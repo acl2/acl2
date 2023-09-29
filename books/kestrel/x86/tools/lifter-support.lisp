@@ -11,7 +11,7 @@
 
 (in-package "X86ISA") ;todo: use X package
 
-(include-book "kestrel/axe/util2" :dir :system) ;for make-cons-nest
+(include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
 

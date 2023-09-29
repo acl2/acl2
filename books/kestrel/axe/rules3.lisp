@@ -1,7 +1,7 @@
 ; Mixed rules 3
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -96,6 +96,14 @@
 (local (in-theory (disable <-of-constant-when-unsigned-byte-p-size-param)))
 
 (local (in-theory (disable <-OF-IF-ARG1)))
+
+;; surprising that this is needed
+(local
+  (defthm integerp-of-+-type
+    (implies (and (integerp x) (integerp y))
+             (integerp (+ x y)))
+    :rule-classes :type-prescription)
+  )
 
 ;drop?:
 (defconst *minus-1* 4294967295)
@@ -257,7 +265,7 @@
                   (bvcat 2 x n y)))
   :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0))))
 
-;(local (in-theory (disable COLLECT-CONSTANTS-<-/))) ;investigate this
+;(local (in-theory (disable <-of-constant-and-*-of-constant))) ;investigate this
 
 (include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop?
 
@@ -429,11 +437,6 @@
                                    <-BECOMES-BVLT
                                    <-BECOMES-BVLT-alt
                                    anti-bvplus TIMES-4-BECOMES-LOGAPP)))))
-
-;move
-(defthm <-of-+-cancel
-  (equal (< (+ x y) x)
-         (< y 0)))
 
 (defthm logtail-hack77
   (implies (posp size)
@@ -2226,10 +2229,8 @@
                         t
                       nil))))
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 1) (ls 31)))
-           :in-theory (e/d (bvlt bvcat logapp) (<-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
-
-
-
+           :in-theory (e/d (bvlt bvcat logapp slice-becomes-getbit)
+                           (<-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
 
 (defthm introduce-bvlt-hack
   (equal (< (bvplus '29 x y) '4)
@@ -2340,8 +2341,10 @@
            (equal (< k (slice high low x))
                   (<= (* (+ 1 k) (expt 2 low)) (bvchop (+ 1 high) x))))
   :hints (("Goal"
-           :use (:instance logtail-lessp (pos low) (i (BVCHOP (+ 1 HIGH) X)) (j (+ k 1)))
-           :in-theory (e/d (slice) (anti-slice logtail-lessp)))))
+         ;  :use (:instance logtail-lessp (pos low) (i (BVCHOP (+ 1 HIGH) X)) (j (+ k 1)))
+           :in-theory (e/d (slice) (anti-slice
+                                    ;logtail-lessp <-of-logtail-arg1
+                                    )))))
 
 (in-theory (disable BVPLUS-OF-*-ARG2 BVPLUS-WHEN-LOW-BITS-ARE-ZERO BVLT-OF-PLUS-ARG2 BVLT-OF-PLUS-ARG1))
 
@@ -2927,7 +2930,7 @@
                            (j (max xsize ysize)))
            :in-theory (e/d (bvplus unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                                      EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
-                                                      <-of-expt-and-expt
+                                                      <-of-expt-and-expt-same-base
                                                       anti-bvplus)))))
 
 
@@ -2989,7 +2992,7 @@
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
            :in-theory (e/d (bvlt unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                                   <-of-expt-and-expt
+                                                   <-of-expt-and-expt-same-base
                                                    <-becomes-bvlt <-becomes-bvlt-alt
                                                    <-of-bvmult-hack ;bozo
                                                    <-of-bvplus-becomes-bvlt-arg1
@@ -3335,9 +3338,8 @@
   :hints (("Goal"
            :cases ((equal 0 (GETBIT 0 K)) (equal 1 (GETBIT 0 K)))
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
-           :in-theory (e/d (bvlt unsigned-byte-p bvcat logapp bvplus posp)
-                           (
-                            anti-bvplus
+           :in-theory (e/d (bvlt unsigned-byte-p bvcat logapp bvplus posp slice-becomes-getbit)
+                           (anti-bvplus
                             PLUS-BECOMES-BVPLUS
                             <-becomes-bvlt <-becomes-bvlt-alt
                             <-of-bvmult-hack ;bozo
@@ -3631,12 +3633,12 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
-           :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus) (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
-
-                                                                               bvlt-of-plus-arg1
-                                                                               bvminus-becomes-bvplus-of-bvuminus
-                                                                               bvlt-of-plus-arg2
-                                                                               )))) )
+           :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus slice-becomes-getbit)
+                           (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
+                                        bvlt-of-plus-arg1
+                                        bvminus-becomes-bvplus-of-bvuminus
+                                        bvlt-of-plus-arg2
+                                        )))) )
 
 ;; todo: loops with tightening rules?
 (defthmd equal-of-bvchop-extend
@@ -4130,7 +4132,7 @@
            (equal (bvplus 6 51 x)
                   (bvplus 5 -13 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   )
+                                   slice-becomes-getbit)
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
@@ -4296,7 +4298,8 @@
            (equal (bvplus 6 50 x)
                   (bvplus 5 -14 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
+                                   slice-of-bvplus-cases
+                                   slice-becomes-getbit)
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
@@ -4354,7 +4357,7 @@
            (equal (bvplus 6 49 x)
                   (bvplus 5 -15 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   )
+                                   slice-becomes-getbit)
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
@@ -4839,6 +4842,7 @@
            (equal (bvplus 4 13 x)
                   (bvplus 3 -3 x)))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
+                                   slice-becomes-getbit
                                    )
                                   (<-becomes-bvlt <-becomes-bvlt-alt
                                                   <-of-bvmult-hack ;bozo
@@ -4864,6 +4868,7 @@
            (equal (equal (slice 4 3 x) 0)
                   (equal (slice 4 4 x) 0)))
   :hints (("Goal" :in-theory (e/d (;bvcat logapp
+                                   slice-becomes-getbit
                                          )
                                   (GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
                                       BVCAT-EQUAL-REWRITE-ALT
@@ -5069,7 +5074,7 @@
                 )
            (< x (EXPT R I)))
   :hints (("Goal" :use (:instance EXPT-IS-INCREASING-FOR-BASE>1 (i free) (j i))
-           :in-theory (disable EXPT-IS-INCREASING-FOR-BASE>1 <-of-expt-and-expt))))
+           :in-theory (disable EXPT-IS-INCREASING-FOR-BASE>1 <-of-expt-and-expt-same-base))))
 
 
 
@@ -7929,8 +7934,9 @@
            (equal (equal (bvplus size w z) (bvplus size2 x y))
                   (and (unsigned-byte-p size (bvplus size2 x y))
                        (equal (bvplus size w z) (bvplus size x y)))))
-  :hints (("Goal" :in-theory (disable BVLT-31-8-BECOMES-UNSIGNED-BYTE-P
-                                      UNSIGNED-BYTE-P-OF-BVPLUS-TIGHTEN))))
+  :hints (("Goal" :in-theory (e/d (slice-becomes-getbit)
+                                  (BVLT-31-8-BECOMES-UNSIGNED-BYTE-P
+                                   UNSIGNED-BYTE-P-OF-BVPLUS-TIGHTEN)))))
 
 (defthm equal-of-bvplus-and-bvplus-diff-sizes-alt
   (implies (and (< size size2)
@@ -8366,6 +8372,7 @@
                                           bvminus
                                           bvlt
                                           getbit-when-val-is-not-an-integer
+                                          slice-becomes-getbit
                                           )
                                   (SLICE-OF-+
                                    anti-bvplus GETBIT-OF-+
@@ -10030,7 +10037,7 @@
            (equal (BVLT '32 (BVPLUS '32 y x8) (BVPLUS '32 x11 (BVCHOP '2 x8)))
                   (BVLT '32 (BVPLUS '32 y (bvmult 31 4 (bvdiv 31 x8 4))) x11)))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y x8) (n 31) (m 2))
+           :use (:instance split-bv (x x8) (n 31) (m 2))
 
            :in-theory (e/d (bvlt
                             bvcat logapp
@@ -10077,7 +10084,7 @@
            (equal (BVLT '32 (BVPLUS '32 y (bvchop 2 x8)) x8)
                   (BVLT '32 y (bvmult 31 4 (bvdiv 31 x8 4)))))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y x8) (n 31) (m 2))
+           :use (:instance split-bv (x x8) (n 31) (m 2))
 
            :in-theory (e/d (bvlt
                             bvcat logapp
@@ -10126,7 +10133,7 @@
                            (equal x8 (bvplus '31 x11 0))
                          (equal (bvmult 31 4 (bvdiv 31 x8 4)) (bvplus '31 x11 1))))))
   :hints (("Goal"
-           :use (:instance split-bv (y x8) (n 31) (m 2))
+           :use (:instance split-bv (x x8) (n 31) (m 2))
            :in-theory (e/d (bvlt
                             bvcat logapp
                             bvplus
@@ -10177,7 +10184,7 @@
            (equal (bvlt 29 (slice 30 2 y) (slice 30 2 x))
                   nil))
   :hints (("Goal"
-           :use (:instance split-bv (y y) (n 31) (m 2))
+           :use (:instance split-bv (x y) (n 31) (m 2))
            :in-theory (e/d (bvlt slice-bound-lemma-gen slice-bound-lemma-gen2
                             bvcat logapp
                             bvplus
@@ -10227,7 +10234,7 @@
                       (BVLT '32 (BVPLUS '32 y x8) (BVPLUS '32 x11 0))
                     (BVLT '32 (BVPLUS '32 y (bvmult 31 4 (bvdiv 31 x8 4))) (bvplus 32 1 x11)))))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y x8) (n 31) (m 2))
+           :use (:instance split-bv (x x8) (n 31) (m 2))
 
            :in-theory (e/d (bvlt
                             bvcat logapp
@@ -10271,7 +10278,7 @@
 (defthm <-of-x-and-pieces
   (implies (unsigned-byte-p 31 x)
            (not (< (+ 3 (* 4 (slice 30 2 x))) x)))
-  :hints (("Goal" :use (:instance split-bv (y x) (n 31) (m 2))
+  :hints (("Goal" :use (:instance split-bv (x x) (n 31) (m 2))
            ;;           :use (:instance <-of-bvcat
            ;;                           (x (+ 3 (* 4 (slice 30 2 x))))
            ;;                           (HIGHSIZE 29)
@@ -10330,7 +10337,7 @@
   (implies (unsigned-byte-p 31 x)
            (equal (< (+ y x) (* 4 (slice 30 2 x)))
                   (< (+ y (bvchop 2 x)) 0)))
-  :hints (("Goal" :use (:instance split-bv (y x) (n 31) (m 2))
+  :hints (("Goal" :use (:instance split-bv (x x) (n 31) (m 2))
            :in-theory (e/d (bvlt
                             bvcat logapp
                             bvplus
@@ -10374,7 +10381,7 @@
   (implies (unsigned-byte-p 31 x)
            (<= (+ 3 (* 4 (slice 30 2 x))) (+ 4 x)))
   :rule-classes ((:linear))
-  :hints (("Goal" :use (:instance split-bv (y x) (n 31) (m 2))
+  :hints (("Goal" :use (:instance split-bv (x x) (n 31) (m 2))
            ;;           :use (:instance <-of-bvcat
            ;;                           (x (+ 3 (* 4 (slice 30 2 x))))
            ;;                           (HIGHSIZE 29)
@@ -10525,7 +10532,7 @@
                       (BVLT '32 x11 x8)
                     (BVLT '32 (bvplus 32 y x11) (bvmult 31 4 (bvdiv 31 x8 4))))))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y x8) (n 31) (m 2))
+           :use (:instance split-bv (x x8) (n 31) (m 2))
 
            :in-theory (e/d (bvlt
                             bvcat logapp
@@ -10578,7 +10585,7 @@
                       (BVLT '32 x11 x8)
                     (BVLT '32 (bvplus 32 y x11) (bvmult 31 4 (bvdiv 31 x8 4))))))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y x8) (n 31) (m 2))
+           :use (:instance split-bv (x x8) (n 31) (m 2))
 
            :in-theory (e/d (bvlt
                             bvcat logapp
@@ -10885,8 +10892,8 @@
                               (slice 30 2 y))
                        (bvlt 2 (bvchop 2 x) (bvchop 2 y)))))
   :hints (("Goal"
-           :use ((:instance split-bv (y y) (n 31) (m 2))
-                 (:instance split-bv (y x) (n 31) (m 2)))
+           :use ((:instance split-bv (x y) (n 31) (m 2))
+                 (:instance split-bv (x x) (n 31) (m 2)))
            :in-theory (e/d (POWER-OF-2P
                             bvlt
                             bvplus
@@ -10963,8 +10970,8 @@
                            (bvlt 2 (bvchop 2 x)
                                  (bvchop 2 y))))))
   :hints (("Goal"
-           :use ((:instance split-bv (y y) (n 31) (m 2))
-                 (:instance split-bv (y x) (n 31) (m 2)))
+           :use ((:instance split-bv (x y) (n 31) (m 2))
+                 (:instance split-bv (x x) (n 31) (m 2)))
            :in-theory (e/d (POWER-OF-2P
                             bvcat logapp
                             bvlt
@@ -11036,8 +11043,8 @@
                 )
            (equal (equal (slice 30 2 x) (slice 30 2 y))
                   (equal x y)))
-  :hints (("Goal" :use ((:instance split-bv (y y) (n 31) (m 2))
-                        (:instance split-bv (y x) (n 31) (m 2)))
+  :hints (("Goal" :use ((:instance split-bv (x y) (n 31) (m 2))
+                        (:instance split-bv (x x) (n 31) (m 2)))
            :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 
@@ -11066,7 +11073,7 @@
                       (equal 0 (bvmult '31 '4 (slice '30 '2 x8)))
                     nil)))
   :hints (("Goal"
-           :use ((:instance split-bv (y x8) (n 31) (m 2)))
+           :use ((:instance split-bv (x x8) (n 31) (m 2)))
            :in-theory (e/d (power-of-2p
                             bvmult
                             bvcat logapp
@@ -11350,7 +11357,7 @@
                 )
            (bvlt '31 x38 x8))
   :hints (("Goal"
-           :use ((:instance split-bv (y x8) (n 31) (m 2)))
+           :use ((:instance split-bv (x x8) (n 31) (m 2)))
            :in-theory (e/d (power-of-2p
                             bvmult
                             bvcat logapp
@@ -11399,7 +11406,7 @@
             )
            (bvlt '31 x38 x8))
   :hints (("Goal"
-           :use ((:instance split-bv (y x8) (n 31) (m 2)))
+           :use ((:instance split-bv (x x8) (n 31) (m 2)))
            :in-theory (e/d (power-of-2p
                             bvmult
                             bvcat logapp
@@ -11504,7 +11511,7 @@
            (equal (+ y (- (* k (slice (+ -1 BIGSIZE) smallsize y))))
                   (bvchop smallsize y)))
   :hints (("Goal" :in-theory (e/d (bvcat logapp natp) ( LOGAPP-EQUAL-REWRITE))
-            :use (:instance split-bv (n bigsize) (m smallsize)))))
+            :use (:instance split-bv (x y) (n bigsize) (m smallsize)))))
 
 (defthm +-of-minus-of-shifted-slice-of-same-alt
   (implies (and (equal k (expt 2 smallsize))
@@ -11583,7 +11590,7 @@
                   (EQUAL (BVCHOP SIZE (+ z1 (* (expt 2 2) (slice (+ -1 size) 2 k))))
                          (BVCHOP SIZE (+ z3)))))
   :hints (("Goal" :in-theory (e/d (bvcat logapp natp) ( LOGAPP-EQUAL-REWRITE))
-           :use (:instance split-bv (y k) (n size) (m 2)))))
+           :use (:instance split-bv (x k) (n size) (m 2)))))
 
 (defthm equal-of-bvchop-cancel-slice-rule-alt
   (implies (and (integerp z1)
@@ -12106,7 +12113,7 @@
          (- (slice 5 2 x))
          )
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y (slice 30 2 x)) (n 29) (m 4))
+           :use (:instance split-bv (x (slice 30 2 x)) (n 29) (m 4))
            :in-theory (e/d (bvmult bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
                                                                           )))))
 
@@ -12115,7 +12122,7 @@
          (slice 5 2 x)
          )
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y (slice 30 2 x)) (n 29) (m 4))
+           :use (:instance split-bv (x (slice 30 2 x)) (n 29) (m 4))
            :in-theory (e/d (bvmult bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
                                                                           )))))
 
@@ -12286,9 +12293,8 @@
                 (natp n))
            (equal (slice m 0 x)
                   (slice m 0 y)))
-
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable differing-bit))))
+  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit))))
 
 ;; (defthm natp-of-differing-bit
 ;;   (natp (differing-bit n x y)))
@@ -12323,7 +12329,7 @@
            (equal (< (differing-bit n x y) 0)
                   (equal (bvchop (+ 1 n) x)
                          (bvchop (+ 1 n) y))))
-  :hints (("Goal" :in-theory (enable differing-bit))))
+  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit))))
 
 ;;(local (in-theory (enable BVOR-1-BECOMES-BITOR)))         ;Thu Mar 31 16:45:29 2011
 
@@ -12552,7 +12558,7 @@
                 (unsigned-byte-p size x))
            (bvle size x (+ (expt 2 size) (- (expt 2 free)))))
   :hints (("Goal"
-           :use ((:instance split-bv (y x) (n size) (m free))
+           :use ((:instance split-bv (x x) (n size) (m free))
                  (:instance slice-upper-bound-linear (high (+ -1 size)) (low free)))
            :in-theory (e/d ( bvmult bvcat logapp bvlt slice-of-sum-cases bvchop-of-sum-cases)
                            (bvcat-equal-rewrite-alt
@@ -12753,7 +12759,7 @@
          (and (unsigned-byte-p 31 x)
               (equal 0 (bvchop 6 x))))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y (bvchop 31 x)) (n 31) (m 6))
+           :use (:instance split-bv (x (bvchop 31 x)) (n 31) (m 6))
            :in-theory (e/d (bvmult bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
                                                                           )))))
 
@@ -12772,7 +12778,7 @@
            (equal (bvlt 25 (slice 30 n x) (slice 30 n y))
                   nil))
   :hints (("Goal" :in-theory (e/d (bvlt slice BVCHOP-OF-LOGTAIL
-                                        ) (LOGTAIL-LESSP anti-slice)))))
+                                        ) (LOGTAIL-LESSP <-of-logtail-arg2 anti-slice)))))
 
 (defthm bvmult-of-slice-when-bvchop-0
   (implies (and (equal free (bvchop 6 x))
@@ -12781,8 +12787,8 @@
            (equal (bvmult '31 '64 (slice '30 '6 x))
                   (bvchop 31 x)))
   :hints (("Goal"
-           :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE ))
-           :use (:instance split-bv (y (bvchop 31 x))
+           :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
+           :use (:instance split-bv (x (bvchop 31 x))
                            (n 31)
                            (m 6)))))
 
@@ -12838,7 +12844,7 @@
                 (natp n))
            (bvlt 31 x y))
   :hints (("Goal" :in-theory (e/d (bvlt slice bvchop-of-logtail)
-                                  (logtail-lessp anti-slice)))))
+                                  (logtail-lessp <-of-logtail-arg2 anti-slice)))))
 
 (in-theory (disable LOGTAIL-OF-ONE-MORE)) ;add syntaxp hyp
 
@@ -12865,10 +12871,10 @@
                 (unsigned-byte-p 31 y))
            (bvlt 32 (bvplus 32 k x) y))
   :hints (("Goal"
-           :use ((:instance split-bv (y (bvchop 31 x))
+           :use ((:instance split-bv (x (bvchop 31 x))
                             (n 31)
                             (m 6))
-                 (:instance split-bv (y (bvchop 31 y))
+                 (:instance split-bv (x (bvchop 31 y))
                             (n 31)
                             (m 6)))
            :in-theory (e/d (bvlt slice bvchop-of-logtail bvplus bvcat logapp logtail FLOOR-OF-SUM bvchop-of-sum-cases
@@ -12900,7 +12906,7 @@
   (equal (BVPLUS '30 (SLICE '34 '5 x) (BVUMINUS '30 (BVMULT '30 '16 (SLICE '34 '9 x))))
          (slice 8 5 x))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y (slice 34 5 x)) (n 30) (m 4))
+           :use (:instance split-bv (x (slice 34 5 x)) (n 30) (m 4))
            :in-theory (e/d (bvplus bvuminus bvminus bvmult bvcat logapp)
                            (BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE
@@ -13023,7 +13029,7 @@
 (defthmd split-hack-lemma
   (equal (SLICE 30 2 X)
          (+ (SLICE 5 2 X) (* 16 (SLICE 30 6 X))))
-  :hints (("Goal" :use ((:instance SPLIT-BV (y (slice 30 2 x)) (n 29) (m 4)))
+  :hints (("Goal" :use ((:instance split-bv (x (slice 30 2 x)) (n 29) (m 4)))
           :in-theory (e/d (bvplus bvuminus bvminus bvmult bvcat logapp bvlt SLICE-OF-SUM-CASES bvchop-of-sum-cases)
                           (BVCAT-EQUAL-REWRITE-ALT
                            BVCAT-EQUAL-REWRITE
@@ -13044,8 +13050,8 @@
            (equal (equal 0 (slice 30 2 (bvplus 31 x (bvuminus 31 y))))
                   nil))
   :hints (("Goal"
-           :use ((:instance SPLIT-BV (y (slice 30 2 x)) (n 29) (m 4))
-                 (:instance SPLIT-BV (y (slice 30 2 y)) (n 29) (m 4))
+           :use ((:instance split-bv (x (slice 30 2 x)) (n 29) (m 4))
+                 (:instance split-bv (x (slice 30 2 y)) (n 29) (m 4))
     ;(:instance <-of-slice-and-slice-when-<-of-slice-and-slice)
                  )
 
@@ -13063,7 +13069,7 @@
   (equal (unsigned-byte-p '29 (bvmult '30 '16 x))
          (equal 0 (getbit 25 x)))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 26 x)) (n 26) (m 25))
+           :use (:instance split-bv (x (bvchop 26 x)) (n 26) (m 25))
            :in-theory (e/d (getbit-when-val-is-not-an-integer
                             bvmult)
                            (bvcat-equal-rewrite-alt
@@ -13176,7 +13182,7 @@
 
 ;UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP
                             ;;                                    EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                            ;;                                    <-OF-EXPT-AND-EXPT
+                            ;;                                    <-OF-EXPT-AND-EXPT-same-base
                             ;;                                    <-OF-EXPT-WHEN-FREE
                             ;;                                    PLUS-OF-TIMES-EXPT-BOUND2
                             )))))
@@ -13207,7 +13213,7 @@
            (equal (bvplus size k x)
                   (bvcat (- size free) (slice (+ -1 size) free x) free k)))
   :hints (("Goal" ;:expand ((:with (:definition unsigned-byte-p) (unsigned-byte-p free2 (+ k x))))
-           :use (:instance split-bv (y (bvchop size x)) (n size) (m free))
+           :use (:instance split-bv (x (bvchop size x)) (n size) (m free))
            :in-theory (e/d (;bvplus bvcat logapp
                             )
                            (bvcat-equal-rewrite-alt
@@ -13228,7 +13234,7 @@
 ;;            (equal (bvplus size k x)
 ;;                   (bvcat (- free2 free) (slice (+ -1 free2) free x) free k)))
 ;;   :hints (("Goal" ;:expand ((:with (:definition unsigned-byte-p) (unsigned-byte-p free2 (+ k x))))
-;;            :use (:instance split-bv (y x) (n free2) (m free))
+;;            :use (:instance split-bv (x x) (n free2) (m free))
 ;;            :in-theory (e/d ()
 ;;                            (bvcat-equal-rewrite-alt
 ;;                             bvcat-equal-rewrite
@@ -13335,7 +13341,7 @@
                           )
                   (sbvlt 32 x (+ k2 (- k)))))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 32 k)) (n 32) (m 31))
+           :use (:instance split-bv (x (bvchop 32 k)) (n 32) (m 31))
            :cases ((equal 0 (getbit 31 k)))
            :in-theory (e/d (sbvlt bvlt getbit-of-bvplus-split bvplus bvchop-of-sum-cases boolor
                                   bvcat getbit-of-plus
@@ -13458,7 +13464,7 @@
                 (natp high))
            (equal (equal k (slice high low x))
                   nil))
-  :hints (("Goal" :use (:instance split-bv (y (slice high low x)) (n (- (+ 1 high) low)) (m (- size low)))
+  :hints (("Goal" :use (:instance split-bv (x (slice high low x)) (n (- (+ 1 high) low)) (m (- size low)))
            :in-theory (e/d (split-hack-lemma bvplus bvuminus bvminus bvmult ;bvcat logapp
                                              natp
                                              bvlt slice-of-sum-cases bvchop-of-sum-cases)
@@ -13510,7 +13516,7 @@
                           )
                   (sbvlt 32 x (+ k2 (- (expt 2 32) k)))))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 32 k)) (n 32) (m 31))
+           :use (:instance split-bv (x (bvchop 32 k)) (n 32) (m 31))
            :cases ((equal 0 (getbit 31 k)))
            :in-theory (e/d (sbvlt bvlt getbit-of-bvplus-split bvplus bvchop-of-sum-cases boolor
                                   bvcat getbit-of-plus
@@ -13616,7 +13622,7 @@
   (equal (bvlt '31 (bvplus '31 '2147483647 (bvcat '29 (slice '30 '2 x) '2 '0)) x)
          (not (equal 0 (slice '30 '2 x))))
   :hints (("Goal"
-           :use (:instance split-bv (y (SLICE 30 0 X)) (n 31) (m 2))
+           :use (:instance split-bv (x (SLICE 30 0 X)) (n 31) (m 2))
            :in-theory (e/d (bvlt bvplus bvmult bvchop-of-sum-cases slice-of-sum-cases
                                  bvcat logapp)
                            (BVCAT-EQUAL-REWRITE-ALT
@@ -14216,14 +14222,9 @@
                           (bvcat 25 (slice 30 6 x) 4 k))
                   (bvminus 4 k (slice 5 2 x))))
   :hints (("Goal"
-           :use (:instance SPLIT-BV (y (SLICE 30 2 X)) (n 29) (m 4))
+           :use (:instance split-bv (x (SLICE 30 2 X)) (n 29) (m 4))
 
            :in-theory (enable bvplus bvuminus bvminus bvchop-of-sum-cases bvlt bvcat logapp))))
-
-
-
-
-
 
 (defthm *-of-1/4-and-bvcat-of-0
   (equal (* 1/4 (BVCAT highsize highval 2 0)) ;gen the 2 (and maybe the 0)?
@@ -14339,7 +14340,7 @@
 ;; (thm
 ;;  (equal (< (+ (bvchop 31 x) y) x)
 ;;         (< y (* (expt 2 31) (logtail 31 x))))
-;;  :hints (("Goal" :use (:instance split-bv (y x) (
+;;  :hints (("Goal" :use (:instance split-bv (x x) (
 
 (defthmd UNSIGNED-BYTE-P-when-top-bit-1
   (implies (EQUAL 1 (GETBIT 31 K))
@@ -14357,7 +14358,7 @@
                   ))
   :hints (("Goal"
            :cases ((equal 0 (getbit 31 x)))
-           :use (:instance split-bv (y k) (n 32) (m 31))
+           :use (:instance split-bv (x k) (n 32) (m 31))
            :in-theory (e/d (;UNSIGNED-BYTE-P-when-top-bit-1
                             bvplus bvlt bvchop-of-sum-cases lowbits-not-0-helper getbit-of-plus
                                    bvcat
@@ -14504,7 +14505,7 @@
            (equal (bvplus size k1 (bvcat 25 x lowsize k2))
                   (bvcat 25 (bvplus 25 (slice (+ lowsize 25) lowsize (+ k1 k2)) x) lowsize (bvchop lowsize (+ k1 k2)))))
   :hints (("Goal"
-           :use (:instance split-bv (y k1) (n (+ lowsize 25)) (m lowsize))
+           :use (:instance split-bv (x k1) (n (+ lowsize 25)) (m lowsize))
            :in-theory (enable bvchop-of-sum-cases
                               slice-of-sum-cases
                               logapp
@@ -14569,7 +14570,7 @@
                                    BVCAT-EQUAL-REWRITE
                                    LOGAPP-EQUAL-REWRITE
                                    LOGAPP-EQUAL-REWRITE))
-           :use (:instance split-bv (y (bvchop size k)) (n size) (m lowsize)))))
+           :use (:instance split-bv (x (bvchop size k)) (n size) (m lowsize)))))
 
 (defthm <-of-shift-of-slice-and-same-special
   (implies (and ;(natp k)
@@ -14651,7 +14652,7 @@
                            (equal ;2147483584
                             (bvcat 25 33554431 6 k)
                             (bvchop 31 x23)))))
-  :hints (("Goal" :use (:instance split-bv (y (bvchop 31 x23)) (n 31) (m 6))
+  :hints (("Goal" :use (:instance split-bv (x (bvchop 31 x23)) (n 31) (m 6))
            :in-theory (e/d (bvlt) (bvcat-slice-same BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-ONTO-CONSTANT BVCAT-OF-SLICE-AND-X-ADJACENT
                                                     )))))
 
@@ -14686,7 +14687,7 @@
            (equal (equal 0 (slice 5 2 x)) ;ffixme just turn this into a bound?
                   nil))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 6 x)) (m 2) (n 6))
+           :use (:instance split-bv (x (bvchop 6 x)) (m 2) (n 6))
            :in-theory (e/d (bvlt
                             ) (BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE
@@ -14700,12 +14701,6 @@
                               (not (quotep x)))))
            (equal (bvif size (equal k (bvchop size x)) x y)
                   (bvif size (equal k (bvchop size x)) k y))))
-
-(local ; todo: move?
- (defthm integerp-of-+-type
-   (implies (and (integerp x) (integerp y))
-            (integerp (+ x y)))
-   :rule-classes :type-prescription))
 
 ;gen
 (defthm bvlt-of-constant-and-slice
@@ -14853,15 +14848,6 @@
   :hints (("Goal" :use (:instance bvchop-0-hack-helper (x (bvchop 6 x))))))
 
 
-
-(defthm equal-of-firstn-and-firstn-same
-  (implies (and (natp n1)
-                (natp n2)
-                (<= n1 (len x))
-                (<= n2 (len x)))
-           (equal (equal (firstn n1 x) (firstn n2 x))
-                  (equal n1 n2))))
-
 ;ffixme what other bvop of myif rules are missing?
 (defthm bvuminus-of-myif-arg2
   (equal (bvuminus size (myif test x y))
@@ -14875,10 +14861,6 @@
            (equal (bv-array-read '32 '2 (unary-- index) data)
                   (bv-array-read '32 '2 (getbit 0 index) data)))
   :hints (("Goal" :in-theory (e/d (bv-array-read) (NTH-BECOMES-BV-ARRAY-READ2)))))
-
-(defthm <-cancel-only-and-2-of-more
-  (equal (< x (+ y (+ x z)))
-         (< 0 (+ y z))))
 
 (defthm bitxor-when-equal-of-constant-and-bvchop-arg2
   (implies (and (equal free (bvchop size x))
@@ -14895,12 +14877,6 @@
                 (posp size))
            (equal (bitxor x y)
                   (bitxor free y))))
-
-(defthm bvxor-cancel-2-of-more-and-1-of-more
-  (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
-         (equal (bvxor size y z) (bvchop size w))))
-
-
 
 ;gen!
 (defthm         bvplus-of-bvuminus-of-bvcat-and-bvcat
@@ -16438,7 +16414,7 @@
            (equal (bvplus 31 x (bvuminus 31 (bvcat 25 (slice 30 6 x) 6 k)))
                   (bvminus 6 x k)))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 31 x)) (n 31) (m 6))
+           :use (:instance split-bv (x (bvchop 31 x)) (n 31) (m 6))
            :in-theory (enable bvlt bvplus bvminus bvuminus bvcat logapp
                               bvchop-of-sum-cases
                               ))))
@@ -16778,7 +16754,7 @@
   (equal (bvlt '30 (slice '29 '1 x) x)
          (not (equal 0 (bvchop 30 x))))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 30 x)) (n 30) (m 1))
+           :use (:instance split-bv (x (bvchop 30 x)) (n 30) (m 1))
            :in-theory (e/d (bvlt ;slice
                             bvcat logapp
                             ) (bvchop-of-logtail-becomes-slice
@@ -16840,7 +16816,7 @@
                 (equal 0 free))
            (bvlt 2 1 x))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 2 x)) (m 1) (n 2))
+           :use (:instance split-bv (x (bvchop 2 x)) (m 1) (n 2))
            :in-theory (enable bvlt bvcat logapp))))
 
 ;; (defthmd equal-of-nth2-and-bv-array-read
@@ -16882,7 +16858,7 @@
   (equal (bvplus '31 (bvcat '27 (slice '30 '4 x) '4 '15) (bvuminus '31 x))
          (bvplus 4 15 (bvuminus 4 x)))
   :hints (("Goal"
-           :use ((:instance split-bv (y (bvchop 31 x)) (n 31) (m 4)))
+           :use ((:instance split-bv (x (bvchop 31 x)) (n 31) (m 4)))
            :in-theory (e/d (bvplus bvuminus bvminus bvcat logapp bvchop-of-sum-cases)
                            (<-OF-+-OF-MINUS-AND-CONSTANT ;looped
                             )))))
@@ -16921,7 +16897,7 @@
                   (equal 0 (slice (+ -1 size2) size1 x))))
   :hints (("Goal"
            :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y (bvchop size2 x)) (n size2) (m size1)))))
+           :use (:instance split-bv (x (bvchop size2 x)) (n size2) (m size1)))))
 
 ;fixme should stp be able to prove goals like this? maybe we dont translate the read since the len is unknown...
 (defthm equal-of-bv-array-read-and-bv-array-read-different-widths
@@ -16956,7 +16932,7 @@
            (equal (bvplus 32 x (bvuminus 32 (bvcat 25 (slice 30 6 x) 6 k)))
                   (bvminus 6 x k)))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 31 x)) (n 31) (m 6))
+           :use (:instance split-bv (x (bvchop 31 x)) (n 31) (m 6))
            :in-theory (e/d (bvlt bvplus bvminus bvuminus bvcat logapp
                               bvchop-of-sum-cases
                               ) (<-OF-+-OF-MINUS-AND-CONSTANT-ALT ;fixme disable!
@@ -17296,10 +17272,6 @@
                   (SBVLT 32 n -1)))
   :hints (("Goal" :in-theory (enable SBVLT-REWRITE))))
 
-(defthm sbvlt-of-maxint-when-sbvlt
-  (IMPLIES (SBVLT 32 N free)
-           (SBVLT 32 N 2147483647)))
-
 (defthm bvlt-of-bvplus-of-1
   (IMPLIES (AND (BVLT 31 I J)
                 (BVLT 31 J LEN))
@@ -17484,9 +17456,9 @@
                             (sbvle 32 0 y)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal"
-           :use ((:instance SPLIT-BV (y (BVCHOP 32 X))
+           :use ((:instance split-bv (x (BVCHOP 32 X))
                             (n 32) (m 31))
-                 (:instance SPLIT-BV (y (BVCHOP 32 y))
+                 (:instance split-bv (x (BVCHOP 32 y))
                             (n 32) (m 31)))
            :in-theory (e/d (sbvlt-rewrite bvlt)
                            (BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
@@ -17579,7 +17551,8 @@
                 (integerp y))
            (equal (sbvlt 32 0 (sbvdiv 32 x y))
                   (not (sbvlt 32 x y))))
-  :hints (("Goal" :cases ((sbvle 32 0 x)))))
+  :hints (("Goal" :use (:instance sbvlt-of-sbvdiv-and-0-when-neg-and-pos (size 32))
+           :in-theory (disable sbvlt-of-sbvdiv-and-0-when-neg-and-pos))))
 
 ;todo: move this stuff to bv library but needs equal-of-slice:
 

@@ -127,7 +127,8 @@
   (implies (natp n)
            (equal (bvxor (+ 1 n) x y)
                   (bvcat 1 (acl2::bitxor (acl2::getbit n x) (acl2::getbit n y))
-                         n (bvxor n x y)))))
+                         n (bvxor n x y))))
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 ;we currently prefer bvnot for mutli-bit opens and bitxor with 1 for single bit ops <- a bit weird
 ;not sure that's a good choice..  bvnot can interfere with the bvxor cancel rules..

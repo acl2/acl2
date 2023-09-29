@@ -163,3 +163,11 @@
                   (<= n (len x))))
   :hints (("Goal" :use (:instance equal-of-firstn-and-take)
            :in-theory (disable equal-of-firstn-and-take))))
+
+(defthm equal-of-firstn-and-firstn-same
+  (implies (and (natp n1)
+                (natp n2)
+                (<= n1 (len x))
+                (<= n2 (len x)))
+           (equal (equal (firstn n1 x) (firstn n2 x))
+                  (equal n1 n2))))

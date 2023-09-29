@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -231,3 +231,11 @@
            (equal (unsigned-byte-p size (bvsx new-size old-size x))
                   (equal 0 (getbit (+ -1 old-size) x))))
   :hints (("Goal" :in-theory (e/d (bvsx) (REPEATBIT-OF-1-ARG2)))))
+
+(defthm equal-of-0-and-bvsx
+  (implies (and (natp size)
+                (posp old-size)
+                (<= old-size size))
+           (equal (equal 0 (bvsx size old-size x))
+                  (equal 0 (bvchop old-size x))))
+  :hints (("Goal" :in-theory (enable bvsx getbit-when-equal-of-constant-and-bvchop))))

@@ -12,43 +12,40 @@
 
 ;; STATUS: IN-PROGRESS
 
+;; TODO: Organize this material
+
 ;; TODO: Don't even attempt a run if no match is found in the symbol table for the function name?
 
 ;; TODO: Somehow distinguish between a run failing to finish and a query failing with a cex -- for now, we just use must-fail.
 
-;(include-book "kestrel/axe/equivalence-checker" :dir :system) ;has skip-proofs
-(include-book "kestrel/axe/bv-rules-axe" :dir :system) ;for trim-does-nothing-dag
-(include-book "kestrel/bv/bvcount" :dir :system)
-(include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
-;(include-book "kestrel/bv/rules" :dir :system) ; for the stuff in core-rules-bv
-(include-book "kestrel/bv/intro" :dir :system)
-(include-book "kestrel/axe/rules1" :dir :system)
-(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
-;(include-book "kestrel/axe/tactic-prover" :dir :system)
-(include-book "kestrel/event-macros/cw-event" :dir :system)
-(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)
-(include-book "kestrel/x86/tools/conditions" :dir :system) ; todo?
-(include-book "kestrel/x86/tools/support" :dir :system) ; todo?
-(include-book "x86-changes")
-(include-book "register-readers-and-writers64")
-(include-book "read-over-write-rules64")
-(include-book "write-over-write-rules64")
+;(include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
+;(include-book "kestrel/bv/intro" :dir :system)
+;(include-book "kestrel/axe/rules1" :dir :system)
+;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
+(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
+(include-book "kestrel/x86/read-and-write" :dir :system)
+(include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod2" :dir :system)) ; reduce?
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/top" :dir :system)) ; todo
+(local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 ;(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
-(acl2::add-known-boolean CANONICAL-ADDRESS-P$INLINE) ; needed?
-
-(acl2::def-constant-opener acl2::bool-fix$inline)
+(acl2::def-constant-opener acl2::bool-fix$inline) ; or build into axe?
 
 (defthm /-bound-when-non-negative-and-integer
   (implies (and (natp i)
@@ -309,93 +306,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;drop?
-(defthm if-of-jz-condition-and-1-and-0
-  (implies (unsigned-byte-p 1 zf)
-           (equal (if (jz-condition zf) 1 0)
-                  zf))
-  :hints (("Goal" :in-theory (enable jz-condition))))
-
-;drop?
-(defthm jz-condition-of-if-of-1-and-0
-  (implies (booleanp test)
-           (equal (JZ-CONDITION (IF test 1 0))
-                  test))
-  :hints (("Goal" :in-theory (enable jz-condition))))
-
-;nice
-(defthm jz-condition-of-sub-zf-spec8
-  (equal (jz-condition (x86isa::sub-zf-spec8 dst src))
-         (equal dst src))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec8))))
-
-;nice
-(defthm jz-condition-of-sub-zf-spec16
-  (equal (jz-condition (x86isa::sub-zf-spec16 dst src))
-         (equal dst src))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec16))))
-
-;nice
-(defthm jz-condition-of-sub-zf-spec32
-  (equal (jz-condition (x86isa::sub-zf-spec32 dst src))
-         (equal dst src))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec32))))
-
-;nice
-(defthm jz-condition-of-sub-zf-spec64
-  (equal (jz-condition (x86isa::sub-zf-spec64 dst src))
-         (equal dst src))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec64))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;nice?
-(defthm jnz-condition-of-zf-spec
-  (equal (jnz-condition (x86isa::zf-spec res))
-         (not (equal res 0)))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec32))))
-
-;nice
-(defthm jnz-condition-of-sub-zf-spec8
-  (equal (jnz-condition (x86isa::sub-zf-spec8 dst src))
-         (not (equal dst src)))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec8))))
-
-;nice
-(defthm jnz-condition-of-sub-zf-spec16
-  (equal (jnz-condition (x86isa::sub-zf-spec16 dst src))
-         (not (equal dst src)))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec16))))
-
-;nice
-(defthm jnz-condition-of-sub-zf-spec32
-  (equal (jnz-condition (x86isa::sub-zf-spec32 dst src))
-         (not (equal dst src)))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec32))))
-
-;nice
-(defthm jnz-condition-of-sub-zf-spec64
-  (equal (jnz-condition (x86isa::sub-zf-spec64 dst src))
-         (not (equal dst src)))
-  :hints (("Goal" :in-theory (enable jz-condition
-                                     x86isa::sub-zf-spec64))))
-
-;drop?
-(defthm if-of-jnz-condition-and-1-and-0
-  (implies (unsigned-byte-p 1 zf)
-           (equal (if (jnz-condition zf) 1 0)
-                  (bitnot zf)))
-  :hints (("Goal" :in-theory (enable jnz-condition))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;can loop with bvxor's def
 (DEFTHM ACL2::LOGXOR-of-BVCHOP-becomes-bvxor-arg1
@@ -435,11 +345,6 @@
                   (BVIF ACL2::SIZE ACL2::TEST ACL2::Z (BVuminus ACL2::SIZE X))))
   :HINTS (("Goal" :IN-THEORY (ENABLE BVIF BVuminus bvminus))))
 
-(DEFTHM ACL2::INTEGERP-OF---when-integerp
-  (implies (INTEGERP X)
-           (INTEGERP (- X)))
-)
-
 (defthm bvdiv-tighten-64-32 ;gen
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
@@ -458,183 +363,9 @@
   (implies (unsigned-byte-p 32 x)
            (not (bvlt 64 4294967295 x))))
 
-(in-theory (disable X86ISA::INTEGERP-WHEN-CANONICAL-ADDRESS-P-CHEAP)) ;todo
+;(in-theory (disable X86ISA::INTEGERP-WHEN-CANONICAL-ADDRESS-P-CHEAP)) ;todo
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm mv-nth-0-of-div-spec-8
-  (equal (mv-nth 0 (X86ISA::DIV-SPEC-8 dst src))
-         (if (bvlt 16
-                   (+ -1 (expt 2 8))
-                   (acl2::bvdiv 16 DST (BVCHOP 8 SRC)))
-             (LIST (CONS 'X86ISA::QUOTIENT
-                         (acl2::bvdiv 16 dst (bvchop 8 src)))
-                   (CONS 'X86ISA::REMAINDER
-                         (acl2::bvmod 16 dst (bvchop 8 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-8
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-1-of-div-spec-8
-  (equal (mv-nth 1 (X86ISA::DIV-SPEC-8 dst src))
-         (if (bvlt 16
-                   (+ -1 (expt 2 8))
-                   (acl2::bvdiv 16 DST (BVCHOP 8 SRC)))
-             0
-           (acl2::bvdiv 16 dst (bvchop 8 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-8
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-2-of-div-spec-8
-  (equal (mv-nth 2 (X86ISA::DIV-SPEC-8 dst src))
-         (if (bvlt 16
-                   (+ -1 (expt 2 8))
-                   (acl2::bvdiv 16 DST (BVCHOP 8 SRC)))
-             0
-           (acl2::bvmod 16 dst (bvchop 8 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-8
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm mv-nth-0-of-div-spec-16
-  (equal (mv-nth 0 (X86ISA::DIV-SPEC-16 dst src))
-         (if (bvlt 64
-                   (+ -1 (expt 2 16))
-                   (acl2::bvdiv 32 DST (BVCHOP 16 SRC)))
-             (LIST (CONS 'X86ISA::QUOTIENT
-                         (acl2::bvdiv 32 dst (bvchop 16 src)))
-                   (CONS 'X86ISA::REMAINDER
-                         (acl2::bvmod 32 dst (bvchop 16 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-16
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-1-of-div-spec-16
-  (equal (mv-nth 1 (X86ISA::DIV-SPEC-16 dst src))
-         (if (bvlt 32
-                   (+ -1 (expt 2 16))
-                   (acl2::bvdiv 32 DST (BVCHOP 16 SRC)))
-             0
-           (acl2::bvdiv 32 dst (bvchop 16 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-16
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-2-of-div-spec-16
-  (equal (mv-nth 2 (X86ISA::DIV-SPEC-16 dst src))
-         (if (bvlt 32
-                   (+ -1 (expt 2 16))
-                   (acl2::bvdiv 32 DST (BVCHOP 16 SRC)))
-             0
-           (acl2::bvmod 32 dst (bvchop 16 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-16
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm mv-nth-0-of-div-spec-32
-  (equal (mv-nth 0 (X86ISA::DIV-SPEC-32 dst src))
-         (if (bvlt 64
-                   (+ -1 (expt 2 32))
-                   (acl2::bvdiv 64 DST (BVCHOP 32 SRC)))
-             (LIST (CONS 'X86ISA::QUOTIENT
-                         (acl2::bvdiv 64 dst (bvchop 32 src)))
-                   (CONS 'X86ISA::REMAINDER
-                         (acl2::bvmod 64 dst (bvchop 32 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-32
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-1-of-div-spec-32
-  (equal (mv-nth 1 (X86ISA::DIV-SPEC-32 dst src))
-         (if (bvlt 64
-                   (+ -1 (expt 2 32))
-                   (acl2::bvdiv 64 DST (BVCHOP 32 SRC)))
-             0
-           (acl2::bvdiv 64 dst (bvchop 32 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-32
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-2-of-div-spec-32
-  (equal (mv-nth 2 (X86ISA::DIV-SPEC-32 dst src))
-         (if (bvlt 64
-                   (+ -1 (expt 2 32))
-                   (acl2::bvdiv 64 DST (BVCHOP 32 SRC)))
-             0
-           (acl2::bvmod 64 dst (bvchop 32 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-32
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-
-(defthm mv-nth-0-of-div-spec-64
-  (equal (mv-nth 0 (X86ISA::DIV-SPEC-64 dst src))
-         (if (bvlt 128
-                   (+ -1 (expt 2 64))
-                   (acl2::bvdiv 128 DST (BVCHOP 64 SRC)))
-             (LIST (CONS 'X86ISA::QUOTIENT
-                         (acl2::bvdiv 128 dst (bvchop 64 src)))
-                   (CONS 'X86ISA::REMAINDER
-                         (acl2::bvmod 128 dst (bvchop 64 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-64
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-1-of-div-spec-64
-  (equal (mv-nth 1 (X86ISA::DIV-SPEC-64 dst src))
-         (if (bvlt 128
-                   (+ -1 (expt 2 64))
-                   (acl2::bvdiv 128 DST (BVCHOP 64 SRC)))
-             0
-           (acl2::bvdiv 128 dst (bvchop 64 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-64
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-(defthm mv-nth-2-of-div-spec-64
-  (equal (mv-nth 2 (X86ISA::DIV-SPEC-64 dst src))
-         (if (bvlt 128
-                   (+ -1 (expt 2 64))
-                   (acl2::bvdiv 128 DST (BVCHOP 64 SRC)))
-             0
-           (acl2::bvmod 128 dst (bvchop 64 src))))
-  :hints (("Goal" :in-theory (e/d (X86ISA::DIV-SPEC-64
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
 
 ;gen the sizes
 (defthm bvuminus-of-bvif-constants
@@ -649,34 +380,6 @@
          0)
   :hints (("Goal" :in-theory (enable of-spec32))))
 
-(defthm jle-condition-rewrite-1-with-bvif
-  (implies (unsigned-byte-p 32 x)
-           (equal (jle-condition (bvif 1 (equal 0 x) 1 0)
-                                 (acl2::getbit 31 x)
-                                 0)
-                  (not (acl2::sbvlt 32 0 x))))
-  :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
-
-(defthm jle-condition-rewrite-1-with-bvif-and-bvchop
-  (equal (jle-condition (bvif 1 (equal 0 (bvchop 32 x)) 1 0)
-                        (acl2::getbit 31 x)
-                        0)
-         (not (acl2::sbvlt 32 0 x)))
-  :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
-
-(defthm jle-condition-rewrite-1-with-bvchop
-  (equal (jle-condition (if (equal 0 (bvchop 32 x)) 1 0)
-                        (acl2::getbit 31 x)
-                        0)
-         (not (acl2::sbvlt 32 0 x)))
-  :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
-
-;; or should we keep the flag expressions disabled?
-(defthm jnl-condition-of-getbit-31-and-0
-  (equal (JNL-CONDITION (GETBIT '31 x) '0)
-         (sbvle 32 0 x))
-  :hints (("Goal" :in-theory (enable JNL-CONDITION))))
-
 (defthm bvchop-of-logext-becomes-bvsx
   (implies (and (< size2 size)
                 (natp size)
@@ -684,26 +387,6 @@
            (equal (bvchop size (logext size2 x))
                   (bvsx size size2 x)))
   :hints (("Goal" :in-theory (enable bvsx))))
-
-(defthm jnl-condition-rewrite-16
-  (equal (jnl-condition (sf-spec32 (bvsx 32 16 x))
-                        (of-spec32 (logext 16 x)))
-         (sbvle 16 0 x))
-  :hints (("Goal" :in-theory (enable jnl-condition
-                                     of-spec32
-                                     sf-spec32))))
-
-(defthm jnl-condition-rewrite-16b
-  (equal (jnl-condition (sf-spec32 x)
-                        0)
-         (sbvle 32 0 x))
-  :hints (("Goal" :in-theory (enable jnl-condition
-                                     of-spec32
-                                     sf-spec32))))
-
-(defthm bvuminus-of-bvsx-16-32-16 ;gen!
-  (equal (BVUMINUS '16 (BVSX '32 '16 x))
-         (bvuminus 16 x)))
 
 (defthm bvchop-of-zf-spec
   (implies (posp size)
@@ -724,85 +407,11 @@
          (SF-SPEC64$INLINE x))
   :hints (("Goal" :in-theory (enable SF-SPEC64))))
 
-(acl2::add-known-boolean JNL-CONDITION) ;todo: more
-
 (defthm of-spec64-of-logext-64
   (equal (of-spec64 (logext 64 x))
          0)
   :hints (("Goal" :in-theory (enable of-spec64))))
 
-
-(defthm jnl-condition-of-sf-spec64-and-of-spec64-same
-  (implies (SIGNED-BYTE-P 64 X) ;t;(unsigned-byte-p 64 x)
-           (equal (JNL-CONDITION (SF-SPEC64 x)
-                                 (OF-SPEC64 x))
-                  (sbvle 64 0 x)))
-  :hints (("Goal" :in-theory (enable SF-SPEC64 OF-SPEC64 JNL-CONDITION))))
-
-(defthm jnl-condition-of-sf-spec32-and-of-spec32-same
-  (implies (SIGNED-BYTE-P 32 X) ;t;(unsigned-byte-p 32 x)
-           (equal (JNL-CONDITION (SF-SPEC32 x)
-                                 (OF-SPEC32 x))
-                  (sbvle 32 0 x)))
-  :hints (("Goal" :in-theory (enable SF-SPEC32 OF-SPEC32 JNL-CONDITION))))
-
-;nice
-(defthm jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
-  (implies (and (unsigned-byte-p 16 src)
-                (unsigned-byte-p 16 dst))
-           (equal (JNL-CONDITION (x86isa::sub-SF-SPEC16 dst src)
-                                 (x86isa::sub-OF-SPEC16 dst src))
-                  (sbvle 16 src dst)))
-  :hints (("Goal" :in-theory (enable x86isa::sub-SF-SPEC16
-                                     x86isa::sub-OF-SPEC16
-                                     x86isa::sf-spec16
-                                     x86isa::of-spec16
-                                     JNL-CONDITION
-                                     signed-byte-p
-                                     acl2::getbit-of-plus
-                                     acl2::logext-cases
-                                     bvplus
-                                     bvlt))))
-
-;nice
-(defthm jnl-condition-of-sub-sf-spec32-and-sub-of-spec32-same
-  (implies (and (unsigned-byte-p 32 src)
-                (unsigned-byte-p 32 dst))
-           (equal (JNL-CONDITION (x86isa::sub-SF-SPEC32 dst src)
-                                 (x86isa::sub-OF-SPEC32 dst src))
-                  (sbvle 32 src dst)))
-  :hints (("Goal" :in-theory (enable x86isa::sub-SF-SPEC32
-                                     x86isa::sub-OF-SPEC32
-                                     SF-SPEC32
-                                     OF-SPEC32
-                                     JNL-CONDITION
-                                     signed-byte-p
-                                     acl2::getbit-of-plus
-                                     acl2::logext-cases
-                                     bvplus
-                                     bvlt))))
-
-;nice
-(defthm jnl-condition-of-sub-sf-spec64-and-sub-of-spec64-same
-  (implies (and (unsigned-byte-p 64 src)
-                (unsigned-byte-p 64 dst))
-           (equal (JNL-CONDITION (x86isa::sub-SF-SPEC64 dst src)
-                                 (x86isa::sub-OF-SPEC64 dst src))
-                  (sbvle 64 src dst)))
-  :hints (("Goal" :in-theory (enable x86isa::sub-SF-SPEC64
-                                     x86isa::sub-OF-SPEC64
-                                     SF-SPEC64 OF-SPEC64
-                                     JNL-CONDITION
-                                     signed-byte-p
-                                     acl2::getbit-of-plus
-                                     acl2::logext-cases
-                                     bvplus
-                                     bvlt))))
-
-(defthm jnl-condition-of-sf-spec64-and-0
-  (equal (jnl-condition (sf-spec64 x) 0)
-         (sbvle 64 0 x))
-  :hints (("Goal" :in-theory (enable SF-SPEC64 OF-SPEC64 JNL-CONDITION))))
 
 (acl2::def-constant-opener X86ISA::!PREFIXES->REP$inline)
 (acl2::def-constant-opener X86ISA::PREFIXES->REP$INLINE)
@@ -837,10 +446,9 @@
                   1))
   :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
 
-
-;for axe
-(defthm integerp-of-ctri
-  (integerp (X86ISA::CTRI ACL2::I X86)))
+;; probably only needed for axe
+(defthmd integerp-of-ctri
+  (integerp (x86isa::ctri acl2::i x86)))
 
 (defthm cr0bits->ts-of-bvchop
   (implies (and (< 3 n)
@@ -913,356 +521,6 @@
 ;;          (x86isa::feature-flag ':sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable x86isa::ctri)))))
 
-;nice
-(defthm jz-condition-of-zf-spec
-  (equal (jz-condition (zf-spec result))
-         (equal result 0))
-  :hints (("Goal" :in-theory (enable jz-condition zf-spec))))
-
-;; ;todo: should not be needed if cf-spec is not being opened?
-;; (defthm jnbe-condition-of-bool->bit-of-<-of-bvchop-and-zf-spec-of-bvplus-of-bvuminus
-;;   (implies (unsigned-byte-p 32 x)
-;;            (equal (jnbe-condition (bool->bit$inline (< x (bvchop '32 y)))
-;;                                   (zf-spec$inline (bvplus '32 x (bvuminus '32 y))))
-;;                   (bvlt 32 y x)))
-;;   :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt))))
-
-;nice
-(defthm jnbe-condition-of-sub-cf-spec8-and-sub-zf-spec8
-  (implies (and (unsigned-byte-p 8 dst)
-                (unsigned-byte-p 8 src))
-           (equal (jnbe-condition (x86isa::sub-cf-spec8 dst src)
-                                  (x86isa::sub-zf-spec8 dst src))
-                  (bvlt 8 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
-                                     x86isa::sub-zf-spec8))))
-
-;nice
-(defthm jnbe-condition-of-sub-cf-spec16-and-sub-zf-spec16
-  (implies (and (unsigned-byte-p 16 dst)
-                (unsigned-byte-p 16 src))
-           (equal (jnbe-condition (x86isa::sub-cf-spec16 dst src)
-                                  (x86isa::sub-zf-spec16 dst src))
-                  (bvlt 16 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
-                                     x86isa::sub-zf-spec16))))
-
-;nice
-(defthm jnbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
-  (implies (and (unsigned-byte-p 32 dst)
-                (unsigned-byte-p 32 src))
-           (equal (jnbe-condition (x86isa::sub-cf-spec32 dst src)
-                                  (x86isa::sub-zf-spec32 dst src))
-                  (bvlt 32 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
-                                     x86isa::sub-zf-spec32))))
-
-;nice
-(defthm jnbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
-  (implies (and (unsigned-byte-p 64 dst)
-                (unsigned-byte-p 64 src))
-           (equal (jnbe-condition (x86isa::sub-cf-spec64 dst src)
-                                  (x86isa::sub-zf-spec64 dst src))
-                  (bvlt 64 src dst)))
-  :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt
-                                     x86isa::sub-zf-spec64))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;todo: gen the other and kill this:
-(defthm acl2::equal-of-bvchops-when-equal-of-getbits-64
-  (implies (and (syntaxp (acl2::want-to-strengthen
-                          (equal (bvchop 63 x) (bvchop 63 y))))
-                (equal (getbit 63 x) (getbit 63 y)))
-           (equal (equal (bvchop 63 x) (bvchop 63 y))
-                  (equal (bvchop 64 x) (bvchop 64 y))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0))))
-
-(defthm acl2::equal-of-bvchops-when-equal-of-getbits-16
-  (implies (and (syntaxp (acl2::want-to-strengthen (equal (bvchop 15 x) (bvchop 15 y))))
-                (equal (getbit 15 x) (getbit 15 y)))
-           (equal (equal (bvchop 15 x) (bvchop 15 y))
-                  (equal (bvchop 16 x) (bvchop 16 y))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0))))
-
-;nice
-(defthm jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
-  (implies (and (unsigned-byte-p 16 dst)
-                (unsigned-byte-p 16 src))
-           (equal (jnle-condition (x86isa::sub-zf-spec16 dst src)
-                                  (x86isa::sub-sf-spec16 dst src)
-                                  (x86isa::sub-of-spec16 dst src))
-                  (sbvlt 16 src dst)))
-  :hints (("Goal" :in-theory (enable jnle-condition zf-spec
-                                     x86isa::of-spec16
-                                     x86isa::sf-spec16
-                                     bvlt
-                                     x86isa::sub-zf-spec16
-                                     x86isa::sub-sf-spec16
-                                     x86isa::sub-of-spec16
-                                     ACL2::GETBIT-OF-PLUS
-                                     bvplus
-                                     SIGNED-BYTE-P
-                                     acl2::logext-cases
-                                     acl2::equal-of-bvchop-extend))))
-
-;nice
-(defthm jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
-  (implies (and (unsigned-byte-p 32 dst)
-                (unsigned-byte-p 32 src))
-           (equal (jnle-condition (x86isa::sub-zf-spec32 dst src)
-                                  (x86isa::sub-sf-spec32 dst src)
-                                  (x86isa::sub-of-spec32 dst src))
-                  (sbvlt 32 src dst)))
-  :hints (("Goal" :in-theory (enable jnle-condition zf-spec
-                                     OF-SPEC32
-                                     sF-SPEC32
-                                     bvlt
-                                     x86isa::sub-zf-spec32
-                                     x86isa::sub-sf-spec32
-                                     x86isa::sub-of-spec32
-                                     ACL2::GETBIT-OF-PLUS
-                                     bvplus
-                                     SIGNED-BYTE-P
-                                     acl2::logext-cases
-                                     acl2::equal-of-bvchop-extend))))
-
-;nice
-(defthm jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
-  (implies (and (unsigned-byte-p 64 dst)
-                (unsigned-byte-p 64 src))
-           (equal (jnle-condition (x86isa::sub-zf-spec64 dst src)
-                                  (x86isa::sub-sf-spec64 dst src)
-                                  (x86isa::sub-of-spec64 dst src))
-                  (sbvlt 64 src dst)))
-  :hints (("Goal" :in-theory (enable jnle-condition zf-spec
-                                     OF-SPEC64
-                                     sF-SPEC64
-                                     bvlt
-                                     x86isa::sub-zf-spec64
-                                     x86isa::sub-sf-spec64
-                                     x86isa::sub-of-spec64
-                                     ACL2::GETBIT-OF-PLUS
-                                     bvplus
-                                     SIGNED-BYTE-P
-                                     acl2::logext-cases
-                                     acl2::equal-of-bvchop-extend))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;nice
-(defthm jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
-  (implies (and (unsigned-byte-p 32 dst)
-                (unsigned-byte-p 32 src))
-           (equal (jle-condition (x86isa::sub-zf-spec32 dst src)
-                                 (x86isa::sub-sf-spec32 dst src)
-                                 (x86isa::sub-of-spec32 dst src))
-                  (sbvle 32 dst src)))
-  :hints (("Goal" :in-theory (enable jle-condition zf-spec
-                                     OF-SPEC32
-                                     sF-SPEC32
-                                     bvlt
-                                     x86isa::sub-zf-spec32
-                                     x86isa::sub-sf-spec32
-                                     x86isa::sub-of-spec32
-                                     ACL2::GETBIT-OF-PLUS
-                                     bvplus
-                                     SIGNED-BYTE-P
-                                     acl2::logext-cases
-                                     acl2::equal-of-bvchop-extend))))
-
-;nice
-(defthm jle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
-  (implies (and (unsigned-byte-p 64 dst)
-                (unsigned-byte-p 64 src))
-           (equal (jle-condition (x86isa::sub-zf-spec64 dst src)
-                                 (x86isa::sub-sf-spec64 dst src)
-                                 (x86isa::sub-of-spec64 dst src))
-                  (sbvle 64 dst src)))
-  :hints (("Goal" :in-theory (enable jle-condition zf-spec
-                                     OF-SPEC64
-                                     sF-SPEC64
-                                     bvlt
-                                     x86isa::sub-zf-spec64
-                                     x86isa::sub-sf-spec64
-                                     x86isa::sub-of-spec64
-                                     ACL2::GETBIT-OF-PLUS
-                                     bvplus
-                                     SIGNED-BYTE-P
-                                     acl2::logext-cases
-                                     acl2::equal-of-bvchop-extend))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;nice
-(defthm jbe-condition-of-sub-cf-spec32-and-sub-zf-spec32
-  (implies (and (unsigned-byte-p 32 dst)
-                (unsigned-byte-p 32 src))
-           (equal (jbe-condition (x86isa::sub-cf-spec32 dst src)
-                                 (x86isa::sub-zf-spec32 dst src))
-                  (bvle 32 dst src)))
-  :hints (("Goal" :in-theory (enable jbe-condition zf-spec
-                                     OF-SPEC32
-                                     sF-SPEC32
-                                     bvlt
-                                     x86isa::sub-zf-spec32
-                                     x86isa::sub-sf-spec32
-                                     x86isa::sub-of-spec32
-                                     ACL2::GETBIT-OF-PLUS
-                                     bvplus
-                                     SIGNED-BYTE-P
-                                     acl2::logext-cases))))
-
-;nice
-(defthm jbe-condition-of-sub-cf-spec64-and-sub-zf-spec64
-  (implies (and (unsigned-byte-p 64 dst)
-                (unsigned-byte-p 64 src))
-           (equal (jbe-condition (x86isa::sub-cf-spec64 dst src)
-                                 (x86isa::sub-zf-spec64 dst src))
-                  (bvle 64 dst src)))
-  :hints (("Goal" :in-theory (enable jbe-condition zf-spec
-                                     OF-SPEC64
-                                     sF-SPEC64
-                                     bvlt
-                                     x86isa::sub-zf-spec64
-                                     x86isa::sub-sf-spec64
-                                     x86isa::sub-of-spec64
-                                     ACL2::GETBIT-OF-PLUS
-                                     bvplus
-                                     SIGNED-BYTE-P
-                                     acl2::logext-cases))))
-
-;nice
-(defthm jl-condition-of-sub-sf-spec8-and-sub-of-spec8
-  (implies (and (unsigned-byte-p 8 dst)
-                (unsigned-byte-p 8 src))
-           (equal (jl-condition (x86isa::sub-sf-spec8 dst src)
-                                (x86isa::sub-of-spec8 dst src))
-                  (sbvlt 8 dst src)))
-  :hints (("Goal" :in-theory (enable jl-condition bvlt
-                                     x86isa::sf-spec8
-                                     x86isa::of-spec8
-                                     x86isa::sub-sf-spec8
-                                     x86isa::sub-of-spec8
-                                     SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
-                                     BVPLUS ;why?
-                                     ACL2::LOGEXT-CASES
-                                     ))))
-
-;nice
-(defthm jl-condition-of-sub-sf-spec16-and-sub-of-spec16
-  (implies (and (unsigned-byte-p 16 dst)
-                (unsigned-byte-p 16 src))
-           (equal (jl-condition (x86isa::sub-sf-spec16 dst src)
-                                (x86isa::sub-of-spec16 dst src))
-                  (sbvlt 16 dst src)))
-  :hints (("Goal" :in-theory (enable jl-condition bvlt
-                                     x86isa::sf-spec16
-                                     x86isa::of-spec16
-                                     x86isa::sub-sf-spec16
-                                     x86isa::sub-of-spec16
-                                     SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
-                                     BVPLUS ;why?
-                                     ACL2::LOGEXT-CASES
-                                     ))))
-
-;nice
-(defthm jl-condition-of-sub-sf-spec32-and-sub-of-spec32
-  (implies (and (unsigned-byte-p 32 dst)
-                (unsigned-byte-p 32 src))
-           (equal (jl-condition (x86isa::sub-sf-spec32 dst src)
-                                (x86isa::sub-of-spec32 dst src))
-                  (sbvlt 32 dst src)))
-  :hints (("Goal" :in-theory (enable jl-condition bvlt
-                                     x86isa::sf-spec32
-                                     x86isa::of-spec32
-                                     x86isa::sub-sf-spec32
-                                     x86isa::sub-of-spec32
-                                     SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
-                                     BVPLUS ;why?
-                                     ACL2::LOGEXT-CASES
-                                     ))))
-
-;nice
-(defthm jl-condition-of-sub-sf-spec64-and-sub-of-spec64
-  (implies (and (unsigned-byte-p 64 dst)
-                (unsigned-byte-p 64 src))
-           (equal (jl-condition (x86isa::sub-sf-spec64 dst src)
-                                (x86isa::sub-of-spec64 dst src))
-                  (sbvlt 64 dst src)))
-  :hints (("Goal" :in-theory (enable jl-condition bvlt
-                                     x86isa::sf-spec64
-                                     x86isa::of-spec64
-                                     x86isa::sub-sf-spec64
-                                     x86isa::sub-of-spec64
-                                     SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
-                                     BVPLUS ;why?
-                                     ACL2::LOGEXT-CASES
-                                     ))))
-
-;; ;nice?  only needed for constants?
-;; (defthm jl-condition-of-sf-spec64-and-of-spec64
-;;   (implies (and ...(unsigned-byte-p 32 dst)
-;;                 (unsigned-byte-p 32 src))
-;;            (equal (jl-condition (x86isa::sf-spec64 x)
-;;                                 (x86isa::of-spec64 x))
-;;                   (sbvlt 64 dst src)))
-;;   :hints (("Goal" :in-theory (enable jl-condition bvlt
-;;                                      x86isa::sf-spec32
-;;                                      x86isa::of-spec32
-;;                                      x86isa::sub-sf-spec32
-;;                                      x86isa::sub-of-spec32
-;;                                      SIGNED-BYTE-P
-;;                                      acl2::getbit-of-plus
-;;                                      BVPLUS ;why?
-;;                                      ACL2::LOGEXT-CASES
-;;                                      ))))
-
-
-;nice
-(defthm jb-condition-of-sub-cf-spec8
-  (implies (and (unsigned-byte-p 8 dst)
-                (unsigned-byte-p 8 src))
-           (equal (jb-condition (x86isa::sub-cf-spec8 dst src))
-                  (bvlt 8 dst src)))
-  :hints (("Goal" :in-theory (enable jb-condition
-                                     x86isa::sub-cf-spec8
-                                     bvlt))))
-
-;nice
-(defthm jb-condition-of-sub-cf-spec16
-  (implies (and (unsigned-byte-p 16 dst)
-                (unsigned-byte-p 16 src))
-           (equal (jb-condition (x86isa::sub-cf-spec16 dst src))
-                  (bvlt 16 dst src)))
-  :hints (("Goal" :in-theory (enable jb-condition
-                                     x86isa::sub-cf-spec16
-                                     bvlt))))
-
-;nice
-(defthm jb-condition-of-sub-cf-spec32
-  (implies (and (unsigned-byte-p 32 dst)
-                (unsigned-byte-p 32 src))
-           (equal (jb-condition (x86isa::sub-cf-spec32 dst src))
-                  (bvlt 32 dst src)))
-  :hints (("Goal" :in-theory (enable jb-condition
-                                     x86isa::sub-cf-spec32
-                                     bvlt))))
-
-;nice
-(defthm jb-condition-of-sub-cf-spec64
-  (implies (and (unsigned-byte-p 64 dst)
-                (unsigned-byte-p 64 src))
-           (equal (jb-condition (x86isa::sub-cf-spec64 dst src))
-                  (bvlt 64 dst src)))
-  :hints (("Goal" :in-theory (enable jb-condition
-                                     x86isa::sub-cf-spec64
-                                     bvlt))))
-
 (in-theory (disable x86isa::sub-zf-spec32))
 
 (defthm bvchop-of-sub-zf-spec32
@@ -1285,103 +543,7 @@
   (equal (equal 1 (x86isa::sub-zf-spec32 dst src))
          (equal dst src)))
 
-;finally, a nice rule!
-;todo: other sizes!
-(defthm jnl-condition-rewrite-32
-  (equal (jnl-condition (x86isa::sub-sf-spec32 x y)
-                        (x86isa::sub-of-spec32 x y))
-         (acl2::sbvle 32 y x))
-  :otf-flg t
-  :hints (("Goal"
-           :use ( ;; (:instance acl2::split-signed-bv-top
-                 ;;            (x x)
-                 ;;            (size 32))
-                 ;; (:instance acl2::split-signed-bv-top
-                 ;;            (x y)
-                 ;;            (size 32))
-                 )
-           :cases ((and (equal 0 (acl2::getbit 31 Y))
-                        (equal 0 (acl2::getbit 31 x)))
-                   (and (equal 0 (acl2::getbit 31 Y))
-                        (equal 1 (acl2::getbit 31 x)))
-                   (and (equal 1 (acl2::getbit 31 Y))
-                        (equal 0 (acl2::getbit 31 x)))
-                   (and (equal 1 (acl2::getbit 31 Y))
-                        (equal 1 (acl2::getbit 31 x))))
 
-           :in-theory (e/d (ACL2::LOGEXT-WHEN-NEGATIVE-2
-;signed-byte-p-with-top-bit-0
-                            signed-byte-p-with-top-bit-0-bound
-                            signed-byte-p-with-top-bit-1-bound
-                            jnl-condition
-                            x86isa::of-spec32$inline
-                            x86isa::sf-spec32$inline
-                            acl2::bvplus
-                            ;; acl2::bvchop-of-sum-cases
-                            signed-byte-p
-                            acl2::bvuminus
-                            acl2::bvminus
-                            acl2::getbit-of-plus
-                            ;; acl2::equal-of-bitxor-and-1
-                            ;; acl2::bvcat
-                            ;; logapp
-                            ;; logext
-                            acl2::sbvlt
-                            acl2::bvlt
-                            )
-                           ( ;acl2::bvplus-recollapse
-                            acl2::bvminus-becomes-bvplus-of-bvuminus
-;acl2::plus-bvcat-with-0 ;looped
-;acl2::plus-bvcat-with-0-alt ;looped
-                            acl2::slice-of-+)))))
-
-;rename
-;nice
-(defthm jnb-condition-8
-  (implies (and (unsigned-byte-p 8 dst)
-                (unsigned-byte-p 8 src))
-           (equal (jnb-condition (X86ISA::SUB-CF-SPEC8 dst src))
-                  (bvle 8 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC8
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
-
-;rename
-;nice
-(defthm jnb-condition-16
-  (implies (and (unsigned-byte-p 16 dst)
-                (unsigned-byte-p 16 src))
-           (equal (jnb-condition (X86ISA::SUB-CF-SPEC16 dst src))
-                  (bvle 16 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC16
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
-
-;rename
-;nice
-(defthm jnb-condition-32
-  (implies (and (unsigned-byte-p 32 dst)
-                (unsigned-byte-p 32 src))
-           (equal (jnb-condition (X86ISA::SUB-CF-SPEC32 dst src))
-                  (bvle 32 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC32
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
-
-;rename
-;nice
-(defthm jnb-condition-64
-  (implies (and (unsigned-byte-p 64 dst)
-                (unsigned-byte-p 64 src))
-           (equal (jnb-condition (X86ISA::SUB-CF-SPEC64 dst src))
-                  (bvle 64 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC64
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
 
 ;slow: ACL2::UNSIGNED-BYTE-P-OF-+-OF-MINUS
 
@@ -1440,9 +602,7 @@
   (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
          (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
 
-(defthm read-of-if
-  (equal (read n addr (if test x86 x86_2))
-         (if test (read n addr x86) (read n addr x86_2))))
+
 
 (defthm sse-daz-of-nil
   (equal (X86ISA::SSE-DAZ kind exp frac nil)
@@ -1526,7 +686,7 @@
   (equal (X86ISA::!RFLAGS v (if test x86_1 x86_2))
          (if test (X86ISA::!RFLAGS v x86_1) (X86ISA::!RFLAGS v x86_2))))
 
-(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+
 
 (defthm <-of-fp-to-rat
   (implies (and (natp frac)
@@ -1556,8 +716,6 @@
 ;;                (INTEGERP J))
 ;;           (<= (- k) (FLOOR I J))))
 
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/top" :dir :system)) ; todo
 
 ;gen!
 (defthm *-of-/-linear-when-both-negative-free-linear
@@ -1586,7 +744,7 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (disable acl2::<-of-*-of-/-arg1))))
 
-(in-theory (disable X86ISA::<-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE X86ISA::<-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
+;(in-theory (disable X86ISA::<-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE X86ISA::<-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
 
 (defthm acl2::logext-of-truncate
   (implies (and (signed-byte-p acl2::size acl2::i)
@@ -1695,6 +853,22 @@
                            (acl2::sbvlt-rewrite ;disable
                             )))))
 
+;todo: also prove for slice and logtail
+(defthm getbit-of-*-of-1/2
+  (implies (and (integerp x)
+                (equal 0 (getbit 0 x)) ; needed?
+                (natp n))
+           (equal (getbit n (* 1/2 x))
+                  (getbit (+ 1 n) x)))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail acl2::expt-of-+ ifix bvchop)
+                                  (acl2::bvchop-1-becomes-getbit)))))
+
+;gen and move
+(defthm evenp-of-bvchop
+  (equal (evenp (bvchop 32 x))
+         (equal 0 (getbit 0 x)))
+  :hints (("Goal" :in-theory (e/d (getbit slice bvchop evenp) (acl2::bvchop-1-becomes-getbit)))))
+
 ;; Shows that the division can't be too positive
 ;; todo: gen the 2 but watch for the one weird case
 (defthm not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
@@ -1715,13 +889,6 @@
            (equal (bvcat (+ 32 (- amt)) val amt 0)
                   (acl2::bvshl 32 val amt)))
   :hints (("Goal" :in-theory (enable acl2::bvshl))))
-
-;; mostly to suppress messages (but does this slow down anything?):
-;; todo: have this print :redundant when it is
-(acl2::add-known-boolean canonical-address-p$inline)
-(acl2::add-known-boolean separate)
-(acl2::add-known-boolean x86p)
-(acl2::add-known-boolean alignment-checking-enabled-p)
 
 (defthm X86ISA::RFLAGSBITS->PF-of-if
   (equal (X86ISA::RFLAGSBITS->PF (if test x1 x2))
@@ -1926,7 +1093,9 @@
   :hints (("Goal" :in-theory (e/d (acl2::equal-of-logext-and-logext bvmult)
                                   (ACL2::SLICE-OF-* ;looped
                                    acl2::getbit-of-* ; looped
-                                   X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
+                                   ;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
+                                   ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
+                                   ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    )))))
 
 ;; ;arises in array indexing
@@ -1950,9 +1119,6 @@
                 (< (* 4 (bvchop 62 index)) (- 140737488355328 k)))
            (canonical-address-p (+ k (bvmult 64 4 index))))
   :hints (("Goal" :in-theory (enable bvmult canonical-address-p signed-byte-p))))
-
-
-
 
 (defthm BV-ARRAY-READ-of-*-arg3
   (implies (and (syntaxp (quotep len))
@@ -2096,6 +1262,7 @@
            (equal (write n addr val3 (write n2 addr2 val2 (write n addr val1 x86)))
                   (write n addr val3 (write n2 addr2 val2 x86))))
   :hints (("Goal" :expand (write n2 addr2 val2 (write n addr val1 x86))
+           :in-theory (enable write)
            :do-not '(generalize eliminate-destructors)
            :induct (write n2 addr2 val2 x86))))
 
@@ -2162,35 +1329,11 @@
 ;;                                    (val3 val4)))
 ;;            :in-theory (disable write-of-write-of-write-same write))))
 
-(defthm read-byte-of-write-disjoint
-  (implies (and (or (<= (+ n2 addr2) addr1)
-                    (<= (+ 1 addr1) addr2))
-                (canonical-address-p addr1)
-                (canonical-address-p addr2)
-                (implies (posp n2)
-                         (canonical-address-p (+ -1 n2 addr2)))
-                (natp n2))
-           (equal (read-byte addr1 (write n2 addr2 val x86))
-                  (read-byte addr1 x86)))
-  :hints (("Goal" :use (:instance read-of-write-disjoint
-                                  (n1 1))
-           :in-theory (e/d (read) (read-of-write-disjoint write)))))
-
 (defthm bvminus-of-+-of-1-same
   (implies (integerp x)
            (equal (bvminus size x (+ 1 x))
                   (bvchop size -1)))
   :hints (("Goal" :in-theory (enable bvminus))))
-
-;; todo: read should go to read-byte?
-;; todo: gen
-(defthm read-of-write-1-4
-  (implies (and (canonical-address-p addr)
-                (canonical-address-p (+ 3 addr)))
-           (equal (read 1 addr (write 4 addr val x86))
-                  (bvchop 8 val)))
-  :hints (("Goal" :expand (write 4 addr val x86)
-           :in-theory (enable write))))
 
 ;; (thm
 ;;  (implies (and (syntaxp (and (quotep offset1)
@@ -2226,8 +1369,9 @@
            (equal (equal k (bvchop size x))
                   (and (unsigned-byte-p size k)
                        (equal (logext size k) x))))
-  :hints (("Goal" :use (:instance acl2::logext-of-bvchop-same
-                                  (acl2::size size)))))
+  :hints (("Goal" :in-theory (enable signed-byte-p)
+           :use (:instance acl2::logext-of-bvchop-same
+                           (acl2::size size)))))
 
 (defthmd equal-of-bvchop-when-signed-byte-p
   (implies (and ;; (syntaxp (quotep k))
@@ -2235,7 +1379,8 @@
            (equal (equal k (bvchop size x))
                   (and (unsigned-byte-p size k)
                        (equal (logext size k) x))))
-  :hints (("Goal" :use (:instance acl2::logext-of-bvchop-same
+  :hints (("Goal" :in-theory (enable signed-byte-p)
+           :use (:instance acl2::logext-of-bvchop-same
                                   (acl2::size size)))))
 
 
@@ -2312,17 +1457,8 @@
 ;;                            distributivity
 ;;                            )))))
 
-;; todo: gen the 1?
-(defthm read-of-write-irrel-1
-  (implies (and (not (bvlt 48 (bvminus 48 addr1 addr2) n))
-                (integerp addr1)
-                (integerp addr2)
-                (unsigned-byte-p 48 n))
-           (equal (read 1 addr1 (write n addr2 val x86))
-                  (read 1 addr1 x86)))
-  :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (enable bvminus bvlt acl2::bvchop-of-sum-cases))))
 
+;move
 ;; todo: gen the 1?
 (defthm read-of-write-included-1
   (implies (and (bvlt 48 (bvminus 48 addr1 addr2) n)
@@ -2334,7 +1470,7 @@
                          (* 8 (bvminus 48 addr1 addr2))
                          val)))
   :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (enable bvminus bvlt acl2::bvchop-of-sum-cases))))
+           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases))))
 
 ;; todo: gen the 1?
 (defthm read-of-write-1-both
@@ -2438,127 +1574,7 @@
 
 (def-constant-opener x86isa::!prefixes->seg$inline)
 
-(defthm jns-condition-of-sub-sf-spec8
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (jns-condition (x86isa::sub-sf-spec8 x y))
-                  ;; (sbvle 8 y x) ; todo: something like this would be better
-                  (equal 0 (getbit 7 (bvminus 8 x y)))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec8
-                                     jns-condition
-                                     x86isa::sf-spec8
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
-
-(defthm jns-condition-of-sub-sf-spec16
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (jns-condition (x86isa::sub-sf-spec16 x y))
-                  ;; (sbvle 16 y x) ; todo: something like this would be better
-                  (equal 0 (getbit 15 (bvminus 16 x y)))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec16
-                                     jns-condition
-                                     x86isa::sf-spec16
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
-
-(defthm jns-condition-of-sub-sf-spec32
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (jns-condition (x86isa::sub-sf-spec32 x y))
-                  ;; (sbvle 32 y x) ; todo: something like this would be better
-                  (equal 0 (getbit 31 (bvminus 32 x y)))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec32
-                                     jns-condition
-                                     sf-spec32
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
-
-(defthm jns-condition-of-sub-sf-spec64
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (jns-condition (x86isa::sub-sf-spec64 x y))
-                  ;; (sbvle 64 y x) ; todo: something like this would be better
-                  (equal 0 (getbit 63 (bvminus 64 x y)))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec64
-                                     jns-condition
-                                     sf-spec64
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm js-condition-of-sub-sf-spec8
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (js-condition (x86isa::sub-sf-spec8 x y))
-                  ;; (sbvle 8 y x) ; todo: something like this would be better
-                  (not (equal 0 (getbit 7 (bvminus 8 x y))))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec8
-                                     js-condition
-                                     x86isa::sf-spec8
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
-
-(defthm js-condition-of-sub-sf-spec16
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (js-condition (x86isa::sub-sf-spec16 x y))
-                  ;; (sbvle 16 y x) ; todo: something like this would be better
-                  (not (equal 0 (getbit 15 (bvminus 16 x y))))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec16
-                                     js-condition
-                                     x86isa::sf-spec16
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
-
-(defthm js-condition-of-sub-sf-spec32
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (js-condition (x86isa::sub-sf-spec32 x y))
-                  ;; (sbvle 32 y x) ; todo: something like this would be better
-                  (not (equal 0 (getbit 31 (bvminus 32 x y))))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec32
-                                     js-condition
-                                     sf-spec32
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
-
-(defthm js-condition-of-sub-sf-spec64
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (js-condition (x86isa::sub-sf-spec64 x y))
-                  ;; (sbvle 64 y x) ; todo: something like this would be better
-                  (not (equal 0 (getbit 63 (bvminus 64 x y))))
-                  ))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec64
-                                     js-condition
-                                     sf-spec64
-                                     acl2::getbit-of-plus
-                                     bvplus
-                                     bvminus
-                                     bvlt))))
 
 (defthm bvif-of-if-constants-nil-nonnil
   (implies (and (syntaxp (quotep k))
@@ -2573,113 +1589,6 @@
                   (bvif size test tp ep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Only needed for Axe.
-(defthmd booleanp-of-jp-condition
-  (booleanp (jp-condition x)))
-
-;; Only needed for Axe.
-(defthmd booleanp-of-jnp-condition
-  (booleanp (jnp-condition x)))
-
-;; Only needed for Axe.
-(defthmd booleanp-of-jz-condition
-  (booleanp (jz-condition x)))
-
-;; Only needed for Axe.
-(defthmd booleanp-of-jnz-condition
-  (booleanp (jnz-condition x)))
-
-(defthm jz-condition-of-bvif-1-0-1
-  (equal (jz-condition (bvif 1 test 0 1))
-         (not test)))
-
-(defthm jz-condition-of-bvif-1-1-0
-  (equal (jz-condition (bvif 1 test 1 0))
-         (acl2::bool-fix test)))
-
-(defthm jnz-condition-of-bvif-1-0-1
-  (equal (jnz-condition (bvif 1 test 0 1))
-         (acl2::bool-fix test)))
-
-(defthm jnz-condition-of-bvif-1-1-0
-  (equal (jnz-condition (bvif 1 test 1 0))
-         (not test)))
-
-(defthm jnbe-condition-of-bvif-1-arg1
-  (equal (jnbe-condition (bvif 1 test cf1 cf2) zf)
-         (and (equal 0 (bvif 1 test cf1 cf2))
-              (equal 0 zf)))
-  :hints (("Goal" :in-theory (enable jnbe-condition))))
-
-(defthm jnbe-condition-of-bvif-1-arg2
-  (equal (jnbe-condition cf (bvif 1 test zf1 zf2))
-         (and (equal 0 cf)
-              (equal 0 (bvif 1 test zf1 zf2))))
-  :hints (("Goal" :in-theory (enable jnbe-condition))))
-
-(defthm jbe-condition-of-bvif-1-arg1
-  (equal (jbe-condition (bvif 1 test cf1 cf2) zf)
-         (or (equal 1 (bvif 1 test cf1 cf2))
-             (equal 1 zf)))
-  :hints (("Goal" :in-theory (enable jbe-condition))))
-
-(defthm jbe-condition-of-bvif-1-arg2
-  (equal (jbe-condition cf (bvif 1 test zf1 zf2))
-         (or (equal 1 cf)
-             (equal 1 (bvif 1 test zf1 zf2))))
-  :hints (("Goal" :in-theory (enable jbe-condition))))
-
-(defthm jp-condition-of-bvif-1-0-1
-  (equal (jp-condition (bvif 1 test 0 1))
-         (not test)))
-
-(defthm jp-condition-of-bvif-1-1-0
-  (equal (jp-condition (bvif 1 test 1 0))
-         (acl2::bool-fix test)))
-
-(defthm jnp-condition-of-bvif-1-0-1
-  (equal (jnp-condition (bvif 1 test 0 1))
-         (acl2::bool-fix test)))
-
-(defthm jnp-condition-of-bvif-1-1-0
-  (equal (jnp-condition (bvif 1 test 1 0))
-         (not test)))
-
-;; These seem okay as bool-to-bit is not among the special flag functions we
-;; look for as arguments to the condition functions:
-
-(defthm jp-condition-of-bool-to-bit
-  (equal (jp-condition (bool-to-bit bool))
-         (acl2::bool-fix bool))
-  :hints (("Goal" :in-theory (enable jp-condition))))
-
-(defthm jnp-condition-of-bool-to-bit
-  (equal (jnp-condition (bool-to-bit bool))
-         (not bool))
-  :hints (("Goal" :in-theory (enable jnp-condition))))
-
-(defthm jz-condition-of-bool-to-bit
-  (equal (jz-condition (bool-to-bit bool))
-         (acl2::bool-fix bool))
-  :hints (("Goal" :in-theory (enable jz-condition))))
-
-(defthm jnz-condition-of-bool-to-bit
-  (equal (jnz-condition (bool-to-bit bool))
-         (not bool))
-  :hints (("Goal" :in-theory (enable jnz-condition))))
-
-(defthm jnbe-condition-of-bool-to-bit-arg1
-  (equal (jnbe-condition (bool-to-bit cf-bool) zf)
-         (and (not cf-bool)
-              (equal 0 zf)))
-  :hints (("Goal" :in-theory (enable jnbe-condition))))
-
-(defthm jnbe-condition-of-bool-to-bit-arg1
-  (equal (jnbe-condition (bool-to-bit cf-bool) zf)
-         (and (not cf-bool)
-              (equal 0 zf)))
-  :hints (("Goal" :in-theory (enable jnbe-condition))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2762,15 +1671,6 @@
                   (bool-to-bit bool))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Splits into individual reads, which then get resolved
-;; TODO: Instead, resolve a read of 2 bytes when we have an appropriate program-at claim
-(defthm read-of-2
-  (equal (read '2 addr x86)
-         (bvcat 8 (read 1 (+ 1 addr) x86)
-                8 (read 1 addr x86)))
-  :hints (("Goal" :in-theory (enable read))))
-
 
 (defthm equal-of-bvif-safe2 ; todo: replace the other
   (implies (syntaxp (and (quotep x)

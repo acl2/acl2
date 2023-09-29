@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,9 +23,10 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
+(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
+(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop, for sub1-logcdr-induction-1
 
 (defthm bvmult-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
@@ -93,8 +94,9 @@
                   (* (expt 2 n) (floor a (expt 2 n)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :expand (logand a (- (expt 2 n)))
-           :in-theory (e/d (logand* logcdr ;fl
-                                    expt-of-+ mod-expt-split)
+           :in-theory (e/d (logand*
+                            logcdr ;fl
+                            expt-of-+ mod-expt-split)
                            (MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;why?
                             ))
            :induct (sub1-logcdr-induction-1 n a))))
@@ -345,7 +347,8 @@
                 (integerp x)
                 (integerp y))
            (equal (bvand size x y)
-                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y)))))
+                  (bvcat 1 (bvand 1 (getbit (+ -1 size) x) (getbit (+ -1 size) y)) (+ -1 size) (bvand (+ -1 size) x y))))
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 ;; (thm
 ;;  (implies (and (< high n)
@@ -502,31 +505,7 @@
                                    BVMULT-PAD-ARG2)))))
 
 ;move
-(defthm collect-constants-<-/
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< a (* b x))
-                  (< (/ a b) x))))
-
-;move
-(defthm collect-constants-<-/-two
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< (* b x) a)
-                  (< x (/ a b)))))
-
-;move
-(defthm my-non-integerp-<-integerp
+(defthmd my-non-integerp-<-integerp
   (implies (and (syntaxp (quotep k))
                 (not (integerp k))
                 (rationalp k)
@@ -536,7 +515,7 @@
            (equal (< k n)
                   (< (floor k 1) n))))
 ;fixme drop?
-(defthm <-of-non-integerp-and-integerp
+(defthmd <-of-non-integerp-and-integerp
   (implies (and (syntaxp (quotep k))
                 (not (integerp k))
                 (integerp n)
@@ -547,7 +526,7 @@
            :use (:instance my-non-integerp-<-integerp (k k)))))
 
 ;move
-(defthm my-integerp-<-non-integerp
+(defthmd my-integerp-<-non-integerp
   (implies (and (syntaxp (quotep k))
                 (not (integerp k))
                 (rationalp k)
@@ -650,7 +629,7 @@
                            (i (min xsize ysize))
                            (j (max xsize ysize)))
            :in-theory (e/d ( bvplus unsigned-byte-p unsigned-byte-p-forced) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                                      <-of-expt-and-expt
+                                                      <-of-expt-and-expt-same-base
                                                       ;;anti-bvplus
                                                       )))))
 

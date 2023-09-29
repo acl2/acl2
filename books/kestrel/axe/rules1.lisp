@@ -20,7 +20,9 @@
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/rules" :dir :system)
+(include-book "kestrel/bv/repeatbit" :dir :system)
+(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/rules" :dir :system) ; why?
 ;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
@@ -2971,7 +2973,8 @@
                          (+ -1 element-width)
                          ;wrap a bvchop-list around the data?
                          (bv-array-read (+ -1 element-width) len index data))))
-  :hints (("Goal" :in-theory (enable GETBIT-OF-BV-ARRAY-READ-HELPER bvchop-of-bv-array-read))))
+  :hints (("Goal" :in-theory (enable GETBIT-OF-BV-ARRAY-READ-HELPER bvchop-of-bv-array-read
+                                     slice-becomes-getbit))))
 
 ;what should we do when the data is not a quotep?
 (defthmd bv-array-read-blast

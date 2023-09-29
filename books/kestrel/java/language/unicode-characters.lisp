@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -62,59 +62,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defbyte iso8851
-  :short "Fixtype of ISO 8851-1 characters."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The ISO 8851-1 characters are the first 256 Unicode characters.")
-   (xdoc::p
-    "Since we model Java Unicode characters as unsigned 16-bit integers,
-     we model ISO 8851-1 characters as unsigned 8-bit integers.")
-   (xdoc::p
-    "The names of this fixtype and of its recognizer, fixer, and equivalence
-     omit the last `1' in `ISO 8851-1' for brevity.
-     In the context of our Java language formalization,
-     `ISO 8859' only refers to Part 1 of the ISO 8859 standard.")
-   (xdoc::p
-    "Note that " (xdoc::seetopic "acl2::characters" "ACL2 characters") " are
-     consistent with ISO 8851-1.
-     Thus, this fixtype is isomorphic to the ACL2 characters."))
-  :size 8
-  :pred iso8851p)
-
-(defsection iso8851-ext
-  :extension iso8851
-
-  (defrule unicodep-when-iso8851p
-    (implies (iso8851p x)
-             (unicodep x))
-    :enable (iso8851p unicodep)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defbytelist iso8851-list
-  :short "Fixtype of lists of ISO 8851-1 characters."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Values of this type model Java strings
-     (at a more essential and abstract level than
-     instances of the class @('java.lang.String'))
-     that consist of only ISO 8851-1 characters."))
-  :elt-type iso8851
-  :pred iso8851-listp)
-
-(defsection iso8851-list-ext
-  :extension iso8851-list
-
-  (defrule unicode-listp-when-iso8851-listp
-    (implies (iso8851-listp x)
-             (unicode-listp x))
-    :enable (iso8851-listp unicode-listp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defbyte ascii
   :short "Fixtype of ASCII characters."
   :long
@@ -130,10 +77,10 @@
 (defsection ascii-ext
   :extension ascii
 
-  (defrule iso8851p-when-asciip
+  (defrule unicodep-when-asciip
     (implies (asciip x)
-             (iso8851p x))
-    :enable (asciip iso8851p)))
+             (unicodep x))
+    :enable (asciip unicodep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,10 +99,10 @@
 (defsection ascii-list-ext
   :extension ascii-list
 
-  (defrule iso8851-listp-when-ascii-listp
-    (implies (iso8851-listp x)
+  (defrule unicode-listp-when-ascii-listp
+    (implies (ascii-listp x)
              (unicode-listp x))
-    :enable (iso8851-listp unicode-listp)))
+    :enable (ascii-listp unicode-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -170,16 +117,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The ACL2 characters are ISO-8859-1: see "
-    (xdoc::seetopic "acl2::characters" "this topic")
-    ", and the @('acl2.lisp') system souce file.")
-   (xdoc::p
-    "Since the ISO-8859-1 characters are the first 256 Unicode characters,
-     and since we model Java Unicode characters as unsigned 16-bit integers,
-     the library function @(tsee string=>nats) can be used
-     to convert ACL2 strings to Java Unicode character lists.
-     Here we define a wrapper of this function
-     with an appropriate return type theorem.")
+    "This converts each ACL2 character in the string
+     to a Unicode character whose value is the code of the character.
+     In at last some of the Lisps on which ACL2 runs,
+     strings may include non-ASCII Unicode characters,
+     but ACL2's view of these strings is that of
+     the sequence of ACL2 characters whose codes are
+     the bytes that form the UTF-8 encoding of the string.
+     This is as expected for ASCII, but not necessarily for non-ASCII.
+     We plan to restrict this ACL2 function to operate
+     only on ACL2 strings consisting of ASCII characters.")
    (xdoc::p
     "See also @(tsee ascii=>string)."))
   (string=>nats string)
@@ -200,10 +147,7 @@
     "This is the inverse of @(tsee string=>unicode)
      for the ASCII subset of Unicode.
      It converts lists of ASCII codes to Java strings,
-     using the library function @(tsee nats=>string).")
-   (xdoc::p
-    "This function could be extended to the ISO-8859-1 subset of Unicode,
-     but for now this is not needed in our Java formalization."))
+     using the library function @(tsee nats=>string)."))
   (b* ((ascii (mbe :logic (ascii-list-fix ascii) :exec ascii)))
     (nats=>string ascii))
   :guard-hints (("Goal" :in-theory (enable unsigned-byte-listp-8-when-7)))

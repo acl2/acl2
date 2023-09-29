@@ -1980,6 +1980,10 @@ What you can enter at the SVTV-CHASE prompt:
 
 
 
+; Matt K. mod to accommodate change to guards for fmt-hard-right-margin and
+; fmt-soft-right-margin around August 2023.
+(local (in-theory (enable acl2::all-boundp-initial-global-table)))
+
 (verify-termination fmt-hard-right-margin)
 (verify-termination fmt-soft-right-margin)
 

@@ -55,7 +55,7 @@ sets (i.e., non-@('nil') atoms and lists that have duplicated or mis-ordered
 elements) as the empty set.  We adopt this convention throughout the library.
 It allows most of our rewrite rules to have no @(see setp) hypotheses.</p>
 
-<p>The primitive list functions do follow the non-set convention.  For
+<p>The primitive list functions do not follow the non-set convention.  For
 instance:</p>
 
 <ul>

@@ -13,23 +13,22 @@
 
 (include-book "rules")
 (include-book "bvashr")
-(local (include-book "logior"))
+;(local (include-book "logior"))
 (local (include-book "logxor"))
-(local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
-(local (include-book "rules0"))
+(local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
 (defthm lessthan-256-backchain
-  (implies (and (unsigned-byte-p 8 x))
+  (implies (unsigned-byte-p 8 x)
            (< x 256)))
 
 (defthm plus-bvcat-with-0-special
@@ -54,9 +53,9 @@
            (equal (+ x y)
                   (bvcat (- newsize newsize2) (slice (+ -1 newsize) newsize2 y) newsize2 x)))
   :hints (("Goal"
-           :use (:instance split-bv (n newsize) (m newsize2))
+           :use (:instance split-bv (x y) (n newsize) (m newsize2))
            :in-theory (e/d (BVCAT LOGAPP bvchop)
-                           (mod-=-0
+                           (;mod-=-0
                             NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))))
 
 (defthm plus-bvcat-with-0-alt
@@ -73,33 +72,9 @@
   :hints (("Goal" :use (:instance plus-bvcat-with-0)
            :in-theory (disable plus-bvcat-with-0))))
 
-;rename and move
-(defthm collect-constants-<-/
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< a (* b x))
-                  (< (/ a b) x))))
-
-;rename and move
-(defthm collect-constants-<-/-two
-  (implies (and (syntaxp (and (quotep a)
-                              (quotep b)))
-                (< 0 b)
-                (rationalp a)
-                (rationalp b)
-                (rationalp x)
-                )
-           (equal (< (* b x) a)
-                  (< x (/ a b)))))
-
 ;; These loop (note that <-UNARY-/-POSITIVE-LEFT <-UNARY-/-POSITIVE-RIGHT should probably have syntaxp hyps added).
-(theory-invariant (incompatible (:rewrite collect-constants-<-/) (:rewrite <-unary-/-positive-left)))
-(theory-invariant (incompatible (:rewrite collect-constants-<-/-two) (:rewrite <-unary-/-positive-right)))
+(theory-invariant (incompatible (:rewrite <-of-constant-and-*-of-constant) (:rewrite <-unary-/-positive-left)))
+(theory-invariant (incompatible (:rewrite <-of-*-of-constant-and-constant) (:rewrite <-unary-/-positive-right)))
 
 ;; (thm
 ;;  (equal (SLICE '19 '14 (bvcat '8 y '8 x))
@@ -170,12 +145,13 @@
                 (EQUAL 1 (BVCHOP 1 X)))
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
-  :hints (("Goal" :in-theory (e/d (bvchop mod) (BVCHOP-1-BECOMES-GETBIT
-                                                 MOD-OF-EXPT-OF-2
-                                                 mod-of-expt-of-2-constant-version
+  :hints (("Goal" :in-theory (e/d (bvchop mod)
+                                  (BVCHOP-1-BECOMES-GETBIT
+                                   MOD-OF-EXPT-OF-2
+                                   mod-of-expt-of-2-constant-version
                                                  ;;MOD-RECOLLAPSE-LEMMA2
                                                  ;;MOD-RECOLLAPSE-LEMMA
-                                                 )))))
+                                   )))))
 
 (defthmd split-when-low-bit-0
   (implies (and (INTEGERP X)
@@ -191,12 +167,15 @@
                                                  )))))
 
 (defthm split-when-low-bit-1-hack
-  (implies (and (INTEGERP X)
+  (implies (and (integerp x)
                 (integerp y)
-                (EQUAL 1 (BVCHOP 1 X)))
-           (equal (+ Y (* 2 Y (FLOOR X 2)))
+                (equal 1 (bvchop 1 x)))
+           (equal (+ y (* 2 y (floor x 2)))
                   (* x y)))
-  :hints (("Goal" :use (:instance split-when-low-bit-1))))
+  :hints (("Goal" :use (:instance split-when-low-bit-1)
+           :in-theory (e/d (getbit bvchop floor-of-when-mod-known)
+                           (slice-becomes-getbit
+                            bvchop-1-becomes-getbit)))))
 
 (defthm split-when-low-bit-0-hack
   (implies (and (INTEGERP X)
@@ -205,7 +184,8 @@
            (equal (* 2 Y (FLOOR X 2))
                   (* x y)))
   :hints (("Goal" :use (:instance split-when-low-bit-0)
-           :in-theory (disable BVCHOP-1-BECOMES-GETBIT))))
+           :in-theory (e/d (floor-of-when-mod-known)
+                           (bvchop-1-becomes-getbit)))))
 
 (defthmd blast-bvmult-into-bvplus
   (implies (and (natp n)
@@ -294,6 +274,7 @@
                        (logtail 1 y)))))
   :hints (("Goal" :in-theory (enable logtail floor-of-sum))))
 
+;todo: very slow
 (defthmd blast-bvplus
   (implies (posp n)
            (equal (bvplus n x y)
@@ -539,71 +520,6 @@
                   (bvcat highsize highval lowsize (bvif lowsize test a b))))
   :hints (("Goal" :in-theory (enable myif bvif))))
 
-(local
- (defun induct-floor-and-sub1 (x n)
-   (if (zp n)
-       (list x n)
-     (induct-floor-and-sub1 (floor x 2) (+ -1 n)))))
-
-;move
-(defthm logand-of-minus-of-expt
-  (implies (and (natp n)
-                (integerp x)
-                (< x 0)
-                (<= (- (expt 2 n)) x))
-           (equal (logand (- (expt 2 n)) x)
-                  (- (expt 2 n))))
-  :hints (("Subgoal *1/2" :use (:instance floor-weak-monotone
-                                          (i1 (- (expt 2 n)))
-                                          (i2 x)
-                                          (j 2))
-           :expand (logand x (- (expt 2 n)))
-           :in-theory (e/d (expt-of-+ ;fl
-                            mod-=-0
-                            mod-expt-split)
-                           (MOD-OF-EXPT-OF-2
-                            mod-of-expt-of-2-constant-version
-                            floor-unique-equal-version
-                            floor-weak-monotone ;hack-6
-                            )))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (induct-floor-and-sub1 x n)
-           :expand (logand x (- (expt 2 n)))
-           :in-theory (e/d (lognot logand ;fl
-                                   expt-of-+
-                                   mod-expt-split)
-                           (;hack-6                     ;ffixme
-                            ;EQUAL-OF-EXPT2-AND-CONSTANT ;fixme
-                            )))))
-
-(defthm logand-of-minus-of-expt-alt
-  (implies (and (natp n)
-                (integerp x)
-                (< x 0)
-                (<= (- (expt 2 n)) x))
-           (equal (logand x (- (expt 2 n)))
-                  (- (expt 2 n))))
-  :hints (("Goal" :use (:instance logand-of-minus-of-expt)
-           :in-theory (disable logand-of-minus-of-expt))))
-
-(defthm logand-of-minus-of-expt-and-lognot
-  (implies (and (natp n)
-                (unsigned-byte-p n x))
-           (equal (logand (- (expt 2 n)) (lognot x))
-                  (- (expt 2 n))))
-  :hints (("Goal" :in-theory (e/d (lognot logand
-                                          expt-of-+
-                                          ;;INTEGER-TIGHTEN-BOUND ;why?
-                                          )
-                                  (size-non-negative-when-unsigned-byte-p-free)))))
-
-(defthm logior-of-all-ones
-  (implies (and (natp n)
-                (unsigned-byte-p n x))
-           (equal (logior (+ -1 (expt 2 n)) x)
-                  (+ -1 (expt 2 n))))
-  :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
-
 (defthmd getbit-of-bvif-quoteps
   (implies (and (syntaxp (quotep thenpart))
                 (syntaxp (quotep elsepart))
@@ -771,7 +687,8 @@
            (equal (< (logext 32 x) 64)
                   (or (equal 1 (getbit 31 x))
                       (< (bvchop 31 x) 64))))
-  :hints (("Goal" :in-theory (e/d (logext LOGAPP-0) (TIMES-4-BECOMES-LOGAPP)))))
+  :hints (("Goal" :in-theory (e/d (logext ;LOGAPP-0
+                                          ) (TIMES-4-BECOMES-LOGAPP)))))
 
 (defthm <-bvchop-31-x-64
   (implies (and (< x 64)
@@ -788,7 +705,9 @@
            (equal (< (logext 8 x) 64)
                   (or (equal 1 (getbit 7 x))
                       (< (bvchop 7 x) 64))))
-  :hints (("Goal" :in-theory (e/d (logext LOGAPP-0) (TIMES-4-BECOMES-LOGAPP)))))
+  :hints (("Goal" :in-theory (e/d (logext ;LOGAPP-0
+                                   )
+                                  (TIMES-4-BECOMES-LOGAPP)))))
 
 
 
@@ -1127,21 +1046,7 @@
          (myif test a b))
   :hints (("Goal" :in-theory (enable myif))))
 
-;kill some others?
-(DEFTHMd BVCAT-EQual-rewrite-constant
-  (IMPLIES (AND (syntaxp (and (quotep x)
-                              (quotep highsize)
-                              (quotep lowsize)))
-                (NATP LOWSIZE)
-                (NATP HIGHSIZE))
-           (EQUAL (EQUAL X
-                         (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL))
-                  (AND (UNSIGNED-BYTE-P (+ LOWSIZE HIGHSIZE) X)
-                       (EQUAL (BVCHOP LOWSIZE X)
-                              (BVCHOP LOWSIZE LOWVAL))
-                       (EQUAL (SLICE (+ -1 LOWSIZE HIGHSIZE)
-                                     LOWSIZE X)
-                              (BVCHOP HIGHSIZE HIGHVAL))))))
+
 ;move
 (defthmd bvif-blast
   (implies (and (< 1 size)
@@ -1321,7 +1226,7 @@
                 )
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (leftrotate size amt1 x)))
-  :hints (("Goal" :in-theory (e/d (bvsx bvshr bvshl-rewrite-with-bvchop leftrotate)
+  :hints (("Goal" :in-theory (e/d (bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate)
                                   (;+-becomes-bvplus-hack
                                    )))))
 
@@ -1349,7 +1254,7 @@
                 (natp size))
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
-  :hints (("Goal" :in-theory (enable bvshr bvsx bvshl-rewrite-with-bvchop leftrotate))))
+  :hints (("Goal" :in-theory (enable bvashr bvshr bvsx bvshl-rewrite-with-bvchop leftrotate))))
 
 (defthm bvor-of-bvashr-and-bvshl-alt
   (implies (and (unsigned-byte-p (+ amt1 amt2) x)
@@ -1404,18 +1309,25 @@
   :hints (("Goal" :use (:instance bvplus-disjoint-ones-32-24-8-two)
            :in-theory (disable bvplus-disjoint-ones-32-24-8-two))))
 
+(defthm getbit-0-of-bvplus-tighten
+  (implies (and (< 1 size)
+                (integerp size))
+           (equal (getbit 0 (bvplus size x y))
+                  (getbit 0 (bvplus 1 x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bitxor-of-+
+  (implies (and (integerp y)
+                (integerp z))
+           (equal (bitxor x (+ y z))
+                  (bitxor x (bitxor y z)))))
+
 (defthm bvplus-1-of-bvplus-trim-arg1
   (implies (and (< 1 size)
                 (integerp size))
            (equal (bvplus 1 (bvplus size x y) z)
                   (bvplus 1 (bvplus 1 x y) z)))
-  :hints (("Goal" :use ((:instance bvplus-of-bvchop-arg2 (size 1)
-                                   (x (bvplus size x y))
-                                   (y z)))
-           :in-theory (disable bvplus-of-bvchop-arg2
-                               EQUAL-OF-BITXOR-AND-BITXOR-SAME-6
-                               EQUAL-OF-BITXOR-AND-BITXOR-SAME-ALT
-                               bvchop-1-becomes-getbit))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvplus-1-of-bvplus-trim-arg2
    (implies (and (< 1 size)
@@ -1557,7 +1469,8 @@
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    bitxor
-                                   bvxor)
+                                   bvxor
+                                   expt-of-+)
                            (;hack-6 ;yuck!
                             BVXOR-1-BECOMES-BITXOR
                             BITXOR-OF-UNARY-MINUS-ARG1
@@ -1910,8 +1823,7 @@
                 (NATP YSIZE)
                 (<= XSIZE YSIZE))
            (< (+ X Y) (EXPT 2 (+ 1 YSIZE))))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT))
-           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (min xsize ysize)) (j (max xsize ysize))))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm sum-bound2
    (IMPLIES (AND (UNSIGNED-BYTE-P XSIZE X)
@@ -1920,8 +1832,7 @@
                  (NATP YSIZE)
                  (<= XSIZE YSIZE))
             (< (+ X Y) (* 2 (EXPT 2 YSIZE))))
-   :hints (("Goal" :in-theory (e/d (unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 <-OF-EXPT-AND-EXPT))
-            :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i (min xsize ysize)) (j (max xsize ysize))))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm sum-bound-lemma
   (implies (and (unsigned-byte-p xsize x)
@@ -2289,16 +2200,6 @@
                         (equal (fix c1) c2))
                     nil))))
 
-(defthm <-of-expt-and*-*-of-2-and-expt
-  (IMPLIES (AND (INTEGERP N)
-                (< 0 N)
-                (NATP M)
-                (<= N M))
-           (<= (EXPT 2 N) (* 2 (EXPT 2 M))))
-  :hints (("Goal" :use (:instance <-OF-EXPT-AND-EXPT (r 2)
-                                  (i (+ 1 m))
-                                  (j n)))))
-
 ;move?
 (defthm logext-of-bvsx
   (implies (and (<= n m)
@@ -2573,8 +2474,7 @@
                 (rationalp z)
                 (rationalp x))
            (equal (< (+ x (* x z)) (* x y))
-                  (< (+ 1 z) y)))
-  :hints (("Goal" :use (:instance <-*-left-cancel (z x) (x (+ 1 z))))))
+                  (< (+ 1 z) y))))
 
 (defthm getbit-of-+-of-expt
   (implies (and (natp n)
@@ -2667,7 +2567,7 @@
                         (GETBIT n x)))
                   (bvchop (+ 1 n) x)))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y (bvchop (+ 1 n) x)) (n (+ 1 n)) (m n)))))
+           :use (:instance split-bv (x (bvchop (+ 1 n) x)) (n (+ 1 n)) (m n)))))
 
 
 
@@ -2688,7 +2588,7 @@
                         (getbit 0 x)))
                   (* (expt 2 (+ -1 n)) (slice 1 0 x))))
   :hints (("Goal" :in-theory (enable logapp bvcat expt-of-+)
-           :use (:instance split-bv (y (bvchop 2 x)) (n 2) (m 1)))))
+           :use (:instance split-bv (x (bvchop 2 x)) (n 2) (m 1)))))
 ;gen the 8
 (defthm unsigned-byte-p-1-of-*
   (implies (integerp x)
@@ -2753,7 +2653,8 @@
                            (y2 (EXPT 2 m)))
            :cases ((equal 0 x)
                    (and (equal 0 y) (equal 0 x)))
-           :in-theory (e/d (BVMULT UNSIGNED-BYTE-P unsigned-byte-p-forced)
+           :in-theory (e/d (BVMULT UNSIGNED-BYTE-P unsigned-byte-p-forced
+                                   expt-of-+)
                            (<-of-*-and-*
                             bvchop-of-*)))))
 

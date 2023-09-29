@@ -17,8 +17,8 @@
 
 (include-book "system/apply/loop-scions" :dir :system)
 
-; The books included below are a subset (not necessarily a proper subset) of
-; those included in top.lisp.
+; Most of the books included below are a subset (not necessarily a proper
+; subset) of those included in top.lisp.
 
 (include-book "verified-termination-and-guards")
 (include-book "sublis-var")
@@ -39,7 +39,7 @@
 (include-book "observation1-cw")
 (include-book "defstobj")
 (include-book "brr-near-missp")
-(include-book "eviscerate-top")
+(include-book "error1")
 (include-book "remove-guard-holders") ; includes remove-guard-holders-weak
 ; Do not include "remove-guard-holders-future", which has an invalid
 ; skip-proofs as noted there.
@@ -49,3 +49,4 @@
 ; would require guards to be verified for functions in that book.
 
 ; (include-book "untranslate-car-cdr")
+

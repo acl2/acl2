@@ -11,3 +11,5 @@
 (include-book "kestrel/x86/portcullis" :dir :system)
 
 (include-book "rtl/rel11/portcullis" :dir :system)
+
+; cert-flags: ? T :TTAGS :ALL

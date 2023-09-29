@@ -1,7 +1,7 @@
 ; BV Library: logand
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -554,3 +554,49 @@
                    (< (ifix j) 0))))
   :hints (("Goal" :use (:instance <-of-logand-and-0)
            :in-theory (disable <-of-logand-and-0))))
+
+(local
+ (defun induct-floor-and-sub1 (x n)
+   (if (zp n)
+       (list x n)
+     (induct-floor-and-sub1 (floor x 2) (+ -1 n)))))
+
+(defthm logand-of-minus-of-expt
+  (implies (and (natp n)
+                (integerp x)
+                (< x 0)
+                (<= (- (expt 2 n)) x))
+           (equal (logand (- (expt 2 n)) x)
+                  (- (expt 2 n))))
+  :hints (("Subgoal *1/2" :use (:instance floor-weak-monotone
+                                          (i1 (- (expt 2 n)))
+                                          (i2 x)
+                                          (j 2))
+           :expand (logand x (- (expt 2 n)))
+           :in-theory (e/d (expt-of-+ ;fl
+                            ;mod-=-0
+                            mod-expt-split)
+                           (
+                            floor-unique-equal-version
+                            floor-weak-monotone ;hack-6
+                            )))
+          ("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (induct-floor-and-sub1 x n)
+           :expand (logand x (- (expt 2 n)))
+           :in-theory (e/d (lognot logand ;fl
+                                   expt-of-+
+                                   mod-expt-split)
+                           (;hack-6                     ;ffixme
+                            ;EQUAL-OF-EXPT2-AND-CONSTANT ;fixme
+                            )))))
+
+(defthm logand-of-minus-of-expt-and-lognot
+  (implies (and (natp n)
+                (unsigned-byte-p n x))
+           (equal (logand (- (expt 2 n)) (lognot x))
+                  (- (expt 2 n))))
+  :hints (("Goal" :in-theory (e/d (lognot logand
+                                          expt-of-+
+                                          ;;INTEGER-TIGHTEN-BOUND ;why?
+                                          )
+                                  ()))))

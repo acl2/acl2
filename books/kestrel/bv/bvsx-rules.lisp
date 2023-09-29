@@ -1,7 +1,7 @@
 ; Rules that deal with both bvsx and other operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bvcat-rules")
 (include-book "bvsx")
+(include-book "bvand")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -262,13 +263,3 @@
                                 (- low))
                              (getbit (+ -1 old-size) x))))
   :hints (("Goal" :in-theory (enable bvsx natp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm equal-of-0-and-bvsx
-  (implies (and (natp size)
-                (posp old-size)
-                (<= old-size size))
-           (equal (equal 0 (bvsx size old-size x))
-                  (equal 0 (bvchop old-size x))))
-  :hints (("Goal" :in-theory (enable bvsx getbit-when-equal-of-constant-and-bvchop))))

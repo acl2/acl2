@@ -43,6 +43,10 @@
 ; such bogus marking as guard-verified seems much less likely than the event
 ; that our system has other serious bugs!
 
+(verify-termination-boot-strap +f!-fn2$inline) ; and guards
+
+(verify-termination-boot-strap +f!-fn3$inline) ; and guards
+
 (verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
 
 (verify-termination-boot-strap acl2-system-namep) ; and guards
@@ -147,7 +151,6 @@
                         :DIR :SYSTEM
                         :UNCERTIFIED-OKP nil
                         :DEFAXIOMS-OKP nil
-                        :SKIP-PROOFS-OKP nil
                         :TTAGS nil)
           (assert-event
            (equal *system-verify-guards-alist*
@@ -742,6 +745,39 @@
 ; books/projects/sat/lrat/cube/cube.lisp from 7.76 seconds to more than 11,600
 ; seconds before aborting.  After this disable the proof took 0.03 seconds.
 (in-theory (disable iprint-oracle-updates))
+
+; Above we disable iprint-oracle-updates.  But some books, for example in
+; books/std/io/base.lisp and books/projects/sat/lrat/cube/cube.lisp, enable
+; iprint-oracle-updates and take longer than necessary when array-order is also
+; enabled.  So we disable it here.  As of this writing, not many community
+; books seem to deal directly with array-order, but one that does is
+; books/kestrel/acl2-arrays/acl2-arrays.lisp, and it disables array-order.
+(in-theory (disable array-order))
+
+; The printing functions are complicated.  Eric Smith noticed this and asked
+; for the following functions to be disabled.  They are in :program mode in
+; #+acl2-devel builds; hence, the readtime conditional.
+#-acl2-devel
+(in-theory (disable error-fms
+                    error-fms-channel
+                    error1
+                    error1-state-p
+                    fms
+                    fmt
+                    fmt-abbrev1
+                    fmt-ppr
+                    fmt0
+                    fmt1
+                    fmt1!
+                    ppr
+                    ppr1
+                    ppr2))
+
+; The following two are necessary because after the defun-inline in
+; basis-a.lisp for each of +f!-fn2 and +f!-fn3, the second pass of axioms.lisp
+; clears the macro-aliases-table.
+(add-macro-alias +f!-fn2 +f!-fn2$inline)
+(add-macro-alias +f!-fn3 +f!-fn3$inline)
 
 (deftheory ground-zero
 

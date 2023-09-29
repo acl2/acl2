@@ -1,7 +1,7 @@
 ; A stobj to track results of rewriting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,8 @@
 
 (include-book "all-dargp")
 (include-book "dargp-less-than")
-(include-book "bounded-dag-exprs") ; todo: reduce, for largest-non-quotep
+(include-book "largest-non-quotep")
+(include-book "bounded-darg-listp")
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
 (local (include-book "kestrel/lists-light/resize-list" :dir :system))
 

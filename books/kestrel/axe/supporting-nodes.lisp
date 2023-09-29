@@ -26,6 +26,7 @@
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system)
 (include-book "kestrel/acl2-arrays/aset1-list" :dir :system)
 (include-book "kestrel/typed-lists-light/all-greater" :dir :system)
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -460,7 +461,7 @@
 ;; This does not remove duplicates (we are not building even a dag-array, much
 ;; less a dag-parent-array!), because we assume that the incoming DAG has no
 ;; duplicates, and we are not changing exprs in a way that can introduce duplicates.
-;; TODO: avoid making a node that is a quotep (but then consider what to do about possible duplicate exprs caused by that!).
+;; TODO: avoid making a node that is a quotep (but then consider what to do about possible duplicate exprs caused by that! and also consider that this might then return a quotep).
 ;; The "-with-name" suffix indicates that this function takes the dag-array-name as an argument.
 (defund build-reduced-dag-with-name (n top-nodenum dag-array-name dag-array
                                        tag-array ; nodes that we want to keep have been tagged
@@ -853,20 +854,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Takes a dag-array but returns a dag.
+;; TODO: Consider allowing this to return a quoted constant?
 ;smashes the arrays 'tag-array and 'translation-array
 ;bad to use the name 'tag-array here?
 ;better to use a worklist algorithm? maybe not..
 ;; The "-with-name" suffix indicates that this function takes the dag-array-name as an argument.
 (defund drop-non-supporters-array-with-name (dag-array-name dag-array top-nodenum print)
   (declare (xargs :guard (and (natp top-nodenum)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum)))))
-  (b* ((- (and print (cw "(Discarding unused nodes (~x0 total nodes))~%" (+ 1 top-nodenum))))
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum)))
+                  :guard-hints (("Goal" :in-theory (disable top-nodenum))) ; disable globally?
+                  :verify-guards nil
+                  ))
+  (b* ((old-node-count (+ 1 top-nodenum))
        (tag-array (tag-supporters-of-node-with-name top-nodenum dag-array-name dag-array 'tag-array (+ 1 top-nodenum)))
-       (translation-array (make-empty-array 'translation-array (+ 1 top-nodenum))))
-    (mv-let (dag-lst translation-array)
-      (build-reduced-dag-with-name 0 top-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
-      (declare (ignore translation-array))
-      dag-lst)))
+       (translation-array (make-empty-array 'translation-array (+ 1 top-nodenum)))
+       ((mv dag & ;translation-array
+            )
+        (build-reduced-dag-with-name 0 top-nodenum dag-array-name dag-array tag-array 0 translation-array nil))
+       (new-node-count (+ 1 (top-nodenum  dag)))
+       (removed-node-count (- old-node-count new-node-count))
+       (- (and print (cw "(Discarding ~x0 unused nodes of ~x1.)~%" removed-node-count old-node-count))))
+    dag))
 
 (defthm true-listp-of-drop-non-supporters-array-with-name
   (true-listp (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print))
@@ -897,6 +905,13 @@
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum)))
            (pseudo-dagp (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print)))
   :hints (("Goal" :in-theory (enable drop-non-supporters-array-with-name))))
+
+(verify-guards drop-non-supporters-array-with-name
+  :hints (("Goal" :use (:instance pseudo-dagp-of-drop-non-supporters-array-with-name)
+           :in-theory (e/d (acl2-numberp-when-natp
+                            alistp-when-pseudo-dagp)
+                           (pseudo-dagp-of-drop-non-supporters-array-with-name
+                            top-nodenum)))))
 
 ; Returns (mv renamed-smaller-nodenum renamed-larger-nodenum dag).
 ;; Only used by the equivalence checker.

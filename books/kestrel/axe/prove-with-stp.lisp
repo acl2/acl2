@@ -1329,7 +1329,7 @@
                                                                    (+ -1 (expt 2 arg3-width)))))
                                          (prog2$ (and print (cw ", which is a BVMULT: ~x0" expr))
                                                  (list* "ASSERT(BVLE("
-                                                        (makevarname n)
+                                                        (make-node-var n)
                                                         ","
                                                         (translate-bv-constant max-product-value (unquote (darg1 expr)))
                                                         "));"

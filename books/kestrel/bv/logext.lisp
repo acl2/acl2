@@ -747,3 +747,12 @@
                            (x (bvchop n x))
                            (y (bvchop n y)) (size n))
            :in-theory (disable signed-byte-p))))
+
+;todo gen
+(defthm signed-byte-p-of-one-less-of-logext
+  (equal (signed-byte-p 32 (+ -1 (logext 32 x)))
+         (not (equal (expt 2 31) (bvchop 32 x))))
+  :hints (("Goal"
+           :use (:instance split-bv-top-add (size 32) (x (bvchop 32 x)))
+           :in-theory (enable logext-cases signed-byte-p
+                                     ))))

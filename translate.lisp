@@ -2153,8 +2153,13 @@
                            nil))
 
 (defun gc-off1 (guard-checking-on)
-  (member-eq guard-checking-on
-             '(nil :none)))
+
+; This little function helps preserve the property that for any value v of
+; state global guard-checking-on that is not in *guard-checking-values*, v is
+; treated as :nowarn -- as documented in :DOC guard-evaluation-table.
+
+  (or (eq guard-checking-on nil)
+      (eq guard-checking-on :none)))
 
 (defun gc-off (state)
   (gc-off1 (f-get-global 'guard-checking-on state)))
@@ -2936,13 +2941,6 @@
                               default
                             ans)
                           rst))))))
-
-(defun remove-strings (l)
-  (declare (xargs :guard (true-listp l) :mode :logic))
-  (cond ((endp l) nil)
-        ((stringp (car l))
-         (remove-strings (cdr l)))
-        (t (cons (car l) (remove-strings (cdr l))))))
 
 (defun rev-union-equal (x y)
   (declare (xargs :guard (and (true-listp x)
@@ -6378,91 +6376,6 @@
   (if (atom fn)
       (true-listp args)
     (apply$-lambda-guard fn args)))
-
-(defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
-  (cond ((endp embedded-event-lst)
-         nil)
-        ((and (eq (caar embedded-event-lst) 'encapsulate)
-              (cadar embedded-event-lst))
-         (cons (car embedded-event-lst)
-               (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst))))
-        (t (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst)))))
-
-(defun all-function-symbolps (fns wrld)
-  (declare (xargs :mode :logic
-                  :guard (plist-worldp wrld)))
-  (cond ((atom fns) (equal fns nil))
-        (t (and (symbolp (car fns))
-                (function-symbolp (car fns) wrld)
-                (all-function-symbolps (cdr fns) wrld)))))
-
-(defconst *unknown-constraints*
-
-; This value must not be a function symbol, because functions may need to
-; distinguish conses whose car is this value from those consisting of function
-; symbols.
-
-  :unknown-constraints)
-
-(defun unknown-constraints-table-guard (key val wrld)
-  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
-                 because ~@0.  See :DOC partial-encapsulate."))
-    (cond
-     ((eq key :supporters)
-      (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                         (global-val 'embedded-event-lst wrld))))
-        (cond
-         ((null ee-entries)
-          (mv nil
-              (msg er-msg
-                   "it is not being made in the scope of a non-trivial ~
-                    encapsulate")))
-         ((cdr ee-entries)
-          (mv nil
-              (msg er-msg
-                   (msg "it is being made in the scope of nested non-trivial ~
-                         encapsulates.  In particular, an enclosing ~
-                         encapsulate introduces function ~x0, while an ~
-                         encapsulate superior to that one introduces function ~
-                         ~x1"
-                        (caar (cadr (car ee-entries)))
-                        (caar (cadr (cadr ee-entries)))))))
-         ((not (all-function-symbolps val wrld))
-          (mv nil
-              (msg er-msg
-                   (msg "the value, ~x0, is not a list of known function ~
-                         symbols"
-                        val))))
-         ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
-                              val))
-          (mv nil
-              (msg er-msg
-                   (msg "the value, ~x0, does not include all of the ~
-                         signature functions of the partial-encapsulate"
-                        val))))
-         (t (mv t nil)))))
-     (t (mv nil nil)))))
-
-(table unknown-constraints-table nil nil
-       :guard
-       (unknown-constraints-table-guard key val world))
-
-(defmacro set-unknown-constraints-supporters (&rest fns)
-  `(table unknown-constraints-table
-          :supporters
-
-; Notice that by including the newly-constrained functions in the supporters,
-; we are guaranteeing that this table event is not redundant.  To see this,
-; first note that we are inside a non-trivial encapsulate (see
-; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
-; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
-; would have rejected a previous attempt to set to these supporters, since they
-; were not function symbols at that time.
-
-          (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                             (global-val 'embedded-event-lst world))))
-            (union-equal (strip-cars (cadr (car ee-entries)))
-                         ',fns))))
 
 (partial-encapsulate
  ((ev-fncall-rec-logical-unknown-constraints
@@ -14733,17 +14646,6 @@
                             chk-dcl-lst."
                            dcl))))))))))
        (chk-dcl-lst (cdr l) vars binder ctx wrld)))))
-
-(defun number-of-strings (l)
-  (cond ((null l) 0)
-        ((stringp (car l))
-         (1+ (number-of-strings (cdr l))))
-        (t (number-of-strings (cdr l)))))
-
-(defun get-string (l)
-  (cond ((null l) nil)
-        ((stringp (car l)) (list (car l)))
-        (t (get-string (cdr l)))))
 
 (defun collect-declarations-cmp (lst vars binder ctx wrld)
 

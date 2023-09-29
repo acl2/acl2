@@ -568,3 +568,21 @@
                          (natp (unquote (first (dargs expr))))
                          (acons (unquote quoted-varname) (first (dargs expr)) nil))
                   nil)))))))))
+
+;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
+;; but not one of the exclude-fns.  No guard on exclude-fns because the caller
+;; cannot easily establish it.
+(defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)
+  (declare (xargs :guard (and (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+  (and (not (consp darg)) ; test for nodenum
+       (let ((expr (aref1 'dag-array dag-array darg)))
+         (and (consp expr)
+              (let ((fn (ffn-symb expr)))
+                (and (member-eq fn *functions-convertible-to-bv*)
+                     (let ((exclude-fns (unquote-if-possible exclude-fns)))
+                       (if exclude-fns
+                           (and (true-listp exclude-fns) ; for guards
+                                (not (member-eq fn exclude-fns)))
+                         t))))))))

@@ -1,7 +1,7 @@
 ; A tool to simplify a term and store the resulting DAG in a constant
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -40,6 +40,7 @@
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
+(include-book "kestrel/bv/bvsx-rules" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
 (include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?

@@ -299,7 +299,7 @@
                 (integerp y))
            (equal (equal (+ y (bvchop 32 x)) x)
                   (equal y (* (expt 2 32) (getbit 32 x)))))
-  :hints (("Goal" :use (:instance acl2::split-bv (y x)
+  :hints (("Goal" :use (:instance acl2::split-bv (x x)
                                   (n 33)
                                   (m 32))
            :in-theory (enable bvcat acl2::logapp))))
@@ -434,7 +434,7 @@
            (equal (add (mul *-2^33* bit p) (bvplus '34 x y) p)
                   (bvplus 33 x y)))
   :hints (("Goal"
-           :use (:instance acl2::split-bv (y (BVPLUS 34 X Y))
+           :use (:instance acl2::split-bv (x (BVPLUS 34 X Y))
                            (n 34) (m 33))
            :in-theory (enable add mul bvcat acl2::logapp ACL2::MOD-SUM-CASES))))
 
@@ -934,7 +934,7 @@
                    (equal 1 (SLICE 34 33 BV35))
                    (equal 2 (SLICE 34 33 BV35)))
            :use (:instance acl2::split-bv
-                           (y bv35)
+                           (x bv35)
                            (n 35)
                            (m 33))
            :in-theory (enable add mul bvcat acl2::logapp ACL2::MOD-SUM-CASES slice ACL2::BVCHOP-OF-SUM-CASES
@@ -1193,7 +1193,7 @@
 (defthm *-of-2-and-slice-of-1
   (equal (* 2 (slice 33 1 x))
          (- (bvchop 34 x) (getbit 0 x)))
-  :hints (("Goal" :use (:instance acl2::split-bv (y (bvchop 34 x)) (n 34) (m 1))
+  :hints (("Goal" :use (:instance acl2::split-bv (x (bvchop 34 x)) (n 34) (m 1))
            :in-theory (enable bvcat acl2::logapp getbit))))
 
 (defthm mul-of-2-and-slice-of-1

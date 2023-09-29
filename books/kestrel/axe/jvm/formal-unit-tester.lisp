@@ -87,7 +87,7 @@
 ;;         (equal 0 (slice 15 8 x)))
 ;;  :hints (("Goal"
 ;;           :cases ((equal 0 (GETBIT 15 X)))
-;;           :use (:instance SPLIT-BV (y (slice 15 8 x)) (n 16) (m 8))
+;;           :use (:instance split-bv (x (slice 15 8 x)) (n 16) (m 8))
 ;;           :in-theory (e/d (bvsx) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
 ;;                                   )))))
 

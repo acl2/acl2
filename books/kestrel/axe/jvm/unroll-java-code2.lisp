@@ -580,6 +580,7 @@
                                  nil ; interpreted-fns
                                  monitor
                                  call-stp
+                                 t ; check-fnsp
                                  state)
           (mv nil result-dag state)))
        ((when erp) (mv erp nil state))

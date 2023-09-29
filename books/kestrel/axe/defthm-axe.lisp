@@ -18,7 +18,7 @@
 (include-book "prover")
 
 ;; Returns an event.
-(defun defthm-axe-fn (name term rules rule-lists remove-rules rule-classes print state)
+(defun defthm-axe-fn (name term rules rule-lists remove-rules monitor rule-classes print state)
   (declare (xargs :guard (and (rule-item-listp rules)
                               (rule-item-list-listp rule-lists)
                               (symbol-listp remove-rules)
@@ -36,6 +36,7 @@
        :hints (("Goal" :clause-processor (axe-prover-clause-processor clause
                                                                       '((:must-prove . t)
                                                                         (:rule-lists . ,rule-lists)
+                                                                        (:monitor . ,monitor)
                                                                         (:print . ,print))
                                                                       state)))
        ,@(if (eq :auto rule-classes)
@@ -43,16 +44,18 @@
            `(:rule-classes ,rule-classes)))))
 
 ;; Prove a theorem with the Axe Prover, throwing an error if it fails.
+;; todo: eval most of the args here?
 (defmacro defthm-axe (name term
                            &key
                            (rules 'nil)
                            (rule-lists 'nil)
                            (remove-rules 'nil)
+                           (monitor 'nil) ; gets evaluated
                            (rule-classes ':auto)
                            (print 'nil))
   (if (and (consp term)
            (eq :eval (car term)))
       ;; Evaluate TERM:
-      `(make-event (defthm-axe-fn ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))
+      `(make-event (defthm-axe-fn ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ,monitor ',rule-classes ',print state))
     ;; Don't evaluate TERM:
-    `(make-event (defthm-axe-fn ',name ',term ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))))
+    `(make-event (defthm-axe-fn ',name ',term ',rules ',rule-lists ',remove-rules ,monitor ',rule-classes ',print state))))

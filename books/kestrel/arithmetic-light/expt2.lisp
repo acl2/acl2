@@ -22,6 +22,7 @@
 (local (include-book "times-and-divide"))
 (local (include-book "plus"))
 (local (include-book "floor")) ; because integer-length calls floor
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (defthm integerp-of-expt2
   (implies (integerp i)
@@ -270,3 +271,23 @@
            (equal (< (+ (expt 2 (+ -1 i)) x) (expt 2 i))
                   (< x (expt 2 (+ -1 i)))))
   :hints (("Goal" :cases ((< x (expt 2 (+ -1 i)))))))
+
+(defthm <-of-*-of-2-and-expt-and-expt
+  (implies (and (integerp n)
+                (integerp m))
+           (equal (< (* 2 (expt 2 m)) (expt 2 n))
+                  (< (+ 1 m) n)))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
+                                  (i (+ 1 m))
+                                  (j n))
+           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
+
+(defthm <-of-expt-and-*-of-2-and-expt
+  (implies (and (integerp n)
+                (integerp m))
+           (equal (< (expt 2 n) (* 2 (expt 2 m)))
+                  (< n (+ 1 m))))
+  :hints (("Goal" :use (:instance <-of-expt-and-expt-same-base (r 2)
+                                  (i (+ 1 m))
+                                  (j n))
+           :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))

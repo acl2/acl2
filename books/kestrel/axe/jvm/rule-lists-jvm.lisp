@@ -1534,6 +1534,7 @@
 ;todo: rename?  Maybe to miter-rules?
 ;fixme build this from smaller lists of rules?
 ;GETBIT-OF-BVXOR-ERIC ;seemed to be bad for dag prover Tue Jan 12 06:24:08 2010
+;todo: move this out of this jvm-specific file?
 (defun axe-rules ()
   (declare (xargs :guard t))
   (set-difference-equal
@@ -1777,7 +1778,7 @@
              bvxor-cancel-2-of-more-and-1-of-more
              bitxor-when-equal-of-constant-and-bvchop-arg1
              bitxor-when-equal-of-constant-and-bvchop-arg2
-             <-cancel-only-and-2-of-more ;fixme also add comm of plus?
+             <-of-+-cancel-1-2+  ; todo: also add commutativity of plus?
              getbit-when-equal-of-constant-and-bvchop
              equal-of-constant-when-not-bvlt-constant-1
              equal-of-constant-when-not-bvlt-constant-2
@@ -1849,8 +1850,8 @@
              boolor-of-not-and-booland-same-1
              unsigned-byte-p-of-bvuminus-bigger
              <-of-len-and-expt-of-2-constant-version
-             collect-constants-<-/     ;can introduce fractions...
-             collect-constants-<-/-two ;can introduce fractions...
+             <-of-constant-and-*-of-constant     ;can introduce fractions...
+             <-of-*-of-constant-and-constant ;can introduce fractions...
              <-of-floor-constant-when-not-integerp
              move-minus-to-constant
              <-of-minus1-and-floor
@@ -1897,7 +1898,7 @@
              rationalp-of-ceiling
              integerp-of-ceiling
              bvlt-of-bvuminus-arg2-constant
-;    <-becomes-bvlt-dag-both
+;    <-becomes-bvlt-axe-both
              <-0-+-negative-2
 ;    +-of-myif-arg1 ;new5
 ;   +-of-myif-arg2 ;new5

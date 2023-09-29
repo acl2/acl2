@@ -34,7 +34,8 @@
  (thm (equal (f3 x)
              yyy)))
 
-; Output is a bit painful to check and numes might change.
+; Output is a bit painful to check and numes (i.e, the unique numbers
+; corresponding to the rules) might change.
 ; (show-brr-data-lst (@ brr-data-lst))
 
 (cw-gstack-for-term (cons (f0 (car x)) (f0 (car x))))
