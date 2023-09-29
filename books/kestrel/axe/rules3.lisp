@@ -14,6 +14,8 @@
 
 ;; This book was called dagrulesmore0.lisp.
 
+;; TODO: Organize these rules and move thing to more fundamental libraries.
+
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system)
 (include-book "kestrel/bv/rules6" :dir :system)
@@ -22,7 +24,6 @@
 (include-book "kestrel/bv/rules5" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p2" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
-(include-book "kestrel/bv/rules8" :dir :system)
 (include-book "kestrel/bv/rules11" :dir :system) ; for BVPLUS-OF-BVCAT-FITS-IN-LOW-BITS-CORE-NEGATIVE-K1-HELPER
 (include-book "kestrel/bv/sbvmoddown" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
@@ -34,11 +35,7 @@
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ;needed?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; for nth2
-(include-book "kestrel/utilities/mydefconst" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
-(include-book "kestrel/lists-light/prefixp" :dir :system)
-(include-book "kestrel/lists-light/prefixp2" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ;todo
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
@@ -54,7 +51,6 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-;(local (include-book "kestrel/bv/arith" :dir :system)) ; for INTEGERP-OF-POWER2-HACK-ANOTHER-FACTOR, etc.
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/bv/trim-rules" :dir :system))
@@ -85,10 +81,6 @@
                            <=-OF-BVCHOP-SAME-LINEAR ;slow
                            SBVDIV-REWRITE ;move?
                            )))
-
-;todo: move the rest of the prefixp rules out of this file
-
-;todo: uncomment:(add-known-boolean prefixp) ;todo: make a list-rules-axe book.  prefixp-when-longer-work-hard etc could also go there
 
 (local (in-theory (enable getbit-when-bvlt-of-small-helper))) ;todo
 
@@ -456,20 +448,6 @@
                  (< x (EXPT 2 (+ -1 SIZE)))))
  :hints (("Goal" :in-theory (enable expt-of-+))))
 
-(defthm <-of-logext-true
-  (implies (<= (expt 2 (+ -1 size)) k)
-           (< (LOGEXT size X) k))
-  :hints (("Goal" :in-theory (enable logext logapp))))
-
-(defthm <-of-logext-false
-  (implies (and (<= k (- (expt 2 (+ -1 size))))
-                (posp size)
-                )
-           (not (< (LOGEXT size X) k)))
-  :hints (("Goal" :in-theory (enable logext logapp))))
-
-
-
 ;move up
 (defthmd truncate-becomes-floor-gen4-better-better
   (implies (and (rationalp i) (rationalp j))
@@ -591,8 +569,8 @@
                             ;; if-backchain-rule
                             logext-bounds
                             ;bvchop-leq
-                            <-of-logext-false
-                            <-of-logext-true
+                            ;<-of-logext-false
+                            ;<-of-logext-true
                             logext-when-top-bit-0 sbp-32-when-non-neg
                             LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP
                             TRUNCATE-=-X/Y
@@ -739,8 +717,8 @@
 ;                                   if-backchain-rule
                                    logext-bounds
                                    ;bvchop-leq
-                                   <-of-logext-false
-                                   <-of-logext-true
+                                   ;<-of-logext-false
+                                   ;<-of-logext-true
                                    logext-when-top-bit-0 sbp-32-when-non-neg)))))
 
 (local (in-theory (disable MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))
@@ -13403,26 +13381,7 @@
                   (bvchop size x)))
   :hints (("Goal" :cases ((equal size size2)))))
 
-(defthm nth-when-equal-of-firstn-and-constant
-  (implies (and (equal k (firstn m x))
-                (syntaxp (and (quotep k)
-                              (not (quotep x)))) ;gen to that k is a smaller term?
-                (< n m)
-                (natp n)
-                (natp m))
-           (equal (nth n x)
-                  (nth n k))))
-
-(defthm nth-when-equal-of-take-and-constant
-  (implies (and (equal k (take m x))
-                (syntaxp (and (quotep k)
-                              (not (quotep x)))) ;gen to that k is a smaller term?
-                (< n m)
-                (natp n)
-                (natp m))
-           (equal (nth n x)
-                  (nth n k))))
-
+;move
 (defthm bv-array-read-when-equal-of-firstn-and-constant
   (implies (and (equal k (firstn m x))
                 (syntaxp (and (quotep k)
@@ -13436,20 +13395,6 @@
            (equal (bv-array-read size len n x)
                   (bv-array-read size len n k)))
   :hints (("Goal" :in-theory (e/d ( bv-array-read-opener) (NTH-BECOMES-BV-ARRAY-READ2)))))
-
-(defthm bv-array-read-when-equal-of-take-and-constant
-  (implies (and (equal k (take m x))
-                (syntaxp (and (quotep k)
-                              (not (quotep x))))
-                (< n m)
-                (< n len)
-                (natp len)
-                (natp n)
-                (natp m)
-                )
-           (equal (bv-array-read size len n x)
-                  (bv-array-read size len n k)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) (NTH-BECOMES-BV-ARRAY-READ2)))))
 
 (defthm equal-of-slice-and-constant-when-equal-of-bvchop-and-constant2
   (implies (and (syntaxp (quotep k))
@@ -14060,6 +14005,7 @@
                                  equal-of-slice-and-max-30-6)
                            (sbvlt-rewrite bvminus-becomes-bvplus-of-bvuminus)))))
 
+;todo: slow proof
 (defthm sha1-hack-four-million-six
   (implies (and (not (sbvlt '32
                             (bvplus '32
@@ -14085,7 +14031,9 @@
            :in-theory (e/d (bvlt sbvlt bvplus bvchop-of-sum-cases bvuminus bvminus slice-of-sum-cases
                                  bvcat
                                  equal-of-slice-and-max-30-6)
-                           (sbvlt-rewrite bvminus-becomes-bvplus-of-bvuminus)))))
+                           (sbvlt-rewrite bvminus-becomes-bvplus-of-bvuminus
+                                          bvchop-identity ; for speed
+                                          )))))
 
 (defthmd usb-hack-100
   (implies (AND (<= Y X)
@@ -15120,31 +15068,6 @@
   :hints (("Goal" :cases ((< len1 len2))
            :in-theory (e/d (BV-ARRAY-READ-opener) (NTH-BECOMES-BV-ARRAY-READ2)))))
 
-(defthm prefixp-of-bv-array-write-when-prefixp
-  (implies (and (< (len x) len)
-                (all-unsigned-byte-p 8 data)
-                (prefixp x data)
-                (natp len))
-           (equal (prefixp x (bv-array-write '8 len (len x) val data))
-                  t))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :use (:instance ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
-                           (size 8)
-                           (lst x))
-           :in-theory (e/d (bv-array-write ceiling-of-lg UPDATE-NTH2 PREFIXP-REWRITE-gen
-                                           equal-of-true-list-fix-and-true-list-fix-forward)
-                           (ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
-                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
-
-(defthm bvlt-of-len-and-len-when-prefixp
-  (implies (and (prefixp x free)
-                (equal y free)
-                (unsigned-byte-p size (len x))
-                (unsigned-byte-p size (len y)))
-           (equal (bvlt size (len y) (len x))
-                  nil))
-  :hints (("Goal" :in-theory (enable bvlt prefixp))))
-
 ;fixme not equal when < of lens
 
 ;gross
@@ -15273,24 +15196,6 @@
            (equal (bvplus 32 1 (bvplus 31 k x))
                   (bvplus 31 (+ 1 k) x)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases bvlt boolor bvuminus bvminus))))
-
-(defthm nth-of-add-to-end
-  (implies (natp n)
-           (equal (nth n (add-to-end item lst))
-                  (if (> n (len lst))
-                      nil
-                    (if (< n (len lst))
-                        (nth n lst)
-                      item))))
-  :hints (("Goal" ; :induct t
-           :in-theory (enable add-to-end ;LIST::NTH-WITH-LARGE-INDEX
-                              ))))
-
-(defthm equal-of-firstn-same
-  (equal (equal x (firstn n x))
-         (and (true-listp x)
-              (<= (len x) (nfix n))))
-  :hints (("Goal" :in-theory (enable firstn))))
 
 ;gen!
 (defthm sbvmoddown-of-bvplus-of-minus-4
@@ -16797,18 +16702,6 @@
                 (equal 0 free))
            (equal (unsigned-byte-p 1 x)
                   (equal 1 x))))
-
-(defthmd prefixp-when-longer-work-hard
-  (implies (work-hard (< (len x) (len y)))
-           (equal (prefixp y x)
-                  nil))
-  :hints (("Goal" :in-theory (enable prefixp))))
-
-(defthmd prefixp-when-not-shorter-work-hard
-  (implies (work-hard (<= (len x) (len y)))
-           (equal (prefixp y x)
-                  (equal (true-list-fix x) (true-list-fix y))))
-  :hints (("Goal" :in-theory (enable prefixp))))
 
 ;gen!
 (defthm bvlt-when-top-bit-one

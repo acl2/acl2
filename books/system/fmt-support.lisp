@@ -1155,8 +1155,8 @@
 
 (defthm general-type-of-max-width
   (implies (and (ppr-tuple-lst-p lst)
-		(signed-byte-p #.*small-bits* maximum))
-	   (if (consp lst)
+                (signed-byte-p #.*small-bits* maximum))
+           (if (consp lst)
                (unsigned-byte-p #.*small-nat-bits* (max-width lst maximum))
                (equal (max-width lst maximum) maximum)))
   :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p)))
@@ -1292,7 +1292,7 @@
 ; Eliminates nearly 2/3 of the time for flag-lemma-for-ppr-tuple-p-ppr1:
            :ruler-extenders (:lambdas))
 
-; I now develop a computed hint for this the theorem that ppr1/ppr1-lst 
+; I now develop a computed hint for this the theorem that ppr1/ppr1-lst
 ; produces ppr-tuple-ps.
 
 (mutual-recursion
@@ -1301,7 +1301,7 @@
          ((fquotep term) ans)
          ((eq (ffn-symb term) fn)
           (cond ((member-equal term ans) ans)
-                (t (find-all-calls-lst fn (fargs term) (cons term ans))))) 
+                (t (find-all-calls-lst fn (fargs term) (cons term ans)))))
          (t (find-all-calls-lst fn (fargs term) ans))))
  (defun find-all-calls-lst (fn lst ans)
    (cond ((endp lst) ans)
@@ -1390,7 +1390,7 @@
     :flag ppr1-lst)
   :hints ((when-stable-open-concl-and-later-enable
            nil nil clause stable-under-simplificationp state)
-          ("Goal" 
+          ("Goal"
            :in-theory (disable fix ppr1 ppr1-lst)
            :do-not-induct t) ; to stop on first checkpoint
           ))
@@ -1520,7 +1520,7 @@
 (defthm integerp-max-width
   (implies (and (ppr-tuple-lst-p lst)
                 (integerp ac))
-	   (integerp (max-width lst ac)))
+           (integerp (max-width lst ac)))
   :hints (("Goal" :in-theory (enable max-width)))
   :rule-classes (:rewrite :type-prescription))
 
@@ -1632,7 +1632,10 @@
           'dot))
   :hints (("Goal"
            :expand
-           ((ppr1 x print-base print-radix width rpc state eviscp)))))
+           ((ppr1 x print-base print-radix width rpc state eviscp))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm ppr-tuple-lst-p-list-list
   (implies (and (unsigned-byte-p #.*small-nat-bits* width)
@@ -1648,10 +1651,13 @@
                                  PRINT-BASE
                                  PRINT-RADIX (ROUND-TO-SMALL T (+ -1 WIDTH))
                                  RPC STATE EVISCP)
-			   (PPR1 (CADR X)
+                           (PPR1 (CADR X)
                                  PRINT-BASE
                                  PRINT-RADIX (ROUND-TO-SMALL T (+ -1 WIDTH))
-                                 RPC STATE NIL)))))
+                                 RPC STATE NIL))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm small-nat-max-difference-0
   (implies (and (unsigned-byte-p #.*small-nat-bits* x)
@@ -1670,7 +1676,10 @@
                              PRINT-RADIX WIDTH RPC STATE NIL))))
   :hints (("Goal" :expand ((PPR1 x
                                  PRINT-BASE
-                                 PRINT-RADIX WIDTH RPC STATE NIL)))))
+                                 PRINT-RADIX WIDTH RPC STATE NIL))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (defthm not-cdddr-ppr1-flat-not-evisceration-mark
   (implies (and (NOT (EQUAL x :EVISCERATION-MARK))
@@ -1683,7 +1692,10 @@
                              PRINT-RADIX WIDTH RPC STATE eviscp))))
   :hints (("Goal" :expand ((PPR1 x
                                  PRINT-BASE
-                                 PRINT-RADIX WIDTH RPC STATE eviscp)))))
+                                 PRINT-RADIX WIDTH RPC STATE eviscp))
+           ;; Disable added by Eric Smith, for speed only:
+           :in-theory (disable special-term-num ppr1 ppr1-lst
+                               get-global table-alist w))))
 
 (verify-guards ppr1
   :hints ((verify-guards-ppr1/ppr1-lst-strategy nil nil clause stable-under-simplificationp state)
@@ -2292,7 +2304,7 @@
            (state-p1
             (update-iprint-ar-fal iprint-alist iprint-fal-new iprint-fal-old
                                   state))))
-  
+
 
 (in-theory (disable (:definition array-order)
                     (:definition aset1)
@@ -3116,7 +3128,7 @@
             (iprint-array-p (aset1-lst name iprint-alist ar)
                             max))
    :hints (("Goal" :in-theory (enable aset1-lst aset1 iprint-alistp1
-                                      iprint-array-p))))) 
+                                      iprint-array-p)))))
 (local
  (defthm main-1-2-3
    (implies (and (iprint-array-p ar max)
@@ -3559,7 +3571,7 @@
             min
             fix
             member-equal
-            integer-range-p unsigned-byte-p min mv-nth punctp
+            integer-range-p unsigned-byte-p min
             left-pad-with-blanks
             len msgp length keywordp
             ))

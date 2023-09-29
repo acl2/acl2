@@ -1411,7 +1411,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;move up?
-(local (in-theory (disable acl2::<-of-logext-false ; disables for speed
+(local (in-theory (disable ;acl2::<-of-logext-false ; disables for speed
                            acl2::backchain-signed-byte-p-to-unsigned-byte-p ;same as acl2::signed-byte-p-when-unsigned-byte-p ?
                            acl2::signed-byte-p-when-unsigned-byte-p
                            acl2::logext-when-non-negative-becomes-bvchop)))
