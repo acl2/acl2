@@ -6494,23 +6494,12 @@
                      has the non-void type ~x2, ~
                      which is disallowed."
                     gin.fn val-term xform.type)))
-             (pass-updated-context-and-inscope
-              (and (consp xform.term)
-                   (b* ((fn (car xform.term)))
-                     (or (eq fn 'if*)
-                         (b* ((fninfo (cdr (assoc-eq fn gin.prec-fns))))
-                           (and fninfo
-                                (atc-fn-info->correct-mod-thm fninfo)))))))
              ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
-                             :context (if pass-updated-context-and-inscope
-                                          xform.context
-                                        gin.context) ; temporary
-                             :inscope (if pass-updated-context-and-inscope
-                                          xform.inscope
-                                        gin.inscope) ; temporary
+                             :context xform.context
+                             :inscope xform.inscope
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
