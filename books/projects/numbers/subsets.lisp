@@ -17,6 +17,23 @@
 	(append s (conses (car l) s)))
     (list ())))
 
+;; NIL is a subset of every l:
+
+(defthm member-nil-subsets
+  (member-equal () (subsets l)))
+
+;; Every subset is a true list:
+
+(defthm true-listp-subset
+  (implies (member-equal s (subsets l))
+           (true-listp s)))
+
+;; A true list is a subset of itself:
+
+(defthm subset-self
+  (implies (true-listp l)
+	   (member-equal l (subsets l))))
+
 ;; Every member of (subsets l) is a sublist of l and a dlist:
 
 (defthm sublistp-subset
