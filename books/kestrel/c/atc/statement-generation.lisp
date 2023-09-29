@@ -3544,7 +3544,7 @@
          :type (type-void)
          :term term
          :context gin.context
-         :inscope nil
+         :inscope gin.inscope
          :limit limit
          :events nil
          :thm-name nil
@@ -3685,7 +3685,7 @@
          :type type
          :term term
          :context new-context
-         :inscope nil
+         :inscope new-inscope
          :limit items-limit
          :events item-events
          :thm-name nil
@@ -3830,8 +3830,8 @@
          :items all-items
          :type items-type
          :term term
-         :context (make-atc-context :preamble nil :premises nil)
-         :inscope nil
+         :context gin.context
+         :inscope gin.inscope
          :limit all-items-limit
          :events (append item-events items-events)
          :thm-name nil
@@ -3967,8 +3967,8 @@
          :items items
          :type type
          :term term
-         :context (make-atc-context :preamble nil :premises nil)
-         :inscope nil
+         :context gin.context
+         :inscope gin.inscope
          :limit items-limit
          :events (append items1-events items2-events)
          :thm-name nil
@@ -4210,8 +4210,8 @@
                 :items (list (block-item-stmt stmt))
                 :type expr.type
                 :term term
-                :context (make-atc-context :preamble nil :premises nil)
-                :inscope nil
+                :context gin.context
+                :inscope gin.inscope
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
@@ -4401,8 +4401,8 @@
         (retok (make-stmt-gout :items then-items
                                :type then-type
                                :term term
-                               :context (atc-context nil nil)
-                               :inscope nil
+                               :context gin.context
+                               :inscope gin.inscope
                                :limit then-limit
                                :events then-events
                                :thm-name nil
@@ -4588,7 +4588,7 @@
           :items (list (block-item-stmt stmt))
           :type type
           :term term
-          :context (make-atc-context :preamble nil :premises nil)
+          :context gin.context
           :inscope gin.inscope
           :limit (pseudo-term-fncall
                   'binary-+
@@ -5082,8 +5082,8 @@
                 :items (list (block-item-stmt (stmt-expr call-expr)))
                 :type (type-void)
                 :term term
-                :context (make-atc-context :preamble nil :premises nil)
-                :inscope nil
+                :context gin.context
+                :inscope gin.inscope
                 :limit `(binary-+ '5 ,limit)
                 :events args.events
                 :thm-name nil
@@ -5948,8 +5948,8 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
+                        :context gin.context
+                        :inscope gin.inscope
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -6038,8 +6038,8 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
+                        :context gin.context
+                        :inscope gin.inscope
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -6106,8 +6106,8 @@
                   :items items
                   :type type
                   :term term
-                  :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil
+                  :context gin.context
+                  :inscope gin.inscope
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -6622,8 +6622,8 @@
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
                   :term term
-                  :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil
+                  :context gin.context
+                  :inscope gin.inscope
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -6635,8 +6635,8 @@
                     :items nil
                     :type (type-void)
                     :term term
-                    :context (make-atc-context :preamble nil :premises nil)
-                    :inscope nil
+                    :context gin.context
+                    :inscope gin.inscope
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil
