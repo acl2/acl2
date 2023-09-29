@@ -128,39 +128,51 @@ Subgoal *1/5'
   (equal (mem a (compress x))
          (mem a x)))
 
-; Now when we try no-dupls-p-compress above, the proof goes all the way to a
-; forcing round.  Here is a goal from the forcing round that does not get
-; proved.
+; Now when we try no-dupls-p-compress above again, the proof fails in a
+; different way, leaving us with this checkpoint:
 
 #|
-[1]Subgoal 2
-(IMPLIES (AND (CONSP X4)
-              (NOT (EQUAL (CAR X4) X3))
-              (NOT (MEM X3 X4))
-              (NO-DUPLS-P (COMPRESS X4))
-              (<= (CAR X4) X3)
-              (<= X3 (CAR X4))
-              (ORDEREDP X4)
-              (MEM (CAR X4) X4))
-         (ACL2-NUMBERP (CAR X4)))
+Subgoal *1/5'
+(IMPLIES (AND (CONSP X)
+              (CONSP (CDR X))
+              (NOT (EQUAL (CAR X) (CADR X)))
+              (NO-DUPLS-P (COMPRESS (CDR X)))
+              (<= (CAR X) (CADR X))
+              (ORDEREDP (CDR X)))
+         (NOT (MEM (CAR X) (CDR X))))
 |#
 
-; The goal above suggests that we need to restrict to lists of numbers.  That
-; makes sense, because otherwise the version of no-dupls-p-compress listed above
-; is false:
+; This formula is not a theorem because it is treating the elements of X as
+; rationals (they are being compared with <=) but there is no requirement that
+; they are numbers.  For example, let X be '(t nil t).  Then the hypotheses are
+; all true but the conclusion is not.  We can test that claim by execution but
+; we first have to turn off guard checking since <=.  (Note: (<= i j)
+; macroexpands to (not (< j i)), and < has a guard requiring its arguments to
+; be rationals.  Logically speaking though, (< j i) defaults each argument to 0
+; if it's not rational.  By turning off guard checking we cause the ACL2 evaluation
+; mechanism to just adhere to the axiomatic semantics without imposing the runtime
+; expectations on guards.)
 
 #|
 ACL2 !>:set-guard-checking nil
 
-Turning guard checking off.  That is, results will be given in the
-ACL2 logic.  This raises a question:  how should :program functions
-be evaluated?  They have no logical definitions.  Our decision is that
-calls of :program functions at the top level will continue to be evaluable
-but will continue to check their guards and signal errors when their
-guards are not satisfied.  As with :logic functions, when a guard has
-been satisfied no subsidiary guard checking will be done.  A few :logic
-functions that take STATE, including for example PRINC$, will also
-be treated this way.
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >(let ((x '(t nil t)))
+;Subgoal *1/5'
+(IMPLIES (AND (CONSP X)
+              (CONSP (CDR X))
+              (NOT (EQUAL (CAR X) (CADR X)))
+              (NO-DUPLS-P (COMPRESS (CDR X)))
+              (<= (CAR X) (CADR X))
+              (ORDEREDP (CDR X)))
+         (NOT (MEM (CAR X) (CDR X)))))
+NIL
+
+; In fact, our main ``theorem,'' no-dupls-p-compress, is not a theorem
+; either!
 
 ACL2 >(let ((x '(t nil t)))
 	 (implies (orderedp x)
@@ -170,6 +182,10 @@ ACL2 >(let ((x '(t nil t)))
 	 (compress x))
 (T NIL T)
 ACL2 >
+
+; So we introduce the notion of a list of numbers (we could restrict it
+; rationals but needn't) and add that hypothesis to the main theorem to
+; finish the exercise.
 |#
 
 (defun number-listp (x)
