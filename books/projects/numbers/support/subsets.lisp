@@ -81,8 +81,8 @@
 		(equal (car p) k)
 		(member-equal (cdr p) l))))
 
-(local (defthm member-nil-subsets
-  (member-equal () (subsets l))))
+(defthm member-nil-subsets
+  (member-equal () (subsets l)))
 
 (local (defun subset-subset-1-induct (x s l)
   (declare (xargs :measure (+ (len s) (len l))))
@@ -149,10 +149,14 @@
 		     (sublistp x s))))
   :hints (("Goal" :use (subset-subset-1 subset-subset-2))))
 
-(local (defthmd true-listp-subset
+(defthm true-listp-subset
   (implies (member-equal s (subsets l))
            (true-listp s))
-  :hints (("Goal" :induct (subsets-induct s l)))))
+  :hints (("Goal" :induct (subsets-induct s l))))
+
+(defthm subset-self
+  (implies (true-listp l)
+	   (member-equal l (subsets l))))
 
 (local (defthm member-remove1-subsets
   (implies (member-equal s (subsets l))
