@@ -6483,8 +6483,7 @@
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect (list var)
-                                             :loop-flag nil
-                                             :proofs gin.proofs)
+                                             :loop-flag nil)
                             state))
              ((unless (type-case xform.type :void))
               (reterr
