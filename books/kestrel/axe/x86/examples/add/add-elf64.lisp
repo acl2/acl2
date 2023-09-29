@@ -17,16 +17,12 @@
 ;; lifter and prove equivalent to spec.
 
 (include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
-(include-book "kestrel/axe/x86/tester-rules" :dir :system) ; todo: rename
 
 ;; Lift the subroutine into logic:
 (def-unrolled add-elf64
   "add.elf64"
   :target "add"
-  :stack-slots 2
-  :extra-rules (lifter-rules64-new) ; these need to be done together
-  :extra-assumption-rules (lifter-rules64-new)
-  )
+  :stack-slots 2)
 
 ;; The above command created the function add-elf64, which represents the
 ;; effect of the program on the x86 state.
