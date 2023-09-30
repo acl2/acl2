@@ -19,7 +19,7 @@
 
 (defxdoc+ reference-types
   :parents (syntax)
-  :short "Java reference types [JLS:4.3]."
+  :short "Java reference types [JLS14:4.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -29,11 +29,11 @@
     ".")
    (xdoc::p
     "The relevant grammar rules are
-     the ones in [JLS:4.3] (for @('reference-type') etc.)
-     and the ones in [JLS:4.5.1] (for @('type-arguments') etc.).
-     The rules in [JLS:4.3] include annotations,
+     the ones in [JLS14:4.3] (for @('reference-type') etc.)
+     and the ones in [JLS14:4.5.1] (for @('type-arguments') etc.).
+     The rules in [JLS14:4.3] include annotations,
      but the grammar also includes rules for unannotated reference types
-     in [JLS:8.3] (for @('unann-reference-type') etc.).
+     in [JLS14:8.3] (for @('unann-reference-type') etc.).
      Note, however, that also the rules for @('unann-reference-type') etc.
      include some annotations in certain places.")
    (xdoc::p
@@ -63,7 +63,7 @@
      see @(tsee fty::deftagsum) for details."))
 
   (fty::deftagsum reference-type
-    :short "Fixtype of Java (unannotated) reference types [JLS:4.3] [JLS:8.3]."
+    :short "Fixtype of Java (unannotated) reference types [JLS14:4.3] [JLS14:8.3]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -86,7 +86,7 @@
 
   (fty::deftagsum class-type
     :short "Fixtype of Java (unannotated) class (and interface) types
-            [JLS:4.3] [JLS:8.3]."
+            [JLS14:4.3] [JLS14:8.3]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -97,7 +97,7 @@
        to emphasize the difference between classes and interfaces.
        However, in our formalization, it seems more convenient
        to just define one syntactic entity for both, called `class type'.
-       This is not unlike other uses, in [JLS] and [JVMS],
+       This is not unlike other uses, in [JLS14] and [JVMS14],
        of `class' in an attributive role to means `class or interface':
        examples are `class loader' and `class file'.
        We may revisit this choice in the future,
@@ -107,13 +107,13 @@
       "There are three kinds of class types.
        The first one consists of
        a type identifier and some optional type arguments:
-       this corresponds to simple names [JLS:6].
+       this corresponds to simple names [JLS14:6].
        The second one consists of
        a package name, a type identifier, and some optional type arguments:
-       this corresponds to a name qualified by a package name [JLS:6].
+       this corresponds to a name qualified by a package name [JLS14:6].
        The third one consists of
        a class type, a type identifier, and some optional type arguments:
-       this denotes a nested class [JLS:8].")
+       this denotes a nested class [JLS14:8].")
      (xdoc::p
       "Since the three summands of this fixtype have two fields in common,
        an alternative formalization approach is
@@ -135,16 +135,16 @@
     :measure (two-nats-measure (acl2-count x) 1))
 
   (fty::deftagsum array-type
-    :short "Fixtype of Java (unannotated) array types [JLS:4.3] [JLS:8.3]."
+    :short "Fixtype of Java (unannotated) array types [JLS14:4.3] [JLS14:8.3]."
     :long
     (xdoc::topstring
      (xdoc::p
       "An array type consists of an element type and one or more dimensions
-       [JLS:10.1].
+       [JLS14:10.1].
        The element type may be
        a primitive type, a class type, or a type variable,
        but not an array type:
-       recall the distinction between array components and elements [JLS:10].")
+       recall the distinction between array components and elements [JLS14:10].")
      (xdoc::p
       "The dimensions are simply captured by a positive integer.")
      (xdoc::p
@@ -160,7 +160,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deftagsum type-argument
-    :short "Fixtype of Java (unannotated) type arguments [JLS:4.5.1]."
+    :short "Fixtype of Java (unannotated) type arguments [JLS14:4.5.1]."
     :long
     (xdoc::topstring
      (xdoc::p

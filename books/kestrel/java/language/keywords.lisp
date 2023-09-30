@@ -16,15 +16,15 @@
 
 (defxdoc+ keywords
   :parents (syntax)
-  :short "The Java keywords [JLS:3.9]."
+  :short "The Java keywords [JLS14:3.9]."
   :long
   (xdoc::topstring
    (xdoc::p
     "Some character sequences are Java keywords in all contexts,
-     namely the ones listed in the grammar production in [JLS:3.9].
+     namely the ones listed in the grammar production in [JLS14:3.9].
      Other character sequences are Java keywords
      only in certain module-related contexts,
-     as described in [JLS:3.9] in prose (i.e. without grammar productions);
+     as described in [JLS14:3.9] in prose (i.e. without grammar productions);
      these are called `restricted keywords'.")
    (xdoc::p
     "To avoid conflict or confusion with ACL2 keywords,

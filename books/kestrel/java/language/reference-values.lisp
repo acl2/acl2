@@ -16,14 +16,14 @@
 
 (defxdoc+ reference-values
   :parents (semantics)
-  :short "Java reference values [JLS:4.3]."
+  :short "Java reference values [JLS14:4.3]."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum reference-value
-  :short "Fixtype of Java reference values [JLS:4.3.1]."
+  :short "Fixtype of Java reference values [JLS14:4.3.1]."
   :long
   (xdoc::topstring-p
    "A reference value is either a pointer (to an object)

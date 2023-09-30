@@ -16,7 +16,7 @@
 
 (fty::deftagsum escape-sequence
   :parents (syntax)
-  :short "Fixtype of escape sequences [JLS:3.10.6]."
+  :short "Fixtype of escape sequences [JLS14:3.10.6]."
   :long
   (xdoc::topstring
    (xdoc::p

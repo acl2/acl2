@@ -47,7 +47,7 @@
      we add a static final field initialized with the return expression,
      and we replace the return expression in the method
      with a reference to the new static final field.
-     Java allows a field and a method to have the same name [JLS:8.2],
+     Java allows a field and a method to have the same name [JLS14:8.2],
      but discourages that as a matter of style;
      since our Java code is generated,
      it seems acceptable to violate that stylistic guide in favor of simplicity,
@@ -61,7 +61,7 @@
    (xdoc::p
     "The restriction that the return expression calls no method
      avoids class initialization issues.
-     According to [JLS:12.4.1], a class's
+     According to [JLS14:12.4.1], a class's
      static initializer(s) (if any) and static final fields (if any)
      are initialized (i.e. executed) in textual order.
      If the initializer of a static final field contained a method call,

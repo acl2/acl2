@@ -20,7 +20,7 @@
 
 (defxdoc+ identifiers
   :parents (syntax)
-  :short "Java identifiers [JLS:3.8]."
+  :short "Java identifiers [JLS14:3.8]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -36,7 +36,7 @@
      (with a slight exception; see @(tsee midentifier)):
      these identifiers are usable in certain module-related contexts.")
    (xdoc::p
-    "Here we also formalize Java type identifiers [JLS:3.8],
+    "Here we also formalize Java type identifiers [JLS14:3.8],
      which are slightly more restricted identifiers."))
   :order-subtopics t
   :default-parent t)
@@ -49,13 +49,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[JLS:3.8] introduces the notion of `ignorable' character in identifiers:
+    "[JLS14:3.8] introduces the notion of `ignorable' character in identifiers:
      two identifiers are considered `equal' when,
      after ignoring (i.e. removing) the ignorable characters,
      the two identifiers are the same (i.e. same characters in the same order).
-     [JLS:3.8] defines this notion in terms of
+     [JLS14:3.8] defines this notion in terms of
      the API method @('Character.isIdentifierIgnorable(int)').
-     [JAPIS] says that this method returns true on the Unicode characters
+     [JAPIS14] says that this method returns true on the Unicode characters
      with codes 0 to 8, 14 to 27, and 127 to 159,
      as well as the ones with the @('FORMAT') general category value.")
    (xdoc::p
@@ -148,13 +148,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[JLS:3.8] introduces the notion of `Java letter'
+    "[JLS14:3.8] introduces the notion of `Java letter'
      as a character that can be used to start an identifier.
-     [JLS:3.8] defines this notion in terms of
+     [JLS14:3.8] defines this notion in terms of
      the API method @('Character.isJavaIdentifierStart(int)').
      [JCAPIS] specifies this method in terms of Unicode notions.")
    (xdoc::p
-    "[JLS:3.8] says that this notion includes the ASCII
+    "[JLS14:3.8] says that this notion includes the ASCII
      uppercase and lowercase Latin letters, as well as dollar and underscore.
      Running OpenJDK 14's
      implementation of @('Character.isJavaIdentifierStart(int)')
@@ -165,7 +165,7 @@
      95 (underscore),
      97-122 (lowercase letters),
      and no others;
-     these are exactly the ASCII characters mentioned by [JLS:3.8].
+     these are exactly the ASCII characters mentioned by [JLS14:3.8].
      Ideally, this should be confirmed with the Unicode standard."))
   (b* ((char (mbe :logic (ascii-fix char) :exec char)))
     (or (= char (char-code #\$))
@@ -235,15 +235,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[JLS:3.8] introduces the notion of `Java letter or digit'
+    "[JLS14:3.8] introduces the notion of `Java letter or digit'
      as a character that can be used in an identifier, not at the start.
-     [JLS:3.8] defines this notion in terms of
+     [JLS14:3.8] defines this notion in terms of
      the API method @('Character.isJavaIdentifierPart(int)').
      [JCAPIS] specifies this method in terms of Unicode notions,
      and mentions that it includes ignorable characters
      (see @(tsee ascii-identifier-ignore-p)).
-     [JLS:3.8] says that a `Java digit' includes the ASCII decimal digits;
-     this, together with the statement made by [JLS:3.8] about `Java letters'
+     [JLS14:3.8] says that a `Java digit' includes the ASCII decimal digits;
+     this, together with the statement made by [JLS14:3.8] about `Java letters'
      (see @(tsee ascii-identifier-start-p)),
      implies that `Java letters and digits' include
      uppercase and lowercase Latin letters,
@@ -262,7 +262,7 @@
      97-122 (lowercase letters),
      127,
      and no others;
-     these are exactly the ASCII characters mentioned by [JLS:3.8],
+     these are exactly the ASCII characters mentioned by [JLS14:3.8],
      plus the ignorable ASCII characters
      (see @(tsee ascii-identifier-ignore-p)).
      Ideally, this should be confirmed with the Unicode standard."))
@@ -367,7 +367,7 @@
      that continue with characters satisfying @(tsee identifier-part-p),
      that differ from all the non-restricted keywords,
      and that differ from the boolean and null literals.
-     See [JLS:3.8]."))
+     See [JLS14:3.8]."))
 
   (define identifierp (x)
     :returns (yes/no booleanp)
@@ -422,12 +422,12 @@
      that differ from all non-restricted and restricted keywords,
      with one exception discussed below.
      Note that this notion of identifiers for module-related contexts
-     is not explicit in the grammar in [JLS].")
+     is not explicit in the grammar in [JLS14].")
    (xdoc::p
     "The exception mentioned above is that
      we allow @('transitive') to be an identifier
      even though it is also a restricted keyword.
-     The reason is that, as noted in [JLS:3.9],
+     The reason is that, as noted in [JLS14:3.9],
      @('transitive') is sometimes tokenized as a keyword,
      other times as an identifier,
      based on some surrounding context.
@@ -463,7 +463,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar rule for @('type-identifier') in [JLS:3.8]
+    "The grammar rule for @('type-identifier') in [JLS14:3.8]
      defines a type identifier as a regular identifier
      that is not @('var') or @('yield').")
    (xdoc::p
@@ -497,7 +497,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar rule for @('unqualified-method-identifier') in [JLS:3.8]
+    "The grammar rule for @('unqualified-method-identifier') in [JLS14:3.8]
      defines an unqualified method identifier as a regular identifier
      that is not @('yield').")
    (xdoc::p

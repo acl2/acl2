@@ -20,14 +20,14 @@
 
 (defxdoc+ values
   :parents (semantics)
-  :short "Java values [JLS:4]."
+  :short "Java values [JLS14:4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A value is either a primitive value or a reference value [JLS:4.1].")
+    "A value is either a primitive value or a reference value [JLS14:4.1].")
    (xdoc::p
     "Since in our model we have primitive values
-     with and without extended-exponent values [JLS:4.2.3],
+     with and without extended-exponent values [JLS14:4.2.3],
      here we correspondingly formalize values
      with and without extended-exponent values.")
    (xdoc::p
@@ -40,8 +40,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflatsum jvalue
-  :short "Fixtype of Java values [JLS:4],
-          excluding extended-exponent values [JLS:4.2.3]."
+  :short "Fixtype of Java values [JLS14:4],
+          excluding extended-exponent values [JLS14:4.2.3]."
   :long
   (xdoc::topstring-p
    "To avoid a conflict with @(tsee value),
@@ -69,8 +69,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflatsum jvaluex
-  :short "Fixtype of Java values [JLS:4],
-          including extended-exponent values [JLS:4.2.3]."
+  :short "Fixtype of Java values [JLS14:4],
+          including extended-exponent values [JLS14:4.2.3]."
   (:primitive primitivex-value)
   (:reference reference-value)
   :pred jvaluexp
