@@ -15,6 +15,7 @@
 (include-book "object-tables")
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
+(include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 
 (local (include-book "kestrel/std/system/w" :dir :system))
@@ -5840,7 +5841,7 @@
                                                 else.thm-name
                                                 t))
                                   state)))
-       ((mv okp var? vars indices val-term body-term wrapper? &)
+       ((mv okp var? vars indices val-term body-term wrapper? mv-var)
         (atc-check-mv-let term))
        ((when okp)
         (b* ((all-vars (if var? (cons var? vars) vars))
@@ -6102,6 +6103,15 @@
                              :names-to-avoid xform.names-to-avoid
                              :proofs (and xform.thm-name t))
                             state))
+             ((unless (equal (len all-vars) (len indices)))
+              (reterr
+               (raise "Internal error: ~
+                       variables ~x0 and indices ~x1 ~
+                       do not match in number."
+                      all-vars indices)))
+             (term (acl2::close-lambdas
+                    (acl2::make-mv-let-call
+                     mv-var all-vars indices xform.term body.term)))
              (items (append xform.items body.items))
              (type body.type)
              (limit (pseudo-term-fncall 'binary-+
