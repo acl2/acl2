@@ -1055,7 +1055,7 @@
      with @('nil') as the @('var?') and @('wrapper?') results.
      We also return, in @('mv-var'),
      the variable to which the term is @(tsee let)-bound
-     (see @(tsee make-mv-let-call));
+     (see @(tsee acl2::make-mv-let-call));
      this is used for reconstructing the transformed term."))
   (b* (((mv okp mv-var vars indices & val body) (fty-check-mv-let-call term))
        ((when (not okp)) (mv nil nil nil nil nil nil nil nil))
