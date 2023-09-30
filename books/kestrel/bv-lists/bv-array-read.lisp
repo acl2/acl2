@@ -163,3 +163,16 @@
            (equal (bv-array-read element-size len index data)
                   (bv-array-read element-size (expt 2 isize) index (take (expt 2 isize) data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-when-equal-of-take-and-constant
+  (implies (and (equal k (take m x))
+                (syntaxp (and (quotep k)
+                              (not (quotep x))))
+                (< n m)
+                (< n len)
+                (natp len)
+                (natp n)
+                (natp m))
+           (equal (bv-array-read size len n x)
+                  (bv-array-read size len n k)))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
