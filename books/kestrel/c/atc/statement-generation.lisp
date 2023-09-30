@@ -4945,17 +4945,19 @@
                                         (list (make-atc-premise-compustate
                                                :var gin.compst-var
                                                :term new-compst))))
-       (new-context (if (and (consp gin.affect)
-                             (not (consp (cdr gin.affect))))
-                        (b* ((var (car gin.affect)))
+       (new-context (if (consp gin.affect)
+                        (if (consp (cdr gin.affect))
+                            (atc-context-extend new-context
+                                                (list (make-atc-premise-cvalues
+                                                       :vars gin.affect
+                                                       :term uterm)))
                           (atc-context-extend new-context
                                               (list (make-atc-premise-cvalue
-                                                     :var var
+                                                     :var (car gin.affect)
                                                      :term uterm))))
                       new-context))
        ((mv new-inscope new-inscope-events thm-index names-to-avoid)
-        (if (and (consp gin.affect)
-                 (not (consp (cdr gin.affect))))
+        (if voidp
             (atc-gen-if/ifelse-inscope gin.fn
                                        gin.fn-guard
                                        gin.inscope
