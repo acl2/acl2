@@ -756,3 +756,20 @@
            :use (:instance split-bv-top-add (size 32) (x (bvchop 32 x)))
            :in-theory (enable logext-cases signed-byte-p
                                      ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Can help if our limit-expt scheme, to avoid huge calls of expt, is in use
+;; and prevents a :linear rule from firing.
+(defthm <-of-logext-true
+  (implies (<= (expt 2 (+ -1 size)) k)
+           (< (logext size x) k))
+  :hints (("Goal" :in-theory (enable logext logapp))))
+
+;; Can help if our limit-expt scheme, to avoid huge calls of expt, is in use
+;; and prevents a :linear rule from firing.
+(defthm <-of-logext-false
+  (implies (and (<= k (- (expt 2 (+ -1 size))))
+                (posp size))
+           (not (< (logext size x) k)))
+  :hints (("Goal" :in-theory (enable logext logapp))))

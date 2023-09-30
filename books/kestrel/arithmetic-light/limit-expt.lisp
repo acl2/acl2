@@ -1,7 +1,7 @@
 ; A tool to avoid expensive calls of expt
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,16 @@
 
 (in-package "ACL2")
 
-;; A tool to avoid evaluation of calls to EXPT when the exponent is huge (TODO:
-;; Didn't I do this somewhere else?):
+;; A tool to avoid evaluation of calls to EXPT when the exponent is huge.
 
-;; To turn on limiting, do (limit-expt)
+;; There is something similar in rtl (see expt-execute-rewrite).
+
+;; To turn on limiting, do (limit-expt).
 
 ;; TODO: What about calls to EXPT that get evaluated in :type-prescription
-;; and/or :forward-chaining, etc.?  I think that can cause some proofs to break
-;; when this is turned on.  Otherwise, we could consider turning this on by
-;; default.
+;; :forward-chaining, or :linear rules, etc.?  I think that can cause some
+;; proofs to break when this is turned on.  Otherwise, we could consider
+;; turning this on by default.
 
 ;TODO: Consider raising this, or making it changeable by the user (perhaps
 ;using a table).

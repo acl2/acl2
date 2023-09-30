@@ -1,6 +1,6 @@
 ; A tool to track functions that are known to return only t or nil
 ;
-; Copyright (C) 2016-2020 Kestrel Institute
+; Copyright (C) 2016-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,7 +26,11 @@
 ;; check that a function does in fact always return a boolean before adding it
 ;; to the table.
 
-;; TODO: Can we somehow protect the table from a user modifying it?
+;; See tests in known-booleans-tests.lisp
+
+;; TODO: Can we somehow protect the table from a user modifying it?  Another
+;; idea would be to simply check, at the start of each Axe run, that each
+;; claimed boolean function is in fact boolean.
 
 (defun all-t (items)
   (declare (xargs :guard (true-listp items)))
@@ -126,5 +130,3 @@
 (add-known-boolean evenp)
 (add-known-boolean oddp)
 (add-known-boolean bitp)
-
-;; See tests in known-booleans-tests.lisp

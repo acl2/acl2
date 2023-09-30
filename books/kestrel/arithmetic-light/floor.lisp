@@ -1475,3 +1475,10 @@
                   (floor i 1)))
   :hints (("Goal" :use (:instance floor-of-*-same)
            :in-theory (disable floor-of-*-same))))
+
+;gen and rename
+(defthmd nonnegative-integer-quotient-by-2
+  (implies (natp x)
+           (equal (nonnegative-integer-quotient x 2)
+                  (floor x 2)))
+  :hints (("Goal" :in-theory (enable floor))))
