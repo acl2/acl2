@@ -6095,6 +6095,8 @@
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
+                             :context xform.context
+                             :inscope xform.inscope
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
