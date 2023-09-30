@@ -38,29 +38,42 @@
    (xdoc::ul
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se14/html"
-       "Java language specification")
-     ", referenced as `[JLS]' in the documentation of this library.
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jls/se21/html"
+              "Java language specification")
+     ", referenced as `[JLSe]' in the documentation of this library,
+      where `e' is the Edition, e.g. `[JLS21]' for Java SE 21 Edition.
       Chapters and sections are referenced
       by appending their designations separated by colon,
       e.g.
-      `[JLS:4.2]' references Section 4.2 of [JLS].")
+      `[JLS21:4.2]' references Section 4.2 of [JLS21].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se14/html"
-       "Java Virtual Machine specification")
-     ", referenced as `[JVMS]' in the documentation of this library.
+     (xdoc::a :href "https://docs.oracle.com/javase/specs/jvms/se21/html"
+              "Java Virtual Machine specification")
+     ", referenced as `[JVMSe]' in the documentation of this library,
+      where `e' is the Edition, e.g. `[JVMS21]' for Java SE 21 Edition.
       Chapters and sections are referenced
       by appending their designations separated by colon,
-      e.g. `[JVMS:5.5]' references Section 5.5 of [JVMS].")
+      e.g. `[JVMS21:5.5]' references Section 5.5 of [JVMS21].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://docs.oracle.com/en/java/javase/14/docs/api"
-       "Java API specification")
-     ", referenced as `[JAPIS]' in the documentation of this library."))
+     (xdoc::a :href "https://docs.oracle.com/en/java/javase/21/docs/api"
+              "Java API specification")
+     ", referenced as `[JAPISe]' in the documentation of this library
+      where `e' is the Edition, e.g. `[JAPIS21]' for Java SE 21 Edition."))
    (xdoc::p
     "These square-bracketed references may be used
-     as nouns or parenthentically."))
+     as nouns or parenthentically.")
+   (xdoc::p
+    "The documentation of this library may use references
+     for different Java Editions, e.g. [JLS21] and [JLS20].
+     Ideally, all the references should be for the latest Edition,
+     but in practice it may take time to update them
+     when a new Java Edition is released (which happens relatively often);
+     the references need to be double-checked for each new Edition,
+     as things may change.
+     By always using the Edition number in the references,
+     we at least guarantee their accuracy."))
   :order-subtopics (language
                     aij
                     atj))

@@ -18,7 +18,7 @@
 
 (defxdoc+ primitive-types
   :parents (syntax)
-  :short "Java primitive types [JLS:4.2]."
+  :short "Java primitive types [JLS14:4.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -27,9 +27,9 @@
     (xdoc::seetopic "primitive-values" "here")
     ".")
    (xdoc::p
-    "According to the grammar rule for @('primitive-type') [JLS:4.2],
+    "According to the grammar rule for @('primitive-type') [JLS14:4.2],
      primitive types (as syntactic entities) include annotations.
-     The grammar also includes a rule for @('unann-primitive-type') [JLS:8.3],
+     The grammar also includes a rule for @('unann-primitive-type') [JLS14:8.3],
      which captures the ``core'' eight primitive types without annotations,
      as they were in the pre-annotations versions of Java.
      However, note that the rules for
@@ -47,14 +47,14 @@
     "For now we just define (unannotated) primitive types.
      Annotated primitive types will be added later.")
    (xdoc::p
-    "We also formalize the subtype relation on primitive types [JLS:4.10]."))
+    "We also formalize the subtype relation on primitive types [JLS14:4.10]."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum primitive-type
-  :short "Fixtype of Java (unannotated) primitive types [JLS:4.2] [JLS:8.3]."
+  :short "Fixtype of Java (unannotated) primitive types [JLS14:4.2] [JLS14:8.3]."
   (:boolean ())
   (:char ())
   (:byte ())
@@ -68,7 +68,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum numeric-type
-  :short "Fixtype of Java numeric types [JLS:4.2]."
+  :short "Fixtype of Java numeric types [JLS14:4.2]."
   (:char ())
   (:byte ())
   (:short ())
@@ -87,7 +87,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum integral-type
-  :short "Fixtype of Java integral types [JLS:4.2]."
+  :short "Fixtype of Java integral types [JLS14:4.2]."
   (:char ())
   (:byte ())
   (:short ())
@@ -104,7 +104,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum floating-point-type
-  :short "Fixtype of Java floating-point types [JLS:4.2]."
+  :short "Fixtype of Java floating-point types [JLS14:4.2]."
   (:float ())
   (:double ())
   :pred floating-point-typep
@@ -119,11 +119,11 @@
 
 (define primitive-type-<1 ((sub primitive-typep) (sup primitive-typep))
   :returns (yes/no booleanp)
-  :short "Direct subtype relation over primitive types [JLS:4.10.1]."
+  :short "Direct subtype relation over primitive types [JLS14:4.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is denoted (for all types) @($<_1$) in [JLS].")
+    "This is denoted (for all types) @($<_1$) in [JLS14].")
    (xdoc::p
     "The direct subtype relation is irreflexive.
      Since this function fixes its arguments,
@@ -152,11 +152,11 @@
 
 (define primitive-type-< ((sub primitive-typep) (sup primitive-typep))
   :returns (yes/no booleanp)
-  :short "Proper subtype relation over primitive types [JLS:4.10]."
+  :short "Proper subtype relation over primitive types [JLS14:4.10]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is denoted (for all types) @($<1$) in [JLS].")
+    "This is denoted (for all types) @($<1$) in [JLS14].")
    (xdoc::p
     "It is the transitive closure of
      the direct subtype relation @(tsee primitive-type-<1)."))
@@ -199,11 +199,11 @@
 
 (define primitive-type-<= ((sub primitive-typep) (sup primitive-typep))
   :returns (yes/no booleanp)
-  :short "Subtype relation over primitive types [JLS:4.10]."
+  :short "Subtype relation over primitive types [JLS14:4.10]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is denoted (for all types) @($<:$) in [JLS].")
+    "This is denoted (for all types) @($<:$) in [JLS14].")
    (xdoc::p
     "It is the reflexive and transitive closure of
      the direct subtype relation @(tsee primitive-type-<1),

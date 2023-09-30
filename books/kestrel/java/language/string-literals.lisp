@@ -19,7 +19,7 @@
 
 (defxdoc+ string-literals
   :parents (syntax)
-  :short "Java string literals [JLS:3.10.5]."
+  :short "Java string literals [JLS14:3.10.5]."
   :order-subtopics t
   :default-parent t)
 
@@ -31,10 +31,10 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to the first alternative of
-     the grammar rule for @('string-character') [JLS:3.10.5],
+     the grammar rule for @('string-character') [JLS14:3.10.5],
      which is @('input-character')
      except for double quote and backslash,
-     where @('input-character') is defined in [JLS:3.4] as
+     where @('input-character') is defined in [JLS14:3.4] as
      a @('unicode-input-character') except for CR and LF.")
    (xdoc::p
     "Since @('unicode-input-character') is captured
@@ -76,7 +76,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to the grammar rule for @('string-character') [JLS:3.10.5],
+    "According to the grammar rule for @('string-character') [JLS14:3.10.5],
      a character for a string literal is
      either a Unicode input character with some exceptions
      (see @(tsee unicode-stringlit-char))
@@ -95,7 +95,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to the grammar rule for @('string-literal') [JLS:3.10.5],
+    "According to the grammar rule for @('string-literal') [JLS14:3.10.5],
      a string literal consists of zero or more @('string-character')s
      (which we formalize via @(tsee string-literal-char))
      between double quotes.
