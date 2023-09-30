@@ -451,6 +451,9 @@
   (declare (xargs :guard t))
   '(bvplus-convert-arg2-to-bv-axe
     bvplus-convert-arg3-to-bv-axe
+    ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
+    ;; bvminus-convert-arg3-to-bv-axe
+    bvuminus-convert-arg2-to-bv-axe
     bvand-convert-arg2-to-bv-axe
     bvand-convert-arg3-to-bv-axe
     bvor-convert-arg2-to-bv-axe

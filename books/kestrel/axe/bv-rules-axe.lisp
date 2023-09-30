@@ -2264,7 +2264,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;; Doesn't apply to when x is a + since we turn bvplus back into + for x86 stack pointer calculations.
 (defthm bvplus-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x '(binary-+) dag-array))
@@ -2277,4 +2276,26 @@
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y '(binary-+) dag-array))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvminus-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvminus size x y)
+                  (bvminus size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvminus-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvminus size x y)
+                  (bvminus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvuminus-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x '(binary-+) dag-array))
+           (equal (bvuminus size x)
+                  (bvuminus size (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
