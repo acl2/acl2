@@ -578,7 +578,6 @@ SLOW_BOOKS := \
   coi/defung/defung-stress-long.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
-  system/ppr1-experiments-thm-1-ppr1.cert \
   workshops/2009/sumners/support/examples.cert \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
