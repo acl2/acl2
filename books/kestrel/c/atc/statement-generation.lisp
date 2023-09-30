@@ -5840,7 +5840,7 @@
                                                 else.thm-name
                                                 t))
                                   state)))
-       ((mv okp var? vars indices val-term body-term wrapper?)
+       ((mv okp var? vars indices val-term body-term wrapper? &)
         (atc-check-mv-let term))
        ((when okp)
         (b* ((all-vars (if var? (cons var? vars) vars))
