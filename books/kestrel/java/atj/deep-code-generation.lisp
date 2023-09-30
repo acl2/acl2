@@ -651,7 +651,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is a public class.
-     [JLS:7.6] says that a Java implementation may require
+     [JLS14:7.6] says that a Java implementation may require
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement.")
    (xdoc::p

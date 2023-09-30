@@ -19,7 +19,7 @@
 
 (defxdoc+ character-literals
   :parents (syntax)
-  :short "Java character literals [JLS:3.10.4]."
+  :short "Java character literals [JLS14:3.10.4]."
   :order-subtopics t
   :default-parent t)
 
@@ -31,10 +31,10 @@
   (xdoc::topstring
    (xdoc::p
     "This corresponds to
-     the grammar rule for @('single-character') [JLS:3.10.4],
+     the grammar rule for @('single-character') [JLS14:3.10.4],
      whose definiens is @('input-character')
      except for single quote and backslash,
-     where @('input-character') is defined in [JLS:3.4] as
+     where @('input-character') is defined in [JLS14:3.4] as
      a @('unicode-input-character') except for CR and LF.")
    (xdoc::p
     "Since @('unicode-input-character') is captured
@@ -80,7 +80,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to the grammar rule for @('character-literal') [JLS:3.10.4],
+    "According to the grammar rule for @('character-literal') [JLS14:3.10.4],
      a character literal is
      either a @('single-character') (see @(tsee unicode-charlit-char))
      or an escape sequence (see @(tsee escape-sequence)),

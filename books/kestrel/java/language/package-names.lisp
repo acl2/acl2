@@ -16,7 +16,7 @@
 
 (defxdoc+ package-names
   :parents (syntax)
-  :short "Java package names [JLS:6.5]."
+  :short "Java package names [JLS14:6.5]."
   :order-subtopics t
   :default-parent t)
 
@@ -27,7 +27,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar rule for @('package-name') in [JLS:6.5] defines a package name
+    "The grammar rule for @('package-name') in [JLS14:6.5] defines a package name
      as a dot-separated non-empty sequence of identifiers.")
    (xdoc::p
     "We formalize this as a list of identifiers,

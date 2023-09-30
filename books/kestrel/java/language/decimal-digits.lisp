@@ -18,14 +18,14 @@
 
 (defxdoc+ decimal-digits
   :parents (syntax)
-  :short "Java decimal digits [JLS:3.10.1]."
+  :short "Java decimal digits [JLS14:3.10.1]."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection dec-digit
-  :short "Fixtype of Java decimal digits [JLS:3.10.1]."
+  :short "Fixtype of Java decimal digits [JLS14:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p

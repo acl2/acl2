@@ -19,7 +19,7 @@
 
 (defxdoc+ binary-integer-literals
   :parents (integer-literals)
-  :short "Java binary integer literals [JLS:3.10.1]."
+  :short "Java binary integer literals [JLS14:3.10.1]."
   :order-subtopics t
   :default-parent t)
 

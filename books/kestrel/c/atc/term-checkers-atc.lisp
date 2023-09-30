@@ -1035,7 +1035,8 @@
                (indices nat-listp)
                (val pseudo-termp)
                (body pseudo-termp)
-               (wrapper? symbolp))
+               (wrapper? symbolp)
+               (mv-var symbolp))
   :short "Check if a term may be an @(tsee mv-let) statement term."
   :long
   (xdoc::topstring
@@ -1051,12 +1052,16 @@
      and we also return
      the corresponding @(tsee declar) or @(tsee assign) wrapper.
      Otherwise, we return all the variables together,
-     with @('nil') as the @('var?') and @('wrapper?') results."))
-  (b* (((mv okp & vars indices & val body) (fty-check-mv-let-call term))
-       ((when (not okp)) (mv nil nil nil nil nil nil nil))
+     with @('nil') as the @('var?') and @('wrapper?') results.
+     We also return, in @('mv-var'),
+     the variable to which the term is @(tsee let)-bound
+     (see @(tsee acl2::make-mv-let-call));
+     this is used for reconstructing the transformed term."))
+  (b* (((mv okp mv-var vars indices & val body) (fty-check-mv-let-call term))
+       ((when (not okp)) (mv nil nil nil nil nil nil nil nil))
        ((mv okp wrapper & wrapped) (atc-check-declar/assign-n val))
-       ((when (not okp)) (mv t nil vars indices val body nil)))
-    (mv t (car vars) (cdr vars) indices wrapped body wrapper))
+       ((when (not okp)) (mv t nil vars indices val body nil mv-var)))
+    (mv t (car vars) (cdr vars) indices wrapped body wrapper mv-var))
 
   :prepwork
   ((defrulel verify-guards-lemma

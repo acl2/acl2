@@ -109,7 +109,7 @@
      into a form that can be correctly pretty-printed
      when the character is part of a Java character or string literal.
      This takes into account
-     not only Java's character and string literal syntax [JLS:3.10],
+     not only Java's character and string literal syntax [JLS14:3.10],
      but also the fact that the pretty-printer uses ACL2's formatted printing,
      where the tilde has a special meaning.")
    (xdoc::p
