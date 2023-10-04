@@ -1411,9 +1411,9 @@
                             (< y (expt 2 47))))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil))))
 
-;; restrict to constant k?
 (defthm signed-byte-p-of-+-forward
-  (implies (signed-byte-p 48 (+ k x))
+  (implies (and (syntaxp (quotep k))
+                (signed-byte-p 48 (+ k x)))
            (and (< x (- (expt 2 47) k))
                 (<= (+ (- (expt 2 47)) (- k)) x)))
   :rule-classes :forward-chaining
