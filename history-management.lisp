@@ -1670,7 +1670,7 @@
                '(GLOBAL-VALUE
                  LINEAR-LEMMAS
                  FORWARD-CHAINING-RULES
-                 ELIMINATE-DESTRUCTORS-RULE
+                 ELIMINATE-DESTRUCTORS-RULES
                  COARSENINGS
                  CONGRUENCES
                  RECOGNIZER-ALIST

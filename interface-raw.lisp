@@ -3644,7 +3644,9 @@
 ;     LEMMAS RUNIC-MAPPING-PAIRS MULTIPLICITY STATE-IN
 ;     RECURSIVEP DEF-BODIES CONSTRAINEDP LINEAR-LEMMAS
 ;     FORMALS MACRO-BODY FORWARD-CHAINING-RULES STATE-OUT TABLE-ALIST
-;     GUARD MACRO-ARGS ELIMINATE-DESTRUCTORS-RULE CONST LEVEL-NO
+;     GUARD MACRO-ARGS
+;     ELIMINATE-DESTRUCTORS-RULE ; as of 10/2023, ELIMINATE-DESTRUCTORS-RULES
+;     CONST LEVEL-NO
 ;     UNNORMALIZED-BODY THEOREM REDEFINED INDUCTION-MACHINE JUSTIFICATION
 ;     INDUCTION-RULES CONTROLLER-ALIST QUICK-BLOCK-INFO
 
@@ -3714,6 +3716,7 @@
 ; CONSTRAINEDP                                          50190
 ; FORWARD-CHAINING-RULES                                49839
 ; CONST                                                 25601
+;;; As of 10/2023, the following was replaced by ELIMINATE-DESTRUCTORS-RULES.
 ; ELIMINATE-DESTRUCTORS-RULE                            19922
 ; THEOREM                                                9234
 ; LINEAR-LEMMAS                                          9102
@@ -3825,6 +3828,7 @@
 ; FORMALS                                                1278
 ; MACRO-BODY                                             1216
 ; STOBJS-OUT                                             1199
+;;; As of 10/2023, the following was replaced by ELIMINATE-DESTRUCTORS-RULES.
 ; ELIMINATE-DESTRUCTORS-RULE                              962
 ;
 ; ============================================================

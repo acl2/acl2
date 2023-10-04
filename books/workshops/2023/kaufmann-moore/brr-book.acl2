@@ -15,6 +15,8 @@ Defense or the U.S. Government.  Released under Distribution Statement
 #||
 (depends-on "brr-input.lsp")
 (depends-on "brr-log.txt")
+(include-book "std/lists/rev" :dir :system)
+(include-book "projects/apply/top" :dir :system)
 ||#
 
 ; cert-flags: ? t :ttags :all
