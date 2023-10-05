@@ -1,0 +1,16 @@
+This is the book for "A Case Study in Analytic Protocol Analysis in ACL2" by
+Max von Hippel, Panagiotis Manolios, Kenneth L. McMillan, Cristina Nita-Rotaru,
+and Lenore Zuck.  The paper is a "companion" work to "A Formal Analysis of 
+Karn's Algorithm", published in NETYS 2023, by Max von Hippel, 
+Kenneth L. McMillan, Cristina Nita-Rotaru, and Lenore Zuck.
+
+Contents of this book:
+.
+├── a-n-0-acl2.lisp - Ceiling proof in ACL2
+├── a-n-0-acl2r.lisp - The "Real" proof, using logarithms
+├── a-n-0-defthm.lisp - Ceiling proof with only defthms, no properties
+├── a-n-0-properties.lisp - Ceiling proof with properties, compact
+├── binomial-proof-manual.lisp - Binomial proof 
+├── binomial-proof-sa.lisp - "Semi-automated" version of Binomial proof
+├── ceiling-proof.lisp - Most compact version of ceiling proof
+└── rfc6298.lisp - Actual results from the Karn's Alg paper
