@@ -2062,11 +2062,10 @@
 
                (and (not super-stobjs-in) (ignore-vars dcls)))
               (ignorable-vars (ignorable-vars dcls))
+              (stobjs-out (getpropc fn 'stobjs-out nil wrld))
               (declared-stobjs (if stobj-flag
                                    (list stobj-flag)
                                  (get-declared-stobjs dcls)))
-              (user-stobj-is-arg (and declared-stobjs
-                                      (not (equal declared-stobjs '(state)))))
               (live-stobjp-test (create-live-user-stobjp-test declared-stobjs))
 
 ; We throw away most declarations and the doc string, keeping only ignore and
@@ -2371,15 +2370,12 @@
 ; performance benefit may be small, so for now at least we avoid complicating
 ; the code with that consideration.
 
-                                            (let ((stobjs-out
-                                                   (getpropc fn 'stobjs-out nil
-                                                             wrld)))
-                                              (cond
-                                               ((and stobjs-out ; property is there
-                                                     (all-nils stobjs-out))
-                                                guard)
-                                               (t `(let ((*aokp* nil))
-                                                     ,guard))))
+                                            (cond
+                                             ((and stobjs-out ; property is there
+                                                   (all-nils stobjs-out))
+                                              guard)
+                                             (t `(let ((*aokp* nil))
+                                                   ,guard)))
                                           guard)
                                      ,*1*guard)
                                    ,(assert$
@@ -2503,7 +2499,7 @@
 ; mode case.
 
                (append
-                (and user-stobj-is-arg
+                (and (set-difference-eq stobjs-out '(nil state))
                      `((when *wormholep*
                          (wormhole-er (quote ,fn) (list ,@formals)))))
                 (and (eq defun-mode :logic) ; else :program
