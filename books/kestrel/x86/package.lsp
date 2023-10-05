@@ -188,6 +188,8 @@
     x86isa::seg-hidden-basei
     x86isa::seg-visiblei
     x86isa::!rip
+
+    x86isa::ctri
     ))
 
 (defconst *symbols-from-acl2-package*
