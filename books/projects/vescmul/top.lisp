@@ -35,9 +35,9 @@
 (value-triple (acl2::set-max-mem (* 10 (expt 2 30))))
 
 ;; for correctness proof
-(include-book "projects/rp-rewriter/lib/mult3/svtv-top" :dir :system)
-(include-book "projects/rp-rewriter/lib/mult3/fgl" :dir :system)
-(include-book "projects/rp-rewriter/lib/mult3/doc" :dir :system)
+(include-book "projects/vescmul/svtv-top" :dir :system)
+(include-book "projects/vescmul/fgl" :dir :system)
+(include-book "projects/vescmul/doc" :dir :system)
 
 (include-book "centaur/fgl/top" :dir :system)
 
@@ -95,15 +95,21 @@
   (defttag nil))
 
 
-(defmacro parse-and-create-svtv (&key file
-                                      topmodule
-                                      name
-                                      save-to-file
-                                      modified-modules-file
-                                      stages
-                                      cycle-phases)
+
+;; old name keeping here for backwards compatibility.
+(defmacro parse-and-create-svtv (&rest args)
+  `(vescmul-parse ,@args))
+
+(defmacro vescmul-parse  (&key file
+                               topmodule
+                               name
+                               save-to-file
+                               modified-modules-file
+                               stages
+                               cycle-phases)
   (declare (xargs :guard (and (or (stringp file)
-                                  (cw "File should be a string~%"))
+                                  (string-listp file)
+                                  (cw "File should be a string or a list of strings~%"))
                               (or (not modified-modules-file)
                                   (stringp modified-modules-file)
                                   (cw "given modified-modules-file should be a string if provided.~%"))
@@ -118,7 +124,7 @@
      :on (summary error)
      :gag-mode nil
      (make-event
-      (b* ((file ',file)
+      (b* ((files ',(if (stringp file) (list file) file))
            (modified-modules-file ',modified-modules-file)
            (topmodule ',topmodule)
            (name ',(or name (intern$ (string-upcase topmodule) "RP")))
@@ -126,44 +132,44 @@
            ;; (VL) event1
            (vl-design (intern$ (str::cat "*" (symbol-name name) "-VL-DESIGN*") "RP"))
            (vl-event `(acl2::defconsts
-                        (,vl-design state)
-                        (b* (((mv loadresult state)
-                              (vl::vl-load (vl::make-vl-loadconfig
-                                            :start-files '(,file)))))
-                          (mv (vl::vl-loadresult->design loadresult) state))))
+                       (,vl-design state)
+                       (b* (((mv loadresult state)
+                             (vl::vl-load (vl::make-vl-loadconfig
+                                           :start-files '(,@files)))))
+                         (mv (vl::vl-loadresult->design loadresult) state))))
            (modified-vl-design (and modified-modules-file
                                     (intern$ (str::cat "*" (symbol-name name) "MODIFIED-VL-DESIGN*") "RP")))
            (modified-vl-event (and modified-modules-file
                                    `(acl2::defconsts
-                                      (,modified-Vl-design state)
-                                      (b* (((mv loadresult state)
-                                            (vl::vl-load (vl::make-vl-loadconfig
-                                                          :start-files '(,modified-modules-file ,file)))))
-                                        (mv (vl::vl-loadresult->design loadresult) state)))))
+                                     (,modified-Vl-design state)
+                                     (b* (((mv loadresult state)
+                                           (vl::vl-load (vl::make-vl-loadconfig
+                                                         :start-files '(,modified-modules-file ,@files)))))
+                                       (mv (vl::vl-loadresult->design loadresult) state)))))
 
            ;; (SV) event2
            (sv-design (intern$ (str::cat "*" (symbol-name name) "-SV-DESIGN*") "RP"))
            (sv-event `(acl2::defconsts
-                        (,sv-design)
-                        (b* (((mv errmsg sv-design ?good ?bad)
-                              (vl::vl-design->sv-design ,topmodule
-                                                        ,vl-design
-                                                        (vl::make-vl-simpconfig))))
-                          (and errmsg
-                               (acl2::raise "~@0~%" errmsg))
-                          sv-design)))
+                       (,sv-design)
+                       (b* (((mv errmsg sv-design ?good ?bad)
+                             (vl::vl-design->sv-design ,topmodule
+                                                       ,vl-design
+                                                       (vl::make-vl-simpconfig))))
+                         (and errmsg
+                              (acl2::raise "~@0~%" errmsg))
+                         sv-design)))
            (modified-sv-design (and modified-modules-file
                                     (intern$ (str::cat "*" (symbol-name name) "-MODIFIED-SV-DESIGN*") "RP")))
            (modified-sv-event (and modified-modules-file
                                    `(acl2::defconsts
-                                      (,modified-sv-design)
-                                      (b* (((mv errmsg sv-design ?good ?bad)
-                                            (vl::vl-design->sv-design ,topmodule
-                                                                      ,modified-vl-design
-                                                                      (vl::make-vl-simpconfig))))
-                                        (and errmsg
-                                             (acl2::raise "~@0~%" errmsg))
-                                        sv-design))))
+                                     (,modified-sv-design)
+                                     (b* (((mv errmsg sv-design ?good ?bad)
+                                           (vl::vl-design->sv-design ,topmodule
+                                                                     ,modified-vl-design
+                                                                     (vl::make-vl-simpconfig))))
+                                       (and errmsg
+                                            (acl2::raise "~@0~%" errmsg))
+                                       sv-design))))
 
            ;; (inputs/outputs) event3
            (get-io-event `(local
@@ -176,9 +182,9 @@
                                               "Something went wrong when looking for ins and outs of this design. Please parse this design without this macro following the instructions in the demo files" nil)))
                               ;; GOTTA LOOK AT WHAT "VAL" LOOKS LIKE...
                               `(acl2::defconsts (*ins* *outs*)
-                                 (mv (list ,@(car (cdr val)))
-                                     (list ,@(cdr (cdr val))))
-                                 )))))
+                                                (mv (list ,@(car (cdr val)))
+                                                    (list ,@(cdr (cdr val))))
+                                                )))))
 
            ;; (SVTV) event4
            (stages ',stages)
@@ -187,17 +193,17 @@
             `(progn
                (make-event
                 `(sv::defsvtv$ ,',name
-                   :mod ,',sv-design
-                   ,@(and ',cycle-phases
-                          '(:cycle-phases ,cycle-phases))
-                   :stages
-                   ,(or ',stages
-                        `((:label
-                           p
-                           :inputs ,(loop$ for x in *ins* collect
-                                           `(,x ,(intern$ (string-upcase x) "RP")))
-                           :outputs ,(loop$ for x in *outs* collect
-                                            `(,x ,(intern$ (string-upcase x) "RP"))))))))
+                               :mod ,',sv-design
+                               ,@(and ',cycle-phases
+                                      '(:cycle-phases ,cycle-phases))
+                               :stages
+                               ,(or ',stages
+                                    `((:label
+                                       p
+                                       :inputs ,(loop$ for x in *ins* collect
+                                                       `(,x ,(intern$ (string-upcase x) "RP")))
+                                       :outputs ,(loop$ for x in *outs* collect
+                                                        `(,x ,(intern$ (string-upcase x) "RP"))))))))
 
                (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOHYPS") "RP"))
                (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOINS") "RP"))))
@@ -210,17 +216,17 @@
                  `(progn
                     (make-event
                      `(sv::defsvtv$ ,',modified-name
-                        :mod ,',modified-sv-design
-                        ,@(and ',cycle-phases
-                               '(:cycle-phases ,cycle-phases))
-                        :stages
-                        ,(or ',stages
-                             `((:label
-                                p
-                                :inputs ,(loop$ for x in *ins* collect
-                                                `(,x ,(intern$ (string-upcase x) "RP")))
-                                :outputs ,(loop$ for x in *outs* collect
-                                                 `(,x ,(intern$ (string-upcase x) "RP"))))))))
+                                    :mod ,',modified-sv-design
+                                    ,@(and ',cycle-phases
+                                           '(:cycle-phases ,cycle-phases))
+                                    :stages
+                                    ,(or ',stages
+                                         `((:label
+                                            p
+                                            :inputs ,(loop$ for x in *ins* collect
+                                                            `(,x ,(intern$ (string-upcase x) "RP")))
+                                            :outputs ,(loop$ for x in *outs* collect
+                                                             `(,x ,(intern$ (string-upcase x) "RP"))))))))
 
                     (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOHYPS") "RP"))
                     (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOINS") "RP")))))
@@ -404,19 +410,18 @@
                           (svl::svexl-alist-to-svex-alist ',modified-svexl)))))
             state)))))
 
-
-(define verify-svtv-of-mult-fn (&key name
-                                     concl
-                                     thm-name
-                                     (hyp)
-                                     (then-fgl 'nil)
-                                     (only-fgl 'nil)
-                                     (cases 'nil)
-                                     (read-from-file 'nil)
-                                     (keep-going 'nil)
-                                     (print-message 'nil)
-                                     (pkg '"RP")
-                                     )
+(define vescmul-verify-fn (&key name
+                                concl
+                                thm-name
+                                (hyp)
+                                (then-fgl 'nil)
+                                (only-fgl 'nil)
+                                (cases 'nil)
+                                (read-from-file 'nil)
+                                (keep-going 'nil)
+                                (print-message 'nil)
+                                (pkg '"RP")
+                                )
   :mode :program
   (acl2::template-subst
    `(progn
@@ -424,144 +429,147 @@
              `((with-output :stack :pop
                  (read-mult-from-file ,name
                                       ,read-from-file))))
-        (make-event
-         (b* ((cases ',cases)
-              (keep-going ',keep-going)
-              (print-message ',print-message)
+      (make-event
+       (b* ((cases ',cases)
+            (keep-going ',keep-going)
+            (print-message ',print-message)
 
-              (- (cw "~%-------~%Starting verify-svtv-of-mult for ~p0~%~%" ',name))
-              (- (cw "~%--- Starting the proofs for ~s0~s1 ---~%"
-                     (if (stringp print-message) (str::cat "- " print-message " - ") "")
-                     (symbol-name ',name)))
-              
-              ;; ---------------
-              ;; make decisions based on read-from-file:
-              ((mv invars outvars has-modified)
-               ,(if read-from-file
-                    `(mv (strip-cars (<mult>-inmasks))
-                         (remove-equal '&  (acl2::flatten (strip-cdrs (<mult>-outs))))
-                         (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))
-                  `(mv (remove-equal '& (acl2::flatten (strip-cdrs (sv::svtv->orig-ins (<mult>)))))
-                       (remove-equal '&  (acl2::flatten (strip-cdrs (sv::svtv->orig-outs (<mult>)))))
-                       (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))))
-              ((mv hyps simulate-call modified-simulate-call)
-               ,(if read-from-file
-                    `(mv (cons 'and
-                               (loop$ for x in (<mult>-inmasks) collect
-                                      `(unsigned-byte-p ,(integer-length (cdr x))
-                                                        ,(car x))))
-                         `(sv::svex-alist-eval (<mult>)
-                                               (list ,@(loop$ for x in invars collect
-                                                              (list 'cons `',x x))))
-                         `(sv::svex-alist-eval (modified-<mult>)
-                                               (list ,@(loop$ for x in invars collect
-                                                              (list 'cons `',x x)))))
-                  `(mv '(<mult>-autohyps)
-                       '(sv::svtv-run (<mult>) (<mult>-autoins))
-                       '(sv::svtv-run (modified-<mult>) (<mult>-autoins)))))
-              (hyps (if ',hyp `(and ,',hyp ,hyps) hyps))
-              ;; ---------------
+            (- (cw "~%-------~%Starting verify-svtv-of-mult for ~p0~%~%" ',name))
+            (- (cw "~%--- Starting the proofs for ~s0~s1 ---~%"
+                   (if (stringp print-message) (str::cat "- " print-message " - ") "")
+                   (symbol-name ',name)))
 
-              ((acl2::er translated-concl)
-               (acl2::translate ',concl t t nil
-                                'verify-svtv-of-mult
-                                (w state) state))
-              (concl-vars (acl2::all-vars translated-concl))
-              (free-vars (set-difference$ concl-vars
-                                          (append outvars invars)))
-              (& (cw "concl vars: ~p0 ~%" concl-vars))
-              (- (and free-vars
-                      (not (cw "WARNING! THE GIVEN CONCL CONTAINS THESE FREE VARIABLES:~p0~%" free-vars))
-                      (not (cw "Available inputs are: ~p0. And outputs are~p1~%" invars outvars))))
-              (ignorable-outs (loop$ for x in outvars collect
-                                     (intern-in-package-of-symbol
-                                      (str::Cat "?" (symbol-name x))
-                                      x)))
+            ;; ---------------
+            ;; make decisions based on read-from-file:
+            ((mv invars outvars has-modified)
+             ,(if read-from-file
+                  `(mv (strip-cars (<mult>-inmasks))
+                       (remove-equal '&  (acl2::flatten (strip-cdrs (<mult>-outs))))
+                       (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))
+                `(mv (remove-equal '& (acl2::flatten (strip-cdrs (sv::svtv->orig-ins (<mult>)))))
+                     (remove-equal '&  (acl2::flatten (strip-cdrs (sv::svtv->orig-outs (<mult>)))))
+                     (not (equal (meta-extract-formula 'modified-<mult> state) ''t)))))
+            ((mv hyps simulate-call modified-simulate-call)
+             ,(if read-from-file
+                  `(mv (cons 'and
+                             (loop$ for x in (<mult>-inmasks) collect
+                                    `(unsigned-byte-p ,(integer-length (cdr x))
+                                                      ,(car x))))
+                       `(sv::svex-alist-eval (<mult>)
+                                             (list ,@(loop$ for x in invars collect
+                                                            (list 'cons `',x x))))
+                       `(sv::svex-alist-eval (modified-<mult>)
+                                             (list ,@(loop$ for x in invars collect
+                                                            (list 'cons `',x x)))))
+                `(mv '(<mult>-autohyps)
+                     '(sv::svtv-run (<mult>) (<mult>-autoins))
+                     '(sv::svtv-run (modified-<mult>) (<mult>-autoins)))))
+            (hyps (if ',hyp `(and ,',hyp ,hyps) hyps))
+            ;; ---------------
 
-              (vescmul-event ;;(with-output :stack :pop
-               `(,',(if only-fgl 'fgl::def-fgl-thm 'defthmrp-multiplier)
-                 ,@(and ,then-fgl `(:then-fgl ,',then-fgl))
-                 ,(or ',thm-name '<mult>-is-correct)
-                 (implies ,hyps
-                          (b* (((sv::svassocs ,@ignorable-outs)
-                                ,simulate-call))
-                            ,',concl))
+            ((acl2::er translated-concl)
+             (acl2::translate ',concl t t nil
+                              'verify-svtv-of-mult
+                              (w state) state))
+            (concl-vars (acl2::all-vars translated-concl))
+            (free-vars (set-difference$ concl-vars
+                                        (append outvars invars)))
+            (& (cw "concl vars: ~p0 ~%" concl-vars))
+            (- (and free-vars
+                    (not (cw "WARNING! THE GIVEN CONCL CONTAINS THESE FREE VARIABLES:~p0~%" free-vars))
+                    (not (cw "Available inputs are: ~p0. And outputs are~p1~%" invars outvars))))
+            (ignorable-outs (loop$ for x in outvars collect
+                                   (intern-in-package-of-symbol
+                                    (str::Cat "?" (symbol-name x))
+                                    x)))
 
-                 ,@(and cases `(:cases ,cases))))
-                             ;;)
+            (vescmul-event ;;(with-output :stack :pop
+             `(,',(if only-fgl 'fgl::def-fgl-thm 'defthmrp-multiplier)
+               ,@(and ,then-fgl `(:then-fgl ,',then-fgl))
+               ,(or ',thm-name '<mult>-is-correct)
+               (implies ,hyps
+                        (b* (((sv::svassocs ,@ignorable-outs)
+                              ,simulate-call))
+                          ,',concl))
 
-              (modified-equiv-events (and has-modified
-                                          `(defsection <mult>-is-correct
+               ,@(and cases `(:cases ,cases))))
+            ;;)
+
+            (modified-equiv-events (and has-modified
+                                        `(defsection <mult>-is-correct
+                                           (local
+                                            (value-triple (acl2::tshell-ensure)))
+                                           (with-output :stack :pop
                                              (local
-                                              (value-triple (acl2::tshell-ensure)))
-                                             (with-output :stack :pop
-                                               (local
-                                                (fgl::def-fgl-thm <mult>--rw-from-original-to-modified
-                                                  (implies ,hyps
-                                                           (equal ,simulate-call
-                                                                  ,modified-simulate-call)))))
-                                             (local
-                                              (rp::add-rp-rule <mult>--rw-from-original-to-modified
-                                                               :rw-direction :both))
-                                             ,vescmul-event)))
+                                              (fgl::def-fgl-thm <mult>--rw-from-original-to-modified
+                                                (implies ,hyps
+                                                         (equal ,simulate-call
+                                                                ,modified-simulate-call)))))
+                                           (local
+                                            (rp::add-rp-rule <mult>--rw-from-original-to-modified
+                                                             :rw-direction :both))
+                                           ,vescmul-event)))
 
-              (event `(:or
-                       (generate-proof-summary
-                        ,(or ',thm-name '<mult>)
-                        ,(if has-modified modified-equiv-events vescmul-event)
-                        :keep-going ,keep-going
-                        :print-message ,print-message)
-                       (value-triple
-                        (cond (',free-vars
-                               (hard-error 'verify-svtv-of-mult
-                                           "THE GIVEN CONCL CONTAINS THESE FREE VARIABLES: ~p0.~%Available inputs are ~p1.~%Available outputs are ~p2~%"
-                                           (list (cons #\0 ',free-vars)
-                                                 (cons #\1 ',invars)
-                                                 (cons #\2 ',outvars))))
-                              ((not ,',then-fgl)
-                               (hard-error 'verify-svtv-of-mult
-                                           "THE PROOF FAILED. YOU CAN GENERATE COUNTEREXAMPLES BY ~
+            (event `(:or
+                     (generate-proof-summary
+                      ,(or ',thm-name '<mult>)
+                      ,(if has-modified modified-equiv-events vescmul-event)
+                      :keep-going ,keep-going
+                      :print-message ,print-message)
+                     (value-triple
+                      (cond (',free-vars
+                             (hard-error 'verify-svtv-of-mult
+                                         "THE GIVEN CONCL CONTAINS THESE FREE VARIABLES: ~p0.~%Available inputs are ~p1.~%Available outputs are ~p2~%"
+                                         (list (cons #\0 ',free-vars)
+                                               (cons #\1 ',invars)
+                                               (cons #\2 ',outvars))))
+                            ((not ,',then-fgl)
+                             (hard-error 'verify-svtv-of-mult
+                                         "THE PROOF FAILED. YOU CAN GENERATE COUNTEREXAMPLES BY ~
                                     PASSING \":THEN-FGL T\" AS AN ARGUMENT." nil))
-                              (t nil))))))
-           (value
-            (if ,(or only-fgl then-fgl)
-                `(progn (value-triple (acl2::tshell-ensure))
-                        (make-event ',event))
-              event)))))
+                            (t nil))))))
+         (value
+          (if ,(or only-fgl then-fgl)
+              `(progn (value-triple (acl2::tshell-ensure))
+                      (make-event ',event))
+            event)))))
    :atom-alist `((<mult> . ,name))
    :str-alist `(("<MULT>" . ,(symbol-name name)))
    :pkg-sym (pkg-witness pkg)))
-  
 
-(defmacro verify-svtv-of-mult (&key name
-                                    concl
-                                    thm-name
-                                    (hyp)
-                                    (then-fgl 'nil)
-                                    (only-fgl 'nil)
-                                    (cases 'nil)
-                                    (read-from-file 'nil)
-                                    (keep-going 'nil)
-                                    (print-message 'nil)
-                                    (pkg '"RP")
-                                    )
+;; old name keeping here for backwards compatibility.
+(defmacro verify-svtv-of-mult (&rest args)
+  `(vescmul-verify ,@args))
+
+(defmacro vescmul-verify (&key name
+                               concl
+                               thm-name
+                               (hyp)
+                               (then-fgl 'nil)
+                               (only-fgl 'nil)
+                               (cases 'nil)
+                               (read-from-file 'nil)
+                               (keep-going 'nil)
+                               (print-message 'nil)
+                               (pkg '"RP")
+                               )
   `(make-event
     `(with-output
        :off :all
        ;;:gag-mode nil
        :on (error comment)
        :stack :push
-       ,(verify-svtv-of-mult-fn :name ',name
-                                :concl ',concl
-                                :thm-name ',thm-name
-                                :hyp ',hyp
-                                :then-fgl ,(and (not only-fgl) then-fgl)
-                                :only-fgl ,only-fgl
-                                :cases ',(and (not only-fgl) cases)
-                                :read-from-file ,read-from-file
-                                :keep-going ',keep-going
-                                :print-message ',print-message
-                                :pkg ,pkg))))
+       ,(vescmul-verify-fn :name ',name
+                           :concl ',concl
+                           :thm-name ',thm-name
+                           :hyp ',hyp
+                           :then-fgl ,(and (not only-fgl) then-fgl)
+                           :only-fgl ,only-fgl
+                           :cases ',(and (not only-fgl) cases)
+                           :read-from-file ,read-from-file
+                           :keep-going ',keep-going
+                           :print-message ',print-message
+                           :pkg ,pkg))))
 
 ;; (parse-and-create-svtv :file "demo/DT_SB4_HC_64_64_multgen.sv"
 ;;                        :topmodule "DT_SB4_HC_64_64"
