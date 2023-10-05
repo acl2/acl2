@@ -434,3 +434,9 @@
            (equal (bvplus size y (bvplus size (- y) x))
                   (bvchop size x)))
     :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-of-expt-same-arg2
+  (implies (natp size)
+           (equal (bvplus size x (expt 2 size))
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvplus))))

@@ -1043,7 +1043,6 @@
 
 ;todo: why is !rflags remaining in some examples like test_popcount_32_one_bit?
 
-
 (defthm boolif-same-arg1-arg2
   (implies (syntaxp (not (quotep x))) ; avoids loop when x='t, this hyp is supported by Axe
            (equal (acl2::boolif x x y)
@@ -1209,10 +1208,11 @@
 (defthm separate-of-1-and-1
   (implies (and (integerp ad1)
                 (integerp ad2))
-           (equal (SEPARATE :R 1 ad1 :R 1 ad2)
+           (equal (separate :r 1 ad1 :r 1 ad2)
                   (not (equal ad1 ad2))))
   :hints (("Goal" :in-theory (enable separate))))
 
+;rename?
 (defthm <-of-+-and-+-arg3-and-arg1
   (equal (< (+ x (+ y z)) z)
          (< (+ x y) 0)))
@@ -1359,7 +1359,8 @@
 ;;  :hints (("Goal" :in-theory (enable ))))
 
 ;; for when we have to disable the executable-counterpart
-(defthm expt-of-2-and-48
+;; todo: doesn't limit-expt handle this?
+(defthmd expt-of-2-and-48
   (equal (expt 2 48)
          281474976710656))
 
@@ -1382,7 +1383,6 @@
   :hints (("Goal" :in-theory (enable signed-byte-p)
            :use (:instance acl2::logext-of-bvchop-same
                                   (acl2::size size)))))
-
 
 (defthm bvchop-when-signed-byte-p-and-<-of-0
   (implies (and (signed-byte-p 48 x)
@@ -1412,8 +1412,8 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil))))
 
 (defthm signed-byte-p-of-+-forward
-  (implies (and (syntaxp (quotep k))
-                (signed-byte-p 48 (+ k x)))
+  (implies (and (signed-byte-p 48 (+ k x))
+                (syntaxp (quotep k)))
            (and (< x (- (expt 2 47) k))
                 (<= (+ (- (expt 2 47)) (- k)) x)))
   :rule-classes :forward-chaining

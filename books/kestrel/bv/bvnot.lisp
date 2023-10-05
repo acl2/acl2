@@ -193,3 +193,17 @@
            (equal (bvnot width 0)
                   (- (expt 2 width) 1)))
   :hints (("Goal" :in-theory (enable bvnot))))
+
+(defthm bvnot-of-+-of---of-expt-same
+  (implies (and (natp size)
+                (integerp x))
+           (equal (bvnot size (+ (- (expt 2 size)) x))
+                  (bvnot size x)))
+  :hints (("Goal" :in-theory (enable bvnot bvchop lognot))))
+
+(defthm bvnot-of-*-of-expt-same
+  (implies (and (natp size)
+                (integerp x))
+           (equal (bvnot size (* (expt 2 size) x))
+                  (+ -1 (expt 2 size))))
+  :hints (("Goal" :in-theory (enable bvnot lognot BVCHOP-OF-SUM-CASES))))

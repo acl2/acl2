@@ -1721,7 +1721,7 @@
     ;;all-signed-byte-p-when-all-unsigned-byte-p
 ;these help us resolve questions about symbolic indices (e.g., for bvshl and bvshr)
     <-of-sums-cancel
-    <-0-minus
+    <-of-constant-and-minus ; <-0-minus
     binary-+-bring-constant-forward
     subrange-out-of-order-cheap
     ))
