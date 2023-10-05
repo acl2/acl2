@@ -43,12 +43,12 @@
 ;;   (equal (< (+ y x) x)
 ;;          (< y 0)))
 
-;gen
-(defthm <-of-*-cancel-1
-  (implies (and (posp a)
-                (posp b))
-           (equal (< (* a b) a)
-                  (< b 1))))
+;; ;gen
+;; (defthm <-of-*-cancel-1
+;;   (implies (and (posp a)
+;;                 (posp b))
+;;            (equal (< (* a b) a)
+;;                   (< b 1))))
 
 ;gen
 (defthm <-of-*-cancel-2
@@ -57,15 +57,6 @@
                 (posp c))
            (equal (< (* a b) (* c a))
                   (< b c))))
-
-(defthm mod-of-+-same-three
-  (implies (and (rationalp x)
-                (rationalp y)
-                (rationalp z)
-                (<= 0 z))
-           (equal (mod (+ x y z) z)
-                  (mod (+ x y) z)))
-  :hints (("Goal" :in-theory (enable ACL2::MOD-SUM-CASES))))
 
 (defthm slice-mask
   (implies (and (natp low)
@@ -77,12 +68,12 @@
                   (+ -1 (expt 2 width))))
   :hints (("Goal" :in-theory (e/d (acl2::slice) (ACL2::BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-;;move
-(defthm <-of-expt-and-expt
-  (implies (and (natp i)
-                (Natp j))
-           (equal (< (EXPT '2 i) (EXPT '2 j))
-                  (< i j))))
+;; ;;move
+;; (defthm <-of-expt-and-expt
+;;   (implies (and (natp i)
+;;                 (Natp j))
+;;            (equal (< (EXPT '2 i) (EXPT '2 j))
+;;                   (< i j))))
 
 (defthm slice-too-high-lemma
   (implies (and (natp low)

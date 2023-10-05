@@ -1,6 +1,6 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
-; Copyright (C) 2016-2022 Kestrel Technology, LLC
+; Copyright (C) 2016-2023 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,25 +41,9 @@
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/top" :dir :system)) ; todo
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
-;(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
 (acl2::def-constant-opener acl2::bool-fix$inline) ; or build into axe?
-
-(defthm /-bound-when-non-negative-and-integer
-  (implies (and (natp i)
-                (integerp j))
-           (<= (- i) (/ i j)))
-  :hints (("Goal" :cases ((<= j -1)))))
-
-(defthm truncate-bound-when-non-negative-and-integer-linear
-  (implies (and (natp i)
-                (integerp j))
-           (<= (- i) (truncate i j)))
-  :rule-classes :linear
-  :hints (("Goal" :cases ((< j 0))
-           :in-theory (enable acl2::truncate-becomes-floor-gen))))
 
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
@@ -418,19 +402,19 @@
 
 (defthm ctri-of-xw-irrel
   (implies (not (equal :ctr fld))
-           (equal (X86ISA::CTRI i (xw fld index val x86))
-                  (X86ISA::CTRI i x86)))
-  :hints (("Goal" :in-theory (enable X86ISA::CTRI))))
+           (equal (CTRI i (xw fld index val x86))
+                  (CTRI i x86)))
+  :hints (("Goal" :in-theory (enable CTRI))))
 
 (defthm ctri-of-write
-  (equal (X86ISA::CTRI i (write n base-addr val x86))
-         (X86ISA::CTRI i x86))
-  :hints (("Goal" :in-theory (enable X86ISA::CTRI))))
+  (equal (CTRI i (write n base-addr val x86))
+         (CTRI i x86))
+  :hints (("Goal" :in-theory (enable CTRI))))
 
 (defthm ctri-of-set-flag
-  (equal (X86ISA::CTRI i (set-flag flag val x86))
-         (X86ISA::CTRI i x86))
-  :hints (("Goal" :in-theory (enable X86ISA::CTRI))))
+  (equal (CTRI i (set-flag flag val x86))
+         (CTRI i x86))
+  :hints (("Goal" :in-theory (enable CTRI))))
 
 (defthm X86ISA::FEATURE-FLAGS-opener
   (implies (consp features)
@@ -448,7 +432,7 @@
 
 ;; probably only needed for axe
 (defthmd integerp-of-ctri
-  (integerp (x86isa::ctri acl2::i x86)))
+  (integerp (ctri acl2::i x86)))
 
 (defthm cr0bits->ts-of-bvchop
   (implies (and (< 3 n)
@@ -474,14 +458,14 @@
   :hints (("Goal" :in-theory (enable x86isa::cr4bits->OSFXSR
                                      x86isa::cr4bits-fix))))
 
-(defthm integerp-of-PART-INSTALL-WIDTH-LOW$INLINE
-  (integerp (BITOPS::PART-INSTALL-WIDTH-LOW$INLINE BITOPS::VAL X BITOPS::WIDTH BITOPS::LOW))
-  )
+; Only needed for Axe.
+(defthmd integerp-of-part-install-width-low$inline
+  (integerp (bitops::part-install-width-low$inline val x width low)))
 
-(defthm 64-BIT-MODEP-of-if
-  (equal (64-BIT-MODEP (if test x86_1 x86_2))
-         (if test (64-BIT-MODEP x86_1)
-           (64-BIT-MODEP x86_2))))
+(defthm 64-bit-modep-of-if
+  (equal (64-bit-modep (if test x86_1 x86_2))
+         (if test (64-bit-modep x86_1)
+           (64-bit-modep x86_2))))
 
 ;; ;todo!
 ;; ;or use a defun-sk to state that all states have the same cpuid
@@ -489,37 +473,37 @@
 ;;  (defthm feature-flag-sse-of-xw
 ;;   (equal (x86isa::feature-flag ':sse (xw fld index val x86))
 ;;          (x86isa::feature-flag ':sse x86))
-;;   :hints (("Goal" :in-theory (enable x86isa::ctri)))))
+;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-write
 ;;   (equal (x86isa::feature-flag ':sse (write n base-addr val x86))
 ;;          (x86isa::feature-flag ':sse x86))
-;;   :hints (("Goal" :in-theory (enable x86isa::ctri)))))
+;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-set-flag
 ;;   (equal (x86isa::feature-flag ':sse (set-flag flag val x86))
 ;;          (x86isa::feature-flag ':sse x86))
-;;   :hints (("Goal" :in-theory (enable x86isa::ctri)))))
+;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-xw
 ;;   (equal (x86isa::feature-flag ':sse2 (xw fld index val x86))
 ;;          (x86isa::feature-flag ':sse2 x86))
-;;   :hints (("Goal" :in-theory (enable x86isa::ctri)))))
+;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-write
 ;;   (equal (x86isa::feature-flag ':sse2 (write n base-addr val x86))
 ;;          (x86isa::feature-flag ':sse2 x86))
-;;   :hints (("Goal" :in-theory (enable x86isa::ctri)))))
+;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-set-flag
 ;;   (equal (x86isa::feature-flag ':sse2 (set-flag flag val x86))
 ;;          (x86isa::feature-flag ':sse2 x86))
-;;   :hints (("Goal" :in-theory (enable x86isa::ctri)))))
+;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 (in-theory (disable x86isa::sub-zf-spec32))
 
@@ -573,6 +557,11 @@
                                      x86isa::zf-spec
                                      acl2::bvchop-of-sum-cases))))
 
+
+(defthm ifix-of-if
+  (equal (ifix (if test x86 x86_2))
+         (if test (ifix x86) (ifix x86_2))))
+
 (defthm app-view-of-if
   (equal (app-view (if test x86 x86_2))
          (if test (app-view x86) (app-view x86_2))))
@@ -589,10 +578,9 @@
   (equal (get-flag flag (if test x86 x86_2))
          (if test (get-flag flag x86) (get-flag flag x86_2))))
 
-;todo: add ctri to x pkg
 (defthm ctri-of-if
-  (equal (x86isa::ctri i (if test x86 x86_2))
-         (if test (x86isa::ctri i x86) (x86isa::ctri i x86_2))))
+  (equal (ctri i (if test x86 x86_2))
+         (if test (ctri i x86) (ctri i x86_2))))
 
 ;; (defthm feature-flag-of-if
 ;;   (equal (x86isa::feature-flag flag (if test x86 x86_2))
@@ -601,8 +589,6 @@
 (defthm ALIGNMENT-CHECKING-ENABLED-P-of-if
   (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
          (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
-
-
 
 (defthm sse-daz-of-nil
   (equal (X86ISA::SSE-DAZ kind exp frac nil)
@@ -645,10 +631,6 @@
 (defthm MXCSRBITS->DAZ-of-!MXCSRBITS->DE
   (equal (X86ISA::MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
          (X86ISA::MXCSRBITS->DAZ$INLINE mxcsr)))
-
-(defthm ifix-of-if
-  (equal (ifix (if test x86 x86_2))
-         (if test (ifix x86) (ifix x86_2))))
 
 (defthm integerp-of-xr-mxcsr
   (INTEGERP (XR :MXCSR NIL X86)))
@@ -1501,9 +1483,10 @@
   :hints (("Goal" :in-theory (enable bvminus bvplus))))
 
 (defthm acl2::bvminus-of-bvplus-and-bvplus-same-2-2
-  (equal (bvminus '48 (bvplus '48 y1 x) (bvplus '48 y2 x))
-         (bvminus '48 y1 y2)))
+  (equal (bvminus size (bvplus size y1 x) (bvplus size y2 x))
+         (bvminus size y1 y2)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; usually negoffset, n1, n2, and minusn2 are constants
 (defthm not-equal-of-+-when-separate
@@ -1590,57 +1573,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Recognize a NaN
 (defund is-nan (val)
-  (IF
-   (EQUAL 'X86ISA::SNAN val)
-   'T
-   (IF
-    (EQUAL 'X86ISA::QNAN val)
-    'T
-    ;; a special type of QNAN:
-    (EQUAL 'X86ISA::INDEF val))))
+  (declare (xargs :guard t))
+  (or (equal 'x86isa::snan val)
+      (equal 'x86isa::qnan val)
+      ;; a special type of qnan:
+      (equal 'x86isa::indef val)))
 
+;; Only needed for Axe.
 (defthmd booleanp-of-is-nan
   (booleanp (is-nan val)))
 
+;; TODO: Have the model just use is-nan?
 (defthmd is-nan-intro
-  (equal (IF
-          (EQUAL 'X86ISA::SNAN val)
-          'T
-          (IF
-           (EQUAL 'X86ISA::QNAN val)
-           'T
-           (EQUAL 'X86ISA::INDEF val)))
+  (equal (if (equal 'x86isa::snan val) t (if (equal 'x86isa::qnan val) t (equal 'x86isa::indef val)))
          (is-nan val))
   :hints (("Goal" :in-theory (enable is-nan))))
 
 (theory-invariant (incompatible (:rewrite is-nan-intro) (:definition is-nan)))
 
 (defthm if-of-equal-of-indef-and-is-nan
-  (equal (IF
-          (EQUAL 'X86ISA::INDEF val)
-          'T
-          (IS-NAN val))
-         (IS-NAN val))
+  (equal (if (equal 'x86isa::indef val) t (is-nan val))
+         (is-nan val))
   :hints (("Goal" :in-theory (enable is-nan))))
 
 (defthm if-of-equal-of-qnan-and-is-nan
-  (equal (IF
-          (EQUAL 'X86ISA::QNAN val)
-          'T
-          (IS-NAN val))
-         (IS-NAN val))
+  (equal (if (equal 'x86isa::qnan val) t (is-nan val))
+         (is-nan val))
   :hints (("Goal" :in-theory (enable is-nan))))
 
 (defthm if-of-equal-of-snan-and-is-nan
-  (equal (IF
-          (EQUAL 'X86ISA::SNAN val)
-          'T
-          (IS-NAN val))
-         (IS-NAN val))
+  (equal (if (equal 'x86isa::snan val) t (is-nan val))
+         (is-nan val))
   :hints (("Goal" :in-theory (enable is-nan))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
