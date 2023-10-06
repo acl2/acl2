@@ -1294,29 +1294,31 @@
 
                   (x86 (one-byte-opcode-execute
                          proc-mode start-rip temp-rip prefixes rex-byte opcode-byte
-                         modr/m sib x86))
-
-                  (last-clock-event (last-clock-event x86))
-                  (x86 (if (and (> last-clock-event 100000)
-                                (equal (rflagsBits->intf (rflags x86)) 1)
-                                (not (equal (memi #x108 x86) 0)))
-                          (b* ((x86 (!last-clock-event 0 x86))
-                               (x86 (!fault (cons '(:interrupt 32) (fault x86)) x86)))
-                              x86)
-                          (!last-clock-event (1+ last-clock-event) x86)))
-
-                  (x86 (service-interrupts x86))
-
-                  ;; At this point, the CPU is done executing (except for setting the interrupt flag if needed)
-                  ;; Time to check for any TTY output
-                  ;; The TTY protocol is simple. If 0x3F9 is nonzero
-                  ;; 0x3F8 has an output character. (physical addresses of course)
-                  (tty-byte-valid (not (equal (memi #x3F9 x86) 0)))
-                  ((when (not tty-byte-valid)) x86)
-                  (tty-output-byte (memi #x3F8 x86))
-                  (x86 (!memi #x3F9 0 x86))
-                  (x86 (prog2$ (cw "~x0" (code-char tty-output-byte)) x86)))
+                         modr/m sib x86)))
                  x86))
+
+
+        (last-clock-event (last-clock-event x86))
+        (x86 (if (and (> last-clock-event 100000)
+                      (equal (rflagsBits->intf (rflags x86)) 1)
+                      (not (equal (memi #x108 x86) 0))
+                      (not (fault x86)))
+               (b* ((x86 (!last-clock-event 0 x86))
+                    (x86 (!fault (cons '(:interrupt 32) (fault x86)) x86)))
+                   x86)
+               (!last-clock-event (1+ last-clock-event) x86)))
+
+        (x86 (service-interrupts x86))
+
+        ;; At this point, the CPU is done executing (except for setting the interrupt flag if needed)
+        ;; Time to check for any TTY output
+        ;; The TTY protocol is simple. If 0x3F9 is nonzero
+        ;; 0x3F8 has an output character. (physical addresses of course)
+        (tty-byte-valid (not (equal (memi #x3F9 x86) 0)))
+        ((when (not tty-byte-valid)) x86)
+        (tty-output-byte (memi #x3F8 x86))
+        (x86 (!memi #x3F9 0 x86))
+        (x86 (prog2$ (cw "~x0" (code-char tty-output-byte)) x86))
 
         ((when set-interrupt?) (!rflags (logior (ash 1 9)
                                                 (rflags x86))

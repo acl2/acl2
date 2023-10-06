@@ -1472,6 +1472,8 @@ build ../../std/basic/arith-equivs.cert: cert ../../std/basic/arith-equivs.lisp 
 
 build ../../std/basic/bytep.cert: cert ../../std/basic/bytep.lisp | ../../std/basic/bytep.lisp ../../std/basic/cert.acl2 ../../xdoc/constructors.cert ../../std/util/define.cert ../../std/portcullis.cert
 
+build ../../std/basic/code-char-char-code-with-force.cert: cert ../../std/basic/code-char-char-code-with-force.lisp | ../../std/basic/code-char-char-code-with-force.lisp ../../std/basic/cert.acl2 ../../std/portcullis.cert
+
 build ../../std/basic/defs.cert: cert ../../std/basic/defs.lisp | ../../std/basic/defs.lisp ../../std/basic/cert.acl2 ../../xdoc/top.cert ../../std/basic/maybe-natp.cert ../../std/portcullis.cert
 
 build ../../std/basic/inductions.cert: cert ../../std/basic/inductions.lisp | ../../std/basic/inductions.lisp ../../std/basic/cert.acl2 ../../xdoc/top.cert ../../std/portcullis.cert
@@ -1624,7 +1626,7 @@ build ../../std/strings/char-case.cert: cert ../../std/strings/char-case.lisp | 
 
 build ../../std/strings/char-fix.cert: cert ../../std/strings/char-fix.lisp | ../../std/strings/char-fix.lisp ../../std/strings/cert.acl2 ../../std/basic/defs.cert ../../std/util/define.cert ../../std/portcullis.cert ../../cowles/portcullis.cert ../../data-structures/portcullis.cert ../../centaur/fty/portcullis.cert
 
-build ../../std/strings/charset.cert: cert ../../std/strings/charset.lisp | ../../std/strings/charset.lisp ../../std/strings/cert.acl2 ../../std/util/define.cert ../../std/util/deflist.cert ../../xdoc/names.cert ../../std/strings/case-conversion.cert ../../std/strings/decimal.cert ../../std/portcullis.cert ../../cowles/portcullis.cert ../../data-structures/portcullis.cert ../../centaur/fty/portcullis.cert
+build ../../std/strings/charset.cert: cert ../../std/strings/charset.lisp | ../../std/strings/charset.lisp ../../std/strings/cert.acl2 ../../std/util/define.cert ../../std/util/deflist.cert ../../xdoc/names.cert ../../std/strings/case-conversion.cert ../../std/basic/code-char-char-code-with-force.cert ../../std/strings/decimal.cert ../../std/portcullis.cert ../../cowles/portcullis.cert ../../data-structures/portcullis.cert ../../centaur/fty/portcullis.cert
 
 build ../../std/strings/coerce.cert: cert ../../std/strings/coerce.lisp | ../../std/strings/coerce.lisp ../../std/strings/cert.acl2 ../../std/strings/make-character-list.cert ../../std/portcullis.cert ../../cowles/portcullis.cert ../../data-structures/portcullis.cert ../../centaur/fty/portcullis.cert
 

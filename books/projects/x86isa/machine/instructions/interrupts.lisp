@@ -96,10 +96,10 @@
 
                 ;; Restore state
                 (x86 (write-*ip proc-mode new-rip x86))
-                (x86 (load-segment-reg *ss* new-ss x86))
                 (x86 (load-segment-reg *cs* new-cs x86))
                 (x86 (!rflags new-rflags x86))
-                (x86 (write-*sp proc-mode new-rsp x86)))
+                (x86 (write-*sp proc-mode new-rsp x86))
+                (x86 (load-segment-reg *ss* new-ss x86)))
                x86)))
 
 (skip-proofs (def-inst x86-int3

@@ -43,7 +43,11 @@
                     ;; Only 64-bit mode is supported for now
                     ((unless (equal proc-mode #.*64-bit-mode*)) (mv t x86))
 
+                    ;; This hack sets the cpl to 0 while we try to find the gate descriptor. This is needed because when this is triggered by user space, we may not be able to find the gate descriptor
+                    (cs (seg-visiblei *cs* x86))
+                    (x86 (!seg-visiblei *cs* (!segment-selectorBits->rpl 0 cs) x86))
                     ((mv err idt-gate-descriptor x86) (get-idt-gate-descriptor int-vec x86))
+                    (x86 (!seg-visiblei *cs* cs x86))
                     ((when err) (mv t x86))
 
                     ;; Found entry, but it isn't marked present
@@ -54,12 +58,38 @@
                     ;; TODO check DPL for handling INT instruction
 
                     ;; Push relevant values onto the stack
+                    (selector (interrupt/trap-gate-descriptorBits->selector idt-gate-descriptor))
                     (old-rsp (read-*sp proc-mode x86))
+                    (new-privilege (segment-selectorBits->rpl selector))
+                    ;; Moving to more privilege
+                    (old-ss (seg-visiblei *ss* x86))
+                    (old-cs (seg-visiblei *cs* x86))
+                    ((mv flg new-rsp x86) (if (< new-privilege (cpl x86))
+                               (b* ((tss-addr (ssr-hidden-basei *tr* x86))
+                                    ;; TODO check limit
+                                    (new-rsp-addr (i64 (+ tss-addr
+                                                          4
+                                                          (* 8 new-privilege))))
+                                    ;; Use the same hack as above to perform a privileged memory read regardless of the cpl
+                                    (cs (seg-visiblei *cs* x86))
+                                    (x86 (!seg-visiblei *cs* (!segment-selectorBits->rpl 0 cs) x86))
+                                    ((mv flg new-rsp x86) (rml64 new-rsp-addr :r x86))
+                                    (new-rsp (i64 new-rsp))
+                                    (x86 (!seg-visiblei *cs* cs x86))
+                                    ((when flg) (mv t 0 x86))
+                                    (x86 (load-segment-reg *ss* 0 x86))) ;; load the null selector
+                                   (mv nil new-rsp x86))
+                               (mv nil old-rsp x86) ;; No stack switch
+                               ))
+                    ((when flg) (mv t x86))
+                    (x86 (!rgfi *rsp* new-rsp x86))
+
                     (old-rip (read-*ip proc-mode x86))
-                    (x86 (push-stack-vals ((8 (seg-visiblei *ss* x86))
+                    (x86 (load-segment-reg *cs* selector x86))
+                    (x86 (push-stack-vals ((8 old-ss)
                                            (8 old-rsp)
                                            (8 (rflags x86))
-                                           (8 (seg-visiblei *cs* x86))
+                                           (8 old-cs)
                                            (8 old-rip)) x86))
 
                     ;; Jump to the appropriate code
@@ -68,8 +98,6 @@
                                                  (interrupt/trap-gate-descriptorBits->offset15-0 idt-gate-descriptor)
                                                  (interrupt/trap-gate-descriptorBits->offset31-16 idt-gate-descriptor))
                                          (interrupt/trap-gate-descriptorBits->offset63-32 idt-gate-descriptor))))
-                    (selector (interrupt/trap-gate-descriptorBits->selector idt-gate-descriptor))
-                    (x86 (load-segment-reg *cs* selector x86))
                     (x86 (write-*ip proc-mode offset x86)))
                    (mv nil x86))))
 
@@ -83,7 +111,7 @@
 (skip-proofs (defun handle-page-fault (flt x86)
                (declare (xargs :stobjs (x86)))
                (b* (((list & err-no addr) flt)
-                    ;; (- (cw "handling page fault; err-no: ~x4; rip: ~x0; rcx: ~x1; rdi: ~x2; rsi: ~x3; addr: ~x5" (rip x86) (rgfi *rcx* x86) (rgfi *rsi* x86) (rgfi *rdi* x86) err-no addr))
+                    ;; (- (cw "handling page fault; err-no: ~x4; rip: ~x0; rcx: ~x1; rdi: ~x2; rsi: ~x3; addr: ~x5~%" (rip x86) (rgfi *rcx* x86) (rgfi *rsi* x86) (rgfi *rdi* x86) err-no addr))
                     ;; Addresses are signed but ctr registers are unsigned
                     (x86 (!ctri *cr2* (n64 addr) x86)))
                    (setup-interrupt-handler *pg-interrupt-vector* ((8 err-no)) x86))))

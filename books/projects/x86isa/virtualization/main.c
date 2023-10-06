@@ -319,8 +319,9 @@ void vm_run_outside_hole_single_instruction(vm *v);
 
 uint64_t vm_run(vm *v) {
   printf("%d err; errno: %d\n", ioctl(v->vcpu.fd, KVM_RUN, NULL), errno);
-  printf("Exit reason: %d; physaddr: %lx\n", v->vcpu.run->exit_reason,
-         (uint64_t)v->vcpu.run->mmio.phys_addr);
+  printf("Exit reason: %d; hardware_exit_reason: %lx\n",
+         v->vcpu.run->exit_reason,
+         (uint64_t)v->vcpu.run->hw.hardware_exit_reason);
 
   struct kvm_regs regs;
   ioctl(v->vcpu.fd, KVM_GET_REGS, &regs);

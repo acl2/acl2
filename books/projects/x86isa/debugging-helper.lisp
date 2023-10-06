@@ -3,13 +3,9 @@
                   :mode :program))
   (b* (((when (or (equal n m)
                   (ms x86)
-                  (fault x86))) (mv m x86))
-       ((mv flg val x86) (rvm64 (i64 #xffff888002462838) x86))
-       ((when (and (not flg)
-                   (not (equal val 0)))) (mv m x86))
-       (x86 (if flg
-              (!fault nil x86)
-              x86))
+                  (fault x86)
+                  (and (equal 0 (cpl x86))
+                       (> (rip x86) 0)))) (mv m x86))
        (x86 (x86-fetch-decode-execute x86)))
       (do-thing1 n (1+ m) x86)))
 
@@ -17,3 +13,7 @@
   (declare (xargs :stobjs (x86)
                   :mode :program))
   (do-thing1 n 0 x86))
+
+(restore-x86 "x86-state.bak" x86)
+
+(do-thing 8165050 x86)
