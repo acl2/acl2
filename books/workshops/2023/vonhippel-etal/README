@@ -14,3 +14,6 @@ Contents of this book:
 ├── binomial-proof-sa.lisp - "Semi-automated" version of Binomial proof
 ├── ceiling-proof.lisp - Most compact version of ceiling proof
 └── rfc6298.lisp - Actual results from the Karn's Alg paper
+
+Note, the "Real" proof (a-n-0-acl2r.lisp) can only be certified using ACL2(r).
+The other proofs can be certified using ACL2s.
