@@ -8589,9 +8589,6 @@ its attachment is ignored during proofs"))))
 ; (sym key . val) is a member of wrld.  We collect all the rules in val with
 ; :rune rune.  This function is patterned after info-for-x-rules.
 
-; Wart: If key is 'eliminate-destructors-rule, then val is a single rule, not a
-; list of rules.  We handle this case specially below.
-
 ; Warning: Keep this function in sync with info-for-x-rules.  In that spirit,
 ; note that tau rules never store runes and hence are completely ignored
 ; here, as in info-for-x-rules.
@@ -8637,9 +8634,9 @@ its attachment is ignored during proofs"))))
              (if (eq token :linear)
                  (collect-x-rules-of-rune 'linear-lemma rune val ans)
                  ans))
-            (eliminate-destructors-rule
+            (eliminate-destructors-rules
              (if (eq token :elim)
-                 (collect-x-rules-of-rune 'elim-rule rune (list val) ans)
+                 (collect-x-rules-of-rune 'elim-rule rune val ans)
                  ans))
             (congruences
              (if (member-eq token '(:congruence :equivalence))

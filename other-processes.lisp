@@ -379,6 +379,25 @@
 
 )
 
+(defun most-recent-enabled-elim-rule1 (lst ens)
+
+; This function finds the first elim-rule in lst whose whose :nume is
+; enabled-numep.
+
+  (cond ((endp lst) nil)
+        ((enabled-numep (access elim-rule (car lst) :nume) ens)
+         (car lst))
+        (t (most-recent-enabled-elim-rule1 (cdr lst) ens))))
+
+(defun most-recent-enabled-elim-rule (fn wrld ens)
+
+; This function finds the first elim-rule for fn whose whose :nume is
+; enabled-numep.
+
+  (let ((lst (getpropc fn 'eliminate-destructors-rules nil wrld)))
+    (and lst ; optimization
+         (most-recent-enabled-elim-rule1 lst ens))))
+
 (defun nominate-destructor-candidate
   (term eliminables type-alist clause ens wrld votes nominations)
 
@@ -420,11 +439,9 @@
 
   (cond
    ((flambda-applicationp term) nominations)
-   (t (let ((rule (getpropc (ffn-symb term) 'eliminate-destructors-rule nil
-                            wrld)))
+   (t (let ((rule (most-recent-enabled-elim-rule (ffn-symb term) wrld ens)))
         (cond
-         ((or (null rule)
-              (not (enabled-numep (access elim-rule rule :nume) ens)))
+         ((null rule)
           nominations)
          (t (let ((crucial-arg (nth (access elim-rule rule :crucial-position)
                                     (fargs term))))
@@ -619,8 +636,7 @@
      ((null nominations) nil)
      (t
       (let* ((dterm (pick-highest-sum-level-nos nominations wrld nil -1))
-             (rule (getpropc (ffn-symb dterm) 'eliminate-destructors-rule
-                             nil wrld))
+             (rule (most-recent-enabled-elim-rule (ffn-symb dterm) wrld ens))
              (alist (pairlis$ (fargs (access elim-rule rule :destructor-term))
                               (fargs dterm))))
         (change elim-rule rule
@@ -1514,21 +1530,14 @@
 
 (defun destructor-applied-to-varsp (term ens wrld)
 
-; We determine whether term is of the form (destr v1 ... vn)
-; where destr has an enabled 'eliminate-destructors-rule
-; and all the vi are variables.
+; We return non-nil when term is of the form (destr v1 ... vn) where destr has
+; an enabled 'eliminate-destructors-rule and all the vi are variables.
 
   (cond ((variablep term) nil)
         ((fquotep term) nil)
         ((flambda-applicationp term) nil)
         (t (and (all-variablep (fargs term))
-                (let ((rule (getpropc (ffn-symb term)
-                                      'eliminate-destructors-rule
-                                      nil
-                                      wrld)))
-                  (and rule
-                       (enabled-numep (access elim-rule rule :nume)
-                                      ens)))))))
+                (most-recent-enabled-elim-rule (ffn-symb term) wrld ens)))))
 
 (defun dumb-occur-lst-except (term lst lit)
 
@@ -2035,11 +2044,7 @@
 
   (cond ((flambdap fn) nil)
         ((eq fn 'cons) nil)
-        (t (let ((rule (getpropc fn 'eliminate-destructors-rule nil wrld)))
-             (cond ((and rule
-                         (enabled-numep (access elim-rule rule :nume) ens))
-                    nil)
-                   (t t))))))
+        (t (not (most-recent-enabled-elim-rule fn wrld ens)))))
 
 (mutual-recursion
 
