@@ -868,6 +868,8 @@
 		   (deserialize-level1s tail mem$c))))
 
 (skip-proofs (defun deserialize-mem$c (obj mem$c)
+	       (declare (xargs :stobjs (mem$c)
+                               :guard (good-mem$cp mem$c)))
 	       (deserialize-level1s obj mem$c)))
 
 ;; ----------------------------------------------------------------------
