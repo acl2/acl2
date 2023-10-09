@@ -139,7 +139,7 @@
   (implies (integerp x)
            (rationalp x)))
 
-(defthm acl2-numberp-of--
+(defthmd acl2-numberp-of--
   (acl2-numberp (- x)))
 
 (defthm x86isa::canonical-address-p-between-special5
