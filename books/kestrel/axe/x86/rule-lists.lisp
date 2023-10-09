@@ -3278,7 +3278,7 @@
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
             acl2::bvlt-of-max-arg2
             <-of-*-when-constant-integers
-            separate-when-separate
+            separate-when-separate ; todo: drop?
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2
