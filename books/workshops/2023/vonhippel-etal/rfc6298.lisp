@@ -769,7 +769,7 @@ The "Next Step": under the assumption that d(SRTT, S) < Delta for all the SS,
         :prove))
 
 ;; Finally we need to do the actual asymptotic proofs.
-(include-book "pete-proof")
+(include-book "binomial-proof-manual")
 
 (property abs[a-b]<=max[a-or-b] (a :pos-rational b :rational)
   :h (< b 0)
