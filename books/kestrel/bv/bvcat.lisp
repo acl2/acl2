@@ -174,6 +174,14 @@
                   (bvcat highsize 0 LOWSIZE lowval)))
   :hints (("Goal" :in-theory (enable bvcat))))
 
+;drop? rename
+(defthm bvcat-when-arg2-is-not-an-integer
+  (implies (and (syntaxp (quotep highval))
+                (not (integerp highval)))
+           (equal (bvcat highsize highval lowsize lowval)
+                  (bvchop lowsize lowval)))
+  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+
 (defthm bvcat-of-ifix-arg2
   (equal (bvcat highsize (ifix highval) lowsize lowval)
          (bvcat highsize highval lowsize lowval))
@@ -1206,12 +1214,7 @@
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize (bvchop highsize highval) lowsize lowval))))
 
-(defthm bvcat-when-arg2-is-not-an-integer
-  (implies (and (syntaxp (quotep highval))
-                (not (integerp highval)))
-           (equal (bvcat highsize highval lowsize lowval)
-                  (bvchop lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+
 
 (defthm bvcat-normalize-constant-arg4
   (implies (and (syntaxp (and (quotep lowval)
