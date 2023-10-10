@@ -172,6 +172,7 @@
                   (logapp n 0 x))))
 
 (theory-invariant (incompatible (:definition logapp) (:rewrite logapp-recollect-from-shift)))
+(theory-invariant (incompatible (:rewrite logapp-0) (:rewrite logapp-recollect-from-shift)))
 
 (defthm logext-of-logtail
   (implies (and (natp n)
@@ -2018,18 +2019,6 @@
                   0))
   :hints (("Goal" :in-theory (enable BVIF myif SLICE-TOO-HIGH-IS-0))))
 
-(defthm unsigned-byte-p-of-expt-2-n
-  (implies (natp n)
-           (unsigned-byte-p (+ 1 n) (expt 2 n)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p logapp))))
-
-(defthm unsigned-byte-p-of-expt-2-n-gen
-  (implies (and (<= (+ 1 n) m)
-                (natp n)
-                (natp m))
-           (unsigned-byte-p m (expt 2 n)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p logapp))))
-
 (defthm unsigned-byte-p-of-bvmult-from-bound
   (implies (and (< (* x y) (expt 2 n))
                 (natp x)
@@ -3192,26 +3181,6 @@
                         bvchop-of-logtail-becomes-slice
                         logtail-becomes-slice-bind-free)
   :redundant-okp t)
-
-(defthm bvchop-of-sum-of-logext
-  (implies (and (<= size size2)
-                (natp size)
-                (natp size2)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvchop size (+ x (logext size2 y)))
-                  (bvchop size (+ x y)))))
-
-(defthm bvchop-of-sum-of-logext-alt
-  (implies (and (<= size size2)
-                (natp size)
-                (natp size2)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvchop size (+ (logext size2 y) x))
-                  (bvchop size (+ x y)))))
 
 ;BOZO these subst rules may have been a problem before...
 (defthm bvmult-subst
