@@ -1314,11 +1314,12 @@
         ;; Time to check for any TTY output
         ;; The TTY protocol is simple. If 0x3F9 is nonzero
         ;; 0x3F8 has an output character. (physical addresses of course)
-        (tty-byte-valid (not (equal (memi #x3F9 x86) 0)))
-        ((when (not tty-byte-valid)) x86)
-        (tty-output-byte (memi #x3F8 x86))
-        (x86 (!memi #x3F9 0 x86))
-        (x86 (prog2$ (cw "~x0" (code-char tty-output-byte)) x86))
+        (x86 (b* ((tty-byte-valid (not (equal (memi #x3F9 x86) 0)))
+                  ((when (not tty-byte-valid)) x86)
+                  (tty-output-byte (memi #x3F8 x86))
+                  (x86 (!memi #x3F9 0 x86))
+                  (x86 (prog2$ (cw "~x0" (code-char tty-output-byte)) x86)))
+                 x86))
 
         ((when set-interrupt?) (!rflags (logior (ash 1 9)
                                                 (rflags x86))
