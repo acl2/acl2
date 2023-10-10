@@ -10,6 +10,13 @@ of this README's directory, i.e., of [books]/workshops/2023/.
 Alessandro Coglio, Eric McCarthy and Eric Smith
 Formal Verification of Zero-Knowledge Circuits
 
+[books]/kestrel/prime-fields/
+[books]/kestrel/crypto/r1cs/
+[books]/kestrel/crypto/pfcs/
+[books]/kestrel/ethereum/semaphore/
+[books]/kestrel/zcash/
+coglio-mccarthy-smith/
+
 ------------------------------
 
 Ruben Gamboa, Panagiotis Manolios, Eric Smith and Kyle Thompson
@@ -66,6 +73,8 @@ A Bound-Finding Tool for Arithmetic Terms
 
 Max von Hippel, Panagiotis Manolios, Ken McMillan, Cristina Nita-Rotaru and Lenore Zuck
 A Case Study in Analytic Protocol Analysis in ACL2
+
+vonhippel-etal/
 
 ------------------------------
 
