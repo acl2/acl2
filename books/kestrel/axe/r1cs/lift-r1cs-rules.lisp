@@ -355,9 +355,6 @@
 (defthmd bitp-of-0
   (bitp 0))
 
-(defthm bitp-of-bitxor
-  (bitp (acl2::bitxor x y)))
-
 (local (in-theory (disable pfield::fep-holds
                            pfield::mod-when-fep)))
 
