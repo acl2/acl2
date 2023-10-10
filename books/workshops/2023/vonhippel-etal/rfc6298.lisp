@@ -785,7 +785,6 @@ The "Next Step": under the assumption that d(SRTT, S) < Delta for all the SS,
 	(< (car ss) srtt) ;; WLOG
 	(< alpha 1))
   (lim-const-srtt alpha srtt eps ss (car ss))
-  :proof-timeout 6000
   :instructions
   ((:use (:instance further-unfold-recurse-srtt
                     (alpha alpha)
@@ -1053,7 +1052,6 @@ The "Next Step": under the assumption that d(SRTT, S) < Delta for all the SS,
 	(= (len ss) (len srtts))
 	(d[srtt-s]<=Del-always ss srtts beta del))
   :check-contracts? nil
-  :proof-timeout 6000
   (lim-upper-bnd-RTTVar beta del rttvar0 eps ss srtts)
   :instructions
  ((:use (:instance a^n->0-helper (a (- 1 beta))
@@ -1151,7 +1149,6 @@ The "Next Step": under the assumption that d(SRTT, S) < Delta for all the SS,
 	(= (len ss) (len srtts))
 	(d[srtt-s]<=del-always ss srtts beta del))
   (lim-upper-bnd-rttvar beta del rttvar0 eps ss srtts)
-  :proof-timeout 6000
   :check-contracts? nil
   :instructions
   (:pro
