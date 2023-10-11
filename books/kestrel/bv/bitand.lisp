@@ -86,6 +86,9 @@
          (bitand x y))
   :hints (("Goal" :in-theory (enable bitand))))
 
+(defthm bitp-of-bitand
+  (bitp (bitand x y)))
+
 (defthm integerp-of-bitand
   (integerp (bitand x y)))
 

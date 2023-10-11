@@ -297,3 +297,11 @@
   (implies (integerp i)
            (equal (< (expt 2 i) 2)
                   (< i 1))))
+
+(defthm unsigned-byte-p-of-expt2
+  (implies (integerp i)
+           (equal (unsigned-byte-p size (expt 2 i))
+                  (and (natp size)
+                       (<= 0 i)
+                       (<= (+ 1 i) size))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))

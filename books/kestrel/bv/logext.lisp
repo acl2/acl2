@@ -773,3 +773,23 @@
                 (posp size))
            (not (< (logext size x) k)))
   :hints (("Goal" :in-theory (enable logext logapp))))
+
+(defthm bvchop-of-sum-of-logext
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2)
+                (integerp x)
+                (integerp y)
+                )
+           (equal (bvchop size (+ x (logext size2 y)))
+                  (bvchop size (+ x y)))))
+
+(defthm bvchop-of-sum-of-logext-alt
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2)
+                (integerp x)
+                (integerp y)
+                )
+           (equal (bvchop size (+ (logext size2 y) x))
+                  (bvchop size (+ x y)))))
