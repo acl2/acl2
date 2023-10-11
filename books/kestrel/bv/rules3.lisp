@@ -1553,8 +1553,7 @@
 ;bozo trim-all rule for getbit?
 (defthmd getbit-of-bvplus
   (implies (and (< n (+ -1 size))
-                (< 0 n)
-                (integerp n)
+                (natp n)
                 (natp size))
            (equal (getbit n (bvplus size x y))
                   (getbit n (bvplus (+ 1 n) x y))))

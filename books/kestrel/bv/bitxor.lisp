@@ -30,6 +30,9 @@
   (mbe :logic (bitxor x y)
        :exec (the bit (logxor x y))))
 
+(defthm bitp-of-bitxor
+  (bitp (bitxor x y)))
+
 (defthm bitxor-associative
   (equal (bitxor (bitxor x y) z)
          (bitxor x (bitxor y z)))
