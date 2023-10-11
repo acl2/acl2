@@ -73,6 +73,9 @@
 (defthm booleanp-of-<
   (booleanp (< x y)))
 
+(defthm booleanp-of-bitp
+  (booleanp (bitp x)))
+
 (defthm booleanp-of-natp
   (booleanp (natp x)))
 

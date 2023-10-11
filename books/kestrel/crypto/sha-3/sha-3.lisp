@@ -676,12 +676,11 @@
   (theta-c-lanes 0 a w))
 
 ;; Compute bits z through w-1 of lane x of D.
-(defund theta-d-lane (z x c a w)
+(defund theta-d-lane (z x c w)
   (declare (xargs :guard (and (natp z)
                               (natp x)
                               (w-valp w)
-                              (planep c w)
-                              (state-arrayp a w))
+                              (planep c w))
                   :measure (nfix (+ 1 (- w z)))))
   (if (or (not (mbt (natp z)))
           (not (mbt (natp w)))
@@ -689,39 +688,35 @@
       nil
     (cons (bitxor$ (nth-bit z               (nth-lane (mod (- x 1) 5) c w) w)
                   (nth-bit (mod (- z 1) w) (nth-lane (mod (+ x 1) 5) c w) w))
-          (theta-d-lane (+ 1 z) x c a w))))
+          (theta-d-lane (+ 1 z) x c w))))
 
 (defthm bit-stringp-of-theta-d-lane
-  (implies (and (state-arrayp a w)
-                (posp w))
-           (bit-stringp (theta-d-lane z x c a w)))
+  (implies (posp w)
+           (bit-stringp (theta-d-lane z x c w)))
   :hints (("Goal" :in-theory (enable theta-d-lane))))
 
 (defthm len-of-theta-d-lane
-  (implies (and (state-arrayp a w)
-                (posp w)
+  (implies (and (posp w)
                 (natp z))
-           (equal (len (theta-d-lane z x c a w))
+           (equal (len (theta-d-lane z x c w))
                   (nfix (- w z))))
   :hints (("Goal" :in-theory (enable theta-d-lane))))
 
 ;; Compute lanes x through 4 of the plane representing D.
-(defund theta-d-lanes (x c a w)
+(defund theta-d-lanes (x c w)
   (declare (xargs :guard (and (natp x)
                               (w-valp w)
-                              (planep c w)
-                              (state-arrayp a w))
+                              (planep c w))
                   :measure (nfix (+ 1 (- 5 x)))))
   (if (or (not (mbt (natp x)))
           (<= 5 x))
       nil
-    (cons (theta-d-lane 0 x c a w)
-          (theta-d-lanes (+ 1 x) c a w))))
+    (cons (theta-d-lane 0 x c w)
+          (theta-d-lanes (+ 1 x) c w))))
 
 (defthm lane-listp-of-theta-d-lanes
-  (implies (and (state-arrayp a w)
-                (w-valp w))
-           (lane-listp (theta-d-lanes x c a w) w))
+  (implies (w-valp w)
+           (lane-listp (theta-d-lanes x c w) w))
   :hints (("Goal" :in-theory (e/d (lanep theta-d-lanes)
                                   ( ;bit-stringp
                                    )))))
@@ -729,27 +724,25 @@
 (defthm len-of-theta-d-lanes
   (implies (and (w-valp w)
                 (natp x))
-           (equal (len (theta-d-lanes x c a w))
+           (equal (len (theta-d-lanes x c w))
                   (nfix (- 5 x))))
   :hints (("Goal" :in-theory (enable theta-d-lanes))))
 
 ;; Step 2 of Algorithm 1
-(defund theta-d (c a w)
+(defund theta-d (c w)
   (declare (xargs :guard (and (w-valp w)
-                              (planep c w)
-                              (state-arrayp a w))))
-  (theta-d-lanes 0 c a w))
+                              (planep c w))))
+  (theta-d-lanes 0 c w))
 
 (defthm lane-listp-of-theta-d
-  (implies (and (state-arrayp a w)
-                (w-valp w))
-           (lane-listp (theta-d c a w) w))
+  (implies (w-valp w)
+           (lane-listp (theta-d c w) w))
   :hints (("Goal" :in-theory (e/d (lanep theta-d)
                                   ()))))
 
 (defthm len-of-theta-d
   (implies (w-valp w)
-           (equal (len (theta-d c a w))
+           (equal (len (theta-d c w))
                   5))
   :hints (("Goal" :in-theory (enable theta-d))))
 
@@ -866,7 +859,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (PLANEP) (LANE-LISTP-WHEN-PLANEP))))
                   ))
   (let* ((c (theta-c a w))
-         (d (theta-d c a w)))
+         (d (theta-d c w)))
     (theta-planes 0 a d w)))
 
 (defthm state-arrayp-of-theta

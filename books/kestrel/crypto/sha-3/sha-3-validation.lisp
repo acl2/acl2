@@ -137,12 +137,19 @@
                 (natp z)
                 (natp x)
                 (< x 5))
-           (equal (nth-bit n (theta-d-lane z x c a w) w)
+           (equal (nth-bit n (theta-d-lane z x c w) w)
                   (let ((z (+ n z)))
                     (bitxor (nth-bit z               (nth-lane (mod (- x 1) 5) c w) w)
                             (nth-bit (mod (- z 1) w) (nth-lane (mod (+ x 1) 5) c w) w)))))
   :hints (("Goal" :induct (lane-n-induct z x a w n)
            :in-theory (enable theta-d-lane nth-bit))))
+
+(defun lanes-d-induct (x w n)
+  (declare (xargs :measure (nfix (+ 1 (- 5 x)))))
+  (if (or (not (mbt (natp x)))
+          (<= 5 x))
+      (list x w n)
+    (lanes-d-induct (+ 1 x) w (+ -1 n))))
 
 (defthm nth-lane-of-theta-d-lanes
   (implies (and (natp n)
@@ -152,9 +159,9 @@
                 (natp n)
 ;               (< x 5)
                 (natp x))
-           (equal (nth-lane n (theta-d-lanes x c a w) w)
-                  (theta-d-lane 0 (+ x n) c a w)))
-  :hints (("Goal" :induct (lanes-n-induct x a w n)
+           (equal (nth-lane n (theta-d-lanes x c w) w)
+                  (theta-d-lane 0 (+ x n) c w)))
+  :hints (("Goal" :induct (lanes-d-induct x w n)
            :in-theory (enable NTH-LANE theta-d-lanes))))
 
 (defthm nth-lane-of-theta-d
@@ -163,8 +170,8 @@
                 (w-valp w)
                 (state-arrayp a w)
                 (natp n))
-           (equal (nth-lane n (theta-d c a w) w)
-                  (theta-d-lane 0 n c a w)))
+           (equal (nth-lane n (theta-d c w) w)
+                  (theta-d-lane 0 n c w)))
   :hints (("Goal" :in-theory (enable theta-d))))
 
 ;; D[x,z] = ... (Algorithm 1, Step 2)
@@ -176,7 +183,7 @@
                 (< x 5)
                 (natp z)
                 (< z w))
-           (equal (nth-bit z (nth-lane x (theta-d c a w) w) w)
+           (equal (nth-bit z (nth-lane x (theta-d c w) w) w)
                   (bitxor (nth-bit z               (nth-lane (mod (- x 1) 5) c w) w)
                           (nth-bit (mod (- z 1) w) (nth-lane (mod (+ x 1) 5) c w) w)))))
 
@@ -231,7 +238,7 @@
                 (< z w))
            (equal (a x y z (theta a w) w)
                   (bitxor (a x y z a w)
-                          (nth-bit z (nth-lane x (theta-d (theta-c a w) a w) w) w))))
+                          (nth-bit z (nth-lane x (theta-d (theta-c a w) w) w) w))))
   :hints (("Goal" :in-theory (enable a ;theta-d
                                      ;;NTH-PLANE NTH-LANE NTH-bit
                                      theta
