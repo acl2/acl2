@@ -292,6 +292,12 @@
                                   (j n))
            :in-theory (e/d (expt-of-+) (<-OF-EXPT-AND-EXPT-SAME-BASE)))))
 
+;gen to any base?
+(defthm <-of-expt-and-2
+  (implies (integerp i)
+           (equal (< (expt 2 i) 2)
+                  (< i 1))))
+
 (defthm unsigned-byte-p-of-expt2
   (implies (integerp i)
            (equal (unsigned-byte-p size (expt 2 i))

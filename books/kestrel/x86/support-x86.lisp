@@ -1016,10 +1016,12 @@
 
 (in-theory (disable zf-spec))
 
+;gen?
 (defthm integerp-of-xr-rgf-4
   (implies (x86p x86)
            (integerp (xr ':rgf '4 x86))))
 
+;gen?
 (defthm fix-of-xr-rgf-4
   (equal (fix (xr ':rgf '4 x86))
          (xr ':rgf '4 x86)))
