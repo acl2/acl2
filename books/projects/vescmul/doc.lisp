@@ -113,7 +113,7 @@ follow these steps. </p>
 <ol>
 <li> Install ACL2 and certify books. </li>
 <li> Start ACL2 and submit:
-<code> @('(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)')
+<code> @('(include-book \"projects/vescmul/top\" :dir :system)')
 </code>
 </li>
 
@@ -144,7 +144,7 @@ Here, @(see logext) sign-extends its argument, and @(see loghead) zero-extends i
 ways to use these utilities. </p>
 
 
-<p> Including projects/rp-rewriter/lib/mult3/top everytime can take a long time
+<p> Including projects/vescmul/top everytime can take a long time
 (almost a minute). However, you can save an executable with that book in it to
 quickly pull up this multiplier verification library. See @(see
 acl2::save-exec). Alternatively, download a <a
@@ -441,7 +441,7 @@ complex arithmetic module.  </p>
 1. Include the books to parse Verilog designs and crete symbolic simulation vectors.
 
 <code>
-(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)
+(include-book \"projects/vescmul/top\" :dir :system)
 </code>
 </p><p>
 Including this book can take a long time (around a minute). However, we can save an executable
@@ -462,7 +462,7 @@ for you. This package also includes some demo files.
 ')
 </code>
 
-</p><p>This verilog file is located in @('<ACL2-DIRECTORY>/books/projects/rp-rewriter/lib/mult3/demo').
+</p><p>This verilog file is located in @('<ACL2-DIRECTORY>/books/projects/vescmul/demo').
 
 </p>
 
@@ -539,7 +539,7 @@ complex arithmetic module. What is different here than @(see
 
 <p> 2. Load VL design for  the modules in DT_SB4_HC_64_64_multgen.sv. This file
 is                                 located                                under
-@('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo').   This is
+@('<your-acl2-directory>/books/projects/vescmul/demo').   This is
 a 64x64 Signed,  Booth radix-4 encoded, Dadda Tree  integer multiplier.  <code>
 @('
 (acl2::defconsts
@@ -589,7 +589,7 @@ a 64x64 Signed,  Booth radix-4 encoded, Dadda Tree  integer multiplier.  <code>
 5. Include the book that has the rewrite and meta rules
 for multiplier proofs:
 <code>
-(include-book \"projects/rp-rewriter/lib/mult3/svtv-top\" :dir :system)
+(include-book \"projects/vescmul/svtv-top\" :dir :system)
 </code>
 </p>
 
@@ -648,9 +648,9 @@ You may continue to @(see Multiplier-Verification-demo-2-expanded).
  starting  point;  however,  real-world  applications  of  integer  multipliers
  involve more intricate  design strategies. We tried to recreate  some of those
  strategies  and   compiled  a   more  complex   multiplier  module   given  in
- @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv'). You
+ @('<your-acl2-directory>/books/projects/vescmul/demo/integrated_multipliers.sv'). You
  may            find            this           file            on            <a
- href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv\"
+ href=\"https://github.com/acl2/acl2/blob/master/books/projects/vescmul/demo/integrated_multipliers.sv\"
  target=\"_blank\"> GitHub </a> as well.   This module allocates four identical
  33x33-bit  signed  multipliers,  two  final  stage  adders  and  some  smaller
  reduction  trees to  perform  different multiplier  operations. These  include
@@ -666,13 +666,13 @@ You may continue to @(see Multiplier-Verification-demo-2-expanded).
  systems.  Therefore, we  show  how our  tool  can handle  such  cases and  our
  framework to verify them with a similar efficiency as stand-alone multipliers.
  The    same    events    we    give     below    are    also    included    in
- @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-2.lisp'). </p>
+ @('<your-acl2-directory>/books/projects/vescmul/demo/demo-2.lisp'). </p>
 
 <p>
 1. Include the books to parse Verilog designs and crete symbolic simulation vectors.
 
 <code>
-(include-book \"projects/rp-rewriter/lib/mult3/top\" :dir :system)
+(include-book \"projects/vescmul/top\" :dir :system)
 </code>
 </p>
 <p>Including this book can take a long time (around a minute). However, we can save an executable
@@ -1011,9 +1011,9 @@ the value of the output signal at the third clock cycle.
  starting  point;  however,  real-world  applications  of  integer  multipliers
  involve more intricate  design strategies. We tried to recreate  some of those
  strategies  and   compiled  a   more  complex   multiplier  module   given  in
- @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv'). You
+ @('<your-acl2-directory>/books/projects/vescmul/demo/integrated_multipliers.sv'). You
  may            find            this           file            on            <a
- href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/integrated_multipliers.sv\"
+ href=\"https://github.com/acl2/acl2/blob/master/books/projects/vescmul/demo/integrated_multipliers.sv\"
  target=\"_blank\"> GitHub </a> as well.   This module allocates four identical
  33x33-bit  signed  multipliers,  two  final  stage  adders  and  some  smaller
  reduction  trees to  perform  different multiplier  operations. These  include
@@ -1029,7 +1029,7 @@ the value of the output signal at the third clock cycle.
  systems.  Therefore, we  show  how our  tool  can handle  such  cases and  our
  framework to verify them with a similar efficiency as stand-alone multipliers.
  The    same    events    we    give     below    are    also    included    in
- @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/demo-2.lisp'). </p>
+ @('<your-acl2-directory>/books/projects/vescmul/demo/demo-2.lisp'). </p>
 
 <p> 1.  Include necessary books.  @(see SVL) system uses  @(see SV)
 and @(see VL) packages. So we start with them.
@@ -1046,7 +1046,7 @@ multiplier modules:
 </p>
 
 <code>
-(include-book \"projects/rp-rewriter/lib/mult3/svtv-top\" :dir :system)
+(include-book \"projects/vescmul/svtv-top\" :dir :system)
 </code>
 
 <p> 2. Parse the System Verilog design. All events take a few
@@ -1479,16 +1479,16 @@ design. However, our system still supports hierarhical reasoning, and we can
 provide hierarhical  reasoning hints to  help the  program. Below is  a demo
 showing  how it  can  be achieved  for a  64x64-bit  multiplier with  7-to-3
 compressor    tree.     This    module    is    given    in    this    file:
-  @('<your-acl2-directory>/books/projects/rp-rewriter/lib/mult3/demo/homma-7-to-3-64x64-signed-carry-select.v'). You
+  @('<your-acl2-directory>/books/projects/vescmul/demo/homma-7-to-3-64x64-signed-carry-select.v'). You
  may            find            this           file            on            <a
- href=\"https://github.com/acl2/acl2/blob/master/books/projects/rp-rewriter/lib/mult3/demo/homma-7-to-3-64x64-signed-carry-select.v\"
+ href=\"https://github.com/acl2/acl2/blob/master/books/projects/vescmul/demo/homma-7-to-3-64x64-signed-carry-select.v\"
  target=\"_blank\"> GitHub </a> as well.</p>
 
 
-<p>1. As  a hierarchical reasonign  hint, we offer alternative  definitions for
+<p>1. As  a hierarchical reasoning  hint, we offer alternative  definitions for
  some of the  adder modules in this design. Particularly,  we redefined 7to3,
  6to3, 5to3,  and 4to3  compressor modules.  So first, we  create a  new file
- contaning those better defitions.
+ contaning those easier-to-identify definitions.
 
 <code>
 @('
