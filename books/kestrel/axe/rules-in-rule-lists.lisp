@@ -62,7 +62,7 @@
 (include-book "rule-lists")
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
-(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for <-0-MINUS
+(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; why?
 
 ;;todo: add more like this:
 (ensure-rules-known (lookup-rules))
