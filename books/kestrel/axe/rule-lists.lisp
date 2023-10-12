@@ -1440,7 +1440,7 @@
 ;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
      bvxor-list-base  ;move
      bvxor-list-unroll ;move
-     bv-array-read-when-element-size-is-0
+     bv-array-read-of-0-arg1
      bv-array-read-of-bv-array-write-too-narrow-cheap ;new
      bv-array-read-of-append-arrays
      bv-array-clear-1-0
