@@ -521,7 +521,7 @@
                 (equal free free2) ;hack?
                 )
            (not (bvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt) (<-BECOMES-BVLT-FREE <-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
+  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
 
 ;fixme think this through
 ;drop?

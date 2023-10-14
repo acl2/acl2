@@ -231,7 +231,7 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize y k)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (<-becomes-bvlt <-becomes-bvlt-alt
+                                  (
 ;                                                  <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
@@ -341,7 +341,7 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize k y)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (<-becomes-bvlt <-becomes-bvlt-alt
+                                  (
 ;                                                  <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
