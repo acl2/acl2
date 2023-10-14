@@ -26,7 +26,7 @@
 ;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
