@@ -882,20 +882,20 @@
                                    )
                            ()))))
 
-;bozo should we restrict this to constant arrays?
-(DEFTHMd ARRAY-REDUCTION-WHEN-ALL-SAME-improved
-  (IMPLIES (AND (all-equal$ (car data) data) ;old way (involves consing): (EQUAL DATA (REPEAT (LEN DATA) (CAR DATA)))
-                (NATP INDEX)
-                (< INDEX LEN)
-                (EQUAL (LEN DATA) LEN)
-                (TRUE-LISTP DATA)
-                (ALL-UNSIGNED-BYTE-P ELEMENT-SIZE DATA))
-           (EQUAL (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA)
-                  (BV-ARRAY-READ ELEMENT-SIZE LEN 0 DATA) ;(BVCHOP ELEMENT-SIZE (CAR DATA))
-                  ))
-  :hints (("Goal" :use (:instance ARRAY-REDUCTION-WHEN-ALL-SAME)
-           :in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME; CAR-BECOMES-NTH-OF-0
-                               ))))
+;; ;bozo should we restrict this to constant arrays?
+;; (DEFTHMd ARRAY-REDUCTION-WHEN-ALL-SAME-improved
+;;   (IMPLIES (AND (all-equal$ (car data) data) ;old way (involves consing): (EQUAL DATA (REPEAT (LEN DATA) (CAR DATA)))
+;;                 (NATP INDEX)
+;;                 (< INDEX LEN)
+;;                 (EQUAL (LEN DATA) LEN)
+;;                 (TRUE-LISTP DATA)
+;;                 (ALL-UNSIGNED-BYTE-P ELEMENT-SIZE DATA))
+;;            (EQUAL (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA)
+;;                   (BV-ARRAY-READ ELEMENT-SIZE LEN 0 DATA) ;(BVCHOP ELEMENT-SIZE (CAR DATA))
+;;                   ))
+;;   :hints (("Goal" :use (:instance ARRAY-REDUCTION-WHEN-ALL-SAME)
+;;            :in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME; CAR-BECOMES-NTH-OF-0
+;;                                ))))
 
 ;; This could loop when INDEX is the constant 0, except that then the whole
 ;; bv-array-read should be evaluated because all the args would be constants.
@@ -908,16 +908,18 @@
                 (natp index)
                 (< index len)
                 (equal (len data) len)
-                (true-listp data)
-                (all-unsigned-byte-p element-size data))
+                ;;(true-listp data)
+                ;;(all-unsigned-byte-p element-size data)
+                )
            (equal (bv-array-read element-size len index data)
                   (bv-array-read element-size len 0 data) ;(bvchop element-size (car data))
                   ))
-  :hints (("Goal" :use (:instance array-reduction-when-all-same)
+  :hints (("Goal" :use (:instance array-reduction-when-all-same (data (true-list-fix data)))
            :in-theory (e/d (;all-equal$-when-true-listp
+                            BV-ARRAY-READ
                             )
-                           ( array-reduction-when-all-same ;car-becomes-nth-of-0
-                             )))))
+                           (array-reduction-when-all-same ;car-becomes-nth-of-0
+                            )))))
 
 (defthm all-unsigned-byte-p-of-bv-array-write-gen-2
   (implies (and (< size element-size) ;not logically necessary, but keeps us from wasting time on this rule when the regular rule would suffice (BOZO ensure that one fires first?)
