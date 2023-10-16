@@ -232,11 +232,14 @@
 ;; INSTRUCTION: SGDT
 ;; ======================================================================
 
-(skip-proofs (def-inst x86-sgdt
+(skip-proofs
+ (def-inst x86-sgdt
 
   :parents (privileged-opcodes two-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32)
+                                        (signed-byte-p
+                                         unsigned-byte-p))))
 
   :long
 
@@ -250,8 +253,10 @@
 
    <p><b>TO-DO:</b> Handle this outside of 64-bit-mode.</p>"
 
+  :guard (not (equal (modr/m->mod modr/m) #b11))
+  
   :returns (x86 x86p :hyp (x86p x86))
-
+  
   :modr/m t
 
   :body
@@ -308,10 +313,10 @@
        (base (gdtr/idtrBits->base-addr gdtr))
 
        ;; Update the x86 state:
-       ((mv flg x86) (wme-size-opt proc-mode base-size+2 addr
-                                   seg-reg (logapp 16
-                                                   limit
-                                                   base) inst-ac? x86))
+       ((mv flg x86)
+        (wme-size-opt
+         proc-mode base-size+2 addr seg-reg (logapp 16 limit base)
+         inst-ac? x86))
        ((when flg) (!!ms-fresh :wme-size-opt flg))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86)))
