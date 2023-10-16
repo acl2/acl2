@@ -3368,7 +3368,7 @@
                          ,@fixed-cmds
                          ,@(and include-book-alist-entry ; always true?
                                 `((table puff-included-books
-                                         ,full-book-name
+                                         ',full-book-name
                                          ',include-book-alist-entry))))
                        :ld-error-action :error)
                       (maybe-install-acl2-defaults-table
@@ -5087,12 +5087,12 @@
                        (convert-io-markers ,stop-markers)
                        state))
 
-(defmacro set-raw-proof-format (flg)
-  (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
-  (let ((flg (if (atom flg)
-                 (list 'quote flg)
-               flg)))
-    `(f-put-global 'raw-proof-format ,flg state)))
+(defun set-raw-proof-format-fn (val state)
+  (declare (xargs :guard (member-eq val '(t nil :clause))))
+  (f-put-global 'raw-proof-format val state))
+
+(defmacro set-raw-proof-format (val)
+  `(set-raw-proof-format-fn ,val state))
 
 (defmacro set-raw-warning-format (flg)
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))

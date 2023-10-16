@@ -18,13 +18,21 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-(include-book "kestrel/x86/tools/support-axe" :dir :system)
+(include-book "support-axe")
+(include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules32" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules32" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
-(include-book "kestrel/x86/tools/conditions" :dir :system)
-(include-book "kestrel/x86/tools/assumptions32" :dir :system)
-(include-book "kestrel/x86/tools/assumptions64" :dir :system)
-(include-book "kestrel/x86/tools/read-over-write-rules" :dir :system)
-(include-book "kestrel/x86/tools/write-over-write-rules" :dir :system)
+(include-book "kestrel/x86/conditions" :dir :system)
+(include-book "kestrel/x86/support" :dir :system)
+(include-book "kestrel/x86/assumptions32" :dir :system)
+(include-book "kestrel/x86/assumptions64" :dir :system)
+(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
+(include-book "rule-lists")
+(include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
@@ -42,30 +50,31 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
+(include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;reduce? for logext-identity
 (include-book "kestrel/arithmetic-light/mod" :dir :system)
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
+(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
-(include-book "kestrel/x86/tools/rule-lists" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 
 (acl2::ensure-rules-known (lifter-rules32))
 (acl2::ensure-rules-known (lifter-rules32-new))
 (acl2::ensure-rules-known (lifter-rules64))
+(acl2::ensure-rules-known (lifter-rules64-new))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 
+;; move to lifter-support?
+(defconst *executable-types32* '(:pe-32 :mach-o-32 :elf-32))
+(defconst *executable-types64* '(:pe-64 :mach-o-64 :elf-64))
+(defconst *executable-types* (append *executable-types32* *executable-types64*))
+
 ;; The type of an x86 executable
-;; TODO: Add support for ELF
 (defun executable-typep (type)
   (declare (xargs :guard t))
-  (member-eq type '(:pe-32
-                    :pe-64
-                    :mach-o-32
-                    :mach-o-64
-                    :elf-32
-                    :elf-64)))
+  (member-eq type *executable-types*))
 
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
 (deftheory 32-bit-reg-rules
@@ -90,6 +99,20 @@
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
+
+;move?
+;; Returns a symbol-list.
+(defund maybe-add-debug-rules (debug-rules monitor)
+  (declare (xargs :guard (and (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (symbol-listp debug-rules))))
+  (if (eq :debug monitor)
+      debug-rules
+    (if (member-eq :debug monitor)
+        ;; replace :debug in the list with all the debug-rules:
+        (union-eq debug-rules (remove-eq :debug monitor))
+      ;; no special treatment:
+      monitor)))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -141,7 +164,7 @@
          ;;                       (cw ")~%"))))
          (dag dag-or-quote)
          ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag state))
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
@@ -150,7 +173,7 @@
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
          ((mv erp dag state)
-          (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion. todo: add some sort of DAG-based pruning)
+          (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
@@ -168,7 +191,7 @@
          ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
          (dag-fns (acl2::dag-fns dag)))
-      (if (not (member-eq 'run-until-rsp-greater-than dag-fns)) ;; stop if the run is done
+      (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
                   (mv (erp-nil) dag state))
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
@@ -248,6 +271,7 @@
                   :mode :program))
   (b* ((- (cw "Lifting ~s0.~%" target)) ;todo: print the executable name
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
        (- (cw "(Executable type: ~x0.)~%" executable-type))
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
@@ -301,34 +325,37 @@
                                                                           parsed-executable
                                                                           stack-slots)
                                           assumptions)
+                                ;;todo: add support for :elf-32
                                 (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                                         assumptions))))))))
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
-       (- (and print (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
+       (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
-       (lifter-rules (if (eq executable-type :pe-32)
+       (lifter-rules (if (member-eq executable-type *executable-types32*)
                          (append (lifter-rules32)
                                  (lifter-rules32-new))
-                       (if (eq executable-type :mach-o-32)
-                           (append (lifter-rules32)
-                                   (lifter-rules32-new) ; todo, may first need to implement standard-assumptions-mach-o-32
-                                   )
-                         (lifter-rules64))))
+                       (append (lifter-rules64)
+                               (lifter-rules64-new))))
        (rules (append extra-rules lifter-rules))
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
        (rules (set-difference-eq rules remove-rules))
-       (rules-to-monitor (if (eq :debug monitor)
-                             (debug-rules32)
-                           monitor))
+       (32-bitp (member-eq executable-type *executable-types32*))
+       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Next, we simplify the assumptions.  This allows us to state the
        ;; theorem about a lifted routine concisely, using an assumption
        ;; function that opens to a large conjunction before lifting is
        ;; attempted.  We need to assume some assumptions when simplifying the
        ;; others, because opening things like read64 involves testing
        ;; canonical-addressp (which we know from other assumptions is true):
-       (assumption-rules (append extra-assumption-rules (assumption-simplification-rules)))
+       (assumption-rules (append extra-assumption-rules
+                                 (assumption-simplification-rules)
+                                 (if 32-bitp
+                                     nil
+                                   ;; needed to match the normal forms used during lifting:
+                                   (lifter-rules64-new))))
        ((mv erp rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil state))
@@ -363,7 +390,7 @@
 ;; Returns (mv erp event state)
 (defun def-unrolled-fn (lifted-name
                         target
-                        parsed-executable
+                        executable
                         assumptions
                         suppress-assumptions
                         stack-slots
@@ -389,7 +416,7 @@
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
-                              ;; parsed-executable
+                              ;; executable
                               ;; assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
@@ -420,6 +447,15 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
@@ -448,12 +484,13 @@
        (result-dag-vars (acl2::dag-vars result-dag))
        (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
        (defconst-form `(defconst ,defconst-name ',result-dag))
+       ;; TODO: Consider the order of these (seems arbitrary?  maybe sort them)
        (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
-       ((when (intersection-eq result-dag-fns '(run-until-rsp-greater-than run-until-return)))
+       ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
         (if (< result-dag-size 10000)
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (untranslate (dag-to-term result-dag) nil (w state)) nil)
@@ -505,24 +542,29 @@
                          ,function-body-untranslated)))
             (mv (erp-nil) (list defun)))))
        ((when erp) (mv erp nil state))
+       (produce-theorem (and produce-theorem
+                             (if (not produce-function)
+                                 ;; todo: do something better in this case?
+                                 (prog2$ (cw "NOTE: Suppressing theorem because :produce-function is nil.~%")
+                                         nil)
+                               t)))
        (defthms ; either nil or a singleton list
-         (if (not produce-theorem)
-             nil
-           (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
-                             (implies (and ,@assumptions)
-                                      (equal (run-until-return x86)
-                                             (,lifted-name ,@fn-formals)))
-                             :hints ,(if restrict-theory
-                                         `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
-                                                                )))
-                                       `(("Goal" :in-theory (enable ,@rules-used
-                                                                    ;; ,@assumption-rules-used ; todo consider this
-                                                                    ))))
-                             :otf-flg t))
-                  (defthm (if prove-theorem
-                              defthm
-                            `(skip-proofs ,defthm))))
-             (list defthm))))
+         (and produce-theorem
+              (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
+                                (implies (and ,@assumptions)
+                                         (equal (run-until-return x86)
+                                                (,lifted-name ,@fn-formals)))
+                                :hints ,(if restrict-theory
+                                            `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
+                                                                   )))
+                                          `(("Goal" :in-theory (enable ,@rules-used
+                                                                       ;; ,@assumption-rules-used ; todo consider this
+                                                                       ))))
+                                :otf-flg t))
+                     (defthm (if prove-theorem
+                                 defthm
+                               `(skip-proofs ,defthm))))
+                (list defthm))))
        (event `(progn ,defconst-form
                       ,@defuns
                       ,@defthms))
@@ -532,10 +574,11 @@
 ;TODO: Add show- variant
 ;bad name?
 ;try defmacroq?
+;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
 (defmacro def-unrolled (&whole whole-form
                                lifted-name ;name to use for the generated function and constant (the latter surrounded by stars)
-                               parsed-executable ; for example, a defconst created by defconst-x86
+                               executable ; a string (filename), or (for example) a defconst created by defconst-x86
                                &key
                                (target ':entry-point) ;; where to start lifting (see lifter-targetp)
                                (assumptions 'nil) ;extra assumptions in addition to the standard-assumptions (todo: rename to :extra-assumptions)
@@ -552,7 +595,7 @@
                                (step-increment '100)
                                (memoizep 't)
                                (monitor 'nil)
-                               (print 't)             ;how much to print
+                               (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
                                (non-executable 't)  ;since stobj updates will not be let-bound      ;allow :auto?  only use for :output :all ?
@@ -564,7 +607,7 @@
     (def-unrolled-fn
       ',lifted-name
       ,target
-      ,parsed-executable
+      ,executable ; gets evaluated
       ,assumptions
       ',suppress-assumptions
       ',stack-slots

@@ -684,7 +684,7 @@
                   (equal 0 (slice (+ -1 xsize) size x))))
   :hints (("Goal"
            :cases (equal size xsize)
-           :use (:instance split-bv (y x) (n xsize) (m size))
+           :use (:instance split-bv (x x) (n xsize) (m size))
            :in-theory (e/d (unsigned-byte-p-forced) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE bvcat-of-bvchop-low)))))
 
 
@@ -823,7 +823,7 @@
            (equal (equal k (bvchop 6 x))
                   (equal k (bvchop 5 x))))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 6 x)) (n 6) (m 5))
+           :use (:instance split-bv (x (bvchop 6 x)) (n 6) (m 5))
            :in-theory (e/d (bvlt ;UNSIGNED-BYTE-P
                             )
                            (bvcat-of-bvchop-low bvcat-of-getbit-and-x-adjacent

@@ -4446,6 +4446,18 @@
                                      data)))))
    nil))
 
+(defun proof-builder-assumptions (concl-flg govs-flg conc current-addr
+                                            state-stack)
+  (cond (concl-flg (union-equal (hyps t)
+                                (cond (govs-flg
+                                       (add-to-set-equal
+                                        (dumb-negate-lit conc)
+                                        (governors conc current-addr)))
+                                      (t (list (dumb-negate-lit conc))))))
+        (govs-flg (union-equal (hyps t)
+                               (governors conc current-addr)))
+        (t (hyps t))))
+
 (define-pc-help type-alist (&optional concl-flg govs-flg fc-report-flg
                                       alistp)
   (when-goals
@@ -4467,22 +4479,14 @@
                             nil)
                            (set-fc-report-on-the-fly t))))
       (mv-let
-       (flg hyps-type-alist ttree)
+       (flg hyps-type-alist ign)
        (hyps-type-alist
-        (cond (concl-flg
-               (union-equal (hyps t)
-                            (cond (govs-flg
-                                   (add-to-set-equal
-                                    (dumb-negate-lit conc)
-                                    (governors conc current-addr)))
-                                  (t (list (dumb-negate-lit conc))))))
-              (govs-flg (union-equal (hyps t)
-                                     (governors conc current-addr)))
-              (t (hyps t)))
+        (proof-builder-assumptions concl-flg govs-flg conc current-addr
+                                   state-stack)
         (make-pc-ens (pc-ens t) state)
         w
         state)
-       (declare (ignore ttree))
+       (declare (ignore ign))
        (prog2$
         (and fc-report-flg (restore-fc-report-settings))
         (if flg
@@ -4502,6 +4506,73 @@
                                     (decode-type-alist hyps-type-alist))))
                               (t (print-type-alist hyps-type-alist w nil)))
                         state))))))))))
+
+(define-pc-help pot-lst (&optional concl-flg govs-flg rawp)
+  (when-goals
+   (let* ((conc (conc t))
+          (current-addr (current-addr t))
+          (wrld (w state))
+          (govs-flg (if (cdr args) govs-flg (not concl-flg)))
+          (assumptions
+           (proof-builder-assumptions concl-flg govs-flg conc current-addr
+                                      state-stack))
+          (clause (dumb-negate-lit-lst (expand-assumptions assumptions)))
+          (ens (make-pc-ens (pc-ens t) state))
+          (clause-pts (enumerate-elements clause 0)))
+     (mv-let
+       (contradictionp type-alist fc-pair-lst)
+       (forward-chain-top 'pot-lst
+                          clause
+; Pts = nil as in call of hyps-type-alist in type-alist command.
+                          nil
+                          (ok-to-force-ens ens)
+                          nil ; do-not-reconsiderp
+                          wrld ens (match-free-override wrld) state)
+       (cond
+        (contradictionp
+         (io? proof-builder nil state
+              (concl-flg)
+              (fms0 "*** Contradiction (from forward-chaining, towards ~
+                     building a pot-lst)! ***~|~#0~[The S command should ~
+                     complete this goal.~|~/~]"
+                    (list (cons #\0 (if concl-flg 1 0))))))
+        (t
+         (let ((rcnst
+; The following is taken from simplify-clause.
+                (make-rcnst ens wrld state
+                            :force-info
+                            (if (ffnnamep-lst 'if clause)
+                                'weak
+                              t)
+                            :top-clause clause
+                            :current-clause clause)))
+           (mv-let
+             (step-limit contradictionp pot-lst)
+             (setup-simplify-clause-pot-lst clause
+                                            (pts-to-ttree-lst clause-pts)
+                                            fc-pair-lst
+                                            type-alist
+                                            rcnst
+                                            wrld state
+                                            *default-step-limit*)
+             (declare (ignore step-limit))
+             (cond
+              (contradictionp
+               (io? proof-builder nil state
+                    (concl-flg)
+                    (fms0 "*** Contradiction from attempting to build a ~
+                           pot-lst)! ***~|~#0~[The S command should complete ~
+                           this goal.~|~/~]"
+                          (list (cons #\0 (if concl-flg 1 0))))))
+              (t
+               (io? proof-builder nil state
+                    (pot-lst rawp)
+                    (pprogn
+                     (fms0 "~|Current pot-lst:~%")
+                     (prog2$ (if rawp
+                                 (cw "~x0~|" pot-lst)
+                               (print-pot-lst pot-lst nil))
+                             state)))))))))))))
 
 (define-pc-macro print-main ()
   (value '(print (caddr (event-name-and-types-and-raw-term (state-stack))))))

@@ -271,8 +271,8 @@
 ;;                (unsigned-byte-p 32 x)
 ;;                (unsigned-byte-p 32 k))
 ;;           (<= (- x y) 1))
-;;  :hints (("Goal" :use ( (:instance ACL2::SPLIT-BV (y x) (n 32) (m 1))
-;;                         (:instance ACL2::SPLIT-BV (y k) (n 32) (m 1))
+;;  :hints (("Goal" :use ( (:instance ACL2::split-bv (x x) (n 32) (m 1))
+;;                         (:instance ACL2::split-bv (x k) (n 32) (m 1))
 ;;                         )
 ;;           :in-theory (disable ACL2::BVCAT-OF-SLICE-AND-X-ADJACENT
 ;;                               ACL2::BVCAT-SLICE-SAME
@@ -289,8 +289,8 @@
                       (equal (+ 1 k) x))
                   (equal (acl2::slice 31 1 x)
                          (acl2::slice 31 1 k))))
-  :hints (("Goal" :use ((:instance ACL2::SPLIT-BV (y x) (n 32) (m 1))
-                        (:instance ACL2::SPLIT-BV (y k) (n 32) (m 1)))
+  :hints (("Goal" :use ((:instance ACL2::split-bv (x x) (n 32) (m 1))
+                        (:instance ACL2::split-bv (x k) (n 32) (m 1)))
            :cases ((equal 0 (acl2::getbit 0 x)))
            :in-theory (e/d (acl2::bvcat acl2::logapp)
                            ( ACL2::BVCAT-OF-SLICE-AND-X-ADJACENT
@@ -354,9 +354,6 @@
 ;for axe, or build in bitp, or add a constant opener rule
 (defthmd bitp-of-0
   (bitp 0))
-
-(defthm bitp-of-bitxor
-  (bitp (acl2::bitxor x y)))
 
 (local (in-theory (disable pfield::fep-holds
                            pfield::mod-when-fep)))

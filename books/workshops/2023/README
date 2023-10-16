@@ -1,2 +1,84 @@
-This is a stub, to be filled out in analogy with
-../2022/README.
+Below is a list of all papers accepted for ACL2 Workshop 2023,
+alphabetized by first author.  Each is associated (or, to be
+associated) with the corresponding directory containing supporting
+materials.  Directories starting with "[books]" are the indicated
+subdirectories of the community books; the others are subdirectories
+of this README's directory, i.e., of [books]/workshops/2023/.
+
+------------------------------
+
+Alessandro Coglio, Eric McCarthy and Eric Smith
+Formal Verification of Zero-Knowledge Circuits
+
+[books]/kestrel/prime-fields/
+[books]/kestrel/crypto/r1cs/
+[books]/kestrel/crypto/pfcs/
+[books]/kestrel/ethereum/semaphore/
+[books]/kestrel/zcash/
+coglio-mccarthy-smith/
+
+------------------------------
+
+Ruben Gamboa, Panagiotis Manolios, Eric Smith and Kyle Thompson
+Using Counter-Example Generation and Theory Exploration to Suggest Missing Hypotheses
+
+------------------------------
+
+David Hardin
+Verification of a Rust Implementation of Knuth's Dancing Links using ACL2
+
+------------------------------
+
+Matt Kaufmann and J Moore
+Advances in ACL2 Proof Debugging Tools
+
+kaufmann-moore/
+
+------------------------------
+
+Ankit Kumar, Max von Hippel, Panagiotis Manolios and Cristina Nita-Rotaru
+Verification of GossipSub in ACL2s
+
+------------------------------
+
+Carl Kwan
+Classical LU Decomposition in ACL2
+
+------------------------------
+
+Carl Kwan, Yutong Xin and William D. Young
+CHERI Concentrate in ACL2
+
+------------------------------
+
+Grant Passmore
+ACL2 Proofs of Nonlinear Inequalities with Imandra
+
+------------------------------
+
+David Russinoff
+A Formalization of Finite Group Theory: Part II
+
+------------------------------
+
+David Russinoff
+A Formalization of Finite Group Theory: Part III
+
+------------------------------
+
+Sol Swords
+A Bound-Finding Tool for Arithmetic Terms
+
+------------------------------
+
+Max von Hippel, Panagiotis Manolios, Ken McMillan, Cristina Nita-Rotaru and Lenore Zuck
+A Case Study in Analytic Protocol Analysis in ACL2
+
+vonhippel-etal/
+
+------------------------------
+
+Andrew T. Walter, Ankit Kumar and Panagiotis Manolios
+Proving Calculational Proofs Correct
+
+------------------------------

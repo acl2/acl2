@@ -1697,7 +1697,7 @@
   (pseudo-termp val))
 
 ;-----------------------------------------------------------------
-; ELIMINATE-DESTRUCTORS-RULE
+; ELIMINATE-DESTRUCTORS-RULES
 
 ; This contains a single elim-rule:
 ; (defrec elim-rule
@@ -1726,9 +1726,11 @@
           (equal rhs (nth crucial-position (cdr destructor-term)))))
     (& nil)))
 
-(defun pseudo-eliminate-destructors-rulep (sym val)
-  (declare (ignore sym))
-  (pseudo-elim-rulep val))
+(defun pseudo-eliminate-destructors-rules (sym val)
+  (declare (irrelevant sym))
+  (cond ((atom val) (null val))
+        (t (and (pseudo-elim-rulep (car val))
+                (pseudo-eliminate-destructors-rules sym (cdr val))))))
 
 ;-----------------------------------------------------------------
 ; FORMALS
@@ -2893,8 +2895,8 @@
                 (pseudo-def-bodiesp sym val)))
           (DEFAXIOM-SUPPORTER (defaxiom-supporterp sym val))
           (DEFCHOOSE-AXIOM (pseudo-defchoose-axiomp sym val))
-          (ELIMINATE-DESTRUCTORS-RULE
-           (pseudo-eliminate-destructors-rulep sym val))
+          (ELIMINATE-DESTRUCTORS-RULES
+           (pseudo-eliminate-destructors-rules sym val))
           (FORMALS
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))

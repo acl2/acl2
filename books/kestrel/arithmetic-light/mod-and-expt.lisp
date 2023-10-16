@@ -126,7 +126,8 @@
                 (integerp y))
            (equal (mod (expt (mod x y) i) y)
                   (mod (expt x i) y)))
-  :hints (("Goal" :in-theory (enable expt mod-of-*-subst-arg1))))
+  :hints (("Goal" :in-theory (e/d (expt mod-of-*-subst-arg1)
+                                  (floor-mod-elim-rule)))))
 
 (defthm mod-of-expt-when-equal-of-mod-subst-constant
   (implies (and (syntaxp (not (quotep r)))

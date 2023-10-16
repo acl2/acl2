@@ -969,7 +969,7 @@
            (>= x 0)
            (< x 256))
       (code-char x)
-    (gv code-char (x) (code-char 0))))
+    (gv code-char (x) *null-char*)))
 
 (defun-*1* complex (x y)
   (complex (the rational (if (rationalp x) x (gv complex (x y) 0)))
@@ -2062,11 +2062,10 @@
 
                (and (not super-stobjs-in) (ignore-vars dcls)))
               (ignorable-vars (ignorable-vars dcls))
+              (stobjs-out (getpropc fn 'stobjs-out nil wrld))
               (declared-stobjs (if stobj-flag
                                    (list stobj-flag)
                                  (get-declared-stobjs dcls)))
-              (user-stobj-is-arg (and declared-stobjs
-                                      (not (equal declared-stobjs '(state)))))
               (live-stobjp-test (create-live-user-stobjp-test declared-stobjs))
 
 ; We throw away most declarations and the doc string, keeping only ignore and
@@ -2096,7 +2095,7 @@
                (cond (super-stobjs-in
                       '(let ((temp (f-get-global 'guard-checking-on
                                                  *the-live-state*)))
-                         (cond ((or (eq temp :none) (eq temp nil))
+                         (cond ((gc-off1 temp)
 
 ; Calls of a stobj primitive that takes its stobj as an argument are always
 ; guard-checked.  If that changes, consider also changing
@@ -2139,16 +2138,13 @@
 ; skip-early-exit-code-when-none is true.
 
                       guard-checking-on-form)
-                     (t `(let ((x ,guard-checking-on-form))
-                           (and x
-                                (not (eq x :none)))))))
+                     (t `(not (gc-off1 ,guard-checking-on-form)))))
               (fail_guard ; form for reporting guard failure
                (oneify-fail-form
                 'ev-fncall-guard-er fn formals guard super-stobjs-in wrld
                 (and super-stobjs-in
-                     '(cond ((member-eq (f-get-global 'guard-checking-on
-                                                      *the-live-state*)
-                                        '(nil :none))
+                     '(cond ((gc-off1 (f-get-global 'guard-checking-on
+                                                    *the-live-state*))
                              :live-stobj)
                             (t
                              :live-stobj-gc-on)))))
@@ -2374,15 +2370,12 @@
 ; performance benefit may be small, so for now at least we avoid complicating
 ; the code with that consideration.
 
-                                            (let ((stobjs-out
-                                                   (getpropc fn 'stobjs-out nil
-                                                             wrld)))
-                                              (cond
-                                               ((and stobjs-out ; property is there
-                                                     (all-nils stobjs-out))
-                                                guard)
-                                               (t `(let ((*aokp* nil))
-                                                     ,guard))))
+                                            (cond
+                                             ((and stobjs-out ; property is there
+                                                   (all-nils stobjs-out))
+                                              guard)
+                                             (t `(let ((*aokp* nil))
+                                                   ,guard)))
                                           guard)
                                      ,*1*guard)
                                    ,(assert$
@@ -2506,7 +2499,7 @@
 ; mode case.
 
                (append
-                (and user-stobj-is-arg
+                (and (set-difference-eq stobjs-out '(nil state))
                      `((when *wormholep*
                          (wormhole-er (quote ,fn) (list ,@formals)))))
                 (and (eq defun-mode :logic) ; else :program
@@ -3647,7 +3640,9 @@
 ;     LEMMAS RUNIC-MAPPING-PAIRS MULTIPLICITY STATE-IN
 ;     RECURSIVEP DEF-BODIES CONSTRAINEDP LINEAR-LEMMAS
 ;     FORMALS MACRO-BODY FORWARD-CHAINING-RULES STATE-OUT TABLE-ALIST
-;     GUARD MACRO-ARGS ELIMINATE-DESTRUCTORS-RULE CONST LEVEL-NO
+;     GUARD MACRO-ARGS
+;     ELIMINATE-DESTRUCTORS-RULE ; as of 10/2023, ELIMINATE-DESTRUCTORS-RULES
+;     CONST LEVEL-NO
 ;     UNNORMALIZED-BODY THEOREM REDEFINED INDUCTION-MACHINE JUSTIFICATION
 ;     INDUCTION-RULES CONTROLLER-ALIST QUICK-BLOCK-INFO
 
@@ -3717,6 +3712,7 @@
 ; CONSTRAINEDP                                          50190
 ; FORWARD-CHAINING-RULES                                49839
 ; CONST                                                 25601
+;;; As of 10/2023, the following was replaced by ELIMINATE-DESTRUCTORS-RULES.
 ; ELIMINATE-DESTRUCTORS-RULE                            19922
 ; THEOREM                                                9234
 ; LINEAR-LEMMAS                                          9102
@@ -3828,6 +3824,7 @@
 ; FORMALS                                                1278
 ; MACRO-BODY                                             1216
 ; STOBJS-OUT                                             1199
+;;; As of 10/2023, the following was replaced by ELIMINATE-DESTRUCTORS-RULES.
 ; ELIMINATE-DESTRUCTORS-RULE                              962
 ;
 ; ============================================================
@@ -7465,7 +7462,8 @@
          ((defun defund defn defproxy defun-nx defun-one-output defstub
             defmacro defmacro-untouchable defabbrev
             defun@par defmacro-last defun-overrides
-            defun-with-guard-check defun-sk defdeprecate)
+            defun-with-guard-check defun-sk defdeprecate
+            defun-inline defund-inline defun-notinline defund-notinline)
           (our-update-ht (cadr form) form ht when-pass-2-p))
          (save-def
           (note-fns-in-form (cadr form) ht when-pass-2-p))
@@ -8223,15 +8221,15 @@
   (cond
    ((null trips)
     (cond ((null acc) nil)
-          (t (er hard 'check-none-ideal
-                 "The following are :ideal mode functions that are not ~
-                  non-executable.  We rely in oneify-cltl-code on the absence ~
-                  of such functions in the boot-strap world (see the comment ~
-                  on check-none-ideal there); moreover, we want system ~
-                  functions to execute efficiently, which might not be the ~
-                  case for an :ideal mode function.  These functions should ~
-                  have their guards verified: ~&0."
-                 (remove-duplicates-eq acc)))))
+          (t (error
+              "The following are :ideal mode functions that are not ~%~
+               non-executable.  We rely in oneify-cltl-code on the absence ~%~
+               of such functions in the boot-strap world (see the comment ~%~
+               on check-none-ideal there); moreover, we want system ~%~
+               functions to execute efficiently, which might not be the ~%~
+               case for an :ideal mode function.  Functions in the ~%~
+               following list should have their guards verified: ~s."
+              (remove-duplicates-eq acc)))))
    (t
     (let* ((trip (car trips))
            (fn (and (eq (car trip) 'event-landmark)
@@ -8817,15 +8815,15 @@
                       acl2-customization):~&~s~&"
                      '(set-debugger-enable t)))
            (force-output t)
-           (let* ((x (standard-oi state))
-                  (chan (if (and (consp x)
-                                 (symbolp (cdr (last x))))
-                            (cdr (last x))
-                            (and (symbolp x)
-                                 x))))
-             (when (and chan
-                        (open-input-channel-p chan :object state))
-               (clear-input (get-input-stream-from-channel chan))))
+           (when (eq (standard-oi state) *standard-oi*)
+
+; In Version_8.5 we called clear-input regardless of the non-nil value of
+; (standard-oi state).  But that could lead to discarding of valid input or an
+; attempt to read values from within a comment, as illustrated respectively in
+; community book files clear-input-1.lsp and clear-input-2.lsp in directory
+; books/system/tests/.
+
+             (clear-input (get-input-stream-from-channel *standard-oi*)))
            (cond (continue-p
                   (setq *acl2-time-limit* 0)
                   (invoke-restart 'continue))

@@ -376,7 +376,8 @@
                                    len1)
              (prog2$ (er hard? 'intersect-types "Array length mismatch: ~x0 and ~x1." len1 len2)
                      (empty-type)))))
-        (t (er hard? 'intersect-types "Type mismatch: ~x0 and ~x1." type1 type2))))
+        (t (prog2$ (er hard? 'intersect-types "Type mismatch: ~x0 and ~x1." type1 type2)
+                   (empty-type)))))
 
 (defund intersect-types-safe (type1 type2)
   (declare (xargs :guard t))

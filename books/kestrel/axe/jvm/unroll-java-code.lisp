@@ -495,7 +495,7 @@
        ;;; Prune irrelevant branches, if instructed:
        ;; TODO: Consider calling prune-dag-approximately here:
        ((mv erp dag state)
-        (if (if (booleanp prune-branches-precisely)
+        (if (if (booleanp prune-branches-precisely) ;todo: consider calling something like maybe-prune-dag-precisely, but we have a rule-alist here
                 prune-branches-precisely
               ;; prune-branches is a natp (a limit on the size):
               (dag-or-quotep-size-less-thanp dag prune-branches-precisely))
@@ -506,6 +506,7 @@
                                                  nil ; interpreted-function-alist
                                                  monitored-rules
                                                  call-stp
+                                                 t ; check-fnsp
                                                  state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))

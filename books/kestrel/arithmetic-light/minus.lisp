@@ -15,6 +15,11 @@
          (integerp (fix x)))
   :hints (("Goal" :cases ((integerp x)))))
 
+;; Simple but kept disabled because we have the stronger rule integerp-of--.
+(defthmd integerp-of---when-integerp
+  (implies (integerp x)
+           (integerp (- x))))
+
 (in-theory (disable rationalp-unary--)) ;rationalp-of-- is stronger
 
 (defthm rationalp-of--

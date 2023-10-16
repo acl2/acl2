@@ -17,11 +17,12 @@
 
 (make-axe-syntaxp-evaluator 'foo '())
 
-(make-axe-syntaxp-evaluator 'bar '(not-quotep))
+(make-axe-syntaxp-evaluator 'bar '(syntactic-variablep))
 
-(make-axe-syntaxp-evaluator 'baz '(not-quotep heavier-dag-term
-                                              should-reverse-equality ;this one uses the dag-array
-                                              ))
+(make-axe-syntaxp-evaluator 'baz '(syntactic-variablep
+                                   heavier-dag-term
+                                   should-reverse-equality ;this one uses the dag-array
+                                   ))
 
 ;; expected result:
 (must-be-redundant
@@ -94,9 +95,15 @@
       (ATOM ARGS)
       (CASE FN
         (AXE-QUOTEP (AXE-QUOTEP (LOOKUP-EQ ARG0 ALIST)))
-        (NOT-QUOTEP
-         (NOT-QUOTEP (IF (CONSP ARG0)
-                         ARG0 (LOOKUP-EQ ARG0 ALIST)))))
+        (SYNTACTIC-VARIABLEP
+         (SYNTACTIC-VARIABLEP (IF (CONSP ARG0)
+                                  ARG0
+                                (LOOKUP-EQ ARG0 ALIST))
+                              dag-array))
+        (t (ER HARD?
+               'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
+               "Unrecognized function in axe-syntaxp rule: ~x0."
+               FN)))
       (LET
        ((ARG1 (FIRST ARGS)) (ARGS (REST ARGS)))
        (DECLARE (IGNORABLE ARGS ARG1))

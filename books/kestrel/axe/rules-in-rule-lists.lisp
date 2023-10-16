@@ -28,6 +28,7 @@
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling" :dir :system)
+(include-book "kestrel/bv/bvsx-rules" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;for <-of-sums-cancel (todo: reduce)
 (include-book "kestrel/bv/adder" :dir :system) ;for BVPLUS-BECOMES-RIPPLE-CARRY-ADDER, used in bit blasting in the phased rules
 (include-book "bv-array-rules-axe")
@@ -61,7 +62,7 @@
 (include-book "rule-lists")
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
-(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for <-0-MINUS
+(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; why?
 
 ;;todo: add more like this:
 (ensure-rules-known (lookup-rules))

@@ -31,6 +31,10 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
+(defthm equal-of-ifix-self
+  (equal (equal (ifix x) x)
+         (integerp x)))
+
 ;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization/
 
 ;todo: think about this
@@ -39,19 +43,11 @@
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 (defthm plus-of-minus-subst-constant
-  (implies (and (EQUAL x (+ k y)) ;k is a free var
+  (implies (and (equal x (+ k y)) ;k is a free var
                 (syntaxp (quotep k))
                 (acl2-numberp k))
            (equal (+ (- y) x)
                   k)))
-
-(defthm getbit-of-if-two-constants
-  (implies (and (syntaxp (and (quotep n)
-                              (quotep x1)
-                              (quotep x2))))
-           (equal (getbit n (if test x1 x2))
-                  (if test (getbit n x1)
-                    (getbit n x2)))))
 
 (defthm getbit-of-ash
   (implies (and (natp c)
@@ -88,6 +84,7 @@
                                    (n n)))
            :in-theory (disable getbit-of-slice))))
 
+;; or got to getbit of bvnot first?
 (defthm getbit-of-lognot
   (implies (natp m)
            (equal (getbit m (lognot x))
@@ -101,35 +98,11 @@
                                    BITXOR-OF-SLICE-ARG2
                                    )))))
 
-(defthm slice-of-ifix
-  (equal (SLICE top bottom (IFIX X))
-         (SLICE top bottom X))
-  :hints (("Goal" :in-theory (enable ifix))))
-
-(defthm getbit-of-expt-gen
-  (implies (and (natp m)
-                (natp n))
-           (equal (getbit m (expt 2 n))
-                  (if (equal m n)
-                      1
-                    0)))
-  :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice
-                                   slice-becomes-getbit)))))
-(defthm floor-of-2
-  (implies (integerp x)
-           (equal (floor x 2)
-                  (logtail 1 x)))
-  :hints (("Goal" :in-theory (enable logtail ifix))))
-
-(theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
-
 ;gen the -1
 (defthm ash-of-bvchop-32-and-minus1
   (equal (ash (bvchop '32 x) '-1)
          (slice 31 1 x))
-  :hints (("Goal" :in-theory (enable ash ACL2::LOGTAIL-BECOMES-SLICE-BIND-FREE))))
+  :hints (("Goal" :in-theory (enable ash ACL2::LOGTAIL-BECOMES-SLICE-BIND-FREE floor-of-2-becomes-logtail-of-1))))
 
 (defthm integerp-of-*-of-1/2
   (implies (integerp x)
@@ -152,11 +125,6 @@
                   (bvand size x y)))
   :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
 
-(defthmd floor-of-/
-  (equal (FLOOR X (/ y))
-         (floor (* x y) 1))
-  :hints (("Goal" :in-theory (enable floor))))
-
 (defthm UNSIGNED-BYTE-P-shift-lemma
   (IMPLIES (AND (natp n)
                 (UNSIGNED-BYTE-P XSIZE X)
@@ -177,7 +145,6 @@
   :hints (("Goal"
            :use (:instance UNSIGNED-BYTE-P-shift-lemma (n (- n)))
            :in-theory (e/d (ash SLICE LOGTAIL ;floor
-                                floor-of-/
                                 )
                            (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
@@ -242,10 +209,6 @@
 
 (in-theory (disable bvand-of-expt)) ;bvand-of-expt-constant-version should usually be enough
 
-(defthm equal-of-ifix-self
-  (equal (equal (ifix x) x)
-         (integerp x)))
-
 ;move
 ;todo: gen to reduce the constant even if not down to 0
 (defthm mod-of-+-of-constant
@@ -271,13 +234,6 @@
                                    bvchop-of-logtail-becomes-slice
                                    slice-of-+
                                    logtail-of-plus)))))
-
-;can loop
-(defthmd bvnot-of-0
-  (Implies (natp width)
-           (equal (BVNOT width 0)
-                  (- (expt 2 width) 1)))
-  :hints (("Goal" :in-theory (enable bvnot))))
 
 (defthm bvand-with-mask-basic-gen
   (implies (and (<= size n)
@@ -361,6 +317,7 @@
                                    ;BVPLUS-RECOLLAPSE ;looped!
                                    )))))
 
+;move to intro.lisp?
 (defthm logand-of-bvchop-becomes-bvand
   (implies (and (natp width)
                 (natp y)) ;gen
@@ -398,27 +355,6 @@
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (in-theory (disable slice-of-+)) ;todo
-
-(defthm bvnot-of-all-ones
-  (implies (natp width)
-           (equal (BVNOT WIDTH (+ -1 (EXPT 2 WIDTH)))
-                  0))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-;why didn't the trim rule work?
-(defthm bvnot-of-bvcat-trim
-  (implies (natp low)
-           (equal (BVNOT LOW (BVCAT WIDTH x LOW y))
-                  (bvnot low y)))
-  :hints (("Goal"
-           :use ((:instance BVCHOP-LOGNOT-BVCHOP
-                            (n low)
-                            (x (BVCAT WIDTH X LOW Y)))
-                 (:instance BVCHOP-LOGNOT-BVCHOP
-                            (n low)
-                            (x Y)))
-           :in-theory (e/d (bvnot) (BVCHOP-LOGNOT-BVCHOP ; are these 2 the same?
-                                    BVCHOP-OF-LOGNOT-OF-BVCHOP)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -574,13 +510,6 @@
 (defthm signed-byte-p-of-bvchop
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
-
-(defthm signed-byte-p-of-one-less-of-logext
-  (equal (signed-byte-p 32 (+ -1 (logext 32 x)))
-         (not (equal (expt 2 31) (bvchop 32 x))))
-  :hints (("Goal" :in-theory (enable signed-byte-p
-                                     acl2::add-bvchops-to-equality-of-sbps-4))))
-
 
 ;; This can help if the model splits into cases unnecessarily, but we are
 ;; attempting to handle that better by keeping JCC/CMOVCC/SETCC-SPEC disabled.

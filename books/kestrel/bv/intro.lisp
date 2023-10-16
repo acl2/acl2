@@ -21,7 +21,7 @@
 ;; We'll keep these disabled as they may conflict with opening up the BV
 ;; functions.
 
-(defthmd bvchop-of-logand-becomes-band
+(defthmd bvchop-of-logand-becomes-bvand
   (equal (bvchop size (logand x y))
          (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))

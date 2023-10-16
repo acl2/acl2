@@ -16,11 +16,11 @@
 
 (fty::defprod unicode-input-char
   :parents (syntax)
-  :short "Fixtype of Unicode input characters [JLS:3.3]."
+  :short "Fixtype of Unicode input characters [JLS14:3.3]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to the grammar rule for @('unicode-input-character') [JLS:3.3],
+    "According to the grammar rule for @('unicode-input-character') [JLS14:3.3],
      a Unicode input character is
      either a ``raw'' Unicode character (i.e. the character itself)
      or a Unicode escape (which consists of ASCII code).
@@ -60,7 +60,7 @@
      we use the number of @('u') characters in the escape to indicate an escape
      (and to indicate how many @('u')s it uses in the concrete syntax);
      we use the number 0 to denote a raw character.
-     Recall that the grammar rule for @('unicode-marker') in [JLS:3.3]
+     Recall that the grammar rule for @('unicode-marker') in [JLS14:3.3]
      allows one or more @('u') characters.
      So a natural number captures the information that we need here."))
   ((unicode unicode)

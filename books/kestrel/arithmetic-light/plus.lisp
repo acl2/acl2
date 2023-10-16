@@ -165,6 +165,10 @@
   (equal (< x (+ y x))
          (< 0 y)))
 
+(defthm <-of-+-cancel-1-2+
+  (equal (< x (+ y x z))
+         (< 0 (+ y z))))
+
 (defthm <-of-+-cancel-1+-2+
   (equal (< (+ x w) (+ y x z))
          (< w (+ y z)))

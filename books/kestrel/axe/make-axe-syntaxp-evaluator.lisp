@@ -252,8 +252,10 @@
                                         :expand ((free-vars-in-terms args)
                                                  (free-vars-in-term (car args))))))
                   (ignorable dag-array))
+         ;; Special cases for 0 args and 1 arg, to suport special handling of axe-quotep: todo: is that really needed?
          (if (atom args)
              ;; arity 0 case:
+             ;; TODO: Can this case be removed, for speed?  Is there a need for 0-ary axe-syntax functions?
              ,(make-axe-syntaxp-evaluator-case-for-arity 0 arity-0-fns eval-axe-syntaxp-function-application-fn wrld)
            (let ((arg0 (first args))
                  (args (rest args)))
@@ -264,7 +266,8 @@
                    (axe-quotep (axe-quotep
                                 ;; arg0 is a variable (we check this only for axe-quotep), so look it up:
                                 (lookup-eq arg0 alist)))
-                   ,@(make-axe-syntaxp-evaluator-case-for-arity-aux 1 arity-1-fns wrld))
+                   ,@(make-axe-syntaxp-evaluator-case-for-arity-aux 1 arity-1-fns wrld)
+                   (t (er hard? ',eval-axe-syntaxp-function-application-fn "Unrecognized function in axe-syntaxp rule: ~x0." fn)))
                (let ((arg1 (first args))
                      (args (rest args)))
                  (declare (ignorable args arg1))

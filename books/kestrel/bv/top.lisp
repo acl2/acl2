@@ -127,6 +127,7 @@
 (include-book "trim")
 (include-book "trim-intro-rules")
 (include-book "trim-rules")
+(include-book "convert-to-bv-rules")
 
 ; Operations specialized to particular sizes:
 (include-book "ops32")
@@ -175,6 +176,9 @@
 (include-book "if-becomes-bvif-rules")
 
 (include-book "intro")
+
+(include-book "validation-stp")
+(include-book "validation-smt-lib")
 
 ;; (include-book "tests") ; not including this one because it just contains tests
 

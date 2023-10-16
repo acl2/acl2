@@ -18,14 +18,20 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
+(include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
+(include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
+(include-book "kestrel/bv/intro" :dir :system) ; for BVCHOP-OF-LOGXOR-BECOMES-BVXOR
 (include-book "rule-lists")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
+(acl2::ensure-rules-known (extra-tester-rules))
+(acl2::ensure-rules-known (extra-tester-lifting-rules))
+(acl2::ensure-rules-known (tester-proof-rules))
+
 ;; TODO: Parens in output may not be balanced?
-;; todo: allow :monitor to be :debug?
 
 ;; TODO: move this stuff to mach-o-tools.lisp:
 
@@ -223,453 +229,6 @@
     (mv (ceiling (- now start-real-time) 1)
         state)))
 
-;; Returns an (mv erp passedp time state).
-;; TODO: Add redundancy checking
-(defun test-function-core (function-name-string
-                           parsed-executable
-                           param-names ; todo: can we somehow get these from the executable?
-                           assumptions ; untranslated terms
-                           extra-rules extra-lift-rules extra-proof-rules
-                           remove-rules remove-lift-rules remove-proof-rules
-                           print monitor debug
-                           step-limit step-increment
-                           prune tactics
-                           max-conflicts  ;a number of conflicts, or nil for no max
-                           stack-slots
-                           position-independentp
-                           state)
-  (declare (xargs :guard (and (stringp function-name-string)
-                              (symbol-listp extra-rules)
-                              (symbol-listp extra-lift-rules)
-                              (symbol-listp extra-proof-rules)
-                              (symbol-listp remove-rules)
-                              (symbol-listp remove-lift-rules)
-                              (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
-                              (natp step-limit)
-                              (natp step-increment)
-                              (or (eq nil prune)
-                                  (eq t prune)
-                                  (natp prune))
-                              (acl2::tacticsp tactics)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (or (natp stack-slots)
-                                  (eq :auto stack-slots))
-                              (booleanp position-independentp))
-                  :mode :program ; because of apply-tactic-prover and def-unrolled-fn-core
-                  :stobjs state)
-           (ignore debug) ; todo
-           )
-  (b* ((stack-slots (if (eq :auto stack-slots) 100 stack-slots))
-       ;; Translate the assumptions supplied by the user:
-       (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
-       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (- (cw "(Now testing ~x0.~%" function-name-string))
-       ;; Check the param names:
-       ((when (not (or (eq :none param-names)
-                       (and (symbol-listp param-names)
-                            (no-duplicatesp param-names)
-                            (not (member-eq 'x86 param-names))))))
-        (cw "ERROR: Bad param names: ~x0." param-names)
-        (mv (erp-t) nil nil state))
-       ;; These serve to introduce vars for the 6 registers that may contain params (todo: confirm this)
-       ;; TODO: Consider the implications if the replacement may be incomplete.
-       (register-assumptions (if (eq param-names :none)
-                                 ;; We make the register variables be usb64s (todo: add those assumptions), and we assert that the registers
-                                 ;; contain their signed forms:
-                                 `((equal (rdi x86) (logext 64 rdi))
-                                   (equal (rsi x86) (logext 64 rsi))
-                                   (equal (rdx x86) (logext 64 rdx))
-                                   (equal (rcx x86) (logext 64 rcx))
-                                   (equal (r8 x86) (logext 64 r8))
-                                   (equal (r9 x86) (logext 64 r9)))
-                               (make-register-replacement-assumptions param-names '(rdi rsi rdx rcx r8 r9))))
-       (assumptions `(,@user-assumptions
-                      ;; these help with floating point code:
-                      (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
-                      (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
-                      (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
-                      (equal (x86isa::feature-flag ':sse) 1) ; build in?
-                      (equal (x86isa::feature-flag ':sse2) 1)
-                      (equal (x86isa::mxcsrbits->daz$inline (xr ':mxcsr 'nil x86)) 0) ; denormals are not 0 (true at reset)
-                      (equal (x86isa::mxcsrbits->de$inline (xr ':mxcsr 'nil x86)) 0) ; no denormal result created yet
-                      (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
-                      (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
-                      (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ;
-                      ,@register-assumptions
-                      ;; todo: build this into def-unrolled:
-                      ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
-                      ))
-       (target function-name-string)
-       ;; Unroll the computation:
-       ((mv erp result-dag-or-quotep & & state)
-        (def-unrolled-fn-core
-          target
-          parsed-executable
-          assumptions
-          nil ;suppress-assumptions
-          stack-slots
-          position-independentp
-          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte
-          t                   ; use-internal-contextsp
-          prune
-          ;; extra-rules:
-          (append '(x86isa::SAL/SHL-SPEC-8-redef
-                    x86isa::SAL/SHL-SPEC-16-redef
-                    x86isa::SAL/SHL-SPEC-32-redef
-                    x86isa::SAL/SHL-SPEC-64-redef
-                    x86isa::SHR-SPEC-8-redef
-                    x86isa::SHR-SPEC-16-redef
-                    x86isa::SHR-SPEC-32-redef
-                    x86isa::SHR-SPEC-64-redef
-                    x86isa::SAR-SPEC-8-redef
-                    x86isa::SAR-SPEC-16-redef
-                    x86isa::SAR-SPEC-32-redef
-                    x86isa::SAR-SPEC-64-redef
-                    x86isa::GPR-OR-SPEC-1-redef
-                    x86isa::GPR-OR-SPEC-2-redef
-                    x86isa::GPR-OR-SPEC-4-redef
-                    x86isa::GPR-OR-SPEC-8-redef
-                    ) ; push back to def-unrolled
-                  extra-rules
-                  extra-lift-rules
-                  *extra-lifting-rules*)
-          ;; remove-rules:
-          (append
-           '(                        ;; x86isa::gpr-sub-spec-1
-             ;; x86isa::gpr-sub-spec-2
-             ;; x86isa::gpr-sub-spec-4
-             ;; x86isa::gpr-sub-spec-8
-             x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             x86isa::GPR-OR-SPEC-1$inline
-             x86isa::GPR-OR-SPEC-2$inline
-             x86isa::GPR-OR-SPEC-4$inline
-             x86isa::GPR-OR-SPEC-8$inline
-             x86isa::SAL/SHL-SPEC-8
-             x86isa::SAL/SHL-SPEC-16
-             x86isa::SAL/SHL-SPEC-32
-             x86isa::SAL/SHL-SPEC-64
-             x86isa::SHR-SPEC-8
-             x86isa::SHR-SPEC-16
-             x86isa::SHR-SPEC-32
-             x86isa::SHR-SPEC-64
-             ;;x86isa::SAR-SPEC-8 ; why are these not present?
-             ;;x86isa::SAR-SPEC-16
-             ;;x86isa::SAR-SPEC-32
-             ;;x86isa::SAR-SPEC-64
-             acl2::bvchop-of-bvshr
-             acl2::bvchop-of-bvashr)
-           remove-rules
-           remove-lift-rules)
-          ;; extra-assumption-rules:
-          (append (lifter-rules64-new)
-                  '(section-assumptions-mach-o-64
-                    mach-o-section-presentp-constant-opener
-                    maybe-get-mach-o-segment-constant-opener
-                    maybe-get-mach-o-segment-from-load-commands-constant-opener
-                    maybe-get-mach-o-section-constant-opener
-                    acl2::alistp-constant-opener
-                    ;;acl2::const-assumptions-mach-o-64
-                    ;;acl2::data-assumptions-mach-o-64
-                    ;;acl2::get-mach-o-constants-address-constant-opener
-                    ;;acl2::get-mach-o-constants-constant-opener
-                    ;;acl2::get-mach-o-data-address-constant-opener
-                    ;;acl2::get-mach-o-data-constant-opener
-                    acl2::get-elf-section-address
-                    acl2::get-elf-section-bytes
-                    section-assumptions-elf-64
-                    elf-section-presentp
-                    fix-of-rsp
-                    integerp-of-rsp))
-          step-limit
-          step-increment
-          t ; memoizep
-          monitor
-          print
-          10 ; print-base
-          state))
-       ((when erp) (mv erp nil nil state))
-       ((when (quotep result-dag-or-quotep))
-        (mv-let (elapsed state)
-          (real-time-since start-real-time state)
-          (if (equal result-dag-or-quotep ''1)
-              (progn$ (cw "Test ~x0 passed (lifting returned the constant dag ~x1).)~%" function-name-string result-dag-or-quotep)
-                      (mv (erp-nil)
-                          t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
-                          elapsed
-                          state))
-            (progn$ (cw "Test ~x0 failed (lifting returned the constant dag ~x1 where '1 would mean success).)~%" function-name-string result-dag-or-quotep)
-                    (mv (erp-nil)
-                        nil ; failed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
-                        elapsed
-                        state)))))
-       (result-dag result-dag-or-quotep)
-       ;; Always print the DAG, so we can see the nodenums (e.g., if one is non-pure):
-       (- (progn$ (cw "(DAG after lifting:~%")
-                  (acl2::print-list result-dag)
-                  (cw ")~%")))
-       ;; Print the term if small
-       (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
-               (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
-       (result-dag-fns (dag-fns result-dag))
-       ((when (member-eq 'run-until-rsp-greater-than result-dag-fns)) ; TODO: try pruning first
-        (cw "FAILED: Did not finish the run.  See DAG above.)~%")
-        (mv-let (elapsed state)
-          (real-time-since start-real-time state)
-          (mv (erp-nil) nil elapsed state)))
-       (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
-               (cw "WARNING: Result of lifting is not pure (see above).~%")))
-       ;; Prove the test routine always returns 1 (we pass :bit for the type):
-       ((mv result info-acc
-            & ; actual-dag
-            & ; assumptions-given
-            state)
-        (acl2::apply-tactic-prover result-dag
-                                   ;; tests ;a natp indicating how many tests to run
-                                   tactics
-                                   nil ; assumptions
-                                   t   ; simplify-assumptions
-                                   ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
-                                   print
-                                   ;; debug ; todo: use this?
-                                   max-conflicts
-                                   t       ; call-stp-when-pruning
-                                   t ; counterexamplep
-                                   nil ; print-cex-as-signedp
-                                   (set-difference-eq (append *proof-rules* extra-rules extra-proof-rules)
-                                                      (append remove-rules
-                                                              remove-proof-rules
-                                                              ;; these can introduce boolor:
-                                                              '(acl2::boolif-x-x-y
-                                                                acl2::boolif-when-quotep-arg2
-                                                                acl2::boolif-when-quotep-arg3
-                                                                acl2::bvchop-of-bvshr
-                                                                acl2::bvchop-of-bvashr)))
-                                   nil ; interpreted-fns
-                                   ;; monitor:
-                                   (append '(ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?
-;bvlt-reduce-when-not-equal-one-less
-;boolif-of-bvlt-strengthen-to-equal
-                                             )
-                                           monitor)
-                                   t ;normalize-xors
-                                   :bit ; type (means try to prove that the DAG is 1)
-                                   state
-                                   ;;rand
-                                   ))
-       ((mv elapsed state) (real-time-since start-real-time state)))
-    (if (eq result acl2::*error*)
-        (mv :error-in-tactic-proof nil nil state)
-      (if (eq result acl2::*valid*)
-          (progn$ (cw "Test ~x0 passed.)~%" function-name-string)
-                  (mv (erp-nil)
-                      t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
-                      elapsed
-                      state))
-        ;; result is :invalid, :no-change, or some remaining problems:
-        (progn$ (cw "Failure info: ~x0.~%" info-acc) ; todo: sort the counterexample to be in the same order as the param names...
-                (cw "Test ~x0 failed.)~%" function-name-string)
-                (mv (erp-nil)
-                    nil ; failed
-                    elapsed
-                    state))))))
-
-;; Returns (mv erp event state).
-;;If the test passes, EVENT is just (value-triple :invisible).  throws an error if the test failed.
-(defun test-function-fn (function-name-string
-                         executable ; a parsed-executable or a string (meaning read from that file)
-                         param-names ; todo: can we somehoe get these from the executable?
-                         assumptions
-                         extra-rules extra-lift-rules extra-proof-rules
-                         remove-rules remove-lift-rules remove-proof-rules
-                         print monitor debug
-                         step-limit step-increment
-                         prune tactics
-                         max-conflicts stack-slots
-                         position-independent
-                         expected-result
-                         state)
-  (declare (xargs :guard (and (stringp function-name-string)
-                              (symbol-listp extra-rules)
-                              (symbol-listp extra-lift-rules)
-                              (symbol-listp extra-proof-rules)
-                              (symbol-listp remove-rules)
-                              (symbol-listp remove-lift-rules)
-                              (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
-                              (natp step-limit)
-                              (natp step-increment)
-                              (or (eq nil prune)
-                                  (eq t prune)
-                                  (natp prune))
-                              (acl2::tacticsp tactics)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (or (natp stack-slots)
-                                  (eq :auto stack-slots))
-                              (member-eq position-independent '(t nil :auto))
-                              (member-eq expected-result '(:pass :fail :any)))
-                  :mode :program
-                  :stobjs state))
-  (b* (((mv erp parsed-executable state)
-        (if (stringp executable)
-            (acl2::parse-executable executable state)
-          (mv nil executable state)))
-       ((when erp) (mv erp nil state))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto:
-       (position-independentp (if (eq :auto position-independent)
-                                  (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default
-                                    (if (eq executable-type :elf-64)
-                                        nil ; since gcc seems to not produce position-independent code by default
-                                      ;; TODO: Think about this case:
-                                      t))
-                                position-independent))
-       (function-name-string
-        (if (eq executable-type :mach-o-64)
-            (concatenate 'string "_" function-name-string) ; todo: why do we always have to add the underscore?
-          function-name-string))
-       ((mv erp passedp elapsed state)
-        (test-function-core function-name-string parsed-executable param-names assumptions
-                            extra-rules extra-lift-rules extra-proof-rules
-                            remove-rules remove-lift-rules remove-proof-rules
-                            print monitor debug step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
-       ((when erp) (mv erp nil state))
-       (- (cw "Time: ~x0s.~%" elapsed))
-       (result-ok (if (eq :any expected-result)
-                      t
-                    (if (eq :pass expected-result)
-                        passedp
-                      ;; expected-result is :fail
-                      (not passedp)))))
-    (if result-ok
-        (progn$ ;; (cw "Test ~s0: ~s1.~%" function-name-string (if passedp "PASSED" "FAILED"))
-         (mv (erp-nil) '(value-triple :invisible) state))
-      (prog2$ (er hard? 'test-function-fn "For test ~x0, expected ~x1 but got ~x2." function-name-string expected-result (if passedp :pass :fail))
-              (mv :unexpected-result nil state)))))
-
-;; Test a single function:
-(defmacro test-function (function-name-string
-                         executable ; a parsed-executable or a string (meaning read from that file)
-                         &key
-                         (param-names ':none)
-                         (assumptions 'nil)
-                         (extra-rules 'nil)
-                         (extra-lift-rules 'nil)
-                         (extra-proof-rules 'nil)
-                         (remove-rules 'nil)
-                         (remove-lift-rules 'nil)
-                         (remove-proof-rules 'nil)
-                         (print 'nil)
-                         (monitor 'nil)
-                         (debug 'nil)
-                         (step-limit '1000000)
-                         (step-increment '100)
-                         (prune '10000)             ; t, nil, or a max size
-                         (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                         (expected-result ':pass)
-                         (stack-slots ':auto)
-                         (position-independent ':auto)
-                         (max-conflicts '1000000))
-  `(acl2::make-event-quiet (test-function-fn ',function-name-string
-                                             ,executable   ; gets evaluated
-                                             ,param-names  ; gets evaluated
-                                             ,assumptions  ; gets evaluated
-                                             ,extra-rules  ; gets evaluated
-                                             ,extra-lift-rules ; gets evaluated
-                                             ,extra-proof-rules ; gets evaluated
-                                             ,remove-rules ; gets evaluated
-                                             ,remove-lift-rules ; gets evaluated
-                                             ,remove-proof-rules ; gets evaluated
-                                             ',print
-                                             ,monitor ; gets evaluated
-                                             ',debug ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',expected-result state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns an (mv erp result-alist state).
-(defun test-functions-fn-aux (function-name-strings
-                              parsed-executable
-                              assumptions-alist
-                              extra-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-lift-rules remove-proof-rules
-                              print monitor debug step-limit step-increment prune
-                              tactics max-conflicts
-                              stack-slots
-                              position-independentp
-                              expected-failures
-                              result-alist
-                              state)
-  (declare (xargs :guard (and (string-listp function-name-strings)
-                              (and (alistp assumptions-alist)
-                                   (string-listp (strip-cars assumptions-alist))
-                                   (true-list-listp (strip-cdrs assumptions-alist)))
-                              (symbol-listp extra-rules)
-                              (symbol-listp extra-lift-rules)
-                              (symbol-listp extra-proof-rules)
-                              (symbol-listp remove-rules)
-                              (symbol-listp remove-lift-rules)
-                              (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
-                              (natp step-limit)
-                              (natp step-increment)
-                              (or (eq nil prune)
-                                  (eq t prune)
-                                  (natp prune))
-                              (acl2::tacticsp tactics)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (or (natp stack-slots)
-                                  (eq :auto stack-slots))
-                              (booleanp position-independentp)
-                              (string-listp expected-failures)
-                              (alistp result-alist))
-                  :mode :program
-                  :stobjs state))
-  (if (endp function-name-strings)
-      (mv (erp-nil) (acl2::reverse-list result-alist) state)
-    (b* ((function-name (first function-name-strings))
-         ((mv erp passedp elapsed state)
-          (test-function-core function-name parsed-executable
-                              :none ; todo: some way to pass in param-names?
-                              (acl2::lookup-equal function-name assumptions-alist)
-                              extra-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-lift-rules remove-proof-rules
-                              print monitor debug step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
-         ((when erp) (mv erp nil state))
-         (result (if passedp :pass :fail))
-         (expected-result (if (member-equal function-name expected-failures)
-                              :fail
-                            :pass))
-         (- (cw "~%")) ; blank line as separator
-         )
-      (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
-                             extra-rules extra-lift-rules extra-proof-rules
-                             remove-rules remove-lift-rules remove-proof-rules
-                             print monitor debug step-limit step-increment prune
-                             tactics max-conflicts stack-slots position-independentp
-                             expected-failures
-                             (acons function-name (list result expected-result elapsed) result-alist)
-                             state))))
-
-;; (defun shorten-string (str numchars)
-;;   (declare (xargs :guard (and (stringp str)
-;;                               (natp numchars))
-;;                   :guard-debug t
-;;                   ))
-;;   (let ((chars (coerce str 'list)))
-;;     (coerce (take (min numchars (len chars)) chars) 'string)))
-
-;; (defun shorten-symbol (sym numchars)
-;;   (declare (xargs :guard (and (symbolp sym)
-;;                               (natp numchars))))
-;;   (intern-in-package-of-symbol (shorten-string (symbol-name sym) numchars) sym))
 
 ;; TODO: Print OK if expected, otherwise ERROR
 (defund print-test-summary-aux (result-alist)
@@ -741,6 +300,447 @@
                 (acl2::strings-starting-with prefix (rest strings)))
         (acl2::strings-starting-with prefix (rest strings))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an (mv erp passedp time state).
+;; TODO: Add redundancy checking
+(defun test-function-core (function-name-string
+                           parsed-executable
+                           param-names ; todo: can we somehow get these from the executable?
+                           assumptions ; untranslated terms
+                           extra-rules extra-lift-rules extra-proof-rules
+                           remove-rules remove-lift-rules remove-proof-rules
+                           print monitor
+                           step-limit step-increment
+                           prune tactics
+                           max-conflicts  ;a number of conflicts, or nil for no max
+                           stack-slots
+                           position-independentp
+                           state)
+  (declare (xargs :guard (and (stringp function-name-string)
+                              (symbol-listp extra-rules)
+                              (symbol-listp extra-lift-rules)
+                              (symbol-listp extra-proof-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp remove-lift-rules)
+                              (symbol-listp remove-proof-rules)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (natp step-limit)
+                              (natp step-increment)
+                              (or (eq nil prune)
+                                  (eq t prune)
+                                  (natp prune))
+                              (acl2::tacticsp tactics)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (or (natp stack-slots)
+                                  (eq :auto stack-slots))
+                              (booleanp position-independentp))
+                  :mode :program ; because of apply-tactic-prover and def-unrolled-fn-core
+                  :stobjs state))
+  (b* ((stack-slots (if (eq :auto stack-slots) 100 stack-slots))
+       ;; Translate the assumptions supplied by the user:
+       (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
+       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       (- (cw "(Now testing ~x0.~%" function-name-string))
+       ;; Check the param names:
+       ((when (not (or (eq :none param-names)
+                       (and (symbol-listp param-names)
+                            (no-duplicatesp param-names)
+                            (not (member-eq 'x86 param-names))))))
+        (cw "ERROR: Bad param names: ~x0." param-names)
+        (mv (erp-t) nil nil state))
+       ;; These serve to introduce vars for the 6 registers that may contain params (todo: confirm this)
+       ;; TODO: Consider the implications if the replacement may be incomplete.
+       (register-assumptions (if (eq param-names :none)
+                                 ;; We make the register variables be usb64s (todo: add those assumptions), and we assert that the registers
+                                 ;; contain their signed forms:
+                                 `((equal (rdi x86) (logext 64 rdi))
+                                   (equal (rsi x86) (logext 64 rsi))
+                                   (equal (rdx x86) (logext 64 rdx))
+                                   (equal (rcx x86) (logext 64 rcx))
+                                   (equal (r8 x86) (logext 64 r8))
+                                   (equal (r9 x86) (logext 64 r9)))
+                               (make-register-replacement-assumptions param-names '(rdi rsi rdx rcx r8 r9))))
+       (assumptions `(,@user-assumptions
+                      ;; these help with floating point code:
+                      (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
+                      (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
+                      (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
+                      (equal (x86isa::feature-flag ':sse) 1) ; build in?
+                      (equal (x86isa::feature-flag ':sse2) 1)
+                      (equal (x86isa::mxcsrbits->daz$inline (xr ':mxcsr 'nil x86)) 0) ; denormals are not 0 (true at reset)
+                      (equal (x86isa::mxcsrbits->de$inline (xr ':mxcsr 'nil x86)) 0) ; no denormal result created yet
+                      (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
+                      (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
+                      (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ;
+                      ,@register-assumptions
+                      ;; todo: build this into def-unrolled:
+                      ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
+                      ))
+       (target function-name-string)
+       (32-bitp (member-eq executable-type *executable-types32*))
+       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
+       ;; Unroll the computation:
+       ((mv erp result-dag-or-quotep & & state)
+        (def-unrolled-fn-core
+          target
+          parsed-executable
+          assumptions
+          nil ;suppress-assumptions
+          stack-slots
+          position-independentp
+          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte
+          t                   ; use-internal-contextsp
+          prune
+          ;; extra-rules:
+          (append '(x86isa::SAL/SHL-SPEC-8-redef
+                    x86isa::SAL/SHL-SPEC-16-redef
+                    x86isa::SAL/SHL-SPEC-32-redef
+                    x86isa::SAL/SHL-SPEC-64-redef
+                    x86isa::SHR-SPEC-8-redef
+                    x86isa::SHR-SPEC-16-redef
+                    x86isa::SHR-SPEC-32-redef
+                    x86isa::SHR-SPEC-64-redef
+                    x86isa::SAR-SPEC-8-redef
+                    x86isa::SAR-SPEC-16-redef
+                    x86isa::SAR-SPEC-32-redef
+                    x86isa::SAR-SPEC-64-redef
+                    x86isa::GPR-OR-SPEC-1-redef
+                    x86isa::GPR-OR-SPEC-2-redef
+                    x86isa::GPR-OR-SPEC-4-redef
+                    x86isa::GPR-OR-SPEC-8-redef
+                    ) ; push back to def-unrolled
+                  extra-rules
+                  extra-lift-rules
+                  (extra-tester-lifting-rules))
+          ;; remove-rules:
+          (append
+           '(                        ;; x86isa::gpr-sub-spec-1
+             ;; x86isa::gpr-sub-spec-2
+             ;; x86isa::gpr-sub-spec-4
+             ;; x86isa::gpr-sub-spec-8
+             x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
+             x86isa::GPR-OR-SPEC-1$inline
+             x86isa::GPR-OR-SPEC-2$inline
+             x86isa::GPR-OR-SPEC-4$inline
+             x86isa::GPR-OR-SPEC-8$inline
+             x86isa::SAL/SHL-SPEC-8
+             x86isa::SAL/SHL-SPEC-16
+             x86isa::SAL/SHL-SPEC-32
+             x86isa::SAL/SHL-SPEC-64
+             x86isa::SHR-SPEC-8
+             x86isa::SHR-SPEC-16
+             x86isa::SHR-SPEC-32
+             x86isa::SHR-SPEC-64
+             ;;x86isa::SAR-SPEC-8 ; why are these not present?
+             ;;x86isa::SAR-SPEC-16
+             ;;x86isa::SAR-SPEC-32
+             ;;x86isa::SAR-SPEC-64
+             acl2::bvchop-of-bvshr
+             acl2::bvchop-of-bvashr)
+           remove-rules
+           remove-lift-rules)
+          ;; extra-assumption-rules:
+          (append (lifter-rules64-new)
+                  '(section-assumptions-mach-o-64
+                    mach-o-section-presentp-constant-opener
+                    maybe-get-mach-o-segment-constant-opener
+                    maybe-get-mach-o-segment-from-load-commands-constant-opener
+                    maybe-get-mach-o-section-constant-opener
+                    acl2::alistp-constant-opener
+                    ;;acl2::const-assumptions-mach-o-64
+                    ;;acl2::data-assumptions-mach-o-64
+                    ;;acl2::get-mach-o-constants-address-constant-opener
+                    ;;acl2::get-mach-o-constants-constant-opener
+                    ;;acl2::get-mach-o-data-address-constant-opener
+                    ;;acl2::get-mach-o-data-constant-opener
+                    acl2::get-elf-section-address
+                    acl2::get-elf-section-bytes
+                    section-assumptions-elf-64
+                    elf-section-presentp
+                    fix-of-rsp
+                    integerp-of-rsp))
+          step-limit
+          step-increment
+          t ; memoizep
+          rules-to-monitor
+          print
+          10 ; print-base
+          state))
+       ((when erp) (mv erp nil nil state))
+       ((when (quotep result-dag-or-quotep))
+        (mv-let (elapsed state)
+          (real-time-since start-real-time state)
+          (if (equal result-dag-or-quotep ''1)
+              (progn$ (cw "Test ~x0 passed (lifting returned the constant dag ~x1).)~%" function-name-string result-dag-or-quotep)
+                      (mv (erp-nil)
+                          t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
+                          elapsed
+                          state))
+            (progn$ (cw "Test ~x0 failed (lifting returned the constant dag ~x1 where '1 would mean success).)~%" function-name-string result-dag-or-quotep)
+                    (mv (erp-nil)
+                        nil ; failed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
+                        elapsed
+                        state)))))
+       (result-dag result-dag-or-quotep)
+       ;; Always print the DAG, so we can see the nodenums (e.g., if one is non-pure):
+       (- (progn$ (cw "(DAG after lifting:~%")
+                  (acl2::print-list result-dag)
+                  (cw ")~%")))
+       ;; Print the term if small:
+       (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
+               (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
+       (result-dag-fns (dag-fns result-dag))
+       ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
+        (cw "Test ~x0 failed: Did not finish the run.  See DAG above.)~%" function-name-string)
+        (mv-let (elapsed state)
+          (real-time-since start-real-time state)
+          (mv (erp-nil) nil elapsed state)))
+       (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
+               (cw "WARNING: Result of lifting is not pure (see above).~%")))
+       ;; Prove the test routine always returns 1 (we pass :bit for the type):
+       ((mv result info-acc
+            & ; actual-dag
+            & ; assumptions-given
+            state)
+        (acl2::apply-tactic-prover result-dag
+                                   ;; tests ;a natp indicating how many tests to run
+                                   tactics
+                                   nil ; assumptions
+                                   t   ; simplify-assumptions
+                                   ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
+                                   print
+                                   ;; debug ; todo: use this?
+                                   max-conflicts
+                                   t       ; call-stp-when-pruning
+                                   t ; counterexamplep
+                                   nil ; print-cex-as-signedp
+                                   (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
+                                                      (append remove-rules
+                                                              remove-proof-rules
+                                                              ;; these can introduce boolor:
+                                                              '(acl2::boolif-x-x-y
+                                                                acl2::boolif-when-quotep-arg2
+                                                                acl2::boolif-when-quotep-arg3
+                                                                acl2::bvchop-of-bvshr
+                                                                acl2::bvchop-of-bvashr)))
+                                   nil ; interpreted-fns
+                                   ;; monitor:
+                                   (append '(ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?
+;bvlt-reduce-when-not-equal-one-less
+;boolif-of-bvlt-strengthen-to-equal
+                                             )
+                                           rules-to-monitor)
+                                   t ;normalize-xors
+                                   :bit ; type (means try to prove that the DAG is 1)
+                                   state
+                                   ;;rand
+                                   ))
+       ((mv elapsed state) (real-time-since start-real-time state)))
+    (if (eq result acl2::*error*)
+        (mv :error-in-tactic-proof nil nil state)
+      (if (eq result acl2::*valid*)
+          (progn$ (cw "Test ~x0 passed.)~%" function-name-string)
+                  (mv (erp-nil)
+                      t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
+                      elapsed
+                      state))
+        ;; result is :invalid, :no-change, or some remaining problems:
+        (progn$ (cw "Failure info: ~x0.~%" info-acc) ; todo: sort the counterexample to be in the same order as the param names...
+                (cw "Test ~x0 failed.)~%" function-name-string)
+                (mv (erp-nil)
+                    nil ; failed
+                    elapsed
+                    state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp event state).
+;;If the test passes, EVENT is just (value-triple :invisible).  throws an error if the test failed.
+(defun test-function-fn (function-name-string
+                         executable ; a parsed-executable or a string (meaning read from that file)
+                         param-names ; todo: can we somehoe get these from the executable?
+                         assumptions
+                         extra-rules extra-lift-rules extra-proof-rules
+                         remove-rules remove-lift-rules remove-proof-rules
+                         print monitor
+                         step-limit step-increment
+                         prune tactics
+                         max-conflicts stack-slots
+                         position-independent
+                         expected-result
+                         state)
+  (declare (xargs :guard (and (stringp function-name-string)
+                              (symbol-listp extra-rules)
+                              (symbol-listp extra-lift-rules)
+                              (symbol-listp extra-proof-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp remove-lift-rules)
+                              (symbol-listp remove-proof-rules)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (natp step-limit)
+                              (natp step-increment)
+                              (or (eq nil prune)
+                                  (eq t prune)
+                                  (natp prune))
+                              (acl2::tacticsp tactics)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (or (natp stack-slots)
+                                  (eq :auto stack-slots))
+                              (member-eq position-independent '(t nil :auto))
+                              (member-eq expected-result '(:pass :fail :any)))
+                  :mode :program
+                  :stobjs state))
+  (b* (((mv erp parsed-executable state)
+        (if (stringp executable)
+            (acl2::parse-executable executable state)
+          (mv nil executable state)))
+       ((when erp) (mv erp nil state))
+       (executable-type (acl2::parsed-executable-type parsed-executable))
+       ;; Handle a :position-independent of :auto:
+       (position-independentp (if (eq :auto position-independent)
+                                  (if (eq executable-type :mach-o-64)
+                                      t ; since clang seems to produce position-independent code by default
+                                    (if (eq executable-type :elf-64)
+                                        nil ; since gcc seems to not produce position-independent code by default
+                                      ;; TODO: Think about this case:
+                                      t))
+                                position-independent))
+       (function-name-string
+        (if (eq executable-type :mach-o-64)
+            (concatenate 'string "_" function-name-string) ; todo: why do we always have to add the underscore?
+          function-name-string))
+       ((mv erp passedp elapsed state)
+        (test-function-core function-name-string parsed-executable param-names assumptions
+                            extra-rules extra-lift-rules extra-proof-rules
+                            remove-rules remove-lift-rules remove-proof-rules
+                            print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+       ((when erp) (mv erp nil state))
+       (- (cw "Time: ~x0s.~%" elapsed))
+       (result-ok (if (eq :any expected-result)
+                      t
+                    (if (eq :pass expected-result)
+                        passedp
+                      ;; expected-result is :fail
+                      (not passedp)))))
+    (if result-ok
+        (progn$ ;; (cw "Test ~s0: ~s1.~%" function-name-string (if passedp "PASSED" "FAILED"))
+         (mv (erp-nil) '(value-triple :invisible) state))
+      (prog2$ (er hard? 'test-function-fn "For test ~x0, expected ~x1 but got ~x2." function-name-string expected-result (if passedp :pass :fail))
+              (mv :unexpected-result nil state)))))
+
+;; Test a single function:
+(defmacro test-function (function-name-string
+                         executable ; a parsed-executable or a string (meaning read from that file)
+                         &key
+                         (param-names ':none)
+                         (assumptions 'nil)
+                         (extra-rules 'nil)
+                         (extra-lift-rules 'nil)
+                         (extra-proof-rules 'nil)
+                         (remove-rules 'nil)
+                         (remove-lift-rules 'nil)
+                         (remove-proof-rules 'nil)
+                         (print 'nil)
+                         (monitor 'nil)
+                         (step-limit '1000000)
+                         (step-increment '100)
+                         (prune '10000)             ; t, nil, or a max size
+                         (tactics '(:rewrite :stp)) ; todo: try something with :prune
+                         (expected-result ':pass)
+                         (stack-slots ':auto)
+                         (position-independent ':auto)
+                         (max-conflicts '1000000))
+  `(acl2::make-event-quiet (test-function-fn ',function-name-string
+                                             ,executable   ; gets evaluated
+                                             ,param-names  ; gets evaluated
+                                             ,assumptions  ; gets evaluated
+                                             ,extra-rules  ; gets evaluated
+                                             ,extra-lift-rules ; gets evaluated
+                                             ,extra-proof-rules ; gets evaluated
+                                             ,remove-rules ; gets evaluated
+                                             ,remove-lift-rules ; gets evaluated
+                                             ,remove-proof-rules ; gets evaluated
+                                             ',print
+                                             ,monitor ; gets evaluated
+                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',expected-result state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an (mv erp result-alist state).
+(defun test-functions-fn-aux (function-name-strings
+                              parsed-executable
+                              assumptions-alist
+                              extra-rules extra-lift-rules extra-proof-rules
+                              remove-rules remove-lift-rules remove-proof-rules
+                              print monitor step-limit step-increment prune
+                              tactics max-conflicts
+                              stack-slots
+                              position-independentp
+                              expected-failures
+                              result-alist
+                              state)
+  (declare (xargs :guard (and (string-listp function-name-strings)
+                              (and (alistp assumptions-alist)
+                                   (string-listp (strip-cars assumptions-alist))
+                                   (true-list-listp (strip-cdrs assumptions-alist)))
+                              (symbol-listp extra-rules)
+                              (symbol-listp extra-lift-rules)
+                              (symbol-listp extra-proof-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp remove-lift-rules)
+                              (symbol-listp remove-proof-rules)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (natp step-limit)
+                              (natp step-increment)
+                              (or (eq nil prune)
+                                  (eq t prune)
+                                  (natp prune))
+                              (acl2::tacticsp tactics)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (or (natp stack-slots)
+                                  (eq :auto stack-slots))
+                              (booleanp position-independentp)
+                              (string-listp expected-failures)
+                              (alistp result-alist))
+                  :mode :program
+                  :stobjs state))
+  (if (endp function-name-strings)
+      (mv (erp-nil) (acl2::reverse-list result-alist) state)
+    (b* ((function-name (first function-name-strings))
+         ((mv erp passedp elapsed state)
+          (test-function-core function-name parsed-executable
+                              :none ; todo: some way to pass in param-names?
+                              (acl2::lookup-equal function-name assumptions-alist)
+                              extra-rules extra-lift-rules extra-proof-rules
+                              remove-rules remove-lift-rules remove-proof-rules
+                              print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+         ((when erp) (mv erp nil state))
+         (result (if passedp :pass :fail))
+         (expected-result (if (member-equal function-name expected-failures)
+                              :fail
+                            :pass))
+         (- (cw "~%")) ; blank line as separator
+         )
+      (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
+                             extra-rules extra-lift-rules extra-proof-rules
+                             remove-rules remove-lift-rules remove-proof-rules
+                             print monitor step-limit step-increment prune
+                             tactics max-conflicts stack-slots position-independentp
+                             expected-failures
+                             (acons function-name (list result expected-result elapsed) result-alist)
+                             state))))
+
+
 ;; Returns (mv erp event state) an event (a progn containing an event for each test).
 ;; TODO: Return an error if any test is not as expected, but not until the end.
 (defun test-functions-fn (function-name-strings ; can be :all
@@ -749,7 +749,7 @@
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
-                          print monitor debug step-limit step-increment prune
+                          print monitor step-limit step-increment prune
                           tactics max-conflicts stack-slots position-independent
                           expected-failures
                           exclude
@@ -763,8 +763,8 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
-                              (symbol-listp monitor)
-                              (booleanp debug)
+                              (or (eq :debug monitor)
+                                  (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
                               (or (eq nil prune)
@@ -846,7 +846,7 @@
                                assumption-alist
                                extra-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-lift-rules remove-proof-rules
-                               print monitor debug step-limit step-increment prune
+                               print monitor step-limit step-increment prune
                                tactics max-conflicts stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
@@ -874,7 +874,6 @@
                           (remove-proof-rules 'nil)
                           (print 'nil)
                           (monitor 'nil)
-                          (debug 'nil)
                           (step-limit '1000000)
                           (step-increment '100)
                           (prune '10000)             ; t, nil, or a max size
@@ -897,11 +896,13 @@
                                               ,remove-proof-rules ; gets evaluated
                                               ',print
                                               ,monitor ; gets evaluated
-                                              ',debug ',step-limit ',step-increment ',prune
+                                              ',step-limit ',step-increment ',prune
                                               ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
                                               state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests all the functions in the file
 (defmacro test-file (executable ; a string or a parsed executable
@@ -915,7 +916,6 @@
                      (remove-proof-rules 'nil)
                      (print 'nil)
                      (monitor 'nil)
-                     (debug 'nil)
                      (step-limit '1000000)
                      (step-increment '100)
                      (prune '10000)             ; t, nil, or a max size
@@ -938,7 +938,7 @@
                                               ,remove-proof-rules ; gets evaluated
                                               ',print
                                               ,monitor ; gets evaluated
-                                              ',debug ',step-limit ',step-increment ',prune
+                                              ',step-limit ',step-increment ',prune
                                               ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
                                               ',exclude

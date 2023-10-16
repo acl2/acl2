@@ -1,7 +1,7 @@
 ; More rules about slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,6 @@
 (include-book "bv-syntax")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
 
 (defthm <-tighten-when-slice-is-0
   (implies (and (syntaxp (want-to-strengthen (< x k)))
@@ -37,7 +36,8 @@
                   (< x (expt 2 low))))
   :hints (("Goal"
            :cases ((unsigned-byte-p (+ 1 high) x))
-           :in-theory (e/d (slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+           :in-theory (e/d (slice equal-of-logtail-and-0)
+                           (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 ;consider enabling or improving
 (defthmd usb-slice-helper

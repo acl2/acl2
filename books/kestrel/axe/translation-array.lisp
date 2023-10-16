@@ -47,16 +47,6 @@
            (not (< (binary-+ '-1 bound) (nth n items))))
   :hints (("Goal" :in-theory (e/d (all-< nth) (nth-of-cdr)))))
 
-;move
-(defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
-  (implies (bounded-darg-listp (cdr items) bound)
-           (equal (bounded-darg-listp items bound)
-                  (if (not (consp items))
-                      (null items)
-                    (dargp-less-than (car items) bound))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
-
 ;; Checks that, for all indices from top-nodenum-to-check down to 0, the array
 ;; maps the index to either a quotep, a nodenum, or nil.  Allowing nil makes
 ;; this different from a renaming-array (TODO: Actually, nil seems to cause an

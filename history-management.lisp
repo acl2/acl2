@@ -1670,7 +1670,7 @@
                '(GLOBAL-VALUE
                  LINEAR-LEMMAS
                  FORWARD-CHAINING-RULES
-                 ELIMINATE-DESTRUCTORS-RULE
+                 ELIMINATE-DESTRUCTORS-RULES
                  COARSENINGS
                  CONGRUENCES
                  RECOGNIZER-ALIST
@@ -5120,8 +5120,7 @@
                 'portcullis)))
         ((f-get-global 'certify-book-info state)
          nil)
-        ((not (member-eq (f-get-global 'guard-checking-on state)
-                         '(t :nowarn :all)))
+        ((gc-off1 (f-get-global 'guard-checking-on state))
          (and (not (global-val 'cert-replay wrld))
               'portcullis))
         (t nil)))

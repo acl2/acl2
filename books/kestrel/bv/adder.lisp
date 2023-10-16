@@ -1,7 +1,7 @@
 ; Expressing a sum as a ripple-carry adder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "bvplus")
 (include-book "rules") ; for GETBIT-OF-PLUS
 (include-book "rules0") ; for bvplus-1-becomes-bitxor
+(local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -87,7 +88,7 @@
                   (equal (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y))
                          a)))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 (defthm equal-of-sum-of-low-bits-alt
@@ -111,7 +112,7 @@
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a b))))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 (defthm equal-of-sum-of-low-bits-alt2b
@@ -124,7 +125,7 @@
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a b))))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 ;; (defthm expt-of-one-less-combine
@@ -143,7 +144,7 @@
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
                          (+ a))))
   :hints (("Goal" :in-theory (enable bvcat logapp)
-           :use (:instance split-bv (y y)
+           :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
 
 (defthm unsigned-byte-p-of-RIPPLE-CARRY-ADDER
@@ -204,13 +205,15 @@
                   (< (+ a x y) (EXPT 2 (+ -1 N)))))
   :hints (("Goal" :in-theory (enable expt))))
 
-(defthm arith-cancel-a
-  (equal (< (+ a b c x e) x)
-         (< (+ a b c e) 0)))
+(local
+  (defthm arith-cancel-a
+    (equal (< (+ a b c x e) x)
+           (< (+ a b c e) 0))))
 
-(defthm arith-cancel-b
-  (equal (< (+ a b c d x) x)
-         (< (+ a b c d) 0)))
+(local
+  (defthm arith-cancel-b
+    (equal (< (+ a b c d x) x)
+           (< (+ a b c d) 0))))
 
 (defthmd expt-split-linear
   (implies (integerp n)
@@ -232,7 +235,7 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable bvcat logapp)
            :cases ((equal n 0))
-           :use (:instance split-bv (y x)
+           :use (:instance split-bv (x x)
                            (m (+ -1 n))))))
 
 
@@ -283,8 +286,8 @@
 ;(:instance getbit-of-plus (size n) (x carry))
 ;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1(BVCHOP (+ -1 N) Y))))
 ;                 (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)))
-;                  (:instance split-bv (y x) (n n) (m (+ -1 n)))
- ;                 (:instance split-bv (y y) (n n) (m (+ -1 n)))
+;                  (:instance split-bv (x x) (n n) (m (+ -1 n)))
+ ;                 (:instance split-bv (x y) (n n) (m (+ -1 n)))
 ;                  )
             :in-theory (e/d (helper-helper
                              ;bvchop-recollapse

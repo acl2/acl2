@@ -341,25 +341,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bitand-trim-arg1-dag
+(defthmd bitand-trim-arg1-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'non-arithmetic dag-array))
            (equal (bitand x y)
                   (bitand (trim 1 x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitand-trim-arg2-dag
+(defthmd bitand-trim-arg2-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'non-arithmetic dag-array))
            (equal (bitand y x)
                   (bitand y (trim 1 x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitand-trim-arg1-dag-all
+(defthmd bitand-trim-arg1-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'all dag-array))
            (equal (bitand x y)
                   (bitand (trim 1 x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitand-trim-arg2-dag-all
+(defthmd bitand-trim-arg2-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'all dag-array))
            (equal (bitand y x)
                   (bitand y (trim 1 x))))
@@ -367,25 +367,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bitor-trim-arg1-dag
+(defthmd bitor-trim-arg1-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'non-arithmetic dag-array))
            (equal (bitor x y)
                   (bitor (trim 1 x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitor-trim-arg2-dag
+(defthmd bitor-trim-arg2-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'non-arithmetic dag-array))
            (equal (bitor y x)
                   (bitor y (trim 1 x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitor-trim-arg1-dag-all
+(defthmd bitor-trim-arg1-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'all dag-array))
            (equal (bitor x y)
                   (bitor (trim 1 x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitor-trim-arg2-dag-all
+(defthmd bitor-trim-arg2-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'all dag-array))
            (equal (bitor y x)
                   (bitor y (trim 1 x))))
@@ -393,25 +393,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bitxor-trim-arg1-dag
+(defthmd bitxor-trim-arg1-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'non-arithmetic dag-array))
            (equal (bitxor x y)
                   (bitxor (trim 1 x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitxor-trim-arg2-dag
+(defthmd bitxor-trim-arg2-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 y 'non-arithmetic dag-array))
            (equal (bitxor x y)
                   (bitxor x (trim 1 y))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitxor-trim-arg1-dag-all
+(defthmd bitxor-trim-arg1-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 x 'all dag-array))
            (equal (bitxor x y)
                   (bitxor (trim 1 x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bitxor-trim-arg2-dag-all
+(defthmd bitxor-trim-arg2-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '1 y 'all dag-array))
            (equal (bitxor x y)
                   (bitxor x (trim 1 y))))
@@ -419,28 +419,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvmult-trim-arg1-dag
+(defthmd bvmult-trim-arg1-axe
    (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
                  (natp size))
             (equal (bvmult size x y)
                    (bvmult size (trim size x) y)))
    :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvmult-trim-arg2-dag
+(defthmd bvmult-trim-arg2-axe
    (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y 'non-arithmetic dag-array))
                  (natp size))
             (equal (bvmult size x y)
                    (bvmult size x (trim size y))))
    :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvmult-trim-arg1-dag-all
+(defthmd bvmult-trim-arg1-axe-all
    (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                  (natp size))
             (equal (bvmult size x y)
                    (bvmult size (trim size x) y)))
    :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvmult-trim-arg2-dag-all
+(defthmd bvmult-trim-arg2-axe-all
    (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y 'all dag-array))
                  (natp size))
             (equal (bvmult size x y)
@@ -450,28 +450,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename these?!
-(defthmd bvdiv-trim-arg1-dag
+(defthmd bvdiv-trim-arg1-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
                 (natp size))
            (equal (bvdiv size x y)
                   (bvdiv size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvdiv-trim-arg2-dag
+(defthmd bvdiv-trim-arg2-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
                 (natp size))
            (equal (bvdiv size y x)
                   (bvdiv size y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvdiv-trim-arg1-dag-all
+(defthmd bvdiv-trim-arg1-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (bvdiv size x y)
                   (bvdiv size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvdiv-trim-arg2-dag-all
+(defthmd bvdiv-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (bvdiv size y x)
@@ -481,28 +481,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename these?!
-(defthmd sbvdiv-trim-arg1-dag
+(defthmd sbvdiv-trim-arg1-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
                 (natp size))
            (equal (sbvdiv size x y)
                   (sbvdiv size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd sbvdiv-trim-arg2-dag
+(defthmd sbvdiv-trim-arg2-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
                 (natp size))
            (equal (sbvdiv size y x)
                   (sbvdiv size y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd sbvdiv-trim-arg1-dag-all
+(defthmd sbvdiv-trim-arg1-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (sbvdiv size x y)
                   (sbvdiv size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd sbvdiv-trim-arg2-dag-all
+(defthmd sbvdiv-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (sbvdiv size y x)
@@ -512,28 +512,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename these?!
-(defthmd sbvrem-trim-arg1-dag
+(defthmd sbvrem-trim-arg1-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
                 (natp size))
            (equal (sbvrem size x y)
                   (sbvrem size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd sbvrem-trim-arg2-dag
+(defthmd sbvrem-trim-arg2-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
                 (natp size))
            (equal (sbvrem size y x)
                   (sbvrem size y (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd sbvrem-trim-arg1-dag-all
+(defthmd sbvrem-trim-arg1-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (sbvrem size x y)
                   (sbvrem size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd sbvrem-trim-arg2-dag-all
+(defthmd sbvrem-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (sbvrem size y x)
@@ -542,14 +542,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvlt-trim-arg1-dag-all
+(defthmd bvlt-trim-arg1-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (bvlt size x y)
                   (bvlt size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthmd bvlt-trim-arg2-dag-all
+(defthmd bvlt-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y 'all dag-array))
                 (natp size))
            (equal (bvlt size x y)
@@ -558,14 +558,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvmod-trim-arg1-dag-all
+(defthmd bvmod-trim-arg1-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (bvmod size x y)
                   (bvmod size (trim size x) y)))
   :hints(("Goal" :in-theory (enable trim))))
 
-(defthmd bvmod-trim-arg2-dag-all
+(defthmd bvmod-trim-arg2-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (natp size))
            (equal (bvmod size y x)
@@ -596,7 +596,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;bozo gen
-(defthmd rightrotate32-trim-amt-dag
+(defthmd rightrotate32-trim-amt-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe '5 amt 'non-arithmetic dag-array))
                 (natp amt))
            (equal (rightrotate32 amt x)
@@ -606,7 +606,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Should not be needed
-(defthmd trim-does-nothing-dag
+(defthmd trim-does-nothing-axe
   (implies (and (axe-bind-free (bind-bv-size-axe i 'isize dag-array) '(isize))
                 (<= isize size)
                 (unsigned-byte-p-forced isize i)
@@ -638,7 +638,7 @@
   :hints (("Goal" :expand ((:with unsigned-byte-p (unsigned-byte-p isize i)))
            :in-theory (e/d (unsigned-byte-p-forced) ( size-non-negative-when-unsigned-byte-p-free)))))
 
-(defthmd bvcat-tighten-upper-size-dag
+(defthmd bvcat-tighten-upper-size-axe
   (implies (and (axe-bind-free (bind-bv-size-axe highval 'newsize dag-array) '(newsize)) ;had x instead of highval, that should be an error
                 (< 0 newsize) ;allow 0?
                 (< newsize highsize)
@@ -914,7 +914,7 @@
 ;
 
 ;cheap
-(defthmd <-becomes-bvlt-dag-both
+(defthmd <-becomes-bvlt-axe-both
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -925,7 +925,7 @@
            :use (:instance <-becomes-bvlt (k x) (x y)  (free (max xsize ysize))))))
 
 ;cheap
-(defthmd <-becomes-bvlt-dag-2
+(defthmd <-becomes-bvlt-axe-2
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p freeysize y)
                 (unsigned-byte-p-forced xsize x))
@@ -934,20 +934,13 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvlt))))
 
 ;cheap
-(defthmd <-becomes-bvlt-dag-3
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+(defthmd <-becomes-bvlt-axe-3
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize axe-array) '(ysize))
                 (unsigned-byte-p freexsize x)
                 (unsigned-byte-p-forced ysize y))
            (equal (< x y)
                   (bvlt (max freexsize ysize) x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvlt))))
-
-
-
-(local (in-theory (disable ;BVPLUS-RECOLLAPSE
-                   ;;hack-6
-                   )))
-
 
 ;fixme what if there are assumptions of usb for x and/or y
 ;gen the 32
@@ -1289,7 +1282,7 @@
 
 
 (defthmd bvcat-blast-low
-  (implies (and (axe-syntaxp (not-quotep lowval)) ;prevents loops ;Fri Mar  4 20:18:21 2011
+  (implies (and (syntaxp (not (quotep lowval))) ;prevents loops ;Fri Mar  4 20:18:21 2011
                 (axe-syntaxp (not (syntactic-call-of 'bvcat lowval dag-array)));Thu Mar  3 01:52:18 2011
                 (< 1 lowsize) ;prevents loops
                 (integerp highsize)
@@ -2226,3 +2219,83 @@
                   (bvmult (+ (lg x) ysize) x y)))
   :hints (("Goal" :use (bvmult-tighten-when-power-of-2p)
            :in-theory (disable bvmult-tighten-when-power-of-2p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvand-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvand size x y)
+                  (bvand size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvand-convert-arg3-to-bv-axe
+  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvand size x y)
+                  (bvand size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvor-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvor size x y)
+                  (bvor size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvor-convert-arg3-to-bv-axe
+  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvor size x y)
+                  (bvor size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvxor-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvxor size x y)
+                  (bvxor size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvxor-convert-arg3-to-bv-axe
+  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvxor size x y)
+                  (bvxor size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Doesn't apply to when x is a + since we turn bvplus back into + for x86 stack pointer calculations.
+(defthm bvplus-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x '(binary-+) dag-array))
+           (equal (bvplus size x y)
+                  (bvplus size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;; Doesn't apply to when y is a + since we turn bvplus back into + for x86 stack pointer calculations.
+(defthm bvplus-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y '(binary-+) dag-array))
+           (equal (bvplus size x y)
+                  (bvplus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvminus-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvminus size x y)
+                  (bvminus size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvminus-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvminus size x y)
+                  (bvminus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvuminus-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x '(binary-+) dag-array))
+           (equal (bvuminus size x)
+                  (bvuminus size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))

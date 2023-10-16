@@ -921,6 +921,23 @@
        :induct t
        :enable (var-in-scopes-p write-auto-var-aux))))
 
+  (defruled write-var-to-write-static-var
+    (implies (not (var-autop var compst))
+             (equal (write-var var val compst)
+                    (write-static-var var val compst)))
+    :enable write-var
+    :prep-lemmas
+    ((defrule not-write-auto-var-when-not-var-autop
+       (implies (not (var-autop var compst))
+                (not (write-auto-var var val compst)))
+       :enable (write-auto-var var-autop)
+       :prep-lemmas
+       ((defrule not-write-auto-var-aux-when-not-var-in-scopes-p
+          (implies (not (var-in-scopes-p var scopes))
+                   (not (write-auto-var-aux var val scopes)))
+          :induct t
+          :enable (var-in-scopes-p write-auto-var-aux))))))
+
   (defval *atc-write-var-rules*
     '(write-var-to-update-var
       write-var-okp-of-enter-scope
@@ -2026,6 +2043,13 @@
                 top-frame
                 push-frame
                 pop-frame))))
+
+  (defruled update-static-var-of-if*-val
+    (equal (update-static-var var (if* a b c) compst)
+           (if* a
+                (update-static-var var b compst)
+                (update-static-var var c compst)))
+    :enable if*)
 
   (defval *atc-update-static-var-rules*
     '(update-static-var-of-add-frame

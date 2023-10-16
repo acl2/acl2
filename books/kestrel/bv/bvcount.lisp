@@ -28,19 +28,6 @@
 
 (local (in-theory (disable expt)))
 
-;move
-(defthmd nonnegative-integer-quotient-by-2
-  (implies (natp x)
-           (equal (nonnegative-integer-quotient x 2)
-                  (floor x 2)))
-  :hints (("Goal" :in-theory (enable floor))))
-
-(defthmd floor-by-2
-  (implies (integerp i)
-           (equal (floor i 2)
-                  (logtail 1 i)))
-  :hints (("Goal" :in-theory (enable logtail))))
-
 ;; Count the number of 1 bits in X, which should be SIZE bits wide.  The result
 ;; fits in B bits where B is (integer-length SIZE).
 (defund bvcount (size x)
@@ -219,7 +206,7 @@
            (equal (bvcount size (bvchop xsize x))
                   (bvcount size x)))
   :hints (("Goal" :use (:instance split-bv
-                                  (y (bvchop size x))
+                                  (x (bvchop size x))
                                   (n size)
                                   (m xsize))
            :in-theory (disable bvcat-of-getbit-and-x-adjacent

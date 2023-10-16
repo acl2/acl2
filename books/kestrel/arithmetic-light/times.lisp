@@ -73,7 +73,6 @@
                                   (y z))
            :in-theory (disable integerp-of-*))))
 
-
 (defthm *-of---arg1
   (implies (syntaxp (not (quotep x))) ;prevent it from matching a constant
            (equal (* (- x) y)
@@ -548,8 +547,22 @@
                 (rationalp k2)
                 )
            (equal (< k1 (* k2 x))
-                  (and ;(acl2-numberp k1)
-                       (< (/ k1 k2) (fix x)))))
+                  (< (/ k1 k2) x)))
+  :hints (("Goal" :in-theory (disable inverse-of-*
+                                      associativity-of-*)
+           :use ((:instance inverse-of-* (x k2))
+                 (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
+
+(defthm <-of-*-of-constant-and-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (< 0 k2) ;gen
+                (rationalp x)
+                (rationalp k1)
+                (rationalp k2)
+                )
+           (equal (< (* k2 x) k1)
+                  (< x (/ k1 k2))))
   :hints (("Goal" :in-theory (disable inverse-of-*
                                       associativity-of-*)
            :use ((:instance inverse-of-* (x k2))
@@ -564,11 +577,11 @@
                     (if (equal 0 i)
                         nil
                       (< j -1)))))
-  :hints (("Goal" :use (:instance acl2::<-of-*-and-*-cancel-gen
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
                                   (y i)
                                   (x1 1)
                                   (x2 (- j)))
-           :in-theory (disable acl2::<-of-*-and-*-cancel-gen))))
+           :in-theory (disable <-of-*-and-*-cancel-gen))))
 
 (defthm equal-of-*-cancel-arg1+
   (equal (equal (* x y) x)

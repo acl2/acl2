@@ -121,7 +121,7 @@
     :enable (objdesign-of-var-aux
              var-in-scopes-p))
 
-  (defruled objdesign-of-var-of-update-var
+  (defruled objdesign-of-var-of-update-var-iff
     (iff (objdesign-of-var var (update-var var2 val compst))
          (or (equal (ident-fix var)
                     (ident-fix var2))
@@ -136,6 +136,14 @@
              objdesign-of-var-aux-iff-var-in-scopes
              var-in-scopes-p-of-update-var-aux
              len))
+
+  (defruled objdesign-of-var-of-update-static-var-iff
+    (iff (objdesign-of-var var (update-static-var var2 val compst))
+         (or (equal (ident-fix var) (ident-fix var2))
+             (objdesign-of-var var compst)))
+    :enable (objdesign-of-var
+             update-static-var
+             top-frame))
 
   (defruled read-object-of-objdesign-of-var-of-add-var
     (implies (objdesign-of-var var (add-var var2 val compst))
@@ -170,7 +178,7 @@
                       (read-object (objdesign-of-var var compst) compst))))
     :enable (read-object-of-objdesign-of-var-to-read-var
              read-var-of-update-var
-             objdesign-of-var-of-update-var))
+             objdesign-of-var-of-update-var-iff))
 
   (defruled objdesign-of-var-of-update-object-iff
     (iff (objdesign-of-var var (update-object objdes val compst))
@@ -194,11 +202,43 @@
     :enable (read-object
              update-object))
 
+  (defruled read-object-of-objdesign-of-var-of-update-static-var-different
+    (implies (and (objdesign-of-var var (update-static-var var2 val compst))
+                  (not (equal (ident-fix var)
+                              (ident-fix var2))))
+             (equal (read-object
+                     (objdesign-of-var var (update-static-var var2 val compst))
+                     (update-static-var var2 val compst))
+                    (read-object (objdesign-of-var var compst) compst)))
+    :enable (objdesign-of-var-of-update-static-var-iff
+             read-object-of-objdesign-of-var-to-read-var
+             read-var-of-update-static-var-different))
+
+  (defruled read-object-of-objdesign-of-var-of-update-static-var-same
+    (implies (not (var-autop var compst))
+             (equal (read-object
+                     (objdesign-of-var var (update-static-var var val compst))
+                     (update-static-var var val compst))
+                    (remove-flexible-array-member val)))
+    :enable (read-object-of-objdesign-of-var-to-read-var
+             read-var-of-update-static-var-same
+             objdesign-of-var-of-update-static-var-iff))
+
   (defruled objdesign-of-var-of-if*-when-both-objdesign-of-var
     (implies (and (objdesign-of-var var b)
                   (objdesign-of-var var c))
              (objdesign-of-var var (if* a b c)))
     :enable if*)
+
+  (defruled read-object-of-objdesign-static-to-objdesign-of-var
+    (implies (and (objdesign-of-var id compst)
+                  (not (var-autop id compst)))
+             (equal (read-object (objdesign-static id) compst)
+                    (read-object (objdesign-of-var id compst) compst)))
+    :enable (read-object-of-objdesign-of-var-to-read-var
+             read-var-to-read-static-var
+             read-object
+             read-static-var))
 
   (defval *atc-object-designator-rules*
     '(objdesign-of-var-when-static

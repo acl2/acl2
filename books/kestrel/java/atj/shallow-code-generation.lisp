@@ -4623,7 +4623,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is a public class.
-     [JLS:7.6] says that a Java implementation may require
+     [JLS14:7.6] says that a Java implementation may require
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement.")
    (xdoc::p
@@ -4637,7 +4637,7 @@
      comes textually before the fields for the quoted constants,
      so that the ACL2 environment is initialized
      before the field initializers, which construct ACL2 values, are executed;
-     [JLS:12.4.1] says that the class initialization code
+     [JLS14:12.4.1] says that the class initialization code
      is executed in textual order.")
    (xdoc::p
     "If @(':guards') is @('t'), we exclude the ACL2 functions

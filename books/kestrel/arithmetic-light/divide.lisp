@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation /.
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -431,3 +431,10 @@
                                   (y (* i (/ j)))
                                   (z (- i)))
            :in-theory (disable equal-of-*-and-*-cancel))))
+
+(defthm /-bound-when-non-negative-and-integer
+  (implies (and (integerp j)
+                (<= 0 i)
+                (rationalp i))
+           (<= (- i) (/ i j)))
+  :hints (("Goal" :cases ((<= j -1)))))

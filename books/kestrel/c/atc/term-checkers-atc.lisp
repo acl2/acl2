@@ -15,10 +15,12 @@
 (include-book "function-tables")
 (include-book "tag-tables")
 
+(include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
+(local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 (local (include-book "projects/apply/loop" :dir :system))
 (local (in-theory (disable acl2::loop-book-theory)))
@@ -723,15 +725,18 @@
                              (var-term-alist symbol-pseudoterm-alistp)
                              (prec-fns atc-symbol-fninfo-alistp)
                              (wrld plist-worldp))
-  :returns (mv (yes/no booleanp)
+  :returns (mv erp
+               (yes/no booleanp)
                (fn symbolp)
                (args pseudo-term-listp)
                (in-types type-listp)
                (out-type typep)
                (affect symbol-listp)
+               (extobjs symbol-listp)
                (limit pseudo-termp)
                (fn-guard symbolp))
-  :short "Check if a term may represent a call to a C function."
+  :short "Check if a term may represent a call to a C function,
+          and in that case check the requirements on the call arguments."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -739,7 +744,15 @@
      the called function along with the arguments.
      We also return the input and output types of the function,
      the variables affected by the function,
-     and the limit sufficient to execute the function.")
+     the formals of the function that represent external objects,
+     the limit sufficient to execute the function,
+     and the local function that encapsulates the function's guard.")
+   (xdoc::p
+    "We also check each actual argument
+     for a formal parameter of array or pointer type,
+     or for a formal parameter that represents an external object,
+     is identical to the formal,
+     as required in the ATC user documentation.")
    (xdoc::p
     "The limit retrieved from the function table
      refers to the formal parameters.
@@ -749,7 +762,8 @@
      in order to obtain the real arguments of the call
      from the point of view of the top level of
      where this call term occurs."))
-  (b* (((acl2::fun (no)) (mv nil nil nil nil (irr-type) nil nil nil))
+  (b* (((reterr) nil nil nil nil (irr-type) nil nil nil nil)
+       ((acl2::fun (no)) (retok nil nil nil nil (irr-type) nil nil nil nil))
        ((unless (pseudo-term-case term :fncall)) (no))
        ((pseudo-term-fncall term) term)
        ((when (irecursivep+ term.fn wrld)) (no))
@@ -759,11 +773,64 @@
        (in-types (atc-fn-info->in-types info))
        (out-type (atc-fn-info->out-type info))
        (affect (atc-fn-info->affect info))
+       (extobjs (atc-fn-info->extobjs info))
        ((when (null out-type)) (no))
        (limit (atc-fn-info->limit info))
        (limit (fty-fsublis-var var-term-alist limit))
-       (fn-guard (atc-fn-info->guard info)))
-    (mv t term.fn term.args in-types out-type affect limit fn-guard))
+       (fn-guard (atc-fn-info->guard info))
+       ((erp) (atc-check-cfun-call-args term.fn
+                                        (formals+ term.fn wrld)
+                                        term.args
+                                        in-types
+                                        extobjs)))
+    (retok t term.fn term.args in-types out-type affect extobjs limit fn-guard))
+
+  :prepwork
+  ((define atc-check-cfun-call-args ((fn symbolp)
+                                     (formals symbol-listp)
+                                     (actuals pseudo-term-listp)
+                                     (in-types type-listp)
+                                     (extobjs symbol-listp))
+     :returns erp
+     :parents nil
+     (b* (((reterr))
+          ((when (endp formals))
+           (cond ((consp actuals)
+                  (reterr
+                   (raise "Internal error: extra actuals ~x0." actuals)))
+                 ((consp in-types)
+                  (reterr
+                   (raise "Internal error: extra types ~x0." in-types)))
+                 (t (retok))))
+          ((when (or (endp actuals)
+                     (endp in-types)))
+           (reterr (raise "Internal error: extra formals ~x0." formals)))
+          (formal (car formals))
+          (actual (car actuals))
+          (in-type (car in-types))
+          ((when (and (not (type-case in-type :pointer))
+                      (not (type-case in-type :array))
+                      (not (member-eq formal extobjs))))
+           (atc-check-cfun-call-args fn
+                                     (cdr formals)
+                                     (cdr actuals)
+                                     (cdr in-types)
+                                     extobjs))
+          ((unless (eq formal actual))
+           (reterr
+            (msg "Since the formal parameter ~x0 of ~x1 ~
+                  has array or pointer type, ~
+                  or represents an external object, ~
+                  the actual argument passed to the call must be ~
+                  identical to the formal parameters, ~
+                  but it is ~x2 instead."
+                 formal fn actual))))
+       (atc-check-cfun-call-args fn
+                                 (cdr formals)
+                                 (cdr actuals)
+                                 (cdr in-types)
+                                 extobjs))))
+
   ///
 
   (defret pseudo-term-count-of-atc-check-cfun-call
@@ -771,45 +838,6 @@
              (< (pseudo-term-list-count args)
                 (pseudo-term-count term)))
     :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atc-check-cfun-call-args ((formals symbol-listp)
-                                  (in-types type-listp)
-                                  (args pseudo-term-listp))
-  :returns (yes/no booleanp)
-  :short "Check the arguments of a call to a C function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called after @(tsee atc-check-cfun-call),
-     if the latter is successful.
-     As stated in the user documentation of ATC,
-     calls of non-recursive target functions must satisfy the property that
-     the argument for a formal of pointer or array type
-     must be identical to the formal.
-     This is because these arguments and formals
-     represent arrays and pointers,
-     and thus they must be passed around exactly by their name,
-     similarly to stobjs in ACL2.
-     This code checks the condition."))
-  (b* (((when (endp formals))
-        (cond ((consp in-types)
-               (raise "Internal error: extra types ~x0." in-types))
-              ((consp args)
-               (raise "Internal error: extra arguments ~x0." args))
-              (t t)))
-       ((when (or (endp in-types)
-                  (endp args)))
-        (raise "Internal error: extra formals ~x0." formals))
-       (formal (car formals))
-       (in-type (car in-types))
-       (arg (car args))
-       ((when (and (not (type-case in-type :pointer))
-                   (not (type-case in-type :array))))
-        (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args)))
-       ((unless (eq formal arg)) nil))
-    (atc-check-cfun-call-args (cdr formals) (cdr in-types) (cdr args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1007,7 +1035,8 @@
                (indices nat-listp)
                (val pseudo-termp)
                (body pseudo-termp)
-               (wrapper? symbolp))
+               (wrapper? symbolp)
+               (mv-var symbolp))
   :short "Check if a term may be an @(tsee mv-let) statement term."
   :long
   (xdoc::topstring
@@ -1023,12 +1052,16 @@
      and we also return
      the corresponding @(tsee declar) or @(tsee assign) wrapper.
      Otherwise, we return all the variables together,
-     with @('nil') as the @('var?') and @('wrapper?') results."))
-  (b* (((mv okp & vars indices & val body) (fty-check-mv-let-call term))
-       ((when (not okp)) (mv nil nil nil nil nil nil nil))
+     with @('nil') as the @('var?') and @('wrapper?') results.
+     We also return, in @('mv-var'),
+     the variable to which the term is @(tsee let)-bound
+     (see @(tsee acl2::make-mv-let-call));
+     this is used for reconstructing the transformed term."))
+  (b* (((mv okp mv-var vars indices & val body) (fty-check-mv-let-call term))
+       ((when (not okp)) (mv nil nil nil nil nil nil nil nil))
        ((mv okp wrapper & wrapped) (atc-check-declar/assign-n val))
-       ((when (not okp)) (mv t nil vars indices val body nil)))
-    (mv t (car vars) (cdr vars) indices wrapped body wrapper))
+       ((when (not okp)) (mv t nil vars indices val body nil mv-var)))
+    (mv t (car vars) (cdr vars) indices wrapped body wrapper mv-var))
 
   :prepwork
   ((defrulel verify-guards-lemma

@@ -20,7 +20,7 @@
 
 (defxdoc+ pointers
   :parents (semantics)
-  :short "Java pointers [JLS:4.3.1]."
+  :short "Java pointers [JLS14:4.3.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -45,7 +45,7 @@
      We can (optionally) model these hash codes
      separately from the pointers formalized here:
      we use these pointers just to identify objects,
-     consistently with [JLS].")
+     consistently with [JLS14].")
    (xdoc::p
     "We could use natural numbers to model Java pointers,
      but we prefer this more abstract model,

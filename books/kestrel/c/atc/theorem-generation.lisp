@@ -670,12 +670,12 @@
            (atc-type-to-notflexarrmem-thms type prec-tags))
           (then-var-info (atc-get-var var then-inscope))
           ((unless then-var-info)
-           (raise "Internal error: ~x0 not in scope after 'then'.")
+           (raise "Internal error: ~x0 not in scope after 'then'." var)
            (mv nil nil nil))
           (then-var-thm (atc-var-info->thm then-var-info))
           (else-var-info (atc-get-var var else-inscope))
           ((unless else-var-info)
-           (raise "Internal error: ~x0 not in scope after 'else'.")
+           (raise "Internal error: ~x0 not in scope after 'else'." var)
            (mv nil nil nil))
           (else-var-thm (atc-var-info->thm else-var-info))
           (value-kind-thms
@@ -690,6 +690,8 @@
                            objdesign-of-var-of-update-object-iff
                            objdesign-of-var-of-enter-scope-iff
                            update-object-of-update-object-same
+                           read-object-of-update-object-disjoint
+                           object-disjointp-commutative
                            update-object-of-enter-scope
                            compustate-frames-number-of-enter-scope-not-zero
                            compustatep-of-enter-scope
@@ -731,7 +733,23 @@
                            sllong-arrayp-of-sllong-array-write
                            compustatep-of-update-object
                            ,@value-kind-thms
-                           ,@writer-return-thms))))
+                           ,@writer-return-thms
+                           update-static-var-of-enter-scope
+                           compustatep-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustate-frames-number-of-add-frame-not-zero
+                           objdesign-of-var-of-update-static-var-iff
+                           update-static-var-of-add-frame
+                           read-var-of-add-frame
+                           read-static-var-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustatep-of-add-frame
+                           objdesign-of-var-of-add-frame-when-read-object-static
+                           read-object-of-objdesign-static
+                           (:t objdesign-static)
+                           read-static-var-of-add-frame
+                           mv-nth-of-cons
+                           (:e zp)))))
           (else-hints
            `(("Goal"
               :in-theory '(,else-var-thm
@@ -740,6 +758,8 @@
                            objdesign-of-var-of-update-object-iff
                            objdesign-of-var-of-enter-scope-iff
                            update-object-of-update-object-same
+                           read-object-of-update-object-disjoint
+                           object-disjointp-commutative
                            update-object-of-enter-scope
                            compustate-frames-number-of-enter-scope-not-zero
                            compustatep-of-enter-scope
@@ -781,7 +801,23 @@
                            sllong-arrayp-of-sllong-array-write
                            compustatep-of-update-object
                            ,@value-kind-thms
-                           ,@writer-return-thms))))
+                           ,@writer-return-thms
+                           update-static-var-of-enter-scope
+                           compustatep-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustate-frames-number-of-add-frame-not-zero
+                           objdesign-of-var-of-update-static-var-iff
+                           update-static-var-of-add-frame
+                           read-var-of-add-frame
+                           read-static-var-of-update-static-var
+                           compustate-frames-number-of-update-static-var
+                           compustatep-of-add-frame
+                           objdesign-of-var-of-add-frame-when-read-object-static
+                           read-object-of-objdesign-static
+                           (:t objdesign-static)
+                           read-static-var-of-add-frame
+                           mv-nth-of-cons
+                           (:e zp)))))
           (instructions
            `((casesplit ,(atc-contextualize
                           test-term

@@ -47,7 +47,7 @@
 
 (defxdoc+ primitive-conversions
   :parents (semantics)
-  :short "Java primitive conversions [JLS:5.1.2-4]."
+  :short "Java primitive conversions [JLS14:5.1.2-4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -62,7 +62,7 @@
 
 (defxdoc+ primitive-widening-conversions
   :parents (primitive-conversions)
-  :short "Java primitive widening conversions [JLS:5.1.2]."
+  :short "Java primitive widening conversions [JLS14:5.1.2]."
   :order-subtopics t
   :default-parent t)
 
@@ -72,7 +72,7 @@
   :in-type (primitive-type-byte)
   :out-type (primitive-type-short)
   :operation x
-  :short "Widening conversion from @('byte') to @('short') [JLS:5.1.2].")
+  :short "Widening conversion from @('byte') to @('short') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,7 +80,7 @@
   :in-type (primitive-type-byte)
   :out-type (primitive-type-int)
   :operation x
-  :short "Widening conversion from @('byte') to @('int') [JLS:5.1.2].")
+  :short "Widening conversion from @('byte') to @('int') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,7 +88,7 @@
   :in-type (primitive-type-byte)
   :out-type (primitive-type-long)
   :operation x
-  :short "Widening conversion from @('byte') to @('long') [JLS:5.1.2].")
+  :short "Widening conversion from @('byte') to @('long') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,7 +96,7 @@
   :in-type (primitive-type-byte)
   :out-type (primitive-type-float)
   :operation (byte-to-float-abs x)
-  :short "Widening conversion from @('byte') to @('float') [JLS:5.1.2].")
+  :short "Widening conversion from @('byte') to @('float') [JLS14:5.1.2].")
 
 (in-theory (disable (:e byte-to-float)))
 
@@ -106,7 +106,7 @@
   :in-type (primitive-type-byte)
   :out-type (primitive-type-double)
   :operation (byte-to-double-abs x)
-  :short "Widening conversion from @('byte') to @('double') [JLS:5.1.2].")
+  :short "Widening conversion from @('byte') to @('double') [JLS14:5.1.2].")
 
 (in-theory (disable (:e byte-to-double)))
 
@@ -116,7 +116,7 @@
   :in-type (primitive-type-short)
   :out-type (primitive-type-int)
   :operation x
-  :short "Widening conversion from @('short') to @('int') [JLS:5.1.2].")
+  :short "Widening conversion from @('short') to @('int') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,7 +124,7 @@
   :in-type (primitive-type-short)
   :out-type (primitive-type-long)
   :operation x
-  :short "Widening conversion from @('short') to @('long') [JLS:5.1.2].")
+  :short "Widening conversion from @('short') to @('long') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,7 +132,7 @@
   :in-type (primitive-type-short)
   :out-type (primitive-type-float)
   :operation (short-to-float-abs x)
-  :short "Widening conversion from @('short') to @('float') [JLS:5.1.2].")
+  :short "Widening conversion from @('short') to @('float') [JLS14:5.1.2].")
 
 (in-theory (disable (:e short-to-float)))
 
@@ -142,7 +142,7 @@
   :in-type (primitive-type-short)
   :out-type (primitive-type-double)
   :operation (short-to-double-abs x)
-  :short "Widening conversion from @('short') to @('double') [JLS:5.1.2].")
+  :short "Widening conversion from @('short') to @('double') [JLS14:5.1.2].")
 
 (in-theory (disable (:e short-to-double)))
 
@@ -152,7 +152,7 @@
   :in-type (primitive-type-char)
   :out-type (primitive-type-int)
   :operation x
-  :short "Widening conversion from @('char') to @('int') [JLS:5.1.2].")
+  :short "Widening conversion from @('char') to @('int') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +160,7 @@
   :in-type (primitive-type-char)
   :out-type (primitive-type-long)
   :operation x
-  :short "Widening conversion from @('char') to @('long') [JLS:5.1.2].")
+  :short "Widening conversion from @('char') to @('long') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -168,7 +168,7 @@
   :in-type (primitive-type-char)
   :out-type (primitive-type-float)
   :operation (char-to-float-abs x)
-  :short "Widening conversion from @('char') to @('float') [JLS:5.1.2].")
+  :short "Widening conversion from @('char') to @('float') [JLS14:5.1.2].")
 
 (in-theory (disable (:e char-to-float)))
 
@@ -178,7 +178,7 @@
   :in-type (primitive-type-char)
   :out-type (primitive-type-double)
   :operation (char-to-double-abs x)
-  :short "Widening conversion from @('char') to @('double') [JLS:5.1.2].")
+  :short "Widening conversion from @('char') to @('double') [JLS14:5.1.2].")
 
 (in-theory (disable (:e char-to-double)))
 
@@ -188,7 +188,7 @@
   :in-type (primitive-type-int)
   :out-type (primitive-type-long)
   :operation x
-  :short "Widening conversion from @('int') to @('long') [JLS:5.1.2].")
+  :short "Widening conversion from @('int') to @('long') [JLS14:5.1.2].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,7 +196,7 @@
   :in-type (primitive-type-int)
   :out-type (primitive-type-float)
   :operation (int-to-float-abs x)
-  :short "Widening conversion from @('int') to @('float') [JLS:5.1.2].")
+  :short "Widening conversion from @('int') to @('float') [JLS14:5.1.2].")
 
 (in-theory (disable (:e int-to-float)))
 
@@ -206,7 +206,7 @@
   :in-type (primitive-type-int)
   :out-type (primitive-type-double)
   :operation (int-to-double-abs x)
-  :short "Widening conversion from @('int') to @('double') [JLS:5.1.2].")
+  :short "Widening conversion from @('int') to @('double') [JLS14:5.1.2].")
 
 (in-theory (disable (:e int-to-double)))
 
@@ -216,7 +216,7 @@
   :in-type (primitive-type-long)
   :out-type (primitive-type-float)
   :operation (long-to-float-abs x)
-  :short "Widening conversion from @('long') to @('float') [JLS:5.1.2].")
+  :short "Widening conversion from @('long') to @('float') [JLS14:5.1.2].")
 
 (in-theory (disable (:e long-to-float)))
 
@@ -226,7 +226,7 @@
   :in-type (primitive-type-long)
   :out-type (primitive-type-double)
   :operation (long-to-double-abs x)
-  :short "Widening conversion from @('long') to @('double') [JLS:5.1.2].")
+  :short "Widening conversion from @('long') to @('double') [JLS14:5.1.2].")
 
 (in-theory (disable (:e long-to-double)))
 
@@ -236,7 +236,7 @@
   :in-type (primitive-type-float)
   :out-type (primitive-type-double)
   :operation (float-to-double-abs x)
-  :short "Widening conversion from @('float') to @('double') [JLS:5.1.2].")
+  :short "Widening conversion from @('float') to @('double') [JLS14:5.1.2].")
 
 (in-theory (disable (:e float-to-double)))
 
@@ -244,7 +244,7 @@
 
 (defxdoc+ primitive-narrowing-conversions
   :parents (primitive-conversions)
-  :short "Java primitive narrowing conversions [JLS:5.1.3]."
+  :short "Java primitive narrowing conversions [JLS14:5.1.3]."
   :order-subtopics t
   :default-parent t)
 
@@ -254,7 +254,7 @@
   :in-type (primitive-type-short)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
-  :short "Narrowing conversion from @('short') to @('byte') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('short') to @('byte') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +262,7 @@
   :in-type (primitive-type-short)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
-  :short "Narrowing conversion from @('short') to @('char') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('short') to @('char') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,7 +270,7 @@
   :in-type (primitive-type-char)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
-  :short "Narrowing conversion from @('char') to @('byte') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('char') to @('byte') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,7 +278,7 @@
   :in-type (primitive-type-char)
   :out-type (primitive-type-short)
   :operation (logext 16 x)
-  :short "Narrowing conversion from @('char') to @('short') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('char') to @('short') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,7 +286,7 @@
   :in-type (primitive-type-int)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
-  :short "Narrowing conversion from @('int') to @('byte') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('int') to @('byte') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -294,7 +294,7 @@
   :in-type (primitive-type-int)
   :out-type (primitive-type-short)
   :operation (logext 16 x)
-  :short "Narrowing conversion from @('int') to @('short') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('int') to @('short') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +302,7 @@
   :in-type (primitive-type-int)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
-  :short "Narrowing conversion from @('int') to @('char') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('int') to @('char') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,7 +310,7 @@
   :in-type (primitive-type-long)
   :out-type (primitive-type-byte)
   :operation (logext 8 x)
-  :short "Narrowing conversion from @('long') to @('byte') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('long') to @('byte') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,7 +318,7 @@
   :in-type (primitive-type-long)
   :out-type (primitive-type-short)
   :operation (logext 16 x)
-  :short "Narrowing conversion from @('long') to @('short') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('long') to @('short') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,7 +326,7 @@
   :in-type (primitive-type-long)
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
-  :short "Narrowing conversion from @('long') to @('char') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('long') to @('char') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,7 +334,7 @@
   :in-type (primitive-type-long)
   :out-type (primitive-type-int)
   :operation (logext 32 x)
-  :short "Narrowing conversion from @('long') to @('int') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('long') to @('int') [JLS14:5.1.3].")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -342,7 +342,7 @@
   :in-type (primitive-type-float)
   :out-type (primitive-type-byte)
   :operation (float-to-byte-abs x)
-  :short "Narrowing conversion from @('float') to @('byte') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('float') to @('byte') [JLS14:5.1.3].")
 
 (in-theory (disable (:e float-to-byte)))
 
@@ -352,7 +352,7 @@
   :in-type (primitive-type-float)
   :out-type (primitive-type-short)
   :operation (float-to-short-abs x)
-  :short "Narrowing conversion from @('float') to @('short') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('float') to @('short') [JLS14:5.1.3].")
 
 (in-theory (disable (:e float-to-short)))
 
@@ -362,7 +362,7 @@
   :in-type (primitive-type-float)
   :out-type (primitive-type-char)
   :operation (float-to-char-abs x)
-  :short "Narrowing conversion from @('float') to @('char') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('float') to @('char') [JLS14:5.1.3].")
 
 (in-theory (disable (:e float-to-char)))
 
@@ -372,7 +372,7 @@
   :in-type (primitive-type-float)
   :out-type (primitive-type-int)
   :operation (float-to-int-abs x)
-  :short "Narrowing conversion from @('float') to @('int') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('float') to @('int') [JLS14:5.1.3].")
 
 (in-theory (disable (:e float-to-int)))
 
@@ -382,7 +382,7 @@
   :in-type (primitive-type-float)
   :out-type (primitive-type-long)
   :operation (float-to-long-abs x)
-  :short "Narrowing conversion from @('float') to @('long') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('float') to @('long') [JLS14:5.1.3].")
 
 (in-theory (disable (:e float-to-long)))
 
@@ -392,7 +392,7 @@
   :in-type (primitive-type-double)
   :out-type (primitive-type-byte)
   :operation (double-to-byte-abs x)
-  :short "Narrowing conversion from @('double') to @('byte') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('double') to @('byte') [JLS14:5.1.3].")
 
 (in-theory (disable (:e double-to-byte)))
 
@@ -402,7 +402,7 @@
   :in-type (primitive-type-double)
   :out-type (primitive-type-short)
   :operation (double-to-short-abs x)
-  :short "Narrowing conversion from @('double') to @('short') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('double') to @('short') [JLS14:5.1.3].")
 
 (in-theory (disable (:e double-to-short)))
 
@@ -412,7 +412,7 @@
   :in-type (primitive-type-double)
   :out-type (primitive-type-char)
   :operation (double-to-char-abs x)
-  :short "Narrowing conversion from @('double') to @('char') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('double') to @('char') [JLS14:5.1.3].")
 
 (in-theory (disable (:e double-to-char)))
 
@@ -422,7 +422,7 @@
   :in-type (primitive-type-double)
   :out-type (primitive-type-int)
   :operation (double-to-int-abs x)
-  :short "Narrowing conversion from @('double') to @('int') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('double') to @('int') [JLS14:5.1.3].")
 
 (in-theory (disable (:e double-to-int)))
 
@@ -432,7 +432,7 @@
   :in-type (primitive-type-double)
   :out-type (primitive-type-long)
   :operation (double-to-long-abs x)
-  :short "Narrowing conversion from @('double') to @('long') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('double') to @('long') [JLS14:5.1.3].")
 
 (in-theory (disable (:e double-to-long)))
 
@@ -442,7 +442,7 @@
   :in-type (primitive-type-double)
   :out-type (primitive-type-float)
   :operation (double-to-float-abs x)
-  :short "Narrowing conversion from @('double') to @('float') [JLS:5.1.3].")
+  :short "Narrowing conversion from @('double') to @('float') [JLS14:5.1.3].")
 
 (in-theory (disable (:e double-to-float)))
 
@@ -450,7 +450,7 @@
 
 (defxdoc+ primitive-widening-narrowing-conversions
   :parents (primitive-conversions)
-  :short "Java primitive widening and narrowing conversions [JLS:5.1.4]."
+  :short "Java primitive widening and narrowing conversions [JLS14:5.1.4]."
   :order-subtopics t
   :default-parent t)
 
@@ -461,4 +461,4 @@
   :out-type (primitive-type-char)
   :operation (loghead 16 x)
   :short "Widening and narrowing conversion
-          from @('byte') to @('char') [JLS:5.1.4].")
+          from @('byte') to @('char') [JLS14:5.1.4].")

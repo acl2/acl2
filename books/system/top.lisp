@@ -84,6 +84,12 @@
 ; Tests of fancy string reader:
 ; fancy-string-reader-test.lisp
 
+; Termination and guard verification for printing functions:
+; fmt-support.lisp
+; fmt.lisp
+; error1-support.lisp
+; error1.lisp
+
 ; Proof that "demonstrates that hl-nat-combine is onto the naturals":
 ; hl-nat-combine-onto.lisp
 

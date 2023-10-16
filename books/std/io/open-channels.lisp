@@ -160,7 +160,7 @@
              (b* (((mv & state) (read-byte$ other-channel state)))
                (open-input-channel-p1 channel type state))))
 
-; Matt K. mod 5/8/2024: Due to adding a call of iprint-oracle-updates in the
+; Matt K. mod 5/8/2023: Due to adding a call of iprint-oracle-updates in the
 ; definition of read-object, then for the proof of
 ; open-input-channel-p1-under-read-object below, we locally enable
 ; read-acl2-oracle and update-acl2-oracle.
