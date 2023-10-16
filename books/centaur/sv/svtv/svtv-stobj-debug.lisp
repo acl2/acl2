@@ -839,8 +839,8 @@
   :returns (offsets integer-listp)
   (if (atom common-labels)
       nil
-    (cons (- (acl2::index-of (car common-labels) labels1)
-             (acl2::index-of (car common-labels) labels2))
+    (cons (- (acl2::index-of (car common-labels) labels2)
+             (acl2::index-of (car common-labels) labels1))
           (svtv-chase$-compare-offsets-by-labels (cdr common-labels) labels1 labels2))))
 
 (define svtv-chase$-compare-most-frequent-offset ((offsets integer-listp)
@@ -913,7 +913,10 @@
        (svtv-chase-data (set-svtv-chase-data->evaldata2 evaldata2 svtv-chase-data))
        (offset (svtv-chase$-compare-decide-offset offset
                                                   (svtv-chase-data->phaselabels svtv-chase-data)
-                                                  (subst nil 'acl2::? (defsvtv-args->labels defsvtv-args2))))
+                                                  (subst nil 'acl2::?
+                                                         (svtv-labels-cycle-adjust
+                                                          (defsvtv-args->labels defsvtv-args2)
+                                                          (defsvtv-args->cycle-phases defsvtv-args2)))))
        (svtv-chase-data (set-svtv-chase-data->data2-offset offset svtv-chase-data))
        ((mv svtv-chase-data state) (svtv-chase$-repl)))
     (mv nil svtv-chase-data svtv-data state)))
