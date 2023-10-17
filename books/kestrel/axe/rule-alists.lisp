@@ -1,3 +1,15 @@
+; Rule-alists: databases of rules used by Axe
+;
+; Copyright (C) 2008-2011 Eric Smith and Stanford University
+; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2016-2020 Kestrel Technology, LLC
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "make-axe-rules")
@@ -249,15 +261,16 @@
     (cons (make-rule-alist-simple (first rule-sets) remove-duplicate-rulesp priorities)
           (make-rule-alists-simple (rest rule-sets) remove-duplicate-rulesp priorities))))
 
+;; Makes a rule-alist from the given RULE-NAMES, using priority information from WRLD.
 ;; Returns (mv erp rule-alist).
+;todo: optimize this routine to not make the rules first
 (defund make-rule-alist (rule-names wrld)
-  (declare (xargs :guard (and (true-listp rule-names)
-                              (symbol-listp rule-names)
+  (declare (xargs :guard (and (symbol-listp rule-names)
                               (ilks-plist-worldp wrld))))
   (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp nil))
        (priorities (table-alist 'axe-rule-priorities-table wrld))
-       ) ;todo: optimize this routine to not make the rules first
+       )
     (if (not (alistp priorities))
         (prog2$ (er hard? 'make-rule-alist "Ill-formed priorities table.")
                 (mv :bad-priorities-table nil))
@@ -272,8 +285,7 @@
 
 ;; Returns a rule-alist.  Doesn't return erp.
 (defund make-rule-alist! (rule-names wrld)
-  (declare (xargs :guard (and (true-listp rule-names)
-                              (symbol-listp rule-names)
+  (declare (xargs :guard (and (symbol-listp rule-names)
                               (ilks-plist-worldp wrld))))
   (mv-let (erp rule-alist)
     (make-rule-alist rule-names wrld)
@@ -284,8 +296,7 @@
 
 ;; Returns (mv erp rule-alists).
 (defund make-rule-alists (rule-name-lists wrld)
-  (declare (xargs :guard (and (true-listp rule-name-lists)
-                              (symbol-list-listp rule-name-lists)
+  (declare (xargs :guard (and (symbol-list-listp rule-name-lists)
                               (ilks-plist-worldp wrld))))
   (if (endp rule-name-lists)
       (mv (erp-nil) nil)
@@ -333,7 +344,6 @@
 ;compare to extend-rule-alistXXX
 (defund add-to-rule-alist (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (true-listp rule-names)
                               (rule-alistp rule-alist)
                               (ilks-plist-worldp wrld))))
   (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
@@ -347,7 +357,6 @@
 
 (defthm rule-alistp-of-mv-nth-1-of-add-to-rule-alist
   (implies (and (symbol-listp rule-names)
-                (true-listp rule-names)
                 (rule-alistp rule-alist)
                 (ilks-plist-worldp wrld))
            (rule-alistp (mv-nth 1 (add-to-rule-alist rule-names rule-alist wrld))))
@@ -356,7 +365,6 @@
 ;; Returns the rule-alist.  Does not return erp.
 (defund add-to-rule-alist! (rule-names rule-alist wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (true-listp rule-names)
                               (rule-alistp rule-alist)
                               (ilks-plist-worldp wrld))))
   (mv-let (erp rule-alist)
@@ -369,7 +377,6 @@
 ;; Returns (mv erp rule-alists).
 (defun add-to-rule-alists (rule-names rule-alists wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (true-listp rule-names)
                               (all-rule-alistp rule-alists)
                               (true-listp rule-alists)
                               (ilks-plist-worldp wrld))))
@@ -386,7 +393,6 @@
 
 (defun remove-from-stored-rules (rule-names-to-remove stored-rules)
   (declare (xargs :guard (and (symbol-listp rule-names-to-remove)
-                              (true-listp rule-names-to-remove)
                               (all-stored-axe-rulep stored-rules)
                               (true-listp stored-rules))
                   :guard-hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep)))))
@@ -400,7 +406,6 @@
 ;; TODO: Optimize to not re-cons if not needed.
 (defun remove-from-rule-alist (rule-names rule-alist)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (true-listp rule-names)
                               (rule-alistp rule-alist))
                   :verify-guards nil ;done below
                   ))
@@ -437,7 +442,6 @@
 
 (defun remove-from-rule-alists (rule-names rule-alists)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (true-listp rule-names)
                               (all-rule-alistp rule-alists)
                               (true-listp rule-alists))))
   (if (endp rule-alists)
