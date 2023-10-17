@@ -19,10 +19,7 @@
 
 (in-theory (disable fgetprop)) ;move
 
-;;
-;; rule-alists (structures that index rules by the top function symbol of their LHSes)
-;;
-
+;; Rule-alists are structures that index rules by the top function symbol of their LHSes.
 ;; TODO: Consider using a property list world to make the lookups faster.
 
 ;; A rule-alist is a database of rules used by Axe.  It maps function symbols
@@ -60,6 +57,14 @@
               (all-stored-axe-rulep val)))
   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal rule-alistp))))
 
+(defthm rule-alistp-of-acons
+  (implies (and (symbolp fn)
+                (all-stored-axe-rulep stored-rules)
+                (true-listp stored-rules)
+                (rule-alistp rule-alist))
+           (rule-alistp (acons fn stored-rules rule-alist)))
+  :hints (("Goal" :in-theory (enable rule-alistp acons))))
+
 ;rename
 ;disable outside of axe, or make a :forward-chaining rule
 (defthm rule-alistp-means-alistp
@@ -76,12 +81,24 @@
   :rule-classes ((:rewrite :backchain-limit-lst 1))
   :hints (("Goal" :in-theory (enable rule-alistp))))
 
-;;;
-;;; all-rule-alistp
-;;;
+;; todo: why is this about the -aux function?
+(defthm rule-alistp-of-uniquify-alist-eq-aux
+  (implies (and (rule-alistp alist)
+                (rule-alistp acc))
+           (rule-alistp (uniquify-alist-eq-aux alist acc)))
+  :hints (("Goal" :in-theory (enable rule-alistp acons))))
 
-(defforall-simple rule-alistp)
-(verify-guards all-rule-alistp)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun empty-rule-alist () (declare (xargs :guard t)) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: use defun-inline?  do we use this consistently?
+(defmacro get-rules-for-fn (fn rule-alist)
+  `(lookup-eq ,fn ,rule-alist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund count-rules-in-rule-alist-aux (rule-alist acc)
   (declare (xargs :guard (and (rule-alistp rule-alist)
@@ -97,11 +114,93 @@
   (declare (xargs :guard (rule-alistp rule-alist)))
   (count-rules-in-rule-alist-aux rule-alist 0))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;todo: deprecate (use count-rules-in-rule-alist)
+(defund rule-count-in-rule-alist (rule-alist)
+  (declare (xargs :guard (rule-alistp rule-alist)
+                  :verify-guards nil ;done below
+                  ))
+  (if (endp rule-alist)
+      0
+    (let* ((entry (car rule-alist))
+           (stored-rules (cdr entry)))
+      (+ (len stored-rules)
+         (rule-count-in-rule-alist (cdr rule-alist))))))
+
+;drop?
+(defthm natp-of-rule-count-in-rule-alist
+  (natp (rule-count-in-rule-alist rule-alist))
+  :rule-classes (:rewrite :type-prescription))
+
+(verify-guards rule-count-in-rule-alist
+  :hints (("Goal" :in-theory (enable rule-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Check whether RULE-ALIST contains a rule named RULE-SYMBOL.
+(defund rule-alist-containsp (rule-alist rule-symbol)
+  (declare (xargs :guard (and (rule-alistp rule-alist)
+                              (symbolp rule-symbol))
+                  :guard-hints (("Goal" :in-theory (enable rule-alistp)))))
+  (if (endp rule-alist)
+      nil
+    (let* ((entry (first rule-alist))
+           (stored-rules (cdr entry)))
+      (or (rule-is-presentp rule-symbol stored-rules)
+          (rule-alist-containsp (rest rule-alist) rule-symbol)))))
+
+;; test: (equal (rule-alist-containsp (make-rule-alist '(car-cons cdr-cons) state) 'car-cons) t)
+;; test: (equal (rule-alist-containsp (make-rule-alist '(car-cons cdr-cons) state) 'blah) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Prints a message for all of the RULES not in the RULE-ALIST.
+(defund print-missing-rules (rules rule-alist)
+  (declare (xargs :guard (and (rule-alistp rule-alist)
+                              (symbol-listp rules))
+                  :guard-hints (("Goal" :in-theory (enable rule-alistp)))))
+  (if (endp rules)
+      t
+    (b* ((rule (first rules))
+         (presentp (rule-alist-containsp rule-alist rule))
+         (- (and (not presentp)
+                 (cw "(NOTE: Rule ~x0 is not (yet) in the rule-alist.)~%" rule))))
+      (print-missing-rules (rest rules) rule-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+;; Returns a list of rule-names.
+(defund rules-from-rule-alist (alist)
+  (declare (xargs :guard (rule-alistp alist)
+                  :verify-guards nil ;done below
+                  ))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+;           (fn (car entry))
+           (stored-rules (cdr entry)))
+      (union-eq (rules-from-stored-axe-rules stored-rules)
+                (rules-from-rule-alist (rest alist))))))
+
+(defthm symbol-listp-of-rules-from-rule-alist
+  (implies (rule-alistp alist)
+           (symbol-listp (rules-from-rule-alist alist)))
+  :hints (("Goal" :in-theory (enable rules-from-rule-alist
+                                     rule-alistp))))
+
+(verify-guards rules-from-rule-alist
+  :hints (("Goal" :in-theory (enable rule-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;makes an alist where each entry pairs a function symbol with a list of axe-rules that apply to that function.
 ;(All rules must have a topmost function symbol; the LHS of a rule can't be a constant or variable).
 ;the alist returned may have many entries for each function symbol, but we remove the shadowed entries in the caller
 ;if remove-duplicate-rulesp is non-nil we ensure that two rules with the same name are never added (we don't check for rules that are the same except for the name)
 ;;ffixme might be faster to do duplicate checking at the end (or while sorting!)...
+;; todo: optimize by using a property-list world?
 (defund extend-unprioritized-rule-alist (axe-rules remove-duplicate-rulesp rule-alist)
   (declare (xargs :guard (and (axe-rule-listp axe-rules)
                               (rule-alistp rule-alist))
@@ -112,7 +211,7 @@
     (let* ((rule (first axe-rules))
            (lhs (rule-lhs rule))
            (fn (ffn-symb lhs))
-           (stored-rules-for-fn (lookup-eq fn rule-alist)) ;may be slow?
+           (stored-rules-for-fn (get-rules-for-fn fn rule-alist)) ;may be slow?
            (new-stored-rules-for-fn (if (and remove-duplicate-rulesp
                                              (rule-is-presentp (rule-symbol rule) stored-rules-for-fn))
                                         ;;already there:
@@ -133,45 +232,6 @@
   :hints (("Goal" :in-theory (enable extend-unprioritized-rule-alist axe-rulep ;yuck
                                      ))))
 
-;; TODO: Would it make sense to sort the fns also?
-(defund sort-rules-for-each-function-symbol-by-priority (rule-alist priorities)
-  (declare (xargs :guard (and (alistp priorities)
-                              (rule-alistp rule-alist))
-                  :verify-guards nil ;done below
-                  ))
-  (if (endp rule-alist)
-      nil
-    (let* ((entry (car rule-alist))
-           (fn (car entry))
-           (stored-rules (cdr entry)))
-      (acons fn
-             (merge-sort-by-rule-priority stored-rules priorities)
-             (sort-rules-for-each-function-symbol-by-priority (cdr rule-alist) priorities)))))
-
-(defthm alistp-of-sort-rules-for-each-function-symbol-by-priority
-  (implies (alistp rule-alist)
-           (alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
-  :hints (("Goal" :in-theory (enable  sort-rules-for-each-function-symbol-by-priority))))
-
-(verify-guards sort-rules-for-each-function-symbol-by-priority
-  :hints (("Goal" :in-theory (enable rule-alistp  RULE-ALISTP-means-alistp))))
-
-(defthm rule-alistp-of-sort-rules-for-each-function-symbol-by-priority
-  (implies (rule-alistp rule-alist)
-           (rule-alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
-  :hints (("Goal" :in-theory (enable sort-rules-for-each-function-symbol-by-priority
-                                     rule-alistp))))
-
-;; this is really axe-rule-setsp:
-(defforall-simple axe-rule-listp)
-(verify-guards all-axe-rule-listp)
-
-(defthm rule-alistp-of-uniquify-alist-eq-aux
-  (implies (and (rule-alistp alist)
-                (rule-alistp acc))
-           (rule-alistp (uniquify-alist-eq-aux alist acc)))
-  :hints (("Goal" :in-theory (enable rule-alistp acons))))
-
 (defthm rule-alistp-of-extend-unprioritized-rule-alist
   (implies (and (rule-alistp acc)
                 (axe-rule-listp axe-rules))
@@ -181,14 +241,50 @@
                     (axe-rule-listp axe-rules))
            :in-theory (enable rule-alistp extend-unprioritized-rule-alist))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Would it make sense to sort the fns also (e.g., by frequency of occurrence)?
+(defund sort-rules-for-each-function-symbol-by-priority (rule-alist priorities)
+  (declare (xargs :guard (and (alistp priorities)
+                              (rule-alistp rule-alist))
+                  :verify-guards nil ;done below
+                  ))
+  (if (endp rule-alist)
+      nil
+    (let* ((entry (first rule-alist))
+           (fn (car entry))
+           (stored-rules (cdr entry)))
+      (acons fn
+             ;; TODO: Perhaps optimize if none of the rules have priorities (but that might change existing orderings)?:
+             (merge-sort-by-rule-priority stored-rules priorities)
+             (sort-rules-for-each-function-symbol-by-priority (rest rule-alist) priorities)))))
+
+(defthm alistp-of-sort-rules-for-each-function-symbol-by-priority
+  (implies (alistp rule-alist)
+           (alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
+  :hints (("Goal" :in-theory (enable  sort-rules-for-each-function-symbol-by-priority))))
+
+(verify-guards sort-rules-for-each-function-symbol-by-priority
+  :hints (("Goal" :in-theory (enable rule-alistp  rule-alistp-means-alistp))))
+
+(defthm rule-alistp-of-sort-rules-for-each-function-symbol-by-priority
+  (implies (rule-alistp rule-alist)
+           (rule-alistp (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)))
+  :hints (("Goal" :in-theory (enable sort-rules-for-each-function-symbol-by-priority
+                                     rule-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;speed this up when just adding a few rules?
 (defund extend-rule-alist (axe-rules remove-duplicate-rulesp priorities rule-alist)
-  (declare (xargs :guard (and (rule-alistp rule-alist)
+  (declare (xargs :guard (and (axe-rule-listp axe-rules)
+                              ; (booleanp remove-duplicate-rulesp)
                               (alistp priorities)
-                              (axe-rule-listp axe-rules))))
-  (let* ((rule-alist (uniquify-alist-eq (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp rule-alist)))
+                              (rule-alistp rule-alist))))
+  (let* ((rule-alist (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp rule-alist))
+         (rule-alist (uniquify-alist-eq rule-alist))
          (rule-alist (if priorities
-                         (sort-rules-for-each-function-symbol-by-priority rule-alist priorities) ;is this too slow?
+                         (sort-rules-for-each-function-symbol-by-priority rule-alist priorities)
                        rule-alist)))
     rule-alist))
 
@@ -199,11 +295,12 @@
            (rule-alistp (extend-rule-alist axe-rules remove-duplicate-rulesp priorities rule-alist)))
   :hints (("Goal" :in-theory (enable extend-rule-alist))))
 
-(defun empty-rule-alist () (declare (xargs :guard t)) nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Make a rule-alist from the given axe-rules. TODO: Might be faster to first
-;; sort the rules by head symbol, then remove dups, then use the fact that
-;; rules for the same symbol are grouped together.
+;; Makes a rule-alist from the given axe-rules (not that these are full axe-rules,
+;; not rule-names).  TODO: Might be faster to first sort the rules by head
+;; symbol, then remove dups, then use the fact that rules for the same symbol
+;; are grouped together.
 (defund make-rule-alist-simple (axe-rules remove-duplicate-rulesp priorities)
   (declare (xargs :guard (and (axe-rule-listp axe-rules)
                               (alistp priorities))))
@@ -215,51 +312,7 @@
            (rule-alistp (make-rule-alist-simple axe-rules remove-duplicate-rulesp priorities)))
   :hints (("Goal" :in-theory (enable make-rule-alist-simple))))
 
-(defund rule-count-in-rule-alist (rule-alist)
-  (declare (xargs :guard (rule-alistp rule-alist)
-                  :verify-guards nil ;done below
-                  ))
-  (if (endp rule-alist)
-      0
-    (let* ((entry (car rule-alist))
-           (stored-rules (cdr entry)))
-      (+ (len stored-rules)
-         (rule-count-in-rule-alist (cdr rule-alist))))))
-
-;drop?
-(defthm natp-of-rule-count-in-rule-alist
-  (natp (rule-count-in-rule-alist rule-alist))
-  :rule-classes (:rewrite :type-prescription))
-
-(verify-guards rule-count-in-rule-alist
-  :hints (("Goal" :in-theory (enable rule-alistp))))
-
-;; Check whether RULE-ALIST contains a rule named RULE-SYMBOL.
-(defund rule-alist-containsp (rule-alist rule-symbol)
-  (declare (xargs :guard (and (rule-alistp rule-alist)
-                              (symbolp rule-symbol))
-                  :guard-hints (("Goal" :in-theory (enable rule-alistp)))))
-  (if (endp rule-alist)
-      nil
-    (let* ((entry (first rule-alist))
-           (stored-rules (cdr entry)))
-      (or (rule-is-presentp rule-symbol stored-rules)
-          (rule-alist-containsp (rest rule-alist) rule-symbol)))))
-
-;; test: (equal (rule-alist-containsp (make-rule-alist '(car-cons cdr-cons) state) 'car-cons) t)
-;; test: (equal (rule-alist-containsp (make-rule-alist '(car-cons cdr-cons) state) 'blah) nil)
-
-(defmacro get-rules-for-fn (fn rule-alist)
-  `(lookup-eq ,fn ,rule-alist))
-
-(defund make-rule-alists-simple (rule-sets remove-duplicate-rulesp priorities)
-  (declare (xargs :guard (and (axe-rule-setsp rule-sets)
-                              (alistp priorities)
-                              (booleanp remove-duplicate-rulesp))))
-  (if (endp rule-sets)
-      nil
-    (cons (make-rule-alist-simple (first rule-sets) remove-duplicate-rulesp priorities)
-          (make-rule-alists-simple (rest rule-sets) remove-duplicate-rulesp priorities))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Makes a rule-alist from the given RULE-NAMES, using priority information from WRLD.
 ;; Returns (mv erp rule-alist).
@@ -283,7 +336,9 @@
   :hints (("Goal" :in-theory (enable make-rule-alist
                                      axe-rule-listp))))
 
-;; Returns a rule-alist.  Doesn't return erp.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a rule-alist.  Can throw an error but doesn't return erp.
 (defund make-rule-alist! (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (ilks-plist-worldp wrld))))
@@ -293,6 +348,116 @@
         (er hard? 'make-rule-alist! "Error making rule alist.")
       rule-alist)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp rule-alist).
+(defund add-to-rule-alist (rule-names rule-alist wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (rule-alistp rule-alist)
+                              (ilks-plist-worldp wrld))))
+  (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
+       ((when erp) (mv erp nil))
+       (priorities (table-alist 'axe-rule-priorities-table wrld)))
+    (if (not (alistp priorities))
+        (prog2$ (er hard? 'add-to-rule-alist "Ill-formed priorities table.")
+                (mv :bad-priorities-table nil))
+      (mv (erp-nil)
+          (extend-rule-alist axe-rules t priorities rule-alist)))))
+
+(defthm rule-alistp-of-mv-nth-1-of-add-to-rule-alist
+  (implies (and (symbol-listp rule-names)
+                (rule-alistp rule-alist)
+                (ilks-plist-worldp wrld))
+           (rule-alistp (mv-nth 1 (add-to-rule-alist rule-names rule-alist wrld))))
+  :hints (("Goal" :in-theory (enable add-to-rule-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns the rule-alist.  Does not return erp.
+(defund add-to-rule-alist! (rule-names rule-alist wrld)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (rule-alistp rule-alist)
+                              (ilks-plist-worldp wrld))))
+  (mv-let (erp rule-alist)
+    (add-to-rule-alist rule-names rule-alist wrld)
+    (if erp
+        (er hard? 'add-to-rule-alist! "Error adding to rule alist.")
+      rule-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This is for the special case when the AXE-RULES do not correspond to theorems in the world.
+;todo: would prefer to just pass in named formulas here
+(defund extend-rule-alist2 (axe-rules rule-alist wrld)
+  (declare (xargs :guard (and (axe-rule-listp axe-rules)
+                              (rule-alistp rule-alist)
+                              (plist-worldp wrld))))
+  (let ((priorities (table-alist 'axe-rule-priorities-table wrld)))
+    (if (not (alistp priorities))
+        (er hard? 'extend-rule-alist2 "Ill-formed priorities table.")
+      (extend-rule-alist axe-rules t priorities rule-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: Optimize to not re-cons if not needed.
+(defund remove-from-rule-alist (rule-names rule-alist)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (rule-alistp rule-alist))
+                  :verify-guards nil ;done below
+                  ))
+  (if (endp rule-alist)
+      nil
+    (let* ((entry (car rule-alist))
+           (fn (car entry))
+           (stored-rules (cdr entry)))
+      (acons fn
+             (remove-from-stored-rules rule-names stored-rules)
+             (remove-from-rule-alist rule-names (rest rule-alist))))))
+
+(defthm rule-alistp-of-remove-from-rule-alist
+  (implies (rule-alistp rule-alist)
+           (rule-alistp (remove-from-rule-alist rule-names rule-alist)))
+  :hints (("Goal" :in-theory (enable remove-from-rule-alist rule-alistp))))
+
+(verify-guards remove-from-rule-alist
+  :hints (("Goal" :in-theory (enable all-stored-axe-rulep
+                                     stored-axe-rulep
+                                     rule-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;
+;;; all-rule-alistp
+;;;
+
+(defforall-simple rule-alistp) ; todo: simplify?
+(verify-guards all-rule-alistp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a list of rule-names.
+;; Warning: If any of these rules have :rule-classes nil, ACL2 won't allow us to use them.
+(defund rules-from-rule-alists (alists)
+  (declare (xargs :guard (and (all-rule-alistp alists)
+                              (true-listp alists))))
+  (if (endp alists)
+      nil
+    (union-eq (rules-from-rule-alist (first alists))
+              (rules-from-rule-alists (rest alists)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Only used in once, in equivalence checker.
+(defund make-rule-alists-simple (rule-sets remove-duplicate-rulesp priorities)
+  (declare (xargs :guard (and (axe-rule-setsp rule-sets)
+                              (alistp priorities)
+                              (booleanp remove-duplicate-rulesp))))
+  (if (endp rule-sets)
+      nil
+    (cons (make-rule-alist-simple (first rule-sets) remove-duplicate-rulesp priorities)
+          (make-rule-alists-simple (rest rule-sets) remove-duplicate-rulesp priorities))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rule-alists).
 (defund make-rule-alists (rule-name-lists wrld)
@@ -319,15 +484,7 @@
            (all-rule-alistp (mv-nth 1 (make-rule-alists rule-name-lists wrld))))
   :hints (("Goal" :in-theory (enable make-rule-alists))))
 
-;todo: would prefer to just pass in named formulas here
-(defund extend-rule-alist2 (axe-rules rule-alist wrld)
-  (declare (xargs :guard (and (axe-rule-listp axe-rules)
-                              (rule-alistp rule-alist)
-                              (plist-worldp wrld))))
-  (let ((priorities (table-alist 'axe-rule-priorities-table wrld)))
-    (if (not (alistp priorities))
-        (er hard? 'extend-rule-alist2 "Ill-formed priorities table.")
-      (extend-rule-alist axe-rules t priorities rule-alist))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: would prefer to just pass in named formulas here
 (defund extend-rule-alists2 (axe-rules rule-alists wrld)
@@ -340,42 +497,10 @@
     (cons (extend-rule-alist2 axe-rules (first rule-alists) wrld)
           (extend-rule-alists2 axe-rules (rest rule-alists) wrld))))
 
-;; Returns (mv erp rule-alist).
-;compare to extend-rule-alistXXX
-(defund add-to-rule-alist (rule-names rule-alist wrld)
-  (declare (xargs :guard (and (symbol-listp rule-names)
-                              (rule-alistp rule-alist)
-                              (ilks-plist-worldp wrld))))
-  (b* (((mv erp axe-rules) (make-axe-rules rule-names wrld))
-       ((when erp) (mv erp nil))
-       (priorities (table-alist 'axe-rule-priorities-table wrld)))
-    (if (not (alistp priorities))
-        (prog2$ (er hard? 'add-to-rule-alist "Ill-formed priorities table.")
-                (mv :bad-priorities-table nil))
-      (mv (erp-nil)
-          (extend-rule-alist axe-rules t priorities rule-alist)))))
-
-(defthm rule-alistp-of-mv-nth-1-of-add-to-rule-alist
-  (implies (and (symbol-listp rule-names)
-                (rule-alistp rule-alist)
-                (ilks-plist-worldp wrld))
-           (rule-alistp (mv-nth 1 (add-to-rule-alist rule-names rule-alist wrld))))
-  :hints (("Goal" :in-theory (enable add-to-rule-alist))))
-
-;; Returns the rule-alist.  Does not return erp.
-(defund add-to-rule-alist! (rule-names rule-alist wrld)
-  (declare (xargs :guard (and (symbol-listp rule-names)
-                              (rule-alistp rule-alist)
-                              (ilks-plist-worldp wrld))))
-  (mv-let (erp rule-alist)
-    (add-to-rule-alist rule-names rule-alist wrld)
-    (if erp
-        (er hard? 'add-to-rule-alist! "Error adding to rule alist.")
-      rule-alist)))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rule-alists).
-(defun add-to-rule-alists (rule-names rule-alists wrld)
+(defund add-to-rule-alists (rule-names rule-alists wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (all-rule-alistp rule-alists)
                               (true-listp rule-alists)
@@ -391,56 +516,9 @@
       (mv (erp-nil)
           (cons rule-alist rule-alists)))))
 
-(defun remove-from-stored-rules (rule-names-to-remove stored-rules)
-  (declare (xargs :guard (and (symbol-listp rule-names-to-remove)
-                              (all-stored-axe-rulep stored-rules)
-                              (true-listp stored-rules))
-                  :guard-hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep)))))
-  (if (endp stored-rules)
-      nil
-    (let ((stored-rule (first stored-rules)))
-      (if (member-eq (stored-rule-symbol stored-rule) rule-names-to-remove)
-          (remove-from-stored-rules rule-names-to-remove (rest stored-rules))
-        (cons stored-rule (remove-from-stored-rules rule-names-to-remove (rest stored-rules)))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Optimize to not re-cons if not needed.
-(defun remove-from-rule-alist (rule-names rule-alist)
-  (declare (xargs :guard (and (symbol-listp rule-names)
-                              (rule-alistp rule-alist))
-                  :verify-guards nil ;done below
-                  ))
-  (if (endp rule-alist)
-      nil
-    (let* ((entry (car rule-alist))
-           (fn (car entry))
-           (stored-rules (cdr entry)))
-      (acons fn
-             (remove-from-stored-rules rule-names stored-rules)
-             (remove-from-rule-alist rule-names (rest rule-alist))))))
-
-(defthm rule-alistp-of-acons
-  (implies (and (symbolp fn)
-                (all-stored-axe-rulep stored-rules)
-                (true-listp stored-rules)
-                (rule-alistp rule-alist))
-           (rule-alistp (acons fn stored-rules rule-alist)))
-  :hints (("Goal" :in-theory (enable rule-alistp acons))))
-
-(defthm all-stored-axe-rulep-of-remove-from-stored-rules
-  (implies (all-stored-axe-rulep stored-rules)
-           (all-stored-axe-rulep (remove-from-stored-rules rule-names stored-rules))))
-
-(defthm rule-alistp-of-remove-from-rule-alist
-  (implies (rule-alistp rule-alist)
-           (rule-alistp (remove-from-rule-alist rule-names rule-alist)))
-  :hints (("Goal" :in-theory (enable rule-alistp))))
-
-(verify-guards remove-from-rule-alist
-  :hints (("Goal" :in-theory (enable all-stored-axe-rulep
-                                     stored-axe-rulep
-                                     rule-alistp))))
-
-(defun remove-from-rule-alists (rule-names rule-alists)
+(defund remove-from-rule-alists (rule-names rule-alists)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (all-rule-alistp rule-alists)
                               (true-listp rule-alists))))
@@ -449,76 +527,7 @@
     (cons (remove-from-rule-alist rule-names (first rule-alists))
           (remove-from-rule-alists rule-names (rest rule-alists)))))
 
-;; Prints a message for all missing rules
-(defun print-missing-rules (rules rule-alist)
-  (declare (xargs :guard (and (rule-alistp rule-alist)
-                              (true-listp rules)
-                              (symbol-listp rules))
-                  :guard-hints (("Goal" :in-theory (enable rule-alistp)))))
-  (if (endp rules)
-      t
-    (b* ((rule (first rules))
-         (presentp (rule-alist-containsp rule-alist rule))
-         (- (and (not presentp)
-                 (cw "(NOTE: Rule ~x0 is not (yet) in the rule-alist.)~%" rule))))
-      (print-missing-rules (rest rules) rule-alist))))
-
-(defun rules-from-stored-axe-rules (stored-rules)
-  (declare (xargs :guard (and (all-stored-axe-rulep stored-rules)
-                              (true-listp stored-rules))
-                  :guard-hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep)))))
-  (if (endp stored-rules)
-      nil
-    (cons (stored-rule-symbol (first stored-rules))
-          (rules-from-stored-axe-rules (rest stored-rules)))))
-
-(defthm symbol-listp-of-rules-from-stored-axe-rules
-  (implies (all-stored-axe-rulep rules)
-           (symbol-listp (rules-from-stored-axe-rules rules)))
-  :hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep))))
-
-;; Returns a list of rule-names.
-(defund rules-from-rule-alist (alist)
-  (declare (xargs :guard (rule-alistp alist)
-                  :verify-guards nil ;done below
-                  ))
-  (if (endp alist)
-      nil
-    (let* ((entry (first alist))
-;           (fn (car entry))
-           (stored-rules (cdr entry)))
-      (union-eq (rules-from-stored-axe-rules stored-rules)
-                (rules-from-rule-alist (rest alist))))))
-
-(defthm symbol-listp-of-rules-from-rule-alist
-  (implies (rule-alistp alist)
-           (symbol-listp (rules-from-rule-alist alist)))
-  :hints (("Goal" :in-theory (enable rules-from-rule-alist
-                                     rule-alistp))))
-
-(verify-guards rules-from-rule-alist
-  :hints (("Goal" :in-theory (enable rule-alistp))))
-
-;If any of these rules have :rule-classes nil, ACL2 won't allow us to use them.
-;; Returns a list of rule-names.
-(defund rules-from-rule-alists (alists)
-  (declare (xargs :guard (and (all-rule-alistp alists)
-                              (true-listp alists))
-;                  :guard-hints (("Goal" :in-theory (enable rule-alistp)))
-                  ))
-  (if (endp alists)
-      nil
-    (union-eq (rules-from-rule-alist (first alists))
-              (rules-from-rule-alists (rest alists)))))
-
 (defthm symbol-listp-of-rules-from-rule-alists
   (implies (all-rule-alistp alists)
            (symbol-listp (rules-from-rule-alists alists)))
   :hints (("Goal" :in-theory (enable rules-from-rule-alists))))
-
-(defthm <=-of-len-of-car-when-all-stored-axe-rulep
-  (implies (and (all-stored-axe-rulep stored-rules)
-                (consp stored-rules))
-           (<= 3 (len (car stored-rules))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep))))
