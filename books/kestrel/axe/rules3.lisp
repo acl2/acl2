@@ -8957,13 +8957,14 @@
 ;    (:rewrite *-OF-2-BECOMES-BVMULT)
     ))
 
-(defun anti-bvlt ()
-  '((:rewrite <-OF-BVCHOP-ARG1)
-    (:rewrite <-WHEN-UNSIGNED-BYTE-P-ALT)
-    (:rewrite <-becomes-bvlt-free)
-    (:rewrite <-becomes-bvlt-free-alt)
-    (:rewrite <-becomes-bvlt)
-    (:rewrite <-WHEN-UNSIGNED-BYTE-P)))
+;only used just below
+;; (defun anti-bvlt ()
+;;   '((:rewrite <-OF-BVCHOP-ARG1)
+;;     (:rewrite <-WHEN-UNSIGNED-BYTE-P-ALT)
+;;     ;(:rewrite <-becomes-bvlt-free)
+;;     ;(:rewrite <-becomes-bvlt-free-alt)
+;;     ;(:rewrite <-becomes-bvlt)
+;;     (:rewrite <-WHEN-UNSIGNED-BYTE-P)))
 
 ;could drop some hyps
 (defthm bvlt-of-bvmult-of-bvdiv-helper
@@ -8973,14 +8974,11 @@
            (equal (bvlt size x (bvmult size y (bvdiv size x y)))
                   nil))
   :hints (("Goal" :cases ((equal y 0))
-           :in-theory (set-difference-equal (e/d ( unsigned-byte-p-when-unsigned-byte-p-free
-                                                   bvlt
-                                                   bvmult
-                                                   bvdiv
-                                                   )
-                                                 (
-
-                                                  anti-bvplus GETBIT-OF-+
+           :in-theory (set-difference-equal (e/d (unsigned-byte-p-when-unsigned-byte-p-free
+                                                  bvlt
+                                                  bvmult
+                                                  bvdiv)
+                                                 (anti-bvplus GETBIT-OF-+
                                                   SLICE-OF-+
                                                   BVPLUS-OF-PLUS-ARG3
 ;+-BECOMES-BVPLUS-HACK-GEN
@@ -8995,7 +8993,7 @@
                                                   ;;
                                                   minus-becomes-bv
                                                   PLUS-1-AND-BVCHOP-BECOMES-BVPLUS))
-                                            (append (anti-bvlt)
+                                            (append ;(anti-bvlt)
                                                     (anti-bvmult))))))
 
 (defthm bvlt-of-bvmult-of-bvdiv
