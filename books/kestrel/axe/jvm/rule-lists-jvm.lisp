@@ -2575,23 +2575,7 @@
                           bvashr-rewrite-for-constant-shift-amount
                           )))
 
-;; ;wrap up rotates first..
 ;; ;todo: compare to phased-bv-axe-rule-sets
-;; (defun phased-axe-rule-sets-for-symbolic-execution (state)
-;;   (declare (xargs :stobjs state
-;;                   :verify-guards nil))
-;;   (list (make-axe-rules (phase-1-rules)
-;;                      state)
-;;         (make-axe-rules (set-difference-equal (append '( ;bvshl ;this makes things much bigger
-;;                                                      )
-;;                                                    (amazing-rules))
-;;                                            '( ;BVOR-WITH-SMALL-ARG2
-;;                                              ;;GETBIT-OF-BVXOR
-;;                                              ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
-;;                                              ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
-;;                                              ))
-;;                         state)))
-
 (defun phased-rule-alists-for-symbolic-execution (state)
   (declare (xargs :stobjs state
                   :guard (ilks-plist-worldp (w state))))
