@@ -2442,9 +2442,6 @@
 ;          :expand (UNSIGNED-BYTE-P FREESIZE (- K)) ;this expands with the wrong defn..
            :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases ;unsigned-byte-p
                               ) (;anti-bvplus
-                                 <-BECOMES-BVLT
-                                 <-BECOMES-BVLT-ALT
-                                 <-BECOMES-BVLT-FREE
                                  )))))
 
 (defthm +-of-minus-constant-version
