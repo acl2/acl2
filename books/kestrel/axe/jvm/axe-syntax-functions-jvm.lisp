@@ -464,7 +464,9 @@
                                       (prog2$ (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls.~%" stripped-expr)
                                               (mv :error nil nil)))))))))
                       (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest)
-                              (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
+                              ;;(er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
+                              ;; When this was an error, symbolic execution failures were harder to debug.
+                              (cw "WARNING: Unexpected state term: ~X01.~%" expr nil)
                               (mv :error nil nil))))))))))))))
 
 (local

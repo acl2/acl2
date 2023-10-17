@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,9 +11,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
-
-;; Note that, as of March 2021, many of these rules are not yet open sourced.
-;; This file just gives their names.
 
 (include-book "kestrel/jvm/portcullis" :dir :system)
 (include-book "../rule-lists")
@@ -1242,28 +1239,25 @@
 ;;   (append (jvm-semantics-rules)
 ;;           (jvm-simplification-rules)))
 
+;; todo: think about when we want these
+(defun update-nth2-intro-rules ()
+  (declare (xargs :guard t))
+  '(update-nth-becomes-update-nth2 ; drop once arraycopy keeps types better?
+    ;; update-nth-becomes-update-nth2-extend
+    ;; update-nth-becomes-update-nth2-extend-gen
+    update-nth-becomes-update-nth2-extend-new ; drop once arraycopy keeps types better?
+    ))
+
 ;; todo: get rid of this?
 ;; many of these are list rules
 (defun jvm-rules-unfiled-misc ()
   (declare (xargs :guard t))
-  (append (update-nth2-rules) ;since below we have rules to introduce update-nth2
-          (update-nth-rules)
-          '(equal-nil-of-myif
+  (append '(equal-nil-of-myif
             logext-of-0 ;move to logext-rules?
 ;basic rules:
             if-of-if-t-nil
 ;    possible-exception-of-nil
 ;    len-of-update-nth-rewrite-2
-
-            update-nth-becomes-update-nth2 ; drop once arraycopy keeps types better?
-            ;; update-nth-becomes-update-nth2-extend
-            ;; update-nth-becomes-update-nth2-extend-gen
-            update-nth-becomes-update-nth2-extend-new ; drop once arraycopy keeps types better?
-
-            true-listp-of-cons
-
-            true-listp-of-take
-            nth-of-take-2
             ;; nth-of-bvchop-becomes-nth2 ;yuck?
             ;; nth-of-bvxor-becomes-nth2 ;yuck?
             ;; nth-of-slice-becomes-nth2 ;yuck?
@@ -1319,6 +1313,7 @@
 
 ;; todo: rename
 ;used by many axe examples
+;; todo: include list-rules2?
 (defun amazing-rules-spec-and-dag ()
   (declare (xargs :guard t))
   (append (amazing-rules-bv)
@@ -1328,6 +1323,9 @@
           (logext-rules) ;move to parent?
           (jvm-rules-list)
           (jvm-rules-alist)
+          (update-nth2-rules) ;since below we have rules to introduce update-nth2
+          (update-nth2-intro-rules)
+          (update-nth-rules)
           (jvm-rules-unfiled-misc)
           (more-rules-yuck)
           '(getbit-list-of-bv-array-write-too-high
@@ -1364,6 +1362,9 @@
            (jvm-rules-list)
            (jvm-rules-alist)
            (bv-array-rules)
+           (update-nth2-rules) ;since below we have rules to introduce update-nth2
+           (update-nth2-intro-rules)
+           (update-nth-rules)
            (jvm-rules-unfiled-misc)
 ;           (bitxor-rules)
 ;           (bit-blast-rules3) ;bozo
@@ -1400,7 +1401,6 @@
              ;; myif-comparison-hack
              ))
    '(slice-trim-axe-all                      ;new
-     ;;array-reduction-when-all-same-improved2 ;looped?
      update-nth-becomes-update-nth2
      )))
 
@@ -1424,6 +1424,9 @@
            (jvm-rules-list)
            (jvm-rules-alist)
            (bv-array-rules)
+           (update-nth2-rules) ;since below we have rules to introduce update-nth2
+           (update-nth2-intro-rules)
+           (update-nth-rules)
            (jvm-rules-unfiled-misc)
 ;           (bitxor-rules)
 ;           (bit-blast-rules3) ;bozo
@@ -1452,7 +1455,6 @@
              fix-of-len
              integerp-when-signed-byte-p))
    '(slice-trim-axe-all                      ;new
-     ;;array-reduction-when-all-same-improved2 ;looped?
      update-nth-becomes-update-nth2)))
 
 (defun first-loop-top-rules ()
@@ -1490,7 +1492,6 @@
              not-null-refp-when-addressp-free
              ))
    '(update-nth-becomes-update-nth2-extend-new
-     ;;array-reduction-when-all-same-improved2               ;looped?
      update-nth-becomes-update-nth2
      )))
 
@@ -1597,7 +1598,6 @@
              equal-of-bvchop-and-bvplus-of-same-alt
              <-of-+-of-minus-and-constant
              <-of-+-of-minus-and-constant-alt
-             append-of-nil-arg2 ;move?
              bvlt-unique
 ;equal-of-constant-and-getbit-extend ;loops with BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE?
              unsigned-byte-p-of-1-when-not-nil
@@ -1923,9 +1923,7 @@
              rationalp-of-+
              bvlt-of-1
              max
-             len-of-nthcdr ;move
              bvchop-of-times-of-/-32
-             equal-of-bvplus-constant-and-constant
              integerp-of-1-times-1/32
              commutativity-of-*-when-constant
              bvmult-32
@@ -2189,8 +2187,6 @@
              bvxor-cancel
              bvxor-cancel-alt
 
-             equal-of-bvplus-and-bvplus-cancel-arg2-arg1
-             equal-of-bvplus-and-bvplus-cancel-arg1-arg2
              unsigned-byte-p-of-nth
 
              <-of-constant-and-unary-minus
@@ -2442,14 +2438,11 @@
              bvlt-of-plus-arg2
 
              <-of-negative-when-usbp
-             nth-of-nthcdr
              bvlt-of-bvplus-1-cancel-alt
-             consp-of-nthcdr
              posp
 ;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
 
-             cdr-of-nthcdr
              collect-constants-over-<-2
 
              equal-of-cons
@@ -2479,7 +2472,6 @@
              cons-equal-no-split
              +-of-minus1-and-bvplus-of-1
              take-of-bv-array-write-irrel
-             equal-of-bvplus-constant-and-constant-alt
              nthcdr-of-take-becomes-subrange
              <-of-bvplus-same-32-1
              equal-of-append-arg1
@@ -2583,23 +2575,8 @@
                           bvashr-rewrite-for-constant-shift-amount
                           )))
 
-;; ;wrap up rotates first..
 ;; ;todo: compare to phased-bv-axe-rule-sets
-;; (defun phased-axe-rule-sets-for-symbolic-execution (state)
-;;   (declare (xargs :stobjs state
-;;                   :verify-guards nil))
-;;   (list (make-axe-rules (phase-1-rules)
-;;                      state)
-;;         (make-axe-rules (set-difference-equal (append '( ;bvshl ;this makes things much bigger
-;;                                                      )
-;;                                                    (amazing-rules))
-;;                                            '( ;BVOR-WITH-SMALL-ARG2
-;;                                              ;;GETBIT-OF-BVXOR
-;;                                              ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
-;;                                              ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
-;;                                              ))
-;;                         state)))
-
+;; note that this builds in the "smart" symbolic execution rules.
 (defun phased-rule-alists-for-symbolic-execution (state)
   (declare (xargs :stobjs state
                   :guard (ilks-plist-worldp (w state))))

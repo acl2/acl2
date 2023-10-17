@@ -110,12 +110,11 @@
             x86isa::mv-nth-2-of-div-spec-64)
           *instruction-decoding-and-spec-rules*))
 
-(defun list-rules2 ()
+(defun list-rules-x86 ()
   '(atom ;open to expose consp
     car-cons
     acl2::consp-of-cons
     cdr-cons
-
     ;; lists as sets:
     x86isa::subset-p-of-singleton-arg1
     x86isa::disjoint-p-subset-p ;has free vars, somewhat aggressive
@@ -691,7 +690,7 @@
     x86isa::sub-pf-spec32-constant-opener
     x86isa::sub-sf-spec32-constant-opener
     x86isa::sub-zf-spec32-constant-opener
-    
+
     x86isa::cf-spec64$inline-constant-opener
     x86isa::of-spec64$inline-constant-opener
     x86isa::pf-spec64$inline-constant-opener
@@ -786,6 +785,7 @@
     mv-nth-1-of-get-prefixes-of-set-rbp))
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
+;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
   (append (acl2::base-rules)
           (acl2::type-rules)
@@ -797,7 +797,7 @@
           (constant-opener-rules)
           (simple-opener-rules)
           (instruction-rules)
-          (list-rules2)
+          (list-rules-x86)
           (state-rules)
           (if-rules)
           (decoding-and-dispatch-rules)
@@ -917,7 +917,7 @@
             ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
             ;x86isa::not-equal-when-separate
             ;x86isa::not-equal-when-separate-alt
-            
+
             x86isa::rb-wb-equal
             x86isa::rb-of-if-arg2
 
@@ -1018,8 +1018,6 @@
             x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
 
-
-
             x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
             x86isa::xr-wb-in-app-view ;targets xr-of-mv-nth-1-of-wb
             x86isa::x86-decode-sib-p               ;restrict to ground terms?
@@ -1075,8 +1073,6 @@
 ;            x86isa::xw-xr-same
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
-
-
             x86isa::select-operand-size$inline ;shilpi leaves this enabled (could restrict to ground terms)
             x86isa::select-segment-register$inline
             x86isa::x86-operand-from-modr/m-and-sib-bytes
@@ -1101,7 +1097,6 @@
             acl2::getbit-of-if-two-constants ;this caused the execution to split? (or maybe not?)
 
             acl2::unsigned-byte-p-of-if-two-constants
-
 
             ;; stuff from the timessix example:
             acl2::bvchop-of-logext
@@ -1156,7 +1151,6 @@
             x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?
 
-
             x86isa::undef-flg$notinline
             x86isa::undef-flg-logic
             x86isa::undef-read$notinline
@@ -1178,7 +1172,6 @@
             acl2::bvmult-commutative-axe
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
-
 
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
@@ -1307,7 +1300,6 @@
 
             x86isa::x86-operation-mode
             x86isa::alignment-checking-enabled-p-of-xw-irrel
-            return-last
             acl2::slice-of-bvcat-gen
             /= ;"not equal"
 
@@ -1460,6 +1452,7 @@
           ;; acl2::boolif-when-quotep-arg3)
           ))
 
+;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
   (append (lifter-rules-common)
           '(x86isa::rip ; todo: think about this

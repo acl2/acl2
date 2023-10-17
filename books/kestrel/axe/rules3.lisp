@@ -33,7 +33,6 @@
 (include-book "rules1") ;drop? for BV-ARRAY-WRITE-EQUAL-REWRITE-ALT, to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ;needed?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ;todo

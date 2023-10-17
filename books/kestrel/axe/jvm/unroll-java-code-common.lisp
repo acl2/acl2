@@ -66,6 +66,8 @@
           (logext-rules) ;drop?
           (jvm-rules-list)
           (jvm-rules-alist)
+          (update-nth2-rules) ;since below we have rules to introduce update-nth2
+          (update-nth2-intro-rules)
           (jvm-rules-unfiled-misc)
           (more-rules-yuck) ;drop?
           '(getbit-list-of-bv-array-write-too-high

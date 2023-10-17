@@ -14,6 +14,9 @@
 
 (include-book "kestrel/utilities/print-levels" :dir :system)
 
+;; TODO: Consider adding more things to this, such as print and
+;; interpreted-function-alist.  Maybe also memoization info tries limits.
+
 (defstobj+ rewrite-stobj
   (known-booleans :type (satisfies symbol-listp) :initially nil)
   (monitored-symbols :type (satisfies symbol-listp) :initially nil)
