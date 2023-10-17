@@ -48,19 +48,14 @@
                             bvchop-when-top-bit-1)
                            (getbit-of-plus
 ;                            <-of-bvchop-arg1
-                            <-becomes-bvlt-free
-                            <-becomes-bvlt-free-alt
                             ;<-when-unsigned-byte-p
                             ;<-when-unsigned-byte-p-alt
-                            <-becomes-bvlt
                             ;minus-becomes-bv
                             ;plus-becomes-bvplus-arg1-free
                             ;bvuminus-of-+
                             bvplus-of-plus-arg3
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
-                            <-becomes-bvlt
-                            <-becomes-bvlt-alt
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
                             ;anti-bvplus
