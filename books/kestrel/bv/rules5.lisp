@@ -304,11 +304,8 @@
                                   (bvlt-of-plus-arg1
                                    bvlt-of-plus-arg2
                                    bvminus-becomes-bvplus-of-bvuminus
-                                   <-becomes-bvlt-free
-                                   <-becomes-bvlt-free-alt
-                                   <-becomes-bvlt
-                                   ;collect-constants-over-<
-                                   <-becomes-bvlt-alt)))))
+                                   ;;collect-constants-over-<
+                                   )))))
 
 (defthm unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt
   (implies (and (equal sizeplusone (+ 1 size))
