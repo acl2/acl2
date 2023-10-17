@@ -818,9 +818,7 @@
    :hints
    (("Goal"
      :cases ((integerp k))
-     :in-theory
-     (e/d (bvlt bvchop-of-sum-cases)
-          (<-becomes-bvlt <-becomes-bvlt-alt)))))
+     :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
 
 ;rename
 (defthm bvlt-false-when-bvlt-better
