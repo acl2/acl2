@@ -1258,7 +1258,6 @@
             if-of-if-t-nil
 ;    possible-exception-of-nil
 ;    len-of-update-nth-rewrite-2
-            nth-of-take-2
             ;; nth-of-bvchop-becomes-nth2 ;yuck?
             ;; nth-of-bvxor-becomes-nth2 ;yuck?
             ;; nth-of-slice-becomes-nth2 ;yuck?
@@ -1599,7 +1598,6 @@
              equal-of-bvchop-and-bvplus-of-same-alt
              <-of-+-of-minus-and-constant
              <-of-+-of-minus-and-constant-alt
-             append-of-nil-arg2 ;move?
              bvlt-unique
 ;equal-of-constant-and-getbit-extend ;loops with BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE?
              unsigned-byte-p-of-1-when-not-nil
@@ -1925,9 +1923,7 @@
              rationalp-of-+
              bvlt-of-1
              max
-             len-of-nthcdr ;move
              bvchop-of-times-of-/-32
-             equal-of-bvplus-constant-and-constant
              integerp-of-1-times-1/32
              commutativity-of-*-when-constant
              bvmult-32
@@ -2191,8 +2187,6 @@
              bvxor-cancel
              bvxor-cancel-alt
 
-             equal-of-bvplus-and-bvplus-cancel-arg2-arg1
-             equal-of-bvplus-and-bvplus-cancel-arg1-arg2
              unsigned-byte-p-of-nth
 
              <-of-constant-and-unary-minus
@@ -2444,14 +2438,11 @@
              bvlt-of-plus-arg2
 
              <-of-negative-when-usbp
-             nth-of-nthcdr
              bvlt-of-bvplus-1-cancel-alt
-             consp-of-nthcdr
              posp
 ;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
 
-             cdr-of-nthcdr
              collect-constants-over-<-2
 
              equal-of-cons
@@ -2481,7 +2472,6 @@
              cons-equal-no-split
              +-of-minus1-and-bvplus-of-1
              take-of-bv-array-write-irrel
-             equal-of-bvplus-constant-and-constant-alt
              nthcdr-of-take-becomes-subrange
              <-of-bvplus-same-32-1
              equal-of-append-arg1
