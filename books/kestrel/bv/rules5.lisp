@@ -26,9 +26,40 @@
 
 (local (in-theory (disable LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP))) ;for speed
 
+; move these:
+
+(defthm bvchop-of-+-of-expt-same-arg3
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x y (expt 2 size)))
+                  (bvchop size (+ x y)))))
+
+(defthm getbit-of-+-of-expt-same-arg1
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ (expt 2 n) x))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+
+(defthm getbit-of-+-of---of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (- (expt 2 n))))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+
+(defthm getbit-of-+-of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (expt 2 n)))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if
 ;we'd like.
+;; Slow proof!
 (defthmd sbvlt-add-to-both-sides-normal-case
   (implies (and (not (signed-addition-overflowsp size k x))
                 (not (signed-addition-overflowsp size k y))
@@ -37,24 +68,28 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases
-                                          sbvlt
-                                          bvlt
-                                          GETBIT-OF-PLUS
-                                          logext-cases
-                                          bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                          bvuminus
-                                          ;;bvcat
-                                          ;;logapp
-                                          ;;expt-of-+
-                                          <-of-0-and-logext-alt
-                                          *-of-expt-of-one-less
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-;PLUS-BVCAT-WITH-0-ALT ;looped!
-;PLUS-BVCAT-WITH-0 ;looped!
+  :hints (("Goal" :in-theory (e/d (bvplus
+                                   bvchop-of-sum-cases
+                                   sbvlt
+                                   bvlt
+                                   getbit-of-plus
+                                   logext-cases
+                                   bvminus
+                                   bvchop-when-top-bit-1
+                                   getbit-when-val-is-not-an-integer
+                                   bvuminus
+                                   <-of-0-and-logext-alt
+                                   *-of-expt-of-one-less)
+                                  (bvminus-becomes-bvplus-of-bvuminus
+                                   ;;plus-bvcat-with-0-alt ;looped!
+                                   ;;plus-bvcat-with-0 ;looped!
+                                   ;; disables for speed:
+                                   bvchop-identity
+                                   expt-type-even-exponent-1
+                                   expt-type-even-exponent-2
+                                   expt-type-odd-exponent-negative-base
+                                   <=-of-bvchop-same-linear-2
+                                   expt-type-small-base-negative-exponent
                                    )))))
 
 ;todo: add more versions
@@ -269,11 +304,8 @@
                                   (bvlt-of-plus-arg1
                                    bvlt-of-plus-arg2
                                    bvminus-becomes-bvplus-of-bvuminus
-                                   <-becomes-bvlt-free
-                                   <-becomes-bvlt-free-alt
-                                   <-becomes-bvlt
-                                   ;collect-constants-over-<
-                                   <-becomes-bvlt-alt)))))
+                                   ;;collect-constants-over-<
+                                   )))))
 
 (defthm unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt
   (implies (and (equal sizeplusone (+ 1 size))

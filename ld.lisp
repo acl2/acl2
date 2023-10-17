@@ -3368,7 +3368,7 @@
                          ,@fixed-cmds
                          ,@(and include-book-alist-entry ; always true?
                                 `((table puff-included-books
-                                         ,full-book-name
+                                         ',full-book-name
                                          ',include-book-alist-entry))))
                        :ld-error-action :error)
                       (maybe-install-acl2-defaults-table

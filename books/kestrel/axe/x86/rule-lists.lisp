@@ -1333,6 +1333,10 @@
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
 (table axe-rule-priorities-table 'acl2::bvplus-of-+-combine-constants -1)
 
+;; Not needed?:
+;; (table axe-rule-priorities-table 'x86isa::separate-when-separate -1)
+;; (table axe-rule-priorities-table 'x86isa::separate-when-separate-alt -1)
+
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 
 ;; Used in both versions of the lifter
@@ -3278,7 +3282,7 @@
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
             acl2::bvlt-of-max-arg2
             <-of-*-when-constant-integers
-            separate-when-separate
+            separate-when-separate ; todo: drop? but that caused problems
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2

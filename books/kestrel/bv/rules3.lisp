@@ -1553,8 +1553,7 @@
 ;bozo trim-all rule for getbit?
 (defthmd getbit-of-bvplus
   (implies (and (< n (+ -1 size))
-                (< 0 n)
-                (integerp n)
+                (natp n)
                 (natp size))
            (equal (getbit n (bvplus size x y))
                   (getbit n (bvplus (+ 1 n) x y))))
@@ -2443,9 +2442,6 @@
 ;          :expand (UNSIGNED-BYTE-P FREESIZE (- K)) ;this expands with the wrong defn..
            :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases ;unsigned-byte-p
                               ) (;anti-bvplus
-                                 <-BECOMES-BVLT
-                                 <-BECOMES-BVLT-ALT
-                                 <-BECOMES-BVLT-FREE
                                  )))))
 
 (defthm +-of-minus-constant-version

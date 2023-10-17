@@ -1,0 +1,42 @@
+This directory contains various Python tools that work on the ACL2 books in 
+support of extracting actionable data from the books for training machine
+learning models. The most important file is convert_acl2data.py, which is the
+entry point into the postprocess phase.
+
+ALL programs in this directory are in the public domain, under the same license
+as ACL2, i.e., based on the BSD-3-Clause.
+
+* checkpoint_to_clause.py -- attempts to convert an ACL2 checkpoint (as printed 
+	to the user) into clausal form as used for machine learning.
+
+* collect_defpkg.py -- finds definitions of packages in ACL2 community books, and
+	allows you to lookup a symbol and see which packages it is defined in. This is
+	a command-line utility. Run with --help for details.
+
+* collect_runes.py -- finds definitions of many rule names (RUNEs) in ACL2 
+	community books, and allows you to lookup a rune and see in what file it is
+	defined. Run with --help for details.
+
+* convert_acl2data.py -- finds *.acl2data.out files (produced by the "gather" 
+	phase) in a directory and translates each such file into a .mli (Machine 
+	Learning Input) file. The MLI file format is specified in the Kestrel PEARLS
+	project documentation.
+
+* fix_defpkg.py -- finds duplicate/conflicting package information in the ACL2
+	community books. This depends on the package database produced with
+	collect_defpkg.py. Run with --help for details.
+
+* ld_instr.py -- (very) poor man's "gather" process. Executes and ACL2 file and
+	collects information about the hints and lemmas used to feed a very simple
+	machine learning model. Strictly a prototyping tool.
+
+* learn_enable.py -- uses the data gathered by ld_instr.py to train a machine
+	learning model in enabling runes. Strictly a prototyping tool.
+
+* parse_acl2.py -- Python parser for ACL2 S-expressions.
+
+* pkg_consts.py -- definition of common package constants used in defpkg commands.
+
+* slurp_runes.py -- collects rule names in an ACL2 file
+
+* summarize_mli.py -- collects basic information about the data in an .mli file.

@@ -1,7 +1,7 @@
 ; Taking the or of two bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,6 +29,9 @@
            (type bit x y))
   (mbe :logic (bitor x y)
        :exec (the bit (logior x y))))
+
+(defthm bitp-of-bitor
+  (bitp (bitor x y)))
 
 (defthm integerp-of-bitor
   (integerp (bitor x y)))

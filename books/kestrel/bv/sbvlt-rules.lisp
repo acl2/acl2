@@ -35,7 +35,7 @@
                       (bvlt (+ -1 size) x y)))))
   :hints (("Goal" :in-theory (e/d (sbvlt bvlt ;LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE
                                          logext-when-negative logext-when-negative-2)
-                                  (<-becomes-bvlt-alt <-becomes-bvlt <-becomes-bvlt-free)))))
+                                  ()))))
 
 ;gen?
 ; but myif-of-nil-special seems to not fire

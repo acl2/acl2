@@ -31,6 +31,7 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;for logand-with-mask
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/idioms" :dir :system))
 
 
@@ -117,12 +118,6 @@
 ;;                (< k len)
 ;;                (CANONICAL-ADDRESS-p (+ len rip)))
 ;;           (MEMBER-P (BINARY-+ k RIP) (CREATE-CANONICAL-ADDRESS-LIST len RIP))))
-
-;how does this not already exist?
-(defthm len-of-append
-  (equal (len (append x y))
-         (+ (len x) (len y))))
-
 
 ;; simplify (this is reading the jump offset from the code?):
 ;; (CANONICAL-ADDRESS-P$INLINE
@@ -1811,17 +1806,9 @@
 (defthm separate-when-separate
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad3 ad1)
-                (<= (+ n1 ad1) (+ n3 ad3))
+                (<= n1 (+ n3 (- ad3 ad1)))
                 (<= ad4 ad2)
-                (<= (+ n2 ad2) (+ n4 ad4))
-                (integerp n1)
-                (integerp n2)
-                (integerp n3)
-                (integerp n4)
-                (integerp ad1)
-                (integerp ad2)
-                (integerp ad3)
-                (integerp ad4))
+                (<= n2 (+ n4 (- ad4 ad2))))
            (separate rwx n1 ad1 rwx n2 ad2))
   :hints (("Goal" :in-theory (e/d (separate)
                                   (;x86isa::RGFI-IS-I64P
@@ -1831,17 +1818,9 @@
 (defthm separate-when-separate-alt
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad4 ad1)
-                (<= (+ n1 ad1) (+ n4 ad4))
+                (<= n1 (+ n4 (- ad4 ad1)))
                 (<= ad3 ad2)
-                (<= (+ n2 ad2) (+ n3 ad3))
-                (integerp n1)
-                (integerp n2)
-                (integerp n3)
-                (integerp n4)
-                (integerp ad1)
-                (integerp ad2)
-                (integerp ad3)
-                (integerp ad4))
+                (<= n2 (+ n3 (- ad3 ad2))))
            (separate rwx n1 ad1 rwx n2 ad2))
   :hints (("Goal" :in-theory (e/d (separate)
                                   (;x86isa::RGFI-IS-I64P
