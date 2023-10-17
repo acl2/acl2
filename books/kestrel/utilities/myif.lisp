@@ -1,7 +1,7 @@
 ; MYIF, an alias for IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -78,8 +78,7 @@
 (defthm integerp-of-myif
   (implies (and (integerp a)
                 (integerp b))
-           (equal (integerp (myif test a b))
-                  t))
+           (integerp (myif test a b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthm integerp-of-myif-strong
@@ -241,14 +240,13 @@
 (defthm unsigned-byte-p-of-myif
   (implies (and (unsigned-byte-p n a)
                 (unsigned-byte-p n b))
-           (equal (unsigned-byte-p n (myif test a b))
-                  t))
+           (unsigned-byte-p n (myif test a b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;strengthen?
 (defthm acl2-numberp-of-myif
   (implies (and (acl2-numberp a) (acl2-numberp b))
-           (equal (acl2-numberp (myif test a b)) t))
+           (acl2-numberp (myif test a b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd myif-of-nil-special
