@@ -95,11 +95,12 @@ less than or equal to the level limit.")
     acl2::maybe-natp
     :default nil
     "If set to a natural number N, then the initial equiv classes will be built
-by joining pairs of outputs. If initial-equiv-classes-last is nonnil, this
-will (i, i+N) for all i in (numOuts-2N)<=i<(numOuts-N); if nil, then for all
-i<N. Larger equivalence classes may be built by pairing the same node more than
-once.  Combinational equivalence is preserved for all outputs.  Not compatible
-with @(':miters-only').")
+by joining pairs of outputs @('(i, i+N)'). The range of @('i') depends on the
+setting of initial-equiv-classes-last.  If nonnil, then @('i') ranges from
+@('numOuts-2N') to @('numOuts-N-1'); if nil, then it ranges from @('0') to
+@('N-1').  Larger equivalence classes may be built by pairing the same node
+more than once.  Combinational equivalence is preserved for all outputs.  Not
+compatible with @(':miters-only').")
    (initial-equiv-classes-last booleanp :default nil
                                "See the n-outputs-are-initial-equiv-classes option."))
 
