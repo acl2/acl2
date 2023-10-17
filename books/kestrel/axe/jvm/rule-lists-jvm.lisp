@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,9 +11,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
-
-;; Note that, as of March 2021, many of these rules are not yet open sourced.
-;; This file just gives their names.
 
 (include-book "kestrel/jvm/portcullis" :dir :system)
 (include-book "../rule-lists")
@@ -1261,8 +1258,6 @@
             if-of-if-t-nil
 ;    possible-exception-of-nil
 ;    len-of-update-nth-rewrite-2
-            true-listp-of-cons ; drop
-            true-listp-of-take ; drop
             nth-of-take-2
             ;; nth-of-bvchop-becomes-nth2 ;yuck?
             ;; nth-of-bvxor-becomes-nth2 ;yuck?
