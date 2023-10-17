@@ -1,7 +1,7 @@
 ; The main (old-style) Axe evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -29,7 +29,8 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; reduce?
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/bv-lists/map-packbv" :dir :system) ;for map-packbv, map-reverse-list, etc.
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
