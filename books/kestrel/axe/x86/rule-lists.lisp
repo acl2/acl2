@@ -147,6 +147,9 @@
     x86isa::wml64           ;shilpi leaves this enabled, but this is big!
     x86isa::wml-size$inline ;shilpi leaves this enabled
 
+    x86isa::wiml08
+    x86isa::wiml16
+    x86isa::wiml32
     x86isa::wiml64
     x86isa::wiml-size$inline
     ))
@@ -907,9 +910,13 @@
             x86isa::separate-from-separate-lemma-1b-alt
             x86isa::separate-from-separate-lemma-1c-alt
             x86isa::separate-from-separate-lemma-1d-alt
-            ;; these 2 may be all we need:
+            ;; these 2 may subsume much of the stuff above:
             x86isa::separate-when-separate
             x86isa::separate-when-separate-alt
+            ;; these may be expensive but seem necessary in some cases
+            ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
+            ;x86isa::not-equal-when-separate
+            ;x86isa::not-equal-when-separate-alt
             
             x86isa::rb-wb-equal
             x86isa::rb-of-if-arg2
@@ -3243,6 +3250,8 @@
   '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
+    mv-nth-1-of-rb-becomes-read
+    mv-nth-1-of-rb-1-becomes-read
     ))
 
 (defun debug-rules32 ()
@@ -3282,7 +3291,7 @@
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
             acl2::bvlt-of-max-arg2
             <-of-*-when-constant-integers
-            separate-when-separate ; todo: drop? but that caused problems
+            ;separate-when-separate-2 ; todo: drop? but that caused problems
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2
@@ -3354,7 +3363,7 @@
             acl2::<-of-negative-constant-and-bv
             READ-OF-WRITE-BOTH-SIZE-1
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG ; rename
-            separate-of-1-and-1
+            ;; separate-of-1-and-1 ; do we ever need this?
             <-of-+-and-+-arg3-and-arg1
             equal-of-bvshl-and-constant
             bvchop-of-bvshl-same
