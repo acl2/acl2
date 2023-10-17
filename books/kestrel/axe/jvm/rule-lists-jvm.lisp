@@ -2576,6 +2576,7 @@
                           )))
 
 ;; ;todo: compare to phased-bv-axe-rule-sets
+;; note that this builds in the "smart" symbolic execution rules.
 (defun phased-rule-alists-for-symbolic-execution (state)
   (declare (xargs :stobjs state
                   :guard (ilks-plist-worldp (w state))))
