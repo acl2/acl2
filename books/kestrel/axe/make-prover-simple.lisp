@@ -5159,7 +5159,8 @@
               ((when (not (rule-item-list-listp rule-lists)))
                (er hard? ',prove-dag-implication-name "Bad rule lists: ~x0" rule-lists)
                (mv :bad-input nil state))
-              ((when (not (rule-item-listp global-rules)))
+              ((when (not (or (eq :auto global-rules)
+                              (rule-item-listp global-rules))))
                (er hard? ',prove-dag-implication-name "Bad global-rules: ~x0" global-rules)
                (mv :bad-input nil state))
               ((when (not (simple-prover-tacticp tactic)))
@@ -5207,13 +5208,22 @@
               ;; make auxiliary dag data structures:
               ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
+              ;; Handle the global-rules option:
+              (global-rules (if (eq :auto global-rules)
+                                nil ; todo: allow this to be customized for each prover
+                              global-rules))
               ;; Expand 0-ary function calls in rule-lists:
               (global-rules (elaborate-rule-items global-rules state))
               (rule-lists (elaborate-rule-item-lists rule-lists state))
               ;; Add global-rules to the rule-lists:
               (rule-lists (if (endp rule-lists)
-                              ;; If no rule-lists given, use the global rules as a single rule-list:
-                              (list global-rules) ; todo: what if global-rules is empty?
+                              (if (endp global-rules)
+                                  (prog2$ (cw "Warning: No rule-lists or global rules given!~%")
+                                          (list global-rules) ; todo: or just use nil?
+                                          )
+                                ;; If no rule-lists given, use the global rules as a single rule-list:
+                                (prog2$ (cw "Note: No rule-lists given.  Using only the global rules.~%")
+                                        (list global-rules)))
                             ;; Include the global-rules in each rule-list:
                             (union-eq-with-all global-rules rule-lists)))
               ;; Build the rule-alists:
@@ -5271,7 +5281,8 @@
                                            state)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (rule-item-list-listp rule-lists)
-                                     (rule-item-listp global-rules)
+                                     (or (eq :auto global-rules)
+                                         (rule-item-listp global-rules))
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (booleanp no-splitp)
                                      (symbol-listp monitor)
@@ -5304,7 +5315,7 @@
                                           &key
                                           (tactic ''(:rep :rewrite :subst))
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
-                                          (global-rules 'nil) ;; rules to be added to every rule-list
+                                          (global-rules ':auto) ;; rules to be added to every rule-list
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (monitor 'nil)
