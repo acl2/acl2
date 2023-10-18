@@ -18,7 +18,6 @@
 (include-book "flags")
 ;(include-book "support-x86") ;todo reduce
 ;(include-book "read-and-write") ; drop?
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
@@ -115,8 +114,6 @@
 ;;todo: need to get the standard 32-bit assumptions gathered up:
 
 ;; TODO: reads like this (READ 4 4214784 X86) should now be resolvable?
-
-(acl2::defopeners X86ISA::RR08$inline :hyps ((syntaxp (and (quotep X86ISA::REG) (quotep X86ISA::REX)))))
 
 ;(acl2::defopeners X86ISA::RME-SIZE$inline :hyps ((< X86ISA::EFF-ADDR '2000)))
 
