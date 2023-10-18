@@ -1206,12 +1206,11 @@
             nthcdr-of-nthcdr                    ;sun sep  5 05:01:31 2010
             consp-of-firstn                     ;fri sep  3 04:06:54 2010
             ;;list::nthcdr-of-len-or-more ;make a cheap version?
-            subrange-out-of-order
+
             equal-of-subrange-opener ;not in the usual rule set
             cons-nth-0-equal-self
-            nth-of-subrange ;-gen
             append-of-firstn-and-subrange
-            subrange-of-cdr
+
             equal-of-take-and-firstn
             firstn-when-<=-of-len
             nth-of-take-2
@@ -1221,13 +1220,11 @@
             equal-subrange-nthcdr-rewrite
             true-listp-of-firstn
 
-;firstn-of-cdr-becomes-subrange ; drop?
+            ;;firstn-of-cdr-becomes-subrange ; drop?
             append-of-take-and-cons-when-nth ;could be expensive
             append-subrange-subrange-adjacent-alt
             equal-of-append-arg1
             cons-of-nth-and-nth-plus-1
-
-            subrange-of-0
             append-of-take-and-subrange-alt
             equal-of-cons
             cdr-iff
@@ -1239,9 +1236,7 @@
             +-combine-constants
             <-of-+-arg2-when-negative-constant
             nth-append-1
-            nth-append-2
-            len-of-subrange
-            true-listp-of-subrange)))
+            nth-append-2)))
 
 ;; These are ACL2 runes, not legal axe rules names.
 (defun list-rules2-executable-counterparts ()
@@ -1255,21 +1250,35 @@
     (:executable-counterpart nfix)
     (:executable-counterpart natp)))
 
-;; TODO: Rename
-;these are just list rules?
-(defun jvm-rules-list ()
+;; uses in the JVM for arraycopy
+(defun subrange-rules ()
   (declare (xargs :guard t))
-  '(;; rules about update-subrange:
-    len-of-update-subrange ;drop?
+  '(subrange-of-0
+    subrange-not-nil1
+    subrange-not-nil2
+    len-of-subrange
+    true-listp-of-subrange
+    nth-of-subrange
+    subrange-out-of-order
+    subrange-of-cdr))
+
+(defun update-subrange-rules ()
+  (declare (xargs :guard t))
+  '(len-of-update-subrange ;drop?
     update-subrange-not-nil1
     update-subrange-not-nil2
     update-subrange-of-true-list-fix
     update-subrange-all
     nth-of-update-subrange-diff-1 ;reorder hyps
     nth-of-update-subrange-diff-2
-    nth-of-update-subrange-same
+    nth-of-update-subrange-same))
 
-    ;; rules about update-subrange2 (do we still use it?):
+(defun list-rules3 ()
+  (declare (xargs :guard t))
+  (append
+   (subrange-rules)
+   (update-subrange-rules)
+  '(;; rules about update-subrange2 (used in the JVM for arraycopy):
     equal-of-nil-and-update-subrange2 ;new
     len-of-update-subrange2
     update-subrange2-all ;used, for example, when we initialize an array to 0's (using repeat) and then copy another array into it
@@ -1278,20 +1287,13 @@
     all-unsigned-byte-p-of-update-subrange2 ;where should this go?
     nth-of-update-subrange2
 
-    ;; rules about subrange:
-    subrange-of-0
-    subrange-not-nil1
-    subrange-not-nil2
-    len-of-subrange
-    true-listp-of-subrange
-
     union-equal-of-nil-arg1
     union-equal-of-nil-arg2
 
     all-equal$-of-cons
-    all-equal$-of-append))
+    all-equal$-of-append)))
 
-(defun jvm-rules-alist ()
+(defun alist-rules ()
   (declare (xargs :guard t))
   '(strip-cdrs-of-cons
     strip-cdrs-of-append
@@ -1332,7 +1334,9 @@
 
 (defun logext-rules ()
   (declare (xargs :guard t))
-  '(bv-array-read-of-logext-arg3
+  '(logext-of-0
+
+    bv-array-read-of-logext-arg3
 
     bvmult-of-logext-alt ;new
     bvmult-of-logext     ;new
@@ -1723,7 +1727,7 @@
     <-of-sums-cancel
     <-of-constant-and-minus ; <-0-minus
     binary-+-bring-constant-forward
-    subrange-out-of-order-cheap
+    ;subrange-out-of-order-cheap
     ))
 
 (defun array-reduction-rules ()

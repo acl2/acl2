@@ -5157,8 +5157,8 @@
                            (make-axe-rules! (set-difference-eq
                                             (append (map-rules)
                                                     (jvm-simplification-rules)
-                                                    (jvm-rules-list)
-                                                    (jvm-rules-alist)
+                                                    (list-rules3)
+                                                    (alist-rules)
                                                     (bv-array-rules)
                                                     (jvm-rules-unfiled-misc)
                                                     (boolean-rules)

@@ -64,8 +64,8 @@
           (lookup-rules)
           (list-rules)
           (logext-rules) ;drop?
-          (jvm-rules-list)
-          (jvm-rules-alist)
+          (list-rules3)
+          (alist-rules)
           (update-nth2-rules) ;since below we have rules to introduce update-nth2
           (update-nth2-intro-rules)
           (jvm-rules-unfiled-misc)
