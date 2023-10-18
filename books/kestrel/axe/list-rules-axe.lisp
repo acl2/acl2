@@ -78,6 +78,11 @@
 (defthmd integerp-of-len
   (integerp (len x)))
 
+(defthmd acl2-numberp-of-len
+  (acl2-numberp (len x)))
+
+;; could be used outside axe, but we have better rules for fix
+;; deprecate: use fix-when-acl2-numberp and acl2-numberp-of-len
 (defthmd fix-of-len
   (equal (fix (len x))
          (len x)))
