@@ -352,9 +352,9 @@
                 (<= free k1))
            (not (< k1 x))))
 
-(defthm <-of-sums-cancel
-  (equal (< x (+ x y))
-         (< 0 y)))
+;; (defthm <-of-sums-cancel
+;;   (equal (< x (+ x y))
+;;          (< 0 y)))
 
 ;linear can get this, but maybe this will keep us from generating trivial cases?...
 (defthm no-room-between-ints-lemma

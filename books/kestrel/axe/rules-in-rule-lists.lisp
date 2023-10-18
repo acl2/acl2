@@ -29,7 +29,7 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling" :dir :system)
 (include-book "kestrel/bv/bvsx-rules" :dir :system)
-(include-book "kestrel/bv/arith" :dir :system) ;for <-of-sums-cancel (todo: reduce)
+(include-book "kestrel/bv/arith" :dir :system) ;for COLLECT-CONSTANTS-OVER-<-2 (todo: reduce)
 (include-book "kestrel/bv/adder" :dir :system) ;for BVPLUS-BECOMES-RIPPLE-CARRY-ADDER, used in bit blasting in the phased rules
 (include-book "bv-array-rules-axe")
 ;(include-book "rules1" :dir :system) ;included by bv-array-rules-axe

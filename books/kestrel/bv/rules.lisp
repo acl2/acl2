@@ -3899,7 +3899,7 @@
 
 ;ffixme think about this..
 ;go to bvif!
-(defthmd bvchop-of-myif-consant-branches
+(defthmd bvchop-of-myif-constant-branches
   (implies (syntaxp (and (quotep x)
                          (quotep y)
                          (quotep size)))

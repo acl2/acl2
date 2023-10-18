@@ -1065,7 +1065,10 @@
     equal-bvcat-0-left ; gen and move
     equal-bvcat-0-right ; gen and move
 
-    slice-of-myif-consant-branches
+    bvchop-of-myif-constant-branches
+    slice-of-myif-constant-branches
+    ; todo: add one for getbit?
+
     bvcat-bound-hack-2
 ;                          bvor-1-bound-2
 
@@ -1711,10 +1714,8 @@
   (declare (xargs :guard t))
   '(true-listp-of-myif
 
-    bytes-to-bits-of-bv-array-write ;move
+    ;bytes-to-bits-of-bv-array-write ;move
     integerp-of-myif
-
-    bvchop-of-myif-consant-branches
 
     all-unsigned-byte-p-of-cons
     unsigned-byte-p-of-myif ;can be expensive?!
@@ -1724,7 +1725,7 @@
 ;    logext-list-does-nothing
     ;;all-signed-byte-p-when-all-unsigned-byte-p
 ;these help us resolve questions about symbolic indices (e.g., for bvshl and bvshr)
-    <-of-sums-cancel
+    <-of-+-cancel-1-1+ ; <-of-sums-cancel
     <-of-constant-and-minus ; <-0-minus
     binary-+-bring-constant-forward
     ;subrange-out-of-order-cheap
