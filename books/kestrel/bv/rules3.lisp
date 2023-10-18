@@ -542,7 +542,7 @@
 
 
 ;go to bvif!
-(defthmd slice-of-myif-consant-branches
+(defthmd slice-of-myif-constant-branches
   (implies (and (syntaxp (quotep high))
                 (syntaxp (quotep low))
                 (syntaxp (quotep x))

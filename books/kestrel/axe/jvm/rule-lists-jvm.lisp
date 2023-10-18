@@ -1253,7 +1253,6 @@
 (defun jvm-rules-unfiled-misc ()
   (declare (xargs :guard t))
   (append '(equal-nil-of-myif
-            logext-of-0 ;move to logext-rules?
 ;basic rules:
             if-of-if-t-nil
 ;    possible-exception-of-nil
@@ -1270,7 +1269,6 @@
             integerp-of-nth-when-all-integerp
 ;    logext-identity;;this caused problems.  trying without.
             sbp-32-when-non-neg ;do we need still this?
-            nth-of-subrange
             one-plus-len-hack
             <-of-+-cancel-1-2
             <-of-+-cancel-2-1)))
@@ -1287,8 +1285,8 @@
 ;;   (append (map-rules)
 ;;           (jvm-semantics-rules)
 ;;           (jvm-simplification-rules)
-;;           (jvm-rules-list)
-;;           (jvm-rules-alist)
+;;           (list-rules3)
+;;           (alist-rules)
 ;;           (list-rules) ;drop?
 ;;           (bv-array-rules)
 ;;           (jvm-rules-unfiled-misc)))
@@ -1321,8 +1319,8 @@
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
           (logext-rules) ;move to parent?
-          (jvm-rules-list)
-          (jvm-rules-alist)
+          (list-rules3)
+          (alist-rules)
           (update-nth2-rules) ;since below we have rules to introduce update-nth2
           (update-nth2-intro-rules)
           (update-nth-rules)
@@ -1359,8 +1357,8 @@
            (unsigned-byte-p-rules)
            (logext-rules)
            (jvm-simplification-rules)
-           (jvm-rules-list)
-           (jvm-rules-alist)
+           (list-rules3)
+           (alist-rules)
            (bv-array-rules)
            (update-nth2-rules) ;since below we have rules to introduce update-nth2
            (update-nth2-intro-rules)
@@ -1421,8 +1419,8 @@
            (logext-rules)
            (jvm-semantics-rules)
            (jvm-simplification-rules)
-           (jvm-rules-list)
-           (jvm-rules-alist)
+           (list-rules3)
+           (alist-rules)
            (bv-array-rules)
            (update-nth2-rules) ;since below we have rules to introduce update-nth2
            (update-nth2-intro-rules)
