@@ -120,15 +120,6 @@
   :hints (("Goal" ;:in-theory (enable <-of-floor-when-<)
            :cases ((<= x (/ K1 k2))))))
 
-;todo: compare to X86ISA::SEPARATE-SMALLER-REGIONS
-(defthm separate-when-separate
-  (implies (and (separate :r n3 addr3 :r n4 addr4) ; free vars
-                (<= addr3 addr1)
-                (<= n1 (+ n3 (- addr3 addr1)))
-                (<= addr4 addr2)
-                (<= n2 (+ n4 (- addr4 addr2))))
-           (separate :r n1 addr1 :r n2 addr2)))
-
 ;gen
 ;why is this needed? maybe because of ACL2::<-BECOMES-BVLT-DAG-ALT-GEN-BETTER2
 (defthm UNSIGNED-BYTE-P-2-of-bvchop-when-bvlt-of-4
@@ -1185,13 +1176,6 @@
                 (integerp k2))
            (not (equal (+ k1 (+ index text-offset))
                        (+ k2 (rsp x86)))))
-  :hints (("Goal" :in-theory (enable separate))))
-
-(defthm separate-of-1-and-1
-  (implies (and (integerp ad1)
-                (integerp ad2))
-           (equal (separate :r 1 ad1 :r 1 ad2)
-                  (not (equal ad1 ad2))))
   :hints (("Goal" :in-theory (enable separate))))
 
 ;rename?
