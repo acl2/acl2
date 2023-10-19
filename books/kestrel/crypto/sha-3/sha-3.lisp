@@ -624,10 +624,10 @@
           (<= w z))
       nil
     (cons (bitxor$ (a x 0 z a w)
-                  (bitxor$ (a x 1 z a w)
-                          (bitxor$ (a x 2 z a w)
-                                  (bitxor$ (a x 3 z a w)
-                                          (a x 4 z a w)))))
+                   (bitxor$ (a x 1 z a w)
+                            (bitxor$ (a x 2 z a w)
+                                     (bitxor$ (a x 3 z a w)
+                                              (a x 4 z a w)))))
           (theta-c-lane (+ 1 z) x a w))))
 
 (defthm bit-stringp-of-theta-c-lane
@@ -687,7 +687,7 @@
           (<= w z))
       nil
     (cons (bitxor$ (nth-bit z               (nth-lane (mod (- x 1) 5) c w) w)
-                  (nth-bit (mod (- z 1) w) (nth-lane (mod (+ x 1) 5) c w) w))
+                   (nth-bit (mod (- z 1) w) (nth-lane (mod (+ x 1) 5) c w) w))
           (theta-d-lane (+ 1 z) x c w))))
 
 (defthm bit-stringp-of-theta-d-lane
@@ -762,7 +762,7 @@
           (<= w z))
       nil
     (cons (bitxor$ (a x y z a w)
-                  (nth-bit z (nth-lane x d w) w))
+                   (nth-bit z (nth-lane x d w) w))
           (theta-lane (+ 1 z) x y a d w))))
 
 (defthm len-of-theta-lane
@@ -1232,9 +1232,9 @@
           (<= w z))
       nil
     (cons (bitxor$ (a x y z a w)
-                  (bitand$ (bitxor$ (a (mod (+ x 1) 5) y z a w)
-                                  1)
-                          (a (mod (+ x 2) 5) y z a w)))
+                   (bitand$ (bitxor$ (a (mod (+ x 1) 5) y z a w)
+                                     1)
+                            (a (mod (+ x 2) 5) y z a w)))
           (chi-lane (+ 1 z) x y a w))))
 
 (defthm bit-stringp-of-chi-lane
