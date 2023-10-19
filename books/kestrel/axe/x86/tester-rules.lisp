@@ -26,6 +26,7 @@
 (include-book "kestrel/x86/read-and-write" :dir :system)
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(include-book "kestrel/axe/axe-rules-mixed" :dir :system) ; todo; make local
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))

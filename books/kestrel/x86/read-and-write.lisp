@@ -24,6 +24,9 @@
 (include-book "kestrel/bv/rules10" :dir :system)
 (include-book "kestrel/bv-lists/unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/lists-light/finalcdr" :dir :system)
 ;(include-book "linear-memory")
 ;(include-book "support") ;reduce?
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
@@ -754,7 +757,22 @@
   :hints (("Goal" :in-theory (enable write wb))))
 
 
-
+(defthmd write-of-xw-mem
+  (implies (and (< n (bvchop 48 (- addr addr2))) ;no wrap around ;(< (bvchop 48 addr) (bvchop 48 addr2))
+                (integerp addr2)
+                (integerp addr))
+           (equal (write n addr2 val2 (xw :mem addr val x86))
+                  (xw :mem addr val (write n addr2 val2 x86))))
+  :hints (("Subgoal *1/3" :cases ((equal n 1)))
+          ("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (WRITE N ADDR2 VAL2 X86)
+           :in-theory (e/d (write
+                            ACL2::BVCHOP-PLUS-1-SPLIT
+                            ACL2::BVCHOP-OF-SUM-CASES
+                            write-byte)
+                           (ACL2::BVPLUS-RECOLLAPSE))
+           :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))
+                    (:free (addr val x86) (WRITE n ADDR VAL X86))))))
 
 ;;
 ;; lemmas about read and write
@@ -763,14 +781,17 @@
 (defthm xr-of-write-too-low
   (implies (and (< addr1 addr2)
                 (natp n)
-;                (x86p x86)
-                (canonical-address-p addr1)
+                (integerp addr1)
+                (integerp addr2)
+;                (< N '281474976710656)
+ ;               (canonical-address-p addr1)
                 (canonical-address-p addr2)
                 (implies (posp n) (canonical-address-p (+ -1 n addr2)))
                 )
            (equal (xr :mem addr1 (write n addr2 val x86))
                   (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (enable write CANONICAL-ADDRESS-P write-byte))))
+  :hints (("Goal" :in-theory (enable write CANONICAL-ADDRESS-P write-byte
+                                     WRITE-OF-XW-MEM))))
 
 ;; (defthm xr-of-write-too-low-2
 ;;   (implies (and (< addr1 (bvchop 48 addr2))
@@ -859,12 +880,9 @@
                     (:free (addr val x86) (WRITE n ADDR VAL X86))))))
 
 (defthm read-of-write-same
-  (implies (and; (app-view x86)
-                (canonical-address-p addr)
+  (implies (and (canonical-address-p addr)
                 (implies (posp n) (canonical-address-p (+ -1 n addr))) ;drop?
-                (natp n)
-;                (x86p x86)
-                )
+                (integerp n))
            (equal (read n addr (write n addr val x86))
                   (bvchop (* 8 n) val)))
   :hints (;("subgoal *1/2" :cases ((equal n1 1)))
@@ -1072,22 +1090,7 @@
            :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))
                     (:free (addr val x86) (WRITE n ADDR VAL X86))))))
 
-(defthmd write-of-xw-mem
-  (implies (and (< n (bvchop 48 (- addr addr2))) ;no wrap around ;(< (bvchop 48 addr) (bvchop 48 addr2))
-                (integerp addr2)
-                (integerp addr))
-           (equal (write n addr2 val2 (xw :mem addr val x86))
-                  (xw :mem addr val (write n addr2 val2 x86))))
-  :hints (("Subgoal *1/3" :cases ((equal n 1)))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (WRITE N ADDR2 VAL2 X86)
-           :in-theory (e/d (write
-                            ACL2::BVCHOP-PLUS-1-SPLIT
-                            ACL2::BVCHOP-OF-SUM-CASES
-                            write-byte)
-                           (ACL2::BVPLUS-RECOLLAPSE))
-           :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))
-                    (:free (addr val x86) (WRITE n ADDR VAL X86))))))
+
 
 ;; (defthm write-alt-of-write-alt-same
 ;;   (implies (and (app-view x86)
@@ -1626,138 +1629,6 @@
                           (< addr2 addr))
            :in-theory (e/d (read) (write-of-0)))))
 
-
-
-;;;
-;;; write-bytes
-;;;
-
-(defund write-bytes (base-addr bytes x86)
-  (declare (xargs :stobjs x86
-                  :guard (and (acl2::all-unsigned-byte-p 8 bytes)
-                              (true-listp bytes)
-                              (integerp base-addr))))
-  (if (endp bytes)
-      x86
-    (let ((x86 (write-byte base-addr (first bytes) X86)))
-      (write-bytes (+ 1 base-addr)
-                  (rest bytes)
-                  x86))))
-
-(defthm write-bytes-of-nil
-  (equal (write-bytes base-addr nil x86)
-         x86)
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm xr-of-write-bytes
-  (implies (not (equal :mem fld))
-           (equal (xr fld index (write-bytes base-addr vals x86))
-                  (xr fld index x86)))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm x86p-of-write-bytes
-  (implies (x86p x86)
-           (x86p (write-bytes base-addr vals x86)))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm 64-bit-modep-of-write-bytes
-  (equal (64-bit-modep (write-bytes base-addr vals x86))
-         (64-bit-modep x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm app-view-of-write-bytes
-  (equal (app-view (write-bytes base-addr vals x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm alignment-checking-enabled-p-of-write-bytes
-  (equal (alignment-checking-enabled-p (write-bytes base-addr vals x86))
-         (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm write-bytes-of-xw-irrel
-  (implies (not (equal :mem fld))
-           (equal (write-bytes addr values (xw fld index val x86))
-                  (xw fld index val (write-bytes addr values x86))))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm set-flag-of-write-bytes
-  (equal (set-flag flg val (write-bytes addr values x86))
-         (write-bytes addr values (set-flag flg val x86)))
-  :hints (("Goal" :in-theory (enable set-flag wb write-bytes))))
-
-(defthm get-flag-of-write-bytes
-  (equal (get-flag flg (write-bytes addr values x86))
-         (get-flag flg x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-;todo turn only writes of >1 byte into write-bytes..
-(defthm write-bytes-when-length-is-1
-  (implies (equal 1 (len bytes))
-           (equal (write-bytes addr bytes x86)
-                  (write-byte addr (first bytes) x86)))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-;;;
-;;; read-bytes
-;;;
-
-;; Read N bytes, starting at ADDR, returning a list.
-(defund read-bytes (addr n x86)
-  (declare (xargs :guard (and (integerp addr)
-                              (natp n))
-                  :stobjs x86))
-  (if (zp n)
-      nil
-    (cons (read-byte addr x86)
-          (read-bytes (+ 1 addr) (+ -1 n) x86))))
-
-(defthm car-of-read-bytes
-  (implies (and (posp n)
-                (integerp addr))
-           (equal (car (read-bytes addr n x86))
-                  (read-byte addr x86)))
-  :hints (("Goal" :expand
-           (read-bytes addr n x86))))
-
-(local
- (defun inc-dec-dec-induct (x y z)
-   (if (zp y)
-       (list x y z)
-     (inc-dec-dec-induct (+ 1 x) (+ -1 y) (+ -1 z)))))
-
-(defthm nth-of-read-bytes
-  (implies (and (natp n1)
-                (< n1 n2)
-                (natp n2)
-                (integerp addr))
-           (equal (nth n1 (read-bytes addr n2 x86))
-                  (read-byte (+ addr n1) x86)))
-  :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
-           :in-theory (enable read-bytes))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm write-bytes-of-read-bytes-same
-  (equal (write-bytes addr (read-bytes addr n x86) x86)
-         x86)
-  :hints (("Goal" :in-theory (enable read-bytes write-bytes))))
-
-(defthm write-bytes-of-write-byte-irrel
-  (implies (and (<= (len bytes) (bvminus 48 addr2 addr1))
-                (integerp addr2)
-                (integerp addr1))
-           (equal (write-bytes addr1 bytes (write-byte addr2 byte x86))
-                  (write-byte addr2 byte (write-bytes addr1 bytes x86))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (write-bytes addr1 bytes x86)
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes write-byte)
-                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::slice-of-+ ;looped
-                                                    acl2::bvcat-of-+-high
-                                                    ACL2::BVCHOP-IDENTITY ;for speed
-                                                    )))))
-
 (defthm read-1-of-write-4-same
   (implies (and (natp read-ad)
                 (< read-ad (bvplus 48 4 write-ad))
@@ -1816,6 +1687,7 @@
            :expand ((WRITE (+ N1 N2)
                            AD2 (BVCAT (* 8 N1) VAL1 (* 8 N2) VAL2)
                            X86)))))
+
 (defthm xr-of-write-too-low-alt
   (implies (and (< (bvchop 48 addr1) (bvchop 48 addr2))
                 (natp n)
@@ -1943,6 +1815,7 @@
                 8 (read 1 addr x86)))
   :hints (("Goal" :in-theory (enable read))))
 
+
 (defthm memi-of-write-not-irrel
   (implies (and (< (bvchop 48 (- addr1 addr2)) n) ;rephrase?
                 (integerp addr2)
@@ -1982,41 +1855,6 @@
                                                     ACL2::BVCAT-OF-+-HIGH
                                                     )))))
 
-(defthm read-byte-of-write-bytes-irrel
-  (implies (and (<= (len bytes) (bvminus 48 addr1 addr2))
-                (integerp addr2)
-                (integerp addr1))
-           (equal (read-byte addr1 (write-bytes addr2 bytes x86))
-                  (read-byte addr1 x86)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (WRITE-BYTES ADDR2 BYTES X86)
-           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes ;ACL2::NTH-WHEN-N-IS-ZP
-                                   )
-                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::slice-of-+ ;looped
-                                                    acl2::bvcat-of-+-high
-;                                                    ACL2::NTH-OF-CDR
-                                                    )))))
-
-(defthm read-of-write-bytes-disjoint
-  (implies (and (<= (len vals) (bvminus 48 addr1 addr2))
-                (<= n1 (bvminus 48 addr2 addr1))
-                (natp n1)
-                (integerp addr2)
-                (integerp addr1))
-           (equal (read n1 addr1 (write-bytes addr2 vals x86))
-                  (read n1 addr1 x86)))
-  :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (read n1 addr1 x86)
-           :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus ;read-byte
-                                   )
-                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    ACL2::SLICE-OF-+ ;looped
-                                                    ACL2::BVCAT-OF-+-HIGH
-                                                    )))))
-
-
 ;mixes abstraction levels - todo remove
 (defthm memi-of-write-byte-same
   (implies (and (<= n (expt 2 48))
@@ -2052,7 +1890,13 @@
            :in-theory (e/d (write-byte memi)
                            (acl2::bvplus-recollapse)))))
 
-(include-book "kestrel/axe/axe-rules-mixed" :dir :system) ;todo: reduce?
+(local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ;todo: reduce?
+;move
+(local (in-theory (disable ACL2::INEQ-HACK2
+                           ACL2::INEQ-HACK
+                           ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
+                           ACL2::PLUS-BVCAT-WITH-0
+                           ACL2::PLUS-BVCAT-WITH-0-ALT)))
 
 (defthm read-of-write-byte-disjoint
   (implies (and (<= 1 (bvminus 48 addr1 addr2))
@@ -2078,6 +1922,169 @@
   :hints (("Goal" :in-theory (enable read read-byte))))
 
 ;remove theorems about memi once we use read-byte more?
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Read N bytes, starting at ADDR, returning a list.
+(defund read-bytes (addr n x86)
+  (declare (xargs :guard (and (integerp addr)
+                              (natp n))
+                  :stobjs x86))
+  (if (zp n)
+      nil
+    (cons (read-byte addr x86)
+          (read-bytes (+ 1 addr) (+ -1 n) x86))))
+
+(defthm car-of-read-bytes
+  (implies (and (posp n)
+                (integerp addr))
+           (equal (car (read-bytes addr n x86))
+                  (read-byte addr x86)))
+  :hints (("Goal" :expand
+           (read-bytes addr n x86))))
+
+(local
+ (defun inc-dec-dec-induct (x y z)
+   (if (zp y)
+       (list x y z)
+     (inc-dec-dec-induct (+ 1 x) (+ -1 y) (+ -1 z)))))
+
+(defthm nth-of-read-bytes
+  (implies (and (natp n1)
+                (< n1 n2)
+                (natp n2)
+                (integerp addr))
+           (equal (nth n1 (read-bytes addr n2 x86))
+                  (read-byte (+ addr n1) x86)))
+  :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
+           :in-theory (enable read-bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund write-bytes (base-addr bytes x86)
+  (declare (xargs :stobjs x86
+                  :guard (and (acl2::all-unsigned-byte-p 8 bytes)
+                              (true-listp bytes)
+                              (integerp base-addr))))
+  (if (endp bytes)
+      x86
+    (let ((x86 (write-byte base-addr (first bytes) X86)))
+      (write-bytes (+ 1 base-addr)
+                  (rest bytes)
+                  x86))))
+
+(defthm write-bytes-of-nil
+  (equal (write-bytes base-addr nil x86)
+         x86)
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm xr-of-write-bytes
+  (implies (not (equal :mem fld))
+           (equal (xr fld index (write-bytes base-addr vals x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm x86p-of-write-bytes
+  (implies (x86p x86)
+           (x86p (write-bytes base-addr vals x86)))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm 64-bit-modep-of-write-bytes
+  (equal (64-bit-modep (write-bytes base-addr vals x86))
+         (64-bit-modep x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm app-view-of-write-bytes
+  (equal (app-view (write-bytes base-addr vals x86))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm alignment-checking-enabled-p-of-write-bytes
+  (equal (alignment-checking-enabled-p (write-bytes base-addr vals x86))
+         (alignment-checking-enabled-p x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm write-bytes-of-xw-irrel
+  (implies (not (equal :mem fld))
+           (equal (write-bytes addr values (xw fld index val x86))
+                  (xw fld index val (write-bytes addr values x86))))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm set-flag-of-write-bytes
+  (equal (set-flag flg val (write-bytes addr values x86))
+         (write-bytes addr values (set-flag flg val x86)))
+  :hints (("Goal" :in-theory (enable set-flag wb write-bytes))))
+
+(defthm get-flag-of-write-bytes
+  (equal (get-flag flg (write-bytes addr values x86))
+         (get-flag flg x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+;todo turn only writes of >1 byte into write-bytes..
+(defthm write-bytes-when-length-is-1
+  (implies (equal 1 (len bytes))
+           (equal (write-bytes addr bytes x86)
+                  (write-byte addr (first bytes) x86)))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write-bytes-of-read-bytes-same
+  (equal (write-bytes addr (read-bytes addr n x86) x86)
+         x86)
+  :hints (("Goal" :in-theory (enable read-bytes write-bytes))))
+
+(defthm write-bytes-of-write-byte-irrel
+  (implies (and (<= (len bytes) (bvminus 48 addr2 addr1))
+                (integerp addr2)
+                (integerp addr1))
+           (equal (write-bytes addr1 bytes (write-byte addr2 byte x86))
+                  (write-byte addr2 byte (write-bytes addr1 bytes x86))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (write-bytes addr1 bytes x86)
+           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes write-byte)
+                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                                                    acl2::slice-of-+ ;looped
+                                                    acl2::bvcat-of-+-high
+                                                    ACL2::BVCHOP-IDENTITY ;for speed
+                                                    )))))
+
+(defthm read-byte-of-write-bytes-irrel
+  (implies (and (<= (len bytes) (bvminus 48 addr1 addr2))
+                (integerp addr2)
+                (integerp addr1))
+           (equal (read-byte addr1 (write-bytes addr2 bytes x86))
+                  (read-byte addr1 x86)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (WRITE-BYTES ADDR2 BYTES X86)
+           :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes ;ACL2::NTH-WHEN-N-IS-ZP
+                                   )
+                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                                                    acl2::slice-of-+ ;looped
+                                                    acl2::bvcat-of-+-high
+;                                                    ACL2::NTH-OF-CDR
+                                                    )))))
+
+(defthm read-of-write-bytes-disjoint
+  (implies (and (<= (len vals) (bvminus 48 addr1 addr2))
+                (<= n1 (bvminus 48 addr2 addr1))
+                (natp n1)
+                (integerp addr2)
+                (integerp addr1))
+           (equal (read n1 addr1 (write-bytes addr2 vals x86))
+                  (read n1 addr1 x86)))
+  :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
+          ("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (read n1 addr1 x86)
+           :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus ;read-byte
+                                   )
+                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                                                    ACL2::SLICE-OF-+ ;looped
+                                                    ACL2::BVCAT-OF-+-HIGH
+                                                    )))))
+
+
 
 (local
  (defthm <-of-if-arg2
@@ -2250,21 +2257,6 @@
                   (write-bytes ad vals1 (write-bytes (+ ad (len vals1)) vals2 x86))))
   :hints (("Goal" :in-theory (enable write-bytes append bvminus-of-+-arg3))))
 
-(defthm bvminus-of-+-same-arg2
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvminus size x (binary-+ x y))
-                  (bvuminus size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvuminus acl2::bvchop-of-sum-cases bvminus) ( ;bvplus-of-minus-1
-                                                                                        )))))
-
-(defthm bvminus-of-+-same-arg2-alt
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvminus size x (binary-+ y x))
-                  (bvuminus size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvuminus acl2::bvchop-of-sum-cases bvminus) ( ;bvplus-of-minus-1
-                                                                                        )))))
 ;; outer write is at lower addresses
 (defthmd write-bytes-of-write-bytes-adjacent-2
   (implies (and (equal addr1 (bvplus 48 addr2 (len vals2)))
@@ -2274,8 +2266,6 @@
            (equal (write-bytes addr2 vals2 (write-bytes addr1 vals1 x86))
                   (write-bytes addr2 (append vals2 vals1) x86)))
   :hints (("Goal" :in-theory (enable BVPLUS))))
-
-
 
 ;; outer write is at lower addresses
 (defthmd write-byte-of-write-bytes-adjacent
@@ -2526,10 +2516,6 @@
                            (;(:e ash) ;blows out the memory
                             ;(:e expt)
                             acl2::bvminus-becomes-bvplus-of-bvuminus)))))
-
-(in-theory (disable ACL2::INEQ-HACK2 ACL2::INEQ-HACK ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER))
-
-(in-theory (disable ACL2::PLUS-BVCAT-WITH-0 ACL2::PLUS-BVCAT-WITH-0-ALT))
 
 (defthm write-byte-of-+-subst-arg1
   (implies (and (equal (bvchop 48 ad) freek)
