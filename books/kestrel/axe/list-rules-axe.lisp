@@ -29,6 +29,9 @@
 
 (def-constant-opener memberp)
 
+(defthmd consp-of-cons
+  (consp (cons a x)))
+
 ;;Only needeed for Axe.
 (defthmd equal-of-cons-alt
   (implies (syntaxp (not (and (quotep x)
@@ -74,6 +77,21 @@
 
 (defthmd integerp-of-len
   (integerp (len x)))
+
+(defthmd acl2-numberp-of-len
+  (acl2-numberp (len x)))
+
+;; could be used outside axe, but we have better rules for fix
+;; deprecate: use fix-when-acl2-numberp and acl2-numberp-of-len
+(defthmd fix-of-len
+  (equal (fix (len x))
+         (len x)))
+
+(defthmd len-equal-impossible
+  (implies (and (syntaxp (quotep k))
+                (not (natp k)))
+           (equal (equal k (len x))
+                  nil)))
 
 ;rename
 (defthmd len-non-negative
@@ -152,3 +170,11 @@
            (equal (prefixp y x)
                   (equal (true-list-fix x) (true-list-fix y))))
   :hints (("Goal" :in-theory (enable prefixp))))
+
+(defthmd true-listp-subst-rule
+  (implies (equal x (take free free2))
+           (equal (true-listp x)
+                  t)))
+
+(defthmd true-listp-of-take
+  (true-listp (take n x)))
