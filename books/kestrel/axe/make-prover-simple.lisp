@@ -5138,6 +5138,7 @@
                                             tactic
                                             rule-lists
                                             global-rules
+                                            extra-global-rules
                                             interpreted-function-alist
                                             no-splitp
                                             monitor
@@ -5165,6 +5166,9 @@
               ((when (not (or (eq :auto global-rules)
                               (rule-item-listp global-rules))))
                (er hard? ',prove-dag-implication-name "Bad global-rules: ~x0" global-rules)
+               (mv :bad-input nil state))
+              ((when (not (rule-item-listp extra-global-rules)))
+               (er hard? ',prove-dag-implication-name "Bad extra-global-rules: ~x0" extra-global-rules)
                (mv :bad-input nil state))
               ((when (not (simple-prover-tacticp tactic)))
                (er hard? ',prove-dag-implication-name "Bad tactic: ~x0" tactic)
@@ -5215,6 +5219,8 @@
               (global-rules (if (eq :auto global-rules)
                                 ,default-global-rules ; this can differ for each prover
                               global-rules))
+              ;; Add the extra-global-rules, if any:
+              (global-rules (union-equal extra-global-rules global-rules))
               ;; Expand 0-ary function calls in rule-lists:
               (global-rules (elaborate-rule-items global-rules state))
               (rule-lists (elaborate-rule-item-lists rule-lists state))
@@ -5276,6 +5282,7 @@
                                            tactic
                                            rule-lists
                                            global-rules
+                                           extra-global-rules
                                            interpreted-function-alist
                                            no-splitp
                                            monitor
@@ -5286,6 +5293,7 @@
                                      (rule-item-list-listp rule-lists)
                                      (or (eq :auto global-rules)
                                          (rule-item-listp global-rules))
+                                     (rule-item-listp extra-global-rules)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (booleanp no-splitp)
                                      (symbol-listp monitor)
@@ -5304,6 +5312,7 @@
                                         tactic
                                         rule-lists
                                         global-rules
+                                        extra-global-rules
                                         interpreted-function-alist
                                         no-splitp
                                         monitor
@@ -5318,7 +5327,8 @@
                                           &key
                                           (tactic ''(:rep :rewrite :subst))
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
-                                          (global-rules ':auto) ;; rules to be added to every rule-list
+                                          (global-rules ':auto) ;; rules to be added to every rule-list, replacing the default global-rules
+                                          (extra-global-rules 'nil) ;; additional rule to add to the global-rules
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (monitor 'nil)
@@ -5332,6 +5342,7 @@
                      tactic
                      rule-lists
                      global-rules
+                     extra-global-rules
                      interpreted-function-alist
                      no-splitp
                      monitor
