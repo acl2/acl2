@@ -122,11 +122,6 @@
            (plist-worldp (w state)))
   :hints (("Goal" :in-theory (enable state-p w))))
 
-(defthm fix-when-acl2-numberp
-  (implies (acl2-numberp x)
-           (equal (fix x)
-                  x)))
-
 (defthm acl2-numberp-of-fix
   (acl2-numberp (fix x)))
 

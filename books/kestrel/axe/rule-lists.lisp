@@ -1303,6 +1303,7 @@
     strip-cars-of-cons
     strip-cars-of-append))
 
+;rename to bv-list-rules?
 (defun core-rules-non-bv ()
   (declare (xargs :guard t))
   '(all-unsigned-byte-p-of-update-nth
@@ -2169,7 +2170,9 @@
      all-unsigned-byte-p-of-cdr
      true-listp-of-cdr
      len-of-cdr
-     fix-of-len ;is fix enabled in axe-rules though?
+     ;fix-of-len ;is fix enabled in axe-rules though?
+     fix-when-acl2-numberp
+     acl2-numberp-of-len
      equal-of-myif-same
 ;<-becomes-bvlt-alt
      <-becomes-bvlt-axe-both

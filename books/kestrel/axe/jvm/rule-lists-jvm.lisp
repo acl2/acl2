@@ -1438,7 +1438,7 @@
            (more-rules-bv-misc)
            ;;(amazing-rules) ;this seemed slow - BBOZO why?? lots of bvchop 7 of larger values?
            '(;fixme what other of the amazing rules do we need?
-             <-of-+-cancel-1-2 ;just added -where else is this needed?  what else do we need here?
+             ;<-of-+-cancel-1-2 ;just added -where else is this needed?  what else do we need here?
              getbit-list-of-bv-array-write-too-high
              update-nth-of-cons
              myif-of-cons-and-cons ;drop?
@@ -1450,7 +1450,9 @@
              ;; myif-intervening-and-negated-hack
              ;; myif-comparison-hack
              unicity-of-0
-             fix-of-len
+             fix-when-acl2-numberp
+             acl2-numberp-of-len
+             ;fix-of-len
              integerp-when-signed-byte-p))
    '(slice-trim-axe-all                      ;new
      update-nth-becomes-update-nth2)))
@@ -1458,7 +1460,7 @@
 (defun first-loop-top-rules ()
   (declare (xargs :guard t))
   (set-difference-equal
-   (append (amazing-rules-spec-and-dag)
+   (append (amazing-rules-spec-and-dag) ; this may have list rules we don't need
            (map-rules)
            (jvm-semantics-rules)
            (jvm-simplification-rules)
@@ -1478,7 +1480,9 @@
              update-nth-of-cons
              update-nth-of-0 ;not sure i want this...
              unicity-of-0
-             fix-of-len
+             fix-when-acl2-numberp
+             acl2-numberp-of-len
+             ;fix-of-len
 ;             call-stack-of-make-state-of-thread-table
 ;                           update-nth ;fixme might loop
              getbit-of-bvand
