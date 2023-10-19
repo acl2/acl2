@@ -740,11 +740,14 @@
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-suffix
                               syntaxp-evaluator-suffix
-                              bind-free-evaluator-suffix)
+                              bind-free-evaluator-suffix
+                              default-global-rules)
   (declare (xargs :guard (and (symbolp suffix)
                               (symbolp evaluator-suffix)
                               (symbolp syntaxp-evaluator-suffix)
-                              (symbolp bind-free-evaluator-suffix))))
+                              (symbolp bind-free-evaluator-suffix)
+                              ;; default-global-rules can be any form (untranslated)
+                              )))
   (let* ((evaluator-base-name (pack$ 'axe-evaluator- evaluator-suffix))
          (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- syntaxp-evaluator-suffix)) ; keep in sync with make-axe-syntaxp-evaluator.lisp
          (eval-axe-bind-free-function-application-fn (pack$ 'eval-axe-bind-free-function-application- bind-free-evaluator-suffix)) ; keep in sync with make-axe-bind-free-evaluator.lisp
@@ -5210,7 +5213,7 @@
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
               ;; Handle the global-rules option:
               (global-rules (if (eq :auto global-rules)
-                                nil ; todo: allow this to be customized for each prover
+                                ,default-global-rules ; this can differ for each prover
                               global-rules))
               ;; Expand 0-ary function calls in rule-lists:
               (global-rules (elaborate-rule-items global-rules state))
@@ -5465,8 +5468,11 @@
                               evaluator-suffix ;as given to make-evaluator-simple
                               syntaxp-evaluator-suffix ;as given to make-axe-syntaxp-evaluator
                               bind-free-evaluator-suffix ;as given to make-axe-bind-free-evaluator
+                              &key
+                              (default-global-rules 'nil) ; a form that gets spliced into the generated code
                               )
   (make-prover-simple-fn suffix
                          evaluator-suffix
                          syntaxp-evaluator-suffix
-                         bind-free-evaluator-suffix))
+                         bind-free-evaluator-suffix
+                         default-global-rules))
