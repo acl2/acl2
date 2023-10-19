@@ -2838,12 +2838,6 @@
            ;;                 )
            )))
 
-(defthm signed-byte-p-of-myif
-  (implies (and (signed-byte-p n a)
-                (signed-byte-p n b))
-           (signed-byte-p n (myif test a b)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 (defthm logxor-myif-hack
   (implies (and (integerp a)
                 (integerp b)
