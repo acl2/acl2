@@ -772,12 +772,6 @@
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
 
-(DEFTHM SIGNED-BYTE-P-OF-MYIF2
-  (IMPLIES (AND (SIGNED-BYTE-P N A)
-                (SIGNED-BYTE-P N B))
-           (SIGNED-BYTE-P N (MYIF TEST A B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
-
 ;keep but move
 ;; (defthm all-signed-byte-p-of-logext-list
 ;;   (implies (and (integerp size)

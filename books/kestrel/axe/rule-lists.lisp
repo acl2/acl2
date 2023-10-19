@@ -1593,7 +1593,7 @@
 ;    myif-of-logext-list-arg2
 ;    myif-of-logext-list-arg1
 
-    signed-byte-p-of-myif2
+    signed-byte-p-of-myif
     ;;all-signed-byte-p-of-myif
     ;;all-signed-byte-p-of-nil
     ;;all-signed-byte-p-of-cons
