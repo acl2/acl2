@@ -99,14 +99,6 @@
 ;;                       (sz addr val rec)
 ;;                     (sz addr2 val2 (sz addr val rec))))))
 
-
-(defthm <-of-len-of-update-nth
-  (implies (natp n)
-           (< n (LEN (UPDATE-NTH n val lst))))
-  :hints (("Goal" :in-theory (e/d (update-nth nfix)
-                                  (;ACL2::LEN-OF-CDR-BETTER
-                                   )))))
-
 (defthm xw-of-xw-both
   (implies (and (syntaxp (acl2::smaller-termp addr2 addr))
 ;                (canonical-address-p addr)
