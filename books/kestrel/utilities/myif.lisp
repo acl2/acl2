@@ -236,11 +236,30 @@
          (myif test (consp a) (consp b)))
   :hints (("Goal" :in-theory (enable myif))))
 
-;strengthen?
 (defthm unsigned-byte-p-of-myif
   (implies (and (unsigned-byte-p n a)
                 (unsigned-byte-p n b))
            (unsigned-byte-p n (myif test a b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm unsigned-byte-p-of-myif-strong
+  (equal (unsigned-byte-p n (myif test a b))
+         (myif test
+               (unsigned-byte-p n a)
+               (unsigned-byte-p n b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm signed-byte-p-of-myif
+  (implies (and (signed-byte-p n a)
+                (signed-byte-p n b))
+           (signed-byte-p n (myif test a b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm signed-byte-p-of-myif-strong
+  (equal (signed-byte-p n (myif test a b))
+         (myif test
+               (signed-byte-p n a)
+               (signed-byte-p n b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;strengthen?
