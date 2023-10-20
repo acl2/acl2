@@ -185,7 +185,7 @@
 
 (defun write-rules ()
   '(write-of-bvchop-arg3-gen
-    xr-of-write
+    xr-of-write-when-not-mem
     x86p-of-write
     64-bit-modep-of-write
     app-view-of-write
