@@ -167,11 +167,9 @@
                 (natp size2))
            (equal (bvchop size1 (bvminus size2 y z))
                   (bvminus size1 y z)))
-  :hints (("Goal" :in-theory (enable bvminus ;bvchop-bvchop
-                                   ))))
+  :hints (("Goal" :in-theory (enable bvminus))))
 
 (defthm bvminus-of-bvplus-same-arg2
   (equal (bvminus size k (bvplus size j k))
          (bvuminus size j))
-  :hints (("Goal" :in-theory (e/d (bvplus bvuminus acl2::bvchop-of-sum-cases bvminus) (;BVPLUS-OF-MINUS-1
-                                                                               )))))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))

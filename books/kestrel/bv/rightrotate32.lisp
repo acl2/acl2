@@ -1,7 +1,7 @@
 ; 32-bit right rotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -53,8 +53,8 @@
                          (slice mid 0 x)
                          lowsize
                          (slice 31 mid+1 x))
-                  (acl2::rightrotate 32 (+ 1 mid) x)))
-  :hints (("Goal" :in-theory (enable ACL2::RIGHTROTATE))))
+                  (rightrotate 32 (+ 1 mid) x)))
+  :hints (("Goal" :in-theory (enable rightrotate))))
 
 ;usual case (slice down to 0 has become bvchop)
 (defthmd bvcat-becomes-rightrotate-2
@@ -66,5 +66,5 @@
                          (bvchop size x) ;todo: won't the size here go away usually?
                          lowsize
                          (slice 31 size x))
-                  (acl2::rightrotate 32 size x)))
-  :hints (("Goal" :in-theory (e/d (ACL2::RIGHTROTATE) ()))))
+                  (rightrotate 32 size x)))
+  :hints (("Goal" :in-theory (enable rightrotate))))
