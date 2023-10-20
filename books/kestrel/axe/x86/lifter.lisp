@@ -331,7 +331,7 @@
      x86p-of-write ;move
      read-of-write-same ;move
      get-flag-of-write
-     xr-of-write
+     xr-of-write-when-not-mem
      read-of-xw-irrel
      64-bit-modep-of-write
      program-at-of-write
@@ -339,7 +339,6 @@
      mod-of-plus-reduce-constants
      mv-nth-1-of-rb-becomes-read
      mv-nth-1-of-wb-becomes-write
-     xr-of-write
      write-of-xw-irrel
      read-of-xw-irrel
      read-of-set-flag

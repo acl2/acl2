@@ -33,6 +33,12 @@
            (+ 1 (nfix n)))))
 (in-theory (disable len-update-nth))
 
+;; Avoids a case split
+(defthm <-of-len-of-update-nth
+  (implies (natp n)
+           (< n (len (update-nth n val l))))
+  :hints (("Goal" :in-theory (enable update-nth nfix))))
+
 ;; Match what's in STD
 (defthm update-nth-of-update-nth-same
   (equal (update-nth n v1 (update-nth n v2 x))
