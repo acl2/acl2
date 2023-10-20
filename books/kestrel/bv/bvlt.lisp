@@ -1,7 +1,7 @@
 ; Unsigned bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -139,8 +139,8 @@
 ;;          (not (equal 511 (bvchop 9 x))))
 ;;   :hints (("Goal"
 ;;            :cases ((natp size))
-;;            :in-theory (e/d (bvlt)
-;;                            ()))))
+;;            :in-theory (enable bvlt)
+;;                            )))
 
 ;delete
 ;; ;use polarity?
@@ -521,7 +521,7 @@
                 (equal free free2) ;hack?
                 )
            (not (bvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;fixme think this through
 ;drop?
@@ -818,7 +818,7 @@
    :hints
    (("Goal"
      :cases ((integerp k))
-     :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
+     :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 ;rename
 (defthm bvlt-false-when-bvlt-better

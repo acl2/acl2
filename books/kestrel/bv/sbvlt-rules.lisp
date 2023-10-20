@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,9 +33,8 @@
                         t
                       ;; both negative:
                       (bvlt (+ -1 size) x y)))))
-  :hints (("Goal" :in-theory (e/d (sbvlt bvlt ;LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE
-                                         logext-when-negative logext-when-negative-2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable sbvlt bvlt ;LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE
+                                         logext-when-negative logext-when-negative-2))))
 
 ;gen?
 ; but myif-of-nil-special seems to not fire
