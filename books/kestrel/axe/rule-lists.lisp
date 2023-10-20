@@ -2704,6 +2704,1078 @@
           (base-rules)
           (boolean-rules)))
 
+;; todo: think about when we want these
+(defun update-nth2-intro-rules ()
+  (declare (xargs :guard t))
+  '(update-nth-becomes-update-nth2 ; drop once arraycopy keeps types better?
+    ;; update-nth-becomes-update-nth2-extend
+    ;; update-nth-becomes-update-nth2-extend-gen
+    update-nth-becomes-update-nth2-extend-new ; drop once arraycopy keeps types better?
+    ))
+
+;; todo: get rid of this?
+;; many of these are list rules
+(defun jvm-rules-unfiled-misc ()
+  (declare (xargs :guard t))
+  (append '(equal-nil-of-myif
+;basic rules:
+            if-of-if-t-nil
+;    possible-exception-of-nil
+;    len-of-update-nth-rewrite-2
+            ;; nth-of-bvchop-becomes-nth2 ;yuck?
+            ;; nth-of-bvxor-becomes-nth2 ;yuck?
+            ;; nth-of-slice-becomes-nth2 ;yuck?
+;    true-listp-of-logext-list
+;    logext-list-equal-nil-rewrite2
+;    logext-list-equal-nil-rewrite
+
+;    iushr-constant-opener
+;            usbp8-implies-sbp32-2 ;fixme do we still need this?
+            integerp-of-nth-when-all-integerp
+;    logext-identity;;this caused problems.  trying without.
+            sbp-32-when-non-neg ;do we need still this?
+            one-plus-len-hack
+            <-of-+-cancel-1-2
+            <-of-+-cancel-2-1)))
+
+;move?
+;; TODO: Add more
+(defun map-rules ()
+  (declare (xargs :guard t))
+  '(not-equal-of-nil-and-s))
+
+;; todo: rename
+;used by many axe examples
+;; todo: include list-rules2?
+(defun amazing-rules-spec-and-dag ()
+  (declare (xargs :guard t))
+  (append (amazing-rules-bv)
+          (bvchop-list-rules)
+          (lookup-rules) ;Sat Dec 25 23:52:09 2010
+          (list-rules)
+          (logext-rules) ;move to parent?
+          (list-rules3)
+          (alist-rules)
+          (update-nth2-rules) ;since below we have rules to introduce update-nth2
+          (update-nth2-intro-rules)
+          (update-nth-rules)
+          (jvm-rules-unfiled-misc)
+          (more-rules-yuck)
+          '(getbit-list-of-bv-array-write-too-high
+            map-packbv-constant-opener)))
+
+;todo: rename?  Maybe to miter-rules?
+;fixme build this from smaller lists of rules?
+;GETBIT-OF-BVXOR-ERIC ;seemed to be bad for dag prover Tue Jan 12 06:24:08 2010
+;todo: move this out of this jvm-specific file?
+(defun axe-rules ()
+  (declare (xargs :guard t))
+  (set-difference-equal
+   (append '(mod-of-0-arg1
+
+             equal-of-map-reverse-list-and-map-reverse-list ;Tue Feb  8 15:08:06 2011
+
+             ;; logext can still appear (if arraycopy is called):
+             logext-when-usb-cheap
+             logext-identity-when-usb-smaller-dag
+
+             all-unsigned-byte-p-of-take-of-subrange ;Fri Dec 17 03:22:09 2010
+             all-true-listp-of-map-unpackbv
+             items-have-len-of-map-unpackbv
+             map-packbv-of-map-unpackbv
+             group-of-ungroup-same
+             all-true-listp-of-map-reverse-list
+             items-have-len-of-map-reverse-list
+             all-unsigned-byte-p-of-reverse-list
+             all-all-unsigned-byte-p-of-map-reverse-list
+
+             equal-of-map-packbv-and-map-packbv
+
+             bvlt-transitive-3-a
+             bvlt-transitive-3-b
+             bvlt-transitive-4-a
+             bvlt-transitive-4-b
+             bvlt-transitive-5-a
+             bvlt-transitive-5-b
+
+             equal-of-bvchop-extend-when-bvlt     ;new
+             bvplus-of-bvuminus-of-bvcat-of-slice32 ;new
+             bvplus-of-bvuminus-of-bvcat-of-slice   ;new
+             bvlt-of-floor-arg3
+             bvlt-of-floor-arg2
+             bvchop-numeric-bound ;applied for even non-constant widths Fri Sep  3 10:19:33 2010
+             ;; equal-of-nth2-and-bv-array-read ;Tue Aug 31 03:44:49 2010 drop?
+             ;; equal-of-nth2-and-bv-array-read-alt ;Tue Aug 31 03:44:49 2010 drop?
+             ;; unsigned-byte-p-of-nth2 ;Tue Aug 31 03:44:58 2010 drop?
+             sbvrem-when-positive-work-hard ;added work-hard Sat Dec 18 23:31:50 2010 ;was just in axe-prover-rules ;Fri Aug 13 00:51:36 2010
+             equal-of-0-and-sbvrem-when-small
+             unsigned-byte-p-of-*-of-constant ;Mon Jul 19 16:25:03 2010
+             equal-of-0-and-+-of-minus-2 ;gen the 0?!
+             boolor-of-bvlt-of-constant-and-bvlt-of-constant-3-disjuncts ;fffixme add the rest of these
+             boolor-of-bvlt-of-constant-and-bvlt-of-constant
+             boolor-lemma-sha-1
+             unsigned-byte-p-of-minus
+             bv-array-read-when-index-is-len
+
+             leftrotate-32-of-myif-arg2
+             bvnot-of-myif
+
+             bvlt-of-myif-arg3
+             bvlt-of-myif-arg2
+             bvcat-of-myif-arg2
+             bvcat-of-myif-arg4
+
+             bvcat-of-constant-when-equal-of-constant-and-bvchop
+             equal-of-bvchop-and-bvplus-of-same
+             equal-of-bvchop-and-bvplus-of-same-alt
+             <-of-+-of-minus-and-constant
+             <-of-+-of-minus-and-constant-alt
+             bvlt-unique
+;equal-of-constant-and-getbit-extend ;loops with BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE?
+             unsigned-byte-p-of-1-when-not-nil
+             nth-when-all-same-cheap
+             equal-of-nil-and-map-packbv
+             bv-array-read-of-append
+             bv-array-read-of-map-packbv
+             bvcat-of-slice-when-slice-known
+             nth-becomes-bv-array-read-strong2
+             nth-of-bv-when-all-same
+             unsigned-byte-p-of-+-of-minus-better
+             bv-array-write-shorten-constant-data
+             EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
+             bvlt-6-4
+             equal-of-0-and-bvxor
+             bvlt-of-bvuminus-same
+             bvplus-of-same
+             bvlt-of-bvmult-of-constant-and-constant
+             ASSOCIATIVITY-OF-+
+             bvcat-of-slice-extend-constant-region
+             ;len-of-FINALCDR
+             ;group-of-FINALCDR
+             bvcat-when-unsigned-byte-p
+             unsigned-byte-p-of-2-when-bvlt
+             nth-of-myif-limited ;Mon May 10 02:08:59 2010 trying this since i needed nth of myif to make two nodes in the miter agree? - maybe we should always blast a multiple-value expression?
+             equal-0-getbit-when-bvlt
+             equal-of-0-and-slice-extend
+             nthcdr-of-firstn-same
+             bvlt-6-1
+             equal-of-0-and-getbit-when-bvlt-hack
+;             slice-when-not-bvlt-hack ;kill
+             drop->-hyps
+             <-of-+-of-minus
+             <-of-+-of-minus-alt
+             equal-of-+-of-minus-alt
+             equal-of-+-of-minus
+             <-of-+-of-minus-32
+             <-of-+-of-minus-alt-32
+             equal-of-+-of-minus-alt-32
+             equal-of-+-of-minus-32
+
+             bvcat-when-top-bit-0-2
+             bvcat-when-top-bit-0
+             unsigned-byte-p-of-0-arg1
+             nth-of-nil
+             equal-of-nil-when-equal-of-len
+             move-minus-hack
+             move-minus-hack2
+             firstn-of-+-of-minus
+             firstn-of-+-of-minus-2
+             unsigned-byte-p-tighten-when-slice-is-0
+             unsigned-byte-p-false-when-not-longer
+             equal-of-0-and-bvchop-6
+             bvlt-of-64
+             unsigned-byte-p-of-+-of-minus2
+             sbvlt-of-+-arg1
+             sbvlt-of-+-arg2
+             bvplus-of-unary-minus-arg2
+             all-all-unsigned-byte-p-of-append
+             all-all-unsigned-byte-p-of-cons
+             items-have-len-of-cons
+             items-have-len-of-append
+             firstn-of-nil
+             all-all-unsigned-byte-p-of-nil
+;             equal-of-0-and-len-when-true-listp ;loops with equal-of-nil-when-true-listp ;fri may 21 01:25:02 2010
+             bvlt-of-33554432 ;todo: gross
+             unsigned-byte-p-shrink
+             times-of-64-becomes-bvmult
+             subrange-of-cons-constant-version
+             bv-arrayp ;think about this...
+             bv-array-clear-of-bv-array-write-both
+             <-of-constant-when-natp-2
+             unsigned-byte-p-when-bvlt
+             bvcat-when-highsize-is-not-posp
+             bvcat-when-lowsize-is-not-posp
+             fold-consts-in-*
+             booland-of-bvlt-of-constant-and-bvle-of-constant
+             sbvlt-of-bvplus-of-bvuminus-tighten-31-32
+             sbvlt-of-negative-constant-when-unsigned-byte-p-2
+             <-of-constant-when-usb
+             my-integerp-<-non-integerp
+             my-non-integerp-<-integerp
+             booland-combine-adjacent-bvles
+             booland-combine-adjacent-bvles-alt
+             boolif-of-not-same-arg2 ;moved from axe-prover-rules
+             boolif-of-not-same-arg3 ;moved from axe-prover-rules
+
+             sbvlt-of-bvplus-of-constant-and-constant
+             nth-when-equal-of-take-hack
+             prefixp-same
+             prefixp-of-cdr-rule
+             bvchop-when-must-be-1
+             bvplus-subst-value
+             bvplus-subst-value-alt
+             subrange-of-bv-array-write-irrel ;drop?
+;subrange-of-bv-array-write-in-range
+             subrange-of-bv-array-write
+
+             cdr-of-subrange
+             bv-array-clear-range-of-bv-array-write-both
+             cdr-of-bv-array-clear
+             nth-of-bv-array-clear-both
+             sbvlt-of-constant-when-<-of-constant
+             bvlt-of-constant-when-<-of-constant
+             sbvlt-of-bvplus-32 ;yuck?
+             bvchop-identity-when-<
+             bv-array-clear-range-of-1-and-cons-of-0
+             bv-array-read-of-append-of-cons
+             bv-array-clear-range-of-append-one-more
+             append-of-constant-and-cons-of-constant
+             bv-array-clear-range-of-cons
+             bv-array-clear-range-of-append-of-cons
+             bv-array-clear-range-of-cons-of-cons
+             bv-array-clear-range-of-bv-array-write-too-high
+
+             bv-array-clear-length-1-of-list-zero ;Wed Apr 14 00:23:10 2010
+             bvchop-identity-cheap ;moved from prover rules
+             bvplus-of-bvcat-and-bvuminus-of-bvcat ;Tue Apr 13 16:17:40 2010
+             bvminus-of-constant-and-bvplus-of-constant ;Sun Apr 11 17:17:35 2010
+             true-listp-of-add-to-end
+             len-of-add-to-end ;fixme just expand add-to-end ?
+             ;append-of-final-cdr-arg1
+             prefixp-of-true-list-fix-arg2
+             prefixp-of-true-list-fix-arg1
+             prefixp-of-add-to-end
+             prefixp-of-nil-arg2
+             prefixp-of-nil-arg1
+             equal-of-+-of-minus-same
+             equal-of-fix-same ;reorder?
+             <-of-256
+
+             <-becomes-bvlt-dag-alt-gen-better ;these are from md5
+             equal-of-bvplus-cancel-2-of-more-and-1-of-more
+             equal-of-bvplus-cancel-3-of-more-and-1-of-more
+;              bound-when-usb2
+;              myif-of-bvif-becomes-bvif-arg2
+;             myif-of-bvif-becomes-bvif-arg1
+;            myif-of-bvcat-becomes-bvif-arg1
+;           myif-of-bvcat-becomes-bvif-arg2
+;             getbit-of-bvplus-split ;bad? introduces ifs sat dec 25 23:51:03 2010
+
+             sbvlt-becomes-bvlt-cheap
+             sbvlt-becomes-bvlt-cheap-1
+             sbvlt-becomes-bvlt-cheap-2
+             equal-of-bvplus-cancel-arg1 ;was just in prover-rules
+             firstn-of-0
+             bv-array-clear-of-cons
+             bv-array-read-of-cons-both
+             equal-of-myif-and-bvif-same
+             equal-of-myif-and-bvif-same-alt
+             bvplus-of-bvplus-of-bvuminus-of-bvcat ;new without this there was a problem
+             boolor-of-equal-and-not-of-equal-constants
+             boolor-of-equal-and-not-of-equal-constants-alt
+             booland-of-booland-of-boolif
+             not-equal-constant-when-unsigned-byte-p-bind-free-dag ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
+             sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
+             boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
+             bvlt-of-constant-when-unsigned-byte-p-tighter
+             equal-of-repeat-and-bv-array-write-hack-alt
+             equal-of-repeat-and-bv-array-write-hack
+
+             all-unsigned-byte-p-of-append ;fri mar 12 03:05:08 2010
+
+             booleanp-of-prefixp
+             equal-of-constant-and-bv-array-write
+             equal-of-bv-array-write-of-bvplus-and-repeat-of-bvplus-alt
+             equal-of-bv-array-write-of-bvplus-and-repeat-of-bvplus
+             all-unsigned-byte-p-of-repeat ;are these needed?
+
+             ;;these are for the rolled proof:
+             <-of-len-and-constant
+             <-becomes-bvlt-dag-alt-gen-better2
+             <-becomes-bvlt-dag-gen-better2
+
+             bvplus-of-bvuminus-of-bvcat-and-bvcat
+
+             unsigned-byte-p-of-smaller
+             bvxor-cancel-2-of-more-and-1-of-more
+             bitxor-when-equal-of-constant-and-bvchop-arg1
+             bitxor-when-equal-of-constant-and-bvchop-arg2
+             <-of-+-cancel-1-2+  ; todo: also add commutativity of plus?
+             getbit-when-equal-of-constant-and-bvchop
+             equal-of-constant-when-not-bvlt-constant-1
+             equal-of-constant-when-not-bvlt-constant-2
+             equal-of-constant-when-bvlt-constant-1
+             equal-of-constant-when-bvlt-constant-2
+
+             bv-array-read-of-unary-minus-32-2 ;new
+             bvuminus-of-myif-arg2
+             equal-of-firstn-and-firstn-same
+             true-listp-of-firstn ;wasn't already included?!
+             bvchop-0-hack
+             slice-of-bvif-safe
+             equal-of-constant-and-slice-when-bvlt
+             equal-of-constant-and-slice-when-equal-of-constant-and-slice
+             equal-of-constant-and-slice-when-equal-of-constant-and-bvchop ;may help a lot?  more like this?
+
+             bvlt-of-constant-and-slice
+             bvif-of-equal-of-bvchop-same
+             equal-of-0-and-slice-when-bvlt
+             equal-of-0-and-slice-when-bvlt2
+;             unsigned-byte-p-of-+-of-minus ;thu apr 29 05:44:14 2010
+;            unsigned-byte-p-of-+-of-minus-alt ;thu apr 29 05:44:17 2010
+             bvxor-subst-arg2
+             bvxor-subst-arg3
+
+             bvlt-of-bvchop-arg3
+             bvlt-of-bvchop-arg2
+
+             bvcat-subst-constant-arg2
+             bvcat-subst-constant-arg4
+
+             firstn-of-firstn ;make a safe non-splitting version?
+             bvlt-of-2147483583
+             nthcdr-of-bv-array-write-is-nil
+             slice-of-floor-of-expt-constant-version
+             consp-becomes-<-of-len
+             getbit-when-slice-is-known-constant
+             bitxor-of-minus
+             floor-of-*-of-8-and-32
+             consp-of-ungroup
+
+             equal-of-constant-and-+-of-minus-and-bv
+             group-of-cons
+             <-of-non-integerp-and-integerp
+             bvlt-of-bitxor-of-1-same
+             bvlt-of-bitxor-of-1-same-two
+
+             <-of-constant-and-+-of-bv-and-minus-and-bv
+             <-of-+-of-minus-becomes-bvlt
+             unsigned-byte-p-of-slice-one-more
+             equal-of-plus-minus-move
+             equal-of-0-and-+-of-minus ;these should have similar names
+             myfirst-of-myif-arg2
+             map-packbv-of-myif-arg3
+             group-of-myif-arg2
+             booland-of-not-of-equal-and-equal-constants
+             booland-of-not-of-equal-and-equal-constants-alt
+
+
+             equal-of-bitxor-and-bitxor-same-6
+             bvplus-of-bvcat-constants
+             slice-when-bvchop-known-2
+
+             consp-of-group
+             ;;BV-ARRAY-READ-OF-BV-ARRAY-WRITE-DIFF-SAFE-fixme ;make it not true?! huh?
+             bv-array-clear-range-of-bv-array-write-contained
+             sbvlt-of-constant-and-bvplus-of-constant ;yuck?
+             equal-of-bvplus-of-bvchop-and-bvplus-same
+             boolor-of-not-and-booland-same-1
+             unsigned-byte-p-of-bvuminus-bigger
+             <-of-len-and-expt-of-2-constant-version
+             <-of-constant-and-*-of-constant     ;can introduce fractions...
+             <-of-*-of-constant-and-constant ;can introduce fractions...
+             <-of-floor-constant-when-not-integerp
+             move-minus-to-constant
+             <-of-minus1-and-floor
+
+             equal-of-*-of-1/4-and-slice-of-2
+             <-of-0-and-*
+             bvchop-of-1/4
+             equal-of-0-and-*-of-constant
+             *-of-1/4-and-bvcat-of-0
+             *-of-1/16-and-bvcat-of-0
+             integerp-of-*-of-1/4 ;gen!
+
+             ;;sha1-spec-case-rules:
+             equal-of-0-and-bvmult-of-expt-constant-version
+             bvmult-tighten-6-8-2
+             bvuminus-of-*
+             equal-of-bvmult-of-expt-constant-version
+             acl2-numberp-of-mod
+             integerp-of-mod
+             bvchop-shift-gen-constant-version
+
+             bvlt-of-*-arg3
+
+             bvlt-add-to-both-sides-constant-lemma ;expensive?
+
+             ;rationalp-when-integerp ;drop
+             rationalp-of-floor
+             rationalp-*2
+             integerp-of-floor
+;             bvuminus-of-bvuminus
+             consp-of-repeat ;move
+
+             boolor-hack-sha1
+             booland-of-not-of-boolor
+             bvlt-add-to-both-sides-constant-lemma-alt-dag
+             bvlt-of-bvuminus-and-constant
+             boolor-of-booland-of-not-same-2
+
+             booland-of-boolor-and-not-same-5
+             booland-of-boolor-and-not-same-5-alt
+             booland-of-boolor-and-not-same-3
+             booland-of-boolor-and-not-same-4
+             bvlt-of-bvuminus-5-4
+             rationalp-of-ceiling
+             integerp-of-ceiling
+             bvlt-of-bvuminus-arg2-constant
+;    <-becomes-bvlt-axe-both
+             <-0-+-negative-2
+;    +-of-myif-arg1 ;new5
+;   +-of-myif-arg2 ;new5
+             repeat-of-myif-arg1
+             take-of-nil
+             integerp-of-+-when-integerp-1
+;    unary---of-bvif ;new5
+             nfix
+             *-of-1/32-and-bvcat-of-0
+;    bvlt-of-bvif-arg3 ;bad?
+;    bvlt-of-bvif-arg2 ;bad?
+
+             booland-of-not-same2
+;    equal-of-bvif ;trying without..
+             plus-of-minus-one-and-bv-dag
+             <-of-+-arg1-when-negative-constant
+             ; <-of-+-arg2-when-negative-constant ;uncomment?
+;bvuminus-when-smaller-bind-free
+;    bvuminus-when-smaller-bind-free-dag
+             commutativity-2-of-+-when-constant
+             rationalp-of--
+             rationalp-of-+
+             bvlt-of-1
+             max
+             bvchop-of-times-of-/-32
+             integerp-of-1-times-1/32
+             commutativity-of-*-when-constant
+             bvmult-32
+             <-of-bvcat-alt
+             +-of-bvplus
+             take-of-repeat
+             rationalp-of-myif
+             rationalp-of-len
+             booleanp-of-rationalp
+             len-of-group
+             floor-of-16-when-usb-31
+             *-becomes-bvmult-axe
+;ceiling-in-terms-of-floor
+
+             floor-of-32-when-usb
+             list-fix-of-append
+             bvlt-of-constant-when-usb-dag
+             minus-becomes-bv-2
+;commutativity-2-of-+
+
+             nthcdr-of-repeat
+             functional-self-inversion-of-minus
+             distributivity-of-minus-over-+
+
+;    <-becomes-bvlt-dag-alt-gen ;Wed Feb 24 15:00:10 2010
+             +-combine-constants
+             <-of-negative-constant-and-unary-minus
+             move-negative-addend-1
+             unicity-of-0
+             collect-constants-over-<
+             natp
+
+             rationalp-when-bv-operator
+             acl2-numberp-when-bv-operator
+
+             +-becomes-bvplus-hack-gen
+;group-of-append-new ;too aggressive? ;Fri May 21 07:20:55 2010
+             append-associative ;move
+
+;(bit-blast-rules-basic) ;new! we only want these when mitering?
+             unsigned-byte-p-of-+-of-constant-strong
+             nth-of-repeat
+             +-of-minus-1-and-bv2-alt-bind-free
+             <-of-constant-and-+-of-bv-and-minus
+             <-of-constant-and-+-of-minus-and-bv
+
+             nth-of-plus-of-bv-and-minus
+             nth-of-plus-of-bv-and-minus-alt
+             repeat-of-plus-of-bv-and-minus
+             repeat-of-plus-of-bv-and-minus-alt
+
+;;;FLOOR-OF-MINUS-ARG1 ;scary
+;;;FLOOR-OF-sum ;scary
+
+             equal-of-booleans-axe ;EQUAL-OF-BOOLEANS-SPLIT
+             getbit-of-myif
+
+             true-listp-of-ungroup
+             bvplus-of-bvuminus-of-slice-and-bvcat-of-slice
+
+             equal-of-+-and-bv
+             equal-of-0-and-floor
+             equal-of-getbit-and-bitxor-same
+             equal-of-getbit-and-bitxor-same-alt
+             equal-of-floor-of-expt-and-bv-constant-version-dag
+             <-of-diff-of-bv-and-constant
+             <-of-constant-when-<=-of-free
+             bvxor-cancel-lemma1-bvchop-version-alt3
+             bvxor-cancel-lemma1-bvchop-version-alt2
+             floor-bound-lemma3
+             equal-of-bvplus-cancel-arg2-alt ;more?
+             equal-of-constant-and-bvif-of-constant-and-constant
+
+             ;;                                      <-of-constant-and-+-of-minus
+             ;;                                      <-of-*-of-floor-and-same
+             ;;                                      +-of-bvplus-of-1-and-unary-minus-same
+             ;;                                      +-of-bvplus-of-2-and-unary-minus-same
+
+             +-of-minus-bind-free-constant-version ;more like this?!
+             unsigned-byte-p-of-floor-of-expt-constant-version
+             bvplus-of-floor-4-32
+             bvplus-of-floor-4-32-alt
+             bvmult-of-expt2-constant-version
+             equal-constant-+-alt
+
+             ;;new (try with the back?!):
+             ;;                                      bvand-of-bvxor-of-ones-same
+             ;;                                      bvand-of-bvxor-of-ones-same-alt
+             ;;                                      bvand-of-bvand-of-bvxor-of-ones-same
+             ;;                                      bvand-of-bvand-of-bvxor-of-ones-same-alt
+             ;;                                      BITXOR-COMMUTATIVE-2-INCREASING-AXE
+             ;;                                      BITXOR-COMMUTATIVE-INCREASING-AXE
+
+             ;;                                      EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
+             ;;                                      bvnot-becomes-bvxor
+             ;;                                      BVCAT-EQUAL-REWRITE ;wait, why didn't this fire when the slow dag is rewritten?
+             ;;                                      BVCAT-EQUAL-REWRITE-ALT
+
+
+             ;;                                      BVXOR-COMMUTATIVE-AXE
+             ;;                                      BVXOR-COMMUTATIVE-2-AXE
+             ;;                                      ;BVXOR-ASSOCIATIVE
+             ;;                                      SLICE-OF-BVXOR
+             ;;                                      EQUAL-OF-BITXOR-SAME
+             ;;                                      EQUAL-OF-BITXOR-SAME-alt
+             ;;                                      TURN-EQUAL-AROUND-AXE4
+             ;;                                      equal-of-getbit-and-bitxor-same
+             ;;                                      equal-of-getbit-and-bitxor-same-alt
+             ;;                                      equal-of-getbit-and-bitxor-same-alt2
+             ;;                                      equal-of-getbit-and-bitxor-same-alt3
+             ;; ;                         BOOLAND-ASSOCIATIVE
+             ;;                                      equal-of-bitxor-and-bitxor-same
+             ;;                                      equal-of-bitxor-and-bitxor-same-2
+             ;;                                      equal-of-bitxor-and-bitxor-same-3
+             ;;                                      equal-of-bitxor-and-bitxor-same-4
+             ;;                                      equal-of-bitxor-and-bitxor-same-5
+             ;;                                      equal-of-bitxor-and-bitxor-same-6
+             ;;                                      equal-of-bvxor-and-bvxor-same-7
+             ;;                                      equal-of-bvxor-and-bvxor-same-8
+             ;;                                      BVCAT-EQUAL-REWRITE
+             ;;                                      BVMULT-OF-EXPT2-constant-version
+             ;;end of new stuff
+
+             equal-of-nth-and-bv-array-read-better
+             equal-of-nth-and-bv-array-read-alt-better
+
+             boolor-adjacent-ranges-sha1-hack ;fragile! ;maybe not needed?
+
+             equal-of-bitxor-and-bitxor-same
+             getbit-of-bvmult-of-expt-constant-version
+             equal-of-myif-same-1
+             equal-of-myif-same-2
+             bvif-of-myif-arg3
+             bvif-of-myif-arg4
+             bvplus-of-plus-arg3
+             bvplus-of-plus-arg2
+             slice-of-+ ;ffixme complete set..
+             bv-array-read-of-+
+             <-of-+-of-minus-and-bv
+             equal-of-+-of-minus-and-bv
+             nth-of-bv-array-write-becomes-bv-array-read-strong
+             sha1-hack-four-million-six
+             equal-of-0-and-bvplus-of-bvuminus-alt
+             equal-of-0-and-bvplus-of-bvuminus
+             sha1-hack-four-million-four
+;                                bvplus-of-bvplus-constants-size-differs-better-no-split-case2 ;wed feb 24 14:58:25 2010
+             acl2-numberp-of-myif
+             boolif-of-booland-same
+             boolif-of-boolor-same
+             sha1-hack-four-million-five-alt
+             sha1-hack-four-million-five
+
+
+             sha1-hack-four-million-one
+             sha1-hack-four-million-three
+             boolif-of-not
+             sha1-hack-four-million
+             ;;bvchop-of-nth-becomes-bv-array-read2
+             nth-becomes-bv-array-read-strong ;why doesn't this fire?
+;bvif-of-nth-arg3
+;bvif-of-nth-arg4
+             bvplus-of-myif-arg3
+             bvplus-of-myif-arg2
+;BOOLOR-ASSOCIATIVE ;new - do we have dag versions of the comm rules? - was this slow?!
+;bvcat-of-nth-arg2
+;bvcat-of-nth-arg4
+;bvxor-of-nth-arg2
+;bvxor-of-nth-arg3
+;bitxor-of-nth-arg1
+;bitxor-of-nth-arg2
+;slice-of-nth-becomes-bv-array-read ;i have high hopes for this. yeeg.
+             boolif-of-booland-of-boolor
+             boolif-of-boolor-of-boolor
+             bvif-of-+-arg3
+             bvif-of-+-arg4
+             bvif-of-minus-arg3
+             bvif-of-minus-arg4
+             slice-of-myif
+             bvlt-of-huge-when-slice-not-max
+             bvchop-of-minus-becomes-bvuminus
+             items-have-len-of-nil
+             items-have-len-of-myif
+             bvlt-when-slice-known-hack
+             equal-of-slice-and-slice-when
+             equal-of-slice-and-slice-when-alt
+             slice-monotone-strong-30-6-bv
+             equal-of-subrange-and-subrange-same-lsts-and-ends
+             sha1-hack-three-million
+             sha1-hack-two-million
+             sha1-hack-two-million-alt
+             bvchop-subst-constant
+
+             equal-of-packbv-and-packbv
+             bvlt-of-bvplus-of-bvcat-of-slice
+             unsigned-byte-p-of-myif-strong ;expensive..
+             bvlt-of-bvmult-of-expt-arg2-constant-version2
+
+             acl2-numberp-of-floor
+             integerp-of-myif-strong
+             bvchop-of-minus-trim
+             sha1-hack-a-million
+             subrange-of-take
+             nthcdr-of-subrange
+             subrange-of-group
+             equal-of-group-and-group
+             subrange-when-end-is-negative
+
+             consp-of-subrange
+
+;fffixme do these contradict what simplifying bitxors does?
+             ;;BITXOR-commutative-axe
+             ;; BITXOR-commutative-2-axe
+
+             bvxor-of-bvcat-arg3     ;dangerous?
+             bvxor-of-bvcat-arg2 ;dangerous?
+
+             bvxor-cancel-lemma1-bvchop-version
+             bvxor-cancel-lemma1-bvchop-version-alt
+
+
+;             bvcat-of-slice-and-bvcat-of-getbit
+             bvcat-of-slice-of-bv-array-read-and-bvcat-of-getbit-of-bv-array-read
+             equal-of-bvxor-and-bvxor-arg1-arg2
+             slice-of-bvxor ;needed due to an issue with bv-array-reads being trimmed
+             bvxor-cancel-lemma1-alt
+             bvxor-cancel-lemma1
+
+             equal-of-0-when-bvlt
+             trim-of-0-arg1
+             bvmult-of-power-of-2-subst-9-8
+             equal-of-slice-and-constant-when-equal-of-bvchop-and-constant2
+             all-unsigned-byte-p-of-subrange
+             bvmult-subst2-alt-constant-version
+             bvmult-subst2-constant-version
+
+             nth-of-unpackbv ;or should we unroll unpackbv?
+             nth-of-ungroup-gen
+             map-packbv-of-group-of-ungroup-of-map-unpackbv ;Sat Feb  5 13:02:18 2011
+            ;drop?:
+             map-packbv-of-map-ungroup-of-map-map-unpackbv ;Thu Feb  3 14:20:47 2011
+             ;group-of-map-unpackbv ;Tue Feb  8 15:05:59 2011 yuck?!
+             packbv-base ;drop?
+             packbv-opener ;drop? would need trim of packbv and getbit of packbv ;add syntaxp hyp..
+             bvchop-of-packbv
+             all-unsigned-byte-p-of-map-packbv
+             unsigned-byte-p-of-packbv-gen
+
+;                                    bitlist-to-bv2-rewrite
+             bv-array-read-when-equal-of-firstn-and-constant
+             bv-array-read-when-equal-of-take-and-constant
+
+;                                    UNSIGNED-BYTE-P-OF-BITLIST-TO-BV2
+             nthcdr-of-ungroup
+             bvplus-of-bvuminus-of-bvcat-of-0
+;bool-to-bit ;was expensive
+             bvcat-of-slice-onto-constant
+             getbit-when-not-bvlt-constant
+
+             bvxor-cancel-cross-1
+             bvxor-cancel-cross-2
+             bvxor-cancel
+             bvxor-cancel-alt
+
+             unsigned-byte-p-of-nth
+
+             <-of-constant-and-unary-minus
+             bvplus-and-bvcat-hack ;caused problems?
+             <-of-minus-and-constant
+             <-of-negative-constant-and-bv
+;bvchop-of-nth-becomes-bv-array-read
+             bvlt-of-one-less-than-max-25
+             all-true-listp-of-nthcdr
+             all-all-unsigned-byte-p-of-nthcdr
+             all-unsigned-byte-p-of-nthcdr
+             equal-of-0-and-getbit-of-bvplus
+;                                GETBIT-OF-BVPLUS-SPLIT ;trying this - bad!
+             items-have-len-of-nthcdr
+             bvplus-of-bvcat-constants-hack
+             bvlt-of-bvcat-arg2
+             bvmult-of-4-gen
+
+             nth-of-group
+             bvmult-of-bvcat-hack100
+
+
+             bvplus-of-bvuminus-of-bvcat-same
+             items-have-len-of-group-strong
+             bvdiv-of-64
+;             sbvlt-becomes-bvlt-better
+
+             group2-in-terms-of-group
+             equal-of-group-and-group2-alt
+             equal-of-group-and-group2
+;                                    ceiling-in-terms-of-floor2 ;introduces /
+;                                    group-of-map-byte-to-bit-list
+             one-fourth-hack
+
+             bound-when-low-bits-0
+             bound-when-low-bits-0-alt
+             bvcat-equal-rewrite-alt
+             bvlt-of-bvplus-constant-and-constant-other
+             len-of-ungroup ;what else is missing?
+;                                    len-of-map-map-byte-to-bit-list
+;                                    true-lisp-of-map-ungroup
+;                                    len-of-map-ungroup
+             equal-of-group2-and-group2
+             ;group2-of-ungroup ;thu feb  3 17:20:24 2011
+             ;group-of-ungroup ;Thu Feb  3 17:20:58 2011
+;                                    TAKE-OF-MAP-BYTE-TO-BIT-LIST
+;                                    LEN-OF-MAP-BYTE-TO-BIT-LIST
+             bvmult-becomes-bvcat-31-64
+;                                    group2-of-MAP-BYTE-TO-BIT-LIST
+             bytes-to-bits-rewrite
+             ;LEN-OF-BYTES-TO-BITS
+
+             take-of-ungroup
+             firstn-of-ungroup
+             ceiling-of-bvcat-hack
+
+             bvlt-when-bvchop-known-subst
+             bvlt-when-bvchop-known-subst-alt
+             bvlt-of-bvmult-9-8-400
+;                                     slice-of-bvplus-cases-no-split-no-carry2 ;seems expensive...
+             bvcat-of-bvmult-hack-another
+             bvchop-of-floor-of-expt-of-2-constant-version
+             unsigned-byte-p-of-bvmult-29-30-16
+             equal-constant-when-bvchop-equal-constant-false
+
+             sha1-hack-123434
+             equal-of-bvplus-and-bvplus-cancel-arg1-arg1 ;more like this?!
+
+             equal-of-bvnot-and-bvnot
+             bvmult-of-bvcat-hack4
+             bvmult-of-bvcat-hack3
+             bvmult-of-bvcat-hack2
+             take-of-group2
+             floor-of-expt2-becomes-slice-when-bv-axe-constant-version
+             take-of-bytes-to-bits
+;GROUP-BECOMES-GROUP2 ;put this back?
+             bvmult-of-bvcat-hack
+             take-of-group
+             firstn-of-group
+
+             bvplus-of-slice-and-bvuminus-of-bvmult
+             all-all-unsigned-byte-p-of-group
+             true-listp-of-group
+             all-true-listp-of-group
+             booleanp-of-all-all-unsigned-byte-p
+
+             majority-idiom1
+             majority-idiom2
+             majority-idiom3
+             majority-idiom4
+             majority-idiom5
+             majority-idiom6
+             majority-idiom7
+             majority-idiom8
+
+             bvand-of-bvnot-same
+             bvand-of-bvnot-same-alt
+             bvand-of-bvand-of-bvnot-same
+             bvand-of-bvand-of-bvnot-same-alt
+
+             bvand-associative
+             bvand-commutative-2-axe
+
+             bvor-associative
+             bvor-commutative-2-axe
+             bvor-commutative-axe
+
+             equal-of-bvor-and-bvxor
+             equal-of-bvor-and-bvxor-alt
+             equal-of-bvxor-and-bvor
+             equal-of-bvxor-and-bvor-alt
+
+             plus-of-minus-becomes-bv-dag
+             plus-of-minus-becomes-bv-dag-alt
+
+             bvlt-of-slice-29-30-2
+             slice-when-not-bvlt-gen
+             bvlt-of-slice
+             all-all-unsigned-byte-p-of-group2-rewrite
+             bvplus-tighten-free-1
+             bvplus-tighten-free-2
+             bvlt-of-bvplus-when-bvlt-of-slices
+             ;;             BVPLUS-OF-BVPLUS-COMBINE-CONSTANTS-WHEN-NOT-OVERFLOW ;Fri Mar 26 17:45:00 2010
+             bvlt-of-slice-and-slice2-back
+
+             bvlt-of-bvplus-constant-when-not-bvlt-of-bvplus-constant
+;BOOLAND-COMMUTATIVE-2 ;looped? should never be used in the dag world?
+;booland-commutative ;looped? should never be used in the dag world?
+             booland-associative
+             equal-of-0-when-bvlt-of-slice
+             floor-becomes-slice-when-unsigned-byte-p
+;             bvlt-tighten-free-alt ;problems? ;tue aug 31 19:45:37 2010
+;             bvlt-tighten-free ;problems? ;tue aug 31 19:45:37 2010
+             minus-becomes-bv
+             true-listp-of-bv-array-clear-range
+             all-unsigned-byte-p-of-bv-array-clear-range
+             len-of-bv-array-clear-range
+             bv-array-read-of-bv-array-clear-range-contained
+             bv-array-read-of-bv-array-clear-range-high
+             bv-array-read-of-bv-array-clear-range-low
+             bv-array-clear-of-bv-array-clear-range-contained
+             bv-array-clear-whole-range
+             bv-array-clear-of-bv-array-clear-adjacent1
+             bv-array-clear-of-bv-array-clear-adjacent2
+             bv-array-clear-of-bv-array-clear-range-adjacent1
+             bv-array-clear-of-bv-array-clear-range-adjacent2
+             bv-array-clear-range-of-bv-array-clear-adjacent1
+             bv-array-clear-range-of-bv-array-clear-adjacent2
+             bv-array-clear-range-of-bv-array-clear-range-adjacent1
+             bv-array-clear-range-of-bv-array-clear-range-adjacent2
+             bv-array-clear-of-bv-array-write-better
+;bv-array-clear-of-bv-array-write
+             bvlt-of-bvplus-of-bvuminus-other-alt ;new
+             all-true-listp-of-group2
+             items-have-len-of-group2
+             bvplus-of-bvuminus-trim
+             <-becomes-bvlt-free ;ffixme put in the complete theory of this stuff?
+             <-becomes-bvlt-free-alt
+             <-of-constant-and-floor
+             bvmult-of-slice-when-bvchop-0
+             bvcat-equal-bvcat
+             true-listp-of-nthcdr-2
+             bvlt-of-slice-and-slice2
+             bv-array-read-of-bv-array-clear
+             all-unsigned-byte-p-of-bv-array-clear-gen
+             len-of-bv-array-clear
+             true-listp-of-bv-array-clear
+             bv-array-read-of-take-better ;added -better fri dec 24 17:14:32 2010
+
+             bvmult-of-bvcat
+             bv-array-write-equal-rewrite
+             bv-array-write-equal-rewrite-alt
+             bv-array-write-of-bv-array-write-tighten-len
+             min
+             unsigned-byte-p-from-bound-constant-version-axe
+             acl2-numberp-of-len
+             ;; jvm::acl2-numberp-of-call-stack-size ;trying
+             equal-of-append
+             bvmult-tighten-dag-power-of-2
+             bvplus-tighten-better
+             bvmult-tighten-dag ;can we do better for a power of 2?? ffixme
+             true-listp-of-group2
+             bvmult-of-bvplus-hack-gen-constant-version
+             equal-of-bvmult-of-slice
+;                                <-becomes-bvlt-dag-alt-gen ;wed feb 24 15:00:22 2010
+             <-of-floor-of-constant-and-constant-gen
+
+             all-unsigned-byte-p-of-myif-strong
+             all-unsigned-byte-p-of-take
+             all-unsigned-byte-p-of-firstn   ;just in case
+
+             floor-of-floor
+             <-of-0-and-floor
+
+             plus-becomes-bvplus-arg2-free-dag ;other ones?
+             plus-becomes-bvplus-arg1-free-dag ;other ones?
+;bvmult-of-slice-when-bvchop-0 ;where did this rule go? ffixme
+             bvlt-of-bvmult-hack200
+             nth-of-group2-gen
+             nth-of-group2 ;drop?
+             <-+-negative-0-2
+
+             len-of-group2
+             slice-subst-constant
+             slice-subst-constant-alt
+             bvplus-tighten-hack100
+             bvmult-tighten-hack
+             bvmult-of-bvplus-hack4
+             bvmult-of-bvplus-hack3
+
+;;dup             *-BECOMES-BVMULT-axe
+             slice-tighten-top-free
+             bvmult-of-bvplus-hack2
+             bvmult-of-slice-tighten
+             plus-becomes-bvplus-dag
+             bvmult-of-bvplus-hack
+             bvmult-of-bvmult-hack
+             <-lemma-for-known-operators2
+             <-lemma-for-known-operators3
+             nthcdr-of-nthcdr
+
+             cdr-of-group2
+             cdr-of-group
+             +-becomes-bvplus-when-bv-dag
+             natp-of-*
+             *-of-1/64-when-multiple
+             integerp-of-*-of-1/64
+
+             <-of-slice-and-constant-when-not-positive
+             floor-of-64-when-usb-64
+             floor-of-64-when-usb-31
+             natp-of-floor
+             nthcdr-of-group2
+             nthcdr-of-group
+
+             <-of-0-and-len-when-consp ;hope this is okay..
+             all-true-listp-of-cdr
+             all-all-unsigned-byte-p-of-cdr
+             all-unsigned-byte-p-when-all-all-unsigned-byte-p
+             true-listp-of-nth-when-all-true-listp
+             len-nth-from-items-have-len
+             equal-of-bvplus-and-bvplus-cancel-gen-alt
+             equal-of-bvplus-and-bvplus-cancel-gen
+             unsigned-byte-p-of-bvplus-tighten
+             bvlt-tighten-arg1
+;bvlt-tighten-arg2 ;wed feb 24 01:14:46 2010
+             acl2-numberp-when-unsigned-byte-p
+             bvlt-of-plus-arg1
+             bvlt-of-plus-arg2
+
+             <-of-negative-when-usbp
+             bvlt-of-bvplus-1-cancel-alt
+             posp
+;             natp ;loops with not-<-of-0-when-natp
+;natp-when-integerp
+
+             collect-constants-over-<-2
+
+             equal-of-cons
+;             bv-array-write-with-index-and-len-same ;mon jul 19 21:06:14 2010
+;             bvxor-associative ;i can't believe this was missing!
+;             bvxor-commutative-axe
+;           bvxor-commutative-2-axe
+             bv-array-read-trim-index
+             bvlt-transitive-free2-back-constants
+             bvlt-of-bvplus-constant-and-constant
+             bvlt-of-bvplus-same-alt
+;                                <-of-bvplus-becomes-bvlt-arg1 ;wed feb 24 14:59:16 2010
+;                                <-of-bvplus-becomes-bvlt-arg2 ;wed feb 24 14:59:16 2010
+             nth-becomes-bv-array-read2
+;             bvlt-transitive-free-back ;other rules like this?
+             nth-of-take-gen
+             nth-of-firstn ;move to list-rules?
+             bvlt-when-not-bvlt
+             bvlt-when-unsigned-byte-p
+;                        <-of-bvplus-same-gen
+;nth-of-take ;seemed expensive (why suddenly?)
+
+             <-becomes-bvlt
+             <-becomes-bvlt-alt
+             equal-of-cons-and-cons-same-arg2
+             subrange-same
+             cons-equal-no-split
+             +-of-minus1-and-bvplus-of-1
+             take-of-bv-array-write-irrel
+             nthcdr-of-take-becomes-subrange
+             <-of-bvplus-same-32-1
+             equal-of-append-arg1
+             +-of-minus-constant-version
+             bvlt-when-not-bvlt-one-more
+             ;;bvchop-identity ;fri jan 15 22:52:27 2010
+
+             slice-of-bvplus-cases-no-split-case-no-carry-constant-version
+             plus-of-minus-of-slice-and-bvmult-of-slice
+             plus-of-slice-and-minus-of-bvmult-of-slice
+             bvmult-of-16-becomes-bvcat
+             bvlt-of-bvmult-of-slice-and-slice
+
+             items-have-len-of-group
+
+             ;;                              ;i think maybe we don't want to open all this stuff until we have to?:
+             ;;                              sha1-loop-11-unrollsha1-loop-11-base-case
+             ;;                              sha1-loop-12-unrollsha1-loop-12-base-case
+             ;;                              sha1-loop-13-unrollsha1-loop-13-base-case
+             ;;                              sha1-loop-14-unrollsha1-loop-14-base-case
+             ;;                              sha1-loop-15-unrollsha1-loop-15-base-case
+             ;;                              sha1-inner-loop-base
+             ;;                              sha1-inner-loop-unroll
+             ;;                              prepare-message-schedule
+             ;;                              prepare-message-schedule-aux-base
+             ;;                              prepare-message-schedule-aux-unroll
+             )
+           (amazing-rules-spec-and-dag)
+           (map-rules)
+           (miter-rules) ;todo
+           (introduce-bv-array-rules) ;do we still want these?
+
+           ;;new, since these will be pulled out:
+           (strip-cadrs (map-runes 'map-packbv))
+           (strip-cadrs (map-runes 'map-unpackbv))
+           (strip-cadrs (map-runes 'map-map-unpackbv))
+           (strip-cadrs (map-runes 'map-ungroup)))
+   '(sbvlt-becomes-bvlt-better ;fri mar 26 08:12:17 2010 ;delete this from above
+     myif-of-bvif-becomes-bvif-arg2 ;thu mar 25 12:59:18 2010 (4)
+     myif-of-bvif-becomes-bvif-arg1
+     myif-of-bvcat-becomes-bvif-arg1
+     myif-of-bvcat-becomes-bvif-arg2
+     bound-when-usb2 ;thu mar 25 05:33:45 2010
+
+     myif-of-bv-array-write-arg1-safe ;may have caused big problems
+     myif-of-bv-array-write-arg2-safe ;may have caused big problems
+
+     bvplus-when-<=-15-hack-for-sha1
+     <-of-myif-arg2 ;wed feb  3 23:56:47 2010
+;bv-array-read-shorten-data ;sat jan 16 02:37:49 2010
+     firstn-becomes-take-gen  ;take caused problems ;revisit this?
+     unsigned-byte-p-of-myif      ;thu jan 14 21:26:14 2010
+     getbit-of-bvxor              ;tue jan 12 05:56:17 2010
+     ;; nth-of-bvchop-becomes-nth2  ;yuck?
+     ;; nth-of-bvxor-becomes-nth2
+     ;; nth-of-slice-becomes-nth2
+
+     bvlt-of-bvif-arg2
+     bvlt-of-bvif-arg3
+     bvplus-commutative-2-sizes-differ ;after including dag prover rules
+     bvplus-commutative-axe    ;after including dag prover rules
+     bvplus-commutative-2-axe  ;after including dag prover rules
+;     bvxor-all-ones            ;why? ;trying without
+     )))
+
+(defun unroll-spec-rules ()
+  (append (amazing-rules-spec-and-dag) ;todo: reduce?
+          (introduce-bv-array-rules)
+          (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
+          (introduce-bv-array-rules)  ;todo: duplicated above!
+          ))
+
 ;outside-in rules.  Only used un rewriter-alt.lisp.
 (defun oi-rules ()
   (declare (xargs :guard t))
