@@ -46,8 +46,9 @@
          *t* ;use a hyp of t
          formula
          '(:rep :rewrite :subst)
-         nil ; no rules
-         nil ; no global rules
+         nil ; no rule-lists
+         nil ; no global-rules
+         nil ; no extra-global-rules
          nil ; no ifns
          nil ; no-splitp
          nil ; no monitored rules
