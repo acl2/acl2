@@ -103,6 +103,8 @@
 
 (theory-invariant (incompatible (:rewrite bvminus-of-+-arg3) (:rewrite acl2::bvchop-of-sum-cases)))
 
+(in-theory (disable acl2::natp-when-gte-0)) ;questionable rule; the x86 model should not bring in std/basic/arith-equivs.lisp
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Less primitive library additions:
@@ -1693,6 +1695,8 @@
                                         (BVCHOP 8 VAL)
                                         X86))))
 
+;; todo: move this stuff:
+
 ;rename
 (defthmd write-when-bvchops-agree
   (implies (and (equal (bvchop 48 addr)
@@ -1733,8 +1737,7 @@
                   (write n (bvplus 48 x y) val x86)))
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree))))
 
-
-
+;rename
 ;; we use logext so that negative constants are nice
 (defthm write-of-bvplus-normalize
   (implies (and (syntaxp (quotep k))
@@ -1744,8 +1747,6 @@
                   (write n (+ (logext 48 k) addr) val x86)))
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree
                                      acl2::bvplus-recollapse))))
-
-;; todo: move this stuff:
 
 (defthm write-of-bvplus
   (implies (and (integerp x)
@@ -1765,8 +1766,6 @@
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree
                                      acl2::bvplus-recollapse))))
 
-
-
 (defthm write-of-bvchop-arg3
   (implies (natp n)
            (equal (write n ad (bvchop (* 8 n) val) x86)
@@ -1780,8 +1779,6 @@
            :expand ((write n ad val x86)
                     (write n ad (bvchop (* 8 n) val) x86)))))
 
-(in-theory (disable acl2::natp-when-gte-0)) ;seems bad
-
 (defthm write-of-bvchop-arg3-gen
   (implies (and (<= (* 8 n) m)
                 (natp n)
@@ -1792,7 +1789,7 @@
                         (:instance write-of-bvchop-arg3 (val (bvchop m val))))
            :in-theory (disable write-of-bvchop-arg3))))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm read-of-write-both-size-1
   (implies (and (app-view x86) ;drop
