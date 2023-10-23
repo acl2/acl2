@@ -43,16 +43,15 @@
 ; more stobjs.
 (set-waterfall-parallelism nil)
 
-(include-book "projects/rp-rewriter/lib/mult3/top" :dir :system) ;; a big book; takes around 30 seconds
-
+(include-book "projects/vescmul/top" :dir :system) ;; a big book; takes around 30-60 seconds
 
 ;; should be parsed in around a second.
-(parse-and-create-svtv :name my-multiplier-example
-                       :file "DT_SB4_HC_64_64_multgen.sv"
-                       :topmodule "DT_SB4_HC_64_64")
+(vescmul-parse :name my-multiplier-example
+               :file "DT_SB4_HC_64_64_multgen.sv"
+               :topmodule "DT_SB4_HC_64_64")
 
-(verify-svtv-of-mult :name my-multiplier-example 
-                     :concl (equal result ;; output signal name
-                                   ;; specification:
-                                   (loghead 128 (* (logext 64 in1)
-                                                   (logext 64 in2)))))
+(vescmul-verify :name my-multiplier-example
+                :concl (equal result ;; -> output signal name
+                              ;; specification ->
+                              (loghead 128 (* (logext 64 in1)
+                                              (logext 64 in2)))))

@@ -98,7 +98,14 @@
        ((when err)
         (if test.successp
             (raise "Expected successful test but got error: ~s0" err)
-          (prog2$ (cw "ERR: ~x0.~%" err) t)))
+          (prog2$ (cw "ERR: ~x0.~%" err)
+                  t)))
+       ((when (consp tokens))
+        (b* ((remainder (vl-tokenlist->string-with-spaces tokens)))
+          (if test.successp
+              (raise "Expected successful test but not all tokens were consumed: ~s0" remainder)
+            (prog2$ (cw "Extra tokens: ~s0.~%" remainder)
+                    t))))
        (pretty (vl-pretty-paramdecls val))
        (- (cw "VAL: ~x0.~%" val))
        (- (cw "Pretty value: ~x0.~%" pretty))
@@ -106,8 +113,7 @@
        (- (or (equal pstate.warnings 'blah-warnings)
               (raise "warnings aren't right?")))
        ((unless test.successp)
-        (or err
-            (raise "Expected failure, but no error.~%"))))
+        (raise "Expected failure, but no error.~%")))
     (or (equal pretty test.expect)
         (raise "Pretty value not as expected."))))
 
@@ -116,6 +122,8 @@
   (or (atom tests)
       (and (vl-run-paramdecltest (car tests) config)
            (vl-run-paramdecltests (cdr tests) config))))
+
+
 
 
 (progn
@@ -182,7 +190,7 @@
 
      (make-vl-paramdecltest :input "localparam [7:8] signed a = 1, b = 1 : 2 : 3" ;; signed must come before range
                             :successp nil)
-
+     
      (make-vl-paramdecltest :input "parameter [7:8] unsigned a" ;; unsigned must come before range
                             :successp nil)
 

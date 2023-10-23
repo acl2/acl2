@@ -42,8 +42,7 @@
 ; more stobjs.
 (set-waterfall-parallelism nil)
 
-(include-book "projects/rp-rewriter/lib/mult3/top" :dir :system) ;; a big book; takes around 30 seconds
-
+(include-book "projects/vescmul/top" :dir :system) ;; a big book; takes around 30 seconds
 
 ;; VeSCmul  may  not  always be  able  to  find  adder  components in  a  given
 ;; design. However, our system still supports hierarhical reasoning, and we can
@@ -51,7 +50,6 @@
 ;; showing  how it  can  be achieved  for a  64x64-bit  multiplier with  7-to-3
 ;; compressor    tree.     This    module    is    given    in    this    file:
 ;; homma-7-to-3-64x64-signed-carry-select.v
-
 
 ;; 1. As  a hierarchical reasonign  hint, we offer alternative  definitions for
 ;; some of the  adder modules in this design. Particularly,  we redefined 7to3,
@@ -68,8 +66,8 @@
  ;; a loop.
  (string-append-lst
   (append
-   (loop$ for x from 0 to 123 collect                           
-         (str::cat "module UB7_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5,X6,X7);
+   (loop$ for x from 0 to 123 collect
+          (str::cat "module UB7_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5,X6,X7);
      wire car1,car2,sum1,sum2,car3;
      // make it look like a group of full-adders:
      assign {car1,sum1} = (X1+X2+X3);
@@ -78,8 +76,8 @@
      assign {S1,S2} = car1+car2+car3;
 endmodule
 "))
-   (loop$ for x from 0 to 123 collect                           
-         (str::cat "module UB6_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5,X6);
+   (loop$ for x from 0 to 123 collect
+          (str::cat "module UB6_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5,X6);
      wire car1,car2,sum1,sum2,car3;
      // make it look like a group of full-adders:
      assign {car1,sum1} = (X1+X2+X3);
@@ -89,8 +87,8 @@ endmodule
 endmodule
 "))
 
-   (loop$ for x from 0 to 123 collect                           
-         (str::cat "module UB5_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5);
+   (loop$ for x from 0 to 123 collect
+          (str::cat "module UB5_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5);
      wire car1,car2,sum1,sum2,car3;
      // make it look like a group of full-adders:
      assign {car1,sum1} = (X1+X2+X3);
@@ -100,8 +98,8 @@ endmodule
 endmodule
 "))
 
-   (loop$ for x from 0 to 123 collect                           
-         (str::cat "module UB4_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4);
+   (loop$ for x from 0 to 123 collect
+          (str::cat "module UB4_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4);
      wire car1,car2,sum1,sum2,car3;
      // make it look like a group of full-adders:
      assign {car1,sum1} = (X1+X2+X3);
@@ -110,20 +108,17 @@ endmodule
 endmodule
 ")))))
 
-
 ;; 2.  We tell  parse-and-create-svtv to  parse the  design. This  program will
 ;; parse and  create two  simulation vectors  for the design.  One will  be the
 ;; simulation of the  original design, and the other will  be similation of the
 ;; design whose adder modules are  replaced with the ones in better-homma-7-3.v
 ;; file. verify-svtv-of-mult will later perform equivalance checking between
-;; the two to make sure that the two designs are functionally equivalant. 
+;; the two to make sure that the two designs are functionally equivalant.
 
-(parse-and-create-svtv :file "homma-7-to-3-64x64-signed-carry-select.v"
-                       :topmodule "Multiplier_63_0_6000"
-                       :name homma-7-to-3
-                       :modified-modules-file "better-homma-7-3.v")
-
-
+(vescmul-parse :file "homma-7-to-3-64x64-signed-carry-select.v"
+               :topmodule "Multiplier_63_0_6000"
+               :name homma-7-to-3
+               :modified-modules-file "better-homma-7-3.v")
 
 ;; 3. Verify the design.  verify-svtv-of-mult will perform equivalance checking
 ;; between  the  modified  and  original  design first  using  FGL.   For  fast
@@ -160,7 +155,7 @@ endmodule
            (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
   (local (defattach fgl::fgl-toplevel-sat-check-config monolithic-sat-with-transforms)))
 
-(verify-svtv-of-mult :name homma-7-to-3
-                     :concl (equal p
-                                   (loghead 128 (* (logext 64 in1)
-                                                   (logext 64 in2)))))
+(vescmul-verify :name homma-7-to-3
+                :concl (equal p
+                              (loghead 128 (* (logext 64 in1)
+                                              (logext 64 in2)))))

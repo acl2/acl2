@@ -63,7 +63,7 @@ suffixed with @('!') and simply wraps the function invocation in @('(binder
   (and x ans t)
   ///
   (defthm check-true-implies-true
-    (implies (check-true ans x)
+     (implies (check-true ans x)
              x)
     :rule-classes :forward-chaining)
 
@@ -298,3 +298,7 @@ its symbolic bits.</p>"
 
   (defmacro check-equal! (&rest args)
     `(binder (check-equal . ,args))))
+
+
+(define symbolic-t () t)
+(define symbolic-nil () nil)

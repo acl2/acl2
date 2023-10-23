@@ -258,13 +258,40 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
         ;; We have to be careful here.  The comma may not belong to us.  For
         ;; instance, we may have something like: module foo #(parameter foo =
         ;; 1, parameter bar = 2), in which case the comma is separating
-        ;; parameters, not identifiers.  So, only eat the comma if we see an
-        ;; identifier afterward.
-        (when (and (vl-is-token? :vl-comma)
-                   (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens))))
-          (:= (vl-match))
-          (rest := (vl-parse-list-of-param-assignments atts localp type)))
-        (return (cons first rest))))
+        ;; parameters, not identifiers.  But worse, datatypes complicate things --
+        ;; we could have logic foo=1, bar, data_t baz= (data_t)'(3).
+        ;; If we aren't careful we could mistake these for
+        ;; logic foo, logic bar, logic data_t
+        ;; and then we'd fail after this because we're missing a comma/rparen.
+        
+        ;;  So when we have a comma, we need to try parsing the next param
+        ;;  assignment, but backtrack (including giving back the comma) if it
+        ;;  fails.  And we need to know it failed, so we'll look for the
+        ;;  comma/right paren following.
+        (when (or (atom (vl-tokstream->tokens)) ;; allow EOF, to support parser tests
+                  (vl-is-token? :vl-rparen)
+                  (vl-is-token? :vl-semi))
+          (return (list first)))
+        (when (vl-is-token? :vl-comma)
+          (when (vl-lookahead-is-token? :vl-idtoken (cdr (vl-tokstream->tokens)))
+            (return-raw
+             (b* ((backup (vl-tokstream-save)) ;; important -- before the comma
+                  ((mv err decls tokstream)
+                   (seq tokstream
+                        (:= (vl-match)) ;; comma
+                        (decls := (vl-parse-list-of-param-assignments atts localp type))
+                        (return decls)))
+                  ((unless err)
+                   ;; it worked -- cons on the first
+                   (mv nil (cons first decls) tokstream))
+                  ;; else back up to before the comma and just return the first
+                  (tokstream (vl-tokstream-restore backup)))
+               (mv nil (list first) tokstream))))
+          (return (list first)))
+
+        ;; it's not a comma or a right paren, so this is an error.
+        (return-raw
+         (vl-parse-error "Expected a comma or right paren to follow a list of param assignments"))))
 
 
 ; Type Parameters -------------------------------------------------------------
