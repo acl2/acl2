@@ -77,15 +77,6 @@
                             len) (len-of-cdr
                                   )))))
 
-(defthm all-unsigned-byte-p-of-update-nth
-  (implies (and (unsigned-byte-p m val)
-                (natp m)
-;                (natp n)
-                (all-unsigned-byte-p m lst))
-           (equal (all-unsigned-byte-p m (update-nth n val lst))
-                  (<= (nfix n) (len lst))))
-  :hints (("Goal" :in-theory (enable update-nth all-unsigned-byte-p))))
-
 (defthm all-unsigned-byte-p-of-update-nth2
   (implies (and (ALL-UNSIGNED-BYTE-P WIDTH lst)
                 (unsigned-byte-p width val)
@@ -1076,3 +1067,4 @@
 (defun empty-bv-array (element-size len)
   (declare (ignore element-size))
   (repeat len 0))
+

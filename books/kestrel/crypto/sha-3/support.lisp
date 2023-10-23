@@ -69,16 +69,6 @@
                                      FLOOR-WHEN-MULTIPLE
                                      EQUAL-OF-0-AND-MOD))))
 
-;move
-(defthm all-unsigned-byte-p-of-update-nth
-  (implies (and (all-unsigned-byte-p size vals)
-                (natp n)
-                (< n (len vals))
-                (unsigned-byte-p size val))
-           (all-unsigned-byte-p size (update-nth n val vals)))
-  :hints (("Goal" :in-theory (enable all-unsigned-byte-p
-                                     update-nth))))
-
 (defthm mod-when-odd
   (implies (and (not (integerp (* 1/2 x)))
                 (integerp x))

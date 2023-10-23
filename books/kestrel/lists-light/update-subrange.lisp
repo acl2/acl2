@@ -596,3 +596,11 @@
 ;;                 (natp start))
 ;;            (equal (update-subrange start end vals (update-nth n val lst))
 ;;                   (update-nth n val (update-subrange start end vals lst)))))
+
+(defthm update-subrange-from-end
+  (implies (and (natp end)
+                (true-listp lst) ;drop?
+                )
+           (equal (update-subrange (len lst) end vals lst)
+                  (append lst (take (+ 1 (- end (len lst))) vals))))
+  :hints (("Goal" :in-theory (enable update-subrange equal-of-append))))
