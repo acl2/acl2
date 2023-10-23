@@ -21,18 +21,24 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
+(local
+ (defthm arith-helper
+   (implies (acl2-numberp start1)
+            (equal (equal -1 (+ end1 (- start1)))
+                   (equal start1 (+ 1 end1))))))
+
 ;; Replace the elements of LST numbered START through END (inclusive, 0-based) with the VALS.
 ;; TODO: Require the VALS to have the correct length?
 (defund update-subrange (start end vals lst)
   (declare (xargs :measure (nfix (+ 1 (- end start)))
                   :guard (and (natp start)
-                              (integerp end)
+                              (integerp end) ; todo, use natp here
                               (true-listp vals)
                               (true-listp lst))
                   :verify-guards nil ;done below
                   ))
   (if (or (< end start)
-          (not (natp start))
+          (not (natp start)) ;todo: add mbts
           (not (natp end)))
       lst
     (update-nth start
@@ -41,62 +47,69 @@
                                  end (cdr vals)
                                  lst))))
 
+;rename: requires n to be smaller
 (defthm update-nth-of-update-subrange-diff
-  (implies (and (natp n)
+  (implies (and (< n start)
+                (natp n)
                 (natp start)
-                (natp end)
-                (< n start))
+                (natp end))
            (equal (update-nth n val (update-subrange start end vals lst))
                   (update-subrange start end vals (update-nth n val lst))))
   :hints (("Goal" :in-theory (enable update-subrange update-nth-of-update-nth-diff))))
 
+;rename
 (defthmd update-nth-of-update-subrange-diff-back
-  (implies (and (natp n)
+  (implies (and (< n start)
+                (natp n)
                 (natp start)
-                (natp end)
-                (< n start))
+                (natp end))
            (equal (update-subrange start end vals (update-nth n val lst))
-                  (update-nth n val (update-subrange start end vals lst))
-                  ))
-  :hints (("Goal" :in-theory (enable update-nth-of-update-nth-diff))))
+                  (update-nth n val (update-subrange start end vals lst))))
+  :hints (("Goal" :by update-nth-of-update-subrange-diff)))
+
+(defthm true-listp-of-update-subrange-type
+  (implies (true-listp lst)
+           (true-listp (update-subrange start end vals lst)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (update-subrange update-nth-of-update-subrange-diff-back)
+                           (update-nth-of-update-subrange-diff)))))
 
 (defthm true-listp-of-update-subrange
   (implies (true-listp lst)
-           (true-listp (update-subrange start end vals lst)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (update-subrange UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
-                           (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
+           (true-listp (update-subrange start end vals lst))))
 
 (verify-guards update-subrange)
 
-(defthm nth-of-update-subrange-same
-  (implies (and (natp start)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+(defthmd nth-of-update-subrange-same
+  (implies (and (<= start n)
+                (<= n end)
+                (natp start)
                 (integerp end) ;(natp end)
-                (natp n)
-                (<= start n)
-                (<= n end))
-           (equal (NTH n (UPDATE-SUBRANGE start end vals lst))
+                (natp n))
+           (equal (nth n (update-subrange start end vals lst))
                   (nth (- n start) vals)))
-  :hints (("subgoal *1/4" :expand  (UPDATE-SUBRANGE N END VALS LST))
+  :hints (("subgoal *1/2" :expand  (UPDATE-SUBRANGE N END VALS LST))
           ("Goal" :in-theory (e/d ( update-subrange ;nth
                                    ) (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
-(defthm nth-of-update-subrange-diff-1
-  (implies (and (natp start)
+(defthmd nth-of-update-subrange-diff-1
+  (implies (and (< n start)
+                (natp start)
                 (integerp end) ;(natp end)
-                (natp n)
-                (> start n)
-                )
+                (natp n))
            (equal (nth n (update-subrange start end vals lst))
                   (nth n lst)))
   :hints (("Goal" :in-theory (e/d (update-subrange) (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
-(defthm nth-of-update-subrange-diff-2
-  (implies (and (natp start)
+(defthmd nth-of-update-subrange-diff-2
+  (implies (and (< end n)
+                (natp start)
                 (integerp end) ;(natp end)
-                (natp n)
-                (< end n)
-                )
+                (natp n))
            (equal (nth n (update-subrange start end vals lst))
                   (nth n lst)))
   :hints (("Goal" :in-theory (e/d (update-subrange) (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
@@ -104,19 +117,18 @@
 ;disable the individual cases?
 (defthm nth-of-update-subrange
   (implies (and (natp start)
-                (natp end)
+                (integerp end)
                 (natp n))
            (equal (nth n (update-subrange start end vals lst))
                   (if (or (< n start)
                           (< end n))
                       (nth n lst)
-                    (nth (+ n (- start)) vals)))))
+                    (nth (+ n (- start)) vals))))
+  :hints (("Goal" :in-theory (enable nth-of-update-subrange-same
+                                     nth-of-update-subrange-diff-1
+                                     nth-of-update-subrange-diff-2))))
 
-(local
- (defthm arith-helper
-   (implies (acl2-numberp start1)
-            (equal (EQUAL -1 (+ END1 (- START1)))
-                   (EQUAL start1 (+ 1 END1))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm update-subrange-combine-adjacent-1
   (implies (and (natp end1)
@@ -149,7 +161,7 @@
            :expand ((update-subrange start start vals lst)))))
 
 ;disable?
-(defthm update-nth-of-update-nth-becomes-update-subrange
+(defthmd update-nth-of-update-nth-becomes-update-subrange
   (implies (and (equal n2 (+ 1 n1))
                 (natp n1))
            (equal (update-nth n1 val1 (update-nth n2 val2 lst))
@@ -173,14 +185,18 @@
                             len ;for speed
                             UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
+(theory-invariant (incompatible (:rewrite update-subrange-split-off-last-elem) (:rewrite update-nth-of-update-subrange)))
+
 (defthm update-nth-of-update-subrange
-  (implies (and (natp end)
-                (natp start)
+  (implies (and (equal n (+ 1 end))
                 (equal (len vals) (+ 1 end (- start)))
-                (equal n (+ 1 end)))
+                (natp end)
+                (natp start))
            (equal (update-nth n val (update-subrange start end vals lst))
                   (update-subrange start (+ 1 end) (append vals (list val)) lst)))
   :hints (("Goal" :in-theory (enable update-subrange-split-off-last-elem))))
+
+(theory-invariant (incompatible (:rewrite update-subrange) (:rewrite update-nth-of-update-subrange)))
 
 (defthm update-subrange-of-update-subrange-same
   (implies (and (natp start)
@@ -331,6 +347,8 @@
 ;;           (equal (update-nth n (take n2 x))
 ;;                  (<
 
+;move
+;disable?
 (defthm equal-of-update-nth-of-0
   (equal (equal (update-nth 0 val lst) x)
          (and (consp x)
@@ -571,3 +589,10 @@
 ;;   :hints (("Goal" ; :induct (indf n lst v)
 ;;            :in-theory (enable update-subrange-rewrite ;update-subrange
 ;;                               ))))
+
+;; (defthm update-subrange-of-update-nth-too-low
+;;   (implies (and (natp n)
+;;                 (< n start)
+;;                 (natp start))
+;;            (equal (update-subrange start end vals (update-nth n val lst))
+;;                   (update-nth n val (update-subrange start end vals lst)))))
