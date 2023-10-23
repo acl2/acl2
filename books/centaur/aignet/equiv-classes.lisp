@@ -926,7 +926,7 @@
 
 
 (define classes-init-out-miters (classes aignet)
-  ;; Puts everything in one big equiv class.
+  ;; Finds mitered pairs in outputs and turns them into the initial equiv classes.
   :returns (new-classes)
   :prepwork ((local (defthm classes-size-of-resize
                       (implies (equal (len a) (len b))
@@ -954,6 +954,83 @@
     (classes-report-sizes classes)
     (classes-check-consistency (num-fanins aignet) classes)
     (mv mark classes))
+       
+  ///
+
+  (std::defret classes-size-of-<fn>
+    (equal (classes-size new-classes) (+ 1 (fanin-count aignet))))
+
+  (std::defret classes-wellformed-of-<fn>
+    (classes-wellformed new-classes)
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable classes-wellformed)
+                  :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
+
+
+(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes)
+  ;; N is the maximum first index, offset is the offset of the second index.
+  :guard (and (<= (+ offset n) (num-outs aignet))
+              (<= idx n)
+              (<= (num-fanins aignet) (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (nfix n) (nfix idx)))
+  :returns new-classes
+  (b* (((when (mbe :logic (zp (- (nfix n) (nfix idx)))
+                   :exec (eql idx n)))
+        classes)
+       (id1 (lit->var (outnum->fanin idx aignet)))
+       (id2 (lit->var (outnum->fanin (+ (lnfix idx) (lnfix offset)) aignet)))
+       (classes (join-equiv-classes (node-class-head id1 classes)
+                                    (node-class-head id2 classes)
+                                    classes)))
+    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes))
+  ///
+  
+  (defret classes-size/wellformed-of-<fn>
+    (implies (and (<= (num-fanins aignet) (classes-size classes))
+                  (classes-wellformed classes))
+             (and (equal (classes-size new-classes)
+                         (classes-size classes))
+                  (classes-wellformed new-classes)))))
+
+
+(define classes-init-n-outputs ((n natp)
+                                (lastp "if nonnil, use the last 2N outputs instead of the first 2N outputs")
+                                classes aignet)
+  ;; Pairs the first N outputs with the next N outputs to form the initial equivalence classes.
+  :returns (new-classes)
+  :prepwork ((local (defthm classes-size-of-resize
+                      (implies (equal (len a) (len b))
+                               (equal (classes-size (update-nth *class-headsi*
+                                                                a
+                                                                (update-nth *class-nextsi* b classes)))
+                                      (len a)))
+                      :hints(("Goal" :in-theory (enable classes-size)))))
+             (local (in-theory (disable acl2::lower-bound-of-len-when-sublistp
+                                        acl2::resize-list-when-atom))))
+  :guard-hints (("goal" :do-not-induct t))
+  ;; :guard-hints ((and stable-under-simplificationp
+  ;;                    '(:in-theory (enable classes-sized))))
+  (b* ((size (num-fanins aignet))
+       (classes (resize-class-nexts size classes))
+       (classes (resize-class-heads size classes))
+       ((when (zp size)) classes)
+       (classes (classes-init-empty-aux (num-fanins aignet) classes))
+       ((when (> (* 2 (lnfix n)) (num-outs aignet)))
+        (cw " **********  TRANSFORMATION FAILED **********~%~
+Fraig transform was attempted with option ~x0 set to ~x1. ~
+When this value is a natural number N, there must be at least 2*N outputs, ~
+so in this case the aignet should have at least ~x2 outputs, but in fact it has ~x3.~%"
+            :n-outputs-are-initial-equiv-classes
+            (lnfix n) (* 2 (lnfix n)) (num-outs aignet))
+        classes)
+       (classes (if lastp
+                    (b* ((start (- (num-outs aignet) (* 2 (lnfix n)))))
+                      (classes-join-po-pairs start n (+ start (lnfix n)) aignet classes))
+                  (classes-join-po-pairs 0 n n aignet classes))))
+    (classes-report-sizes classes)
+    (classes-check-consistency (num-fanins aignet) classes)
+    classes)
        
   ///
 

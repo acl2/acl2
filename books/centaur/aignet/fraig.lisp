@@ -89,7 +89,21 @@ avoids checking false equivalences."
    (level-limit natp :default 0
                 "If set greater than 0, we'll only try to check the current
 node's candidatae equivalence if its level (see @(see aignet-record-levels)) is
-less than or equal to the level limit."))
+less than or equal to the level limit.")
+
+   (n-outputs-are-initial-equiv-classes
+    acl2::maybe-natp
+    :default nil
+    "If set to a natural number N, then the initial equiv classes will be built
+by joining pairs of outputs @('(i, i+N)'). The range of @('i') depends on the
+setting of initial-equiv-classes-last.  If nonnil, then @('i') ranges from
+@('numOuts-2N') to @('numOuts-N-1'); if nil, then it ranges from @('0') to
+@('N-1').  Larger equivalence classes may be built by pairing the same node
+more than once.  Combinational equivalence is preserved for all outputs.  Not
+compatible with @(':miters-only').")
+   (initial-equiv-classes-last booleanp :default nil
+                               "See the n-outputs-are-initial-equiv-classes option."))
+
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."
   :tag :fraig-config)
@@ -2657,6 +2671,11 @@ less than or equal to the level limit."))
                      :exec classes))
        (classes (cond (config.outs-only (classes-init-outs classes aignet))
                       (config.miters-only (classes-init-out-miters classes aignet))
+                      (config.n-outputs-are-initial-equiv-classes
+                       (classes-init-n-outputs
+                        config.n-outputs-are-initial-equiv-classes
+                        config.initial-equiv-classes-last
+                        classes aignet))
                       (t (classes-init (num-fanins aignet) classes))))
        (s32v (mbe :logic (non-exec (create-s32v))
                   :exec s32v))

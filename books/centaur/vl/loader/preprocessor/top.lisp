@@ -2427,21 +2427,180 @@ non-arguments pieces.</p>"
     ;; Else, eat the opening paren and go do the actual parsing.
     (vl-parse-define-formal-arguments (cdr text) (vl-echar->loc (car text)) ppst)))
 
+
+
+
+
+(local (defthm char-of-non-natp-index
+         (implies (not (natp n))
+                  (equal (char x n) (char x 0)))))
+
+
+;; BOZO these scan-(backward-)for-(non-)whitespace fns should probably be elsewhere,
+;; but at the moment they're only used for vl-trim-for-preproc.
+
+(define scan-for-non-whitespace ((idx natp)
+                                 (x stringp))
+  :guard (<= idx (length x))
+  :measure (nfix (- (length x) (nfix idx)))
+  ;; equals length when not found, otherwise index of first non-whitespace char
+  :returns (result-idx natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (disable length char))))
+  (b* (((when (mbe :logic (zp (- (length x) (nfix idx)))
+                   :exec (eql idx (length x))))
+        (mbe :logic (length x) :exec idx))
+       ((when (not (vl-whitespace-p (char x idx))))
+        (lnfix idx)))
+    (scan-for-non-whitespace (1+ (lnfix idx)) x))
+  ///
+  (defret <fn>-upper-bound
+    (<= result-idx (length x))
+    :rule-classes :linear)
+
+  (defret <fn>-finds-non-whitespace
+    (implies (not (equal result-idx (length x)))
+             (not (vl-whitespace-p (char x result-idx)))))
+
+  (defretd <fn>-bound-when-non-whitespace-exists
+    (implies (and (< (nfix nw-idx) (length x))
+                  (not (vl-whitespace-p (char x nw-idx)))
+                  (<= (nfix idx) (nfix nw-idx)))
+             (<= result-idx (nfix nw-idx)))))
+             
+
+(define scan-backward-for-non-whitespace ((idx natp)
+                                          (x stringp))
+  :guard (<= idx (length x))
+  ;; equals length when not found, otherwise index of last non-whitespace char
+  :returns (result-idx natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (disable length char))))
+  :measure (nfix idx)
+  (b* (((when (zp idx))
+        (length x))
+       ((unless (mbt (< 0 (length x))))
+        0)
+       (idx (mbe :logic (1- (min idx (length x))) :exec (1- idx)))
+       ((when (not (vl-whitespace-p (char x idx))))
+        (lnfix idx)))
+    (scan-backward-for-non-whitespace idx x))
+  ///
+  (defret <fn>-upper-bound
+    (<= result-idx (length x))
+    :rule-classes :linear)
+
+  (defret <fn>-finds-non-whitespace
+    (implies (not (equal result-idx (length x)))
+             (not (vl-whitespace-p (char x result-idx)))))
+
+  (defretd <fn>-bound-when-non-whitespace-exists
+    (implies (and (< (nfix nw-idx) (length x))
+                  (not (vl-whitespace-p (char x nw-idx)))
+                  (< (nfix nw-idx) (nfix idx)))
+             (and (<= (nfix nw-idx) result-idx)
+                  (< result-idx (length x)))))
+
+  (defthm scan-backward-for-non-whitespace-gte-than-scan-for-non-whitespace
+    (<= (scan-for-non-whitespace 0 x) (scan-backward-for-non-whitespace (length x) x))
+    :hints (("goal" :use ((:instance scan-backward-for-non-whitespace-bound-when-non-whitespace-exists
+                           (idx (length x))
+                           (nw-idx (scan-for-non-whitespace 0 x)))
+                          (:instance scan-for-non-whitespace-bound-when-non-whitespace-exists
+                           (idx 0)
+                           (nw-idx (scan-backward-for-non-whitespace (length x) x))))
+             :in-theory (disable scan-backward-for-non-whitespace)
+             :do-not-induct t))
+    :rule-classes :linear))
+
+(define scan-backward-for-whitespace ((idx natp)
+                                          (x stringp))
+  :guard (<= idx (length x))
+  ;; equals length when not found, otherwise index of last whitespace char
+  :returns (result-idx natp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (disable length char))))
+  :measure (nfix idx)
+  (b* (((when (zp idx))
+        (length x))
+       ((unless (mbt (< 0 (length x))))
+        0)
+       (idx (mbe :logic (1- (min idx (length x))) :exec (1- idx)))
+       ((when (vl-whitespace-p (char x idx)))
+        (lnfix idx)))
+    (scan-backward-for-whitespace idx x))
+  ///
+  (defret <fn>-upper-bound
+    (<= result-idx (length x))
+    :rule-classes :linear)
+
+  (defret <fn>-finds-whitespace
+    (implies (not (equal result-idx (length x)))
+             (vl-whitespace-p (char x result-idx))))
+
+  (defretd <fn>-bound-when-whitespace-exists
+    (implies (and (< (nfix nw-idx) (length x))
+                  (vl-whitespace-p (char x nw-idx))
+                  (< (nfix nw-idx) (nfix idx)))
+             (and (<= (nfix nw-idx) result-idx)
+                  (< result-idx (length x))))))
+        
+
 (define vl-trim-for-preproc ((x stringp))
   :short "Trim whitespace from a string, but preserving space that might be syntactically significant."
   :long "<p>Generally whitespace is not supposed to be syntactically
 significant, but there is one case where it is: escaped identifiers that are
-written beginning with a backslash and ending with a space, tab, or newline. In
-the preprocessor we need to be careful to leave some such whitespace character
-after anything that might be an escaped identifier -- in this case we don't
-bother to check, but just leave a space at the end unless no whitespace was
-trimmed at all or the string was empty after trimming.</p>"
-  (b* ((trimmed (str::trim x))
-       (trimmed-len (length trimmed)))
-    (if (or (eql trimmed-len 0)
-            (eql trimmed-len (length x)))
-        trimmed
-      (str::cat trimmed " "))))
+written beginning with a backslash and ending with a space, tab, or newline.
+We need to leave a space after any such escaped identifier.  Conversely,
+though, it is important NOT to include a space in something like prefix below:</p>
+
+@({
+ `define MY_MACRO(suffix, prefix) \
+      logic ``prefix``_foo_``suffix``;
+
+   module test ();
+   
+      `MY_MACRO(aaa, bbb)
+   
+   endmodule // test
+ })
+
+<p> As a hack to accommodate both these particularities, we'll always trim
+whitespace from the beginning of the string and also trim whitespace from the
+end unless either (1) there is no whitespace at the end, or (2) there is a
+backslash character somewhere within the continuous block of non-whitespace
+characters immediately preceding the final block of whitespace.</p>"
+
+  :returns (trim stringp :rule-classes :type-prescription)
+  :prepwork ((local (in-theory (disable length char))))
+  (b* ((x (mbe :logic (str-fix x) :exec x))
+       (len (length x))
+       (first-non-whitespace-idx (scan-for-non-whitespace 0 x))
+       (last-non-whitespace-idx (scan-backward-for-non-whitespace len x))
+       ;; If there is no non-whitespace, return the empty string
+       ((when (eql last-non-whitespace-idx len)) "")
+       ;; If there is no trailing whitespace, don't bother with looking for a
+       ;; slash -- just trim the leading whitespace and go.
+       ((when (eql last-non-whitespace-idx (1- len)))
+        (b* (((when (eql first-non-whitespace-idx 0))
+              x))
+          (subseq x first-non-whitespace-idx nil)))
+
+       ;; Look for a backslash in the region between the trailing whitespace
+       ;; and the last whitespace before that.
+       
+       ;; Find the last whitespace preceding the trailing whitespace.  read
+       ;; this as "last non-trailing whitespace", i.e. it is whitespace but not
+       ;; trailing whitespace.
+       (last-non-trailing-whitespace-idx (scan-backward-for-whitespace last-non-whitespace-idx x))
+       ;; If there is no non-trailing whitespace, then look from the beginning
+       (search-start (if (eql last-non-trailing-whitespace-idx len)
+                         0
+                       (1+ last-non-trailing-whitespace-idx)))
+       ;; Is there a backslash somewhere after this?
+       (has-backslash (str::strpos-fast "\\" x search-start 1 len))
+       ((When has-backslash)
+        ;; treat as escaped identifier and leave a space.
+        (subseq x first-non-whitespace-idx (+ 2 last-non-whitespace-idx))))
+    ;; no escaped identifier -- trim all whitespace.
+    (subseq x first-non-whitespace-idx (+ 1 last-non-whitespace-idx))))
        
 
 (define vl-process-define

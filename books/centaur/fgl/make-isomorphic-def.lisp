@@ -1,10 +1,5 @@
 ; FGL - A Symbolic Simulation Framework for ACL2
-; Copyright (C) 2019 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright (C) 2023 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -26,42 +21,20 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original author: Sol Swords <sswords@centtech.com>
+; Original author: Sol Swords <sol.swords@intel.com>
+
 
 (in-package "FGL")
 
-(include-book "top-bare")
-(include-book "bitops-primitives")
-(include-book "check-primitives")
-(include-book "make-isomorphic")
-(include-book "svex")
-(include-book "svex-primitives")
-(include-book "member-equal")
-(include-book "member-int-list")
-(include-book "enums")
-(include-book "transform")
-(include-book "simplify")
-(include-book "gatecount")
-(include-book "sat-binder")
-(include-book "equivcheck")
-(include-book "extremize")
+(include-book "std/util/define" :dir :system)
 
-(local (in-theory (disable w)))
+(define fgl-make-isomorphic (successp x y)
+  :parents (fgl-object)
+  :short "FGL binder function whose implementation will try to modify the
+symbolic representation of the two inputs so that they have Boolean function
+objects in all the same places.  The successp flag (expected to be the binder
+input's free variable) indicates whether this succeeded."
+  :enabled t
+  (mv (ec-call (car successp))
+      x y))
 
-(install-fgl-metafns top)
-(def-fancy-ev-primitives top-fancy-ev-primitives)
-
-#||
-(include-book
- "xdoc/save" :dir :system)
-(include-book
- "std/util/defval-tests" :dir :system)
-(include-book
- "centaur/fty/top" :dir :system)
-(xdoc::change-parents fgl (acl2::top))
-(xdoc::save "./manual"
-            :redef-okp t
-            :error t) 
-
-
-||#

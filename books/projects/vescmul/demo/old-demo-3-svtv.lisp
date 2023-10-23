@@ -78,7 +78,7 @@
 (set-waterfall-parallelism nil)
 
 ;; for correctness proof of multiplier
-(include-book "projects/rp-rewriter/lib/mult3/svtv-top" :dir :system)
+(include-book "projects/vescmul/svtv-top" :dir :system)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

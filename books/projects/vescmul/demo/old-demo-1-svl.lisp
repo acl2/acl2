@@ -49,7 +49,7 @@
 (value-triple (acl2::set-max-mem (* 10 (expt 2 30))))
 
 ;; for correctness proof
-(include-book "projects/rp-rewriter/lib/mult3/svl-top" :dir :system)
+(include-book "projects/vescmul/svl-top" :dir :system)
 
 ;; load VL design for the modules in DT_SB4_HC_64_64_multgen.sv
 ;; this is a 64x64 Signed, Booth radix-4 encoded, Dadda Tree integer multiplier

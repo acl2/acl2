@@ -3352,9 +3352,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (svex-mask-alist-complete masks)
                     (equal boolmasks (svar-boolmasks-fix boolmasks1))
                     (svex-env-boolmasks-ok goalenv boolmasks)
-                    (subsetp (intersection-equal (svexlist-vars x)
-                                                 (alist-keys (svex-env-fix goalenv)))
-                             (svarlist-fix vars)))
+                    (double-rewrite
+                     (subsetp (intersection-equal (svexlist-vars x)
+                                                  (alist-keys (svex-env-fix goalenv)))
+                              (svarlist-fix vars))))
                (equal (a4veclist-eval a4vecs env)
                       (svexlist-eval x goalenv))))
     :hints (("goal" :use svexlist->a4vec-correct-for-varmasks-aig-env
@@ -3650,9 +3651,10 @@ except that we memoize the results and we use fast alist lookups."
       :flag list))
 
   (defret svex-eval-of-svexlist-x-out-unused-vars
-    (implies (subsetp (intersection-equal (svexlist-vars x)
-                                          (alist-keys (svex-env-fix env)))
-                      (svarlist-fix svars))
+    (implies (double-rewrite
+              (subsetp (intersection-equal (svexlist-vars x)
+                                           (alist-keys (svex-env-fix env)))
+                       (svarlist-fix svars)))
              (equal (svexlist-eval new-x env)
                     (svexlist-eval x env))))
 

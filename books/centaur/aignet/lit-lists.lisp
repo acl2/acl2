@@ -73,19 +73,54 @@
   (defretd lit->neg-of-lit-copy
     (equal (lit->neg copylit) (b-xor (lit->neg lit) (lit->neg (get-lit (lit->var lit) copy))))))
 
+(define lit-list-copies-aux ((lits lit-listp)
+                             copy
+                             (acc lit-listp))
+  :guard (< (lits-max-id-val lits) (lits-length copy))
+  :hooks nil
+  (if (atom lits)
+      acc
+    (lit-list-copies-aux (cdr lits) copy (cons (lit-copy (car lits) copy) acc))))
+  
+                             
+
 (define lit-list-copies ((lits lit-listp)
                          (copy))
   :guard (< (lits-max-id-val lits) (lits-length copy))
-  :guard-hints (("goal" :in-theory (enable lits-max-id-val)))
   :returns (new-lits lit-listp)
-  (if (atom lits)
-      nil
-    (cons (lit-copy (car lits) copy)
-          (lit-list-copies (cdr lits) copy)))
+  :verify-guards nil
+  (mbe :logic (if (atom lits)
+                  nil
+                (cons (lit-copy (car lits) copy)
+                      (lit-list-copies (cdr lits) copy)))
+       :exec (lit-list-copies-aux (reverse lits) copy nil))
   ///
   (defret len-of-<fn>
     (equal (len new-lits)
-           (len lits))))
+           (len lits)))
+
+  (local (defthm rev-of-revappend
+           (equal (acl2::rev (revappend x y))
+                  (append (acl2::rev y) (acl2::true-list-fix x)))
+           :hints(("Goal" :in-theory (enable acl2::rev)))))
+  
+  (local (defthm lit-list-copies-aux-elim
+           (equal (lit-list-copies-aux lits copy acc)
+                  (append (lit-list-copies (acl2::rev lits) copy) acc))
+           :hints(("Goal" :in-theory (enable lit-list-copies-aux acl2::rev)))))
+
+  (local (defthm lits-max-id-val-of-revappend
+           (equal (lits-max-id-val (revappend x y))
+                  (max (lits-max-id-val x)
+                       (lits-max-id-val y)))
+           :hints(("Goal" :in-theory (enable lits-max-id-val)))))
+
+  (local (defthm lit-listp-revappend
+           (implies (and (lit-listp x)
+                         (lit-listp y))
+                    (lit-listp (revappend x y)))))
+  
+  (verify-guards lit-list-copies))
 
 
 (define lit-list-marked ((lits lit-listp)

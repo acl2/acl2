@@ -2390,7 +2390,8 @@ nil)))
                        (list . ,lst)
                        ,new-s/c)))))
 
-
+;; collect common elements in pp-lst and pull it out from a c term's arguments
+;; into a (times pp-common new-c) way. 
 (define c-pattern4-compress ((s-lst rp-term-listp)
                              (pp-lst rp-term-listp)
                              (c-lst rp-term-listp))
@@ -2705,12 +2706,13 @@ nil)))
        ((mv s-lst pp-lst c-lst)
         (c-pattern1-reduce s-lst pp-lst c-lst))
        ((mv reduced-pp-lst reducedp)
-        (c-pattern4-compress s-lst pp-lst c-lst))
+        (c-pattern2-reduce s-lst pp-lst c-lst))
        ((when reducedp)
         (mv nil reduced-pp-lst nil))
-
+       ;; pattern4 comes after because pattern2 can do a better reduction
+       ;; first.  
        ((mv reduced-pp-lst reducedp)
-        (c-pattern2-reduce s-lst pp-lst c-lst))
+        (c-pattern4-compress s-lst pp-lst c-lst))
        ((when reducedp)
         (mv nil reduced-pp-lst nil)))
     (cond ((or (and (equal c-lst nil)
@@ -2748,9 +2750,9 @@ nil)))
 
                 (res `(c ',hash-code ,s ,pp ,c))
 
-                (- (and (equal hash-code '(2 . 6288828))
-                        (raise "s-lst: ~p0. pp-lst ~p1, c-lst ~p2 ~%" s-lst
-                        pp-lst c-lst)))
+                ;; (- (and (equal hash-code '(2 . 6288828))
+                ;;         (raise "s-lst: ~p0. pp-lst ~p1, c-lst ~p2 ~%" s-lst
+                ;;         pp-lst c-lst)))
                 
                 ((mv max-val min-val valid)
                  (if (natp (maybe-bitp-precheck res)) ;; minimize the calls made to get-max-min-val

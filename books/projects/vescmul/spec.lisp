@@ -44,9 +44,7 @@
 (in-package "RP")
 
 (include-book "ihs/basic-definitions" :dir :system)
-
 (include-book "fnc-defs")
-
 (include-book "projects/rp-rewriter/top" :dir :system)
 
 ;(include-book "mult-defs")
@@ -1829,6 +1827,32 @@
                               )
                    )
              :in-theory nil))))
+
+
+(defthm unsigned-byte-p-of-2vec-adder
+   (implies (natp size)
+            (unsigned-byte-p size (2vec-adder x y carry-in size)))
+   :hints (("goal"
+            :in-theory (e/d (bit-concat
+                             2vec-adder)
+                            ()))))
+            
+(defthm unsigned-byte-p-of-logcount-strict
+  (implies (and (natp num)
+                (unsigned-byte-p size num))
+           (unsigned-byte-p size (logcount num)))
+  :hints (("Goal"
+           :in-theory (e/d* (abs
+                             bitops::ihsext-inductions
+                             bitops::ihsext-recursive-redefs)
+                            (unsigned-byte-p)))
+          (and stable-under-simplificationp
+               '(:use ((:instance unsigned-byte-p-of-+
+                                  (x (BOOL->BIT (LOGBITP 0 NUM)))
+                                  (size1 1)
+                                  (y (logcount (logcdr num)))
+                                  (size2 (1- size))
+                                  (z 0)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; subtraction:
