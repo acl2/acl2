@@ -571,3 +571,11 @@
 ;;   :hints (("Goal" ; :induct (indf n lst v)
 ;;            :in-theory (enable update-subrange-rewrite ;update-subrange
 ;;                               ))))
+
+(defthm update-subrange-from-end
+  (implies (and (natp end)
+                (true-listp lst) ;drop?
+                )
+           (equal (update-subrange (len lst) end vals lst)
+                  (append lst (take (+ 1 (- end (len lst))) vals))))
+  :hints (("Goal" :in-theory (enable update-subrange equal-of-append))))
