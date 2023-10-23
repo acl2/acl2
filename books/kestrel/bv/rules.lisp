@@ -600,7 +600,7 @@
 ;;                 )
 ;;            (equal (bvxor size x y)
 ;;                   (bvxor size x (bvchop size y))))
-;;   :hints (("Goal" :in-theory (e/d (bvxor) ()))))
+;;   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;; (defthmd add-bvchop-to-bvxor-1
 ;;   (implies (and (syntaxp (and (not (quotep y))
@@ -612,7 +612,7 @@
 ;;                 )
 ;;            (equal (bvxor size y x)
 ;;                   (bvxor size (bvchop size y) x)))
-;;   :hints (("Goal" :in-theory (e/d (bvxor) ()))))
+;;   :hints (("Goal" :in-theory (enable bvxor))))
 
 (in-theory (enable BVCHOP-OF-LOGTAIL)) ;fixme why?
 
@@ -4075,9 +4075,8 @@
                 )
            (equal (BVLT size x k)
                   t))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   )
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     ))))
 
 ;more like these? e.g., ones with just 2 conjuncts, bvlt versions, signed versions?
 (defthm booland-combine-adjacent-bvles
@@ -5417,7 +5416,7 @@
                 (rationalp x))
            (equal (integerp (* 1/2 (mod x (expt 2 size))))
                   (integerp (* 1/2 x))))
-  :hints (("Goal" :in-theory (e/d ((:i expt) expt) ()))))
+  :hints (("Goal" :in-theory (enable (:i expt) expt))))
 
 ;; Disabled by default since this is pretty aggressive and splits into cases.
 (defthmd logext-of-plus
@@ -5477,12 +5476,11 @@
                       (sbvlt 32
                              (bvuminus 32 k) ;gets computed
                              x)))))
-  :hints (("Goal" :in-theory (e/d (sbvlt ;-rewrite
-                                   bvuminus
-                                   bvminus
-                                   bvlt bvplus bvchop-of-sum-cases
-                                   logext-of-plus)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
+                                     bvuminus
+                                     bvminus
+                                     bvlt bvplus bvchop-of-sum-cases
+                                     logext-of-plus))))
 
 (defthm sbvlt-of-bvuminus
   (implies (unsigned-byte-p 32 x)
@@ -5572,14 +5570,13 @@
                       (sbvlt size
                              (bvuminus size k) ;gets computed
                              x)))))
-  :hints (("Goal" :in-theory (e/d (sbvlt ;-rewrite
-                                   bvuminus
-                                   bvminus
-                                   bvlt bvplus bvchop-of-sum-cases
-                                   logext-of-plus
-                                   logext-when-equal-of-bvchop
-                                   logext-when-equal-of-bvchop-safe)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
+                                     bvuminus
+                                     bvminus
+                                     bvlt bvplus bvchop-of-sum-cases
+                                     logext-of-plus
+                                     logext-when-equal-of-bvchop
+                                     logext-when-equal-of-bvchop-safe))))
 
 (defthm sbvlt-of-bvplus-of-0-and-constant
   (implies (and (syntaxp (quotep k))
@@ -5634,15 +5631,14 @@
   (implies (unsigned-byte-p size y)
            (equal (< (bvplus size x z) y)
                   (bvlt size (bvplus size x z) y)))
-  :hints (("Goal" :in-theory (e/d (bvlt) (
-                                                         EQUAL-OF-+-AND-BV ;looped
-                                                         )))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (EQUAL-OF-+-AND-BV ;looped
+                                          )))))
 
 (defthmd <-of-bvplus-becomes-bvlt-arg2
   (implies (unsigned-byte-p size y)
            (equal (< y (bvplus size x z))
                   (bvlt size y (bvplus size x z))))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthmd bvlt-add-to-both-sides
   (implies (and (integerp x)
@@ -5741,7 +5737,7 @@
                 (bvle size (expt 2 xsize) k)
                 (force (unsigned-byte-p-forced xsize x)))
            (bvlt size x k))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p UNSIGNED-BYTE-P-FORCED) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p unsigned-byte-p-forced))))
 
 (defthm bvuminus-when-smaller
   (implies (and (unsigned-byte-p free x)
@@ -5964,15 +5960,13 @@
 (defthm bvlt-of-bvplus-32-31-trim-alt
   (equal (BVLT 31 (BVPLUS 32 y x) z)
          (BVLT 31 (BVPLUS 31 y x) z))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;gen
 (defthm bvlt-of-bvplus-32-31-trim
   (equal (BVLT 31 z (BVPLUS 32 y x))
          (BVLT 31 z (BVPLUS 31 y x)))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;hope the case split is okay.. (see no-split version below)
 (DEFTHM BVPLUS-OF-1-TIGHTEN
@@ -6553,11 +6547,11 @@
  (equal (< (bvchop 32 x) (+ y (bvchop 31 x)))
         (< (* (expt 2 31) (getbit 31 x)) y))
  :hints (("Goal" :use (:instance
-                       acl2::split-bv
+                       split-bv
                        (n 32)
                        (m 31)
                        (x (bvchop 32 x)))
-          :in-theory (e/d (bvcat logapp) (acl2::logapp-of-bvchop-same)))))
+          :in-theory (e/d (bvcat logapp) (logapp-of-bvchop-same)))))
 
 
 ;gen
@@ -6565,8 +6559,8 @@
   (equal (< (bvplus 32 4294967295 x) (bvchop 31 x))
          (and (equal (getbit 31 x) 0)
               (not (equal 0 (bvchop 31 x)))))
-  :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases)
-                                  (;acl2::bvplus-recollapse
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
+                                  (;bvplus-recollapse
                                    )))))
 
 ;; do we need these?
@@ -6862,7 +6856,7 @@
                 (natp highsize))
            (equal  (bvcat highsize+ (slice highsize-1 lowsize (bvsx highsize lowsize x)) lowsize x)
                    (bvsx highsize lowsize x)))
-  :hints (("Goal" :in-theory (disable acl2::bvcat-tighten-upper-size ;todo: forcing of usbp of repeatbit
+  :hints (("Goal" :in-theory (disable bvcat-tighten-upper-size ;todo: forcing of usbp of repeatbit
                                       ))))
 
 ;; TODO: Will this match bth ways? No!

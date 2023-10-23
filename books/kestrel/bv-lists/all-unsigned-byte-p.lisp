@@ -96,8 +96,7 @@
 
 (defthm all-unsigned-byte-p-when-not-consp
   (implies (not (consp (double-rewrite lst)))
-           (equal (all-unsigned-byte-p size lst)
-                  t))
+           (all-unsigned-byte-p size lst))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
 
 (defthm all-unsigned-byte-p-of-revappend
@@ -107,13 +106,11 @@
 
 (defthm all-unsigned-byte-p-of-cdr
   (implies (all-unsigned-byte-p size lst)
-           (equal (all-unsigned-byte-p size (cdr lst))
-                  t)))
+           (all-unsigned-byte-p size (cdr lst))))
 
 (defthm all-unsigned-byte-p-of-nthcdr
   (implies (all-unsigned-byte-p size lst)
-           (equal (all-unsigned-byte-p size (nthcdr lst0 lst))
-                  t))
+           (all-unsigned-byte-p size (nthcdr lst0 lst)))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p nthcdr))))
 
 
@@ -206,3 +203,16 @@
                 (natp n))
            (all-unsigned-byte-p n lst))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
+
+(defthm all-unsigned-byte-p-of-if
+  (equal (all-unsigned-byte-p size (if test x1 x2))
+         (if test (all-unsigned-byte-p size x1) (all-unsigned-byte-p size x2)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
+
+(defthm all-unsigned-byte-p-of-update-nth
+  (implies (and (unsigned-byte-p size val)
+                (all-unsigned-byte-p size lst))
+           (equal (all-unsigned-byte-p size (update-nth n val lst))
+                  ;; might extend the list by one item:
+                  (<= (nfix n) (len lst))))
+  :hints (("Goal" :in-theory (enable update-nth all-unsigned-byte-p))))

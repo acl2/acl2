@@ -201,7 +201,7 @@
                 (not (integerp highval)))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvchop lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvcat-of-ifix-arg2
   (equal (bvcat highsize (ifix highval) lowsize lowval)
@@ -240,7 +240,7 @@
            (equal (bvcat highsize highval lowsize (bvchop n lowval))
                   (bvcat highsize highval lowsize lowval)))
   :hints (("Goal" :cases ((integerp lowval))
-           :in-theory (e/d (bvcat) ()))))
+           :in-theory (enable bvcat))))
 
 ;rename
 (defthm bvcat-slice-same
@@ -361,7 +361,7 @@
 (defthmd bvcat-of-0-and-0
   (equal (bvcat highsize 0 lowsize 0)
          0)
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 
 (defthm bvcat-when-lowsize-is-not-posp
@@ -369,15 +369,14 @@
            (equal (bvcat highsize highval lowsize lowval)
                   (bvchop highsize highval)))
   :hints (("Goal" :cases ((integerp lowval))
-           :in-theory (e/d (bvcat) ()))))
+           :in-theory (enable bvcat))))
 
 (defthm bvcat-when-highsize-is-not-posp
   (implies (not (posp highsize))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvchop lowsize lowval)))
   :hints (("Goal" :cases ((equal 0 highsize))
-           :in-theory (e/d (bvcat BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                           ()))))
+           :in-theory (enable bvcat bvchop-when-i-is-not-an-integer))))
 
 (defthm bvcat-of-slice-and-slice-adjacent
   (implies (and (equal low1 (+ 1 high2))
@@ -568,7 +567,7 @@
                 (natp size))
            (equal (logtail size (bvcat highsize highval size lowval))
                   (bvchop highsize highval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvchop-of-logapp-bigger
    (implies (and (< n2 n)
@@ -661,7 +660,7 @@
                 (integerp y))
            (equal (bvcat highsize (bvchop size y) lowsize x)
                   (bvcat highsize (bvchop highsize y) lowsize x)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+  :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvcat-equal-rewrite-no-first-components-same
   (implies (and (integerp x)
@@ -1203,7 +1202,7 @@
            (equal (bvcat highsize highval lowsize lowval)
                   (bvchop highsize highval)))
   :hints (("Goal" :cases ((integerp lowval))
-           :in-theory (e/d (bvcat) ()))))
+           :in-theory (enable bvcat))))
 
 (defthm bvcat-normalize-constant-arg2
   (implies (and (syntaxp (and (quotep highval)
@@ -1368,7 +1367,7 @@
                   (bvchop (+ -1 size) x)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
   :hints (("Goal"
-           :in-theory (e/d (bvcat logapp posp) ())
+           :in-theory (enable bvcat logapp posp)
            :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
 
 ;move?

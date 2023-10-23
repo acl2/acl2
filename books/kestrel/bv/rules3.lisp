@@ -577,7 +577,7 @@
 ;;    :hints (("Goal"
 ;;             :do-not '(generalize eliminate-destructors)
 ;;             :induct (triple-floor-by-2-induct x y k)
-;;             :in-theory (e/d (logand  floor-when-evenp floor-when-not-evenp) ()))))
+;;             :in-theory (enable logand floor-when-evenp floor-when-not-evenp))))
 
 ;; ;note that (logior 1 4)=5
 ;; (defthm logior-bound

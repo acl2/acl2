@@ -102,7 +102,7 @@
 (defthm ash-of-bvchop-32-and-minus1
   (equal (ash (bvchop '32 x) '-1)
          (slice 31 1 x))
-  :hints (("Goal" :in-theory (enable ash ACL2::LOGTAIL-BECOMES-SLICE-BIND-FREE floor-of-2-becomes-logtail-of-1))))
+  :hints (("Goal" :in-theory (enable ash LOGTAIL-BECOMES-SLICE-BIND-FREE floor-of-2-becomes-logtail-of-1))))
 
 (defthm integerp-of-*-of-1/2
   (implies (integerp x)
@@ -607,10 +607,10 @@
            (not (< x k))))
 
 (defthm slice-of-if-arg3
-  (equal (acl2::slice high low (if test v1 v2))
+  (equal (slice high low (if test v1 v2))
          (if test
-             (acl2::slice high low v1)
-             (acl2::slice high low v2))))
+             (slice high low v1)
+             (slice high low v2))))
 
 (defthm ash-of-if
   (equal (ash (if test i1 i2) c)
@@ -656,7 +656,7 @@
            (equal (bvplus 32 k x)
                   (+ (- (- (expt 2 32) k)) ;gets computed
                      x)))
-  :hints (("Goal" :in-theory (enable bvplus acl2::bvchop-of-sum-cases))))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
 
 (defthmd bvcat-of-logtail-low
   (implies (and (natp lowsize)
