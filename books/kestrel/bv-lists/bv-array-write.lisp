@@ -17,6 +17,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 
@@ -223,3 +224,10 @@
                   (bv-array-write element-size len index val data)))
   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                                                  )))))
+
+(defthm nthcdr-of-bv-array-write-is-nil
+  (implies (and (<= len n)
+                (integerp len)
+                (integerp n))
+           (equal (nthcdr n (bv-array-write element-size len key val lst))
+                  nil)))

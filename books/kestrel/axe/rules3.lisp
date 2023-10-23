@@ -7219,7 +7219,7 @@
 (defthm nthcdr-of-bvplus-1
   (implies (and (not (equal 4294967295 (bvchop 32 n)))
                 (natp n))
-           (equal (nthcdr (bvplus '32 '1 n) x)
+           (equal (nthcdr (bvplus 32 1 n) x)
                   (cdr (nthcdr (bvchop 32 n) x))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases CDR-OF-NTHCDR)
                                   (anti-bvplus GETBIT-OF-+
@@ -11652,15 +11652,6 @@
            (equal (equal '0 (binary-+ x (unary-- y)))
                   (equal y x))))
 
-;see LIST::NTHCDR-WHEN-<=
-;seemed quite slow!  do we need it?
-(defthmd nthcdr-is-nil
-  (implies (and (<= (len x) n)
-                (integerp n)
-                (true-listp x))
-           (equal (NTHCDR n x)
-                  nil)))
-
 ;gen!
 (defthm plus-of-minus-of-slice-and-bvmult-of-slice
   (equal (+ (- (slice 30 2 x)) (bvmult 30 16 (slice 30 6 x)))
@@ -11679,8 +11670,6 @@
            :use (:instance split-bv (x (slice 30 2 x)) (n 29) (m 4))
            :in-theory (e/d (bvmult bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
                                                                           )))))
-
-
 ;gen!
 (defthm bvmult-of-16-becomes-bvcat
   (equal (BVMULT 29 16 x)
@@ -14160,13 +14149,6 @@
                                   (bvchop 6 x)))))
   :hints (("Goal" :in-theory (enable booland))))
 
-(defthm nthcdr-of-bv-array-write-is-nil
-  (implies (and (<= len n)
-                (integerp len)
-                (integerp n))
-           (equal (nthcdr n (bv-array-write element-size len key val lst))
-                  nil)))
-
 ;gen!
 (defthm bvlt-of-2147483583
   (implies (and (equal k (bvchop '6 x23))
@@ -16134,37 +16116,6 @@
                                           val lst)))))
   :hints (("Goal" :use (:instance cdr-of-bv-array-write-better (lst (cons x lst))))))
 
-;move?
-(defthm all-unsigned-byte-p-of-update-subrange
-  (implies (and (all-unsigned-byte-p size lst)
-                (all-unsigned-byte-p size vals)
-                (integerp start) (natp start)
-                (integerp end)
-                (natp size)
-                (true-listp lst) ;drop?
-                (<= start (len lst))
-                (<= (+ end 1 (- start)) (len vals)))
-           (all-unsigned-byte-p size (update-subrange start end vals lst)))
-  :hints (("Goal" ;:cases ((equal -1 end))
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (update-subrange natp UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
-                           (NTH-BECOMES-BV-ARRAY-READ2
-                            UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
-
-;gen?
-(defthm all-unsigned-byte-p-of-update-subrange2
-  (implies (and (all-unsigned-byte-p size lst)
-                (all-unsigned-byte-p size vals)
-                (natp start) ;gen?
-                (integerp end) ;(natp end) ;gen?
-                (<= (+ end 1 (- start)) (len vals)) ;what if len causes not all vals to be used?
-                (<= len (len lst)) ;gen?
-                (true-listp lst)
-                (natp size))
-           (all-unsigned-byte-p size (update-subrange2 len start end vals lst)))
-  :hints (("Goal" :cases ((<= start len))
-           :in-theory (enable natp))))
-
 ;move
 ;more like this?
 (defthm bvlt-when-low-bits-too-big
@@ -16542,50 +16493,6 @@
   (implies (work-hard (equal index1 index2))
            (equal (equal (bv-array-read ELEMENT-SIZE LEN INDEX1 DATA) (bv-array-read ELEMENT-SIZE LEN INDEX2 DATA))
                   t)))
-
-;move?
-;use defforall?
-(defthm all-unsigned-byte-p-of-subrange
-  (implies (and (all-unsigned-byte-p size x)
-                (integerp start)
-                (integerp end))
-           (equal (all-unsigned-byte-p size (subrange start end x))
-                  (or (< (nfix end) start)
-                      (< end (len x)))))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE)
-                                  (NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                   CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER)))))
-
-;; ;this may help get rid of irrelevant values in x...
-;; ;or is it gross to introduce repeat?
-;; ;fffixme can this loop?!
-;; (defthmd all-unsigned-byte-p-of-take-of-subrange
-;;   (implies (and (all-unsigned-byte-p width x)
-;;                 (natp width)
-;;                 (natp start)
-;;                 (natp end)
-;;                 (natp i)
-;;                 )
-;;            (equal (all-unsigned-byte-p width (take i (subrange start end x)))
-;;                   (all-unsigned-byte-p width (take i (subrange start end (repeat (len x) 0))))))
-;;   :hints (("Goal" :cases ( (< (+ 1 (- end start)) i)))))
-
-;this may help get rid of the values of x, which may be large terms!
-;fixme where does the take come from?
-;fixme is this too special-purpose?  it may be useful just for efficiency..
-(defthm all-unsigned-byte-p-of-take-of-subrange
-  (implies (and (all-unsigned-byte-p width x)
-                (natp width)
-                (natp start)
-                (natp end)
-                (natp i)
-                )
-           (equal (all-unsigned-byte-p width (take i (subrange start end x)))
-                  (if (< (+ 1 (- end start)) i)
-                      (and (< end start)
-                           (equal i 0))
-                    (or (equal i 0)
-                        (< (+ start i -1) (len x)))))))
 
 ;; ;gen the 1 that gets added
 ;; (thm
