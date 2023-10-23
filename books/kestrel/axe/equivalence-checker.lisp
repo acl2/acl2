@@ -11076,6 +11076,7 @@
                                                                               equal-of-cons-when-equal-nth-0
                                                                               NTHCDR-IFF
                                                                               ,@(list-rules2)
+                                                                              ,@(subrange-rules)
                                                                               ,@(list-rules2-executable-counterparts)))
                                           ;;i guess because of substitution, this may not be reliable:
                                           ;;:expand ((,connection-relation-name ,@update-expr-list ,@new-update-exprs ,@old-vars-in-explanations))
@@ -11167,6 +11168,7 @@
                                           :in-theory (union-theories '(,invariant-name
                                                                        ,connection-relation-name
                                                                        ,@(append (list-rules2)
+                                                                                 (subrange-rules)
                                                                                  (list-rules2-executable-counterparts)) ;fixme why are we using these?
                                                                        ;;i found a case where we needed to prove (EQUAL (SUBRANGE 5 9 PARAMS) (FIRSTN 5 (NTHCDR 5 PARAMS)))
                                                                        ;;add some rules to list-rules-etc?

@@ -2838,12 +2838,6 @@
            ;;                 )
            )))
 
-(defthm signed-byte-p-of-myif
-  (implies (and (signed-byte-p n a)
-                (signed-byte-p n b))
-           (signed-byte-p n (myif test a b)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 (defthm logxor-myif-hack
   (implies (and (integerp a)
                 (integerp b)
@@ -3899,7 +3893,7 @@
 
 ;ffixme think about this..
 ;go to bvif!
-(defthmd bvchop-of-myif-consant-branches
+(defthmd bvchop-of-myif-constant-branches
   (implies (syntaxp (and (quotep x)
                          (quotep y)
                          (quotep size)))
