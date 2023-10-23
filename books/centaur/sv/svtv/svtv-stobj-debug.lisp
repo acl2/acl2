@@ -878,6 +878,21 @@
        
                                            
 
+(define svtv-chase-offsets-remove-unlisted ((labels symbol-listp)
+                                            (offset-phases symbol-listp))
+  ;; Replaces any labels not in offset-phases with nil.
+  (if (atom labels)
+      nil
+    (cons (and (member-eq (car labels) offset-phases)
+               (car labels))
+          (svtv-chase-offsets-remove-unlisted (cdr labels) offset-phases))))
+
+(define svtv-chase-offsets-maybe-remove-unlisted ((labels symbol-listp)
+                                                  (offset-phases symbol-listp))
+  ;; Replaces any labels not in offset-phases with nil, but only if offset-phases isn't empty.
+  (if (consp offset-phases)
+      (svtv-chase-offsets-remove-unlisted labels offset-phases)
+    labels))
 
 (define svtv-chase$-compare-defsvtv-forms (&key
                                            form1
@@ -885,6 +900,7 @@
                                            (form2)
                                            (env2 svex-env-p)
                                            (offset)
+                                           (offset-phases)
                                            (svtv-data 'svtv-data)
                                            (svtv-chase-data 'svtv-chase-data)
                                            (state 'state))
@@ -912,11 +928,14 @@
         (mv err svtv-chase-data svtv-data state))
        (svtv-chase-data (set-svtv-chase-data->evaldata2 evaldata2 svtv-chase-data))
        (offset (svtv-chase$-compare-decide-offset offset
-                                                  (svtv-chase-data->phaselabels svtv-chase-data)
-                                                  (subst nil 'acl2::?
-                                                         (svtv-labels-cycle-adjust
-                                                          (defsvtv-args->labels defsvtv-args2)
-                                                          (defsvtv-args->cycle-phases defsvtv-args2)))))
+                                                  (svtv-chase-offsets-maybe-remove-unlisted
+                                                   (svtv-chase-data->phaselabels svtv-chase-data) offset-phases)
+                                                  (svtv-chase-offsets-maybe-remove-unlisted
+                                                   (subst nil 'acl2::?
+                                                          (svtv-labels-cycle-adjust
+                                                           (defsvtv-args->labels defsvtv-args2)
+                                                           (defsvtv-args->cycle-phases defsvtv-args2)))
+                                                   offset-phases)))
        (svtv-chase-data (set-svtv-chase-data->data2-offset offset svtv-chase-data))
        ((mv svtv-chase-data state) (svtv-chase$-repl)))
     (mv nil svtv-chase-data svtv-data state)))
@@ -960,6 +979,7 @@
                                 svtv2
                                 env2
                                 (offset)
+                                (offset-phases)
                                 (svtv-data 'svtv-data)
                                 (svtv-chase-data 'svtv-chase-data)
                                 (state 'state))
@@ -974,7 +994,8 @@
               (and svtv2 (svtv->form svtv2))) ;; otherwise the same as form1, implicitly
    :env1 (or env1 env)
    :env2 (or env2 env)
-   :offset offset))
+   :offset offset
+   :offset-phases offset-phases))
   
 
 (defmacro svtv-chase$-compare ( &key
@@ -988,6 +1009,7 @@
                                 svtv2
                                 env2
                                 (offset)
+                                (offset-phases)
                                 (svtv-data 'svtv-data)
                                 (svtv-chase-data 'svtv-chase-data))
   `(svtv-chase$-compare-aux
@@ -1001,6 +1023,7 @@
     :svtv2 ,svtv2
     :env2 ,env2
     :offset ,offset
+    :offset-phases ',offset-phases
     :svtv-data ,svtv-data
     :svtv-chase-data ,svtv-chase-data))
 
