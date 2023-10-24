@@ -3918,7 +3918,8 @@
                                    signed-byte-p
                                    (:e expt)
                                    ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                  (acl2::bvplus-recollapse
+                                   x86isa::xw-of-xw-both)))))
 
 (defthm mv-nth-1-of-wml128-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3951,7 +3952,8 @@
                                    signed-byte-p
                                    (:e expt)
                                    ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                  (acl2::bvplus-recollapse
+                                   x86isa::xw-of-xw-both)))))
 
 (defthm mv-nth-1-of-wb-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
