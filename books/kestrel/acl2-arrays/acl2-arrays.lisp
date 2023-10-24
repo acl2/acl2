@@ -369,35 +369,23 @@
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm dimensions-of-make-empty-array-with-default
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (dimensions array-name (make-empty-array-with-default array-name len default))
-                  (list len)))
+  (equal (dimensions array-name (make-empty-array-with-default array-name len default))
+         (list len))
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
 (defthm alen1-of-make-empty-array-with-default
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (alen1 array-name (make-empty-array-with-default array-name len default))
-                  len))
+  (equal (alen1 array-name (make-empty-array-with-default array-name len default))
+         len)
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
 (defthm dimensions-of-make-empty-array
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (dimensions array-name (make-empty-array array-name len))
-                  (list len)))
+  (equal (dimensions array-name (make-empty-array array-name len))
+         (list len))
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm alen1-of-make-empty-array
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (alen1 array-name (make-empty-array array-name len))
-                  len))
+  (equal (alen1 array-name (make-empty-array array-name len))
+         len)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 ;; Copies the values at locations INDEX down to 0 from FROM-ARRAY to the same
@@ -472,7 +460,7 @@
   (implies (and (not (equal index1 index2))
                 (array1p array-name array)
                 (natp index1)
-                (< index1 (alen1 array-name array))
+                ;; (< index1 (alen1 array-name array))
                 (natp index2)
                 (< index2 (alen1 array-name array)))
            (equal (aref1 array-name (aset1 array-name array index1 val) index2)
@@ -582,7 +570,7 @@
   :hints (("Goal" :in-theory (enable ARRAY1P-rewrite))))
 
 (defthm aref1-of-make-empty-array-with-default
-  (implies (and (symbolp array-name)
+  (implies (and ;(symbolp array-name)
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
@@ -598,7 +586,7 @@
                               aref1))))
 
 (defthm aref1-of-make-empty-array
-  (implies (and (symbolp array-name)
+  (implies (and ;(symbolp array-name)
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
@@ -613,7 +601,9 @@
                               make-empty-array
                               aref1))))
 
-(in-theory (disable (:executable-counterpart break$))) ;keeps it from breaking when it's evaluted during a proof, e.g., proofs about aset1-safe
+(in-theory (disable (:executable-counterpart break$))) ;keeps it from breaking when it's evaluated during a proof, e.g., proofs about aset1-safe
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;this makes sure the index is in bounds, which prevents memory from getting trashed if this is called on bad arguments
 (defund aset1-safe (name l n val)
@@ -630,10 +620,12 @@
             (aset1 name l n val))))
 
 (defthm aset1-safe-becomes-aset1
-  (implies (< n (alen1 name l))
+  (implies t ;(< n (alen1 name l))
            (equal (aset1-safe name l n val)
                   (aset1 name l n val)))
   :hints (("Goal" :in-theory (enable aset1-safe))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;drop?
 (defun valid-array-indexp (index array-name array)
@@ -712,7 +704,7 @@
 
 ;; This one has no IF in the RHS
 (defthm aref1-of-cons-of-cons-of-header-alt
-  (implies (and (natp n)
+  (implies (and ;(natp n)
                 (equal (default array-name array)
                        (cadr (assoc-keyword :default header-args))))
            (equal (aref1 array-name (cons (cons :header header-args) array) n)
@@ -772,7 +764,7 @@
 (defthm aref1-of-aset1-of-aset1-same
   (implies (and (array1p array-name array)
                 (natp index)
-                (< index (alen1 array-name array))
+                ;; (< index (alen1 array-name array))
                 (natp read-index)
                 (< read-index (alen1 array-name array)))
            (equal (aref1 array-name (aset1 array-name (aset1 array-name array index val1) index val2) read-index)
