@@ -30,6 +30,4 @@
   (implies (true-listp lst1)
            (iff (negated-elems-listp width lst1 lst2)
                 (and (all-integerp lst1)
-                     (equal (firstn (len lst1) lst2) (bvnot-list width lst1)))))
-  :hints (("Goal" :in-theory (disable ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
-                              ))))
+                     (equal (firstn (len lst1) lst2) (bvnot-list width lst1))))))

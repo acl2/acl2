@@ -103,37 +103,12 @@
 
 (theory-invariant (incompatible (:rewrite bvminus-of-+-arg3) (:rewrite acl2::bvchop-of-sum-cases)))
 
+(in-theory (disable acl2::natp-when-gte-0)) ;questionable rule; the x86 model should not bring in std/basic/arith-equivs.lisp
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Less primitive library additions:
 
-;gen
-(defthm xr-app-view-of-!memi
-  (equal (xr :app-view nil (!memi addr val x86))
-         (xr :app-view nil x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm app-view-of-!memi
-  (equal (app-view (!memi addr val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm x86p-of-!memi
-  (implies (and (x86p x86)
-                (INTEGERP ADDR)
-                (UNSIGNED-BYTE-P 8 VAL))
-           (x86p (!memi addr val x86)))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm memi-of-!memi
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (!memi addr val x86))
-                  (bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm !memi-of-!memi-same
-  (equal (!memi addr val (!memi addr val2 x86))
-         (!memi addr val x86)))
 
 ;; (defthm s-of-s-both
 ;;   (implies (syntaxp (acl2::smaller-termp addr2 addr))
@@ -142,20 +117,6 @@
 ;;                       (sz addr val rec)
 ;;                     (sz addr2 val2 (sz addr val rec))))))
 
-(defthm xw-of-xw-both
-  (implies (syntaxp (acl2::smaller-termp addr2 addr))
-           (equal (xw :mem addr val (xw :mem addr2 val2 x86))
-                  (if (equal addr addr2)
-                      (xw :mem addr val x86)
-                    (xw :mem addr2 val2 (xw :mem addr val x86)))))
-  :hints (("Goal" :in-theory (enable xw))))
-
-(defthm xw-of-xw-diff
-  (implies (and (syntaxp (acl2::smaller-termp addr2 addr))
-                (not (equal addr addr2)))
-           (equal (xw :mem addr val (xw :mem addr2 val2 x86))
-                  (xw :mem addr2 val2 (xw :mem addr val x86))))
-  :hints (("Goal" :in-theory (enable xw))))
 
 (defthm canonical-address-p-hack
   (implies (and (< (bvchop 48 addr2) addr2)
@@ -164,18 +125,11 @@
            (not (canonical-address-p (+ -1 addr2 n))))
   :hints (("Goal" :in-theory (enable canonical-address-p unsigned-byte-p signed-byte-p))))
 
+;move?
 (defthm memi-of-set-flag
   (equal (memi addr (set-flag flag val x86))
          (memi addr x86))
   :hints (("Goal" :in-theory (enable memi set-flag))))
-
-(defthm memi-of-xw-irrel
-  (implies (not (equal fld :mem))
-           (equal (memi addr (xw fld index val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (e/d (memi)
-                                  (;x86isa::memi-is-n08p ;does forcing
-                                   )))))
 
 ;; End of Library stuff
 
@@ -1543,10 +1497,12 @@
                   (!memi addr val (write-alt n addr2 val2 x86))))
   :hints ( ;("Subgoal *1/3" :cases ((equal n 1)))
           ("subgoal *1/2"
-           :use (:instance xw-of-xw-diff
-                           (val2 (BVCHOP 8 VAL2))
-                           (addr2 (bvchop 48 addr2))
-                           (X86 (WRITE-ALT (+ -1 N)
+           :use (:instance x86isa::xw-of-xw-diff
+                           (x86isa::val2 (BVCHOP 8 VAL2))
+                           (x86isa::addr2 (bvchop 48 addr2))
+                           (x86isa::addr addr)
+                           (x86isa::val val)
+                           (x86isa::X86 (WRITE-ALT (+ -1 N)
                                            (+ 1 ADDR2)
                                            (LOGTAIL 8 VAL2)
                                            X86))))
@@ -1555,8 +1511,8 @@
            :in-theory (e/d (ACL2::BVCHOP-PLUS-1-SPLIT
                             ACL2::BVCHOP-OF-SUM-CASES)
                            (ACL2::BVPLUS-RECOLLAPSE
-                            XW-OF-XW-BOTH
-                            xw-of-xw-diff
+                            x86isa::xw-of-xw-both
+                            x86isa::xw-of-xw-diff
                             X86ISA::XW-XW-INTRA-FIELD-ARRANGE-WRITES))
            :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))
                     (:free (addr val x86) (WRITE n ADDR VAL X86))))))
@@ -1570,9 +1526,11 @@
                   (xw :mem addr val (write-alt n addr2 val2 x86))))
   :hints ( ;("Subgoal *1/3" :cases ((equal n 1)))
           ("subgoal *1/2"
-           :use (:instance xw-of-xw-diff
+           :use (:instance x86isa::xw-of-xw-diff
                            (val2 (BVCHOP 8 VAL2))
                            (addr2 (bvchop 48 addr2))
+                           (x86isa::addr addr)
+                           (x86isa::val val)
                            (X86 (WRITE-ALT (+ -1 N)
                                            (+ 1 ADDR2)
                                            (LOGTAIL 8 VAL2)
@@ -1582,8 +1540,8 @@
            :in-theory (e/d (ACL2::BVCHOP-PLUS-1-SPLIT
                             ACL2::BVCHOP-OF-SUM-CASES)
                            (ACL2::BVPLUS-RECOLLAPSE
-                            XW-OF-XW-BOTH
-                            xw-of-xw-diff
+                            x86isa::xw-of-xw-both
+                            x86isa::xw-of-xw-diff
                             X86ISA::XW-XW-INTRA-FIELD-ARRANGE-WRITES))
            :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))
                     (:free (addr val x86) (WRITE n ADDR VAL X86))))))
@@ -1693,6 +1651,8 @@
                                         (BVCHOP 8 VAL)
                                         X86))))
 
+;; todo: move this stuff:
+
 ;rename
 (defthmd write-when-bvchops-agree
   (implies (and (equal (bvchop 48 addr)
@@ -1733,8 +1693,7 @@
                   (write n (bvplus 48 x y) val x86)))
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree))))
 
-
-
+;rename
 ;; we use logext so that negative constants are nice
 (defthm write-of-bvplus-normalize
   (implies (and (syntaxp (quotep k))
@@ -1744,8 +1703,6 @@
                   (write n (+ (logext 48 k) addr) val x86)))
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree
                                      acl2::bvplus-recollapse))))
-
-;; todo: move this stuff:
 
 (defthm write-of-bvplus
   (implies (and (integerp x)
@@ -1765,8 +1722,6 @@
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree
                                      acl2::bvplus-recollapse))))
 
-
-
 (defthm write-of-bvchop-arg3
   (implies (natp n)
            (equal (write n ad (bvchop (* 8 n) val) x86)
@@ -1780,8 +1735,6 @@
            :expand ((write n ad val x86)
                     (write n ad (bvchop (* 8 n) val) x86)))))
 
-(in-theory (disable acl2::natp-when-gte-0)) ;seems bad
-
 (defthm write-of-bvchop-arg3-gen
   (implies (and (<= (* 8 n) m)
                 (natp n)
@@ -1792,7 +1745,7 @@
                         (:instance write-of-bvchop-arg3 (val (bvchop m val))))
            :in-theory (disable write-of-bvchop-arg3))))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm read-of-write-both-size-1
   (implies (and (app-view x86) ;drop
@@ -1953,13 +1906,10 @@
                                                     ACL2::BVCAT-OF-+-HIGH
                                                     )))))
 
-
-
 (local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ;todo: reduce?
 ;move
 (local (in-theory (disable ACL2::INEQ-HACK2
                            ACL2::INEQ-HACK
-                           ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                            ACL2::PLUS-BVCAT-WITH-0
                            ACL2::PLUS-BVCAT-WITH-0-ALT)))
 
@@ -2573,11 +2523,10 @@
                     ;;             X86)
                     (WRITE-BYTES 0 (ACL2::TAKE (BVCHOP 48 AD1) VALS2) X86))
            :in-theory (e/d (WRITE-BYTES bvplus acl2::bvchop-of-sum-cases bvuminus bvminus
-                                        ;ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                         )
                            (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             ACL2::BVCAT-OF-+-LOW ;looped
-                            ACL2::TAKE-OF-CDR-BECOMES-SUBRANGE
+                            ;ACL2::TAKE-OF-CDR-BECOMES-SUBRANGE
                             )))))
 
 (defthm write-bytes-of-append-gen
@@ -2690,7 +2639,7 @@
      ;write-bytes-of-append-gen write-bytes-of-append
                             ;LIST::EQUAL-APPEND-REDUCTION!
                             WRITE-BYTES-OF-WRITE-BYTES-DISJOINT
-                            ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+                            ;ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                             )))))
 
 (defthmd write-bytes-of-write-bytes-same-contained
