@@ -35,7 +35,7 @@
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
-(include-book "kestrel/lists-light/rules2" :dir :system) ;todo
+;(local (include-book "kestrel/lists-light/rules2" :dir :system)) ;todo
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "arithmetic/equalities" :dir :system))
@@ -48,6 +48,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/subrange" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
@@ -5981,8 +5982,6 @@
                                    SLICE-OF-+
                                    GETBIT-OF-+ ;looped
                                    )))))
-
-(in-theory (disable NOT-EQUAL-NTH-WHEN-NOT-MEMBERP-NO-LIMIT))
 
 ;; (3 Breaking (:REWRITE BVLT-ADD-TO-BOTH-SIDES-CONSTANT-LEMMA-NO-SPLIT2)
 ;; on (BVLT '8 '132 (BVPLUS '8 '255 FARG0)):
@@ -13271,13 +13270,6 @@
            (BVLT '31 '2147483583 x))
   :hints (("Goal" :in-theory (e/d (bvlt slice logtail floor-bounded-by-/) (anti-slice)))))
 
-(defthm items-have-len-of-myif
-  (equal (items-have-len n (myif test x y))
-         (myif test
-               (items-have-len n x)
-               (items-have-len n y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 (defthm bvlt-of-huge-when-slice-not-max
   (implies (and (syntaxp (quotep k))
                 (bvle 31 (- (expt 2 31) 5) k)
@@ -14825,8 +14817,6 @@
             (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX INDEX1 LST)))
   :hints (("Goal" :in-theory (enable ARRAY-WRITE-of-0))))
 
-(theory-invariant (incompatible (:rewrite equal-of-repeat-of-len-same) (:rewrite all-equal$-when-true-listp)))
-
 ;gen!
 (defthm bv-array-clear-range-of-append-one-more
   (implies (and (syntaxp (quotep z))
@@ -14838,7 +14828,8 @@
                 )
            (equal (bv-array-clear-range 32 len 0 index (binary-append z x))
                   (bv-array-clear-range 32 len 0 (+ -1 (len z)) (binary-append z x))))
-  :hints (("Goal" :in-theory (e/d (equal-of-append) (EQUAL-OF-REPEAT-OF-LEN-SAME)))))
+  :hints (("Goal" :in-theory (e/d (equal-of-append) (;EQUAL-OF-REPEAT-OF-LEN-SAME
+                                                     )))))
 
 (defthm first-hack-for-sha1
   (equal (firstn (+ (BVCAT 25 (SLICE 30 6 x) 4 0) (- (SLICE 30 2 x))) y)
@@ -15217,7 +15208,7 @@
                     (bv-array-clear width (+ -1 len) (+ -1 index) (cdr data)))))
   :hints (("Goal"
            :cases ((< len 2))
-           :in-theory (e/d (bv-array-clear bv-array-write-opener update-nth2)
+           :in-theory (e/d (bv-array-clear bv-array-write-opener update-nth2 subrange)
                                   (GETBIT-OF-BV-ARRAY-READ-HELPER ;yuck
                                    ;LIST::UPDATE-NTH-EQUAL-REWRITE-ALT
                                    update-nth-becomes-update-nth2-extend-gen)))))
@@ -15834,28 +15825,6 @@
 ;;                     (bvlt size (bvminus size x y) (expt 2 n)))))
 ;;   :hints (("Goal" :in-theory (enable bvlt bvminus bvuminus UNSIGNED-BYTE-P))))
 
-(defthmd nth-when-all-same
-  (implies (and (all-same lst)
-                (integerp x))
-           (equal (nth x lst)
-                  (if (< x (len lst))
-                      (first lst)
-                    nil)))
-  :hints (("Goal" :in-theory (e/d ((:i nth) all-equal$) (;nth-of-cdr
-                                                    )))))
-
-(defthm nth-when-all-same-cheap
-  (implies (and (syntaxp (quotep lst))
-                (all-same lst)
-                (integerp x))
-           (equal (nth x lst)
-                  (if (< x (len lst))
-                      (first lst)
-                    nil)))
-  :hints (("Goal" :use (:instance nth-when-all-same)
-           :in-theory (disable nth-when-all-same))))
-
-
 
 ;gen!
 (defthm bvcat-of-slice-when-slice-known
@@ -15883,6 +15852,7 @@
                               ))))
 
 ;use polarities?
+;todo: gen, or mention len in the name
 (defthm unsigned-byte-p-of-1-when-not-nil
   (implies (and (not (equal free x))
                 (syntaxp (quotep free))

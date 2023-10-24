@@ -1025,3 +1025,55 @@
 (defthm fix-of-xr-rgf-4
   (equal (fix (xr ':rgf '4 x86))
          (xr ':rgf '4 x86)))
+
+;gen
+(defthm xr-app-view-of-!memi
+  (equal (xr :app-view nil (!memi addr val x86))
+         (xr :app-view nil x86))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+(defthm app-view-of-!memi
+  (equal (app-view (!memi addr val x86))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+(defthm x86p-of-!memi
+  (implies (and (x86p x86)
+                (INTEGERP ADDR)
+                (UNSIGNED-BYTE-P 8 VAL))
+           (x86p (!memi addr val x86)))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+;rename
+(defthm memi-of-!memi
+  (implies (unsigned-byte-p 48 addr)
+           (equal (memi addr (!memi addr val x86))
+                  (acl2::bvchop 8 val)))
+  :hints (("Goal" :in-theory (enable memi))))
+
+(defthm !memi-of-!memi-same
+  (equal (!memi addr val (!memi addr val2 x86))
+         (!memi addr val x86)))
+
+(defthm xw-of-xw-both
+  (implies (syntaxp (acl2::smaller-termp addr2 addr))
+           (equal (xw :mem addr val (xw :mem addr2 val2 x86))
+                  (if (equal addr addr2)
+                      (xw :mem addr val x86)
+                    (xw :mem addr2 val2 (xw :mem addr val x86)))))
+  :hints (("Goal" :in-theory (enable xw))))
+
+(defthm xw-of-xw-diff
+  (implies (and (syntaxp (acl2::smaller-termp addr2 addr))
+                (not (equal addr addr2)))
+           (equal (xw :mem addr val (xw :mem addr2 val2 x86))
+                  (xw :mem addr2 val2 (xw :mem addr val x86))))
+  :hints (("Goal" :in-theory (enable xw))))
+
+(defthm memi-of-xw-irrel
+  (implies (not (equal fld :mem))
+           (equal (memi addr (xw fld index val x86))
+                  (memi addr x86)))
+  :hints (("Goal" :in-theory (e/d (memi)
+                                  (;x86isa::memi-is-n08p ;does forcing
+                                   )))))

@@ -320,5 +320,3 @@
 ;; parameter-assumptions could return a map from the names of params to their
 ;; expressions.  then the user could specify that an additional input of
 ;; interest is (:field ... x)
-
-(in-theory (disable cdr-of-take-becomes-subrange-better))

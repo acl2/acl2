@@ -50,6 +50,14 @@
 
 ;todo: move some of these rules:
 
+;move
+(defthm items-have-len-of-myif
+  (equal (items-have-len n (myif test x y))
+         (myif test
+               (items-have-len n x)
+               (items-have-len n y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
 (defthmd integerp-of-small-helper
   (implies (and (< x n)
                 (posp x)
