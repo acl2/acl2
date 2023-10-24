@@ -3918,7 +3918,8 @@
                                    signed-byte-p
                                    (:e expt)
                                    ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                  (acl2::bvplus-recollapse
+                                   x86isa::xw-of-xw-both)))))
 
 (defthm mv-nth-1-of-wml128-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3951,7 +3952,8 @@
                                    signed-byte-p
                                    (:e expt)
                                    ifix)
-                                  (acl2::bvplus-recollapse)))))
+                                  (acl2::bvplus-recollapse
+                                   x86isa::xw-of-xw-both)))))
 
 (defthm mv-nth-1-of-wb-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4265,7 +4267,6 @@
                             ;; LIST::EQUAL-APPEND-REDUCTION!
                             ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                             ACL2::NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                            ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                             ;ACL2::<-OF-LEN-WHEN-INTEGERP-OF-NTH ACL2::<-OF-LEN-WHEN-NTH-NON-NIL ;why?
                             )))))
 

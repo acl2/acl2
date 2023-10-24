@@ -35,7 +35,6 @@
 ;(local (in-theory (disable acl2::group-becomes-group2)))
 ;(local (in-theory (disable true-listp))) ;prevent inductions
 ;(local (in-theory (disable acl2::mod-sum-cases))) ;avoid case splits
-;(local (in-theory (disable acl2::update-nth-of-update-nth-becomes-update-subrange)))
 ;(local (in-theory (disable len-of-group)))
 
 (defthm integerp-of-+-of---and--
