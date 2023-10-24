@@ -1950,13 +1950,10 @@
                                                     ACL2::BVCAT-OF-+-HIGH
                                                     )))))
 
-
-
 (local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ;todo: reduce?
 ;move
 (local (in-theory (disable ACL2::INEQ-HACK2
                            ACL2::INEQ-HACK
-                           ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                            ACL2::PLUS-BVCAT-WITH-0
                            ACL2::PLUS-BVCAT-WITH-0-ALT)))
 
@@ -2570,11 +2567,10 @@
                     ;;             X86)
                     (WRITE-BYTES 0 (ACL2::TAKE (BVCHOP 48 AD1) VALS2) X86))
            :in-theory (e/d (WRITE-BYTES bvplus acl2::bvchop-of-sum-cases bvuminus bvminus
-                                        ;ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                         )
                            (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             ACL2::BVCAT-OF-+-LOW ;looped
-                            ACL2::TAKE-OF-CDR-BECOMES-SUBRANGE
+                            ;ACL2::TAKE-OF-CDR-BECOMES-SUBRANGE
                             )))))
 
 (defthm write-bytes-of-append-gen
@@ -2687,7 +2683,7 @@
      ;write-bytes-of-append-gen write-bytes-of-append
                             ;LIST::EQUAL-APPEND-REDUCTION!
                             WRITE-BYTES-OF-WRITE-BYTES-DISJOINT
-                            ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+                            ;ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                             )))))
 
 (defthmd write-bytes-of-write-bytes-same-contained

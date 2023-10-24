@@ -43,3 +43,12 @@
   :hints (("Goal" :in-theory (enable true-listp))))
 
 (theory-invariant (incompatible (:rewrite all-equal$-when-true-listp) (:rewrite equal-of-repeat-of-len-same)))
+
+(defthm nthcdr-when-all-equal$
+  (implies (and (all-equal$ x lst)
+                (natp n)
+                (< n (len lst))
+                (true-listp lst))
+           (equal (nthcdr n lst)
+                  (repeat (- (len lst) n) x)))
+  :hints (("Goal" :in-theory (e/d (all-equal$-when-true-listp) (equal-of-repeat-of-len-same)))))

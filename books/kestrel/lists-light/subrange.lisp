@@ -358,7 +358,6 @@
                     nil)))
   :hints (("Goal" :in-theory (e/d (subrange)
                                   (take-of-nthcdr-becomes-subrange
-                                   cdr-of-take-becomes-subrange-better
                                    TAKE-OF-CDR-BECOMES-SUBRANGE
                                    )))))
 
@@ -399,7 +398,6 @@
   :hints (("Goal" :in-theory (e/d (subrange)
                                   (take-of-nthcdr-becomes-subrange
                                    nthcdr-of-take-becomes-subrange
-                                   cdr-of-take-becomes-subrange-better
                                    TAKE-OF-CDR-BECOMES-SUBRANGE)))))
 
 (defthm subrange-of-append-irrel
@@ -411,7 +409,6 @@
                   (subrange low high x)))
   :hints (("Goal" :in-theory (e/d (subrange TAKE-OF-NTHCDR)
                                   (NTHCDR-OF-TAKE
-                                   CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                    NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                    TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    TAKE-OF-CDR-BECOMES-SUBRANGE)))))
@@ -482,9 +479,7 @@
   :hints (("Goal" :use (:instance append-of-take-and-subrange)
            :in-theory (e/d (;list::car-append list::cdr-append LIST::NTH-APPEND
                             )
-                           (append-of-take-and-subrange
-                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
-                            )))))
+                           (append-of-take-and-subrange)))))
 
 (DEFTHM APPEND-SUBRANGE-SUBRANGE-ADJACENT-alt
   (IMPLIES (AND (< E2 (LEN LST))

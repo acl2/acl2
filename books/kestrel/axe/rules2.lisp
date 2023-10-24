@@ -2885,7 +2885,6 @@
   ;; :hints (("Goal" :use (:instance take-split (n (+ 1 n)))
   ;;          :in-theory (disable take-split
   ;;                              ;cdr-of-take
-  ;;                              cdr-of-take-becomes-subrange-better ;new after i added a guard to maxelem...
   ;;                              )))
   )
 
@@ -3188,7 +3187,7 @@
 ;;                   (byte-fix-list (subrange start end lst))))
 ;;   :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange
 ;;                                               anti-subrange
-;;                                               cdr-of-take-becomes-subrange-better)))))
+;;                                               )))))
 
 (defthm equal-if-<-hack
   (implies (and (rationalp x)

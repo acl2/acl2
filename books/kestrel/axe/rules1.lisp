@@ -367,7 +367,6 @@
 ;;    :hints
 ;;    (("Goal" :do-not '(generalize eliminate-destructors)
 ;;      :in-theory (e/d (update-nth2 logext-list) (TAKE-OF-CDR-BECOMES-SUBRANGE
-;;                                                 CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
 ;;                                                 take-of-logext-list))))))
 
 ;; (defthmd update-nth2-becomes-bv-array-write32-signed-case
@@ -648,7 +647,6 @@
                   (equal len (len array))))
   :hints (("Goal" :in-theory (e/d (subrange) (;take-of-nthcdr-becomes-subrange
                                               ;nthcdr-of-take-becomes-subrange
-                                              ;;cdr-of-take-becomes-subrange-better
                                               )))))
 
 (defthm firstn-of-bvchop-list
@@ -684,7 +682,6 @@
                            (array-reduction-when-top-bit-is-xored-in-helper ;TAKE-WHEN-<-OF-LEN
                                                                             ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                                                             ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                                                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                                                             ))
            :use (:instance array-reduction-when-top-bit-is-xored-in-helper
                            (vals (bvchop-list elem-size (take len (true-list-fix array))))
@@ -1471,7 +1468,6 @@
 ;;                             NTHCDR-OF-CDR-COMBINE-STRONG
 ;;                             TAKE-OF-CDR-BECOMES-SUBRANGE
 ;;                             NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-;;                             CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
 ;;                             TAKE-OF-NTHCDR-BECOMES-SUBRANGE
 ;;                             SUBRANGE-TO-END-BECOMES-NTHCDR)))))
 
@@ -2040,7 +2036,6 @@
                             )
                            (;anti-subrange
                             ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                            ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETtER ;bozo ;also bozo on the non better
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
 ;includes both irrel cases
@@ -2074,7 +2069,6 @@
                                    )
                                   (;anti-subrange
                                    ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                   ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETtER ;bozo
                                    ;CDR-OF-TAKE-BECOMES-SUBRANGE ;bozo
                                    UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
@@ -2682,7 +2676,6 @@
            :in-theory (e/d (subrange TAKE-OF-CDR CAR-BECOMES-NTH-OF-0 equal-of-append nthcdr-of-cdr-combine
                                             BV-ARRAY-CLEAR-RANGE)
                                   (cdr-of-take
-                                   ;cdr-of-take-becomes-subrange-better
                                    ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                    ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    ;;TAKE-OF-CDR-BECOMES-SUBRANGE

@@ -4265,7 +4265,6 @@
                             ;; LIST::EQUAL-APPEND-REDUCTION!
                             ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                             ACL2::NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                            ACL2::CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                             ;ACL2::<-OF-LEN-WHEN-INTEGERP-OF-NTH ACL2::<-OF-LEN-WHEN-NTH-NON-NIL ;why?
                             )))))
 
