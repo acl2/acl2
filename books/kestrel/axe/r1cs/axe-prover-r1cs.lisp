@@ -51,6 +51,19 @@
     acl2::memberp-of-cons ;todo: make a faster version for axe
     ;; basic rules:
     acl2::equal-same
+    acl2::ifix-when-integerp
+    ;; prime field rules:
+    pfield::add-of-0-arg1
+    pfield::add-of-0-arg2
+    pfield::neg-of-0
+    pfield::mul-of-0-arg1
+    pfield::mul-of-0-arg2
+    ;; rules to remove mod (todo: perhaps avoid introducing it):
+    pfield::neg-of-mod
+    pfield::add-of-mod-arg1
+    pfield::add-of-mod-arg2
+    pfield::mul-of-mod-arg1
+    pfield::mul-of-mod-arg1
     ))
 
 (make-prover-simple r1cs
