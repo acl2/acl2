@@ -32,7 +32,7 @@
 
 
 
-
+(include-book "simplify-defs")
 (include-book "logicman-transform")
 (include-book "bfrs-replace")
 (include-book "centaur/aignet/simplify-marked" :dir :system)
@@ -68,13 +68,22 @@
     (equal (bools->bits (bits->bools x))
            (aignet::bit-list-fix x))))
 
+(define bfrlist->aignet-lits-aux ((x bfr-listp) (bfrstate bfrstate-p) (acc aignet::lit-listp))
+  :guard (Bfrstate-mode-is :aignet)
+  :hooks nil
+  (if (atom x)
+      acc
+    (bfrlist->aignet-lits-aux (cdr x) bfrstate (cons (bfr->aignet-lit (car x)) acc))))
+
 (define bfrlist->aignet-lits ((x bfr-listp) &optional ((bfrstate bfrstate-p) 'bfrstate))
   :guard (bfrstate-mode-is :aignet)
   :returns (lits aignet::lit-listp)
-  (if (atom x)
-      nil
-    (cons (bfr->aignet-lit (car x))
-          (bfrlist->aignet-lits (cdr x))))
+  :verify-guards nil
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (bfr->aignet-lit (car x))
+                      (bfrlist->aignet-lits (cdr x))))
+       :exec (bfrlist->aignet-lits-aux (rev x) bfrstate nil))
   ///
   (defret lits-max-id-val-of-<fn>
     (implies (bfrstate-mode-is :aignet)
@@ -93,17 +102,41 @@
                                                                  env nil)
                                            nil (logicman->aignet logicman))
                     (bools->bits (bfr-list-eval x env))))
-    :hints(("Goal" :in-theory (enable bfr-list-eval bools->bits bfr-eval)))))
+    :hints(("Goal" :in-theory (enable bfr-list-eval bools->bits bfr-eval))))
+
+  (local (defthm bfrlist->aignet-lits-aux-elim
+           (equal (bfrlist->aignet-lits-aux x bfrstate y)
+                  (append (bfrlist->aignet-lits (rev x)) y))
+           :hints(("Goal" :in-theory (enable bfrlist->aignet-lits-aux)))))
+
+  (local (defthm bfrlist->aignet-lits-append-nil
+           (equal (append (bfrlist->aignet-lits x) nil)
+                  (bfrlist->aignet-lits x))))
+  (local (defthm bfrlist->aignet-lits-of-true-list-fix
+           (equal (bfrlist->aignet-lits (true-list-fix x))
+                  (bfrlist->aignet-lits x))))
+  
+  (verify-guards bfrlist->aignet-lits-fn))
+
+(define aignet-lits->bfrlist-aux ((x satlink::lit-listp) (bfrstate bfrstate-p) (acc bfr-listp))
+  :guard (and (bfrstate-mode-is :aignet)
+              (<= (aignet::lits-max-id-val x) (bfrstate->bound bfrstate)))
+  (if (atom x)
+      acc
+    (aignet-lits->bfrlist-aux (cdr x) bfrstate
+                              (cons (aignet-lit->bfr (car x)) acc))))
 
 (define aignet-lits->bfrlist ((x satlink::lit-listp) &optional ((bfrstate bfrstate-p) 'bfrstate))
   :guard (and (bfrstate-mode-is :aignet)
               (<= (aignet::lits-max-id-val x) (bfrstate->bound bfrstate)))
+  :verify-guards nil
   :returns (bfrs (implies (bfrstate-mode-is :aignet)
                           (bfr-listp bfrs)))
-  (if (atom x)
-      nil
-    (cons (aignet-lit->bfr (car x))
-          (aignet-lits->bfrlist (cdr x))))
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (aignet-lit->bfr (car x))
+                      (aignet-lits->bfrlist (cdr x))))
+       :exec (aignet-lits->bfrlist-aux (rev x) bfrstate nil))
   ///
   (defret len-of-<fn>
     (equal (len bfrs) (len x)))
@@ -116,7 +149,38 @@
                     (bits->bools (aignet::lit-eval-list x (alist-to-bitarr (aignet::stype-count :pi (logicman->aignet logicman))
                                                                            env nil)
                                                         nil (logicman->aignet logicman)))))
-    :hints(("Goal" :in-theory (enable bfr-list-eval bits->bools bfr-eval bounded-lit-fix)))))
+    :hints(("Goal" :in-theory (enable bfr-list-eval bits->bools bfr-eval bounded-lit-fix))))
+
+  (local (defthm aignet-lits->bfrlist-aux-elim
+           (equal (aignet-lits->bfrlist-aux x bfrstate y)
+                  (append (aignet-lits->bfrlist (rev x)) y))
+           :hints(("Goal" :in-theory (enable aignet-lits->bfrlist-aux)))))
+
+  (local (defthm aignet-lits->bfrlist-append-nil
+           (equal (append (aignet-lits->bfrlist x) nil)
+                  (aignet-lits->bfrlist x))))
+  (local (defthm aignet-lits->bfrlist-of-true-list-fix
+           (equal (aignet-lits->bfrlist (true-list-fix x))
+                  (aignet-lits->bfrlist x))))
+
+  (local (defthm lits-max-id-val-of-append
+           (Equal (aignet::lits-max-id-val (append x y))
+                  (max (aignet::lits-max-id-val x)
+                       (aignet::lits-max-id-val y)))
+           :hints(("Goal" :in-theory (enable aignet::lits-max-id-val)))))
+
+  (local (defthm lits-max-id-val-of-rev
+           (equal (aignet::lits-max-id-val (rev x))
+                  (aignet::lits-max-id-val x))
+           :hints(("Goal" :in-theory (enable rev aignet::lits-max-id-val)))))
+
+  (local (defthm lit-listp-of-rev
+           (implies (satlink::lit-listp x)
+                    (satlink::lit-listp (rev x)))
+           :hints(("Goal" :in-theory (enable rev)))))
+           
+  
+  (verify-guards aignet-lits->bfrlist-fn))
     
 
                               
@@ -2958,27 +3022,6 @@
                   (logicman-pathcond-p new-constraint-pathcond new-logicman)))))
 
 
-(define fgl-simplify-object (x transforms
-                             &key
-                             ((tracked-obj
-                               "Object that is not preserved but whose bits' formulas
-                                are tracked through possibly non-preserving transforms,
-                                for heuristic use by the transforms")
-                              'nil)
-                             ((tracked-bits
-                               "Object providing an ordered list of Boolean conditions
-                                that are passed to the transforms for heuristic use")
-                              'nil)
-                             ((use-pathcond
-                               "Assume the path condition true when simplifying the formulas")
-                              't)
-                             ((use-constraint
-                               "Assume the constraint condition true when simplifying the formulas")
-                              't))
-  :ignore-ok t
-  :irrelevant-formals-ok t
-  :enabled t
-  x)
 
 
 
@@ -3101,23 +3144,7 @@
              (lbfr-listp (fgl-object-bfrlist new-x) new-logicman))))
 
 
-(define fgl-simplify-ordered (x transforms
-                             &key
-                             ((tracked-obj
-                               "Object that is not preserved but whose bits' formulas
-                                are tracked through possibly non-preserving transforms,
-                                for heuristic use by the transforms")
-                              'nil)
-                             ((use-pathcond
-                               "Assume the path condition true when simplifying the formulas")
-                              't)
-                             ((use-constraint
-                               "Assume the constraint condition true when simplifying the formulas")
-                              't))
-  :ignore-ok t
-  :irrelevant-formals-ok t
-  :enabled t
-  x)
+
 
 
 

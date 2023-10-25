@@ -1,6 +1,6 @@
 ; Top book for R1CS tools dir
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,4 +12,5 @@
 
 ;; See also books/kestrel/axe/r1cs/.
 
+(include-book "vars")
 (include-book "order-r1cs-vars")

@@ -2790,6 +2790,15 @@ the (non-ideal) svtv-spec, rather than the SVTV.</li>
 
 <li>@(':lemma-nonlocal') makes the lemma not be local.</li>
 
+<li>@(':lemma-custom-concl') gives a custom conclusion for the lemma, different
+from the one to be used in the final theorem.  Can be convenient if it is
+easier to prove the lemma in a different form which still implies the form of
+the conclusion in the final theorem.</li>
+
+<li>@(':lemma-no-run') makes the lemma not bind the output variables, skipping
+the svtv-run (in the common case, or the svtv-spec-run in others); may be
+useful with @(':lemma-custom-concl').</li>
+
 <li>@(':no-integerp') says to skip proving @('integerp') of each output in the
 initial override theorem.  The @(':enable') option typically must be used to
 provide additional rules for the final theorem to show that the lemma implies

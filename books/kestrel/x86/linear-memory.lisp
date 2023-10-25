@@ -94,6 +94,7 @@
   :hints (("Goal" :in-theory (enable rml-size))))
 
 ;; Take advance of the fact that the r-w-x param is irrelevant to normalize it.
+
 (defthm mv-nth-1-of-rb-1-when-not-natp-cheap
   (implies (not (natp n))
            (equal (mv-nth 1 (rb-1 n addr r-x x86))

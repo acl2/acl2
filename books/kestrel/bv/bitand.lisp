@@ -86,6 +86,9 @@
          (bitand x y))
   :hints (("Goal" :in-theory (enable bitand))))
 
+(defthm bitp-of-bitand
+  (bitp (bitand x y)))
+
 (defthm integerp-of-bitand
   (integerp (bitand x y)))
 
@@ -200,7 +203,7 @@
                   (bitand x y))))
 
 (defthmd bitand-cases
-  (equal (acl2::bitand x y)
+  (equal (bitand x y)
          (if (and (equal (bvchop 1 x) 1)
                   (equal (bvchop 1 y) 1))
              1

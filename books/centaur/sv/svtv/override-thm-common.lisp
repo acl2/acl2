@@ -148,6 +148,8 @@
    lemma-nonlocal
    lemma-defthm
    lemma-args
+   lemma-no-run
+   lemma-custom-concl
    lemma-use-ideal
    lemma-use-svtv-spec
    integerp-separate
@@ -247,18 +249,19 @@
                                                          <override-bindings>
                                                          <override-vals>
                                                          <override-xes>))
-                                            (run (:@ (and (not :use-ideal)
-                                                          (not :use-svtv-spec))
-                                                  (svtv-run (<svtv>)
-                                                            env
-                                                            :include
-                                                            '<outputs-list>))
-                                                 (:@ (or :use-ideal :use-svtv-spec)
-                                                  (svex-env-reduce '<outputs-list>
-                                                                   (svtv-spec-run ((:@ :use-ideal <ideal>)
-                                                                                   (:@ :use-svtv-spec <svtv-spec>))
-                                                                                  env))))
-                                            ((svassocs <outputs>) run))
+                                            (:@ (not :lemma-no-run)
+                                             (run (:@ (and (not :use-ideal)
+                                                           (not :use-svtv-spec))
+                                                   (svtv-run (<svtv>)
+                                                             env
+                                                             :include
+                                                             '<outputs-list>))
+                                                  (:@ (or :use-ideal :use-svtv-spec)
+                                                   (svex-env-reduce '<outputs-list>
+                                                                    (svtv-spec-run ((:@ :use-ideal <ideal>)
+                                                                                    (:@ :use-svtv-spec <svtv-spec>))
+                                                                                   env))))
+                                             ((svassocs <outputs>) run)))
                                          (progn$
                                           <run-before-concl>
                                           (and (:@ (and (not :no-integerp) (not :integerp-separate))
@@ -308,7 +311,7 @@
                    (<svtv> . ,x.svtv)
                    (<svtv-spec> . ,x.svtv-spec)
                    (<ideal> . ,x.ideal)
-                   (<concl> . ,x.concl)
+                   (<concl> . ,(or x.lemma-custom-concl x.concl))
                    (<input-bindings> . (list . ,(svtv-genthm-input-var-bindings-alist-termlist x.input-var-bindings)))
                    (<input-vars> . (list . ,(svtv-genthm-var-alist-termlist x.input-vars)))
                    (<override-tests> . ',(svtv-genthm-override-test-alist
@@ -334,6 +337,7 @@
                      (<integerp-args> . ,x.integerp-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :features (append (and x.lemma-use-ideal '(:use-ideal))
+                       (and x.lemma-no-run '(:lemma-no-run))
                        (and x.lemma-use-svtv-spec '(:use-svtv-spec))
                        (and x.no-integerp '(:no-integerp))
                        (and x.integerp-separate '(:integerp-separate))
@@ -701,6 +705,8 @@
          (run-before-concl 'nil)
          (lemma-defthm 'fgl::def-fgl-thm)
          lemma-args
+         lemma-custom-concl
+         lemma-no-run
          lemma-nonlocal
          lemma-use-ideal
          lemma-use-svtv-spec
@@ -820,6 +826,8 @@
        :lemma-nonlocal lemma-nonlocal
        :lemma-defthm lemma-defthm
        :lemma-args lemma-args
+       :lemma-custom-concl lemma-custom-concl
+       :lemma-no-run lemma-no-run
        :lemma-use-ideal lemma-use-ideal
        :lemma-use-svtv-spec lemma-use-svtv-spec
        :hints hints

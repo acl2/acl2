@@ -1,7 +1,7 @@
 ; Clearing values in bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -225,7 +225,8 @@
                   data))
   :hints (("Goal" :use (:instance bv-array-clear-range-of-repeat-same)
            :in-theory (e/d (ALL-EQUAL$-WHEN-TRUE-LISTP)
-                           (bv-array-clear-range-of-repeat-same)))))
+                           (bv-array-clear-range-of-repeat-same
+                            equal-of-repeat-of-len-same)))))
 
 (defthm bv-array-clear-of-true-list-fix
   (equal (bv-array-clear elem-size len index (true-list-fix lst))

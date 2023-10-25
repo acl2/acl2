@@ -1,7 +1,7 @@
 ; Operations on interpreted-function-alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -105,7 +105,7 @@
 ;; Checks that there are no missing functions in the interpreted-function-alist
 ;; (functions called by other functions in the alist, which will cause
 ;; evaluation of functions in the alist to fail).
-(defun interpreted-function-alist-completep-aux (alist all-fns)
+(defund interpreted-function-alist-completep-aux (alist all-fns)
   (declare (xargs :guard (and (interpreted-function-alistp alist)
                               (symbol-listp all-fns))
                   :guard-hints (("Goal" :in-theory (enable INTERPRETED-FUNCTION-ALISTP)))))
@@ -122,7 +122,7 @@
                   nil)
         (interpreted-function-alist-completep-aux (rest alist) all-fns)))))
 
-(defun interpreted-function-alist-completep (alist built-in-fns)
+(defund interpreted-function-alist-completep (alist built-in-fns)
   (declare (xargs :guard (and (interpreted-function-alistp alist)
                               (symbol-listp built-in-fns))))
   (interpreted-function-alist-completep-aux alist

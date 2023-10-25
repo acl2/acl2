@@ -33,15 +33,6 @@
 (include-book "structure")
 (include-book "centaur/misc/hons-remove-dups" :dir :system)
 
-(defxdoc defsvtv-phasewise
-  :parents (svex-stvs)
-  :short "(Deprecated in favor of @(see defsvtv$).)"
-  :long "<p>@('Defsvtv-phasewise') is a way of creating an SVTV -- see @(see
-svex-stvs). It uses an older workflow to create the SVTV object and thus is
-deprecated in favor of @(see defsvtv$-phasewise), which works similarly but
-uses the @(see svtv-data) stobj-based framework.  Its syntax is the same as
-@(see defsvtv$) using the @(':phases') argument rather than
-@(':inputs')/@(':outputs')/@(':overrides').</p>")
 
 (defxdoc defsvtv-phasewise
   :parents (svex-stvs)

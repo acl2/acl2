@@ -30,6 +30,9 @@
   (mbe :logic (bitxor x y)
        :exec (the bit (logxor x y))))
 
+(defthm bitp-of-bitxor
+  (bitp (bitxor x y)))
+
 (defthm bitxor-associative
   (equal (bitxor (bitxor x y) z)
          (bitxor x (bitxor y z)))
@@ -216,10 +219,10 @@
 
 (defthm bitxor-of-*-of-2 ;todo: gen the 2
   (implies (integerp bit2)
-           (equal (acl2::bitxor bit1 (* 2 bit2))
-                  (acl2::bitxor bit1 0)))
-  :hints (("Goal" :in-theory (e/d (acl2::bitxor acl2::bvxor getbit)
-                                  (acl2::bvxor-1-becomes-bitxor bvchop-1-becomes-getbit slice-becomes-getbit)))))
+           (equal (bitxor bit1 (* 2 bit2))
+                  (bitxor bit1 0)))
+  :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit)
+                                  (bvxor-1-becomes-bitxor bvchop-1-becomes-getbit slice-becomes-getbit)))))
 
 (defthm equal-of-0-and-bitxor
   (equal (equal 0 (bitxor x y))

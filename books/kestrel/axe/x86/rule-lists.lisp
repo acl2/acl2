@@ -110,12 +110,11 @@
             x86isa::mv-nth-2-of-div-spec-64)
           *instruction-decoding-and-spec-rules*))
 
-(defun list-rules2 ()
+(defun list-rules-x86 ()
   '(atom ;open to expose consp
     car-cons
     acl2::consp-of-cons
     cdr-cons
-
     ;; lists as sets:
     x86isa::subset-p-of-singleton-arg1
     x86isa::disjoint-p-subset-p ;has free vars, somewhat aggressive
@@ -147,6 +146,9 @@
     x86isa::wml64           ;shilpi leaves this enabled, but this is big!
     x86isa::wml-size$inline ;shilpi leaves this enabled
 
+    x86isa::wiml08
+    x86isa::wiml16
+    x86isa::wiml32
     x86isa::wiml64
     x86isa::wiml-size$inline
     ))
@@ -183,7 +185,7 @@
 
 (defun write-rules ()
   '(write-of-bvchop-arg3-gen
-    xr-of-write
+    xr-of-write-when-not-mem
     x86p-of-write
     64-bit-modep-of-write
     app-view-of-write
@@ -688,7 +690,7 @@
     x86isa::sub-pf-spec32-constant-opener
     x86isa::sub-sf-spec32-constant-opener
     x86isa::sub-zf-spec32-constant-opener
-    
+
     x86isa::cf-spec64$inline-constant-opener
     x86isa::of-spec64$inline-constant-opener
     x86isa::pf-spec64$inline-constant-opener
@@ -783,6 +785,7 @@
     mv-nth-1-of-get-prefixes-of-set-rbp))
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
+;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
   (append (acl2::base-rules)
           (acl2::type-rules)
@@ -794,7 +797,7 @@
           (constant-opener-rules)
           (simple-opener-rules)
           (instruction-rules)
-          (list-rules2)
+          (list-rules-x86)
           (state-rules)
           (if-rules)
           (decoding-and-dispatch-rules)
@@ -907,10 +910,14 @@
             x86isa::separate-from-separate-lemma-1b-alt
             x86isa::separate-from-separate-lemma-1c-alt
             x86isa::separate-from-separate-lemma-1d-alt
-            ;; these 2 may be all we need:
+            ;; these 2 may subsume much of the stuff above:
             x86isa::separate-when-separate
             x86isa::separate-when-separate-alt
-            
+            ;; these may be expensive but seem necessary in some cases
+            ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
+            ;x86isa::not-equal-when-separate
+            ;x86isa::not-equal-when-separate-alt
+
             x86isa::rb-wb-equal
             x86isa::rb-of-if-arg2
 
@@ -1011,8 +1018,6 @@
             x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
 
-
-
             x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
             x86isa::xr-wb-in-app-view ;targets xr-of-mv-nth-1-of-wb
             x86isa::x86-decode-sib-p               ;restrict to ground terms?
@@ -1068,8 +1073,6 @@
 ;            x86isa::xw-xr-same
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
-
-
             x86isa::select-operand-size$inline ;shilpi leaves this enabled (could restrict to ground terms)
             x86isa::select-segment-register$inline
             x86isa::x86-operand-from-modr/m-and-sib-bytes
@@ -1094,7 +1097,6 @@
             acl2::getbit-of-if-two-constants ;this caused the execution to split? (or maybe not?)
 
             acl2::unsigned-byte-p-of-if-two-constants
-
 
             ;; stuff from the timessix example:
             acl2::bvchop-of-logext
@@ -1149,7 +1151,6 @@
             x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?
 
-
             x86isa::undef-flg$notinline
             x86isa::undef-flg-logic
             x86isa::undef-read$notinline
@@ -1171,7 +1172,6 @@
             acl2::bvmult-commutative-axe
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
-
 
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
@@ -1300,7 +1300,6 @@
 
             x86isa::x86-operation-mode
             x86isa::alignment-checking-enabled-p-of-xw-irrel
-            return-last
             acl2::slice-of-bvcat-gen
             /= ;"not equal"
 
@@ -1332,6 +1331,10 @@
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
 (table axe-rule-priorities-table 'acl2::bvplus-of-+-combine-constants -1)
+
+;; Not needed?:
+;; (table axe-rule-priorities-table 'x86isa::separate-when-separate -1)
+;; (table axe-rule-priorities-table 'x86isa::separate-when-separate-alt -1)
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 
@@ -1449,6 +1452,7 @@
           ;; acl2::boolif-when-quotep-arg3)
           ))
 
+;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
   (append (lifter-rules-common)
           '(x86isa::rip ; todo: think about this
@@ -3239,6 +3243,8 @@
   '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
+    mv-nth-1-of-rb-becomes-read
+    mv-nth-1-of-rb-1-becomes-read
     ))
 
 (defun debug-rules32 ()
@@ -3278,7 +3284,7 @@
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
             acl2::bvlt-of-max-arg2
             <-of-*-when-constant-integers
-            separate-when-separate
+            ;separate-when-separate-2 ; todo: drop? but that caused problems
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2
@@ -3350,7 +3356,7 @@
             acl2::<-of-negative-constant-and-bv
             READ-OF-WRITE-BOTH-SIZE-1
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG ; rename
-            separate-of-1-and-1
+            ;; separate-of-1-and-1 ; do we ever need this?
             <-of-+-and-+-arg3-and-arg1
             equal-of-bvshl-and-constant
             bvchop-of-bvshl-same

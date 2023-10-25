@@ -1539,6 +1539,7 @@
     (mv (erp-nil)
         (union-equal rules rule-set))))
 
+;; this is really axe-rule-setsp:
 (defforall-simple axe-rule-listp)
 (verify-guards all-axe-rule-listp)
 

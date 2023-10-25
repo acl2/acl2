@@ -312,14 +312,23 @@ attached to the @('apply') function when that book is included.</p>
   :short "Stub for an AIG transform that preserves combinational equivalence of
           the first N primary outputs")
 
+(define output-lit-range-aux ((start natp) (count natp) aignet acc)
+  :guard (<= (+ start count) (num-outs aignet))
+  (if (zp count)
+      acc
+    (output-lit-range-aux start (1- count) aignet
+                          (cons (outnum->fanin (+ (lnfix start) (1- count)) aignet) acc))))
+
 (define output-lit-range ((start natp) (count natp) aignet)
   :returns (lits lit-listp)
   :guard (<= (+ start count) (num-outs aignet))
   :hooks (:fix)
-  (if (zp count)
-      nil
-    (cons (outnum->fanin start aignet)
-          (output-lit-range (1+ (lnfix start)) (1- count) aignet)))
+  :verify-guards nil
+  (mbe :logic (if (zp count)
+                  nil
+                (cons (outnum->fanin start aignet)
+                      (output-lit-range (1+ (lnfix start)) (1- count) aignet)))
+       :exec (output-lit-range-aux start count aignet nil))
   ///
   (defret len-of-<fn>
     (equal (len lits) (nfix count)))
@@ -338,7 +347,25 @@ attached to the @('apply') function when that book is included.</p>
             :expand ((:free (a b) (nth n (cons a b)))))))
 
   (defret aignet-lit-listp-of-<fn>
-    (aignet-lit-listp lits aignet)))
+    (aignet-lit-listp lits aignet))
+  
+  (local (defthm append-output-lit-range-of-count-minus-1
+           (implies (posp count)
+                    (equal (append (output-lit-range start (+ -1 count) aignet)
+                                   (cons (fanin 0 (lookup-stype (+ -1 count (nfix start)) :po aignet))
+                                         acc))
+                           (append (output-lit-range start count aignet)
+                                   acc)))
+           :hints (("goal" :induct (output-lit-range start count aignet)
+                    :expand ((:free (count) (output-lit-range start count aignet)))))))
+  
+  (local (defthm output-lit-range-aux-elim
+           (equal (output-lit-range-aux start count aignet acc)
+                  (append (output-lit-range start count aignet) acc))
+           :hints(("Goal" :in-theory (enable output-lit-range-aux)
+                   :induct t :do-not-induct t))))
+  
+  (verify-guards output-lit-range))
 
 (define lits-find-0val ((lits lit-listp)
                                invals regvals aignet)

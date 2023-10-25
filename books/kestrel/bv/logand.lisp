@@ -155,12 +155,15 @@
 (defthm logand-associative
   (equal (logand (logand i j) k)
          (logand i (logand j k)))
-  :hints (("Goal" :in-theory (enable logand
-                                     floor-of-2-cases
-                                     mod-sum-cases
-                                     zip
-                                     logand-is-zero-helper
-                                     logand-is-zero-helper-2)
+  :hints (("Goal" :in-theory (e/d (logand
+                                     ;floor-of-2-cases
+                                   mod-sum-cases
+                                     ;zip
+                                   logand-is-zero-helper
+                                   logand-is-zero-helper-2)
+                                  (;; for speed:
+                                   <=-of-logand-same-arg1
+                                   <=-of-logand-same-arg2))
            :induct t
            :expand ((:free (j) (logand i j))
                     (:free (j) (logand k j))))))
@@ -595,8 +598,7 @@
                 (unsigned-byte-p n x))
            (equal (logand (- (expt 2 n)) (lognot x))
                   (- (expt 2 n))))
-  :hints (("Goal" :in-theory (e/d (lognot logand
+  :hints (("Goal" :in-theory (enable lognot logand
                                           expt-of-+
                                           ;;INTEGER-TIGHTEN-BOUND ;why?
-                                          )
-                                  ()))))
+                                          ))))
