@@ -2012,7 +2012,7 @@
         ((mv erp assumptions state)
          ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
          (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
-                                          t ; todo: change to nil, to save time making the empty memoization
+                                          nil ; don't memoize (avoids time spent making empty-memoizations)
                                           state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
