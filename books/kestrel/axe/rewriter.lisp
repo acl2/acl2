@@ -1239,8 +1239,10 @@
        (max-external-context-nodenum (+ -1 external-context-array-len))
        (initial-array-size (+ original-dag-len external-context-array-len slack-amount))
        (dag-array (make-empty-array 'dag-array initial-array-size))
+       ;; Copy the context nodes into the newly created dag-array:
        (dag-array (copy-array-vals max-external-context-nodenum external-context-array-name external-context-array 'dag-array dag-array)) ;make a version that also updates the aux data structures? maybe add-array-nodes-to-dag? for speed, make sure we take advantage of the fact that there are no dups in the context-array?
        (dag-len external-context-array-len)
+       ;; Also copy the aux data structures for the context nodes:
        (dag-parent-array (make-empty-array 'dag-parent-array initial-array-size))
        (dag-parent-array (copy-array-vals max-external-context-nodenum external-context-parent-array-name external-context-parent-array 'dag-parent-array dag-parent-array))
        (dag-constant-alist external-context-dag-constant-alist) ;inline?
@@ -1295,42 +1297,45 @@
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
              ;;Load all the nodes into the dag-array (fixme only include nodes that support internal contexts?!):
 ;ffixme should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
+             ;; It's important that this not change the node numbering, since the internal contexts refer to these nodes:
              (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
              ;; Make the auxiliary data structures for the DAG:
              ((mv dag-parent-array dag-constant-alist dag-variable-alist)
               (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
              ;; Now figure out the context we can use for each node
              ;; TODO: If this doesn't contain any information, consider skipping the rewrite below (see below):
+             ;; No fixup needed, because the node numbers in dag-array are the same as in dag:
              (internal-context-array (make-full-context-array-with-parents 'dag-array dag-array dag-len dag-parent-array))
              ;; ((when ...) ; could check here whether there is any context information to use
              ;;  (and print (cw ")~%"))
              ;;  (mv (erp-nil) dag limits state))
              ;; TODO: Consider using the context array here to prune if branches (maybe even repeatedly in a loop).
              ;; Add nodes that support the external context:
-             ((mv erp
-                  dag-array dag-len-with-external-context-nodes dag-parent-array dag-constant-alist dag-variable-alist
-                  renaming-array ;maps context nodes to nodes in dag-array
-                  )
+             (dag-len-without-assumption-nodes dag-len)
+             ;; will map external-context nodes to nodes in dag-array:
+             (renaming-array (make-empty-array 'renaming-array (max 1 (+ 1 max-external-context-nodenum)))) ; avoids 0-length array
+             ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
               (add-array-nodes-to-dag 0 max-external-context-nodenum
                                       external-context-array-name external-context-array external-context-array-len
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      (make-empty-array 'renaming-array (max 1 (+ 1 max-external-context-nodenum) ;fixme the max of 1 is new
-                                                                             ))))
+                                      renaming-array))
              ((when erp) (mv erp nil nil state))
-             ;;fix-up the external-context to refer to nodes in dag-array:
+             ;; Fixup the external-context to refer to nodes in dag-array:
              (external-context (fixup-possibly-negated-nodenums external-context 'renaming-array renaming-array))
-             ;;ffixme handle (false-context)?!  can that happen?  what would it mean?!  that the assumptions contradict?!
+             ((when (false-contextp external-context)) ; todo: can this happen?  handle it better. we can rewrite the dag to anything we want.
+              (er hard? 'simplify-dag "Rewriting in false context!")
+              (mv erp :false-context limits state))
+             ;; Fixup the refined-assumption-alist to refer to nodes in dag-array:
              (refined-assumption-alist (fixup-refined-assumption-alist refined-assumption-alist 'renaming-array renaming-array nil))
              ;; Simplify all the nodes:
              ((mv erp dag-array & & & & renaming-array info tries limits state) ;use the ignored things ?!
               (add-simplified-dag-to-dag-array (reverse dag)
-                                               dag-array
-                                               dag-len-with-external-context-nodes
-                                               dag-parent-array dag-constant-alist dag-variable-alist
-                                               (make-empty-array 'renaming-array dag-len) ;reuse this? does the default value need to be in every slot?
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                               (make-empty-array 'renaming-array dag-len-without-assumption-nodes) ;reuse this? does the default value need to be in every slot?
                                                rewriter-rule-alist
-                                               refined-assumption-alist ;mentions nodenums in dag-array
-                                               equality-assumption-alist print-interval print
+                                               refined-assumption-alist ; now mentions nodenums in dag-array
+                                               equality-assumption-alist ; pairs of terms, so no nodenums to fix up (todo: optimize the representation?)
+                                               print-interval print
                                                nil ;memoization (not sound to memoize between nodes when using internal contexts)  :TODO: Print a warning if this turns off memoization.
                                                (and print (empty-info-world)) ;used to track the number of rule hits
                                                (and print (zero-tries)) ;fixme think about this (if rewriter-rule-alist (zero-tries) nil)
@@ -1614,9 +1619,9 @@
                                     priorities ;ignored for rule-alists
                                     interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                     rule-set-number total-rule-set-count
+                                    context ;(list of items of the form <nodenum> or (not <nodenum>)
                                     context-array-name
                                     context-array
-                                    context ;(list of items of the form <nodenum> or (not <nodenum>)
                                     context-array-len context-parent-array-name context-parent-array
                                     context-dag-constant-alist context-dag-variable-alist
                                     work-hard-when-instructedp tag exhaustivep limits state)
@@ -1625,6 +1630,7 @@
                   :guard (and (tagged-rule-setsp tagged-rule-sets)
                               ;;guard for equality-assumption-alist?
                               (rationalp total-rule-set-count)
+                              (non-false-contextp context)
                               (acl2-numberp rule-set-number)
                               (alistp priorities)
                               (rule-limitsp limits))))
@@ -1674,7 +1680,7 @@
                                                          print-interval print priorities
                                                          interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                                          (+ 1 rule-set-number) total-rule-set-count
-                                                         context-array-name context-array context context-array-len context-parent-array-name context-parent-array
+                                                         context context-array-name context-array context-array-len context-parent-array-name context-parent-array
                                                          context-dag-constant-alist context-dag-variable-alist
                                                          work-hard-when-instructedp tag exhaustivep limits state)))))))))
 
@@ -1701,9 +1707,9 @@
                                 ;; fixme rename to something other than "context"?
                                 ;; CONTEXT mentions nodenums in CONTEXT-ARRAY, whose name is CONTEXT-ARRAY-NAME.  The variables in CONTEXT-ARRAY have the same meanings as vars with the
                                 ;; same names in DAG.  We use a dag representation because the context terms might be big.  Currently, the context is rarely used.
+                                context ;a non-false-context (nil means "true" context) over nodes in context-array; fixme can these be the nodenums of constants?!
                                 context-array-name ; meaningful iff context is non-nil
                                 context-array ; meaningful iff context is non-nil
-                                context ;a possibly-negated-nodenumsp (nil means "true" context) over nodes in context-array; fixme can these be the nodenums of constants?!
                                 ;; fixme refine the context entries for matching?!?
                                 ;; fixme what if the context is contradictory?
                                 context-array-len ; meaningful iff context is non-nil
@@ -1727,7 +1733,7 @@
                               (booleanp use-internal-contextsp)
                               (symbolp context-array-name)
                               ;; context-array
-                              (possibly-negated-nodenumsp context)
+                              (non-false-contextp context)
                               (if context (natp context-array-len) t)
                               (booleanp work-hard-when-instructedp)
                               (symbolp tag)
@@ -1783,9 +1789,9 @@
                                        interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                        1 ;;rule-set-number; starts at 1 (saying rule set "0 of 3" looked odd)
                                        (len tagged-rule-sets)
+                                       context ;okay since the nodes in the new context are the same as those in the old context
                                        new-context-array-name
                                        new-context-array
-                                       context ;okay since the nodes in the new context are the same as those in the old context
                                        new-context-array-len
                                        new-context-parent-array-name new-context-parent-array new-context-dag-constant-alist new-context-dag-variable-alist
                                        work-hard-when-instructedp tag exhaustivep limits state))
@@ -1816,10 +1822,10 @@
                     remove-duplicate-rulesp
                     memoizep
                     use-internal-contextsp
-                    context-array-name
-                    context-array
-                    context
-                    context-array-len
+                    context ; a non-false-context
+                    context-array-name ; meaningful iff context is non-nil
+                    context-array ; meaningful iff context is non-nil
+                    context-array-len ; meaningful iff context is non-nil
                     work-hard-when-instructedp
                     tag
                     exhaustivep
@@ -1836,6 +1842,7 @@
                                      (or (eq :none rule-alist) (rule-alistp rule-alist))
                                      (or (eq :none rule-alists) (and (true-listp rule-alists)
                                                                      (all-rule-alistp rule-alists)))
+                                     (non-false-contextp context)
                                      ;;todo: add more checks
                                      (rule-limitsp limits)
                                      )))))
@@ -1850,6 +1857,10 @@
        ((when (and check-inputs
                    (not (rule-limitsp limits))))
         (er hard? 'simp-dag-fn "Bad rule limits: ~x0." limits)
+        (mv :bad-input nil state))
+       ((when (and check-inputs
+                   (not (non-false-contextp context))))
+        (er hard? 'simp-dag-fn "Bad context: ~x0." context)
         (mv :bad-input nil state))
        ;; TODO: Check more inputs here, if check-inputs is true
 
@@ -1879,9 +1890,9 @@
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
+                             context
                              context-array-name
                              context-array
-                             context
                              context-array-len
                              work-hard-when-instructedp
                              tag
@@ -1905,10 +1916,11 @@
                     (remove-duplicate-rulesp 't)
                     (memoizep 't)
                     (use-internal-contextsp 'nil) ;should t be the default instead?
-                    (context-array-name 'nil)
-                    (context-array 'nil)
-                    (context 'nil) ;(list of items of the form <nodenum> or (not <nodenum>)
-                    (context-array-len 'nil)
+                    ;; This non-internal context stuff is only used twice, in the equivalence-checker:
+                    (context 'nil) ; a non-false context (list of items of the form <nodenum> or (not <nodenum>)) where the nodenums are wrt the context-array
+                    (context-array-name 'nil) ; meaningful iff context is non-nil
+                    (context-array 'nil) ; meaningful iff context is non-nil
+                    (context-array-len 'nil) ; meaningful iff context is non-nil
                     (work-hard-when-instructedp 't)
                     (tag ''unknown)
                     (exhaustivep 'nil) ;TODO: deprecate once issues with loops (due to nodenum comparisons) are worked out
@@ -1928,9 +1940,9 @@
                 ,remove-duplicate-rulesp
                 ,memoizep
                 ,use-internal-contextsp
+                ,context
                 ,context-array-name
                 ,context-array
-                ,context
                 ,context-array-len
                 ,work-hard-when-instructedp
                 ,tag
@@ -1958,10 +1970,10 @@
                      remove-duplicate-rulesp
                      memoizep
                      use-internal-contextsp
-                     context-array-name
-                     context-array
-                     context
-                     context-array-len
+                     ;;context-array-name
+                     ;;context-array
+                     ;;context
+                     ;;context-array-len
                      work-hard-when-instructedp
                      tag
                      exhaustivep
@@ -2031,10 +2043,10 @@
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
-                             context-array-name
-                             context-array
-                             context
-                             context-array-len
+                             nil ;context
+                             nil ;context-array-name
+                             nil ;context-array
+                             nil ;context-array-len
                              work-hard-when-instructedp
                              tag
                              exhaustivep
@@ -2061,10 +2073,10 @@
                      (remove-duplicate-rulesp 't)
                      (memoizep 't)
                      (use-internal-contextsp 'nil) ;should t be the default instead?
-                     (context-array-name 'nil)
-                     (context-array 'nil)
-                     (context 'nil) ;(list of items of the form <nodenum> or (not <nodenum>)
-                     (context-array-len 'nil)
+                     ;; (context-array-name 'nil)
+                     ;; (context-array 'nil)
+                     ;; (context 'nil) ;(list of items of the form <nodenum> or (not <nodenum>)
+                     ;; (context-array-len 'nil)
                      (work-hard-when-instructedp 't)
                      (tag ''unknown)
                      (exhaustivep 'nil) ;TODO: deprecate once issues with loops (due to nodenum comparisons) are worked out
@@ -2081,10 +2093,10 @@
                  ,remove-duplicate-rulesp
                  ,memoizep
                  ,use-internal-contextsp
-                 ,context-array-name
-                 ,context-array
-                 ,context ;(list of items of the form <nodenum> or (not <nodenum>)
-                 ,context-array-len
+                 ;;nil ;,context-array-name
+                 ;;nil ;,context-array
+                 ;;nil ;,context ;(list of items of the form <nodenum> or (not <nodenum>)
+                 ;;nil ;,context-array-len
                  ,work-hard-when-instructedp
                  ,tag ,exhaustivep ,limits ,check-inputs state))
 
@@ -2300,11 +2312,11 @@
                           monitored-symbols
                           remove-duplicate-rulesp
                           memoizep
-                          use-internal-contextsp
-                          context-array-name
-                          context-array
-                          context
-                          context-array-len
+                          ;; use-internal-contextsp
+                          ;; context-array-name
+                          ;; context-array
+                          ;; context
+                          ;; context-array-len
                           work-hard-when-instructedp
                           tag
                           exhaustivep
@@ -2353,11 +2365,11 @@
                              monitored-symbols
                              remove-duplicate-rulesp
                              memoizep
-                             use-internal-contextsp
-                             context-array-name
-                             context-array
-                             context
-                             context-array-len
+                             nil ;use-internal-contextsp
+                             nil ;context
+                             nil ;context-array-name
+                             nil ;context-array
+                             nil ;context-array-len
                              work-hard-when-instructedp
                              tag
                              exhaustivep
@@ -2404,11 +2416,11 @@
                       ,monitor
                       ,remove-duplicate-rulesp
                       ,memoizep
-                      nil ;;use-internal-contextsp
-                      nil ;;context-array-name
-                      nil ;;context-array
-                      nil ;;context
-                      nil ;; context-array-len
+                      ;; nil ;;use-internal-contextsp
+                      ;; nil ;;context-array-name
+                      ;; nil ;;context-array
+                      ;; nil ;;context
+                      ;; nil ;; context-array-len
                       ,work-hard-when-instructedp
                       ,tag
                       ,exhaustivep
@@ -2436,11 +2448,11 @@
                                             monitored-symbols
                                             remove-duplicate-rulesp
                                             memoizep
-                                            use-internal-contextsp
-                                            context-array-name
-                                            context-array
-                                            context
-                                            context-array-len
+                                            ;; use-internal-contextsp
+                                            ;; context-array-name
+                                            ;; context-array
+                                            ;; context
+                                            ;; context-array-len
                                             work-hard-when-instructedp
                                             tag
                                             exhaustivep
@@ -2464,11 +2476,11 @@
                        monitored-symbols
                        remove-duplicate-rulesp
                        memoizep
-                       use-internal-contextsp
-                       context-array-name
-                       context-array
-                       context
-                       context-array-len
+                       ;; nil ;use-internal-contextsp
+                       ;; nil ;context-array-name
+                       ;; nil ;context-array
+                       ;; nil ;context
+                       ;; nil ;context-array-len
                        work-hard-when-instructedp
                        tag
                        exhaustivep
@@ -2518,11 +2530,11 @@
                                         ,monitor
                                         ,remove-duplicate-rulesp
                                         ,memoizep
-                                        nil ;;use-internal-contextsp
-                                        nil ;;context-array-name
-                                        nil ;;context-array
-                                        nil ;;context
-                                        nil ;; context-array-len
+                                        ;;nil ;;use-internal-contextsp
+                                        ;;nil ;;context-array-name
+                                        ;;nil ;;context-array
+                                        ;;nil ;;context
+                                        ;;nil ;; context-array-len
                                         ,work-hard-when-instructedp
                                         ,tag
                                         ,exhaustivep

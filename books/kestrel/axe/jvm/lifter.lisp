@@ -2659,10 +2659,10 @@
                                                      monitored-symbols
                                                      print
                                                      "INVAR"
+                                                     nil ;context ;a contextp over nodes in context-array
                                                      nil ;context-array-name
                                                      nil ;context-array
                                                      0
-                                                     nil ;context ;a contextp over nodes in context-array
                                                      6000 ;max-conflicts
                                                      nil  ;print-max-conflicts-goalp
                                                      nil  ;options
