@@ -365,6 +365,7 @@
          assumptions
          rule-alist
          rules-to-monitor
+         nil ; don't memoize (avoids time spent making empty-memoizations)
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
