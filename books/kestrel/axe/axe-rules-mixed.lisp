@@ -21,6 +21,7 @@
 (include-book "rules3") ;drop? ;for BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
+(include-book "kestrel/lists-light/all-same" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
@@ -794,6 +795,7 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-+-of-minus-better-helper (size (max xsize ysize)))
            :in-theory (enable unsigned-byte-p-forced))))
 
+;move
 (defthmd nth-of-bv-when-all-same
   (implies (and (syntaxp (quotep lst))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))

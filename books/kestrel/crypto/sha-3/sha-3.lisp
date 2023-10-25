@@ -54,8 +54,6 @@
 
 (local (in-theory (disable acl2::mod-sum-cases))) ;avoid case splits
 
-;(local (in-theory (disable acl2::update-nth-of-update-nth-becomes-update-subrange)))
-
 (local (in-theory (disable acl2::len-of-group)))
 
 (local (in-theory (enable acl2::memberp-of-cons-when-constant)))
