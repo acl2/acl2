@@ -51,6 +51,9 @@
                            acl2::unsigned-byte-p-of-logior-strong
                            bitops::signed-byte-p-of-ash-split
                            ;; acl2::signed-byte-p-logops
+                           ACL2::LOGEXT-WHEN-SIGNED-BYTE-P
+                           ACL2::ASH-0
+                           acl2::bvchop-identity
                            )))
 
 (defthm data-segment-descriptor-attributesbits->w-of-bvchop
@@ -701,7 +704,9 @@
                 )
            (not (mv-nth 0 (ea-to-la *compatibility-mode* eff-addr *cs* 1 x86))))
   :hints (("Goal" :in-theory (e/d (ea-to-la code-segment-assumptions32-for-code
-                                   segment-base-and-bounds) ()))))
+                                            segment-base-and-bounds
+                                            acl2::bvchop-identity)
+                                  ()))))
 
 ;; ;; Under suitable assumptions, we turn rme08 into a call of read-byte-from-segment, which is a much simpler function
 ;; (defthm mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment
@@ -756,7 +761,8 @@
            (not (mv-nth 0 (x86isa::add-to-*ip *compatibility-mode* *ip delta x86))))
   :hints (("Goal" :in-theory (enable X86ISA::ADD-TO-*IP
                                      code-segment-assumptions32-for-code
-                                     segment-base-and-bounds))))
+                                     segment-base-and-bounds
+                                     acl2::bvchop-identity))))
 
 (defthm mv-nth-1-of-add-to-*ip
   (implies (and (not (64-bit-modep x86))
@@ -773,7 +779,8 @@
                   (+ *ip delta)))
   :hints (("Goal" :in-theory (enable x86isa::add-to-*ip
                                      code-segment-assumptions32-for-code
-                                     segment-base-and-bounds))))
+                                     segment-base-and-bounds
+                                     acl2::bvchop-identity))))
 
 ;;;
 ;;; data-segment-writeable-bit
@@ -896,6 +903,7 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    esp
+                                   acl2::bvchop-identity
                                    )
                                   (;acl2::bvplus-recollapse
                                    )))))
@@ -919,6 +927,7 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   acl2::bvchop-identity
                                    )
                                   (;acl2::bvplus-recollapse
                                    )))))
@@ -954,6 +963,7 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    esp
+                                   acl2::bvchop-identity
                                    )
                                   (;acl2::bvplus-recollapse
                                    )))))
@@ -977,6 +987,7 @@
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
                                    ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   acl2::bvchop-identity
                                    )
                                   (;acl2::bvplus-recollapse
                                    )))))
@@ -1622,7 +1633,8 @@
                                                           acl2::bvchop-of-sum-cases
                                                           32-bit-segment-start
                                                           SEGMENT-MIN-EFF-ADDR32
-                                                          SEGMENT-MAX-EFF-ADDR32)
+                                                          SEGMENT-MAX-EFF-ADDR32
+                                                          acl2::bvchop-identity)
                                   ( ;acl2::bvchop-+-cancel-seconds
                                    ;x86isa::msri$inline
                                    acl2::bvplus-recollapse
@@ -1728,6 +1740,12 @@
                   (well-formed-32-bit-segmentp seg-reg1 x86)))
   :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp))))
 
+(defthm bvchop-32-of-xr-seg-hidden-limit
+  (implies (x86p x86)
+           (equal (bvchop 32 (xr :seg-hidden-limit seg-reg x86))
+                  (xr :seg-hidden-limit seg-reg x86)))
+  :hints (("Goal" :in-theory (enable acl2::bvchop-identity))))
+
 (defthm mv-nth-1-of-rme08-of-ss-becomes-read-byte-from-segment
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86) ;code is a free var and usually will be a constant
                 (not (64-bit-modep x86))
@@ -1758,6 +1776,8 @@
                                           BVMINUS
                                           acl2::bvchop-of-sum-cases
                                           ea-to-la
+                                          ACL2::ASH-0 ; why?
+                                          acl2::bvchop-identity
                                           )
                            (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             ACL2::BVPLUS-RECOLLAPSE)))))
@@ -2197,7 +2217,7 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
-                                   )
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse)))))
 
 ;;;
@@ -2583,7 +2603,8 @@
                               bvminus
                               acl2::bvchop-of-sum-cases
                               unsigned-byte-p
-                              write-to-segment-of-write-byte-to-segment))))
+                              write-to-segment-of-write-byte-to-segment
+                              acl2::bvchop-identity))))
 
 
 ;; (defthm read-byte-from-segment-of-write-to-segment-not-irrel
@@ -2882,6 +2903,7 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
+                                   acl2::bvchop-identity
                                    )
                                   (acl2::bvplus-recollapse)))))
 
@@ -3063,7 +3085,7 @@
                             (:e expt)
                             ifix
                             rb-1
-                            )
+                            acl2::bvchop-identity)
                            (;;ea-to-la
                             ;mv-nth-1-of-rb-becomes-read
                             ;mv-nth-1-of-rb-1-becomes-read
@@ -3109,6 +3131,8 @@
                                    (:e expt)
                                    ifix
                                    rb-1
+                                   acl2::ash-0 ; why?
+                                   acl2::bvchop-identity
                                    )
                                   (;;ea-to-la
 ;;mv-nth-1-of-rb-becomes-read
@@ -3175,7 +3199,8 @@
                             (:e expt)
                             ifix
                             rb-1
-                            )
+                            acl2::ash-0 ; why?
+                            acl2::bvchop-identity)
                            ( ;;ea-to-la
                             ;;mv-nth-1-of-rb-becomes-read
                             ;;mv-nth-1-of-rb-1-becomes-read
@@ -3299,6 +3324,8 @@
 
 ;;;
 
+(local (in-theory (disable ea-to-la)))
+
 (defthm ea-to-la-of-set-eip
   (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (set-eip eip x86))
          (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
@@ -3387,7 +3414,8 @@
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32
-                                     rb))))
+                                     rb
+                                     ea-to-la))))
 
 (defthm mv-nth-2-of-rime-size$inline
   (implies (app-view x86)
@@ -3453,7 +3481,8 @@
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32 rb (:e expt)
-                                     canonical-address-p signed-byte-p))))
+                                     canonical-address-p signed-byte-p
+                                     ea-to-la))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-1
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3508,7 +3537,9 @@
                             canonical-address-p$inline
                             signed-byte-p
                             (:e expt)
-                            )
+                            acl2::ash-0 ; why?
+                            acl2::bvchop-identity
+                            ea-to-la)
                            (;;ea-to-la
 ;                            mv-nth-1-of-rb-becomes-read
  ;                           mv-nth-1-of-rb-1-becomes-read
@@ -3566,7 +3597,8 @@
                             canonical-address-p$inline
                             ;signed-byte-p
                             (:e expt)
-                            )
+                            ea-to-la
+                            acl2::bvchop-identity)
                            (acl2::bvplus-recollapse
                             ;acl2::bvcat-equal-rewrite
                             ;acl2::bvcat-equal-rewrite-alt
@@ -3623,7 +3655,8 @@
                             CANONICAL-ADDRESS-P$INLINE
                             ;SIGNED-BYTE-P
                             (:e expt)
-                            )
+                            ea-to-la
+                            acl2::bvchop-identity)
                            (acl2::bvplus-recollapse
                             ACL2::SLICE-OF-+
                             ACL2::LOGEXT-OF-LOGIOR)))))
@@ -3678,7 +3711,8 @@
                             CANONICAL-ADDRESS-P$INLINE
                             ;SIGNED-BYTE-P
                             (:e expt)
-                            )
+                            ea-to-la
+                            acl2::bvchop-identity)
                            (acl2::bvplus-recollapse
                             ACL2::SLICE-OF-+
                             ;for speed:
@@ -3716,7 +3750,8 @@
                                      x86isa::wml128
                                      (:e expt)
                                      canonical-address-p
-                                     signed-byte-p))))
+                                     signed-byte-p
+                                     ea-to-la))))
 
 (acl2::defopeners write-to-segment)
 (in-theory (disable write-to-segment-unroll))
@@ -3752,7 +3787,9 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse)))))
 
 (defthm mv-nth-1-of-wml16-of-mv-nth-1-of-ea-to-la
@@ -3785,7 +3822,9 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse)))))
 
 (defthm mv-nth-1-of-wml32-of-mv-nth-1-of-ea-to-la
@@ -3818,7 +3857,9 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse)))))
 
 (defthm mv-nth-1-of-wml48-of-mv-nth-1-of-ea-to-la
@@ -3851,7 +3892,9 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse)))))
 
 (defthm mv-nth-1-of-wml64-of-mv-nth-1-of-ea-to-la
@@ -3884,7 +3927,9 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse)))))
 
 (defthm mv-nth-1-of-wml80-of-mv-nth-1-of-ea-to-la
@@ -3917,7 +3962,9 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse
                                    x86isa::xw-of-xw-both)))))
 
@@ -3951,7 +3998,9 @@
                                    canonical-address-p$inline
                                    signed-byte-p
                                    (:e expt)
-                                   ifix)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
                                   (acl2::bvplus-recollapse
                                    x86isa::xw-of-xw-both)))))
 
@@ -3986,7 +4035,9 @@
                             canonical-address-p$inline
                             signed-byte-p
                             (:e expt)
-                            ifix)
+                            ifix
+                            ea-to-la
+                            acl2::bvchop-identity)
                            (acl2::bvplus-recollapse)))))
 
 (defthm canonical-address-p-of-+-of-ea-to-la-last-address
@@ -4003,7 +4054,8 @@
                                    signed-byte-p
                                    (:e expt)
                                    ifix
-                                   bvplus) (acl2::bvplus-recollapse)))))
+                                   bvplus
+                                   ea-to-la) (acl2::bvplus-recollapse)))))
 
 (defthm mv-nth-1-of-wml-size-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
