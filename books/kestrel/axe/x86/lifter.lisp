@@ -2011,7 +2011,9 @@
         ((when erp) (mv erp nil nil nil state))
         ((mv erp assumptions state)
          ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
-         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor state))
+         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
+                                          t ; todo: change to nil, to save time making the empty memoization
+                                          state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
         (state-var (pack-in-package-of-symbol 'x86 'x86_ loop-depth))
