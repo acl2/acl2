@@ -336,7 +336,7 @@
                                  (lifter-rules32-new))
                        (append (lifter-rules64)
                                (lifter-rules64-new))))
-       (rules (append extra-rules lifter-rules))
+       (rules (append extra-rules lifter-rules)) ; todo: use union?
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
@@ -356,16 +356,15 @@
                                      nil
                                    ;; needed to match the normal forms used during lifting:
                                    (lifter-rules64-new))))
-       ((mv erp rule-alist)
+       ((mv erp assumption-rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil state))
-       ;; TODO: Option to turn this off, or to do just one pass
+       ;; TODO: Option to turn this off, or to do just one pass:
        ((mv erp assumptions state)
-        (acl2::simplify-terms-repeatedly ;; simplify-terms-using-each-other
-         assumptions
-         rule-alist
-         rules-to-monitor
-         state))
+        (acl2::simplify-terms-repeatedly assumptions
+                                         assumption-rule-alist
+                                         rules-to-monitor
+                                         state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        (- (cw "Done simplifying assumptions)~%"))
