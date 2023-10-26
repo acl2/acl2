@@ -4962,13 +4962,16 @@
               ((when provedp)
                (and print (cw "! Proved case ~s0 (one literal was a non-nil constant!)~%" case-designator))
                (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-              ;; Get the vars
-              (vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len))
-              (- (cw "(DAG has ~x0 vars.)~%" (len vars)))
+              ;; Get the vars:
+              ;; (vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len)) ; too slow if there are many -- optimize!
+              ;; (- (cw "(DAG has ~x0 vars.)~%" (len vars)))
               ;; Apply :use hints:
               (axe-use-instances (desugar-axe-use-hint use-hint))
               ((mv erp new-literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-               (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist vars wrld nil))
+               (if axe-use-instances
+                   (let ((vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len))) ; todo: optimize!
+                     (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist vars wrld nil))
+                 (mv nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
               ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (- (cw "(Added ~x0 literal(s) from use hints.)~%" (len new-literal-nodenums)))
               (literal-nodenums (append new-literal-nodenums literal-nodenums))
