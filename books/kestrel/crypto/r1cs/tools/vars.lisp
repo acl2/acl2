@@ -12,6 +12,7 @@
 
 (include-book "../sparse/r1cs")
 (include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
 (local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -19,68 +20,12 @@
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/strict-symbol-less-than-sortedp" :dir :system))
 
 (local (in-theory (disable acl2::strip-cadrs evens odds)))
 
 ;move this stuff:
-
-(defthm strict-symbol<-sortedp-of-append
-  (implies (and (true-listp l1)
-                (true-listp l2)
-                )
-           (equal (acl2::strict-symbol<-sortedp (append l1 l2))
-                  (if (endp l1)
-                      (acl2::strict-symbol<-sortedp l2)
-                    (if (endp l2)
-                        (acl2::strict-symbol<-sortedp l1)
-                      (and (acl2::strict-symbol<-sortedp l1)
-                           (acl2::symbol< (car (last l1))
-                                          (car l2))
-                           (acl2::strict-symbol<-sortedp l2))))))
-  :hints (("Goal" :in-theory (enable append))))
-
-(defthm strict-symbol<-sortedp-of-revappend
-  (implies (and (symbol-listp l1)
-                (symbol-listp l2))
-           (equal (acl2::strict-symbol<-sortedp (revappend l1 l2))
-                  (if (endp l1)
-                      (acl2::strict-symbol<-sortedp l2)
-                    (if (endp l2)
-                        (acl2::strict-symbol<-sortedp (reverse l1))
-                      (and (acl2::symbol< (car l1)
-                                          (car l2))
-                           (acl2::strict-symbol<-sortedp (reverse l1))
-                           (acl2::strict-symbol<-sortedp l2))))))
-  :hints (("Goal" :in-theory (enable acl2::reverse-list))))
-
-
-(defthm strict-symbol<-sortedp-of-merge-symbol<
-  (implies (and (acl2::strict-symbol<-sortedp lst1)
-                (acl2::strict-symbol<-sortedp lst2)
-                (acl2::strict-symbol<-sortedp (acl2::reverse-list acc))
-                (symbol-listp lst1)
-                (symbol-listp lst2)
-                (symbol-listp acc)
-                (not (intersection-equal lst1 lst2))
-                ;; acc has the smallest items:
-                (implies (and (consp lst1) (consp acc))
-                         (symbol< (car acc) (car lst1)))
-                (implies (and (consp lst2) (consp acc))
-                         (symbol< (car acc) (car lst2))))
-           (acl2::strict-symbol<-sortedp (acl2::merge-symbol< lst1 lst2 acc)))
-  :hints (("Goal" :induct (acl2::merge-symbol< lst1 lst2 acc)
-           :in-theory (enable acl2::merge-symbol<))))
-
-;; Special case for acc=nil
-(defthm strict-symbol<-sortedp-of-merge-symbol<-of-nil
-  (implies (and (acl2::strict-symbol<-sortedp lst1)
-                (acl2::strict-symbol<-sortedp lst2)
-                (symbol-listp lst1)
-                (symbol-listp lst2)
-                (not (intersection-equal lst1 lst2)))
-           (acl2::strict-symbol<-sortedp (acl2::merge-symbol< lst1 lst2 nil))))
 
 ;todo
 ;; ;move
@@ -170,7 +115,8 @@
                          (symbol< (car acc) (car lst2))))
            (acl2::strict-symbol<-sortedp (merge-symbol<-and-remove-dups lst1 lst2 acc)))
   :hints (("subgoal *1/2" :use (:instance not-symbol<-of-car-and-car-of-last (x acc)))
-          ("Goal" :in-theory (enable merge-symbol<-and-remove-dups
+          ("Goal" :in-theory (enable acl2::strict-symbol<-sortedp
+                                     merge-symbol<-and-remove-dups
                                      not-symbol<-of-car-and-car-of-last))))
 
 ;; todo: prove that strict-symbol<-sortedp implies no dups
