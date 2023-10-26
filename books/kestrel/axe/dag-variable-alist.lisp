@@ -1,7 +1,7 @@
 ; Index for variable nodes in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; The dag-variable-alist is an index into the dag that node expressions that
+;; The dag-variable-alist is an index into the dag that maps expressions that
 ;; are variables to their nodenums.  Since these nodes have no children, we
 ;; cannot use the parent-array to find them.  The entries in the
 ;; dag-variable-alist should be sorted by decreasing nodenum.

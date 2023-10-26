@@ -737,6 +737,8 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances) (pseudo-termp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-suffix
                               syntaxp-evaluator-suffix
