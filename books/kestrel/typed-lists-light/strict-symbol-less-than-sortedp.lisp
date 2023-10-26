@@ -36,3 +36,15 @@
                                 (symbol< (car l1)
                                          (car l2))))))
   :hints (("Goal" :in-theory (enable strict-symbol<-sortedp reverse-list))))
+
+(defthm strict-symbol<-sortedp-when-not-consp
+  (implies (not (consp l))
+           (strict-symbol<-sortedp l))
+  :hints (("Goal" :in-theory (enable strict-symbol<-sortedp))))
+
+(defthm strict-symbol<-sortedp-when-not-consp-of-cdr
+  (implies (and (not (consp (cdr l)))
+                (true-listp l) ; because strict-symbol<-sortedp tests for null
+                )
+           (strict-symbol<-sortedp l))
+  :hints (("Goal" :in-theory (enable strict-symbol<-sortedp))))
