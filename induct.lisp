@@ -4724,7 +4724,7 @@
             (controller-variables
              (car lst)
              (access def-body
-                     (def-body (ffn-symb (car lst)) wrld)
+                     (original-def-body (ffn-symb (car lst)) wrld)
                      :controller-alist))
             (induct-vars1 (cdr lst) wrld)))))
 
