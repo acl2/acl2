@@ -1202,7 +1202,7 @@
 ;ffffixme include only the necesary nodes in the context?!
 ;ffixme external contexts could allow us to drop whole subdags and not waste time simplifying them..
 ;;smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
-(defun simplify-dag (dag ;; must not be a quotep, should have no gaps in the numbering? (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),
+(defun simplify-dag (dag ;; must not be a quotep, (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),
                      rewriter-rule-alist
                      slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
                      refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
@@ -1373,7 +1373,7 @@
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
 ;; bindings in INTERPRETED-FUNCTION-ALIST
-(defun repeat-simplify-dag (dag ;; must not be a quotep, should have no gaps in the numbering? (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
+(defun repeat-simplify-dag (dag ;; must not be a quotep,  (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                             rewriter-rule-alist
                             slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
                             refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
@@ -1447,7 +1447,7 @@
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
 ;; bindings in INTERPRETED-FUNCTION-ALIST
-(defun maybe-repeat-simplify-dag (dag ;; must not be a quotep, should have no gaps in the numbering? (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
+(defun maybe-repeat-simplify-dag (dag ;; must not be a quotep (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                                   rewriter-rule-alist
                                   slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
                                   refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
@@ -1605,14 +1605,15 @@
                                                   context-dag-constant-alist context-dag-variable-alist
                                                   work-hard-when-instructedp tag exhaustivep limits state)))))
 
+;; Simplifies DAG using each of the TAGGED-RULE-SETS in turn.
 ;; is it okay for dag to have irrelevant nodes?
 ;; or have the same expression at two different nodenums?
-;; can the numbering have gaps?  be out of order?
 ;; Returns (mv erp simplified-dag-or-quotep limits state) where simplified-dag-or-quotep is equivalent to dag, given the assumptions (fixme what exactly is the story with ifns?).
 ;;change this to print out the list of rules all at once?
 (defun simplify-with-rule-sets-aux (dag ;; must not be a quotep
                                     tagged-rule-sets ;; the tag of each rule set indicates whether it's a list of rules or a rule-alist
-                                    slack-amount normalize-xors
+                                    slack-amount
+                                    normalize-xors
                                     refined-assumption-alist ;mentions nodenums in the context-array
                                     equality-assumption-alist ; use the context array for this?
                                     print-interval print
@@ -1627,7 +1628,8 @@
                                     work-hard-when-instructedp tag exhaustivep limits state)
   (declare (xargs :mode :program :stobjs state
                   :measure (len tagged-rule-sets)
-                  :guard (and (tagged-rule-setsp tagged-rule-sets)
+                  :guard (and (pseudo-dagp dag)
+                              (tagged-rule-setsp tagged-rule-sets)
                               ;;guard for equality-assumption-alist?
                               (rationalp total-rule-set-count)
                               (non-false-contextp context)
@@ -1655,34 +1657,28 @@
                         (mv :unknown-tag nil))))))
          ((when erp) (mv erp nil nil state))
          (- (print-missing-rules monitored-symbols rule-alist)) ;todo: think about where to put this printing
-         )
-      (mv-let (erp dag-or-quotep limits state)
-        ;;apply the first rule set:
-        (simplify-and-normalize-xors-until-stable dag
-                                                     rule-alist
-                                                     slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
-                                                     print-interval print interpreted-function-alist monitored-symbols memoizep use-internal-contextsp
-                                                     context-array-name
-                                                     context-array
-                                                     context
-                                                     context-array-len context-parent-array-name context-parent-array
-                                                     context-dag-constant-alist context-dag-variable-alist
-                                                     work-hard-when-instructedp tag exhaustivep limits state)
-        (if erp
-            (mv erp nil nil state)
-          (prog2$ (and (> total-rule-set-count 1) (cw ")~%"))
-                  (if (quotep dag-or-quotep)
-                      (mv (erp-nil) dag-or-quotep limits state)
-                    (prog2$ (and (member-eq print '(t :verbose :verbose!))
-                                 (print-list dag-or-quotep))
-                            ;;apply the rest of the rule sets:
-                            (simplify-with-rule-sets-aux dag-or-quotep (rest tagged-rule-sets) slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
-                                                         print-interval print priorities
-                                                         interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
-                                                         (+ 1 rule-set-number) total-rule-set-count
-                                                         context context-array-name context-array context-array-len context-parent-array-name context-parent-array
-                                                         context-dag-constant-alist context-dag-variable-alist
-                                                         work-hard-when-instructedp tag exhaustivep limits state)))))))))
+         ;; Apply the first rule set:
+         ((mv erp dag-or-quotep limits state)
+          (simplify-and-normalize-xors-until-stable dag
+                                                    rule-alist
+                                                    slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
+                                                    print-interval print interpreted-function-alist monitored-symbols memoizep use-internal-contextsp
+                                                    context-array-name context-array context context-array-len context-parent-array-name context-parent-array context-dag-constant-alist context-dag-variable-alist
+                                                    work-hard-when-instructedp tag exhaustivep limits state))
+         ((when erp) (mv erp nil nil state))
+         (- (and (> total-rule-set-count 1) (cw ")~%"))) ; balances "(Applying rule set..." above
+         ;; If it's a constant, we are done:
+         ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep limits state))
+         (- (and (member-eq print '(t :verbose :verbose!)) (print-list dag-or-quotep))))
+      ;; Apply the rest of the rule sets:
+      (simplify-with-rule-sets-aux dag-or-quotep
+                                   (rest tagged-rule-sets)
+                                   slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval print priorities
+                                   interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
+                                   (+ 1 rule-set-number) total-rule-set-count
+                                    context context-array-name context-array context-array-len context-parent-array-name context-parent-array
+                                   context-dag-constant-alist context-dag-variable-alist
+                                   work-hard-when-instructedp tag exhaustivep limits state))))
 
 ;; Simplifies the given DAG to produce a new DAG. This function is the main
 ;; entry point for the Axe rewriter (all the wrapper macros should call this
