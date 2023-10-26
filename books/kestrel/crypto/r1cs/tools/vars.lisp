@@ -27,32 +27,6 @@
 
 ;move this stuff:
 
-(defthm strict-symbol<-sortedp-of-merge-symbol<
-  (implies (and (acl2::strict-symbol<-sortedp lst1)
-                (acl2::strict-symbol<-sortedp lst2)
-                (acl2::strict-symbol<-sortedp (acl2::reverse-list acc))
-                (symbol-listp lst1)
-                (symbol-listp lst2)
-                (symbol-listp acc)
-                (not (intersection-equal lst1 lst2))
-                ;; acc has the smallest items:
-                (implies (and (consp lst1) (consp acc))
-                         (symbol< (car acc) (car lst1)))
-                (implies (and (consp lst2) (consp acc))
-                         (symbol< (car acc) (car lst2))))
-           (acl2::strict-symbol<-sortedp (acl2::merge-symbol< lst1 lst2 acc)))
-  :hints (("Goal" :induct (acl2::merge-symbol< lst1 lst2 acc)
-           :in-theory (enable acl2::strict-symbol<-sortedp acl2::merge-symbol<))))
-
-;; Special case for acc=nil
-(defthm strict-symbol<-sortedp-of-merge-symbol<-of-nil
-  (implies (and (acl2::strict-symbol<-sortedp lst1)
-                (acl2::strict-symbol<-sortedp lst2)
-                (symbol-listp lst1)
-                (symbol-listp lst2)
-                (not (intersection-equal lst1 lst2)))
-           (acl2::strict-symbol<-sortedp (acl2::merge-symbol< lst1 lst2 nil))))
-
 ;todo
 ;; ;move
 ;; (thm
