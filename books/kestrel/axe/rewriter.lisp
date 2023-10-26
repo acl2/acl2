@@ -2225,12 +2225,14 @@
                             ;;print
                             rule-alist
                             monitored-rules
+                            memoizep
                             againp
                             state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (pseudo-term-listp done-terms)
                               (rule-alistp rule-alist)
                               (symbol-listp monitored-rules)
+                              (booleanp memoizep)
                               (booleanp againp))
                   :stobjs state
                   :mode :program))
@@ -2243,47 +2245,50 @@
                      ;; Can assume all the other terms, because, if any is false, the whole conjunction is false:
                      :assumptions (append (rest terms) done-terms) ; note that we don't use the term to simplify itself!
                      :monitor monitored-rules
+                     :memoizep memoizep
                      :check-inputs nil))
          ((when erp) (mv erp nil nil state))
          (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
       (if (equal result-term term) ;; no change:
-          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules againp state)
+          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules memoizep againp state)
         (if (equal *t* result-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it:
-            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
+            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules memoizep againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
           (let ((conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules t state)))))))
+            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules memoizep t state)))))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules state)
+(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules memoizep state)
   (declare (xargs :guard (and (natp passes-left)
                               (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules))
+                              (symbol-listp monitored-rules)
+                              (booleanp memoizep))
                   :stobjs state
                   :mode :program))
   (if (zp passes-left)
       (prog2$ (cw "NOTE: Limit reached when simplifying terms repeatedly.~%")
               (mv (erp-nil) terms state))
     (b* (((mv erp new-terms againp state)
-          (simplify-terms-once terms nil rule-alist monitored-rules nil state))
+          (simplify-terms-once terms nil rule-alist monitored-rules memoizep nil state))
          ((when erp) (mv erp nil state)))
       (if againp
-          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules state)
+          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules memoizep state)
         (mv (erp-nil) new-terms state)))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly (terms rule-alist monitored-rules state)
+(defun simplify-terms-repeatedly (terms rule-alist monitored-rules memoizep state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules))
+                              (symbol-listp monitored-rules)
+                              (booleanp memoizep))
                   :stobjs state
                   :mode :program))
   (let ((len (len terms)))
     ;; We add 1 so that if len=1 we get at least 2 passes:
-    (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules state)))
+    (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules memoizep state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -361,10 +361,12 @@
        ((when erp) (mv erp nil nil nil state))
        ;; TODO: Option to turn this off, or to do just one pass:
        ((mv erp assumptions state)
-        (acl2::simplify-terms-repeatedly assumptions
-                                         assumption-rule-alist
-                                         rules-to-monitor
-                                         state))
+        (acl2::simplify-terms-repeatedly
+         assumptions
+         assumption-rule-alist
+         rules-to-monitor
+         nil ; don't memoize (avoids time spent making empty-memoizations)
+         state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        (- (cw "Done simplifying assumptions)~%"))
