@@ -163,11 +163,11 @@
         (let ((expr (aref1 'dag-array dag-array item)))
           (if (variablep expr)
               ;; Can't get negated conjuncts from a variable, so add its negation and return the item:
-              (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+              (mv-let (erp negation-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                 (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist)
                 (mv erp
                     nil                                  ; provedp
-                    (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
+                    (add-to-set-eql negation-nodenum acc) ;meaningless if erp is t.
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
             (let ((fn (ffn-symb expr)))
               (case fn
@@ -205,11 +205,11 @@
                                            print))
                         ;; TODO: Handle any other kinds of IF?
                         ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
-                        (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                        (mv-let (erp negation-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                           (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist)
                           (mv erp
                               nil                                  ; provedp
-                              (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
+                              (add-to-set-eql negation-nodenum acc) ;meaningless if erp is t.
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
                 (not (if (not (= 1 (len (dargs expr))))
                          (prog2$ (er hard? 'get-darg-disjuncts "Bad arity for NOT.")
@@ -221,11 +221,11 @@
                                       nil ;;negated-flg
                                       print)))
                 (t ;;it's not something we know how to get negated conjuncts from, so add its negation and return the item:
-                 (mv-let (erp negated-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
+                 (mv-let (erp negation-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
                    (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist)
                    (mv erp
                        nil                                      ; provedp
-                       (add-to-set-eql negated-nodenum acc) ;meaningless if erp is t.
+                       (add-to-set-eql negation-nodenum acc) ;meaningless if erp is t.
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))))))
 
 ;; (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
