@@ -11,7 +11,12 @@
 
 (in-package "ACL2")
 
+;; See also firstn.lisp for a related function.
+
 (in-theory (disable take))
+
+ ; todo: remove from ACL2?  same as (:type-prescription take).
+(in-theory (disable true-listp-take))
 
 ;; Param name changed to match std.
 (defthm consp-of-take
