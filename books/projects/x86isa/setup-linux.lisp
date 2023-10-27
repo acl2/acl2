@@ -1,3 +1,6 @@
 (include-book "tools/execution/top")
+(defttag :include-raw)
+(include-book "tools/include-raw" :dir :system)
+(include-raw "console-raw.lisp")
 (init-sys-view #x10000000 x86)
-(linux-load "../../../../bzImage" "../../../../alpine-root.img" "rootfstype=ramfs console=ttyx86isa ignore_loglevel root=/dev/ram0 init=/bin/bash" x86 state)
+(linux-load "../../../../bzImage" "../../../../alpine-root.img" "rootfstype=ramfs console=ttyprintk ignore_loglevel root=/dev/ram0" x86 state)

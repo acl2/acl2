@@ -987,7 +987,6 @@
                           (equal reg 0))
                    #.*cr8*
                    reg))
-               (- (cw "writing cr ~x0 with ~x1" ctr-index reg-val))
                ;; TODO: What should be done when the register is too large for
                ;; the control register? ATM, !ctri-write takes the lowest n bits
                (x86
