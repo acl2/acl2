@@ -72,6 +72,7 @@
 ;returns (mv new-dag-array new-dag-len translation-array)
 ;faster way to do this?
 ;todo: compare to drop-non-supporters
+;; See also add-array-nodes-to-dag and copy-array-values.
 (defun extract-dag-array (nodenums ;must not be empty
                           dag-array-name dag-array dag-len
                           new-dag-array-name)

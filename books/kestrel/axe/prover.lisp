@@ -1893,10 +1893,10 @@
                                   interpreted-function-alist monitored-symbols
                                   print
                                   case-name ;a string
-                                  context-array-name
-                                  context-array
-                                  context-array-len
-                                  context ;a contextp over nodes in context-array
+                                  context ;a non-false-context over nodes in context-array
+                                  context-array-name ; meaningless if context is true (nil)
+                                  context-array ; meaningless if context is true (nil) ; todo: does this include only the nodes that support CONTEXT?
+                                  context-array-len ; meaningless if context is true (nil)
                                   max-conflicts
                                   print-max-conflicts-goalp
                                   options state)
@@ -1907,8 +1907,11 @@
                                        (< (len dag) 2147483647))
                                   (myquotep dag))
                               (pseudo-term-listp assumptions)
-                              (array1p context-array-name context-array)
-                              (bounded-contextp context (alen1 context-array-name context-array))
+                              (non-false-contextp context)
+                              (if context
+                                  (and (array1p context-array-name context-array)
+                                       (bounded-contextp context (alen1 context-array-name context-array)))
+                                t)
                               ;;todo: add more
                               (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
@@ -1922,17 +1925,17 @@
           (mv (erp-nil) :failed state)))
     (b* ( ;(dummy (cw " ~x0 prover rules (print ~x1).~%" (len prover-rules) print)) ;drop?
 ;          (dummy (cw "print-max-conflicts-goalp:  ~x0" print-max-conflicts-goalp))
+         ;; Load the DAG nodes into an array:
          (dag-array (make-into-array 'dag-array dag))
          (top-nodenum (top-nodenum dag))
          (dag-len (+ 1 top-nodenum))
-         (negated-assumptions (negate-terms assumptions)) ; todo: handle constant assumptions
-         (max-context-nodenum (max-nodenum-in-context context)) ;pass in? ;fixme have this return nil instead of -1
-         (no-context-nodesp (eql -1 max-context-nodenum))
-         (- (and no-context-nodesp (cw "(No context.)~%")))
          ;; make auxiliary dag data structures:
          ((mv dag-parent-array dag-constant-alist dag-variable-alist)
           (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
-         ;;add the context nodes:
+         ;; Add the context nodes to the array:
+         (max-context-nodenum (max-nodenum-in-context context)) ;pass in? ;fixme have this return nil instead of -1 ; or use one less than the context array length?
+         (no-context-nodesp (eql -1 max-context-nodenum))
+         (- (and no-context-nodesp (cw "(No context.)~%")))
          ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
           (if no-context-nodesp ;Thu Sep 16 12:28:55 2010
               (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil)
@@ -1942,48 +1945,52 @@
                                     (make-empty-array 'renaming-array (+ 1 max-context-nodenum)))))
          ((when erp) (mv erp :failed state))
          ;;Fix up the context to use the new node numbers:
-         (context (if no-context-nodesp context (fixup-context context 'renaming-array renaming-array))))
-      (if (false-contextp context) ;move up? or not?
-          (prog2$ (cw "! Proof succeeded due to contradictory context !")
+         (context (if no-context-nodesp context (fixup-non-false-context context 'renaming-array renaming-array)))
+         ((when (false-contextp context)) ; may not be possible
+          (cw "! Proof succeeded due to contradictory context !")
+          (break$) ; this should never happen?
+          (mv (erp-nil) :proved state))
+         ;; Add the negated assumptions (of all kinds) to the dag:
+         (context-nodenums-to-assume-true (keep-atoms context)) ; todo: turn keep-atoms and keep-non-atoms into special functions for contexts?
+         (context-nodenums-to-assume-false (strip-cadrs (keep-non-atoms context)))  ;strip off the nots from the ones surrounded by not
+         (negated-assumption-trees (append (negate-all context-nodenums-to-assume-true)
+                                           context-nodenums-to-assume-false
+                                           (negate-terms assumptions))) ; todo: handle constant assumptions?
+         ((mv erp negated-assumption-literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+          (merge-trees-into-dag-array negated-assumption-trees
+                                      nil
+                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                      'dag-array 'dag-parent-array
+                                      interpreted-function-alist))
+         ((when erp) (mv erp :failed state))
+         ;; Now try the proof:
+         ((mv erp result & & & & & ;dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+              info tries state)
+          (prove-disjunction-with-axe-prover (cons top-nodenum negated-assumption-literal-nodenums-or-quoteps) ;we prove that either the top node of the dag is true or some assumption is false
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             rule-alists
+                                             interpreted-function-alist monitored-symbols
+                                             print
+                                             case-name
+                                             max-conflicts
+                                             print-max-conflicts-goalp
+                                             t ;fixme work-hard
+                                             (and print (empty-info-world))
+                                             (and print (zero-tries))
+                                             0 ;prover-depth
+                                             options
+                                             (+ -1 (expt 2 59)) ;max fixnum?
+                                             state))
+         ((when erp) (mv erp :failed state))
+         ;;just print the message in the subroutine and don't case split here?
+         (- (and print (cw "(~x0 tries.)~%" tries)))
+         (- (and print (maybe-print-hit-counts print info)))
+         )
+      (if (eq :proved result)
+          (prog2$ (cw "proved ~s0 with dag prover~%" case-name)
                   (mv (erp-nil) :proved state))
-        (b* ((context-nodenums-to-assume (keep-atoms context)) ;fixme turn keep-atoms and keep-non-atoms into special functions for contexts?
-             (context-negations-to-assume (keep-non-atoms context)) ;the ones surrounded by not
-             ;;add the negated assumptions to the dag:
-             ((mv erp negated-assumption-literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-              (merge-trees-into-dag-array (append (negate-all context-nodenums-to-assume)
-                                                  (strip-cadrs context-negations-to-assume) ;strip off the nots
-                                                  negated-assumptions)
-                                          nil
-                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                          'dag-array 'dag-parent-array
-                                          interpreted-function-alist))
-             ((when erp) (mv erp :failed state))
-             ((mv erp result & & & & & ;dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                  info tries state)
-              (prove-disjunction-with-axe-prover (cons top-nodenum negated-assumption-literal-nodenums-or-quoteps) ;we prove that either the top node of the dag is true or some assumption is false
-                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                            rule-alists
-                                            interpreted-function-alist monitored-symbols
-                                            print
-                                            case-name
-                                            max-conflicts
-                                            print-max-conflicts-goalp
-                                            t ;fixme work-hard
-                                            (and print (empty-info-world))
-                                            (and print (zero-tries))
-                                            0 ;prover-depth
-                                            options
-                                            (+ -1 (expt 2 59)) ;max fixnum?
-                                            state))
-             ((when erp) (mv erp :failed state))
-             ;;just print the message in the subroutine and don't case split here?
-             (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (maybe-print-hit-counts print info))))
-          (if (eq :proved result)
-              (prog2$ (cw "proved ~s0 with dag prover~%" case-name)
-                      (mv (erp-nil) :proved state))
-            (prog2$ (cw "failed to prove ~s0 with dag prover~%" case-name)
-                    (mv (erp-nil) result state))))))))
+        (prog2$ (cw "failed to prove ~s0 with dag prover~%" case-name)
+                (mv (erp-nil) result state))))))
 
 ;; Returns (mv erp provedp state)
 (defun prove-implication-with-axe-prover (conc ;a term

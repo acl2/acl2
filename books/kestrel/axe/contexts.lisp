@@ -66,6 +66,11 @@
 (defmacro false-contextp (item)
   `(eq (false-context) ,item))
 
+;; enabled for now
+(defun-inline non-false-contextp (context)
+  (declare (xargs :guard t))
+  (possibly-negated-nodenumsp context))
+
 (defund contextp (context)
   (declare (xargs :guard t))
   (or (eq (false-context) context)
@@ -74,7 +79,7 @@
       ;;a context of nil represents "true" (the conjunction of no things)
       ;; TODO: for efficiency, consider separating the lists of true and false things...
       ;; TODO: Consider requiring no dups, consider requiring no obvious contradictions (x and (not x) both present):
-      (possibly-negated-nodenumsp context)))
+      (non-false-contextp context)))
 
 (defthm contextp-of-cons-of-nil
   (implies (natp nodenum)
@@ -173,6 +178,27 @@
                                      bounded-possibly-negated-nodenumsp
                                      bounded-possibly-negated-nodenump))))
 
+(local
+ (defthm max-nodenum-in-possibly-negated-nodenums-aux-monotone-same-items
+   (implies (<= acc1 acc2)
+            (<= (max-nodenum-in-possibly-negated-nodenums-aux items acc1)
+                (max-nodenum-in-possibly-negated-nodenums-aux items acc2)))
+   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux)))))
+
+(local
+ (defthm max-nodenum-in-possibly-negated-nodenums-aux-monotone-helper
+   (implies (<= acc1 acc2)
+            (<= (max-nodenum-in-possibly-negated-nodenums-aux (cdr items) acc1)
+                (max-nodenum-in-possibly-negated-nodenums-aux items acc2)))
+   :hints (("Goal" :expand ((max-nodenum-in-possibly-negated-nodenums-aux nil acc1)
+                            (max-nodenum-in-possibly-negated-nodenums-aux items acc2))))))
+
+(defthm max-nodenum-in-possibly-negated-nodenums-aux-cdr-monotone
+  (<= (max-nodenum-in-possibly-negated-nodenums-aux (cdr items) acc)
+      (max-nodenum-in-possibly-negated-nodenums-aux items acc))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
+     
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
 ;;;
@@ -228,7 +254,7 @@
 ;;; max-nodenum-in-context
 ;;;
 
-;returns -1 if no nodenums are mentioned
+;returns -1 if no nodenums are mentioned (true or false context)
 (defund max-nodenum-in-context (context)
   (declare (xargs :guard (contextp context)))
   (if (false-contextp context)
@@ -261,12 +287,27 @@
 ;;                  (false-contextp context)))
 ;;  :hints (("Goal" :in-theory (enable MAX-NODENUM-IN-CONTEXT))))
 
-;strips off the nots
+;strips off any nots
+(defun get-nodenums-mentioned-in-non-false-context (context)
+  (declare (xargs :guard (and (contextp context)
+                              (not (false-contextp context)))))
+  (strip-nots-from-possibly-negated-nodenums context))
+
+;; see how contexts are used in the equivalence checker
+(thm
+ (implies (and (contextp context)
+               (not (false-contextp context)))
+          (iff (get-nodenums-mentioned-in-non-false-context context)
+               context))
+ :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums contextp))))
+
+;strips off any nots
+;; todo: can we get rid of this?  usually, if we have a false context we can do better
 (defun get-nodenums-mentioned-in-context (context)
   (declare (xargs :guard (contextp context)))
   (if (false-contextp context)
       nil
-    (strip-nots-from-possibly-negated-nodenums context)))
+    (get-nodenums-mentioned-in-non-false-context context)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

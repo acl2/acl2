@@ -4398,7 +4398,8 @@
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     memoization ; this is over the NEW nodenums (the ones in dag-array)
                                     info tries limits
-                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                    node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
+                                    rule-alist refined-assumption-alist
                                     print interpreted-function-alist rewrite-stobj
                                     renumbering-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
                                     )
