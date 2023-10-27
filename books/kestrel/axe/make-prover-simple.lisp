@@ -737,6 +737,13 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances) (pseudo-termp)))))
 
+(defthm integerp-mv-nth-3-of-apply-axe-use-instances
+  (implies (integerp dag-len)
+           (integerp (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
+  :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp-for-axe) (pseudo-termp
+                                                                                        perm-implies-equal-subsetp-equal-1 ; why?
+                                                                                        )))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
@@ -3311,7 +3318,7 @@
                                      (simple-prover-optionsp options))
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
-             (progn$ (and (member-eq print '(:verbose! :verbose))
+             (progn$ (and (member-eq print '(t :verbose :verbose!))
                           (print-axe-prover-case done-list 'dag-array dag-array dag-len "rewritten"))
                      (mv (erp-nil)
                          nil ;did not prove the clause
@@ -3579,7 +3586,9 @@
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
               (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
-              (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))))
+              (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
+              (- (and (member-eq print '(t :verbose :verbose!))
+                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "rewritten"))))
            (if provedp
                (prog2$ (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
                        (mv (erp-nil)
@@ -4049,7 +4058,7 @@
          (if (atom rule-alists)
              ;; No error but failed to prove this case and no more rule-alists after left:
              (prog2$
-              (and (member-eq print '(:verbose! :verbose)) ;; TODO: improve this printing.
+              (and (member-eq print '(t :verbose :verbose!))
                    (prog2$ (cw "Case ~s0 didn't simplify to true.~%" case-designator)
                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len case-designator)))
               (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -4444,7 +4453,7 @@
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array-with-name 'dag-array dag-array nodenum nil)))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
+                 (- (and (member-eq print '(t :verbose :verbose!))
                          (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true"))))
               ;; Attempt to prove case #1:
               (,prove-or-split-case-name literal-nodenums
@@ -4500,7 +4509,7 @@
                                  print))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
+                 (- (and (member-eq print '(t :verbose :verbose!))
                          (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false"))))
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
@@ -4977,7 +4986,9 @@
               ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               ((when provedp)
                (and print (cw "! Proved case ~s0 (one literal had a non-nil constant disjunct!)~%" case-designator))
-               (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+               (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              (- (and (member-eq print '(t :verbose :verbose!))
+                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial"))))
            (,prove-or-split-case-name literal-nodenums
                                       dag-array
                                       dag-len
