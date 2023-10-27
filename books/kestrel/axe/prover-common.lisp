@@ -1404,6 +1404,22 @@
      ;;print the close paren:
      (cw ")~%"))))
 
+;; Prints as a term if that term would not be too big.
+(defund print-negated-literal-nicely (literal-nodenum dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (natp literal-nodenum)
+                              (< literal-nodenum dag-len))))
+  (let ((term-size (nfix (size-of-node literal-nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
+    (if (< term-size 10000)
+        (let ((term (dag-to-term-aux-array dag-array-name dag-array literal-nodenum)))
+          (if (and (call-of 'not term)
+                   (consp (cdr term)))
+              ;; strip the not:
+              (cw "~x0~%" (farg1 term))
+            ;; add a not:
+            (cw "~x0~%" `(not ,term))))
+      (print-negated-literal literal-nodenum dag-array-name dag-array dag-len))))
+
 (defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
@@ -1411,15 +1427,7 @@
                               (all-< literal-nodenums dag-len))))
   (if (endp literal-nodenums)
       nil
-    (progn$ (let* ((nodenum (first literal-nodenums))
-                   (term-size (nfix (size-of-node nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
-              (if (< term-size 10000)
-                  (let ((term (dag-to-term-aux-array dag-array-name dag-array nodenum)))
-                    (if (and (call-of 'not term)
-                             (consp (cdr term)))
-                        (cw "~x0~%" (farg1 term))
-                      (cw "~x0~%" `(not ,term))))
-                (print-negated-literal nodenum dag-array-name dag-array dag-len)))
+    (progn$ (print-negated-literal-nicely (first literal-nodenums) dag-array-name dag-array dag-len)
             (cw "~%")
             (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len))))
 
