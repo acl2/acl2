@@ -3312,9 +3312,7 @@
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
              (progn$ (and (member-eq print '(:verbose! :verbose))
-                          (progn$ (cw "(Literals after rewriting them all:~%")
-                                  (print-dag-array-node-and-supporters-lst done-list 'dag-array dag-array)
-                                  (cw "):~%")))
+                          (print-axe-prover-case done-list 'dag-array dag-array dag-len "rewritten"))
                      (mv (erp-nil)
                          nil ;did not prove the clause
                          changep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -4052,11 +4050,8 @@
              ;; No error but failed to prove this case and no more rule-alists after left:
              (prog2$
               (and (member-eq print '(:verbose! :verbose)) ;; TODO: improve this printing.
-                   (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
-                               case-designator
-                               literal-nodenums
-                               (expressions-for-this-case-simple literal-nodenums dag-array dag-len))
-                           (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)))
+                   (prog2$ (cw "Case ~s0 didn't simplify to true.~%" case-designator)
+                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len case-designator)))
               (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
            (b* (((mv erp provedp
                      & ;;changep
@@ -4590,7 +4585,9 @@
                     ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)
                     (b* ((- (and print (cw "(Splitting on node ~x0:~%" nodenum)))
                          ;;todo: elide this if too big:
-                         (- (and print (print-dag-array-node-and-supporters 'dag-array dag-array nodenum)))
+                         (- (and print (print-dag-node-nicely nodenum 'dag-array dag-array dag-len 1000)
+                                 ;(print-dag-array-node-and-supporters 'dag-array dag-array nodenum)
+                                 ))
                          ;; (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          ;;         (progn$ (cw "Literals:~%")
                          ;;                 (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)

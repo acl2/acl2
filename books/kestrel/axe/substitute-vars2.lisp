@@ -1,7 +1,7 @@
 ; New tools for substituting equated vars in DAGS
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "crunch-dag2")
 (include-book "remove-duplicates-from-sorted-list")
 (include-book "../acl2-arrays/typed-acl2-arrays")
+(include-book "dag-array-printing2")
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -1082,6 +1083,28 @@
            (bounded-translation-arrayp-aux top-nodenum-to-check (mark-replacements subst-candidates translation-array) bound))
   :hints (("Goal" :in-theory (enable mark-replacements dargp-of-cadr-when-subst-candidatep))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund print-subst-candidates (subst-candidates dag-array dag-len)
+  (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+                  :guard-hints (("Goal" :in-theory (enable subst-candidate-listp)))))
+  (if (endp subst-candidates)
+      nil
+    (let* ((subst-candidate (first subst-candidates))
+           (nodenum-of-var (first subst-candidate))
+           (replacement (second subst-candidate)))
+      (if (not (and (natp nodenum-of-var) (< nodenum-of-var dag-len) (dargp-less-than replacement dag-len))) ; for guards
+          (er hard? 'print-subst-candidates "Bad nodenum-of-var.")
+        (progn$ (cw "  Substituting for ~x0. "  (aref1 'dag-array dag-array nodenum-of-var))
+                (if (consp replacement) ; checks for quotep
+                    (cw "Putting in the constant ~x0.~%" replacement)
+                  (prog2$ (cw "Putting in the term:~%" replacement)
+                          (print-dag-node-nicely replacement 'dag-array dag-array dag-len 1000)))
+                (print-subst-candidates (rest subst-candidates) dag-array dag-len))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; substitute-var-set
 ;;;
@@ -1151,6 +1174,7 @@
                (translation-array (make-empty-array 'translation-array (+ 1 max-literal-nodenum)))
                ;; Mark all the nodenums to be replaced:
                (translation-array (mark-replacements subst-candidates translation-array))
+               (- (print-subst-candidates subst-candidates dag-array dag-len)) ; todo: make conditional on a print arg
                ;; Rebuild all the literals, and their supporters, with the substitution applied:
                ((mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; generalize this name, since now there are several substs:
@@ -1284,6 +1308,8 @@
            (all-< (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
                   (mv-nth 5 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
   :hints (("Goal" :in-theory (enable substitute-var-set))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Repeatedly get rid of sets of vars by substitution.
 ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
