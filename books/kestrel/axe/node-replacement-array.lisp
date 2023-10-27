@@ -270,13 +270,15 @@
                 (<= index (max-key alist 0))
                 (symbolp array-name))
            (bounded-node-replacement-arrayp-aux array-name (make-into-array array-name alist) index bound))
-  :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
+  :hints (("Goal" :in-theory (e/d (bounded-node-replacement-arrayp-aux
                                      bounded-natp-alistp-when-node-replacement-alistp
                                      make-into-array ;todo
                                      aref1 ;todo
                                      make-into-array-with-len ;todo
-                                     DARGP-LESS-THAN-OF-CDR-OF-ASSOC-EQUAL-WHEN-NODE-REPLACEMENT-ALISTP
-                                     ))))
+                                     dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                                     )
+                                  ;; for speed:
+                                  (bounded-node-replacement-arrayp-aux-beyond-length)))))
 
 (defthm bounded-node-replacement-arrayp-of-make-into-array
   (implies (and (node-replacement-alistp node-replacement-alist bound)
@@ -755,8 +757,8 @@
                 (symbol-listp known-booleans)
                 (term-replacement-alistp acc))
            (term-replacement-alistp (term-replacement-alist-for-assumptions assumptions known-booleans acc)))
-  :hints (("Goal" :in-theory (enable term-replacement-alist-for-assumptions
-                                     term-replacement-alistp))))
+  :hints (("Goal" :induct t
+           :in-theory (enable term-replacement-alist-for-assumptions))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
