@@ -217,6 +217,7 @@
 ;; copies a segment of nodes from FROM-DAG-ARRAY to DAG-ARRAY and returns the new dag (including the auxiliary data structures) and a RENAMING-ARRAY
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array).
 ;fixme should this use a worklist instead of copying a segment?
+;; See also extract-dag-array and copy-array-values.
 (defund add-array-nodes-to-dag (nodenum ;smallest nodenum to copy
                                 max-nodenum ;largest nodenum to copy
                                 from-dag-array-name from-dag-array from-dag-array-len
