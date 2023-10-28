@@ -18,7 +18,8 @@
 
 ;; TODO: Add support for :axe-prover option to call the Axe prover
 
-;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
+;; See also the provers created by make-prover-simple (they are more
+;; lightweight and do not depend on skip-proofs).
 
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
@@ -203,6 +204,7 @@
        (- (and print (cw "(Applying the Axe rewriter~%")))
        ((mv erp new-dag state)
         (simp-dag dag ; TODO: Use the basic rewriter (but it will need to support rewriting nodes assuming their [approximate] contexts)
+                  ;; todo: consider :exhaustivep t
                   :rule-alist rule-alist
                   :interpreted-function-alist interpreted-function-alist
                   :monitor monitor
