@@ -1414,6 +1414,21 @@
   :hints (("Goal" :use (substitute-vars2-return-type)
            :in-theory (disable substitute-vars2-return-type))))
 
+(defthm substitute-vars2-return-type-corollary2
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (natp prover-depth)
+                (natp num)
+                (booleanp changep-acc))
+           (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
+             (declare (ignore provedp changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
+  :hints (("Goal" :use (substitute-vars2-return-type)
+           :in-theory (disable substitute-vars2-return-type))))
+
 (defthm substitute-vars2-return-type-2
   (implies (true-listp literal-nodenums)
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
