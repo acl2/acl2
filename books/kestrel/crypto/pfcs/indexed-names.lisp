@@ -16,6 +16,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/std/strings/decimal-fty" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -56,7 +57,10 @@
 (define iname ((base stringp) (i natp))
   :returns (name stringp)
   :short "Create an indexed name, from a base and an index."
-  (str::cat base "_" (str::nat-to-dec-string i)))
+  (str::cat base "_" (str::nat-to-dec-string i))
+  ///
+  (fty::deffixequiv iname
+    :args ((i natp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
