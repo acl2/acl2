@@ -267,3 +267,41 @@
           because the indices are all distinct."
   (implies (stringp base)
            (no-duplicatesp-equal (iname-list base n))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled iname-injective-on-index
+  :parents (iname)
+  :short "The function @(tsee iname) is injective over the index."
+  (implies (stringp base)
+           (equal (equal (iname base i)
+                         (iname base j))
+                  (equal (nfix i)
+                         (nfix j))))
+  :use (only-if-part if-part)
+
+  :prep-lemmas
+
+  ((defruled only-if-part
+     (implies (stringp base)
+              (implies (equal (iname base i)
+                              (iname base j))
+                       (equal (nfix i)
+                              (nfix j))))
+     :use ((:instance iname-to-num-of-iname (i i))
+           (:instance iname-to-num-of-iname (i j)))
+     :disable iname-to-num-of-iname)
+
+   (defruled if-part
+     (implies (stringp base)
+              (implies (equal (nfix i)
+                              (nfix j))
+                       (equal (iname base i)
+                              (iname base j))))
+     :use (:instance lemma (i (nfix i)) (j (nfix j)))
+     :prep-lemmas
+     ((defruled lemma
+        (implies (and (stringp base)
+                      (equal i j))
+                 (equal (iname base i)
+                        (iname base j))))))))
