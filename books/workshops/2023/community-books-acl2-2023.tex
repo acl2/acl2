@@ -89,13 +89,15 @@
 
 \subtitle{Since the ACL2-2022 Workshop}
 
-\author{Alessandro Coglio\inst{1,2,3} (presenter),
-        \emph{more authors}\inst{4}}
+\author{Alessandro Coglio\inst{1,3,4} (presenter),\\
+        Matt Kaufmann\inst{2},
+        \emph{more authors}\inst{5}}
 
 \institute{\inst{1}Aleo Systems Inc.,
-           \inst{2}Kestrel Institute,
-           \inst{3}Kestrel Technology,
-           \inst{4}\emph{more organizations}}
+           \inst{2}ForrestHunt Inc.,
+           \inst{3}Kestrel Institute,
+           \inst{4}Kestrel Technology,\\
+           \inst{5}\emph{more organizations}}
 
 \date{ACL2-2023 Workshop}
 
@@ -124,6 +126,39 @@
       ordered by book path within each of the new and improved library parts.
 \end{itemize}
       
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/acl2data}:
+Tools to collect machine learning data from the community books.
+(Discussed in a paper at this Workshop.)
+\begin{itemize}
+\item Collected data is put into \code{*\_\_acl2data.out} files.
+\item Data is collected by breaking proofs systematically
+      and recording resulting information, including checkpoints.
+\item More information in \code{README} and  \code{gather/README}.
+\item Used by Proof Helpers in \code[kestrel/helpers].
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{demos}:
+Demos of ACL2 and tools built on ACL2.
+\begin{itemize}
+\item Added examples of \code{include-raw}.
+\item Added examples of \code{partial-encapsulate}.
+\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -246,6 +281,23 @@ Standard system library (extension of Std).
 
 \implibtitle
 
+\bookpath{kestrel/utilities}:
+Various utilities in the Kestrel books.
+\begin{itemize}
+\item Added \code{show-books} utility,
+      which returns a tree representing
+      the books included in the current ACL2 session.
+\item Improved \code{checkpoint-list} and related utilities.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/utilities/digits-any-base}:
 Number representations in arbitrary bases.
 \begin{itemize}
@@ -276,11 +328,58 @@ Ordered maps (omaps).
 
 \implibtitle
 
+\bookpath{std/io}:
+Standard I/O library.
+\begin{itemize}
+\item Extended \code{read-string} and \code{read-string-light-fn}
+      to take an optional package as argument.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{std/util}:
 Standard utilities library.
 \begin{itemize}
 \item The \code{er} binder of \code{b*} has been extended with
       an option \code{:iferr} to return an alternative value in case of error.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{tools}:
+Various tools.
+\begin{itemize}
+\item Substantially enhanced \code{with-supporters}.
+\item Improved \code{prove\$}, e.g.\ to treat hard errors as ordinary failures.
+\item Made \code{run-script} more robust against time variations.
+\item Added tools \code{functions-after} and \code{macros-after},
+      which return names of functions and macros introduced after a given name.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{xdoc}:
+XDOC documentation.
+\begin{itemize}
+\item Added support for Greek letters and more mathematical symbols.
 \end{itemize}
 
 \end{frame}
