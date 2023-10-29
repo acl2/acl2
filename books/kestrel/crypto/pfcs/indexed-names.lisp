@@ -263,7 +263,7 @@
 
 (defrule no-duplicatesp-equal-of-iname-list
   :parents (iname-list)
-  :short "The names returned by @('iname-list') are all distinct,
+  :short "The names returned by @(tsee iname-list) are all distinct,
           because the indices are all distinct."
   (implies (stringp base)
            (no-duplicatesp-equal (iname-list base n))))
