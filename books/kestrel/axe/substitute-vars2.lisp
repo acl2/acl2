@@ -857,7 +857,7 @@
 ;; TODO: Can we mark vars to avoid in an array of bits, to avoid operations on sorted lists?
 (defund find-simultaneous-subst-candidates (subst-candidates
                                             candidate-deps-array ;tells us what vars the equated-nodenums depend on
-                                            subst-candidates-acc ; candidates we have already decided to added to the set
+                                            subst-candidates-acc ; candidates we have already decided to add to the set
                                             nodenums-of-vars-already-added ;var nodenums of the candidates in subst-candidates-acc, sorted
                                             nodenums-of-vars-to-avoid ;all the vars on which the candidates in subst-candidates-acc depend, sorted
                                             )
@@ -891,6 +891,8 @@
                                              nil
                                            (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant))))
       (if (and
+           ;; Makes sure we are not already substituting for this var (using a different equality):
+           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-of-vars-already-added))
            ;; Makes sure no already-selected candidate depends on this var:
            (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-of-vars-to-avoid))
            ;; Makes sure this var doesn't depend on any of the already-selected candidates:
