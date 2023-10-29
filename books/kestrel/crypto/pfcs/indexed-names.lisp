@@ -305,3 +305,23 @@
                       (equal i j))
                  (equal (iname base i)
                         (iname base j))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled member-equal-of-iname-and-iname-list
+  :parents (iname-list)
+  (implies (stringp base)
+           (iff (member-equal (iname base i) (iname-list base n))
+                (< (nfix i) (nfix n))))
+  :enable (iname-list
+           member-equal-of-iname-and-iname-list-rev)
+  :prep-lemmas
+  ((defruled member-equal-of-iname-and-iname-list-rev
+     (implies (stringp base)
+              (iff (member-equal (iname base i) (iname-list-rev base n))
+                   (< (nfix i) (nfix n))))
+     :induct t
+     :enable (iname-list-rev
+              member-equal
+              iname-injective-on-index
+              nfix))))
