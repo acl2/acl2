@@ -85,12 +85,24 @@
               (nfix n))
        :hints (("Goal"
                 :induct t
-                :in-theory (enable iname-list-rev nfix fix len))))))
+                :in-theory (enable iname-list-rev nfix fix len))))
+
+     (defret consp-of-iname-list-rev
+       (equal (consp names-rev)
+              (> (nfix n) 0))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))))
   ///
 
   (defret len-of-iname-list
     (equal (len names)
-           (nfix n))))
+           (nfix n)))
+
+  (defret consp-of-iname-list
+    (equal (consp names)
+           (> (nfix n) 0)))
+
+  (in-theory (disable consp-of-iname-list
+                      consp-of-iname-list-rev)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
