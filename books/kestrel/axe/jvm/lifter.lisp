@@ -54,7 +54,7 @@
 (include-book "../make-axe-rules2")
 (include-book "../dag-to-term-with-lets")
 (include-book "../add-to-dag")
-;(include-book "kestrel/bv/arith" :dir :system) ;todo?
+(include-book "kestrel/bv/arith" :dir :system) ;todo ; for equal-of-same-cancel-1
 (include-book "jvm-rules-axe2") ;for smart if handling
 (include-book "../math-rules") ; todo: why?
 (include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
@@ -2659,10 +2659,10 @@
                                                      monitored-symbols
                                                      print
                                                      "INVAR"
+                                                     nil ;context ;a contextp over nodes in context-array
                                                      nil ;context-array-name
                                                      nil ;context-array
                                                      0
-                                                     nil ;context ;a contextp over nodes in context-array
                                                      6000 ;max-conflicts
                                                      nil  ;print-max-conflicts-goalp
                                                      nil  ;options
@@ -5157,8 +5157,8 @@
                            (make-axe-rules! (set-difference-eq
                                             (append (map-rules)
                                                     (jvm-simplification-rules)
-                                                    (jvm-rules-list)
-                                                    (jvm-rules-alist)
+                                                    (list-rules3)
+                                                    (alist-rules)
                                                     (bv-array-rules)
                                                     (jvm-rules-unfiled-misc)
                                                     (boolean-rules)

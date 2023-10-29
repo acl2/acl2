@@ -191,7 +191,7 @@
                  acl2::unsigned-byte-p-of-bvnot
                  acl2::unsigned-byte-p-of-bvplus
                  ;; bitp rules:
-                 r1cs::bitp-of-bitxor
+                 acl2::bitp-of-bitxor
                  acl2::bitp-of-bitnot
                  acl2::bitp-of-getbit
                  ;; acl2::bitp-of-bvchop-of-1 ; drop?

@@ -1,0 +1,14 @@
+; Certification for the Examples in "r1cs.lisp" and "pfcs.lisp"
+;
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Authors: Alessandro Coglio (coglio@kestrel.edu)
+;          Eric McCarthy (mccarthy@kestrel.edu)
+;          Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ld "package.lsp")

@@ -331,7 +331,7 @@
      x86p-of-write ;move
      read-of-write-same ;move
      get-flag-of-write
-     xr-of-write
+     xr-of-write-when-not-mem
      read-of-xw-irrel
      64-bit-modep-of-write
      program-at-of-write
@@ -339,7 +339,6 @@
      mod-of-plus-reduce-constants
      mv-nth-1-of-rb-becomes-read
      mv-nth-1-of-wb-becomes-write
-     xr-of-write
      write-of-xw-irrel
      read-of-xw-irrel
      read-of-set-flag
@@ -2012,7 +2011,9 @@
         ((when erp) (mv erp nil nil nil state))
         ((mv erp assumptions state)
          ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
-         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor state))
+         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
+                                          nil ; don't memoize (avoids time spent making empty-memoizations)
+                                          state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
         (state-var (pack-in-package-of-symbol 'x86 'x86_ loop-depth))

@@ -745,7 +745,7 @@
                       1
                     0)))
   :hints (("Goal" :in-theory (e/d (slice)
-                                  (acl2::bvchop-of-logtail-becomes-slice)))))
+                                  (bvchop-of-logtail-becomes-slice)))))
 
 ;similar to UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2?
 (defthmd slice-too-high-is-0-new

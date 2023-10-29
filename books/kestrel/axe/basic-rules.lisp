@@ -1,7 +1,7 @@
 ; Basic Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -29,12 +29,10 @@
                   n)))
 
 (defthm acl2-numberp-of-*
-  (equal (acl2-numberp (* x y))
-         t))
+  (acl2-numberp (* x y)))
 
 (defthm acl2-numberp-of-unary--
-  (equal (acl2-numberp (unary-- x))
-         t))
+  (acl2-numberp (unary-- x)))
 
 ;move?
 (defthm if-of-non-nil
@@ -55,60 +53,49 @@
          (if test foo bar)))
 
 (defthm natp-of-len
-  (equal (natp (len x))
-         t))
+  (natp (len x)))
 
 (defthm acl2-numberp-of-len
-  (equal (acl2-numberp (len x))
-         t))
+  (acl2-numberp (len x)))
 
 (defthm acl2-numberp-of-+
-  (equal (acl2-numberp (+ x y))
-         t))
+  (acl2-numberp (+ x y)))
 
 (defthm booleanp-of-iff
-  (equal (booleanp (iff x y))
-         t))
+  (booleanp (iff x y)))
 
 (defthm booleanp-of-not
-  (equal (booleanp (not x))
-         t))
+  (booleanp (not x)))
 
 (defthm booleanp-of-equal
-  (equal (booleanp (equal x y))
-         t))
+  (booleanp (equal x y)))
 
 (defthm booleanp-of-<
-  (equal (booleanp (< x y))
-         t))
+  (booleanp (< x y)))
+
+(defthm booleanp-of-bitp
+  (booleanp (bitp x)))
 
 (defthm booleanp-of-natp
-  (equal (booleanp (natp x))
-         t))
+  (booleanp (natp x)))
 
 (defthm booleanp-of-integerp
-  (equal (booleanp (integerp x))
-         t))
+  (booleanp (integerp x)))
 
 (defthm booleanp-of-rationalp
-  (equal (booleanp (rationalp x))
-         t))
+  (booleanp (rationalp x)))
 
 (defthm booleanp-of-acl2-numberp
-  (equal (booleanp (acl2-numberp x))
-         t))
+  (booleanp (acl2-numberp x)))
 
 (defthm booleanp-of-consp
-  (equal (booleanp (consp x))
-         t))
+  (booleanp (consp x)))
 
 (defthm booleanp-of-true-listp
-  (equal (booleanp (true-listp a))
-         t))
+  (booleanp (true-listp a)))
 
 (defthm booleanp-of-endp
-  (equal (booleanp (endp x))
-         t))
+  (booleanp (endp x)))
 
 
 (in-theory (disable add-to-set-eql)) ;new
@@ -135,14 +122,8 @@
            (plist-worldp (w state)))
   :hints (("Goal" :in-theory (enable state-p w))))
 
-(defthm fix-when-acl2-numberp
-  (implies (acl2-numberp x)
-           (equal (fix x)
-                  x)))
-
 (defthm acl2-numberp-of-fix
-  (equal (acl2-numberp (fix x))
-         t))
+  (acl2-numberp (fix x)))
 
 (defthm equal-same
   (equal (equal x x)

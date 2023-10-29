@@ -299,3 +299,12 @@
   :hints (("Goal" :use (:instance bvchop-list-does-nothing-rewrite)
            :in-theory (disable bvchop-list-does-nothing-rewrite
                                bvchop-list-does-nothing-better))))
+
+(defthmd bvchop-list-of-take-of-bvchop-list-gen
+  (implies (and (<= size2 size1)
+                (natp size1)
+                (natp size2))
+           (equal (bvchop-list size1 (take len (bvchop-list size2 lst)))
+                  (bvchop-list size2 (take len lst))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable take bvchop-list))))

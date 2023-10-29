@@ -1,7 +1,7 @@
 ; A function to write to an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 
@@ -208,3 +209,25 @@
   (equal (bv-array-write elem-size len index val (true-list-fix lst))
          (bv-array-write elem-size len index val lst))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
+
+(defthm bv-array-write-of-bvchop-arg3
+  (implies (and (<= (ceiling-of-lg len) size)
+                (integerp size))
+           (equal (bv-array-write element-size len (bvchop size index) val data)
+                  (bv-array-write element-size len index val data)))
+  :hints (("Goal" :in-theory (enable bv-array-write))))
+
+(defthm bv-array-write-of-bvchop-arg4
+  (implies (and (<= element-size size)
+                (integerp size))
+           (equal (bv-array-write element-size len index (bvchop size val) data)
+                  (bv-array-write element-size len index val data)))
+  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
+                                                                 )))))
+
+(defthm nthcdr-of-bv-array-write-is-nil
+  (implies (and (<= len n)
+                (integerp len)
+                (integerp n))
+           (equal (nthcdr n (bv-array-write element-size len key val lst))
+                  nil)))

@@ -20,6 +20,7 @@
 (include-book "padding/top")
 (include-book "pfcs/top")
 (include-book "sha-2/top")
+(include-book "sha-3/sha-3-validation")
 (include-book "kdf/top")
 (include-book "r1cs/top") ;; todo: name clash on perm
 (include-book "r1cs/doc")

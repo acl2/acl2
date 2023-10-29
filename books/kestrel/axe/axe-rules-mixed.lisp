@@ -21,6 +21,7 @@
 (include-book "rules3") ;drop? ;for BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
+(include-book "kestrel/lists-light/all-same" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
@@ -48,19 +49,14 @@
                             bvchop-when-top-bit-1)
                            (getbit-of-plus
 ;                            <-of-bvchop-arg1
-                            <-becomes-bvlt-free
-                            <-becomes-bvlt-free-alt
                             ;<-when-unsigned-byte-p
                             ;<-when-unsigned-byte-p-alt
-                            <-becomes-bvlt
                             ;minus-becomes-bv
                             ;plus-becomes-bvplus-arg1-free
                             ;bvuminus-of-+
                             bvplus-of-plus-arg3
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
-                            <-becomes-bvlt
-                            <-becomes-bvlt-alt
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
                             ;anti-bvplus
@@ -799,6 +795,7 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-+-of-minus-better-helper (size (max xsize ysize)))
            :in-theory (enable unsigned-byte-p-forced))))
 
+;move
 (defthmd nth-of-bv-when-all-same
   (implies (and (syntaxp (quotep lst))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))

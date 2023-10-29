@@ -59,7 +59,7 @@
 ;;    typespec-check implies fgl-sat-check))
 
 (def-formula-checks primitives-formula-checks
-  (if! atom ifix bool-fix$inline mv-nth binary-append nthcdr take))
+  (if! atom ifix bool-fix$inline mv-nth binary-append nthcdr take len))
 
 (enable-split-ifs equal)
 
@@ -806,6 +806,39 @@
         (mv nil nil interp-st)))
     (mv t take interp-st))
   :formula-check primitives-formula-checks)
+
+
+(define fgl-len-aux ((x fgl-object-p) (n natp))
+  :returns (mv ok (new-x fgl-object-p))
+  :verify-guards nil
+  :measure (fgl-object-count x)
+  (fgl-object-case x
+    :g-concrete (mv t (g-concrete (+ (len x.val) (lnfix n))))
+    :g-cons (fgl-len-aux x.cdr (1+ (lnfix n)))
+    :g-boolean (mv t (g-concrete (lnfix n)))
+    :g-integer (mv t (g-concrete (lnfix n)))
+    :otherwise (mv nil nil))
+  ///
+  (Verify-guards fgl-len-aux)
+  
+  (defret bfr-listp-of-<fn>
+    (implies (bfr-listp (fgl-object-bfrlist x))
+             (bfr-listp (fgl-object-bfrlist new-x))))
+  
+  (defret eval-of-<fn>
+    (implies ok
+             (equal (fgl-object-eval new-x env)
+                    (+ (nfix n) (len (fgl-object-eval x env)))))
+    :hints (("goal" :induct <call>
+             :in-theory (enable len)))))
+
+(def-fgl-primitive len (x)
+  (b* (((mv ok len) (fgl-len-aux x 0))
+       ((unless ok)
+        (mv nil nil)))
+    (mv t len))
+  :formula-check primitives-formula-checks
+  :returns (mv successp ans))
 
 
 

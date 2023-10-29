@@ -1,0 +1,3 @@
+;; Empty file to ensure that the directory-wide cert.acl2 file is not
+;; applied to a-n-0-acl2r.lisp.  It seems that cert.acl2 brings in
+;; material not compatible with acl2r.

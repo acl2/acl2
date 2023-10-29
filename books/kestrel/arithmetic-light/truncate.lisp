@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function truncate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (local (include-book "plus"))
 (local (include-book "divide"))
 (local (include-book "times-and-divide"))
+(local (include-book "nonnegative-integer-quotient"))
 
 (in-theory (disable truncate))
 
@@ -48,8 +49,6 @@
                   (floor i j)))
   :hints (("Goal" :in-theory (enable floor truncate)
            :do-not '(generalize eliminate-destructors))))
-
-(local (include-book "nonnegative-integer-quotient"))
 
 (defthm <=-of-truncate-and-0-when-nonnegative-and-nonnegative-type
   (implies (and (<= 0 i)
@@ -202,7 +201,7 @@
 ;;  :hints (("Goal" :cases ((< x 0))
 ;;           :in-theory (enable truncate-becomes-floor-gen))))
 
-(defthmd nonnegative-integer-quotient-of---of-numerator-and-denominator
+(defthmd --of-nonnegative-integer-quotient-of---of-numerator-and-denominator
   (implies (and (rationalp x)
                 (< x 0))
            (equal (- (nonnegative-integer-quotient (- (numerator x))
@@ -246,3 +245,12 @@
              0
            1))
   :hints (("Goal" :in-theory (enable truncate))))
+
+(defthm truncate-bound-when-non-negative-and-integer-linear
+  (implies (and (integerp j)
+                (<= 0 i)
+                (rationalp i))
+           (<= (- i) (truncate i j)))
+  :rule-classes :linear
+  :hints (("Goal" :cases ((< j 0))
+           :in-theory (enable acl2::truncate-becomes-floor-gen))))

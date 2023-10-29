@@ -59,7 +59,9 @@
    check-non-booleanp
    check-equal
    integer-length-bound
-   ifix))
+   ifix
+   symbolic-t
+   symbolic-nil))
 
 ;; (local (defthm equal-of-len
 ;;          (implies (syntaxp (quotep n))
@@ -486,3 +488,17 @@
   :formula-check checks-formula-checks
   :origfn check-equal :formals (x y)
   :prepwork ((local (in-theory (enable check-equal)))))
+
+(def-fgl-primitive symbolic-t ()
+  (g-boolean t)
+  :formula-check checks-formula-checks
+  :returns ans)
+
+(def-fgl-primitive symbolic-nil ()
+  (g-boolean nil)
+  :formula-check checks-formula-checks
+  :returns ans)
+
+(fgl::disable-execution symbolic-t)
+(fgl::disable-execution symbolic-nil)
+

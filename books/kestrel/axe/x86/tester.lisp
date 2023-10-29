@@ -492,18 +492,28 @@
        (- (progn$ (cw "(DAG after lifting:~%")
                   (acl2::print-list result-dag)
                   (cw ")~%")))
-       ;; Print the term if small
+       ;; Print the term if small:
        (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
                (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
        (result-dag-fns (dag-fns result-dag))
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
-        (cw "FAILED: Did not finish the run.  See DAG above.)~%")
+        (cw "Test ~x0 failed: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
           (real-time-since start-real-time state)
           (mv (erp-nil) nil elapsed state)))
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
        ;; Prove the test routine always returns 1 (we pass :bit for the type):
+       (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
+                                       (append remove-rules
+                                               remove-proof-rules
+                                               ;; these can introduce boolor: todo: remove from tester-proof-rules?
+                                               ;; why is boolor bad?  can't translate to stp?
+                                               '(acl2::boolif-x-x-y ;drop?
+                                                 acl2::boolif-when-quotep-arg2
+                                                 acl2::boolif-when-quotep-arg3
+                                                 acl2::bvchop-of-bvshr
+                                                 acl2::bvchop-of-bvashr))))
        ((mv result info-acc
             & ; actual-dag
             & ; assumptions-given
@@ -520,15 +530,7 @@
                                    t       ; call-stp-when-pruning
                                    t ; counterexamplep
                                    nil ; print-cex-as-signedp
-                                   (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
-                                                      (append remove-rules
-                                                              remove-proof-rules
-                                                              ;; these can introduce boolor:
-                                                              '(acl2::boolif-x-x-y
-                                                                acl2::boolif-when-quotep-arg2
-                                                                acl2::boolif-when-quotep-arg3
-                                                                acl2::bvchop-of-bvshr
-                                                                acl2::bvchop-of-bvashr)))
+                                   proof-rules
                                    nil ; interpreted-fns
                                    ;; monitor:
                                    (append '(ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?

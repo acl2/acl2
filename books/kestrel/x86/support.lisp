@@ -31,6 +31,7 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;for logand-with-mask
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/idioms" :dir :system))
 
 
@@ -117,12 +118,6 @@
 ;;                (< k len)
 ;;                (CANONICAL-ADDRESS-p (+ len rip)))
 ;;           (MEMBER-P (BINARY-+ k RIP) (CREATE-CANONICAL-ADDRESS-LIST len RIP))))
-
-;how does this not already exist?
-(defthm len-of-append
-  (equal (len (append x y))
-         (+ (len x) (len y))))
-
 
 ;; simplify (this is reading the jump offset from the code?):
 ;; (CANONICAL-ADDRESS-P$INLINE
@@ -1811,41 +1806,61 @@
 (defthm separate-when-separate
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad3 ad1)
-                (<= (+ n1 ad1) (+ n3 ad3))
+                (<= n1 (+ n3 (- ad3 ad1))) ; rephrase to subtract the larger from the smaller?
                 (<= ad4 ad2)
-                (<= (+ n2 ad2) (+ n4 ad4))
-                (integerp n1)
-                (integerp n2)
-                (integerp n3)
-                (integerp n4)
-                (integerp ad1)
-                (integerp ad2)
-                (integerp ad3)
-                (integerp ad4))
+                (<= n2 (+ n4 (- ad4 ad2))))
            (separate rwx n1 ad1 rwx n2 ad2))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
+  :hints (("Goal" :in-theory (enable separate))))
 
 ;; Quite powerful
 (defthm separate-when-separate-alt
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad4 ad1)
-                (<= (+ n1 ad1) (+ n4 ad4))
+                (<= n1 (+ n4 (- ad4 ad1)))
                 (<= ad3 ad2)
-                (<= (+ n2 ad2) (+ n3 ad3))
-                (integerp n1)
-                (integerp n2)
-                (integerp n3)
-                (integerp n4)
-                (integerp ad1)
-                (integerp ad2)
-                (integerp ad3)
-                (integerp ad4))
+                (<= n2 (+ n3 (- ad3 ad2))))
            (separate rwx n1 ad1 rwx n2 ad2))
-  :hints (("Goal" :in-theory (e/d (separate)
-                                  (;x86isa::RGFI-IS-I64P
-                                   )))))
+  :hints (("Goal" :in-theory (enable separate))))
+
+;drop?!
+;todo: compare to X86ISA::SEPARATE-SMALLER-REGIONS
+(defthm separate-when-separate-2
+  (implies (and (separate :r n3 addr3 :r n4 addr4) ; free vars
+                (<= addr3 addr1)
+                (<= n1 (+ n3 (- addr3 addr1)))
+                (<= addr4 addr2)
+                (<= n2 (+ n4 (- addr4 addr2))))
+           (separate :r n1 addr1 :r n2 addr2)))
+
+;; May be expensive, but needed if separate-of-1-and-1 fires.
+;; TODO: Could add a syntaxp to restrict this to equalities of things that might be addresses.
+(defthm not-equal-when-separate
+  (implies (and (separate rwx n3 ad3 rwx n4 ad4)
+                (<= ad3 ad1)
+                (< (- ad1 ad3) n3)
+                (<= ad4 ad2)
+                (< (- ad2 ad4) n4))
+           (not (equal ad1 ad2)))
+  :hints (("Goal" :in-theory (enable separate))))
+
+;; May be expensive, but needed if separate-of-1-and-1 fires.
+;; TODO: Could add a syntaxp to restrict this to equalities of things that might be addresses.
+(defthm not-equal-when-separate-alt
+  (implies (and (separate rwx n3 ad3 rwx n4 ad4)
+                (<= ad4 ad1)
+                (< (- ad1 ad4) n4)
+                (<= ad3 ad2)
+                (< (- ad2 ad3) n3))
+           (not (equal ad1 ad2)))
+  :hints (("Goal" :in-theory (enable separate))))
+
+;;If we use this, we probably also need not-equal-when-separate and not-equal-when-separate-alt.
+(defthm separate-of-1-and-1
+  (implies (and (integerp ad1)
+                (integerp ad2))
+           (equal (separate :r 1 ad1 :r 1 ad2)
+                  (not (equal ad1 ad2))))
+  :hints (("Goal" :in-theory (enable separate))))
 
 ;; ;see also !flgi-and-wb-in-app-view (but that seems like a bad rule -- reuse of val -- tell shilpi)
 ;; (defthm !flgi-of-mv-nth-1-of-wb

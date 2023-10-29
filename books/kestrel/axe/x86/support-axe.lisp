@@ -25,6 +25,7 @@
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
+(include-book "kestrel/axe/axe-syntax-functions" :dir :system)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
 ;; Register a bunch of x86-related functions as known booleans:

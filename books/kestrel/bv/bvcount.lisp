@@ -1,7 +1,7 @@
 ; Counting the number of 1 bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -55,7 +55,7 @@
 ;;            (<= (logcount x) n))
 ;;   :hints (("Goal" :induct (logcount-induct x n)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (enable expt acl2::expt-of-+))))
+;;            :in-theory (enable expt expt-of-+))))
 
 ;; ;;sanity check
 ;; (defthmd bvcount-is-logcount

@@ -130,3 +130,4 @@
 (add-known-boolean evenp)
 (add-known-boolean oddp)
 (add-known-boolean bitp)
+(add-known-boolean no-duplicatesp-equal)

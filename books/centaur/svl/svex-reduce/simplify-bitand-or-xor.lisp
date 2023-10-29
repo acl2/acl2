@@ -1083,7 +1083,8 @@ x
                        ;; don't want to run integer-listp-of-svexlist if first
                        ;; test fails.
                        (or (integer-listp-of-svexlist leaves)
-                           (rp::cwe "integer-listp-of-svexlist check has failed for ~p0~%" leaves))))
+                           ;;(rp::cwe "integer-listp-of-svexlist check has failed for ~p0~%" leaves)
+                           )))
           (mv svex nil))
          (res (bitand/or/xor-simple-constant-simplify 'sv::bitxor new-x new-y))
          (res (if (equal parent-fn 'sv::bitxor) ;; outermost bitxor should clear 1s  

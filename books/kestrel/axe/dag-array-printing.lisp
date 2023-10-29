@@ -140,3 +140,15 @@
   (progn$ (cw "(")
           (print-dag-array-all-aux nodenum dag-array-name dag-array t)
           (cw ")~%")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun print-dag-nodes-as-terms (nodenums dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (all-natp nodenums)
+                              (true-listp nodenums)
+                              (all-< nodenums dag-len))))
+  (if (endp nodenums)
+      nil
+    (prog2$ (fmt-to-comment-window "~x0~%" (acons #\0 (dag-to-term-aux-array dag-array-name dag-array (first nodenums)) nil) 2 nil 10)
+            (print-dag-nodes-as-terms (rest nodenums) dag-array-name dag-array dag-len))))

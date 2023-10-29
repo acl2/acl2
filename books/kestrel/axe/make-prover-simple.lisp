@@ -737,14 +737,26 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances) (pseudo-termp)))))
 
+(defthm integerp-mv-nth-3-of-apply-axe-use-instances
+  (implies (integerp dag-len)
+           (integerp (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
+  :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp-for-axe) (pseudo-termp
+                                                                                        perm-implies-equal-subsetp-equal-1 ; why?
+                                                                                        )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-suffix
                               syntaxp-evaluator-suffix
-                              bind-free-evaluator-suffix)
+                              bind-free-evaluator-suffix
+                              default-global-rules)
   (declare (xargs :guard (and (symbolp suffix)
                               (symbolp evaluator-suffix)
                               (symbolp syntaxp-evaluator-suffix)
-                              (symbolp bind-free-evaluator-suffix))))
+                              (symbolp bind-free-evaluator-suffix)
+                              ;; default-global-rules can be any form (untranslated)
+                              )))
   (let* ((evaluator-base-name (pack$ 'axe-evaluator- evaluator-suffix))
          (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- syntaxp-evaluator-suffix)) ; keep in sync with make-axe-syntaxp-evaluator.lisp
          (eval-axe-bind-free-function-application-fn (pack$ 'eval-axe-bind-free-function-application- bind-free-evaluator-suffix)) ; keep in sync with make-axe-bind-free-evaluator.lisp
@@ -3306,10 +3318,8 @@
                                      (simple-prover-optionsp options))
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
-             (progn$ (and (member-eq print '(:verbose! :verbose))
-                          (progn$ (cw "(Literals after rewriting them all:~%")
-                                  (print-dag-array-node-and-supporters-lst done-list 'dag-array dag-array)
-                                  (cw "):~%")))
+             (progn$ (and (member-eq print '(t :verbose :verbose!))
+                          (print-axe-prover-case done-list 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options)))
                      (mv (erp-nil)
                          nil ;did not prove the clause
                          changep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -3576,7 +3586,9 @@
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
               (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
-              (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))))
+              (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
+              (- (and (member-eq print '(t :verbose :verbose!))
+                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options)))))
            (if provedp
                (prog2$ (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
                        (mv (erp-nil)
@@ -3761,7 +3773,9 @@
                         ;;  (mv (erp-nil)
                         ;;      nil ;; did not prove
                         ;;      literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                        (- (and print (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums)))))
+                        (- (and print (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
+                        (- (and (member-eq print '(t :verbose :verbose!))
+                                (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "after subst" (lookup-eq :print-as-clausesp options)))))
                      (mv (erp-nil)
                          nil ;provedp
                          changep
@@ -4046,12 +4060,9 @@
          (if (atom rule-alists)
              ;; No error but failed to prove this case and no more rule-alists after left:
              (prog2$
-              (and (member-eq print '(:verbose! :verbose)) ;; TODO: improve this printing.
-                   (prog2$ (cw "Case ~s0 didn't simplify to true.  Literal nodenums:~% ~x1~%(This case: ~x2)~%Literals:~%"
-                               case-designator
-                               literal-nodenums
-                               (expressions-for-this-case-simple literal-nodenums dag-array dag-len))
-                           (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)))
+              (and (member-eq print '(t :verbose :verbose!))
+                   (prog2$ (cw "Case ~s0 didn't simplify to true.~%" case-designator)
+                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len case-designator (lookup-eq :print-as-clausesp options))))
               (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
            (b* (((mv erp provedp
                      & ;;changep
@@ -4444,8 +4455,8 @@
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array-with-name 'dag-array dag-array nodenum nil)))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
-                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true"))))
+                 (- (and (member-eq print '(t :verbose :verbose!))
+                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true" (lookup-eq :print-as-clausesp options)))))
               ;; Attempt to prove case #1:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -4500,8 +4511,8 @@
                                  print))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                 (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
-                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false"))))
+                 (- (and (member-eq print '(t :verbose :verbose!))
+                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false" (lookup-eq :print-as-clausesp options)))))
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -4570,7 +4581,7 @@
               (if (lookup-eq :no-splitp options) ;; Check whether we are allowed to split
                   (progn$ (and print
                                (progn$ (cw "(Not splitting into cases because :no-splitp is true.  Failed to prove case ~s0~%" case-designator)
-                                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this")
+                                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" (lookup-eq :print-as-clausesp options))
                                        (cw ")~%")))
                           (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;; Now maybe try to split on an if-then-else test (or an argument to a bool op).
@@ -4578,14 +4589,16 @@
                   (if (not nodenum)
                       (progn$ (and print
                                    (progn$ (cw "(Couldn't find a node to split on.  Failed to prove case ~s0~%" case-designator)
-                                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this")
+                                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" (lookup-eq :print-as-clausesp options))
                                            (cw ")~%")))
                               (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                     ;;splitting on nodenum (which is not a call of NOT):
                     ;;instead of proving the clause C, we will prove both (or (not nodenum) C) and (or nodenum C)
                     (b* ((- (and print (cw "(Splitting on node ~x0:~%" nodenum)))
                          ;;todo: elide this if too big:
-                         (- (and print (print-dag-array-node-and-supporters 'dag-array dag-array nodenum)))
+                         (- (and print (print-dag-node-nicely nodenum 'dag-array dag-array dag-len 1000)
+                                 ;(print-dag-array-node-and-supporters 'dag-array dag-array nodenum)
+                                 ))
                          ;; (- (and (or (eq t print) (eq :verbose print) (eq :verbose! print))
                          ;;         (progn$ (cw "Literals:~%")
                          ;;                 (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array)
@@ -4975,7 +4988,9 @@
               ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               ((when provedp)
                (and print (cw "! Proved case ~s0 (one literal had a non-nil constant disjunct!)~%" case-designator))
-               (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+               (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              (- (and (member-eq print '(t :verbose :verbose!))
+                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options)))))
            (,prove-or-split-case-name literal-nodenums
                                       dag-array
                                       dag-len
@@ -5135,8 +5150,10 @@
                                             tactic
                                             rule-lists
                                             global-rules
+                                            extra-global-rules
                                             interpreted-function-alist
                                             no-splitp
+                                            print-as-clausesp
                                             monitor
                                             print
                                             use
@@ -5159,8 +5176,12 @@
               ((when (not (rule-item-list-listp rule-lists)))
                (er hard? ',prove-dag-implication-name "Bad rule lists: ~x0" rule-lists)
                (mv :bad-input nil state))
-              ((when (not (rule-item-listp global-rules)))
+              ((when (not (or (eq :auto global-rules)
+                              (rule-item-listp global-rules))))
                (er hard? ',prove-dag-implication-name "Bad global-rules: ~x0" global-rules)
+               (mv :bad-input nil state))
+              ((when (not (rule-item-listp extra-global-rules)))
+               (er hard? ',prove-dag-implication-name "Bad extra-global-rules: ~x0" extra-global-rules)
                (mv :bad-input nil state))
               ((when (not (simple-prover-tacticp tactic)))
                (er hard? ',prove-dag-implication-name "Bad tactic: ~x0" tactic)
@@ -5186,6 +5207,12 @@
               ((when (not (axe-use-hintp use)))
                (er hard? ',prove-dag-implication-name "Bad :use hint: ~x0." use)
                (mv :bad-input nil state))
+              ((when (not (booleanp no-splitp)))
+               (er hard? ',prove-dag-implication-name "Bad :no-splitp hint: ~x0." no-splitp)
+               (mv :bad-input nil state))
+              ((when (not (booleanp print-as-clausesp)))
+               (er hard? ',prove-dag-implication-name "Bad :print-as-clausesp hint: ~x0." print-as-clausesp)
+               (mv :bad-input nil state))
               ;; Form the implication to prove:
               ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
               ((when erp) (mv erp nil state))
@@ -5207,13 +5234,24 @@
               ;; make auxiliary dag data structures:
               ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
+              ;; Handle the global-rules option:
+              (global-rules (if (eq :auto global-rules)
+                                ,default-global-rules ; this can differ for each prover
+                              global-rules))
+              ;; Add the extra-global-rules, if any:
+              (global-rules (union-equal extra-global-rules global-rules))
               ;; Expand 0-ary function calls in rule-lists:
               (global-rules (elaborate-rule-items global-rules state))
               (rule-lists (elaborate-rule-item-lists rule-lists state))
               ;; Add global-rules to the rule-lists:
               (rule-lists (if (endp rule-lists)
-                              ;; If no rule-lists given, use the global rules as a single rule-list:
-                              (list global-rules) ; todo: what if global-rules is empty?
+                              (if (endp global-rules)
+                                  (prog2$ (cw "Warning: No rule-lists or global rules given!~%")
+                                          (list global-rules) ; todo: or just use nil?
+                                          )
+                                ;; If no rule-lists given, use the global rules as a single rule-list:
+                                (prog2$ (cw "Note: No rule-lists given.  Using only the global rules.~%")
+                                        (list global-rules)))
                             ;; Include the global-rules in each rule-list:
                             (union-eq-with-all global-rules rule-lists)))
               ;; Build the rule-alists:
@@ -5223,6 +5261,7 @@
               ;; Set up prover options:
               (options nil)
               (options (if no-splitp (acons :no-splitp t options) options))
+              (options (if print-as-clausesp (acons :print-as-clausesp t options) options))
               (- (and print (cw "(Proving ~s0:~%" case-designator)))
               ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                    info tries)
@@ -5263,17 +5302,22 @@
                                            tactic
                                            rule-lists
                                            global-rules
+                                           extra-global-rules
                                            interpreted-function-alist
                                            no-splitp
+                                           print-as-clausesp
                                            monitor
                                            print
                                            use
                                            state)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (rule-item-list-listp rule-lists)
-                                     (rule-item-listp global-rules)
+                                     (or (eq :auto global-rules)
+                                         (rule-item-listp global-rules))
+                                     (rule-item-listp extra-global-rules)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (booleanp no-splitp)
+                                     (booleanp print-as-clausesp)
                                      (symbol-listp monitor)
                                      ;; print
                                      (ilks-plist-worldp (w state)))
@@ -5290,8 +5334,10 @@
                                         tactic
                                         rule-lists
                                         global-rules
+                                        extra-global-rules
                                         interpreted-function-alist
                                         no-splitp
+                                        print-as-clausesp
                                         monitor
                                         print
                                         use
@@ -5304,9 +5350,11 @@
                                           &key
                                           (tactic ''(:rep :rewrite :subst))
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
-                                          (global-rules 'nil) ;; rules to be added to every rule-list
+                                          (global-rules ':auto) ;; rules to be added to every rule-list, replacing the default global-rules
+                                          (extra-global-rules 'nil) ;; additional rule to add to the global-rules
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
+                                          (print-as-clausesp 'nil)
                                           (monitor 'nil)
                                           (print ':brief)
                                           (use 'nil))
@@ -5318,8 +5366,10 @@
                      tactic
                      rule-lists
                      global-rules
+                     extra-global-rules
                      interpreted-function-alist
                      no-splitp
+                     print-as-clausesp
                      monitor
                      print
                      use
@@ -5389,6 +5439,7 @@
                                      (simple-prover-tacticp (lookup-equal :tactic hint))
                                      (true-listp (lookup-equal :rule-lists hint))
                                      (booleanp (lookup-equal :no-splitp hint))
+                                     (booleanp (lookup-equal :print-as-clausesp hint))
                                      (symbol-listp (lookup-equal :monitor hint))
                                      (axe-use-hintp (lookup-equal :use hint))
                                      (ilks-plist-worldp (w state)))))
@@ -5419,12 +5470,14 @@
               (use-hint (lookup-eq :use hint))
               (monitored-symbols (lookup-eq :monitor hint))
               (no-splitp (lookup-eq :no-splitp hint))
+              (print-as-clausesp (lookup-eq :print-as-clausesp hint))
               (print (lookup-eq :print hint))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
               ((when erp) (mv erp (list clause)))
               ;; Set up prover options:
               (options nil)
               (options (if no-splitp (acons :no-splitp t options) options))
+              (options (if print-as-clausesp (acons :print-as-clausesp t options) options))
               ;; Attempt the proof:
               ((mv erp provedp)
                (,prove-clause-name clause
@@ -5454,8 +5507,11 @@
                               evaluator-suffix ;as given to make-evaluator-simple
                               syntaxp-evaluator-suffix ;as given to make-axe-syntaxp-evaluator
                               bind-free-evaluator-suffix ;as given to make-axe-bind-free-evaluator
+                              &key
+                              (default-global-rules 'nil) ; a form that gets spliced into the generated code
                               )
   (make-prover-simple-fn suffix
                          evaluator-suffix
                          syntaxp-evaluator-suffix
-                         bind-free-evaluator-suffix))
+                         bind-free-evaluator-suffix
+                         default-global-rules))

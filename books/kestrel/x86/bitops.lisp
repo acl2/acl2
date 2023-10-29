@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "X86ISA")
+(in-package "X86ISA") ; todo
 
 ;TODO: Move this to the books/kestrel/bv (and change the package)?
 ;TODO: Reduce deps
@@ -39,65 +39,24 @@
   :hints (("Goal" :use (:instance acl2::<=-of-*-and-*-same-forward-1 (x1 1) (x2 y) (y x))
            :in-theory (disable acl2::<=-of-*-and-*-same-forward-1))))
 
-(defthm cancel-two
-  (equal (< (+ y x) x)
-         (< y 0)))
+;; (defthm cancel-two
+;;   (equal (< (+ y x) x)
+;;          (< y 0)))
 
-;gen
-(defthm <-of-*-cancel-1
-  (implies (and (posp a)
-                (posp b))
-           (equal (< (binary-* a b) a)
-                  (< b 1))))
+;; ;gen
+;; (defthm <-of-*-cancel-1
+;;   (implies (and (posp a)
+;;                 (posp b))
+;;            (equal (< (* a b) a)
+;;                   (< b 1))))
 
 ;gen
 (defthm <-of-*-cancel-2
   (implies (and (posp a)
                 (posp b)
                 (posp c))
-           (equal (< (binary-* a b) (* c a))
+           (equal (< (* a b) (* c a))
                   (< b c))))
-
-(defthm <-of-expt-and-2
-  (implies (integerp i)
-           (equal (< (expt 2 i) 2)
-                  (< i 1))))
-
-;move
-(defthm bvcat-of-expt-same-high
- (implies (natp highsize)
-          (equal (acl2::bvcat highsize (expt 2 highsize) lowsize lowval)
-                 (acl2::bvcat highsize 0 lowsize lowval)))
- :hints (("Goal" :in-theory (enable acl2::bvcat))))
-
-(defthm bvplus-of-expt-same-arg2
-  (implies (natp size)
-           (equal (acl2::bvplus size x (expt 2 size))
-                  (acl2::bvchop size x)))
-  :hints (("Goal" :in-theory (enable acl2::bvplus))))
-
-(defthm mod-of-+-same-three
-  (implies (and (rationalp x)
-                (rationalp y)
-                (rationalp z)
-                (<= 0 z))
-           (equal (mod (+ x y z) z)
-                  (mod (+ x y) z)))
-  :hints (("Goal" :in-theory (enable ACL2::MOD-SUM-CASES))))
-
-(defthm bvnot-of-+-of---of-expt-same
-  (implies (and (natp size)
-                (integerp i))
-           (equal (acl2::bvnot size (+ (- (expt 2 size)) i))
-                  (acl2::bvnot size i)))
-  :hints (("Goal" :in-theory (enable acl2::bvnot acl2::bvchop lognot))))
-
-(defthm bvnot-of-*-of-expt-same
-  (implies (and (natp size)
-                (integerp x))
-           (equal (ACL2::BVNOT size (* (EXPT 2 size) x))
-                  (+ -1 (EXPT 2 SIZE))))
-  :hints (("Goal" :in-theory (enable acl2::bvnot lognot ACL2::BVCHOP-OF-SUM-CASES))))
 
 (defthm slice-mask
   (implies (and (natp low)
@@ -109,12 +68,12 @@
                   (+ -1 (expt 2 width))))
   :hints (("Goal" :in-theory (e/d (acl2::slice) (ACL2::BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-;;move
-(defthm <-of-expt-and-expt
-  (implies (and (natp i)
-                (Natp j))
-           (equal (< (EXPT '2 i) (EXPT '2 j))
-                  (< i j))))
+;; ;;move
+;; (defthm <-of-expt-and-expt
+;;   (implies (and (natp i)
+;;                 (Natp j))
+;;            (equal (< (EXPT '2 i) (EXPT '2 j))
+;;                   (< i j))))
 
 (defthm slice-too-high-lemma
   (implies (and (natp low)

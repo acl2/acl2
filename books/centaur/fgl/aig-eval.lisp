@@ -202,17 +202,31 @@
   ;;     (aignet-lit-list->bools-aux
   ;;      (cdr x) bfrstate (cons (aignet-lit->bool (car x) bfrstate acc)))))
 
+  (define aignet-lit-list->bools-aux ((x aignet::lit-listp)
+                                      (bfrstate bfrstate-p)
+                                      (acc fgl-object-p))
+    :hooks nil
+    :guard (and (bfrstate-mode-is :aignet)
+                (<= (lit-list-max-var+1 x) (+ 1 (bfrstate->bound bfrstate))))
+    (if (atom x)
+        acc
+      (aignet-lit-list->bools-aux (cdr x) bfrstate
+                                  (mk-g-cons (aignet-lit->bool (car x) bfrstate) acc))))
+
+  
   (define aignet-lit-list->bools ((x aignet::lit-listp)
                                   (bfrstate bfrstate-p))
     :returns (new-x fgl-object-p)
     :guard (and (bfrstate-mode-is :aignet)
                 (<= (lit-list-max-var+1 x) (+ 1 (bfrstate->bound bfrstate))))
-    :guard-debug t
-    ;; :verify-guards nil
-    (if (atom x)
-        nil
-      (mk-g-cons (aignet-lit->bool (car x) bfrstate)
-                 (aignet-lit-list->bools (cdr x) bfrstate)))
+    :verify-guards nil
+    (mbe :logic
+         (if (atom x)
+             nil
+           (mk-g-cons (aignet-lit->bool (car x) bfrstate)
+                      (aignet-lit-list->bools (cdr x) bfrstate)))
+         :exec
+         (aignet-lit-list->bools-aux (reverse x) bfrstate nil))
     ///
     ;; (verify-guards aignet-lit-list->bfrs-nrev
     ;;   :hints(("Goal" :in-theory (enable lit-list-max-var+1))))
@@ -235,7 +249,40 @@
                                                                  (fgl-env->bfr-vals env) nil)
                                                 nil
                                                 aignet)))))
-      :hints(("Goal" :in-theory (enable bits->bools))))))
+      :hints(("Goal" :in-theory (enable bits->bools))))
+
+    (local (defun aignet-lit-list->bools-with-end (x bfrstate y)
+             (if (atom x)
+                 y
+               (mk-g-cons (aignet-lit->bool (car x) bfrstate)
+                      (aignet-lit-list->bools-with-end (cdr x) bfrstate y)))))
+
+    (local (defthm aignet-lit-list->bools-with-end-nil
+             (equal (aignet-lit-list->bools-with-end x bfrstate nil)
+                    (aignet-lit-list->bools x bfrstate))))
+             
+    (local (defthm lit-listp-of-rev
+             (implies (aignet::lit-listp x)
+                      (aignet::lit-listp (rev x)))))
+
+    (local (defthm lit-list-max-var-of-append
+             (equal (lit-list-max-var+1 (append x y))
+                    (max (lit-list-max-var+1 x)
+                         (lit-list-max-var+1 y)))
+             :hints(("Goal" :in-theory (enable rev)))))
+    
+    (local (defthm lit-list-max-var-of-ref
+             (equal (lit-list-max-var+1 (rev x))
+                    (lit-list-max-var+1 x))
+             :hints(("Goal" :in-theory (enable rev)))))
+    
+    (local (defthm aignet-lit-list->bools-aux-elim
+             (Equal (aignet-lit-list->bools-aux x bfrstate acc)
+                    (aignet-lit-list->bools-with-end (rev x) bfrstate acc))
+             :hints(("Goal" :in-theory (enable aignet-lit-list->bools-aux
+                                               rev)))))
+    
+    (verify-guards aignet-lit-list->bools)))
 
 
 (set-ignore-ok t)
