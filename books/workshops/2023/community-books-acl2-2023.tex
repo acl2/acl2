@@ -143,7 +143,42 @@ Tools to collect machine learning data from the community books.
 \item Data is collected by breaking proofs systematically
       and recording resulting information, including checkpoints.
 \item More information in \code{README} and  \code{gather/README}.
-\item Used by Proof Helpers in \code[kestrel/helpers].
+\item Used by Proof Helpers in \code{kestrel/helpers}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{workshops/2023/kumar-etal}:
+Formal model of GossipSub protocol with various attacks.
+(Discussed in a paper at this Workshop.)
+\begin{itemize}
+\item Model of entire protocol with special attention paid to score function.
+\item Proof that the protocol satisfies some security properties but not others.
+\item Examples of automated attack discovery using CGen.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{workshops/2023/vonhippel-etal}:
+Formal model of Retransmission TimeOut (RTO) computation.
+(Discussed in a paper at this Workshop.)
+\begin{itemize}
+\item Proofs in ACL2, ACL2s, and ACL2(r) that for all $\alpha \in [0, 1)$,
+      $\lim_{n\to\infty}\alpha^n = 0$.
+\item Multiple proof strategies in ACL2s.
+\item Formal model of RTO system and proven asymptotic bounds on its variables.
 \end{itemize}
 
 \end{frame}
@@ -384,41 +419,6 @@ Various tools.
 \item Made \code{run-script} more robust against time variations.
 \item Added tools \code{functions-after} and \code{macros-after},
       which return names of functions and macros introduced after a given name.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{workshops/2023/kumar-etal}:
-Formal model of GossipSub protocol with various attacks.
-(Discussed in a paper at this Workshop.)
-\begin{itemize}
-\item Model of entire protocol with special attention paid to score function.
-\item Proof that the protocol satisfies some security properties but not others.
-\item Examples of automated attack discovery using CGen.
-\end{itemize}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}
-
-\implibtitle
-
-\bookpath{workshops/2023/vonhippel-etal}:
-Formal model of Retransmission TimeOut (RTO) computation.
-(Discussed in a paper at this Workshop.)
-\begin{itemize}
-\item Proofs in ACL2, ACL2s, and ACL2(r) that for all $\alpha \in [0, 1)$, 
-$\lim_{n\to\infty}\alpha^n = 0$.
-\item Multiple proof strategies in ACL2s.
-\item Formal model of RTO system and proven asymptotic bounds on its variables.
 \end{itemize}
 
 \end{frame}
