@@ -1785,7 +1785,7 @@
 
 ;print-max-conflicts-goalp ;fixme rename this, because now we are printing a failure that didn't time out.. fixme may print many failures b/f the 1st max-conflicts
 
-                                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this"))
+                                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" nil))
                                        (cw ")~%")
                                        (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
                            (progn$

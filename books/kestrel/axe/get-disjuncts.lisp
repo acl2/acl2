@@ -254,6 +254,11 @@
            (true-listp (mv-nth 2 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-darg-disjuncts) (natp)))))
 
+(defthm integerp-of-mv-nth-4-of-get-darg-disjuncts
+  (implies (integerp dag-len)
+           (integerp (mv-nth 4 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
+  :hints (("Goal" :in-theory (e/d (get-darg-disjuncts) (natp)))))
+
 (defthm all-<-of-mv-nth-2-of-get-darg-disjuncts
   (implies  (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                  (dargp-less-than item dag-len)
@@ -379,6 +384,11 @@
             (< 0
                 (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :rule-classes :linear
+  :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
+
+(defthm integerp-of-mv-nth-4-of-get-disjuncts-from-nodes
+  (implies  (integerp dag-len)
+            (integerp (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
 
