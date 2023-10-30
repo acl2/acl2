@@ -15692,15 +15692,18 @@
 ; The goal is thus to return a new stobjs-in, together with a corresponding
 ; mapping from old stobjs-in to new stobjs-in, such that we can legally view
 ; the (implicit) function as having the new stobjs-in.  We adjust the
-; stobjs-out correspondingly in stobjs-in-out.
+; stobjs-out correspondingly in stobjs-in-out.  Ultimately translation must
+; still succeed with the updated stobjs-in and stobjs-out.
 
 ; Otherwise, we are in a failure case (mv failp nil nil) where failp is
 ; non-nil.  (It is fine if failp is t, but we are free to return any non-nil
 ; value, which might provide information that is helpful for debugging.)  That
-; case happens, in particular, when there are duplicate stobjs: for example
-; consider the case that stobjs-in is (st1 st2) where st1 and st2 are congruent
-; stobjs and args is (st1 st1).  There is no reasonable way to return a
-; suitable new-stobjs-in.
+; case may happen, for example, when a stobj occurs more than once in args.
+; For example consider the case that stobjs-in is (st1 st2) where st1 and st2
+; are congruent stobjs and args is (st1 st1).  There is no reasonable way to
+; return a suitable new-stobjs-in if st1 or st2 is among the stobjs-out (but
+; otherwise this can be supported; see the comment about duplicate values in
+; stobjs-in-out).
 
 ; The failure case can also happen when we get "stuck".  For example, again
 ; suppose that st1 and st2 are congruent stobjs; now consider the case that
@@ -15710,11 +15713,10 @@
 ; the second argument?  Suppose that st3 is also congruent to st1 and there is
 ; a typo, so that args is (st2 st3a).  Surely what was "expected" was st3, not
 ; st1.  In this case, and in any situation where we aren't confident that the
-; error message involving new-stobjs-in is clear, we return the faiure case.
+; error message involving new-stobjs-in is clear, we return the failure case.
 
 ; That said, we prefer to avoid the failure case when that won't make error
-; messages more confusing.  See for example (5) in the comments in
-; translate11-call.
+; messages more confusing.
 
   (cond ((endp stobjs-in)
          (mv nil alist (reverse new-stobjs-in-rev)))
@@ -15770,8 +15772,8 @@
 ; stobjs-out using congruence of stobjs, then we return the stobjs-in and
 ; stobjs-out unmodified.
 
-; We return an alist that represents a map whose domain is the the stobjs-in of
-; fn, which is computed from fn if fn is a lambda.  This alist associates each
+; We return an alist that represents a map whose domain is the stobjs-in of fn,
+; which is computed from fn if fn is a lambda.  This alist associates each
 ; stobj st in its domain with a corresponding congruent stobj, possibly equal
 ; to st (as equal stobjs are congruent).  We return (mv alist new-stobjs-in
 ; new-stobjs-out), where new-stobjs-in and new-stobjs-out result from stobjs-in

@@ -504,6 +504,16 @@
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
        ;; Prove the test routine always returns 1 (we pass :bit for the type):
+       (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
+                                       (append remove-rules
+                                               remove-proof-rules
+                                               ;; these can introduce boolor: todo: remove from tester-proof-rules?
+                                               ;; why is boolor bad?  can't translate to stp?
+                                               '(acl2::boolif-x-x-y ;drop?
+                                                 acl2::boolif-when-quotep-arg2
+                                                 acl2::boolif-when-quotep-arg3
+                                                 acl2::bvchop-of-bvshr
+                                                 acl2::bvchop-of-bvashr))))
        ((mv result info-acc
             & ; actual-dag
             & ; assumptions-given
@@ -520,15 +530,7 @@
                                    t       ; call-stp-when-pruning
                                    t ; counterexamplep
                                    nil ; print-cex-as-signedp
-                                   (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
-                                                      (append remove-rules
-                                                              remove-proof-rules
-                                                              ;; these can introduce boolor:
-                                                              '(acl2::boolif-x-x-y
-                                                                acl2::boolif-when-quotep-arg2
-                                                                acl2::boolif-when-quotep-arg3
-                                                                acl2::bvchop-of-bvshr
-                                                                acl2::bvchop-of-bvashr)))
+                                   proof-rules
                                    nil ; interpreted-fns
                                    ;; monitor:
                                    (append '(ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?

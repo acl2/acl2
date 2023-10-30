@@ -1,7 +1,7 @@
 ; Arithmetic (sign-preserving) right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 (local (include-book "repeatbit2"))
 
 ;; NOTE: Currently, the shift amount must be less than the width.
-;; TODO: Result may may be wrong if we shift all the way out! consider: (acl2::bvashr 32 -1 32)
+;; TODO: Result may may be wrong if we shift all the way out! consider: (bvashr 32 -1 32)
 (defund bvashr (width x shift-amount)
   (declare (type (integer 0 *) shift-amount)
            (type integer x)

@@ -115,12 +115,12 @@
                 (integerp size1))
            (equal (bvuminus size (bvchop size1 x))
                   (bvuminus size x)))
-  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvuminus-of-bvchop-arg2-same
   (equal (bvuminus size (bvchop size x))
          (bvuminus size x))
-  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvplus-of-bvuminus-same
   (equal (bvplus size (bvuminus size x) x)

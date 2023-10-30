@@ -890,6 +890,7 @@
             (simplify-terms-repeatedly ;; simplify-terms-using-each-other
              assumptions rule-alist
              nil ; monitored-rules
+             t ; memoizep
              state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))

@@ -35,7 +35,6 @@
 ;(local (in-theory (disable acl2::group-becomes-group2)))
 ;(local (in-theory (disable true-listp))) ;prevent inductions
 ;(local (in-theory (disable acl2::mod-sum-cases))) ;avoid case splits
-;(local (in-theory (disable acl2::update-nth-of-update-nth-becomes-update-subrange)))
 ;(local (in-theory (disable len-of-group)))
 
 (defthm integerp-of-+-of---and--
@@ -69,16 +68,6 @@
                                      CEILING-IN-TERMS-OF-FLOOR
                                      FLOOR-WHEN-MULTIPLE
                                      EQUAL-OF-0-AND-MOD))))
-
-;move
-(defthm all-unsigned-byte-p-of-update-nth
-  (implies (and (all-unsigned-byte-p size vals)
-                (natp n)
-                (< n (len vals))
-                (unsigned-byte-p size val))
-           (all-unsigned-byte-p size (update-nth n val vals)))
-  :hints (("Goal" :in-theory (enable all-unsigned-byte-p
-                                     update-nth))))
 
 (defthm mod-when-odd
   (implies (and (not (integerp (* 1/2 x)))

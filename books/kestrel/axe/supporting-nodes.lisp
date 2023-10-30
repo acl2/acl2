@@ -496,7 +496,7 @@
                   (build-reduced-dag-with-name (+ 1 n) top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
         (let* ((expr (aref1 dag-array-name dag-array n))
                (expr (if (or (variablep expr)
-                             (fquotep expr)) ;todo: maybe inline constants
+                             (fquotep expr)) ;todo: maybe inline constants, but then drop-non-supporters-array-with-name could return a constant
                          ;; Nothing to fix up:
                          expr
                        (let* ((fn (ffn-symb expr))

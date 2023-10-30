@@ -217,6 +217,7 @@
 ;; copies a segment of nodes from FROM-DAG-ARRAY to DAG-ARRAY and returns the new dag (including the auxiliary data structures) and a RENAMING-ARRAY
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array).
 ;fixme should this use a worklist instead of copying a segment?
+;; See also extract-dag-array and copy-array-values.
 (defund add-array-nodes-to-dag (nodenum ;smallest nodenum to copy
                                 max-nodenum ;largest nodenum to copy
                                 from-dag-array-name from-dag-array from-dag-array-len
@@ -1403,6 +1404,22 @@
      ;;print the close paren:
      (cw ")~%"))))
 
+;; Prints as a term if that term would not be too big.
+(defund print-negated-literal-nicely (literal-nodenum dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (natp literal-nodenum)
+                              (< literal-nodenum dag-len))))
+  (let ((term-size (nfix (size-of-node literal-nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
+    (if (< term-size 10000)
+        (let ((term (dag-to-term-aux-array dag-array-name dag-array literal-nodenum)))
+          (if (and (call-of 'not term)
+                   (consp (cdr term)))
+              ;; strip the not:
+              (cw "~x0~%" (farg1 term))
+            ;; add a not:
+            (cw "~x0~%" `(not ,term))))
+      (print-negated-literal literal-nodenum dag-array-name dag-array dag-len))))
+
 (defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
@@ -1410,29 +1427,27 @@
                               (all-< literal-nodenums dag-len))))
   (if (endp literal-nodenums)
       nil
-    (progn$ (let* ((nodenum (first literal-nodenums))
-                   (term-size (nfix (size-of-node nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
-              (if (< term-size 10000)
-                  (let ((term (dag-to-term-aux-array dag-array-name dag-array nodenum)))
-                    (if (and (call-of 'not term)
-                             (consp (cdr term)))
-                        (cw "~x0~%" (farg1 term))
-                      (cw "~x0~%" `(not ,term))))
-                (print-negated-literal nodenum dag-array-name dag-array dag-len)))
+    (progn$ (print-negated-literal-nicely (first literal-nodenums) dag-array-name dag-array dag-len)
             (cw "~%")
             (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len))))
 
 ;recall that the case is the negation of all the literals
 ;fixme similar name to print-negated-literal-list
-(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective)
+(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective print-as-clausesp)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))))
-  (progn$
-   (cw "(Negated lits (~x0) for ~s1 case:~%" (len literal-nodenums) case-adjective)
-   (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len)
-   (cw ")~%")))
+                              (all-< literal-nodenums dag-len)
+                              (booleanp print-as-clausesp))))
+  (if print-as-clausesp
+      (progn$ (cw "~s0 clause:~%(OR " case-adjective)
+             ;; warning: can blow up:
+              (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
+              (cw ")~%"))
+    (progn$
+     (cw "(Negated lits (~x0) for ~s1 case:~%" (len literal-nodenums) case-adjective)
+     (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len)
+     (cw ")~%"))))
 
 (defthm <-of-+-1-of-maxelem
   (implies (and (all-< lst x)
@@ -1570,11 +1585,19 @@
   (declare (xargs :guard t))
   (and (symbol-alistp options)
        (subsetp-eq (strip-cars options) '(:no-splitp ;whether to split into cases
-                                          ))))
+                                          :print-as-clausesp ;whether to print cases as clauses
+                                          ))
+       (booleanp (lookup-equal :print-as-clausesp options))))
 
 (defthm simple-prover-optionsp-forward-to-symbol-alistp
   (implies (simple-prover-optionsp options)
            (symbol-alistp options))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-forward-to-booleanp-of-lookup-equal-of-print-as-clausesp
+  (implies (simple-prover-optionsp options)
+           (booleanp (lookup-equal :print-as-clausesp options)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 

@@ -260,6 +260,30 @@
            (dargp (aref1 renaming-array-name renaming-array nodenum)))
   :hints (("Goal" :in-theory (enable renaming-arrayp))))
 
+;normalize to whether it is a consp
+(defthm myquotep-of-aref1-when-renaming-arrayp-free
+  (implies (and (renaming-arrayp renaming-array-name renaming-array num-nodes-to-check) ;free var
+                (integerp num-nodes-to-check)
+                (natp nodenum)
+                (< nodenum num-nodes-to-check))
+           (equal (myquotep (aref1 renaming-array-name renaming-array nodenum))
+                  (consp (aref1 renaming-array-name renaming-array nodenum))))
+  :hints (("Goal" :use dargp-of-aref1-when-renaming-arrayp-free
+           :in-theory (disable dargp-of-aref1-when-renaming-arrayp-free
+                               dargp-of-aref1-when-renaming-arrayp))))
+
+;normalize to whether it is a consp
+(defthm natp-of-aref1-when-renaming-arrayp-free
+  (implies (and (renaming-arrayp renaming-array-name renaming-array num-nodes-to-check) ;free var
+                (integerp num-nodes-to-check)
+                (natp nodenum)
+                (< nodenum num-nodes-to-check))
+           (equal (natp (aref1 renaming-array-name renaming-array nodenum))
+                  (not (consp (aref1 renaming-array-name renaming-array nodenum)))))
+  :hints (("Goal" :use dargp-of-aref1-when-renaming-arrayp-free
+           :in-theory (disable dargp-of-aref1-when-renaming-arrayp-free
+                               dargp-of-aref1-when-renaming-arrayp))))
+
 (defthm renaming-arrayp-monotone
   (implies (and (renaming-arrayp renaming-array-name renaming-array num-nodes-to-check-free) ; free var
                 (<= num-nodes-to-check num-nodes-to-check-free)

@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags (and to convert terms into dags).
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -262,6 +262,24 @@
   (defthm natp-of-mv-nth-3-of-merge-terms-into-dag-array-basic
     (implies (natp dag-len)
              (natp (mv-nth 3 (merge-terms-into-dag-array-basic
+                              terms var-replacement-alist
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                              interpreted-function-alist))))
+    :flag merge-terms-into-dag-array-basic)
+  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
+
+(defthm-flag-merge-term-into-dag-array-basic
+  (defthm integerp-of-mv-nth-3-of-merge-term-into-dag-array-basic
+    (implies (integerp dag-len)
+             (integerp (mv-nth 3 (merge-term-into-dag-array-basic
+                              term var-replacement-alist dag-array dag-len dag-parent-array
+                              dag-constant-alist dag-variable-alist
+                              dag-array-name dag-parent-array-name
+                              interpreted-function-alist))))
+    :flag merge-term-into-dag-array-basic)
+  (defthm integerp-of-mv-nth-3-of-merge-terms-into-dag-array-basic
+    (implies (integerp dag-len)
+             (integerp (mv-nth 3 (merge-terms-into-dag-array-basic
                               terms var-replacement-alist
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                               interpreted-function-alist))))
