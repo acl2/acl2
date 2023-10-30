@@ -1433,15 +1433,21 @@
 
 ;recall that the case is the negation of all the literals
 ;fixme similar name to print-negated-literal-list
-(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective)
+(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective print-as-clausesp)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))))
-  (progn$
-   (cw "(Negated lits (~x0) for ~s1 case:~%" (len literal-nodenums) case-adjective)
-   (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len)
-   (cw ")~%")))
+                              (all-< literal-nodenums dag-len)
+                              (booleanp print-as-clausesp))))
+  (if print-as-clausesp
+      (progn$ (cw "~s0 clause:~%(OR " case-adjective)
+             ;; warning: can blow up:
+              (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
+              (cw ")~%"))
+    (progn$
+     (cw "(Negated lits (~x0) for ~s1 case:~%" (len literal-nodenums) case-adjective)
+     (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len)
+     (cw ")~%"))))
 
 (defthm <-of-+-1-of-maxelem
   (implies (and (all-< lst x)
@@ -1579,11 +1585,19 @@
   (declare (xargs :guard t))
   (and (symbol-alistp options)
        (subsetp-eq (strip-cars options) '(:no-splitp ;whether to split into cases
-                                          ))))
+                                          :print-as-clausesp ;whether to print cases as clauses
+                                          ))
+       (booleanp (lookup-equal :print-as-clausesp options))))
 
 (defthm simple-prover-optionsp-forward-to-symbol-alistp
   (implies (simple-prover-optionsp options)
            (symbol-alistp options))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-forward-to-booleanp-of-lookup-equal-of-print-as-clausesp
+  (implies (simple-prover-optionsp options)
+           (booleanp (lookup-equal :print-as-clausesp options)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 

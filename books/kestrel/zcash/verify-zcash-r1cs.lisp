@@ -1,6 +1,6 @@
 ; Zcash-specific version of verify-r1cs
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,7 @@
                                       (use 'nil)
                                       (interpreted-function-alist 'nil)
                                       (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
+                                      (print-as-clausesp 'nil)
                                       (monitor 'nil)
                                       (print ':brief))
   `(r1cs::verify-r1cs ,lifted-r1cs
@@ -37,6 +38,7 @@
                       :use ,use
                       :interpreted-function-alist ,interpreted-function-alist
                       :no-splitp ,no-splitp
+                      :print-as-clausesp ,print-as-clausesp
                       :monitor ,monitor
                       :print ,print)
   :parents (zcash r1cs::verify-r1cs r1cs::r1cs-verification-with-axe)
@@ -52,6 +54,7 @@
          (interpreted-function-alist "An interpreted-function-alist to evaluate ground terms" ;todo: document
                                      )
          (no-splitp "Whether to split into cases") ;todo: switch it to :splitp? or :allow-splitting?  why is splitting not a tactic?!
+         (print-as-clausesp "Whether to print proof goals as clauses (disjunctions to be proved), rather than conjunctions of negated literals (to be proved contradictory)")
          (monitor "Rules to monitor during rewriting")
          (print "Axe print argument") ;todo: document
          ))

@@ -1,7 +1,7 @@
 ; More general functions to create and extend dag-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -72,6 +72,12 @@
                           DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME))))
   :RULE-CLASSES (:REWRITE :TYPE-PRESCRIPTION)
   :HINTS (("Goal" :IN-THEORY (ENABLE ADD-VARIABLE-TO-DAG-ARRAY-WITH-NAME))))
+
+(defthm integerp-of-mv-nth-3-of-add-variable-to-dag-array-with-name
+  (implies (integerp dag-len)
+           (integerp (mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name))))
 
 (defthm bound-on-mv-nth-3-of-add-variable-to-dag-array-with-name-3
   (implies (natp dag-len)

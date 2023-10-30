@@ -857,7 +857,7 @@
 ;; TODO: Can we mark vars to avoid in an array of bits, to avoid operations on sorted lists?
 (defund find-simultaneous-subst-candidates (subst-candidates
                                             candidate-deps-array ;tells us what vars the equated-nodenums depend on
-                                            subst-candidates-acc ; candidates we have already decided to added to the set
+                                            subst-candidates-acc ; candidates we have already decided to add to the set
                                             nodenums-of-vars-already-added ;var nodenums of the candidates in subst-candidates-acc, sorted
                                             nodenums-of-vars-to-avoid ;all the vars on which the candidates in subst-candidates-acc depend, sorted
                                             )
@@ -891,6 +891,8 @@
                                              nil
                                            (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant))))
       (if (and
+           ;; Makes sure we are not already substituting for this var (using a different equality):
+           (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-of-vars-already-added))
            ;; Makes sure no already-selected candidate depends on this var:
            (not (memberp-assuming-sorted-<= this-var-nodenum nodenums-of-vars-to-avoid))
            ;; Makes sure this var doesn't depend on any of the already-selected candidates:
@@ -1411,6 +1413,21 @@
                       (implies (< 0 prover-depth)
                                (<= dag-len new-dag-len)))))
   :rule-classes :linear
+  :hints (("Goal" :use (substitute-vars2-return-type)
+           :in-theory (disable substitute-vars2-return-type))))
+
+(defthm substitute-vars2-return-type-corollary2
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp literal-nodenums)
+                (all-< literal-nodenums dag-len)
+                (natp prover-depth)
+                (natp num)
+                (booleanp changep-acc))
+           (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
+             (declare (ignore provedp changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+             (implies (not erp)
+                      (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
   :hints (("Goal" :use (substitute-vars2-return-type)
            :in-theory (disable substitute-vars2-return-type))))
 
