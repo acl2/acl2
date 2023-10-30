@@ -1,7 +1,7 @@
 ; Axe's rewrite rules in stored form
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -32,6 +32,8 @@
          hyps     ;hyps are the next-most-frequenty-accessed part of the rule
          rule-symbol
          rhs))
+
+;; todo: the guards of these should be stored-axe-rulep:
 
 (defund-inline stored-rule-lhs-args (stored-axe-rule)
   (declare (xargs :guard (<= 3 (len stored-axe-rule))))
@@ -159,6 +161,7 @@
 ;fixme generic theorem saying merge-sort preserves foo-listp?
 
 ;todo: use defmergesort?
+;; TODO: For stability, consider comparing the rule names if there priorities are the same.
 (defun merge-sort-by-rule-priority (stored-rules priorities)
   (declare (xargs :measure (len stored-rules)
                   :hints (("Goal" :in-theory (e/d () (len))))
@@ -239,3 +242,43 @@
             (free-vars-in-terms (stored-rule-lhs-args stored-rule))
             (stored-rule-hyps stored-rule)))
   :hints (("Goal" :in-theory (enable stored-axe-rulep))))
+
+;disable
+(defun remove-from-stored-rules (rule-names-to-remove stored-rules)
+  (declare (xargs :guard (and (symbol-listp rule-names-to-remove)
+                              (all-stored-axe-rulep stored-rules)
+                              (true-listp stored-rules))
+                  :guard-hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep)))))
+  (if (endp stored-rules)
+      nil
+    (let ((stored-rule (first stored-rules)))
+      (if (member-eq (stored-rule-symbol stored-rule) rule-names-to-remove)
+          (remove-from-stored-rules rule-names-to-remove (rest stored-rules))
+        (cons stored-rule (remove-from-stored-rules rule-names-to-remove (rest stored-rules)))))))
+
+(defthm all-stored-axe-rulep-of-remove-from-stored-rules
+  (implies (all-stored-axe-rulep stored-rules)
+           (all-stored-axe-rulep (remove-from-stored-rules rule-names stored-rules))))
+
+;rename.
+(defun rules-from-stored-axe-rules (stored-rules)
+  (declare (xargs :guard (and (all-stored-axe-rulep stored-rules)
+                              (true-listp stored-rules))
+                  :guard-hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep)))))
+  (if (endp stored-rules)
+      nil
+    (cons (stored-rule-symbol (first stored-rules))
+          (rules-from-stored-axe-rules (rest stored-rules)))))
+
+(defthm symbol-listp-of-rules-from-stored-axe-rules
+  (implies (all-stored-axe-rulep rules)
+           (symbol-listp (rules-from-stored-axe-rules rules)))
+  :hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep))))
+
+;todo: drop once the guards of the accessors are changed
+(defthm <=-of-len-of-car-when-all-stored-axe-rulep
+  (implies (and (all-stored-axe-rulep stored-rules)
+                (consp stored-rules))
+           (<= 3 (len (car stored-rules))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep))))

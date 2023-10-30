@@ -1,7 +1,7 @@
 ; A function to read from an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -163,3 +163,96 @@
            (equal (bv-array-read element-size len index data)
                   (bv-array-read element-size (expt 2 isize) index (take (expt 2 isize) data))))
   :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-when-equal-of-take-and-constant
+  (implies (and (equal k (take m x))
+                (syntaxp (and (quotep k)
+                              (not (quotep x))))
+                (< n m)
+                (< n len)
+                (natp len)
+                (natp n)
+                (natp m))
+           (equal (bv-array-read size len n x)
+                  (bv-array-read size len n k)))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
+
+(defthm bv-array-read-of-0-arg1
+  (equal (bv-array-read 0 len index data)
+         0)
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm BV-ARRAY-READ-when-width-negative
+  (implies (< width 0)
+           (equal (BV-ARRAY-READ width len INDEX data)
+                  0))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-READ))))
+
+;; I'm going to try disabling this, now that we are not trimming array reads...
+;hope the nfixes are okay - could make a function min-nfix..
+(defthmd bvchop-of-bv-array-read
+  (equal (bvchop n (bv-array-read element-size len index data))
+         (bv-array-read (min (nfix n) (ifix element-size)) len index data))
+  :hints (("Goal"
+;           :cases ((natp n))
+           :in-theory (e/d (bv-array-read natp)
+                           (;list::nth-of-cons
+                            )))))
+
+(defthm bvchop-of-bv-array-read-same
+  (equal (bvchop element-size (bv-array-read element-size len index data))
+         (bv-array-read element-size len index data))
+  :hints (("Goal"
+;           :cases ((natp n))
+           :in-theory (e/d (bv-array-read natp)
+                           (;list::nth-of-cons
+                            )))))
+
+;gross because it mixes theories?
+;fixme could make an append operator with length params for two arrays..
+;does this depend on weird behavior of bv-array-read that may change?
+(defthm bv-array-read-of-append
+  (implies (and; (equal len (+ (len x) (len y))) ;gen?
+                (< index len)
+                (natp len)
+                (natp index))
+           (equal (bv-array-read width len index (binary-append x y))
+                  (if (< index (len x))
+                      (bv-array-read width (len x) index x)
+                    (bv-array-read width
+                                   (- len (len x)) ;(len y)
+                                   (- index (len x)) y))))
+  :hints (("Goal"
+           :cases ((equal 0 (len y)))
+           :in-theory (enable bv-array-read ;-opener
+                              natp))))
+
+;use bv-array-read-of-append?
+(defthm bv-array-read-of-append-of-cons
+  (implies (and (equal (len x) index)
+                (< index len)
+                (natp len))
+           (equal (bv-array-read width len index (binary-append x (cons a b)))
+                  (bvchop width a)))
+  :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
+
+;rename and gen
+(defthm equal-of-bvchop-and-bv-array-read
+  (implies (and (natp n)
+                (< n 16)
+                )
+           (equal (equal (bvchop 8 (nth n data)) (bv-array-read 8 16 n data))
+                  t))
+  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer)
+                                  ()))))
+
+;rename and gen
+(defthm equal-of-bvchop-and-bv-array-read-gen
+  (implies (and (equal m n)
+                (natp m)
+                (< n 16)
+                )
+           (equal (equal (bvchop 8 (nth n data))
+                         (bv-array-read 8 16 m data))
+                  t))
+  :hints (("Goal" :use (:instance equal-of-bvchop-and-bv-array-read))))

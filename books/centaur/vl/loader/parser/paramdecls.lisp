@@ -242,6 +242,8 @@ data type for a local type parameter.  We enforce this in the parser.</p>")
                               :type type)))))
 
 
+(local (in-theory (disable acl2::len-when-atom)))
+
 (defparser vl-parse-list-of-param-assignments (atts localp type)
   ;; list_of_param_assignments ::= param_assignment { ',' param_assignment }
   :guard (and (vl-atts-p atts)

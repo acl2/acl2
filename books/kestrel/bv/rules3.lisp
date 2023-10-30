@@ -533,16 +533,8 @@
                   (bvif 1 test (getbit n thenpart) (getbit n elsepart))))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-
-(DEFTHM UNSIGNED-BYTE-P-OF-MYIF-strong
-  (equal (UNSIGNED-BYTE-P N (MYIF TEST A B))
-         (myif test (UNSIGNED-BYTE-P N A)
-               (UNSIGNED-BYTE-P N B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
-
-
 ;go to bvif!
-(defthmd slice-of-myif-consant-branches
+(defthmd slice-of-myif-constant-branches
   (implies (and (syntaxp (quotep high))
                 (syntaxp (quotep low))
                 (syntaxp (quotep x))
@@ -1553,8 +1545,7 @@
 ;bozo trim-all rule for getbit?
 (defthmd getbit-of-bvplus
   (implies (and (< n (+ -1 size))
-                (< 0 n)
-                (integerp n)
+                (natp n)
                 (natp size))
            (equal (getbit n (bvplus size x y))
                   (getbit n (bvplus (+ 1 n) x y))))
@@ -2443,9 +2434,6 @@
 ;          :expand (UNSIGNED-BYTE-P FREESIZE (- K)) ;this expands with the wrong defn..
            :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases ;unsigned-byte-p
                               ) (;anti-bvplus
-                                 <-BECOMES-BVLT
-                                 <-BECOMES-BVLT-ALT
-                                 <-BECOMES-BVLT-FREE
                                  )))))
 
 (defthm +-of-minus-constant-version

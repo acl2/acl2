@@ -1,0 +1,1415 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(PRINC$
+         "
+This research was developed with funding from the Defense Advanced
+Research Projects Agency (DARPA).  The views, opinions and/or findings
+expressed are those of the authors and should not be interpreted as
+representing the official views or policies of the Department of
+Defense or the U.S. Government.  Released under Distribution Statement
+``A'' (Approved for Public Release, Distribution Unlimited).
+"
+         *STANDARD-CO* STATE)
+<state>
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFCONST *OLD-STANDARD-OI*
+          *STANDARD-OI*)
+
+Summary
+Form:  ( DEFCONST *OLD-STANDARD-OI* ...)
+Rules: NIL
+ *OLD-STANDARD-OI*
+ACL2 !>>(REDEF+)
+ T
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-OI*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-OI STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-OI* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-CO*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-CO STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-CO* ...):  *STANDARD-CO*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-CO* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-CO* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-CO*
+ACL2 p!>>(F-PUT-GLOBAL 'TRACE-CO
+                       (STANDARD-CO STATE)
+                       STATE)
+<state>
+ACL2 p!>>(DEFUN SET-LD-PROMPT (VAL STATE)
+           (ER-PROGN (CHK-LD-PROMPT VAL 'SET-LD-PROMPT STATE)
+                     (IF (EQ VAL 'BRR-PROMPT)
+                         (SET-LD-PRE-EVAL-PRINT T STATE)
+                       (VALUE NIL))
+                     (PPROGN (F-PUT-GLOBAL 'LD-PROMPT VAL STATE)
+                             (VALUE VAL))))
+
+ACL2 Warning [Redef] in ( DEFUN SET-LD-PROMPT ...):  SET-LD-PROMPT
+redefined.
+
+
+
+Summary
+Form:  ( DEFUN SET-LD-PROMPT ...)
+Rules: NIL
+Warnings:  Redef
+ SET-LD-PROMPT
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(DEFLABEL START-SECTION-2)
+
+Summary
+Form:  ( DEFLABEL START-SECTION-2 ...)
+Rules: NIL
+ START-SECTION-2
+ACL2 !>>(INCLUDE-BOOK "std/lists/rev"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "std/lists/rev" ...)
+Rules: NIL
+ (:SYSTEM . "std/lists/rev.lisp")
+ACL2 !>>(WITH-BRR-DATA (THM (IMPLIES (AND (NATP N) (< N (LEN X)))
+                                     (EQUAL (NTH N (REVAPPEND X Y))
+                                            (NTH N (REVERSE X))))
+                            :HINTS (("Goal" :DO-NOT '(PREPROCESS)))))
+
+Splitter note (see :DOC splitter) for Goal (2 subgoals).
+  if-intro: ((:DEFINITION NATP)
+             (:DEFINITION REVERSE))
+
+Subgoal 2
+Subgoal 1
+
+([ A key checkpoint:
+
+Subgoal 1
+(IMPLIES (AND (INTEGERP N)
+              (<= 0 N)
+              (< N (LEN X))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+*1 (Subgoal 1) is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (LEN X).
+
+This suggestion was produced using the :induction rule LEN.  If we
+let (:P N X Y) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (CONSP X)) (:P N X Y))
+     (IMPLIES (AND (CONSP X) (:P N (CDR X) Y))
+              (:P N X Y))).
+This induction is justified by the same argument used to admit LEN.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/3'4'
+Subgoal *1/3'5'
+
+([ A key checkpoint while proving *1 (descended from Subgoal 1):
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP X)
+              (EQUAL (NTH N (APPEND (REV (CDR X)) Y))
+                     (NTH N (REV (CDR X))))
+              (INTEGERP N)
+              (<= 0 N)
+              (< N (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+*1.1 (Subgoal *1/3'5') is pushed for proof by induction.
+
+])
+Subgoal *1/2
+Subgoal *1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1/2' (2 subgoals).
+  if-intro: ((:DEFINITION NTH))
+
+Subgoal *1/2.2
+Subgoal *1/2.2'
+Subgoal *1/2.2''
+Subgoal *1/2.1
+Subgoal *1/2.1'
+Subgoal *1/2.1''
+Subgoal *1/2.1'''
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+Subgoal *1/1'4'
+Subgoal *1/1'5'
+Subgoal *1/1'6'
+Subgoal *1/1'7'
+Subgoal *1/1'8'
+Subgoal *1/1'9'
+
+([ A key checkpoint while proving *1 (descended from Subgoal 1):
+
+Subgoal *1/1'''
+(IMPLIES (AND (CONSP X)
+              (<= (LEN (CDR X)) (LEN (CDR X)))
+              (<= 0 (LEN (CDR X)))
+              (< (LEN (CDR X)) (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH (LEN (CDR X)) (APPEND (REV X) Y))
+                (NTH (LEN (CDR X)) (REV X))))
+
+*1.2 (Subgoal *1/1'9') is pushed for proof by induction.
+
+])
+
+So we now return to *1.2, which is
+
+(IMPLIES (AND (CONSP L)
+              (TRUE-LISTP L)
+              (INTEGERP I)
+              (<= I I)
+              (<= 0 I)
+              (< I (+ 1 I)))
+         (EQUAL (NTH I (APPEND L Y)) (NTH I L))).
+Subgoal *1.2/9
+Subgoal *1.2/8
+Subgoal *1.2/7
+Subgoal *1.2/6
+Subgoal *1.2/5
+Subgoal *1.2/4
+Subgoal *1.2/3
+Subgoal *1.2/3'
+Subgoal *1.2/3''
+Subgoal *1.2/3'''
+Subgoal *1.2/3'4'
+Subgoal *1.2/3'5'
+
+*1.2.1 (Subgoal *1.2/3'5') is pushed for proof by induction.
+Subgoal *1.2/2
+Subgoal *1.2/2'
+Subgoal *1.2/1
+
+So we now return to *1.2.1, which is
+
+(IMPLIES (AND (NOT (ZP I))
+              (<= I I)
+              (<= 0 I)
+              (< I (+ 1 I)))
+         (NOT (NTH (+ -1 I) Y))).
+
+No induction schemes are suggested by *1.2.1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:CONGRUENCE LIST-EQUIV-IMPLIES-EQUAL-NTH-2)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION LEN)
+        (:DEFINITION NATP)
+        (:DEFINITION NTH)
+        (:DEFINITION REVERSE)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:INDUCTION LEN)
+        (:INDUCTION NTH)
+        (:INDUCTION TRUE-LISTP)
+        (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV)
+        (:REWRITE APPEND-TO-NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONSP-OF-REV)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE REV-OF-CONS)
+        (:REWRITE REV-WHEN-NOT-CONSP)
+        (:REWRITE REVAPPEND-REMOVAL)
+        (:TYPE-PRESCRIPTION BINARY-APPEND)
+        (:TYPE-PRESCRIPTION LEN)
+        (:TYPE-PRESCRIPTION REV)
+        (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION NATP)
+             (:DEFINITION NTH)
+             (:DEFINITION REVERSE))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Subgoal 1
+(IMPLIES (AND (INTEGERP N)
+              (<= 0 N)
+              (< N (LEN X))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+*** Key checkpoints under a top-level induction: ***
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP X)
+              (EQUAL (NTH N (APPEND (REV (CDR X)) Y))
+                     (NTH N (REV (CDR X))))
+              (INTEGERP N)
+              (<= 0 N)
+              (< N (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+Subgoal *1/1'''
+(IMPLIES (AND (CONSP X)
+              (<= (LEN (CDR X)) (LEN (CDR X)))
+              (<= 0 (LEN (CDR X)))
+              (< (LEN (CDR X)) (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH (LEN (CDR X)) (APPEND (REV X) Y))
+                (NTH (LEN (CDR X)) (REV X))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 42
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM (REV X))
+1. Simplifying the clause
+     ((IMPLIES (IF (NATP N) (< N (LEN X)) 'NIL)
+               (EQUAL (NTH N (REVAPPEND X Y))
+                      (NTH N (REVERSE X)))))
+2. Rewriting (to simplify) the atom of the first literal,
+     (IMPLIES (IF (NATP N) (< N (LEN X)) 'NIL)
+              (EQUAL (NTH N (REVAPPEND X Y))
+                     (NTH N (REVERSE X)))),
+3. Rewriting (to simplify) the second argument,
+     (EQUAL (NTH N (REVAPPEND X Y))
+            (NTH N (REVERSE X))),
+4. Rewriting (to simplify) the first argument,
+     (NTH N (REVAPPEND X Y)),
+5. Rewriting (to simplify) the second argument,
+     (REVAPPEND X Y),
+6. Attempting to apply (:REWRITE REVAPPEND-REMOVAL) to
+     (REVAPPEND X Y)
+The resulting (translated) term is
+  (BINARY-APPEND (REV X) Y).
+ACL2 !>>(WITH-BRR-DATA (THM (IMPLIES (AND (NATP N) (< N (LEN X)))
+                                     (EQUAL (NTH N (REVAPPEND X Y))
+                                            (NTH N (REVERSE X))))))
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (2 subgoals).
+  if-intro: ((:DEFINITION REVERSE))
+
+Subgoal 2
+Subgoal 1
+
+([ A key checkpoint:
+
+Subgoal 1
+(IMPLIES (AND (INTEGERP N)
+              (<= 0 N)
+              (< N (LEN X))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+*1 (Subgoal 1) is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  We will choose arbitrarily among these.  
+
+We will induct according to a scheme suggested by (LEN X).
+
+This suggestion was produced using the :induction rule LEN.  If we
+let (:P N X Y) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (NOT (CONSP X)) (:P N X Y))
+     (IMPLIES (AND (CONSP X) (:P N (CDR X) Y))
+              (:P N X Y))).
+This induction is justified by the same argument used to admit LEN.
+When applied to the goal at hand the above induction scheme produces
+four nontautological subgoals.
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/3'''
+Subgoal *1/3'4'
+Subgoal *1/3'5'
+Subgoal *1/3'6'
+
+([ A key checkpoint while proving *1 (descended from Subgoal 1):
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP X)
+              (EQUAL (NTH N (APPEND (REV (CDR X)) Y))
+                     (NTH N (REV (CDR X))))
+              (INTEGERP N)
+              (<= 0 N)
+              (< N (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+*1.1 (Subgoal *1/3'6') is pushed for proof by induction.
+
+])
+Subgoal *1/2
+Subgoal *1/2'
+
+Splitter note (see :DOC splitter) for Subgoal *1/2' (2 subgoals).
+  if-intro: ((:DEFINITION NTH))
+
+Subgoal *1/2.2
+Subgoal *1/2.2'
+Subgoal *1/2.2''
+Subgoal *1/2.2'''
+Subgoal *1/2.1
+Subgoal *1/2.1'
+Subgoal *1/2.1''
+Subgoal *1/2.1'''
+Subgoal *1/2.1'4'
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+Subgoal *1/1'''
+Subgoal *1/1'4'
+Subgoal *1/1'5'
+Subgoal *1/1'6'
+Subgoal *1/1'7'
+Subgoal *1/1'8'
+Subgoal *1/1'9'
+Subgoal *1/1'10'
+
+([ A key checkpoint while proving *1 (descended from Subgoal 1):
+
+Subgoal *1/1'''
+(IMPLIES (AND (CONSP X)
+              (<= (LEN (CDR X)) (LEN (CDR X)))
+              (<= 0 (LEN (CDR X)))
+              (< (LEN (CDR X)) (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH (LEN (CDR X)) (APPEND (REV X) Y))
+                (NTH (LEN (CDR X)) (REV X))))
+
+*1.2 (Subgoal *1/1'10') is pushed for proof by induction.
+
+])
+
+So we now return to *1.2, which is
+
+(IMPLIES (AND (CONSP L)
+              (TRUE-LISTP L)
+              (INTEGERP I)
+              (<= 0 I)
+              (<= I I)
+              (< I (+ 1 I)))
+         (EQUAL (NTH I (APPEND L Y)) (NTH I L))).
+Subgoal *1.2/9
+Subgoal *1.2/9'
+Subgoal *1.2/8
+Subgoal *1.2/7
+Subgoal *1.2/6
+Subgoal *1.2/5
+Subgoal *1.2/4
+Subgoal *1.2/3
+Subgoal *1.2/3'
+Subgoal *1.2/3''
+Subgoal *1.2/3'''
+Subgoal *1.2/3'4'
+Subgoal *1.2/3'5'
+Subgoal *1.2/3'6'
+
+*1.2.1 (Subgoal *1.2/3'6') is pushed for proof by induction.
+Subgoal *1.2/2
+Subgoal *1.2/2'
+Subgoal *1.2/2''
+Subgoal *1.2/1
+Subgoal *1.2/1'
+
+So we now return to *1.2.1, which is
+
+(IMPLIES (AND (NOT (ZP I))
+              (<= 0 I)
+              (<= I I)
+              (< I (+ 1 I)))
+         (NOT (NTH (+ -1 I) Y))).
+
+No induction schemes are suggested by *1.2.1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:CONGRUENCE LIST-EQUIV-IMPLIES-EQUAL-NTH-2)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION LEN)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION REVERSE)
+        (:DEFINITION TRUE-LISTP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:INDUCTION LEN)
+        (:INDUCTION NTH)
+        (:INDUCTION TRUE-LISTP)
+        (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV)
+        (:REWRITE APPEND-TO-NIL)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONSP-OF-REV)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE REV-OF-CONS)
+        (:REWRITE REV-WHEN-NOT-CONSP)
+        (:REWRITE REVAPPEND-REMOVAL)
+        (:TYPE-PRESCRIPTION BINARY-APPEND)
+        (:TYPE-PRESCRIPTION LEN)
+        (:TYPE-PRESCRIPTION REV)
+        (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION NTH)
+             (:DEFINITION REVERSE))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Subgoal 1
+(IMPLIES (AND (INTEGERP N)
+              (<= 0 N)
+              (< N (LEN X))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+*** Key checkpoints under a top-level induction: ***
+
+Subgoal *1/3'
+(IMPLIES (AND (CONSP X)
+              (EQUAL (NTH N (APPEND (REV (CDR X)) Y))
+                     (NTH N (REV (CDR X))))
+              (INTEGERP N)
+              (<= 0 N)
+              (< N (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH N (APPEND (REV X) Y))
+                (NTH N (REV X))))
+
+Subgoal *1/1'''
+(IMPLIES (AND (CONSP X)
+              (<= (LEN (CDR X)) (LEN (CDR X)))
+              (<= 0 (LEN (CDR X)))
+              (< (LEN (CDR X)) (+ 1 (LEN (CDR X))))
+              (NOT (STRINGP X)))
+         (EQUAL (NTH (LEN (CDR X)) (APPEND (REV X) Y))
+                (NTH (LEN (CDR X)) (REV X))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 36
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM (REV X))
+1. Simplifying the clause
+     ((NOT (INTEGERP N))
+      (< N '0)
+      (NOT (< N (LEN X)))
+      (EQUAL (NTH N (BINARY-APPEND (REV X) Y))
+             (NTH N (REVERSE X))))
+2. Rewriting (to simplify) the atom of the fourth literal,
+     (EQUAL (NTH N (BINARY-APPEND (REV X) Y))
+            (NTH N (REVERSE X))),
+3. Rewriting (to simplify) the second argument,
+     (NTH N (REVERSE X)),
+4. Rewriting (to simplify) the second argument,
+     (REVERSE X),
+5. Attempting to apply (:DEFINITION REVERSE) to
+     (REVERSE X)
+6. Rewriting (to simplify) the body,
+     (IF (STRINGP X)
+         (COERCE (REVAPPEND (COERCE X 'LIST) 'NIL)
+                 'STRING)
+       (REVAPPEND X 'NIL)),
+   under the substitution
+     X : X
+7. Rewriting (to simplify) the third argument,
+     (REVAPPEND X 'NIL),
+   under the substitution
+     X : X
+8. Attempting to apply (:REWRITE REVAPPEND-REMOVAL) to
+     (REVAPPEND X 'NIL)
+9. Rewriting (to simplify) the rhs of the conclusion,
+     (BINARY-APPEND (REV X) Y),
+   under the substitution
+     Y : 'NIL
+     X : X
+10. Attempting to apply (:REWRITE APPEND-ATOM-UNDER-LIST-EQUIV) to
+     (BINARY-APPEND (REV X) 'NIL)
+The resulting (translated) term is
+  (REV X).
+Note: The first lemma application above that provides a suitable result
+is at frame 5, and that result is
+  (IF (STRINGP X)
+      (COERCE (REV (COERCE X 'LIST)) 'STRING)
+    (REV X)).
+ACL2 !>>(UBT 'START-SECTION-2)
+           7:x(REDEF-)
+ACL2 !>>(SET-BRR-EVISC-TUPLE NIL STATE)
+ (:BRR)
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ (:SYSTEM . "projects/apply/top.lisp")
+ACL2 !>>(ENCAPSULATE ((P (X) T)
+                      (Q (X) T)
+                      (R (X) T)
+                      (S (X) T)
+                      (F (X Y) T))
+          (LOCAL (DEFUN P (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN Q (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN R (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN S (X) (DECLARE (IGNORE X)) T))
+          (LOCAL (DEFUN F (X Y)
+                   (DECLARE (IGNORE X Y))
+                   T))
+          (DEFTHM P-RULE
+            (IMPLIES (Q X) (P (F X Y))))
+          (DEFTHM Q-RULE1 (IMPLIES (R X) (Q X)))
+          (DEFTHM Q-RULE2 (IMPLIES (S X) (Q X))))
+
+To verify that the eight encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN P (X) (DECLARE (IGNORE X)) T))
+
+Since P is non-recursive, its admission is trivial.  We observe that
+the type of P is described by the theorem (EQUAL (P X) T).  
+
+Summary
+Form:  ( DEFUN P ...)
+Rules: NIL
+P
+
+
+ACL2 !>>>(LOCAL (DEFUN Q (X) (DECLARE (IGNORE X)) T))
+
+Since Q is non-recursive, its admission is trivial.  We observe that
+the type of Q is described by the theorem (EQUAL (Q X) T).  
+
+Summary
+Form:  ( DEFUN Q ...)
+Rules: NIL
+Q
+
+
+ACL2 !>>>(LOCAL (DEFUN R (X) (DECLARE (IGNORE X)) T))
+
+Since R is non-recursive, its admission is trivial.  We observe that
+the type of R is described by the theorem (EQUAL (R X) T).  
+
+Summary
+Form:  ( DEFUN R ...)
+Rules: NIL
+R
+
+
+ACL2 !>>>(LOCAL (DEFUN S (X) (DECLARE (IGNORE X)) T))
+
+Since S is non-recursive, its admission is trivial.  We observe that
+the type of S is described by the theorem (EQUAL (S X) T).  
+
+Summary
+Form:  ( DEFUN S ...)
+Rules: NIL
+S
+
+
+ACL2 !>>>(LOCAL (DEFUN F (X Y)
+                  (DECLARE (IGNORE X Y))
+                  T))
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (EQUAL (F X Y) T).  
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+F
+
+
+ACL2 !>>>(DEFTHM P-RULE
+           (IMPLIES (Q X) (P (F X Y))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM P-RULE ...):  A :REWRITE rule generated
+from P-RULE will be triggered only by terms containing the function
+symbols P and F, which have non-recursive definitions.  Unless these
+definitions are disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM P-RULE ...):  The previously added
+rule P subsumes a newly proposed :REWRITE rule generated from P-RULE,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of P-RULE depends upon the :type-prescription rule P.
+
+Summary
+Form:  ( DEFTHM P-RULE ...)
+Rules: ((:TYPE-PRESCRIPTION P)
+        (:TYPE-PRESCRIPTION Q))
+Warnings:  Subsume and Non-rec
+P-RULE
+
+
+ACL2 !>>>(DEFTHM Q-RULE1 (IMPLIES (R X) (Q X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM Q-RULE1 ...):  A :REWRITE rule generated
+from Q-RULE1 will be triggered only by terms containing the function
+symbol Q, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM Q-RULE1 ...):  The previously added
+rule Q subsumes a newly proposed :REWRITE rule generated from Q-RULE1,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of Q-RULE1 depends upon the :type-prescription rule Q.
+
+Summary
+Form:  ( DEFTHM Q-RULE1 ...)
+Rules: ((:TYPE-PRESCRIPTION Q)
+        (:TYPE-PRESCRIPTION R))
+Warnings:  Subsume and Non-rec
+Q-RULE1
+
+
+ACL2 !>>>(DEFTHM Q-RULE2 (IMPLIES (S X) (Q X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM Q-RULE2 ...):  A :REWRITE rule generated
+from Q-RULE2 will be triggered only by terms containing the function
+symbol Q, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM Q-RULE2 ...):  The previously added
+rule Q subsumes a newly proposed :REWRITE rule generated from Q-RULE2,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+The storage of Q-RULE2 depends upon the :type-prescription rule Q.
+
+Summary
+Form:  ( DEFTHM Q-RULE2 ...)
+Rules: ((:TYPE-PRESCRIPTION Q)
+        (:TYPE-PRESCRIPTION S))
+Warnings:  Subsume and Non-rec
+Q-RULE2
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with every one of the functions
+P, Q, R, S and F:
+
+(AND (IMPLIES (Q X) (P (F X Y))) (IMPLIES (R X) (Q X)) (IMPLIES (S X) (Q X)))
+
+Summary
+Form:  ( ENCAPSULATE ((P ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+ (P Q R S F)
+ACL2 !>>(DEFUN NATS (N)
+          (IF (ZP N)
+              '(0)
+            (CONS N (NATS (- N 1)))))
+
+The admission of NATS is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  We observe that the type of NATS is described by the
+theorem (AND (CONSP (NATS N)) (TRUE-LISTP (NATS N))).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN NATS ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ NATS
+ACL2 !>>(DEFSTUB FOO (X) T)
+
+Summary
+Form:  (DEFSTUB FOO ...)
+Rules: NIL
+ FOO
+ACL2 !>>(THM (IMPLIES (R V) (P (F U V))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (R V) (P (F U V)))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(BRR T)
+Use :a! to exit break-rewrite.
+See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
+of details when printing.
+
+The monitored runes are:
+NIL
+ T
+ACL2 !>>(MONITOR 'P-RULE T)
+(((:REWRITE P-RULE) (:CONDITION QUOTE T)))
+ACL2 !>>(MONITOR 'Q-RULE1 T)
+(((:REWRITE Q-RULE1) (:CONDITION QUOTE T))
+ ((:REWRITE P-RULE) (:CONDITION QUOTE T)))
+ACL2 !>>(THM (IMPLIES (R V) (P (F U V))))
+
+(1 Breaking (:REWRITE P-RULE) on (P (F U V)):
+1 ACL2 >:EVAL
+
+(2 Breaking (:REWRITE Q-RULE1) on (Q U):
+2 ACL2 >:EVAL
+
+2x (:REWRITE Q-RULE1) failed because :HYP 1 rewrote to (R U).
+
+2 ACL2 >:TYPE-ALIST
+
+Decoded type-alist:
+-----
+Terms with type (TS-COMPLEMENT *TS-NIL*):
+(R V)
+
+==========
+Use (GET-BRR-LOCAL 'TYPE-ALIST STATE) to see actual type-alist.
+2 ACL2 >"Normally we would execute :a! here, but to support book
+ certification, we simply let the proof run to completion."
+"Normally we would execute :a! here, but to support book
+ certification, we simply let the proof run to completion."
+2 ACL2 >:GO!
+2)
+
+1x (:REWRITE P-RULE) failed because :HYP 1 rewrote to (Q U).
+
+1 ACL2 >:GO!
+1)
+
+(1 Breaking (:REWRITE P-RULE) on (P (F U V)):
+1 ACL2 >:GO!
+
+1x (:REWRITE P-RULE) failed because :HYP 1 rewrote to (Q U).
+1)
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (R V) (P (F U V)))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM (IMPLIES (R U) (P (F U V))))
+
+(1 Breaking (:REWRITE P-RULE) on (P (F U V)):
+1 ACL2 >:GO
+
+(2 Breaking (:REWRITE Q-RULE1) on (Q U):
+2 ACL2 >:GO
+
+2 (:REWRITE Q-RULE1) produced 'T.
+2)
+
+1 (:REWRITE P-RULE) produced 'T.
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P-RULE) (:REWRITE Q-RULE1))
+
+Proof succeeded.
+ACL2 !>>(DEFTHM LEMMA-A
+          (LOOP$ FOR E IN (NATS N)
+                 ALWAYS (ATOM E)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-A ...):  A :REWRITE rule generated
+from LEMMA-A will be triggered only by terms containing the function
+symbol ATOM, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(ALWAYS$ (LAMBDA$ (LOOP$-IVAR)
+           (NOT (CONSP LOOP$-IVAR)))
+         (NATS N))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (NATS N).
+
+This suggestion was produced using the :induction rule NATS.  If we
+let (:P N) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP N)) (:P (+ -1 N)))
+              (:P N))
+     (IMPLIES (ZP N) (:P N))).
+This induction is justified by the same argument used to admit NATS.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+The storage of LEMMA-A depends upon the :type-prescription rule ALWAYS$.
+
+Summary
+Form:  ( DEFTHM LEMMA-A ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ALWAYS$)
+        (:DEFINITION ATOM)
+        (:DEFINITION NATS)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART ALWAYS$)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION NATS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:TYPE-PRESCRIPTION ALWAYS$)
+        (:TYPE-PRESCRIPTION NATS))
+Warnings:  Non-rec
+ LEMMA-A
+ACL2 !>>(DEFTHM THM-A
+          (LOOP$ FOR E IN (NATS (FOO A))
+                 ALWAYS (ATOM E)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM THM-A ...):  A :REWRITE rule generated
+from THM-A will be triggered only by terms containing the function
+symbol ATOM, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM THM-A ...):  The previously added
+rule LEMMA-A subsumes a newly proposed :REWRITE rule generated from
+THM-A, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(ALWAYS$ (LAMBDA$ (LOOP$-IVAR)
+           (NOT (CONSP LOOP$-IVAR)))
+         (NATS (FOO A)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( DEFTHM THM-A ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP))
+Warnings:  Subsume and Non-rec
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(ALWAYS$ (LAMBDA$ (LOOP$-IVAR)
+           (NOT (CONSP LOOP$-IVAR)))
+         (NATS (FOO A)))
+
+ACL2 Error [Failure] in ( DEFTHM THM-A ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(BRR T)
+Use :a! to exit break-rewrite.
+See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
+of details when printing.
+
+The monitored runes are:
+(((:REWRITE Q-RULE1) (:CONDITION QUOTE T))
+ ((:REWRITE P-RULE) (:CONDITION QUOTE T)))
+ T
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(MONITOR 'LEMMA-A '(:LAMBDA T))
+
+ACL2 Warning [Monitor] in MONITOR:  The rune (:REWRITE LEMMA-A) names
+only a simple abbreviation rule.  Monitors can be installed on abbreviation
+rules, but will not fire during preprocessing, so you may want to supply
+the hint :DO-NOT '(PREPROCESS); see :DOC hints.  For an explanation
+of what a simple abbreviation rule is, see :DOC simple.  Also, see
+:DOC monitor.
+
+(((:REWRITE LEMMA-A)
+  (:CONDITION QUOTE T)
+  (:LAMBDA . T)))
+ACL2 !>>(DEFTHM THM-A
+          (LOOP$ FOR E IN (NATS (FOO A))
+                 ALWAYS (ATOM E)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM THM-A ...):  A :REWRITE rule generated
+from THM-A will be triggered only by terms containing the function
+symbol ATOM, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM THM-A ...):  The previously added
+rule LEMMA-A subsumes a newly proposed :REWRITE rule generated from
+THM-A, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+Goal'
+
+(1 Breaking (:REWRITE LEMMA-A) on 
+(ALWAYS$ '(LAMBDA (LOOP$-IVAR)
+            (IF (CONSP LOOP$-IVAR) 'NIL 'T))
+         (NATS (FOO A))):
+
+The pattern in this rule failed to match the target.  However, this
+is considered a NEAR MISS under the break criteria, 
+(:CONDITION 'T :LAMBDA T), specified when this rule was monitored.
+The following criterion is satisfied.
+
+* :LHS matches :TARGET except at one or more quoted LAMBDA constants.
+
+1 ACL2 >:TARGET
+(ALWAYS$ '(LAMBDA (LOOP$-IVAR)
+            (IF (CONSP LOOP$-IVAR) 'NIL 'T))
+         (NATS (FOO A)))
+1 ACL2 >:LHS
+(ALWAYS$ '(LAMBDA (LOOP$-IVAR) (ATOM LOOP$-IVAR)) (NATS N))
+1 ACL2 >"Normally we would execute :a! here, but to support book
+ certification, we simply let the proof run to completion."
+"Normally we would execute :a! here, but to support book
+ certification, we simply let the proof run to completion."
+1 ACL2 >:GO!
+
+1x (:REWRITE LEMMA-A) failed because the pattern (:LHS or :MAX-TERM)
+did not match the :TARGET.
+1)
+Goal''
+
+(1 Breaking (:REWRITE LEMMA-A) on 
+(ALWAYS$ '(LAMBDA (LOOP$-IVAR)
+            (IF (CONSP LOOP$-IVAR) 'NIL 'T))
+         (NATS (FOO A))):
+
+The pattern in this rule failed to match the target.  However, this
+is considered a NEAR MISS under the break criteria, 
+(:CONDITION 'T :LAMBDA T), specified when this rule was monitored.
+The following criterion is satisfied.
+
+* :LHS matches :TARGET except at one or more quoted LAMBDA constants.
+
+1 ACL2 >:GO!
+
+1x (:REWRITE LEMMA-A) failed because the pattern (:LHS or :MAX-TERM)
+did not match the :TARGET.
+1)
+
+(1 Breaking (:REWRITE LEMMA-A) on 
+(ALWAYS$ '(LAMBDA (LOOP$-IVAR)
+            (IF (CONSP LOOP$-IVAR) 'NIL 'T))
+         (NATS (FOO A))):
+
+The pattern in this rule failed to match the target.  However, this
+is considered a NEAR MISS under the break criteria, 
+(:CONDITION 'T :LAMBDA T), specified when this rule was monitored.
+The following criterion is satisfied.
+
+* :LHS matches :TARGET except at one or more quoted LAMBDA constants.
+
+1 ACL2 >:GO!
+
+1x (:REWRITE LEMMA-A) failed because the pattern (:LHS or :MAX-TERM)
+did not match the :TARGET.
+1)
+
+([ A key checkpoint:
+
+Goal''
+(ALWAYS$ (LAMBDA$ (LOOP$-IVAR)
+           (NOT (CONSP LOOP$-IVAR)))
+         (NATS (FOO A)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( DEFTHM THM-A ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP))
+Warnings:  Subsume and Non-rec
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(ALWAYS$ (LAMBDA$ (LOOP$-IVAR)
+           (NOT (CONSP LOOP$-IVAR)))
+         (NATS (FOO A)))
+
+ACL2 Error [Failure] in ( DEFTHM THM-A ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(UNMONITOR :ALL)
+Note:  No runes are being monitored.  Perhaps you should turn off break-
+rewrite with (brr nil).
+
+NIL
+ACL2 !>>(DEFTHM LEMMA-A-REVISED
+          (LOOP$ FOR E IN (NATS N)
+                 ALWAYS (IF (CONSP E) NIL T)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(ALWAYS$ (LAMBDA$ (LOOP$-IVAR)
+           (NOT (CONSP LOOP$-IVAR)))
+         (NATS N))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by (NATS N).
+
+This suggestion was produced using the :induction rule NATS.  If we
+let (:P N) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP N)) (:P (+ -1 N)))
+              (:P N))
+     (IMPLIES (ZP N) (:P N))).
+This induction is justified by the same argument used to admit NATS.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+The storage of LEMMA-A-REVISED depends upon the :type-prescription
+rule ALWAYS$.
+
+Summary
+Form:  ( DEFTHM LEMMA-A-REVISED ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ALWAYS$)
+        (:DEFINITION NATS)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART ALWAYS$)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION NATS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:TYPE-PRESCRIPTION ALWAYS$)
+        (:TYPE-PRESCRIPTION NATS))
+ LEMMA-A-REVISED
+ACL2 !>>(THM (LOOP$ FOR E IN (NATS (FOO A))
+                    ALWAYS (ATOM E)))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ATOM)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:REWRITE LEMMA-A-REVISED))
+
+Proof succeeded.
+ACL2 !>>(BRR T)
+Use :a! to exit break-rewrite.
+See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
+of details when printing.
+
+The monitored runes are:
+NIL
+ T
+ACL2 !>>(MONITOR 'P-RULE ''(:GO))
+(((:REWRITE P-RULE) (:CONDITION QUOTE (:GO))))
+ACL2 !>>(MONITOR 'Q-RULE1 ''(:GO))
+(((:REWRITE Q-RULE1) (:CONDITION QUOTE (:GO)))
+ ((:REWRITE P-RULE) (:CONDITION QUOTE (:GO))))
+ACL2 !>>(THM (IMPLIES (R U) (P (F U V))))
+
+(1 Breaking (:REWRITE P-RULE) on (P (F U V)):
+1 ACL2 >:GO
+
+(2 Breaking (:REWRITE Q-RULE1) on (Q U):
+2 ACL2 >:GO
+
+2 (:REWRITE Q-RULE1) produced 'T.
+2)
+
+1 (:REWRITE P-RULE) produced 'T.
+1)
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P-RULE) (:REWRITE Q-RULE1))
+
+Proof succeeded.
+ACL2 !>>(TRACE$ (BRKPT1 :ENTRY 'BRKPT1 :EXIT 'BRKPT1)
+                (BRKPT2 :ENTRY 'BRKPT2 :EXIT 'BRKPT2))
+ ((BRKPT1 :ENTRY 'BRKPT1 :EXIT 'BRKPT1)
+  (BRKPT2 :ENTRY 'BRKPT2 :EXIT 'BRKPT2))
+ACL2 !>>(THM (IMPLIES (R U) (P (F U V))))
+1> BRKPT1
+
+(1 Breaking (:REWRITE P-RULE) on (P (F U V)):
+1 ACL2 >:GO
+<1 BRKPT1
+1> BRKPT1
+<1 BRKPT1
+1> BRKPT2
+<1 BRKPT2
+1> BRKPT1
+
+(2 Breaking (:REWRITE Q-RULE1) on (Q U):
+2 ACL2 >:GO
+<1 BRKPT1
+1> BRKPT2
+
+2 (:REWRITE Q-RULE1) produced 'T.
+2)
+<1 BRKPT2
+1> BRKPT2
+
+1 (:REWRITE P-RULE) produced 'T.
+1)
+<1 BRKPT2
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE P-RULE) (:REWRITE Q-RULE1))
+
+Proof succeeded.
+ACL2 !>>(REDEF+)
+
+TTAG NOTE: Adding ttag :REDEF+ from the top level loop.
+ T
+ACL2 p!>>(DEFCONST *STANDARD-OI*
+           *OLD-STANDARD-OI*)
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>Bye.

@@ -740,11 +740,14 @@
 (defun make-prover-simple-fn (suffix ;; gets added to generated names
                               evaluator-suffix
                               syntaxp-evaluator-suffix
-                              bind-free-evaluator-suffix)
+                              bind-free-evaluator-suffix
+                              default-global-rules)
   (declare (xargs :guard (and (symbolp suffix)
                               (symbolp evaluator-suffix)
                               (symbolp syntaxp-evaluator-suffix)
-                              (symbolp bind-free-evaluator-suffix))))
+                              (symbolp bind-free-evaluator-suffix)
+                              ;; default-global-rules can be any form (untranslated)
+                              )))
   (let* ((evaluator-base-name (pack$ 'axe-evaluator- evaluator-suffix))
          (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- syntaxp-evaluator-suffix)) ; keep in sync with make-axe-syntaxp-evaluator.lisp
          (eval-axe-bind-free-function-application-fn (pack$ 'eval-axe-bind-free-function-application- bind-free-evaluator-suffix)) ; keep in sync with make-axe-bind-free-evaluator.lisp
@@ -5135,6 +5138,7 @@
                                             tactic
                                             rule-lists
                                             global-rules
+                                            extra-global-rules
                                             interpreted-function-alist
                                             no-splitp
                                             monitor
@@ -5159,8 +5163,12 @@
               ((when (not (rule-item-list-listp rule-lists)))
                (er hard? ',prove-dag-implication-name "Bad rule lists: ~x0" rule-lists)
                (mv :bad-input nil state))
-              ((when (not (rule-item-listp global-rules)))
+              ((when (not (or (eq :auto global-rules)
+                              (rule-item-listp global-rules))))
                (er hard? ',prove-dag-implication-name "Bad global-rules: ~x0" global-rules)
+               (mv :bad-input nil state))
+              ((when (not (rule-item-listp extra-global-rules)))
+               (er hard? ',prove-dag-implication-name "Bad extra-global-rules: ~x0" extra-global-rules)
                (mv :bad-input nil state))
               ((when (not (simple-prover-tacticp tactic)))
                (er hard? ',prove-dag-implication-name "Bad tactic: ~x0" tactic)
@@ -5207,13 +5215,24 @@
               ;; make auxiliary dag data structures:
               ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
+              ;; Handle the global-rules option:
+              (global-rules (if (eq :auto global-rules)
+                                ,default-global-rules ; this can differ for each prover
+                              global-rules))
+              ;; Add the extra-global-rules, if any:
+              (global-rules (union-equal extra-global-rules global-rules))
               ;; Expand 0-ary function calls in rule-lists:
               (global-rules (elaborate-rule-items global-rules state))
               (rule-lists (elaborate-rule-item-lists rule-lists state))
               ;; Add global-rules to the rule-lists:
               (rule-lists (if (endp rule-lists)
-                              ;; If no rule-lists given, use the global rules as a single rule-list:
-                              (list global-rules) ; todo: what if global-rules is empty?
+                              (if (endp global-rules)
+                                  (prog2$ (cw "Warning: No rule-lists or global rules given!~%")
+                                          (list global-rules) ; todo: or just use nil?
+                                          )
+                                ;; If no rule-lists given, use the global rules as a single rule-list:
+                                (prog2$ (cw "Note: No rule-lists given.  Using only the global rules.~%")
+                                        (list global-rules)))
                             ;; Include the global-rules in each rule-list:
                             (union-eq-with-all global-rules rule-lists)))
               ;; Build the rule-alists:
@@ -5263,6 +5282,7 @@
                                            tactic
                                            rule-lists
                                            global-rules
+                                           extra-global-rules
                                            interpreted-function-alist
                                            no-splitp
                                            monitor
@@ -5271,7 +5291,9 @@
                                            state)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (rule-item-list-listp rule-lists)
-                                     (rule-item-listp global-rules)
+                                     (or (eq :auto global-rules)
+                                         (rule-item-listp global-rules))
+                                     (rule-item-listp extra-global-rules)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (booleanp no-splitp)
                                      (symbol-listp monitor)
@@ -5290,6 +5312,7 @@
                                         tactic
                                         rule-lists
                                         global-rules
+                                        extra-global-rules
                                         interpreted-function-alist
                                         no-splitp
                                         monitor
@@ -5304,7 +5327,8 @@
                                           &key
                                           (tactic ''(:rep :rewrite :subst))
                                           (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
-                                          (global-rules 'nil) ;; rules to be added to every rule-list
+                                          (global-rules ':auto) ;; rules to be added to every rule-list, replacing the default global-rules
+                                          (extra-global-rules 'nil) ;; additional rule to add to the global-rules
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (monitor 'nil)
@@ -5318,6 +5342,7 @@
                      tactic
                      rule-lists
                      global-rules
+                     extra-global-rules
                      interpreted-function-alist
                      no-splitp
                      monitor
@@ -5454,8 +5479,11 @@
                               evaluator-suffix ;as given to make-evaluator-simple
                               syntaxp-evaluator-suffix ;as given to make-axe-syntaxp-evaluator
                               bind-free-evaluator-suffix ;as given to make-axe-bind-free-evaluator
+                              &key
+                              (default-global-rules 'nil) ; a form that gets spliced into the generated code
                               )
   (make-prover-simple-fn suffix
                          evaluator-suffix
                          syntaxp-evaluator-suffix
-                         bind-free-evaluator-suffix))
+                         bind-free-evaluator-suffix
+                         default-global-rules))

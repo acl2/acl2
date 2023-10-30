@@ -27,12 +27,6 @@
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "dag-info")
 
-(defun unroll-spec-rules ()
-  (append (amazing-rules-spec-and-dag) ;todo: reduce?
-          (introduce-bv-array-rules)
-          (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-          (introduce-bv-array-rules)))
-
 (ensure-rules-known (unroll-spec-rules))
 
 ;; Is this really needed?

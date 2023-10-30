@@ -17,7 +17,7 @@
 
 (defxdoc+ unicode-characters
   :parents (syntax)
-  :short "Unicode characters in Java [JLS:3.1]."
+  :short "Unicode characters in Java [JLS14:3.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -25,7 +25,7 @@
      `characters', `code points', and `code units'.
      In Java, characters are essentially Unicode UTF-16 code units,
      i.e. unsigned 16-bit values.
-     In our formalization, as in [JLS],
+     In our formalization, as in [JLS14],
      we may use the terms `character', `code point', and `code unit'
      fairly interchangeably, when that causes no confusion."))
   :order-subtopics t

@@ -849,3 +849,15 @@
                 (integerp i))
            (equal (floor i j)
                   (/ (- i k) j))))
+
+(defthm mod-of-+-same-three
+  (implies (and (rationalp x)
+                (rationalp y)
+                (rationalp z)
+                (<= 0 z))
+           (equal (mod (+ x y z) z)
+                  (mod (+ x y) z)))
+  :hints (("Goal" :in-theory (e/d (mod-sum-cases)
+                                  ;; these looped:
+                                  (prefer-positive-addends-equal
+                                   simplify-sums-equal)))))

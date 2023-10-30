@@ -33,6 +33,7 @@
 (include-book "top-bare")
 (include-book "bitops-primitives")
 (include-book "check-primitives")
+(include-book "make-isomorphic")
 (include-book "svex")
 (include-book "svex-primitives")
 (include-book "member-equal")

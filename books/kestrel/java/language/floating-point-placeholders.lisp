@@ -27,9 +27,9 @@
 (defxdoc+ floating-point-placeholders
   :parents (semantics)
   :short "Abstract placeholders for the Java floating-point
-          values [JLS:4.2.3],
-          operations [JLS:4.2.4],
-          and conversions [JLS:5.1]."
+          values [JLS14:4.2.3],
+          operations [JLS14:4.2.4],
+          and conversions [JLS14:5.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -70,14 +70,14 @@
 (defxdoc+ floating-point-value-placeholders
   :parents (floating-point-placeholders)
   :short "Abstract placeholders for
-          the Java floating-point values [JLS:4.2.3]."
+          the Java floating-point values [JLS14:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We introduce constrained recognizers for
      the float and double value sets, as well as for
      the float-extended-exponent and double-extended-exponent value sets
-     [JLS:4.2.3].
+     [JLS14:4.2.3].
      The recognizers for the float and double value sets
      are constrained to be non-empty,
      via a companion nullary witness function for each,
@@ -94,7 +94,7 @@
      we define conditional fixers, but cannot define fixtypes.
      The nullary witness function for each value sets
      is regarded as returning the positive 0 for that value set,
-     which is the default value for floating-point variables [JLS:4.12.5];
+     which is the default value for floating-point variables [JLS14:4.12.5];
      this is just reflected in the name of the witness function,
      not in any constraint property of it."))
   :order-subtopics t
@@ -103,7 +103,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection float-value-abs
-  :short "Abstract fixtype for the float value set [JLS:4.2.3]."
+  :short "Abstract fixtype for the float value set [JLS14:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -141,7 +141,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection double-value-abs
-  :short "Abstract fixtype for the double value set [JLS:4.2.3]."
+  :short "Abstract fixtype for the double value set [JLS14:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -180,7 +180,7 @@
 
 (defsection floatx-value-abs
   :short "Abstract recognizer and fixer
-          for the float-extended-exponent value set [JLS:4.2.3]."
+          for the float-extended-exponent value set [JLS14:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -233,7 +233,7 @@
 
 (defsection doublex-value-abs
   :short "Abstract recognizer and fixer
-          for the double-extended-exponent value set [JLS:4.2.3]."
+          for the double-extended-exponent value set [JLS14:4.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -391,7 +391,7 @@
 (defsection floating-point-operation-placeholders
   :parents (floating-point-placeholders)
   :short "Abstract placeholders for
-          the Java floating-point operations [JLS:4.2.4]."
+          the Java floating-point operations [JLS14:4.2.4]."
 
   (def-primitive-unary-abs float-plus-abs (primitive-type-float))
   (def-primitive-unary-abs double-plus-abs (primitive-type-double))
@@ -437,7 +437,7 @@
 (defsection floating-point-conversion-placeholders
   :parents (floating-point-placeholders)
   :short "Abstract placeholders for
-          the Java floating-point conversions [JLS:5.1]."
+          the Java floating-point conversions [JLS14:5.1]."
 
   ;; widening conversions:
 

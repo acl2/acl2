@@ -18,14 +18,14 @@
 
 (defxdoc+ binary-digits
   :parents (syntax)
-  :short "Java binary digits [JLS:3.10.1]."
+  :short "Java binary digits [JLS14:3.10.1]."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection bin-digit
-  :short "Fixtype of Java binary digits [JLS:3.10.1]."
+  :short "Fixtype of Java binary digits [JLS14:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p

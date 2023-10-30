@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -130,7 +130,7 @@
   )
 
 ;move to axe?
-(defthmd cons-iff (iff (cons x y) t))
+;; (defthmd cons-iff (iff (cons x y) t))
 
 (local
  (defun double-cdr-induct (x y)
@@ -591,7 +591,6 @@
 
 
 
-
 ;; start of stuff for insertion sort...
 
 (defthmd cons-nth-onto-take
@@ -842,15 +841,6 @@
 ;;               (EQUAL Y (NTHCDR (LEN X) Z))))
 ;;   :hints (("Goal" :in-theory (enable LIST::EQUAL-APPEND-REDUCTION!))))
 
-
-(defthmd true-listp-subst-rule
-  (implies (equal x (take free free2))
-           (equal (true-listp x)
-                  t)))
-
-(defthm true-listp-of-take
-  (true-listp (take n x)))
-
 (in-theory (disable len)) ;new
 
 ;add to lists
@@ -886,12 +876,6 @@
            (equal (true-listp lst)
                   (equal nil lst)))
   :hints (("Goal" :in-theory (enable true-listp))))
-
-(defthmd len-equal-impossible
-  (implies (and (syntaxp (quotep k))
-                (not (natp k)))
-           (equal (equal k (len x))
-                  nil)))
 
 ;move
 (defthm not-memberp-of-take2
@@ -932,7 +916,7 @@
                          (equal n (len k))
                          (equal val (car k))))))
   :hints (("Goal" :in-theory (e/d (all-equal$ repeat all-equal$-when-true-listp)
-                                  (cons-onto-repeat)))))
+                                  (cons-onto-repeat equal-of-repeat-of-len-same)))))
 
 ;gross?
 (defthmd append-of-take-and-cons-when-nth
@@ -982,11 +966,11 @@
                        (equal (cdr k) nil)))))
 
 ;drop?
-(defthmd <-of-len-and-negative-constant
-  (implies (and (syntaxp (quotep k))
-                (< k 0))
-           (equal (< k (len x))
-                  t)))
+;; (defthmd <-of-len-and-negative-constant
+;;   (implies (and (syntaxp (quotep k))
+;;                 (< k 0))
+;;            (equal (< k (len x))
+;;                   t)))
 
 (defthm items-have-len-of-firstn
   (implies (items-have-len n lst)
@@ -1047,8 +1031,7 @@
 ;limit?!
 (defthmd <-of-0-and-len-when-consp
   (implies (consp x)
-           (equal (< 0 (len x))
-                  t)))
+           (< 0 (len x))))
 
 (defthm list-split
   (implies (and (natp n)
@@ -1135,15 +1118,11 @@
 
 
 
-;for dag proofs - shouldn't we open endp?
+;for Axe proofs - shouldn't we open endp?
 ;drop?
-(defthm endp-of-cons
-  (equal (endp (cons a x))
-         nil))
-
-;for dag proofs
-(defthm consp-of-cons
-  (consp (cons a x)))
+;; (defthm endp-of-cons
+;;   (equal (endp (cons a x))
+;;          nil))
 
 (defthmd binary-append-opener
   (implies (consp x)
@@ -1360,10 +1339,6 @@
                       (take 2 x)))))
   :hints (("Goal" :in-theory (enable equal-cons-cases2))))
 
-(defthm fix-of-len
-  (equal (fix (len x))
-         (len x)))
-
 (defthm len-of-if
   (equal (len (if test x y))
          (if test (len x) (len y))))
@@ -1569,9 +1544,8 @@
                               ))))
 
 ;follows from UNIQUE-OF-CONS-NO-SPLIT but this is a "simple" rule (i.e., an abbreviation rule)
-(defthm unique-of-singleton
-  (equal (no-duplicatesp-equal (cons x nil))
-         t))
+(defthm no-duplicatesp-equal-of-singleton
+  (no-duplicatesp-equal (cons x nil)))
 
 ;bozo gen
 (defthm subrange-of-update-nth-end-of-range

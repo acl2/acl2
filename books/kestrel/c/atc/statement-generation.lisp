@@ -15,6 +15,7 @@
 (include-book "object-tables")
 
 (include-book "kestrel/std/system/close-lambdas" :dir :system)
+(include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 
 (local (include-book "kestrel/std/system/w" :dir :system))
@@ -817,6 +818,8 @@
                (limit pseudo-termp)
                (events pseudo-event-form-listp)
                (thm-name symbolp)
+               (new-inscope atc-symbol-varinfo-alist-listp)
+               (new-context atc-contextp)
                (thm-index posp)
                (names-to-avoid symbol-listp))
   :short "Generate a C expression from an ACL2 term
@@ -875,7 +878,19 @@
      to not stop right away due to the limit being 0.
      In this case, @('result') is essentially the untranslated input term,
      and @('new-compst') is the computation state variable unchanged."))
-  (b* (((reterr) (irr-expr) (irr-type) nil nil nil nil nil nil 1 nil)
+  (b* (((reterr)
+        (irr-expr)
+        (irr-type)
+        nil
+        nil
+        nil
+        nil
+        nil
+        nil
+        nil
+        (irr-atc-context)
+        1
+        nil)
        ((stmt-gin gin) gin)
        (wrld (w state))
        ((erp okp
@@ -946,6 +961,8 @@
                      `(binary-+ '2 ,limit)
                      args.events
                      nil
+                     gin.inscope
+                     gin.context
                      args.thm-index
                      args.names-to-avoid))
              (guard-lemma-name
@@ -1113,6 +1130,8 @@
                          (list guard-lemma-event
                                call-event))
                  nil ; TODO: call-thm-name
+                 gin.inscope
+                 gin.context
                  thm-index
                  names-to-avoid)))
        ((erp (expr-gout pure))
@@ -1137,6 +1156,8 @@
                bound
                pure.events
                nil
+               gin.inscope
+               gin.context
                pure.thm-index
                pure.names-to-avoid))
        (thm-name (pack gin.fn '-correct- pure.thm-index))
@@ -1202,6 +1223,8 @@
            bound
            (append pure.events (list event))
            thm-name
+           gin.inscope
+           gin.context
            (1+ pure.thm-index)
            names-to-avoid))
   :guard-hints
@@ -1567,6 +1590,8 @@
              init.limit
              init.events
              init.thm-name
+             & ; init.new-inscope
+             & ; init.new-context
              init.thm-index
              init.names-to-avoid)
         (atc-gen-expr val-term
@@ -1774,6 +1799,8 @@
              rhs.limit
              rhs.events
              rhs.thm-name
+             & ; rhs.new-inscope
+             & ; rhs.new-context
              rhs.thm-index
              rhs.names-to-avoid)
         (atc-gen-expr val-term
@@ -3518,7 +3545,7 @@
          :type (type-void)
          :term term
          :context gin.context
-         :inscope nil
+         :inscope gin.inscope
          :limit limit
          :events nil
          :thm-name nil
@@ -3659,7 +3686,7 @@
          :type type
          :term term
          :context new-context
-         :inscope nil
+         :inscope new-inscope
          :limit items-limit
          :events item-events
          :thm-name nil
@@ -3804,8 +3831,8 @@
          :items all-items
          :type items-type
          :term term
-         :context (make-atc-context :preamble nil :premises nil)
-         :inscope nil
+         :context gin.context
+         :inscope gin.inscope
          :limit all-items-limit
          :events (append item-events items-events)
          :thm-name nil
@@ -3941,8 +3968,8 @@
          :items items
          :type type
          :term term
-         :context (make-atc-context :preamble nil :premises nil)
-         :inscope nil
+         :context gin.context
+         :inscope gin.inscope
          :limit items-limit
          :events (append items1-events items2-events)
          :thm-name nil
@@ -4150,6 +4177,8 @@
              expr.limit
              expr.events
              expr.thm-name
+             & ; expr.new-inscope
+             & ; expr.new-context
              expr.thm-index
              expr.names-to-avoid)
         (atc-gen-expr term
@@ -4182,8 +4211,8 @@
                 :items (list (block-item-stmt stmt))
                 :type expr.type
                 :term term
-                :context (make-atc-context :preamble nil :premises nil)
-                :inscope nil
+                :context gin.context
+                :inscope gin.inscope
                 :limit (pseudo-term-fncall
                         'binary-+
                         (list (pseudo-term-quote 3)
@@ -4373,8 +4402,8 @@
         (retok (make-stmt-gout :items then-items
                                :type then-type
                                :term term
-                               :context (atc-context nil nil)
-                               :inscope nil
+                               :context gin.context
+                               :inscope gin.inscope
                                :limit then-limit
                                :events then-events
                                :thm-name nil
@@ -4560,7 +4589,7 @@
           :items (list (block-item-stmt stmt))
           :type type
           :term term
-          :context (make-atc-context :preamble nil :premises nil)
+          :context gin.context
           :inscope gin.inscope
           :limit (pseudo-term-fncall
                   'binary-+
@@ -4917,17 +4946,19 @@
                                         (list (make-atc-premise-compustate
                                                :var gin.compst-var
                                                :term new-compst))))
-       (new-context (if (and (consp gin.affect)
-                             (not (consp (cdr gin.affect))))
-                        (b* ((var (car gin.affect)))
+       (new-context (if (consp gin.affect)
+                        (if (consp (cdr gin.affect))
+                            (atc-context-extend new-context
+                                                (list (make-atc-premise-cvalues
+                                                       :vars gin.affect
+                                                       :term uterm)))
                           (atc-context-extend new-context
                                               (list (make-atc-premise-cvalue
-                                                     :var var
+                                                     :var (car gin.affect)
                                                      :term uterm))))
                       new-context))
        ((mv new-inscope new-inscope-events thm-index names-to-avoid)
-        (if (and (consp gin.affect)
-                 (not (consp (cdr gin.affect))))
+        (if voidp
             (atc-gen-if/ifelse-inscope gin.fn
                                        gin.fn-guard
                                        gin.inscope
@@ -5054,8 +5085,8 @@
                 :items (list (block-item-stmt (stmt-expr call-expr)))
                 :type (type-void)
                 :term term
-                :context (make-atc-context :preamble nil :premises nil)
-                :inscope nil
+                :context gin.context
+                :inscope gin.inscope
                 :limit `(binary-+ '5 ,limit)
                 :events args.events
                 :thm-name nil
@@ -5810,7 +5841,7 @@
                                                 else.thm-name
                                                 t))
                                   state)))
-       ((mv okp var? vars indices val-term body-term wrapper?)
+       ((mv okp var? vars indices val-term body-term wrapper? mv-var)
         (atc-check-mv-let term))
        ((when okp)
         (b* ((all-vars (if var? (cons var? vars) vars))
@@ -5865,6 +5896,8 @@
                          init.limit
                          init.events
                          & ; init.thm-name
+                         & ; init.new-inscope
+                         & ; init.new-context
                          init.thm-index
                          init.names-to-avoid)
                     (atc-gen-expr val-term
@@ -5918,8 +5951,8 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
+                        :context gin.context
+                        :inscope gin.inscope
                         :limit limit
                         :events (append init.events body.events)
                         :thm-name nil
@@ -5949,6 +5982,8 @@
                          rhs.limit
                          rhs.events
                          & ; rhs.thm-name
+                         & ; rhs.new-inscope
+                         & ; rhs.new-context
                          rhs.thm-index
                          rhs.names-to-avoid)
                     (atc-gen-expr val-term
@@ -6006,8 +6041,8 @@
                         :items (cons item body.items)
                         :type type
                         :term term
-                        :context (make-atc-context :preamble nil :premises nil)
-                        :inscope nil
+                        :context gin.context
+                        :inscope gin.inscope
                         :limit limit
                         :events (append rhs.events body.events)
                         :thm-name nil
@@ -6061,11 +6096,22 @@
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
+                             :context xform.context
+                             :inscope xform.inscope
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
                              :proofs (and xform.thm-name t))
                             state))
+             ((unless (equal (len all-vars) (len indices)))
+              (reterr
+               (raise "Internal error: ~
+                       variables ~x0 and indices ~x1 ~
+                       do not match in number."
+                      all-vars indices)))
+             (term (acl2::close-lambdas
+                    (acl2::make-mv-let-call
+                     mv-var all-vars indices xform.term body.term)))
              (items (append xform.items body.items))
              (type body.type)
              (limit (pseudo-term-fncall 'binary-+
@@ -6074,8 +6120,8 @@
                   :items items
                   :type type
                   :term term
-                  :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil
+                  :context gin.context
+                  :inscope gin.inscope
                   :limit limit
                   :events (append xform.events body.events)
                   :thm-name nil
@@ -6451,8 +6497,7 @@
               (atc-gen-stmt val-term
                             (change-stmt-gin gin
                                              :affect (list var)
-                                             :loop-flag nil
-                                             :proofs gin.proofs)
+                                             :loop-flag nil)
                             state))
              ((unless (type-case xform.type :void))
               (reterr
@@ -6463,23 +6508,12 @@
                      has the non-void type ~x2, ~
                      which is disallowed."
                     gin.fn val-term xform.type)))
-             (pass-updated-context-and-inscope
-              (and (consp xform.term)
-                   (b* ((fn (car xform.term)))
-                     (or (eq fn 'if*)
-                         (b* ((fninfo (cdr (assoc-eq fn gin.prec-fns))))
-                           (and fninfo
-                                (atc-fn-info->correct-mod-thm fninfo)))))))
              ((erp (stmt-gout body))
               (atc-gen-stmt body-term
                             (change-stmt-gin
                              gin
-                             :context (if pass-updated-context-and-inscope
-                                          xform.context
-                                        gin.context) ; temporary
-                             :inscope (if pass-updated-context-and-inscope
-                                          xform.inscope
-                                        gin.inscope) ; temporary
+                             :context xform.context
+                             :inscope xform.inscope
                              :var-term-alist var-term-alist-body
                              :thm-index xform.thm-index
                              :names-to-avoid xform.names-to-avoid
@@ -6591,8 +6625,8 @@
                   :items (list (block-item-stmt loop-stmt))
                   :type (type-void)
                   :term term
-                  :context (make-atc-context :preamble nil :premises nil)
-                  :inscope nil
+                  :context gin.context
+                  :inscope gin.inscope
                   :limit limit
                   :events nil
                   :thm-name nil
@@ -6604,8 +6638,8 @@
                     :items nil
                     :type (type-void)
                     :term term
-                    :context (make-atc-context :preamble nil :premises nil)
-                    :inscope nil
+                    :context gin.context
+                    :inscope gin.inscope
                     :limit (pseudo-term-quote 1)
                     :events nil
                     :thm-name nil

@@ -26,7 +26,7 @@
 ;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
@@ -771,12 +771,6 @@
 ;;                   (logext-list n (myif test y x))))
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
-
-(DEFTHM SIGNED-BYTE-P-OF-MYIF2
-  (IMPLIES (AND (SIGNED-BYTE-P N A)
-                (SIGNED-BYTE-P N B))
-           (SIGNED-BYTE-P N (MYIF TEST A B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
 
 ;keep but move
 ;; (defthm all-signed-byte-p-of-logext-list

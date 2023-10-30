@@ -17,27 +17,27 @@
 
 (defxdoc+ unicode-escapes
   :parents (syntax)
-  :short "First Java lexical translation step: Unicode escapes [JLS:3.3]."
+  :short "First Java lexical translation step: Unicode escapes [JLS14:3.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A Java program is a finite sequence of Unicode characters
      satisfying a number of constraints.
-     The first set of constraints is described in [JLS:3.3],
+     The first set of constraints is described in [JLS14:3.3],
      which also describes how
      a sequence of Unicode characters satisfying these constraints
      is turned into another sequence of Unicode characters,
      which is then subjected to
      further constraint checks and associated transformations.")
    (xdoc::p
-    "The grammar rules in [JLS:3.3] express
+    "The grammar rules in [JLS14:3.3] express
      part of this first set of constraints,
      but they are ambiguous if taken alone:
      one could always choose the @('raw-input-character') alternative
      for @('unicode-input-character'),
      without recognizing any @('unicode-escape'),
      and therefore leave the original Unicode sequence unchanged.
-     The English text in [JLS:3.3] provides additional constraints.")
+     The English text in [JLS14:3.3] provides additional constraints.")
    (xdoc::p
     "One additional constraint in this first set is that,
      in order for a Unicode escape to be recognized
@@ -48,10 +48,10 @@
      to have the Java literal string
      @('\"The Unicode escape \\\\u0020 is the ASCII space character.\"'),
      where the double backslash is
-     a (non-Unicode) escape sequence for a single backslash [JLS:3.10.6]:
+     a (non-Unicode) escape sequence for a single backslash [JLS14:3.10.6]:
      without the constraint, this Java literal string would be equivalent to
      @('\"The Unicode escape \\  is the ASCII space character.\"').
-     [JLS:3.3] introduces the notion of `eligible' backslash
+     [JLS14:3.3] introduces the notion of `eligible' backslash
      as one preceded by an even number of backslashes (possibly none).
      In the example string above,
      the backslash just before the @('u') is not eligible,
@@ -63,7 +63,7 @@
      In the second case, there is no Unicode escape,
      because the grammar requires the presence of one or more @('u') letters;
      the backslash must be presumably
-     the start of a (non-Unicode) escape sequence [JLS:3.10.6],
+     the start of a (non-Unicode) escape sequence [JLS14:3.10.6],
      e.g. the backslash in the Java string literal
      @('\"A line.\\nAnother line.\"')
      is eligible,
@@ -101,7 +101,7 @@
      without recognizing any Unicode escape (since there is not one).
      This makes the parser slightly more general,
      and perhaps useful in other circumstances.
-     Presumably [JLS] prescribes an error in this situation
+     Presumably [JLS14] prescribes an error in this situation
      (as opposed to simply leaving the characters unchanged)
      because the resulting Unicode character sequence
      could never be a valid Java program anyhow,
@@ -109,9 +109,9 @@
      Nonetheless, when we compose the parser with the abstractor (see above),
      we perform the check for that situation,
      and return an error if the situation occurs,
-     as prescribed by [JLS].
+     as prescribed by [JLS14].
      In other words, our formalization of Unicode escape processing
-     is faithful to [JLS],
+     is faithful to [JLS14],
      but its parser component is a bit more general."))
   :order-subtopics t
   :default-parent t)
@@ -220,7 +220,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This notion is not explicitly defined in [JLS:3.3],
+    "This notion is not explicitly defined in [JLS14:3.3],
      but it is useful for our formalization.
      A candidate position for (the start of) a Unicode escape
      is the position of an eligible backslash

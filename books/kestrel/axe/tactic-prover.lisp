@@ -25,7 +25,6 @@
 (include-book "dag-size")
 (include-book "make-term-into-dag-basic")
 (include-book "equivalent-dags")
-;(include-book "dagify") ;todo
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system) ; for INTEGERP-OF--
 (include-book "kestrel/arithmetic-light/plus" :dir :system) ; for INTEGERP-OF-+

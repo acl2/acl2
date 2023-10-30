@@ -41,12 +41,13 @@
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "kestrel/bv/bvsx-rules" :dir :system)
-(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
+;(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
 (include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system) ; for MV-NTH-OF-CONS-ALT
+(include-book "kestrel/utilities/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/arithmetic-light/plus" :dir :system)

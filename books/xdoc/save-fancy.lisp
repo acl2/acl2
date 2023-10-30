@@ -606,8 +606,8 @@
   (cond
    ((endp topics)
     (cond
-     (msg-list (er hard 'check-xdoc-topics
-                   "~|~%~*0"
+     (msg-list (xdoc-error "~*1"
+                   'check-xdoc-topics
                    `("impossible"             ; when nothing to print
                      "~@*."                   ; the last element
                      "~@*; and~|~%"           ; the 2nd to last element

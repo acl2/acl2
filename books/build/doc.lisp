@@ -1424,6 +1424,9 @@ certification using @('make')."
 (acl2::defpointer uses-stp cert_param)
 (acl2::defpointer uses-quicklisp cert_param)
 
+;; Added by Eric Smith
+(acl2::defpointer cert-flags custom-certify-book-commands)
+
 (defxdoc acl2::ifdef
   :parents (cert.pl)
   :short "Run some events only if an environment variable is defined and nonempty,

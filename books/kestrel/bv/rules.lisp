@@ -172,6 +172,7 @@
                   (logapp n 0 x))))
 
 (theory-invariant (incompatible (:definition logapp) (:rewrite logapp-recollect-from-shift)))
+(theory-invariant (incompatible (:rewrite logapp-0) (:rewrite logapp-recollect-from-shift)))
 
 (defthm logext-of-logtail
   (implies (and (natp n)
@@ -2018,18 +2019,6 @@
                   0))
   :hints (("Goal" :in-theory (enable BVIF myif SLICE-TOO-HIGH-IS-0))))
 
-(defthm unsigned-byte-p-of-expt-2-n
-  (implies (natp n)
-           (unsigned-byte-p (+ 1 n) (expt 2 n)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p logapp))))
-
-(defthm unsigned-byte-p-of-expt-2-n-gen
-  (implies (and (<= (+ 1 n) m)
-                (natp n)
-                (natp m))
-           (unsigned-byte-p m (expt 2 n)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p logapp))))
-
 (defthm unsigned-byte-p-of-bvmult-from-bound
   (implies (and (< (* x y) (expt 2 n))
                 (natp x)
@@ -2849,12 +2838,6 @@
            ;;                 )
            )))
 
-(defthm signed-byte-p-of-myif
-  (implies (and (signed-byte-p n a)
-                (signed-byte-p n b))
-           (signed-byte-p n (myif test a b)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 (defthm logxor-myif-hack
   (implies (and (integerp a)
                 (integerp b)
@@ -3192,26 +3175,6 @@
                         bvchop-of-logtail-becomes-slice
                         logtail-becomes-slice-bind-free)
   :redundant-okp t)
-
-(defthm bvchop-of-sum-of-logext
-  (implies (and (<= size size2)
-                (natp size)
-                (natp size2)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvchop size (+ x (logext size2 y)))
-                  (bvchop size (+ x y)))))
-
-(defthm bvchop-of-sum-of-logext-alt
-  (implies (and (<= size size2)
-                (natp size)
-                (natp size2)
-                (integerp x)
-                (integerp y)
-                )
-           (equal (bvchop size (+ (logext size2 y) x))
-                  (bvchop size (+ x y)))))
 
 ;BOZO these subst rules may have been a problem before...
 (defthm bvmult-subst
@@ -3930,7 +3893,7 @@
 
 ;ffixme think about this..
 ;go to bvif!
-(defthmd bvchop-of-myif-consant-branches
+(defthmd bvchop-of-myif-constant-branches
   (implies (syntaxp (and (quotep x)
                          (quotep y)
                          (quotep size)))
@@ -4114,8 +4077,7 @@
                   t))
   :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
                                    )
-                                  (<-becomes-bvlt <-becomes-bvlt-alt
-                                                  )))))
+                                  ()))))
 
 ;more like these? e.g., ones with just 2 conjuncts, bvlt versions, signed versions?
 (defthm booland-combine-adjacent-bvles
@@ -5220,7 +5182,7 @@
            (equal (bvlt size x (+ y z))
                   (bvlt size x (bvplus size y z))))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus)
-                                  (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free bvminus-becomes-bvplus-of-bvuminus)))))
+                                  (bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;the integerp hyps are needed because bvplus ifixes its arguments - should it?
 ;disabled for library proofs
@@ -5230,7 +5192,7 @@
            (equal (bvlt size (+ y z) x)
                   (bvlt size (bvplus size y z) x)))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus)
-                                  (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free bvminus-becomes-bvplus-of-bvuminus)))))
+                                  (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm equal-of-bitxor-and-bitor
   (equal (equal (bitxor x y) (bitor x y))
@@ -5247,9 +5209,7 @@
                        (equal (bvminus size k1 k2) (bvchop size x)))))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p bvlt bvchop-of-sum-cases bvplus bvuminus bvminus
                                                    bvchop-when-i-is-not-an-integer)
-                                  ( bvminus-becomes-bvplus-of-bvuminus bvlt-of-plus-arg2 bvlt-of-plus-arg1
-                                                                       <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
-                                                                       )))))
+                                  ( bvminus-becomes-bvplus-of-bvuminus bvlt-of-plus-arg2 bvlt-of-plus-arg1)))))
 
 (defthm equal-of-bvplus-constant-and-constant-alt
   (implies (and (syntaxp (quotep k1))
@@ -5394,9 +5354,7 @@
                 (unsigned-byte-p 31 z))
            (equal (bvlt 32 z x)
                   (bvlt 31 z x)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ( ;<-becomes-bvlt
-                                          <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
- ;                                         bvchop-extend-hack-gen
+  :hints (("Goal" :in-theory (e/d (bvlt) (;; bvchop-extend-hack-gen
                                           )))))
 
 (defthm bvlt-tighten-when-getbit-0-alt
@@ -5405,9 +5363,7 @@
            (equal (bvlt 32 x z)
                   (bvlt 31 x z)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ( ;<-becomes-bvlt
-                                          <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
-;                                          bvchop-extend-hack-gen
+  :hints (("Goal" :in-theory (e/d (bvlt) (; bvchop-extend-hack-gen
                                           )))))
 
 (defthm bvle-tighten-32-31
@@ -5420,8 +5376,7 @@
   :hints (("Goal"
            :use ((:instance split-with-bvcat (x k) (hs 1) (ls 31)))
            :in-theory (e/d (bvlt getbit-when-bvlt-of-small-helper slice-becomes-getbit)
-                           (<-becomes-bvlt <-becomes-bvlt-alt
-                                           EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
+                           (EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
                                            BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
 
 (defthm bvchop-plus-bvchop-bound
@@ -5679,7 +5634,7 @@
   (implies (unsigned-byte-p size y)
            (equal (< (bvplus size x z) y)
                   (bvlt size (bvplus size x z) y)))
-  :hints (("Goal" :in-theory (e/d (bvlt) (<-BECOMES-BVLT <-BECOMES-BVLT-alt
+  :hints (("Goal" :in-theory (e/d (bvlt) (
                                                          EQUAL-OF-+-AND-BV ;looped
                                                          )))))
 
@@ -5687,7 +5642,7 @@
   (implies (unsigned-byte-p size y)
            (equal (< y (bvplus size x z))
                   (bvlt size y (bvplus size x z))))
-  :hints (("Goal" :in-theory (e/d (bvlt) (<-BECOMES-BVLT <-BECOMES-BVLT-alt)))))
+  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
 
 (defthmd bvlt-add-to-both-sides
   (implies (and (integerp x)
@@ -5708,9 +5663,7 @@
                       ;;both overflow
                       (bvlt size (bvplus size x z) (bvplus size y z))))))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus)
-                                  ( bvminus-becomes-bvplus-of-bvuminus bvlt-of-plus-arg2 bvlt-of-plus-arg1
-                                                <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
-)))))
+                                  ( bvminus-becomes-bvplus-of-bvuminus bvlt-of-plus-arg2 bvlt-of-plus-arg1)))))
 
 (defthm bvlt-of-bvplus-and-bvplus-cancel-helper
   (implies (natp size)
@@ -5736,9 +5689,7 @@
                       nil ;move the bvuminus?
                     (bvle size (bvuminus size y) x))))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus)
-                                  ( bvminus-becomes-bvplus-of-bvuminus bvlt-of-plus-arg2 bvlt-of-plus-arg1
-                                                <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
-)))))
+                                  ( bvminus-becomes-bvplus-of-bvuminus bvlt-of-plus-arg2 bvlt-of-plus-arg1)))))
 
 (defthm bvlt-of-bvplus-same-alt
   (implies (natp size)
@@ -5790,7 +5741,7 @@
                 (bvle size (expt 2 xsize) k)
                 (force (unsigned-byte-p-forced xsize x)))
            (bvlt size x k))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p UNSIGNED-BYTE-P-FORCED) (<-becomes-bvlt <-becomes-bvlt-alt)))))
+  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p UNSIGNED-BYTE-P-FORCED) ()))))
 
 (defthm bvuminus-when-smaller
   (implies (and (unsigned-byte-p free x)
@@ -5835,9 +5786,8 @@
                       (bvlt size y (bvuminus size k1))))))
   :hints (("Goal" :in-theory (e/d (bvlt bvuminus bvminus bvchop-of-sum-cases bvplus)
                                   ( bvminus-becomes-bvplus-of-bvuminus
-                                               <-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free
-                                               bvlt-of-plus-arg2
-                                               bvlt-of-plus-arg1)))))
+                                    bvlt-of-plus-arg2
+                                    bvlt-of-plus-arg1)))))
 
 (defthmd bvlt-add-to-both-sides-constant-lemma-helper2
   (implies (and (syntaxp (and (quotep k2)
@@ -5903,11 +5853,7 @@
                                           bvlt)
                                   (bvlt-of-plus-arg1
                                    bvlt-of-plus-arg2
-                                   bvminus-becomes-bvplus-of-bvuminus
-                                   <-becomes-bvlt-free
-                                   <-becomes-bvlt-free-alt
-                                   <-becomes-bvlt
-                                   <-becomes-bvlt-alt)))))
+                                   bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm equal-of-bvplus-move-bvminus-better
   (implies (natp size)
@@ -5948,11 +5894,8 @@
                                    bvlt-of-plus-arg1
                                    bvlt-of-plus-arg2
                                    bvminus-becomes-bvplus-of-bvuminus
-                                   <-becomes-bvlt-free
-                                   <-becomes-bvlt-free-alt
-                                   <-becomes-bvlt
 ;                                   <-of-bvchop-arg1
-                                   <-becomes-bvlt-alt)))))
+                                   )))))
 
 (defthm bvlt-of-bvplus-same-arg2
   (implies (natp size)
@@ -5966,11 +5909,7 @@
                                           bvlt)
                                   (bvlt-of-plus-arg1
                                    bvlt-of-plus-arg2
-                                   bvminus-becomes-bvplus-of-bvuminus
-                                   <-becomes-bvlt-free
-                                   <-becomes-bvlt-free-alt
-                                   <-becomes-bvlt
-                                   <-becomes-bvlt-alt)))))
+                                   bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;(defun theory-test () '(BVLT-WHEN-BVCHOP-KNOWN-SUBST-ALT))
 
@@ -5989,10 +5928,7 @@
                 (natp size))
            (equal (bvlt size 0 x)
                   (not (equal 0 (bvchop size x)))))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-                                  (<-becomes-bvlt
-                                   <-becomes-bvlt-alt
-                                   <-BECOMES-BVLT-FREE)))))
+  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)))))
 
 (defthm sbvlt-of-0-arg2-polarity
   (implies (and (syntaxp (want-to-strengthen (sbvlt size x 0)))
@@ -6029,14 +5965,14 @@
   (equal (BVLT 31 (BVPLUS 32 y x) z)
          (BVLT 31 (BVPLUS 31 y x) z))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free)))))
+                                  ()))))
 
 ;gen
 (defthm bvlt-of-bvplus-32-31-trim
   (equal (BVLT 31 z (BVPLUS 32 y x))
          (BVLT 31 z (BVPLUS 31 y x)))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (<-BECOMES-BVLT-ALT <-BECOMES-BVLT <-BECOMES-BVLT-free)))))
+                                  ()))))
 
 ;hope the case split is okay.. (see no-split version below)
 (DEFTHM BVPLUS-OF-1-TIGHTEN
@@ -6056,12 +5992,8 @@
      (BVCHOP-OF-SUM-CASES
       BVLT BVPLUS
       BVUMINUS BVMINUS UNSIGNED-BYTE-P-FORCED)
-     (<-BECOMES-BVLT-FREE <-BECOMES-BVLT <-BECOMES-BVLT-ALT
-
-
-                          BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-
-                          BVLT-OF-PLUS-ARG1 BVLT-OF-PLUS-ARG2)))))
+     (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+      BVLT-OF-PLUS-ARG1 BVLT-OF-PLUS-ARG2)))))
 
 (defthm bvplus-of-1-tighten-no-split
   (implies (and (unsigned-byte-p free x)
@@ -6088,11 +6020,10 @@
                                    bvchop-of-sum-cases
                                    bvplus
                                    )
-                                  (<-becomes-bvlt <-becomes-bvlt-alt
-                                                  bvlt-of-plus-arg1
-                                                  bvlt-of-plus-arg2
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
+                                  (bvlt-of-plus-arg1
+                                   bvlt-of-plus-arg2
+                                   <-of-bvplus-becomes-bvlt-arg1
+                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 (defthm bvlt-when-not-bvlt-one-more
   (implies (and (syntaxp (quotep const)) ;new
@@ -6104,12 +6035,10 @@
                 (integerp size))
            (equal (bvlt size const x)
                   (equal free (bvchop size x))))
-  :hints (("Goal" :in-theory (e/d (bvlt) (<-becomes-bvlt <-becomes-bvlt-alt
-                                                         <-of-bvplus-becomes-bvlt-arg1
-                                                         <-becomes-bvlt-free
-                                                         <-of-bvplus-becomes-bvlt-arg2
-                                                         BVLT-OF-PLUS-ARG1
-                                                         )))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (<-of-bvplus-becomes-bvlt-arg1
+                                          <-of-bvplus-becomes-bvlt-arg2
+                                          BVLT-OF-PLUS-ARG1
+                                          )))))
 ;use polarities?
 (defthm bvlt-unique
   (implies (and (bvlt size x free)
@@ -6158,14 +6087,9 @@
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
                            (;<-of-bvchop-arg1
-                            <-becomes-bvlt-free
-                            <-becomes-bvlt-free-alt <-becomes-bvlt
-
                             bvplus-of-plus-arg3
                             ;;fixme
                             bvminus-becomes-bvplus-of-bvuminus
-                            <-becomes-bvlt
-                            <-becomes-bvlt-alt
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
 

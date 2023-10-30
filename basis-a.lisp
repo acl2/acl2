@@ -2453,7 +2453,7 @@
        (consp (cdr x))
        (unsigned-byte-p #.*small-nat-bits* (cadr x))
        (case (car x)
-         (FLAT 
+         (FLAT
 
 ; Note that there are no constraints on (cddr x).  It might be an atom, an
 ; eviscerated object, or a proper or improper list.

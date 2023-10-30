@@ -28,6 +28,27 @@
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../library-wrappers/ihs-logops-lemmas")) ; for logtail-logapp
 
+(defthmd *-of-expt-and-/-of-expt-collect
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (* (expt 2 i) (/ (expt 2 j)) x)
+                  (* (expt 2 (- i j)) x)))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;can loop
+(defthmd *-of-half-and-expt-of-one-more
+  (implies (integerp n)
+           (equal (* 1/2 (* m (expt 2 (+ 1 n))))
+                  (* m (expt 2 n))))
+  :hints (("Goal" :in-theory (e/d (expt) (expt-hack)))))
+
+(defthm /-of-expt-of-diff
+  (implies (and (natp i)
+                (natp j))
+           (equal (/ (expt 2 (+ (- i) j)))
+                  (expt 2 (- i j))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
 (defthm unsigned-byte-p-of-bvcat
   (implies (and (>= n (+ lowsize highsize))
                 (integerp n)
@@ -173,6 +194,14 @@
            (equal (bvcat highsize highval LOWSIZE LOWVAL)
                   (bvcat highsize 0 LOWSIZE lowval)))
   :hints (("Goal" :in-theory (enable bvcat))))
+
+;drop? rename
+(defthm bvcat-when-arg2-is-not-an-integer
+  (implies (and (syntaxp (quotep highval))
+                (not (integerp highval)))
+           (equal (bvcat highsize highval lowsize lowval)
+                  (bvchop lowsize lowval)))
+  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
 
 (defthm bvcat-of-ifix-arg2
   (equal (bvcat highsize (ifix highval) lowsize lowval)
@@ -1008,27 +1037,6 @@
   :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (bvchop-of-logtail-becomes-slice))
            :cases ((natp highsize)))))
 
-(defthmd *-of-expt-and-/-of-expt-collect
-  (implies (and (integerp i)
-                (integerp j))
-           (equal (* (expt 2 i) (/ (expt 2 j)) x)
-                  (* (expt 2 (- i j)) x)))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
-;can loop
-(defthmd *-of-half-and-expt-of-one-more
-  (implies (integerp n)
-           (equal (* 1/2 (* m (expt 2 (+ 1 n))))
-                  (* m (expt 2 n))))
-  :hints (("Goal" :in-theory (e/d (expt) (expt-hack)))))
-
-(defthm /-of-expt-of-diff
-  (implies (and (natp i)
-                (natp j))
-           (equal (/ (expt 2 (+ (- i) j)))
-                  (expt 2 (- i j))))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
 (defthm logtail-logapp-better
   (implies (and (integerp size1)
                 (integerp size)
@@ -1206,12 +1214,7 @@
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat highsize (bvchop highsize highval) lowsize lowval))))
 
-(defthm bvcat-when-arg2-is-not-an-integer
-  (implies (and (syntaxp (quotep highval))
-                (not (integerp highval)))
-           (equal (bvcat highsize highval lowsize lowval)
-                  (bvchop lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvcat) ()))))
+
 
 (defthm bvcat-normalize-constant-arg4
   (implies (and (syntaxp (and (quotep lowval)
@@ -1575,3 +1578,9 @@
                        (EQUAL (SLICE (+ -1 LOWSIZE HIGHSIZE)
                                      LOWSIZE X)
                               (BVCHOP HIGHSIZE HIGHVAL))))))
+
+(defthm bvcat-of-expt-same-high
+  (implies (natp highsize)
+           (equal (bvcat highsize (expt 2 highsize) lowsize lowval)
+                  (bvcat highsize 0 lowsize lowval)))
+  :hints (("Goal" :in-theory (enable bvcat))))

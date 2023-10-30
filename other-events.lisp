@@ -26658,10 +26658,9 @@
           (info-for-forward-chaining-rules
            (getpropc name 'forward-chaining-rules nil wrld)
            t ens wrld)
-          (let ((elim-rule (getpropc name 'eliminate-destructors-rule nil wrld)))
-            (and elim-rule
-                 (info-for-eliminate-destructors-rule
-                  elim-rule t ens wrld)))
+          (info-for-eliminate-destructors-rules
+           (getpropc name 'eliminate-destructors-rules nil wrld)
+           t ens wrld)
           (info-for-induction-rules
            (getpropc name 'induction-rules nil wrld)
            t ens wrld))
