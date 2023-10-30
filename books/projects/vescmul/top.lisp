@@ -130,7 +130,7 @@
            (name ',(or name (intern$ (string-upcase topmodule) "RP")))
 
            ;; (VL) event1
-           (vl-design (intern$ (str::cat "*" (symbol-name name) "-VL-DESIGN*") "RP"))
+           (vl-design (intern-in-package-of-symbol (str::cat "*" (symbol-name name) "-VL-DESIGN*") name))
            (vl-event `(acl2::defconsts
                        (,vl-design state)
                        (b* (((mv loadresult state)
@@ -138,7 +138,9 @@
                                            :start-files '(,@files)))))
                          (mv (vl::vl-loadresult->design loadresult) state))))
            (modified-vl-design (and modified-modules-file
-                                    (intern$ (str::cat "*" (symbol-name name) "MODIFIED-VL-DESIGN*") "RP")))
+                                    (intern-in-package-of-symbol
+                                     (str::cat "*" (symbol-name name) "MODIFIED-VL-DESIGN*")
+                                     name)))
            (modified-vl-event (and modified-modules-file
                                    `(acl2::defconsts
                                      (,modified-Vl-design state)
@@ -148,7 +150,7 @@
                                        (mv (vl::vl-loadresult->design loadresult) state)))))
 
            ;; (SV) event2
-           (sv-design (intern$ (str::cat "*" (symbol-name name) "-SV-DESIGN*") "RP"))
+           (sv-design (intern-in-package-of-symbol (str::cat "*" (symbol-name name) "-SV-DESIGN*") name))
            (sv-event `(acl2::defconsts
                        (,sv-design)
                        (b* (((mv errmsg sv-design ?good ?bad)
@@ -159,7 +161,8 @@
                               (acl2::raise "~@0~%" errmsg))
                          sv-design)))
            (modified-sv-design (and modified-modules-file
-                                    (intern$ (str::cat "*" (symbol-name name) "-MODIFIED-SV-DESIGN*") "RP")))
+                                    (intern-in-package-of-symbol
+                                     (str::cat "*" (symbol-name name) "-MODIFIED-SV-DESIGN*") name)))
            (modified-sv-event (and modified-modules-file
                                    `(acl2::defconsts
                                      (,modified-sv-design)
@@ -201,12 +204,18 @@
                                     `((:label
                                        p
                                        :inputs ,(loop$ for x in *ins* collect
-                                                       `(,x ,(intern$ (string-upcase x) "RP")))
+                                                       `(,x ,(intern-in-package-of-symbol (string-upcase x)
+                                                                                          ',name)))
                                        :outputs ,(loop$ for x in *outs* collect
-                                                        `(,x ,(intern$ (string-upcase x) "RP"))))))))
+                                                        `(,x ,(intern-in-package-of-symbol (string-upcase x)
+                                                                                           ',name))))))))
 
-               (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOHYPS") "RP"))
-               (rp::add-rp-rule ,(intern$ (str::cat (symbol-name name) "-AUTOINS") "RP"))))
+               (rp::add-rp-rule ,(intern-in-package-of-symbol
+                                  (str::cat (symbol-name name) "-AUTOHYPS")
+                                  name))
+               (rp::add-rp-rule ,(intern-in-package-of-symbol
+                                  (str::cat (symbol-name name) "-AUTOINS")
+                                  name))))
 
            (modified-name (and modified-modules-file (intern-in-package-of-symbol
                                                       (str::cat "MODIFIED-" (symbol-name name))
@@ -224,12 +233,16 @@
                                          `((:label
                                             p
                                             :inputs ,(loop$ for x in *ins* collect
-                                                            `(,x ,(intern$ (string-upcase x) "RP")))
+                                                            `(,x ,(intern-in-package-of-symbol (string-upcase x) ',name)))
                                             :outputs ,(loop$ for x in *outs* collect
-                                                             `(,x ,(intern$ (string-upcase x) "RP"))))))))
+                                                             `(,x ,(intern-in-package-of-symbol
+                                                                    (string-upcase x) ',name))))))))
 
-                    (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOHYPS") "RP"))
-                    (rp::add-rp-rule ,(intern$ (str::cat (symbol-name modified-name) "-AUTOINS") "RP")))))
+                    (rp::add-rp-rule ,(intern-in-package-of-symbol (str::cat (symbol-name modified-name) "-AUTOHYPS")
+                                                                   modified-name))
+                    (rp::add-rp-rule ,(intern-in-package-of-symbol
+                                       (str::cat (symbol-name modified-name) "-AUTOINS")
+                                       modified-name)))))
 
            ;; (SAVE-TO-FILE) event5
            ;; save-to-file can be a string or a symbol. If string use it as
@@ -420,7 +433,7 @@
                                 (read-from-file 'nil)
                                 (keep-going 'nil)
                                 (print-message 'nil)
-                                (pkg '"RP")
+                                (pkg)
                                 )
   :mode :program
   (acl2::template-subst
@@ -551,7 +564,7 @@
                                (read-from-file 'nil)
                                (keep-going 'nil)
                                (print-message 'nil)
-                               (pkg '"RP")
+                               (pkg)
                                )
   `(make-event
     `(with-output
@@ -569,7 +582,7 @@
                            :read-from-file ,read-from-file
                            :keep-going ',keep-going
                            :print-message ',print-message
-                           :pkg ,pkg))))
+                           :pkg (or ',pkg (symbol-package-name ',name))))))
 
 ;; (parse-and-create-svtv :file "demo/DT_SB4_HC_64_64_multgen.sv"
 ;;                        :topmodule "DT_SB4_HC_64_64"

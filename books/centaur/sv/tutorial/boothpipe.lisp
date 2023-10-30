@@ -556,7 +556,7 @@ composable theorems about, even though we can't execute it.  It also produces a
 function @('boothpipe-ideal-exec') that (logically) extracts certain output
 signals from a run of @('boothpipe-ideal') -- but since @('boothpipe-ideal')
 isn't executable, it actually uses @('boothpipe-run') to compute what must be
-the values of those varibles.</p>
+the values of those variables.</p>
 
 <p>Now we can use the @(see def-svtv-generalized-thm) utility to prove our two
 steps. First, we set some defaults that will be used for all

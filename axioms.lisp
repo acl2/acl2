@@ -20599,7 +20599,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (when (live-state-p state)
     (return-from
      brr-evisc-tuple-oracle-update
-     (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* state)))
+
+; By binding *wormholep* to nil below we prevent the f-put-global from being
+; undone when we exit the wormhole (if any) we're in when this assignment takes
+; place.  That would be problematic except for the fact that brr-evisc-tuple is
+; a ``true global'' (rather than a wormhole status ``local'' whose value is to
+; be restored upon exit) and should always have the same value as its mirror.
+
+     (let ((*wormholep* nil))
+       (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* state))))
   (mv-let (erp val state)
     (read-acl2-oracle state)
     (declare (ignore erp))

@@ -1880,7 +1880,7 @@
 
 (defun brr-evisc-tuple-oracle-update@par ()
   #-acl2-loop-only
-  (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* *the-live-state*)
+  (brr-evisc-tuple-oracle-update *the-live-state*)
   nil)
 
 (defun iprint-oracle-updates@par ()
