@@ -25,6 +25,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
@@ -180,7 +181,7 @@
 
 (local (in-theory (enable <-of-car-of-car-when-all-<-of-strip-cars)))
 
-(local (in-theory (disable set-difference-equal strip-cars strip-cadrs))) ;prevent inductions
+(local (in-theory (disable strip-cars strip-cadrs))) ;prevent inductions
 
 (local (in-theory (disable natp dargp
                            default-car
@@ -214,6 +215,8 @@
           (if test
               (integerp tp)
             (integerp ep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; a triple of the form (<nodenum-of-var> <equated-nodenum-or-constant> <literal-nodenum>).
 ;; TODO: Save a cons by making the literal-nodenum the final cdr?
@@ -1211,23 +1214,6 @@
                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))
 
 ;; todo: move these:
-
-(defthm len-of-set-difference-equal
-  (<= (len (set-difference-equal x y))
-      (len x))
-  :hints (("Goal" :in-theory (enable set-difference-equal))))
-
-(defthm len-of-set-difference-equal-linear
-  (<= (len (set-difference-equal x y))
-      (len x))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable set-difference-equal))))
-
-(defthm equal-of-len-of-set-difference-equal-and-len-same
-  (equal (equal (len (set-difference-equal x y))
-                (len x))
-         (not (intersection-equal x y)))
-  :hints (("Goal" :in-theory (enable set-difference-equal intersection-equal))))
 
 (defthm len-of-mv-nth-3-of-substitute-var-set
   (implies (and ;(consp literal-nodenums)
