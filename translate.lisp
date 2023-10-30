@@ -15692,17 +15692,18 @@
 ; The goal is thus to return a new stobjs-in, together with a corresponding
 ; mapping from old stobjs-in to new stobjs-in, such that we can legally view
 ; the (implicit) function as having the new stobjs-in.  We adjust the
-; stobjs-out correspondingly in stobjs-in-out.
+; stobjs-out correspondingly in stobjs-in-out.  Ultimately translation must
+; still succeed with the updated stobjs-in and stobjs-out.
 
 ; Otherwise, we are in a failure case (mv failp nil nil) where failp is
 ; non-nil.  (It is fine if failp is t, but we are free to return any non-nil
 ; value, which might provide information that is helpful for debugging.)  That
-; case may happen, for example, when there a stobj occurs more than once in
-; args.  For example consider the case that stobjs-in is (st1 st2) where st1
-; and st2 are congruent stobjs and args is (st1 st1).  There is no reasonable
-; way to return a suitable new-stobjs-in if st1 or st2 is among the stobjs-out
-; (but otherwise this can be supported; see the comment about duplicate values
-; in stobjs-in-out).
+; case may happen, for example, when a stobj occurs more than once in args.
+; For example consider the case that stobjs-in is (st1 st2) where st1 and st2
+; are congruent stobjs and args is (st1 st1).  There is no reasonable way to
+; return a suitable new-stobjs-in if st1 or st2 is among the stobjs-out (but
+; otherwise this can be supported; see the comment about duplicate values in
+; stobjs-in-out).
 
 ; The failure case can also happen when we get "stuck".  For example, again
 ; suppose that st1 and st2 are congruent stobjs; now consider the case that
