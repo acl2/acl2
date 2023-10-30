@@ -150,7 +150,6 @@
 (include-book "merge-term-into-dag-array-basic")
 (include-book "merge-tree-into-dag-array-basic")
 (include-book "sublis-var-and-eval-basic")
-(include-book "no-atoms")
 (include-book "node-replacement-alist")
 (include-book "node-info")
 (include-book "node-replacement-array")
