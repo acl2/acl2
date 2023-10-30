@@ -1,7 +1,7 @@
 ; More tools for crunching DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -104,8 +104,9 @@
 ;; Extract from DAG-ARRAY a dag (as a list) containing only the NODENUMS and
 ;; the nodes that support them.  Since nodes will in general be renumbered,
 ;; this returns renamed-nodenums, representing the new numbers for NODENUMS.
-;; Returns (mv renamed-nodenums dag-lst).
+;; Returns (mv renamed-nodenums dag).
 ;; TODO: Move to supporting-nodes.lisp?
+;; TODO: Should have a -with-name suffix.
 (defund drop-non-supporters-array-node-list (dag-array-name dag-array nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
@@ -114,10 +115,10 @@
   (let* ((max-nodenum (maxelem nodenums))
          (tag-array (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
          (translation-array (make-empty-array 'translation-array (+ 1 max-nodenum))))
-    (mv-let (dag-lst translation-array)
+    (mv-let (dag translation-array)
       (build-reduced-dag-with-name 0 max-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
       (mv (aref1-list 'translation-array translation-array nodenums)
-          dag-lst))))
+          dag))))
 
 (defthm len-of-mv-nth-0-of-drop-non-supporters-array-node-list
   (equal (len (mv-nth 0 (drop-non-supporters-array-node-list dag-array-name dag-array nodenums)))
@@ -209,10 +210,11 @@
 ;;; crunch-dag-array2
 ;;;
 
-;; Extracts from DAG-ARRAY a dag (as a list) containing only the NODENUMS and
-;; the nodes that support them.  Returns (mv dag-array dag-len renamed-nodenums).
+;; Returns (mv dag-array dag-len renamed-nodenums).
 ;; Since nodes will in general be renumbered, this returns
 ;; renamed-nodenums, which gives the new numbers of the NODENUMS.
+;; Extracts from DAG-ARRAY a dag (as a list) containing only the NODENUMS and
+;; the nodes that support them.  Then creates a new dag-array from that dag.
 (defund crunch-dag-array2 (dag-array-name dag-array dag-len nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
@@ -228,7 +230,7 @@
   (b* (((mv renamed-nodenums dag)
         (drop-non-supporters-array-node-list dag-array-name dag-array nodenums))
        (dag-len (+ 1 (top-nodenum-of-dag dag)))
-       (slack-amount dag-len)
+       (slack-amount dag-len) ; why?  pass in?
        (dag-array (make-dag-into-array dag-array-name dag slack-amount)))
     (mv dag-array dag-len renamed-nodenums)))
 
@@ -338,14 +340,18 @@
 ;; renamed-nodenums, which gives the new numbers of the NODENUMS.
 ;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renamed-nodenums).
 ;; TODO: Could we optimize this to make the indices as we crunch?
-(defund crunch-dag-array2-with-indices (dag-array-name dag-array dag-len dag-parent-array-name nodenums)
+(defund crunch-dag-array2-with-indices (dag-array-name dag-array dag-len
+                                                       dag-parent-array-name
+                                                       nodenums)
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
                               (consp nodenums) ; so we can call maxelem
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name)
                               (all-< nodenums dag-len))))
-  (b* (((mv dag-array dag-len renamed-nodenums) (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
+  (b* (;; Crunch:
+       ((mv dag-array dag-len renamed-nodenums) (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
+       ;; Remake the 3 indices:
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)))
     (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renamed-nodenums)))
