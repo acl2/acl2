@@ -698,7 +698,9 @@ see (defdata foo rational)
                   :put)
            (defmacro ,pred (,x) `(,',predicate ,,x))
            (defmacro ,alias-enum (,x) `(,',base-enum ,,x))
-           (defmacro ,alias-enum-acc (,x ,seed) `(,',base-enum/acc ,,x ,,seed))))))))
+           (defmacro ,alias-enum-acc (,x ,seed)
+             `(,',base-enum/acc ,,x ,,seed))
+           (add-macro-alias ,pred ,predicate)))))))
 
 #|
 (defmacro defdata-alias (alias type &rest args)

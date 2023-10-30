@@ -1,5 +1,7 @@
+; cert-flags: ? t :ttags :all :skip-proofs-okp t
+
 (in-package "ACL2S")
-(include-book "attack")
+(ld "attack.lisp")
 
 ;; Setup TWP for AG3
 
