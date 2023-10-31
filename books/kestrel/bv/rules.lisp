@@ -2412,8 +2412,7 @@
 ;drop or gen
 (defthm get-rid-of-logtail
   (equal (logtail 7 (bvcat 8 x 24 y))
-         (bvcat 8 x 17 (slice 23 7 y)))
-  :hints (("Goal" :in-theory (disable))))
+         (bvcat 8 x 17 (slice 23 7 y))))
 
 (defthm bvor-of-logext-1
   (implies (and (integerp size)
