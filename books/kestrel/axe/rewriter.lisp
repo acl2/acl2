@@ -1373,6 +1373,7 @@
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
 ;; bindings in INTERPRETED-FUNCTION-ALIST
+;; todo: do we want exhaustivep iff use-internal-contextsp is true?
 (defun repeat-simplify-dag (dag ;; must not be a quotep,  (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                             rewriter-rule-alist
                             slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
@@ -1399,50 +1400,24 @@
                               )
                   :stobjs state))
   (mv-let (erp result-dag limits state)
-    (simplify-dag dag
-                  rewriter-rule-alist
-                  slack-amount
-                  refined-assumption-alist
-                  equality-assumption-alist
-                  print-interval print
-                  interpreted-function-alist monitored-symbols memoizep
+    (simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                   use-internal-contextsp
-                  external-context-array-name
-                  external-context-array
-                  external-context
-                  external-context-array-len
-                  external-context-parent-array-name
-                  external-context-parent-array
-                  external-context-dag-constant-alist
-                  external-context-dag-variable-alist
-                  work-hard-when-instructedp tag limits state)
+                  external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name external-context-parent-array
+                  external-context-dag-constant-alist external-context-dag-variable-alist work-hard-when-instructedp tag limits state)
     (if erp
         (mv erp nil nil state)
       (if (quotep result-dag)
           (mv (erp-nil) result-dag limits state)
-        (if (equivalent-dags dag result-dag)
+        (if (equivalent-dags dag result-dag) ; nothing changed (except perhaps node numbering)
             (mv (erp-nil) dag limits state)
-          (progn$ (cw "(Something changed, so simplify again.)~%")
+          (progn$ (cw "(Something changed, so continue.)~%")
                   (print-list result-dag)
-                  (repeat-simplify-dag result-dag
-                                       rewriter-rule-alist
-                                       slack-amount
-                                       refined-assumption-alist
-                                       equality-assumption-alist
-                                       print-interval print
-                                       interpreted-function-alist monitored-symbols memoizep
+                  (repeat-simplify-dag result-dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                                        use-internal-contextsp
-                                       external-context-array-name
-                                       external-context-array
-                                       external-context
-                                       external-context-array-len
-                                       external-context-parent-array-name
-                                       external-context-parent-array
-                                       external-context-dag-constant-alist
-                                       external-context-dag-variable-alist
-                                       work-hard-when-instructedp tag limits state)))))))
+                                       external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name external-context-parent-array
+                                       external-context-dag-constant-alist external-context-dag-variable-alist work-hard-when-instructedp tag limits state)))))))
 
-;call simplify-dag either once or repeatedly, according to exhaustivep
+;; Calls simplify-dag either once or repeatedly, according to EXHAUSTIVEP.
 ;; Returns (mv erp result limits state) where RESULT is a
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
@@ -1469,45 +1444,21 @@
                                   work-hard-when-instructedp tag
                                   exhaustivep
                                   limits state)
-  (declare (xargs :mode :program
-                  :guard (and (rule-limitsp limits)
+  (declare (xargs :guard (and (rule-limitsp limits)
                               ;;todo
-                              )
+                              (booleanp exhaustivep))
+                  :mode :program
                   :stobjs state))
   (if exhaustivep
-      (repeat-simplify-dag dag
-                           rewriter-rule-alist
-                           slack-amount
-                           refined-assumption-alist
-                           equality-assumption-alist
-                           print-interval print
-                           interpreted-function-alist monitored-symbols memoizep
+      (repeat-simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                            use-internal-contextsp
-                           external-context-array-name
-                           external-context-array
-                           external-context
-                           external-context-array-len
-                           external-context-parent-array-name
-                           external-context-parent-array
-                           external-context-dag-constant-alist
-                           external-context-dag-variable-alist
+                           external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name
+                           external-context-parent-array external-context-dag-constant-alist external-context-dag-variable-alist
                            work-hard-when-instructedp tag limits state)
-    (simplify-dag dag
-                  rewriter-rule-alist
-                  slack-amount
-                  refined-assumption-alist
-                  equality-assumption-alist
-                  print-interval print
-                  interpreted-function-alist monitored-symbols memoizep
+    (simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                   use-internal-contextsp
-                  external-context-array-name
-                  external-context-array
-                  external-context
-                  external-context-array-len
-                  external-context-parent-array-name
-                  external-context-parent-array
-                  external-context-dag-constant-alist
-                  external-context-dag-variable-alist
+                  external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name
+                  external-context-parent-array external-context-dag-constant-alist external-context-dag-variable-alist
                   work-hard-when-instructedp tag limits state)))
 
 ;; Returns (mv erp result limits state) where RESULT is a dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST, EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the bindings in INTERPRETED-FUNCTION-ALIST.
@@ -1528,6 +1479,7 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (booleanp exhaustivep)
                               )
                   :stobjs state))
   (b* (((mv erp normalized-dag changep) (normalize-xors dag print)) ;now does both bitxors and bvxors (seemed important to do them both at the same time?)
@@ -1581,6 +1533,7 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (booleanp exhaustivep)
                               )
                   :stobjs state))
   (mv-let (erp simplified-dag-or-quotep limits state)
@@ -1635,6 +1588,7 @@
                               (non-false-contextp context)
                               (acl2-numberp rule-set-number)
                               (alistp priorities)
+                              (booleanp exhaustivep)
                               (rule-limitsp limits))))
   (if (endp tagged-rule-sets)
       (mv (erp-nil) dag limits state)
