@@ -17,6 +17,7 @@
 (include-book "crunch-dag2")
 (include-book "remove-duplicates-from-sorted-list")
 (include-book "../acl2-arrays/typed-acl2-arrays")
+(include-book "../alists-light/lookup-eq-lst")
 (include-book "dag-array-printing2")
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -27,8 +28,11 @@
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
@@ -624,7 +628,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Marks the nodenum of each (candidate) var as depending on itself, unless it
-;; is too large to be relevant.  This initializes the dependency calculation.
+;; is too large to be relevant.  This helps initialize the dependency calculation.
+;rename?
 (defund mark-all-relevant-vars (subst-candidates max-relevant-nodenum candidate-deps-array)
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (natp max-relevant-nodenum)
@@ -657,6 +662,60 @@
            (candidate-deps-arrayp 'candidate-deps-array (mark-all-relevant-vars subst-candidates max-relevant-nodenum candidate-deps-array)))
   :hints ( ;("subgoal *1/4" :cases ((consp (CDR SUBST-CANDIDATES))))
           ("Goal" :do-not '(generalize eliminate-destructors) :in-theory (enable mark-all-relevant-vars STRIP-CARS))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move
+(defthm dag-variable-alistp-forward-to-nat-of-cdr-of-assoc-equal
+  (implies (and (dag-variable-alistp alist)
+                (assoc-equal var alist))
+           (natp (cdr (assoc-equal var alist))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable dag-variable-alistp))))
+
+;; Marks the nodenum of each var in the VAR-ORDERING as depending on itself, unless it
+;; is too large to be relevant.  This helps initialize the dependency calculation.
+(defund mark-nodes-of-ordering-vars (var-ordering max-relevant-nodenum candidate-deps-array dag-variable-alist)
+  (declare (xargs :guard (and (symbol-listp var-ordering)
+                              (natp max-relevant-nodenum)
+                              (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
+                              (equal (alen1 'candidate-deps-array candidate-deps-array)
+                                     (+ 1 max-relevant-nodenum))
+                              (dag-variable-alistp dag-variable-alist))
+                  :guard-hints (("Goal" :in-theory (e/d (NATP-OF-LOOKUP-EQUAL-WHEN-DAG-VARIABLE-ALISTP) (natp assoc-equal))))))
+  (if (endp var-ordering)
+      candidate-deps-array
+    (let* ((var (first var-ordering))
+           (res (assoc-eq var dag-variable-alist)))
+      (if (not res) ; this var is not in the dag (anymore)
+          (mark-nodes-of-ordering-vars (rest var-ordering) max-relevant-nodenum candidate-deps-array dag-variable-alist)
+        (let ((var-nodenum (cdr res)))
+          (mark-nodes-of-ordering-vars (rest var-ordering)
+                                       max-relevant-nodenum
+                                       (if (and res
+                                                (<= var-nodenum max-relevant-nodenum))
+                                           ;; Mark the nodenum of the var as depending on itself:
+                                           (aset1 'candidate-deps-array candidate-deps-array var-nodenum (list var-nodenum))
+                                         ;; This var nodenum is larger that all equated things, so none of them can depend on it:
+                                         candidate-deps-array)
+                                       dag-variable-alist))))))
+
+(defthm alen1-of-mark-nodes-of-ordering-vars
+  (implies (dag-variable-alistp dag-variable-alist)
+           (equal (alen1 'candidate-deps-array (mark-nodes-of-ordering-vars var-ordering max-relevant-nodenum candidate-deps-array dag-variable-alist))
+                  (alen1 'candidate-deps-array candidate-deps-array)))
+  :hints (("Goal" :in-theory (enable mark-nodes-of-ordering-vars))))
+
+(defthm candidate-deps-arrayp-of-mark-nodes-of-ordering-vars
+  (implies (and (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
+                (equal (alen1 'candidate-deps-array candidate-deps-array)
+                       (+ 1 max-relevant-nodenum))
+                (dag-variable-alistp dag-variable-alist))
+           (candidate-deps-arrayp 'candidate-deps-array (mark-nodes-of-ordering-vars var-ordering max-relevant-nodenum candidate-deps-array dag-variable-alist)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors) :in-theory (enable mark-nodes-of-ordering-vars STRIP-CARS))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;; Merges the deps for all the DARGS into ACC, avoiding duplicates.
 (defund merge-deps-for-args (dargs candidate-deps-array
@@ -762,22 +821,27 @@
 ;; Computes, for each node in the DAG (up through the largest node that is an equated-thing in the SUBST-CANDIDATES), the
 ;; set of candidate vars (actually their nodenums) on which the node depends.
 ;; Returns the candidate-deps-array.
-(defund populate-candidate-deps-array (subst-candidates dag-array dag-len)
+(defund populate-candidate-deps-array (subst-candidates var-ordering dag-array dag-len dag-variable-alist)
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (not (all-consp (strip-cadrs subst-candidates))) ; these is at least one equated-thing that's a nodenum
                               (consp subst-candidates)
+                              (symbol-listp var-ordering)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (or (endp subst-candidates)
                                   (<= (maxelem (strip-cars subst-candidates))
                                       (+ -1 dag-len)))
                               (< (largest-non-quotep (strip-cadrs subst-candidates))
-                                 dag-len))
+                                 dag-len)
+                              (dag-variable-alistp dag-variable-alist))
                   :guard-hints (("Goal" :in-theory (enable all->=-len-of-2-when-subst-candidate-listp
-                                                           ALL-INTEGERP-WHEN-NAT-LISTP)))))
+                                                           all-integerp-when-nat-listp)))))
   (let* (;(max-var-nodenum (maxelem (strip-cars subst-candidates)))
          (max-equated-thing-nodenum (largest-non-quotep (strip-cadrs subst-candidates))) ;the equated-things are what we look up in the deps array
          (candidate-deps-array (make-empty-array 'candidate-deps-array (+ 1 max-equated-thing-nodenum)))
-         (candidate-deps-array (mark-all-relevant-vars subst-candidates max-equated-thing-nodenum candidate-deps-array)))
+         ;; We'll track what depends on the candidate vars
+         (candidate-deps-array (mark-all-relevant-vars subst-candidates max-equated-thing-nodenum candidate-deps-array))
+         ;; We'll also track what depends on the vars in the var-ordering
+         (candidate-deps-array (mark-nodes-of-ordering-vars var-ordering max-equated-thing-nodenum candidate-deps-array dag-variable-alist)))
     (populate-candidate-deps-array-aux 0 max-equated-thing-nodenum candidate-deps-array dag-array dag-len)))
 
 (defthm candidate-deps-arrayp-of-populate-candidate-deps-array
@@ -789,8 +853,9 @@
                     (<= (maxelem (strip-cars subst-candidates))
                         (+ -1 dag-len)))
                 (< (largest-non-quotep (strip-cadrs subst-candidates))
-                   dag-len))
-           (candidate-deps-arrayp 'candidate-deps-array (populate-candidate-deps-array subst-candidates dag-array dag-len)))
+                   dag-len)
+                (dag-variable-alistp dag-variable-alist))
+           (candidate-deps-arrayp 'candidate-deps-array (populate-candidate-deps-array subst-candidates var-ordering dag-array dag-len dag-variable-alist)))
   :hints (("Goal" :in-theory (enable populate-candidate-deps-array))))
 
 (local
@@ -809,8 +874,9 @@
                     (<= (maxelem (strip-cars subst-candidates))
                         (+ -1 dag-len)))
                 (< (largest-non-quotep (strip-cadrs subst-candidates))
-                   dag-len))
-           (equal (alen1 'candidate-deps-array (populate-candidate-deps-array subst-candidates dag-array dag-len))
+                   dag-len)
+                (dag-variable-alistp dag-variable-alist))
+           (equal (alen1 'candidate-deps-array (populate-candidate-deps-array subst-candidates var-ordering dag-array dag-len dag-variable-alist))
                   (+ 1 (largest-non-quotep (strip-cadrs subst-candidates)))))
   :hints (("Goal" :in-theory (enable populate-candidate-deps-array))))
 
@@ -894,6 +960,7 @@
 ;; TODO: Can we mark vars to avoid in an array of bits, to avoid operations on sorted lists?
 (defund find-simultaneous-subst-candidates (subst-candidates
                                             candidate-deps-array ;tells us what vars the equated-nodenums depend on
+                                            var-node-ordering
                                             subst-candidates-acc ; candidates we have already decided to add to the set
                                             nodenums-of-vars-already-added ;var nodenums of the candidates in subst-candidates-acc, sorted
                                             nodenums-of-vars-to-avoid ;all the vars on which the candidates in subst-candidates-acc depend, sorted
@@ -901,6 +968,7 @@
   (declare (xargs :guard (and (subst-candidate-listp subst-candidates)
                               (candidate-deps-arrayp 'candidate-deps-array candidate-deps-array)
                               (bounded-darg-listp (strip-cadrs subst-candidates) (alen1 'candidate-deps-array candidate-deps-array))
+                              (nat-listp var-node-ordering)
                               (nat-listp nodenums-of-vars-already-added)
                               (sortedp-<= nodenums-of-vars-already-added)
                               (nat-listp nodenums-of-vars-to-avoid)
@@ -926,7 +994,9 @@
            ;; sorted:
            (nodenums-this-var-depends-on (if (consp equated-nodenum-or-constant) ;check for quotep
                                              nil
-                                           (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant))))
+                                           (aref1 'candidate-deps-array candidate-deps-array equated-nodenum-or-constant)))
+           (later-nodenums (cdr (member this-var-nodenum var-node-ordering))) ; often nil
+           )
       (if (and
            ;; Makes sure we are not already substituting for this var (using a different equality):
            (not (memberp-assuming-sortedp-<= this-var-nodenum nodenums-of-vars-already-added))
@@ -934,18 +1004,23 @@
            (not (memberp-assuming-sortedp-<= this-var-nodenum nodenums-of-vars-to-avoid))
            ;; Makes sure this var doesn't depend on any of the already-selected candidates:
            (disjointp-assuming-sortedp-<= nodenums-this-var-depends-on nodenums-of-vars-already-added)
+           ;; Makes sure this var doesn't depend on any "later" nodes:
+           (not (intersection-equal nodenums-this-var-depends-on later-nodenums)) ; is there no intersection function that uses eql?
            ;; Makes sure the var doesn't depend on itself (tested last because it's rare):
            (not (memberp-assuming-sortedp-<= this-var-nodenum nodenums-this-var-depends-on)))
           ;; Add this candidate:
           (find-simultaneous-subst-candidates (rest subst-candidates)
                                               candidate-deps-array
+                                              var-node-ordering
                                               (cons subst-candidate subst-candidates-acc)
                                               ;; todo: can dups even occur? maybe if a var is equated to 2 things?
                                               (merge-<-and-remove-dups (list this-var-nodenum) nodenums-of-vars-already-added)
-                                              (merge-<-and-remove-dups nodenums-this-var-depends-on nodenums-of-vars-to-avoid))
+                                              (merge-<-and-remove-dups nodenums-this-var-depends-on nodenums-of-vars-to-avoid)
+                                              )
         ;; Don't add this candidate:
         (find-simultaneous-subst-candidates (rest subst-candidates)
                                             candidate-deps-array
+                                            var-node-ordering
                                             subst-candidates-acc
                                             nodenums-of-vars-already-added
                                             nodenums-of-vars-to-avoid)))))
@@ -953,7 +1028,7 @@
 (defthm subst-candidate-listp-of-find-simultaneous-subst-candidates
   (implies (and (subst-candidate-listp subst-candidates)
                 (subst-candidate-listp subst-candidates-acc))
-           (subst-candidate-listp (find-simultaneous-subst-candidates subst-candidates candidate-deps-array subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid)))
+           (subst-candidate-listp (find-simultaneous-subst-candidates subst-candidates candidate-deps-array var-node-ordering subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid)))
   :hints (("Goal" :in-theory (enable find-simultaneous-subst-candidates
                                      len-of-cadr-when-subst-candidatep
                                      ))))
@@ -961,7 +1036,7 @@
 (defthm bounded-darg-listp-of-strip-cadrs-of-find-simultaneous-subst-candidates
   (implies (and (bounded-darg-listp (strip-cadrs subst-candidates) bound)
                 (bounded-darg-listp (strip-cadrs subst-candidates-acc) bound))
-           (bounded-darg-listp (strip-cadrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
+           (bounded-darg-listp (strip-cadrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array var-node-ordering subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
                                 bound))
   :hints (("Goal" :in-theory (enable find-simultaneous-subst-candidates
                                      len-of-cadr-when-subst-candidatep
@@ -971,7 +1046,7 @@
 (defthm SUBSETP-EQUAL-of-strip-caddrs-of-find-simultaneous-subst-candidates
   (implies (and (subsetp-equal (strip-caddrs subst-candidates) set)
                 (subsetp-equal (strip-caddrs subst-candidates-acc) set))
-           (SUBSETP-EQUAL (strip-caddrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
+           (SUBSETP-EQUAL (strip-caddrs (find-simultaneous-subst-candidates subst-candidates candidate-deps-array var-node-ordering subst-candidates-acc nodenums-of-vars-already-added nodenums-of-vars-to-avoid))
                           set))
   :hints (("Goal" :in-theory (enable find-simultaneous-subst-candidates))))
 
@@ -1152,16 +1227,36 @@
 ;;; substitute-var-set
 ;;;
 
+(defund lookup-var-nodes (vars dag-variable-alist)
+  (declare (xargs :guard (and (symbol-listp vars)
+                               (dag-variable-alistp dag-variable-alist))))
+  (if (endp vars)
+      nil
+    (let* ((var (first vars))
+           (res (lookup-eq var dag-variable-alist)))
+      (if res
+          (cons res (lookup-var-nodes (rest vars) dag-variable-alist))
+        (prog2$ (cw "Warning: Var ~x0 is not in the dag." var)
+                (lookup-var-nodes (rest vars) dag-variable-alist))))))
+
+(local
+  (defthm nat-listp-of-lookup-var-nodes
+    (implies (and (symbol-listp vars)
+                  (dag-variable-alistp dag-variable-alist))
+             (nat-listp (lookup-var-nodes vars dag-variable-alist)))
+    :hints (("Goal" :in-theory (enable lookup-var-nodes)))))
+
 ;; Try to apply a simultaneous set of variable substitutioms.  Uses literals that are each a (negated) equality involving a variable (recall that a literal can be safely assumed false when rewriting other literals).
 ;; Requires that the variable is equated to some term not involving itself (to prevent loops).
 ;; Such equalities are used to substitute in all the other literals.  The literals representing the equalities are all dropped, eliminating those variables from the DAG.
 ;; Simutaneous substitutions are attempted for a set of subst candidates where none of the vars replaced is equated to a subdag that mentions any of the other vars.
 ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; Doesn't change any existing nodes in the dag (just builds new ones).
-(defund substitute-var-set (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+(defund substitute-var-set (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))
+                              (all-< literal-nodenums dag-len)
+                              (symbol-listp var-ordering))
                   ;; clean up:
                   :guard-hints (("Goal" :in-theory (e/d (;car-becomes-nth-of-0
                                                          <-of-nth-when-all-<
@@ -1177,7 +1272,8 @@
                                                          <-OF-+-OF-1-WHEN-INTEGERS
                                                          all-integerp-when-nat-listp
                                                          NATP-OF-+-OF-1
-                                                         ACL2-NUMBERP-WHEN-NATP)
+                                                         ACL2-NUMBERP-WHEN-NATP
+                                                         lookup-var-nodes)
                                                         (natp
                                                          ;;cons-nth-0-nth-1 cons-of-nth-and-nth-plus-1 ;todo: why do these cause mv-nths to show up in appropriate places?
                                                          dargp-less-than
@@ -1188,13 +1284,15 @@
         (mv (erp-nil) nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
       (b* (;(- (cw "  ~x0 subst candidates.~%" (len subst-candidates)))
            (num-candidates (len subst-candidates))
+           ;; Convert the vars to their nodenums:
+           (var-node-ordering (lookup-var-nodes var-ordering dag-variable-alist))
            ;; Filter the good subst candidates:
            (subst-candidates (if (all-consp (strip-cadrs subst-candidates)) ;check whether all the equated things are constants ;todo optimize
                                  ;; Special case: All vars are equated to constants, so we don't need the deps array and can substitute them all at once:
                                  subst-candidates
                                (let ( ;; Find a set of candidates that can be substituted together (may find none due to self deps)
-                                     (candidate-deps-array (populate-candidate-deps-array subst-candidates dag-array dag-len)))
-                                 (find-simultaneous-subst-candidates subst-candidates candidate-deps-array nil nil nil)))))
+                                     (candidate-deps-array (populate-candidate-deps-array subst-candidates var-ordering dag-array dag-len dag-variable-alist)))
+                                 (find-simultaneous-subst-candidates subst-candidates candidate-deps-array var-node-ordering nil nil nil)))))
         (if (not subst-candidates)
             ;; No change:
             (prog2$ (cw "  No candidates are suitable for substitution.~%")
@@ -1256,8 +1354,8 @@
 
 (defthm len-of-mv-nth-3-of-substitute-var-set
   (implies (and ;(consp literal-nodenums)
-                (mv-nth 2 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
-           (< (len (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                (mv-nth 2 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)))
+           (< (len (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)))
               (len literal-nodenums)))
   :hints (("Goal" :in-theory (enable substitute-var-set
                                      intersection-equal-when-subsetp-equal-swapped-iff))))
@@ -1265,15 +1363,15 @@
 (defthm len-of-mv-nth-3-of-substitute-var-set-gen
   (implies (and ;(consp literal-nodenums)
             (<= (len literal-nodenums) bound)
-                (mv-nth 2 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
-           (< (len (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                (mv-nth 2 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)))
+           (< (len (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)))
               bound))
   :hints (("Goal" :in-theory (enable substitute-var-set
                                      intersection-equal-when-subsetp-equal-swapped-iff))))
 
 (defthm mv-nth-3-of-substitute-var-set-when-not-consp
   (implies (not (consp literal-nodenums))
-           (equal (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
+           (equal (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))
                   literal-nodenums))
   :hints (("Goal" :in-theory (enable substitute-var-set))))
 
@@ -1296,7 +1394,7 @@
                           ACL2-NUMBERP-WHEN-NATP)))
 
 (def-dag-builder-theorems
-  (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
+  (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)
   (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :hyps ((nat-listp literal-nodenums)
          (all-< literal-nodenums dag-len))
@@ -1307,33 +1405,33 @@
   )
 
 ;; (defthm <=-of-mv-nth-5-of-substitute-var-set
-;;   (implies (and (mv-nth 2 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
+;;   (implies (and (mv-nth 2 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))
 ;;                 (subsetp-equal literal-nodenums))
-;;            (<= (mv-nth 5 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
+;;            (<= (mv-nth 5 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))
 ;;                2147483646))
 ;;   :hints (("Goal" :in-theory (enable SUBSTITUTE-VAR-SET))))
 
 (defthm nat-listp-of-mv-nth-3-of-substitute-var-set
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (not (mv-nth 0 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                (not (mv-nth 0 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)))
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len))
-           (nat-listp (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
+           (nat-listp (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))))
   :hints (("Goal" :in-theory (enable substitute-var-set))))
 
 (defthm true-listp-of-mv-nth-3-of-substitute-var-set
   (implies (true-listp literal-nodenums)
-           (true-listp (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
+           (true-listp (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable substitute-var-set))))
 
 (defthm all-<-of-mv-nth-3-of-substitute-var-set
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (not (mv-nth 0 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)))
+                (not (mv-nth 0 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print)))
                 (nat-listp literal-nodenums)
                 (all-< literal-nodenums dag-len))
-           (all-< (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
-                  (mv-nth 5 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))))
+           (all-< (mv-nth 3 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))
+                  (mv-nth 5 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))))
   :hints (("Goal" :in-theory (enable substitute-var-set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1346,12 +1444,14 @@
                           print
                           prover-depth
                           initial-dag-len ;; todo: remove this?
+                          var-ordering ; to disallow certain substs
                           changep-acc)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
                               (natp prover-depth)
                               (posp initial-dag-len)
+                              (symbol-listp var-ordering)
                               (booleanp changep-acc))
                   :measure (len literal-nodenums)
                   :guard-hints (("Goal" :in-theory (enable rationalp-when-natp)))))
@@ -1365,7 +1465,7 @@
         (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ;; Try to substitute for a set of vars.  TODO: Allow this to evaluate ground terms that arise when substituting.
        ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
+        (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))
        ((when erp) (mv erp nil changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((when provedp) (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
     (if (or (not changep)
@@ -1401,7 +1501,7 @@
            ;; ((when erp) (mv erp nil changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
            )
         ;; At least one var was substituted away, so keep going:
-        (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len t)))))
+        (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering t)))))
 
 (defthm substitute-vars2-return-type
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1411,7 +1511,7 @@
                 (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
+             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
              (implies (not erp)
                       (and (booleanp changep)
                            (booleanp provedp)
@@ -1432,7 +1532,7 @@
                 (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
+             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
              (declare (ignore provedp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (implies (not erp)
                       (implies (< 0 prover-depth)
@@ -1449,7 +1549,7 @@
                 (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
+             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
              (declare (ignore provedp changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (implies (not erp)
                       (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
@@ -1459,7 +1559,7 @@
 (defthm substitute-vars2-return-type-2
   (implies (true-listp literal-nodenums)
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
+             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
              (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (true-listp new-literal-nodenums)))
   :rule-classes (:rewrite :type-prescription)
@@ -1473,7 +1573,7 @@
                 (natp num)
                 (booleanp changep-acc))
            (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len changep-acc)
+             (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth initial-dag-len var-ordering changep-acc)
              (declare (ignore provedp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (implies (not erp)
                       (natp new-dag-len))))
