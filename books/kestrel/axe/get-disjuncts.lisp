@@ -16,9 +16,11 @@
 (include-book "kestrel/booleans/boolor" :dir :system) ;; since this tool knows about boolor
 (include-book "dag-array-builders")
 (include-book "def-dag-builder-theorems")
+;(include-book "merge-sort-less-than")
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
+;(local (include-book "merge-sort-less-than-rules"))
 
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for PROVEDP.
@@ -288,10 +290,9 @@
 ;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
                   ))
   (if (endp nodenums)
-      ;; I suppose we could skip the reverse here:
       (mv (erp-nil)
           nil ;provedp
-          (reverse acc)
+          (reverse acc) ; (merge-sort-< acc)
           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (b* ( ;; todo add handling of constant disjuncts, currently not returned by get-darg-disjuncts
          ((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -309,11 +310,12 @@
   (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print)
   (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
+;why is this needed?
 (defthm get-disjuncts-from-nodes-of-nil
   (equal (get-disjuncts-from-nodes nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print)
          (mv (erp-nil)
              nil ;provedp
-             (reverse acc)
+             (reverse acc) ; (merge-sort-< acc)
              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
   :hints (("Goal" :in-theory (enable get-disjuncts-from-nodes))))
 
