@@ -146,6 +146,7 @@
          ;;                       (cw ")~%"))))
          ((mv erp dag-or-quote state)
           (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                          :exhaustivep t
                           :rules rules ; todo: don't make the rule-alist each time
                           :assumptions assumptions
                           :monitor rules-to-monitor
