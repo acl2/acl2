@@ -50,22 +50,22 @@
   (all-consp (array-to-alist array-name array len))
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
-(defthm nat-listp-of-strip-cars-of-of-array-to-alist-aux
+(defthm nat-listp-of-strip-cars-of-array-to-alist-aux
   (implies (nat-listp (strip-cars acc))
            (nat-listp (strip-cars (array-to-alist-aux n len array-name array acc))))
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
-(defthm nat-listp-of-strip-cars-of-of-array-to-alist
+(defthm nat-listp-of-strip-cars-of-array-to-alist
   (nat-listp (strip-cars (array-to-alist array-name array len)))
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
-(defthm all-<-of-strip-cars-of-of-array-to-alist-aux
+(defthm all-<-of-strip-cars-of-array-to-alist-aux
   (implies (and (all-< (strip-cars acc) bound)
                 (<= len bound))
            (all-< (strip-cars (array-to-alist-aux n len array-name array acc)) bound))
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
-(defthm all-<-of-strip-cars-of-of-array-to-alist
+(defthm all-<-of-strip-cars-of-array-to-alist
   (implies (<= len bound)
            (all-< (strip-cars (array-to-alist array-name array len)) bound))
   :hints (("Goal" :in-theory (enable array-to-alist))))
