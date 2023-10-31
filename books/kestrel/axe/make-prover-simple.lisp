@@ -3567,7 +3567,7 @@
                    t ; proved the clause
                    t
                    literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-              (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, dag-len is ~x2):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
+              (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, ~x2 DAG nodes):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
               (hit-count-alist-before (make-hit-count-alist (uniquify-alist-eq info) nil))
               (result-array-name (pack$ 'result-array- prover-depth))
               ;; Ensure there is a maximal size raw Lisp array under the hood, for use when rewriting each literal.  I hope the compiler
