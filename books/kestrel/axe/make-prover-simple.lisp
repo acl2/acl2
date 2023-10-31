@@ -3726,7 +3726,7 @@
                                     rule-alist rule-set-number
                                     interpreted-function-alist monitored-symbols
                                     case-designator print ;move print arg?
-                                    info tries prover-depth known-booleans options count)
+                                    info tries prover-depth known-booleans var-ordering options count)
           (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (nat-listp literal-nodenums)
@@ -3739,6 +3739,7 @@
                                       (stringp case-designator)
                                       (natp prover-depth)
                                       (symbol-listp known-booleans)
+                                      (symbol-listp var-ordering)
                                       (simple-prover-optionsp options))
                           :verify-guards nil ; done below
                           :measure (+ 1 (nfix count)))
@@ -3762,6 +3763,7 @@
                                           (if (posp dag-len) ;todo: should always be true
                                               dag-len
                                             1)
+                                          var-ordering
                                           nil))
                         ((when erp)
                          (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -3796,7 +3798,7 @@
                                         rule-alist rule-set-number
                                         interpreted-function-alist monitored-symbols
                                         case-designator print
-                                        info tries prover-depth known-booleans options
+                                        info tries prover-depth known-booleans var-ordering options
                                         nil ; no change yet
                                         (+ -1 count)))
                   ((call-of :rep tactic)
@@ -3807,7 +3809,7 @@
                                               rule-alist rule-set-number
                                               interpreted-function-alist monitored-symbols
                                               case-designator print
-                                              info tries prover-depth known-booleans options
+                                              info tries prover-depth known-booleans var-ordering options
                                               nil ; no change yet
                                               (+ -1 count)))
                         ((when erp)
@@ -3822,7 +3824,7 @@
                                              rule-alist rule-set-number
                                              interpreted-function-alist monitored-symbols
                                              case-designator print
-                                             info tries prover-depth known-booleans options (+ -1 count))
+                                             info tries prover-depth known-booleans var-ordering options (+ -1 count))
                        ;; :rep tactic finished (no change this time):
                        (mv (erp-nil)
                            nil ;provedp
@@ -3842,7 +3844,7 @@
                                      rule-alist rule-set-number
                                      interpreted-function-alist monitored-symbols
                                      case-designator print ;move print arg?
-                                     info tries prover-depth known-booleans options
+                                     info tries prover-depth known-booleans var-ordering options
                                      changep-acc ;whether previous tactics in the list changed anything
                                      count)
           (declare (xargs :guard (and (simple-prover-tactic-listp tactics)
@@ -3857,6 +3859,7 @@
                                       (stringp case-designator)
                                       (natp prover-depth)
                                       (symbol-listp known-booleans)
+                                      (symbol-listp var-ordering)
                                       (simple-prover-optionsp options))
                           :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))  :do-not-induct t))
                           :measure (+ 1 (nfix count)))
@@ -3874,7 +3877,7 @@
                                         rule-alist rule-set-number
                                         interpreted-function-alist monitored-symbols
                                         case-designator print
-                                        info tries prover-depth known-booleans options (+ -1 count)))
+                                        info tries prover-depth known-booleans var-ordering options (+ -1 count)))
                    ((when erp)
                     (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                    ((when provedp)
@@ -3885,7 +3888,7 @@
                                      rule-alist rule-set-number
                                      interpreted-function-alist monitored-symbols
                                      case-designator print
-                                     info tries prover-depth known-booleans options
+                                     info tries prover-depth known-booleans var-ordering options
                                      (or changep changep-acc)
                                      (+ -1 count))))))
         ) ; end mutual-recursion
@@ -3904,6 +3907,7 @@
                         (symbol-listp monitored-symbols)
                         (stringp case-designator)
                         (natp prover-depth)
+                        ;; (symbol-listp var-ordering)
                         (simple-prover-optionsp options))
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                      (,apply-tactic-name tactic
@@ -3912,7 +3916,7 @@
                                          rule-alist rule-set-number
                                          interpreted-function-alist monitored-symbols
                                          case-designator print ;move print arg?
-                                         info tries prover-depth known-booleans options count)
+                                         info tries prover-depth known-booleans var-ordering options count)
                      (implies (not erp)
                               (and (booleanp provedp)
                                    (booleanp changep)
@@ -3935,6 +3939,7 @@
                         (symbol-listp monitored-symbols)
                         (stringp case-designator)
                         (natp prover-depth)
+                        ;; (symbol-listp var-ordering)
                         (simple-prover-optionsp options)
                         (booleanp changep-acc))
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
@@ -3944,7 +3949,7 @@
                                           rule-alist rule-set-number
                                           interpreted-function-alist monitored-symbols
                                           case-designator print ;move print arg?
-                                          info tries prover-depth known-booleans options changep-acc count)
+                                          info tries prover-depth known-booleans var-ordering options changep-acc count)
                      (implies (not erp)
                               (and (booleanp provedp)
                                    (booleanp changep)
@@ -3979,6 +3984,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,apply-tactic-name tactic
@@ -3987,7 +3993,7 @@
                                         rule-alist rule-set-number
                                         interpreted-function-alist monitored-symbols
                                         case-designator print ;move print arg?
-                                        info tries prover-depth known-booleans options count)
+                                        info tries prover-depth known-booleans var-ordering options count)
                     (declare (ignore provedp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -4006,7 +4012,7 @@
                                          rule-alist rule-set-number
                                          interpreted-function-alist monitored-symbols
                                          case-designator print ;move print arg?
-                                         info tries prover-depth known-booleans options count)
+                                         info tries prover-depth known-booleans var-ordering options count)
                      (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                      (true-listp new-literal-nodenums)))
           :flag ,apply-tactic-name)
@@ -4019,7 +4025,7 @@
                                           rule-alist rule-set-number
                                           interpreted-function-alist monitored-symbols
                                           case-designator print ;move print arg?
-                                          info tries prover-depth known-booleans options changep-acc count)
+                                          info tries prover-depth known-booleans var-ordering options changep-acc count)
                      (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                      (true-listp new-literal-nodenums)))
           :flag ,apply-tactics-name)
@@ -4041,7 +4047,7 @@
                                                    rule-alists ;we use these one at a time
                                                    rule-set-number
                                                    interpreted-function-alist monitored-symbols case-designator print
-                                                   info tries prover-depth known-booleans options)
+                                                   info tries prover-depth known-booleans var-ordering options)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
@@ -4055,6 +4061,7 @@
                                      (stringp case-designator)
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
+                                     (symbol-listp var-ordering)
                                      (simple-prover-optionsp options))
                          :measure (len rule-alists)))
          (if (atom rule-alists)
@@ -4073,7 +4080,7 @@
                                      (first rule-alists) ;; try the first rule-alist
                                      rule-set-number
                                      interpreted-function-alist monitored-symbols case-designator print
-                                     info tries prover-depth known-booleans options (+ -1 (expt 2 59))))
+                                     info tries prover-depth known-booleans var-ordering options (+ -1 (expt 2 59))))
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ((when provedp) (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
              ;; Continue with the rest of the rule-alists:
@@ -4083,7 +4090,7 @@
                                                  (rest rule-alists)
                                                  (+ 1 rule-set-number)
                                                  interpreted-function-alist monitored-symbols case-designator print
-                                                 info tries prover-depth known-booleans options))))
+                                                 info tries prover-depth known-booleans var-ordering options))))
 
        (defthm ,(pack$ apply-tactic-for-rule-alists-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4097,6 +4104,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,apply-tactic-for-rule-alists-name tactic literal-nodenums
@@ -4104,7 +4112,7 @@
                                                         rule-alists ;we use these one at a time
                                                         rule-set-number
                                                         interpreted-function-alist monitored-symbols case-designator print
-                                                        info tries prover-depth known-booleans options)
+                                                        info tries prover-depth known-booleans var-ordering options)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -4126,7 +4134,7 @@
                                                         rule-alists ;we use these one at a time
                                                         rule-set-number
                                                         interpreted-function-alist monitored-symbols case-designator print
-                                                        info tries prover-depth known-booleans options)
+                                                        info tries prover-depth known-booleans var-ordering options)
                     (declare (ignore erp provedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp new-literal-nodenums)))
          :hints (("Goal" :induct t
@@ -4226,7 +4234,7 @@
                                  rule-alists
                                  interpreted-function-alist monitored-symbols
                                  case-designator print
-                                 info tries prover-depth known-booleans options)
+                                 info tries prover-depth known-booleans var-ordering options)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
@@ -4239,13 +4247,14 @@
                                      (stringp case-designator)
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
+                                     (symbol-listp var-ordering)
                                      (simple-prover-optionsp options))))
          (,apply-tactic-for-rule-alists-name tactic literal-nodenums
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                              rule-alists
                                              1 ; number the rule sets starting at 1
                                              interpreted-function-alist monitored-symbols case-designator print
-                                             info tries prover-depth known-booleans options))
+                                             info tries prover-depth known-booleans var-ordering options))
 
        (defthm ,(pack$ prove-case-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4258,6 +4267,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
@@ -4266,7 +4276,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth known-booleans options)
+                                      info tries prover-depth known-booleans var-ordering options)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -4290,6 +4300,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
@@ -4298,7 +4309,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth known-booleans options)
+                                      info tries prover-depth known-booleans var-ordering options)
                     (declare (ignore provedp new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (and (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len)
@@ -4318,6 +4329,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
@@ -4326,7 +4338,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth known-booleans options)
+                                      info tries prover-depth known-booleans var-ordering options)
                     (declare (ignore provedp new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (and (not erp)
                                   (<= new-dag-len bound)
@@ -4346,6 +4358,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
@@ -4354,7 +4367,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth known-booleans options)
+                                      info tries prover-depth known-booleans var-ordering options)
                     (declare (ignore provedp new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (and (not erp)
                                   (<= bound new-dag-len)
@@ -4374,6 +4387,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-case-name literal-nodenums
@@ -4382,7 +4396,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth known-booleans options)
+                                      info tries prover-depth known-booleans var-ordering options)
                     (declare (ignore provedp new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -4400,7 +4414,7 @@
                                       rule-alists
                                       interpreted-function-alist monitored-symbols
                                       case-designator print
-                                      info tries prover-depth known-booleans options)
+                                      info tries prover-depth known-booleans var-ordering options)
                     (declare (ignore erp provedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp new-literal-nodenums)))
          :rule-classes (:rewrite :type-prescription)
@@ -4422,7 +4436,7 @@
                                        print
                                        case-1-designator
                                        info tries
-                                       prover-depth known-booleans options count)
+                                       prover-depth known-booleans var-ordering options count)
           (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp nodenum)
@@ -4437,6 +4451,7 @@
                                       (stringp case-1-designator)
                                       (natp prover-depth)
                                       (symbol-listp known-booleans)
+                                      (symbol-listp var-ordering)
                                       (simple-prover-optionsp options))
                           :verify-guards nil ; done below
                           :measure (+ 1 (nfix count)))
@@ -4465,7 +4480,7 @@
                                          print case-1-designator
                                          info tries
                                          (+ 1 prover-depth) ;to indicate that nodes should not be changed
-                                         known-booleans options (+ -1 count)))))
+                                         known-booleans var-ordering options (+ -1 count)))))
 
         ;; Try to prove the clause assuming NODENUM is false.
         ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out.
@@ -4480,7 +4495,7 @@
                                         print
                                         case-2-designator
                                         info tries
-                                        prover-depth known-booleans options count)
+                                        prover-depth known-booleans var-ordering options count)
           (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (natp nodenum)
@@ -4495,6 +4510,7 @@
                                       (stringp case-2-designator)
                                       (natp prover-depth)
                                       (symbol-listp known-booleans)
+                                      (symbol-listp var-ordering)
                                       (simple-prover-optionsp options))
                           :measure (+ 1 (nfix count)))
                    (type (unsigned-byte 59) count))
@@ -4521,7 +4537,7 @@
                                          print case-2-designator
                                          info tries
                                          (+ 1 prover-depth) ;to match what we do in the other case above
-                                         known-booleans options (+ -1 count)))))
+                                         known-booleans var-ordering options (+ -1 count)))))
 
         ;; Tries to prove the disjunction of LITERAL-NODENUMS.
         ;; Returns (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries) where result is :proved, :failed, or :timed-out
@@ -4542,7 +4558,7 @@
                                            print
                                            case-designator ;the name of this case
                                            info tries
-                                           prover-depth known-booleans options count)
+                                           prover-depth known-booleans var-ordering options count)
           (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (nat-listp literal-nodenums)
@@ -4555,6 +4571,7 @@
                                       (stringp case-designator)
                                       (natp prover-depth)
                                       (symbol-listp known-booleans)
+                                      (symbol-listp var-ordering)
                                       (simple-prover-optionsp options))
                           :measure (+ 1 (nfix count)))
                    (type (unsigned-byte 59) count))
@@ -4569,7 +4586,7 @@
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     tactic
                                     rule-alists interpreted-function-alist monitored-symbols
-                                    case-designator print info tries prover-depth known-booleans options))
+                                    case-designator print info tries prover-depth known-booleans var-ordering options))
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                  ((when provedp)
                   ;; (cw "Proved case ~s0 by rewriting, etc.~%" case-designator)
@@ -4630,7 +4647,7 @@
                                                  print
                                                  case-1-designator
                                                  info tries
-                                                 prover-depth known-booleans options (+ -1 count)))
+                                                 prover-depth known-booleans var-ordering options (+ -1 count)))
                          ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                       ;;fixme we could make an option to continue if case 1 fails, so that all the failed subgoals are printed
                       (if (not (eq :proved case-1-result))
@@ -4664,7 +4681,7 @@
                                                       print
                                                       case-2-designator
                                                       info tries
-                                                      prover-depth known-booleans options (+ -1 count)))
+                                                      prover-depth known-booleans var-ordering options (+ -1 count)))
                              ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                              (- (and print
                                      (if (not (eq :proved case-2-result))
@@ -4700,6 +4717,7 @@
                          (symbol-listp monitored-symbols)
                          (stringp case-1-designator)
                          (natp prover-depth)
+                         ;; (symbol-listp var-ordering)
                          (simple-prover-optionsp options))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                       (,prove-true-case-name nodenum
@@ -4712,7 +4730,7 @@
                                              print
                                              case-1-designator
                                              info tries
-                                             prover-depth known-booleans options count)
+                                             prover-depth known-booleans var-ordering options count)
                       (implies (not erp)
                                (and (prover-resultp result)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -4733,6 +4751,7 @@
                          (symbol-listp monitored-symbols)
                          (stringp case-2-designator)
                          (natp prover-depth)
+                         ;; (symbol-listp var-ordering)
                          (simple-prover-optionsp options))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                       (,prove-false-case-name nodenum
@@ -4745,7 +4764,7 @@
                                               print
                                               case-2-designator
                                               info tries
-                                              prover-depth known-booleans options count)
+                                              prover-depth known-booleans var-ordering options count)
                       (implies (not erp)
                                (and (prover-resultp result)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -4764,6 +4783,7 @@
                          (symbol-listp monitored-symbols)
                          (stringp case-designator)
                          (natp prover-depth)
+                         ;; (symbol-listp var-ordering)
                          (simple-prover-optionsp options))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                       (,prove-or-split-case-name literal-nodenums
@@ -4775,7 +4795,7 @@
                                                  print
                                                  case-designator
                                                  info tries
-                                                 prover-depth known-booleans options count)
+                                                 prover-depth known-booleans var-ordering options count)
                       (implies (not erp)
                                (and (prover-resultp result)
                                     (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
@@ -4803,6 +4823,7 @@
                          (symbol-listp monitored-symbols)
                          (stringp case-1-designator)
                          (natp prover-depth)
+                         ;; (symbol-listp var-ordering)
                          (simple-prover-optionsp options))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                       (,prove-true-case-name nodenum
@@ -4815,7 +4836,7 @@
                                              print
                                              case-1-designator
                                              info tries
-                                             prover-depth known-booleans options count)
+                                             prover-depth known-booleans var-ordering options count)
                       (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                       (implies (not erp)
                                (<= dag-len new-dag-len))))
@@ -4836,6 +4857,7 @@
                          (symbol-listp monitored-symbols)
                          (stringp case-1-designator)
                          (natp prover-depth)
+                         ;; (symbol-listp var-ordering)
                          (simple-prover-optionsp options))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                       (,prove-true-case-name nodenum
@@ -4848,7 +4870,7 @@
                                              print
                                              case-1-designator
                                              info tries
-                                             prover-depth known-booleans options count)
+                                             prover-depth known-booleans var-ordering options count)
                       (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                       (implies (not erp)
                                (natp new-dag-len))))
@@ -4872,6 +4894,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-or-split-case-name literal-nodenums
@@ -4883,7 +4906,7 @@
                                                print
                                                case-designator
                                                info tries
-                                               prover-depth known-booleans options count)
+                                               prover-depth known-booleans var-ordering options count)
                     (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -4904,6 +4927,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options))
                   (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,prove-or-split-case-name literal-nodenums
@@ -4915,7 +4939,7 @@
                                                print
                                                case-designator
                                                info tries
-                                               prover-depth known-booleans options count)
+                                               prover-depth known-booleans var-ordering options count)
                     (declare (ignore result new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -4939,7 +4963,7 @@
                                         print
                                         case-designator ;the name of this case
                                         info tries
-                                        prover-depth known-booleans options
+                                        prover-depth known-booleans var-ordering options
                                         use-hint
                                         wrld)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
@@ -4954,6 +4978,7 @@
                                      (stringp case-designator)
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
+                                     (symbol-listp var-ordering)
                                      (simple-prover-optionsp options)
                                      (axe-use-hintp use-hint)
                                      (plist-worldp wrld))
@@ -5006,7 +5031,7 @@
                                       print
                                       case-designator
                                       info tries
-                                      prover-depth known-booleans options
+                                      prover-depth known-booleans var-ordering options
                                       (+ -1 (expt 2 59)) ;max fixnum?
                                       )))
 
@@ -5021,6 +5046,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
+                       ;; (symbol-listp var-ordering)
                        (simple-prover-optionsp options)
                        (axe-use-hintp use-hint)
                        (plist-worldp wrld))
@@ -5037,7 +5063,7 @@
                                              print
                                              case-designator
                                              info tries
-                                             prover-depth known-booleans options
+                                             prover-depth known-booleans var-ordering options
                                              use-hint wrld)
                     (implies (not erp)
                              (and (prover-resultp result)
@@ -5160,6 +5186,7 @@
                                             monitor
                                             print
                                             use
+                                            var-ordering
                                             state)
          (declare (xargs :guard-hints (("Goal" :use (:instance make-implication-dag-return-type)
                                         :in-theory (e/d (array-len-with-slack wf-dagp)
@@ -5212,6 +5239,9 @@
                (mv :bad-input nil state))
               ((when (not (booleanp no-splitp)))
                (er hard? ',prove-dag-implication-name "Bad :no-splitp hint: ~x0." no-splitp)
+               (mv :bad-input nil state))
+              ((when (not (symbol-listp var-ordering)))
+               (er hard? ',prove-dag-implication-name "Bad :var-ordering: ~x0." var-ordering)
                (mv :bad-input nil state))
               ((when (not (booleanp print-as-clausesp)))
                (er hard? ',prove-dag-implication-name "Bad :print-as-clausesp hint: ~x0." print-as-clausesp)
@@ -5284,6 +5314,7 @@
                                           (zero-tries))
                                         0 ;prover-depth
                                         (known-booleans (w state))
+                                        var-ordering
                                         options
                                         use
                                         (w state)))
@@ -5296,7 +5327,7 @@
              (prog2$ (and print (cw "Failed to prove ~s0.)~%" case-designator))
                      (mv :failed-to-prove nil state)))))
 
-       ;; Try to prove that DAG1 implies DAG2, for all values of the variables.
+       ;; Try to prove that DAG-OR-TERM1 implies DAG-OR-TERM2, for all values of the variables.
        ;; Returns (mv erp event state) where a failure to prove causes erp to be non-nil.
        ;; This function has no invariant-risk, because the functions it calls
        ;; have guards that are either t or stobj recognizers.
@@ -5312,6 +5343,7 @@
                                            monitor
                                            print
                                            use
+                                           var-ordering
                                            state)
          (declare (xargs :guard (and (simple-prover-tacticp tactic)
                                      (rule-item-list-listp rule-lists)
@@ -5323,6 +5355,7 @@
                                      (booleanp print-as-clausesp)
                                      (symbol-listp monitor)
                                      ;; print
+                                     (symbol-listp var-ordering)
                                      (ilks-plist-worldp (w state)))
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
@@ -5344,6 +5377,7 @@
                                         monitor
                                         print
                                         use
+                                        var-ordering
                                         state)))
 
        ;; Attempt to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
@@ -5360,7 +5394,8 @@
                                           (print-as-clausesp 'nil)
                                           (monitor 'nil)
                                           (print ':brief)
-                                          (use 'nil))
+                                          (use 'nil)
+                                          (var-ordering 'nil))
          ;; all args get evaluated:
          (list 'make-event
                (list ',prove-implication-fn-name
@@ -5376,21 +5411,23 @@
                      monitor
                      print
                      use
+                     var-ordering
                      'state)))
 
        ;; Returns (mv erp provedp).  Attempts to prove the clause (a disjunction
        ;; of terms) with the Axe Prover.
-       (defund ,prove-clause-name (clause tactic name rule-alists monitored-symbols interpreted-function-alist print known-booleans options use wrld)
-         (declare (xargs :guard (and (simple-prover-tacticp tactic)
-                                     (pseudo-term-listp clause)
+       (defund ,prove-clause-name (clause tactic name rule-alists monitored-symbols interpreted-function-alist print known-booleans var-ordering options use wrld)
+         (declare (xargs :guard (and (pseudo-term-listp clause)
+                                     (simple-prover-tacticp tactic)
                                      (symbolp name)
                                      (all-rule-alistp rule-alists)
                                      (true-listp rule-alists)
                                      (symbol-listp monitored-symbols)
                                      (interpreted-function-alistp interpreted-function-alist)
-                                     ;;... todo add more
-                                     (simple-prover-optionsp options)
+                                     ;; guard for print?
                                      (symbol-listp known-booleans)
+                                     (symbol-listp var-ordering)
+                                     (simple-prover-optionsp options)
                                      (axe-use-hintp use)
                                      (plist-worldp wrld))))
          (b* ((- (cw "(Proving clause with Axe prover:~%"))
@@ -5416,6 +5453,7 @@
                                           (zero-tries))
                                         0 ;prover-depth
                                         known-booleans
+                                        var-ordering
                                         options
                                         use
                                         wrld))
@@ -5435,8 +5473,7 @@
        ;; We don't actually define the clause-processor here, because that
        ;; requires a trust tag; see make-clause-processor-simple.lisp for that
        (defund ,clause-processor-name (clause hint state)
-         (declare (xargs :stobjs state
-                         :guard (and (pseudo-term-listp clause)
+         (declare (xargs :guard (and (pseudo-term-listp clause)
                                      (alistp hint)
                                      ;;todo: make these into checks with nice error messages:
                                      (simple-prover-tacticp (lookup-equal :tactic hint))
@@ -5445,7 +5482,9 @@
                                      (booleanp (lookup-equal :print-as-clausesp hint))
                                      (symbol-listp (lookup-equal :monitor hint))
                                      (axe-use-hintp (lookup-equal :use hint))
-                                     (ilks-plist-worldp (w state)))))
+                                     (symbol-listp (lookup-equal :var-ordering hint))
+                                     (ilks-plist-worldp (w state)))
+                         :stobjs state))
          (b* ((must-prove (lookup-eq :must-prove hint))
               ;; Handle the :rules input:
               (rules (lookup-eq :rules hint))
@@ -5457,7 +5496,6 @@
               ((when (not (symbol-list-listp rule-lists)))
                (er hard? ',clause-processor-name "Bad :rule-lists argument: ~x0." rule-lists)
                (mv (erp-t) (list clause)))
-
               ((when (and rules rule-lists))
                (er hard? ',clause-processor-name "Both :rules and :rule-lists given.") ;todo: perhaps allow (combine them?)
                (mv (erp-t) (list clause)))
@@ -5474,6 +5512,7 @@
               (monitored-symbols (lookup-eq :monitor hint))
               (no-splitp (lookup-eq :no-splitp hint))
               (print-as-clausesp (lookup-eq :print-as-clausesp hint))
+              (var-ordering (lookup-eq :var-ordering hint))
               (print (lookup-eq :print hint))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
               ((when erp) (mv erp (list clause)))
@@ -5491,6 +5530,7 @@
                                    nil ;interpreted-function-alist ;todo?
                                    print
                                    (known-booleans (w state))
+                                   var-ordering
                                    options
                                    use-hint
                                    (w state)))
