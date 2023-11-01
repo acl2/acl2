@@ -369,9 +369,6 @@
    (eth-attack-violations grp evnts evnts 'P256 'P448 attacktopics 0
                           *eth-twp-ags* 42 nil)))
 
-
-
-
 ;; attack on goerli network
 ; 106.51 seconds realtime, 106.27 seconds runtime
 ; (6,489,955,424 bytes allocated).
