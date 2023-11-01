@@ -1,6 +1,6 @@
 ; A drop-in replacement for defstobj that proves many helpful theorems
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -587,5 +587,8 @@
                                                 len
                                                 (:i nth))))))))))
 
+;; A replacement for defstobj (except for certain unhandled features -- see
+;; todos above) that disables most stobj-related functions and proves various
+;; theorems about them.
 (defmacro defstobj+ (name &rest args)
   `(make-event (defstobj+-fn ',name ',args state)))
