@@ -1,16 +1,50 @@
-; ABNF (Augmented Backus-Naur Form) Library
-;
-; Copyright (C) 2023 BAE Systems
-;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
-;
-; Author: Letitia Li (letitia.li@baesystems.com)
-
-
+;(acl2::begin-book t :ttags :all)
 (in-package "ACL2")
 (include-book "centaur/fty/top" :dir :system)
-(include-book "centaur/fty/basetypes" :dir :system)
+
+(include-book "centaur/fty/basetypes" :dir :system :ttags :all)
 (include-book "std/io/top" :dir :system)
+
+
+(include-book "arithmetic-5/top" :dir :system)
+(include-book "std/lists/top" :dir :system)
+(include-book "acl2s/ccg/ccg" :uncertified-okp nil :dir :system :ttags
+              ((:ccg)) :load-compiled-file nil)
+
+;(include-book "acl2s/mode-acl2s-dependencies" :dir :system :ttags :all)
+
+(include-book "acl2s/base-theory" :dir :system :ttags :all)
+
+(include-book "acl2s/ccg/ccg" :dir :system :ttags :all)
+(include-book "acl2s/custom" :dir :system :ttags :all)
+(acl2s-common-settings)
+
+;(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+
+
+(defthm subseq-character-list3
+  (implies
+   (and
+   (character-listp contents)
+   (natp index)
+   (subseq contents index NIL)
+   )
+   (character-listp  (subseq contents index  NIL)
+  )
+
+  )
+  :hints (("Goal" :in-theory (enable                (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION SUBSEQ)
+        (:FORWARD-CHAINING CHARACTER-LISTP-FORWARD-TO-EQLABLE-LISTP)
+        (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
+        (:REWRITE LIST-FIX-WHEN-TRUE-LISTP)
+        (:REWRITE ACL2S::NTHCDR-CHARACTER-LISTP-SIG)
+        (:REWRITE SUBSEQ-LIST-OF-LEN)
+        (:TYPE-PRESCRIPTION CHARACTER-LISTP)
+        (:TYPE-PRESCRIPTION EQLABLE-LISTP))
+)))
 
 
 ;;Helper Functions and types
@@ -91,10 +125,10 @@
 
 ;Functions as replacement for search
 (defthm index-of-subseq-self
-  (implies (consp seq)
+  (implies (consp (double-rewrite seq))
            (equal (index-of-subseq seq seq)
                   0))
-  :hints (("Goal" :in-theory (enable index-of-subseq))))
+  :hints (("Goal"  :in-theory (enable index-of-subseq ))))
 
 (defthm <-of-index-of-subseq-and-len
   (implies (index-of-subseq seq1 seq2)
@@ -112,11 +146,7 @@
            )
   :hints (("Goal" :in-theory (enable index-of-subseq))))
 
-(index-of-subseq (explode "abc") (explode "babcde"))
-(index-of-subseq (explode "abc") (explode "babcdeabc"))
 
-
-(index-of-subseq (reverse (explode "abc")) (reverse (explode "babcdabcdabc")))
 (defund index-of-subseq-from-end (seq1 seq2)
     (declare  (xargs :guard (and (true-listp seq1)
                               (true-listp seq2))))
@@ -126,9 +156,6 @@
       )
   )
 
-(index-of-subseq-from-end (explode "abc") (explode "babcdeabc"))
-(index-of-subseq-from-end (explode "abc") (explode "abcd"))
-(index-of-subseq-from-end (explode "abc") (explode "dabcd"))
 (defthm <-of-index-of-subseq-from-end-and-len
   (implies (and (index-of-subseq-from-end seq1 seq2)
                 )
@@ -182,7 +209,7 @@
 
 
 
-(defund index-of-first-non-digit (contents)
+(defun index-of-first-non-digit (contents)
   (declare (xargs :guard 
                            (character-listp contents)
                             ))
@@ -194,16 +221,21 @@
       0
     )
   )
-(defthm index-of-first-non-digit-non-negative
-   (natp (index-of-first-non-digit contents))
-  )
-(defthm index-of-first-non-digit-len
-   (implies (natp (index-of-first-non-digit contents))
+  
+
+
+
+
+
+
+(defthm index-of-first-non-digit-len2
+   ;(implies (natp (index-of-first-non-digit contents))
             (<= (index-of-first-non-digit contents) (len contents))
-            )
-        :hints (("Goal" :in-theory (and (enable index-of-first-non-digit) )))
+    ;        )
   )
-(defthm subseq-character-list2
+  
+  
+  (defthm subseq-character-list2
   (implies
    (and
    (character-listp contents)
@@ -211,9 +243,50 @@
    )
    (character-listp  (subseq contents 0 (index-of-first-non-digit contents)))
   )
-    :hints (("Goal"  :in-theory (and (disable index-of-first-non-digit) )))
+    :hints (("Goal" :in-theory (enable index-of-first-non-digit
+                                               (:DEFINITION ASSOC-EQUAL)
+        (:DEFINITION CHARACTER-LISTP)
+        (:DEFINITION INDEX-OF-FIRST-NON-DIGIT)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NOT)
+        (:DEFINITION OUR-DIGIT-CHAR-P)
+        (:DEFINITION SUBSEQ)
+        (:DEFINITION SYNP)
+        (:ELIM CAR-CDR-ELIM)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQUAL)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CHARACTER-LISTP)
+        (:EXECUTABLE-COUNTERPART CHARACTERP)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART OUR-DIGIT-CHAR-P)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FORWARD-CHAINING CHARACTER-LISTP-FORWARD-TO-EQLABLE-LISTP)
+        (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
+        (:INDUCTION CHARACTER-LISTP)
+        (:INDUCTION INDEX-OF-FIRST-NON-DIGIT)
+        (:REWRITE |(+ 0 x)|)
+        (:REWRITE |(+ c (+ d x))|)
+        (:REWRITE |(+ y (+ x z))|)
+        (:REWRITE |(< 0 (len x))|)
+        (:REWRITE ACL2S::CONS-CHARACTER-LISTP-SIG)
+        (:REWRITE CONSP-UNDER-IFF-WHEN-TRUE-LISTP)
+        (:REWRITE REDUCE-ADDITIVE-CONSTANT-<)
+        (:REWRITE SUBSEQ-LIST-STARTING-FROM-ZERO)
+        (:REWRITE TAKE-OF-1)
+        (:REWRITE TAKE-OF-CONS)
+        (:REWRITE TAKE-UNDER-IFF)
+        (:REWRITE ZP-OPEN)
+        (:TYPE-PRESCRIPTION CHARACTER-LISTP)
+        (:TYPE-PRESCRIPTION EQLABLE-LISTP)
+        (:TYPE-PRESCRIPTION INDEX-OF-FIRST-NON-DIGIT)
+        (:TYPE-PRESCRIPTION LENGTH))
+                                       ))
   )
-
 (defthm take-charcter-list
   (IMPLIES (CHARACTER-LISTP CONTENTS)
          (CHARACTER-LISTP (TAKE (INDEX-OF-FIRST-NON-DIGIT CONTENTS)
@@ -235,7 +308,7 @@
 (defund parse-string (string contents )
   (declare (xargs :guard (and (stringp string)
                               (character-listp contents))))
-  (if (prefixp (explode string) contents) 
+  (if (and (prefixp (explode string) contents) (character-listp (subseq contents (length (explode string)) NIL)))
      (cons (ast-obj "string" string) (subseq contents (length (explode string)) NIL))
     (cons (ast-obj "null" "") contents)
     )
@@ -255,7 +328,7 @@
    (character-listp contents)
   (character-listp (cdr (parse-string string contents)) )
   )
-   :hints (("Goal" :in-theory (enable parse-string)))
+  :hints (("Goal" :in-theory (enable parse-string)))
   )
 
 ;;;;;;;;;;;;;;;;PARSE CHAR ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -272,8 +345,6 @@
      (cons (ast-obj "null" "") contents)
      )
   )
-(parse-char '#\a (explode "adsfsdjfsdl") )
-(parse-char '#\b (explode "adsfsdjfsdl") )
 
 (defthm parse-char-cons
     (consp (parse-char char contents))
@@ -299,12 +370,19 @@
                          
                             (stringp string)
                             )))
+  ;(if (and (natp  (index-of-subseq (explode string) contents)) (character-listp (subseq contents (index-of-subseq (explode string) contents) NIL) ) (<=  (index-of-subseq (explode string) contents)  (len contents)))
   (if (natp  (index-of-subseq (explode string) contents))
-    (if  (and (<=  (index-of-subseq (explode string) contents)  (len contents)) (character-listp contents))
+  (if (<=  (index-of-subseq (explode string) contents)  (len contents)) 
+  (if (character-listp (subseq contents (index-of-subseq (explode string) contents) NIL))
+  ;  (if  (and (<=  (index-of-subseq (explode string) contents)  (len contents)) (character-listp contents) (character-listp (subseq contents (index-of-subseq (explode string) contents) NIL)) )
     (cons (ast-obj "before-str" (implode (subseq contents 0 (index-of-subseq (explode string) contents))) )
             (subseq contents (index-of-subseq (explode string) contents) NIL))
+      ;  (cons (ast-obj "null" "") contents)
         (cons (ast-obj "null" "") contents)
-    )
+        )
+        (cons (ast-obj "null" "") contents)
+        )
+    ;)
    (cons (ast-obj "null" "") contents)
     )
   
@@ -329,7 +407,9 @@
       )
              (character-listp  (cdr (parse-until-string-non-incl string contents)) )
              )
-          :hints (("Goal" :in-theory (enable parse-until-string-non-incl)))
+                    :hints (("Goal" :in-theory (enable parse-until-string-non-incl)
+                                                   
+                                             ))
   )
 
 ;Return all characters including the entire string to be searched, or ((ast-obj "null" ) contents) if string is not found
@@ -341,8 +421,11 @@
                             )))
   (if (natp  (index-of-subseq (explode string) contents))
     (if  (and (<=  (+ (len (explode string )) (index-of-subseq (explode string) contents) ) (len contents)) (character-listp contents))
+    (if (character-listp (subseq contents ( + (len (explode string)) (index-of-subseq (explode string) contents) ) NIL))
     (cons (ast-obj "until-str" (implode (subseq contents 0 (+ (len (explode string)) (index-of-subseq (explode string) contents))) )) 
             (subseq contents ( + (len (explode string)) (index-of-subseq (explode string) contents) ) NIL))
+                   (cons (ast-obj "null" "") contents)
+            )
         (cons (ast-obj "null" "") contents)
     )
    (cons (ast-obj "null" "") contents)
@@ -350,9 +433,6 @@
   
 )
 
-
-(parse-until-string "endobj" (explode "abc def endobj"))
-(parse-until-string-non-incl "endobj" (explode "abc def endobj"))
 
 
 (defthm parse-until-string-cons
@@ -399,15 +479,29 @@
                           :hints (("Goal" :in-theory (enable parse-word)))
     )
 
+
+ (defthm subseq-character-list4
+  (implies
+   (and
+   (character-listp contents)
+   (subseq contents 0 n)
+   (natp n)
+   (<= n (length contents))
+   )
+   (character-listp  (subseq contents 0 n))
+  )
+  )
 ;;;;;;;;;;;;;;;;;PARSE N CHARS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Return n characters as a list off the start of the characterlist, or (ast-obj "null") contents) if not enough characters
+
+
 (defund parse-n-chars (n contents)
    (declare (xargs :guard (and
                            (character-listp contents)
                             (natp n)
                               )
                    ))
-   (if (<= n (length contents))
+   (if (and (<= n (length contents)) (character-listp (subseq contents n NIL)))
      (cons (ast-obj  "charlist"  (subseq contents 0 n))
          (subseq contents n NIL))
       (cons (ast-obj "null" "") contents)
@@ -441,14 +535,18 @@
                      :guard-hints (("Goal" :in-theory (disable index-of-subseq-from-end)))
                    ))
    (if (natp (index-of-subseq-from-end (explode string) contents))
+   (if (character-listp (subseq contents ( +  (index-of-subseq-from-end (explode string) contents )
+                                                                          (length (explode string)) ) NIL ))
      (cons (ast-obj "before-last-instance" string ) (subseq contents ( +  (index-of-subseq-from-end (explode string) contents )
                                                                           (length (explode string)) ) NIL )
                           )
+                           (cons (ast-obj "null" "") contents)
+                           )
        (cons (ast-obj "null" "") contents)
-       
+       )
   )
-)
-(parse-string-from-end "abc" (explode "abc1abc2"))
+
+
 
 (defthm parse-string-from-end-cons
   (implies (parse-string-from-end string contents)
@@ -501,16 +599,14 @@
                            (character-listp contents)
                               :guard-hints (("Goal" :hands-off (subseq)))   
                             ))
-  (if (and (natp (index-of-first-non-digit contents))(<=  (index-of-first-non-digit contents) (len contents)))
+  (if (and (natp (index-of-first-non-digit contents))(<=  (index-of-first-non-digit contents) (len contents))(character-listp (subseq contents (index-of-first-non-digit contents) NIL)) )
     (subseq contents (index-of-first-non-digit contents) NIL)
     (list )
     )
  ;    NIL
     
   )
-(parse-number-helper-remainder (explode "123 345"))
 
-(parse-number-helper-remainder (explode "a123 345"))
 
 (defthm parse-number-helper-remainder-charlist
   (implies
@@ -537,8 +633,7 @@
    (consp (parse-number contents))
  ; )
   )
-(parse-number (explode "123 "))
-(parse-number (explode "a"))
+
 (defthm parse-number-ast-obj
 
    (ast-obj-p (car (parse-number contents)) )
@@ -708,18 +803,17 @@
   )
     :hints (("Goal"  :in-theory (and (enable parse-xref-sequence) )))
   )
- 
 
-
-
-  
 (defund parse-xref-entry-repetition (prefix contents )
     (declare (xargs :guard
                          (and  (character-listp contents)
                            )
-                            )
+                     
              )
-  (let ((res1 (parse-xref-sequence contents) ))
+             )
+             
+
+ (let ((res1 (parse-xref-sequence contents) ))
     (if (ast-obj-p prefix) 
       (if (character-listp contents)
 
@@ -735,6 +829,7 @@
             (cons (ast-obj "null" NIL) contents)
      )
     )
+    
   )
 
 (defthm parse-xref-entry-repetition-cons
@@ -754,7 +849,6 @@
     :hints (("Goal"  :in-theory (and (enable parse-xref-entry-repetition) )))
   )
  
-(parse-char #\Newline (cdr (parse-until-string "xref" (cdr (parse-header  (explode (read-file-into-string "/home/l/hello.pdf")))))))
 
 
 (defun parse-xref-section (contents)
@@ -804,7 +898,7 @@
                 )
              )
   )
-(parse-xref-section (cdr (parse-char #\Newline (cdr (parse-until-string-non-incl "xref" (cdr (parse-header  (explode (read-file-into-string "/home/l/hello.pdf")))))))))
+
 
 (defthm parse-xref-section-cons
   (consp (parse-xref-section contents))
@@ -921,8 +1015,6 @@
   )
 
 
-(parse-object-entry (cdr (parse-header  (explode (read-file-into-string "/home/l/hello.pdf")))))
-
   
 (defund parse-objects (prefix contents )
     (declare (xargs :guard
@@ -947,7 +1039,6 @@
      )
     )
   )
-(parse-objects (ast-obj "sequence" (list )) (cdr (parse-header  (explode (read-file-into-string "/home/l/hello.pdf")))))
 
 (defthm parse-objects-cons
   (consp (parse-objects prefix contents))
@@ -1183,7 +1274,6 @@
             )
   )
    )
-(parse-trailer  (explode (read-file-into-string "/home/l/trailer-only.pdf")))
 (defthm parse-trailer-cons
   (consp (parse-trailer contents))
   )
@@ -1230,4 +1320,3 @@
             
          
    )
-(parse-pdf (explode  (read-file-into-string "hello.pdf")))
