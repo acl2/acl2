@@ -111,7 +111,7 @@
 ;; See also make-dag-indices.
 (defund make-dag-variable-alist (dag-array-name dag-array dag-len)
   (declare (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
-  (make-dag-variable-alist-aux 0 dag-array-name dag-array dag-len nil))
+  (make-dag-variable-alist-aux 0 dag-array-name dag-array dag-len (empty-dag-variable-alist)))
 
 (defthm dag-variable-alistp-of-make-dag-variable-alist
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -120,7 +120,7 @@
 
 (defthm make-dag-variable-alist-of-0
   (equal (make-dag-variable-alist dag-array-name dag-array 0)
-         nil)
+         (empty-dag-variable-alist))
   :hints (("Goal" :in-theory (enable make-dag-variable-alist))))
 
 (defthm all-<-of-strip-cdrs-of-make-dag-variable-alist

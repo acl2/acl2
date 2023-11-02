@@ -17,10 +17,15 @@
 ;; cannot use the parent-array to find them.  The entries in the
 ;; dag-variable-alist should be sorted by decreasing nodenum.
 
-;; (include-book "kestrel/alists-light/lookup-equal" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
+;; TODO: Consider having users of this call fast-alist-free when then are
+;; finished with each DAG, to free the hash-table on Lisps other than CCL or
+;; SBCL.
+
+
+;; (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "kestrel/utilities/acons-fast" :dir :system)
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
+;; (include-book "kestrel/utilities/acons-fast" :dir :system)
 
 (local (in-theory (disable natp)))
 
@@ -34,11 +39,16 @@
 ;;; dag-variable-alistp
 ;;;
 
+;; Now this is a fast alist (currently with only nil supported for the final cdr).
 ;; TODO: Add the constraints that the keys are all unique and the vals are all unique?
 (defund dag-variable-alistp (alist)
   (declare (xargs :guard t))
   (and (symbol-alistp alist)
        (nat-listp (strip-cdrs alist))))
+
+;; Avoid evaluating this, to help preserve the abstraction
+;; and reduce the chance of using a non-fast-alist somewhere.
+(in-theory (disable (:e dag-variable-alistp)))
 
 (defthm dag-variable-alistp-forward-to-alist
   (implies (dag-variable-alistp alist)
@@ -96,14 +106,48 @@
                  (assoc-equal var dag-variable-alist)))
    :hints (("Goal" :in-theory (enable assoc-equal dag-variable-alistp nat-listp)))))
 
+(local
+ (defthm cdr-of-hons-assoc-equal-becomes-lookup-equal
+   (implies (dag-variable-alistp alist)
+            (equal (cdr (hons-assoc-equal key alist))
+                   (lookup-equal key alist)))
+   :hints (("Goal" :expand (hons-assoc-equal (car (car alist))
+                                             alist)
+            :in-theory (enable assoc-equal hons-assoc-equal dag-variable-alistp)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Might change soon to use fast alists
+(defund empty-dag-variable-alist ()
+  (declare (xargs :guard t))
+  ;; can't use anything else here, such as a fast-alist size or name, since we
+  ;; call strip-cars and strip-cdrs (for now):
+  nil
+  )
+
+;; Avoid evaluating this, to help preserve the abstraction
+;; and reduce the chance of using a non-fast-alist somewhere.
+(in-theory (disable (:e empty-dag-variable-alist)
+                    (:t empty-dag-variable-alist)))
+
+(defthm dag-variable-alistp-of-empty-dag-variable-alist
+  (dag-variable-alistp (empty-dag-variable-alist))
+  :hints (("Goal" :in-theory (enable empty-dag-variable-alist dag-variable-alistp))))
+
+(defthm strip-cdrs-of-empty-dag-variable-alist
+  (equal (strip-cdrs (empty-dag-variable-alist))
+         nil)
+  :hints (("Goal" :in-theory (enable empty-dag-variable-alist))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We use a fast-alist operation here.  This attaches a hash-table to the alist
+;; the first time it is called on a given alist.  Add additions to a
+;; dag-variable-alist should be made by calling this function.
 (defund-inline add-to-dag-variable-alist (var nodenum dag-variable-alist)
   (declare (xargs :guard (and (symbolp var)
                               (natp nodenum)
                               (dag-variable-alistp dag-variable-alist))))
-  (acons-fast var nodenum dag-variable-alist))
+  (hons-acons var nodenum dag-variable-alist))
 
 (defthm dag-variable-alistp-of-add-to-dag-variable-alist
   (equal (dag-variable-alistp (add-to-dag-variable-alist var nodenum dag-variable-alist))
@@ -126,11 +170,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Might change soon to use fast alists
+;; We use a fast-alist operation here.
 (defund-inline lookup-in-dag-variable-alist (var dag-variable-alist)
   (declare (xargs :guard (and (symbolp var)
                               (dag-variable-alistp dag-variable-alist))))
-  (lookup-eq var dag-variable-alist))
+  (cdr (hons-assoc-equal var dag-variable-alist)))
 
 (defthm lookup-in-dag-variable-alist-type
   (implies (dag-variable-alistp dag-variable-alist)
@@ -163,6 +207,7 @@
 (defund bounded-dag-variable-alistp (alist dag-len)
   (declare (xargs :guard (natp dag-len)))
   (and (dag-variable-alistp alist)
+       ;; Strip-cdrs seems okay, even for a fast alist
        (all-< (strip-cdrs alist) dag-len)))
 
 (defthm bounded-dag-variable-alistp-forward-to-dag-variable-alistp
@@ -177,8 +222,8 @@
            (bounded-dag-variable-alistp alist dag-len2))
   :hints (("Goal" :in-theory (enable bounded-dag-variable-alistp))))
 
-(defthm bounded-dag-variable-alistp-of-nil
-  (bounded-dag-variable-alistp nil dag-len)
+(defthm bounded-dag-variable-alistp-of-empty-dag-variable-alist
+  (bounded-dag-variable-alistp (empty-dag-variable-alist) dag-len)
   :hints (("Goal" :in-theory (enable bounded-dag-variable-alistp))))
 
 (defthm <-of-lookup-in-dag-variable-alist-when-bounded-dag-variable-alistp

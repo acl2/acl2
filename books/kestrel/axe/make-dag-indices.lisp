@@ -143,8 +143,7 @@
                           dag-array-name dag-array
                           dag-parent-array-name dag-parent-array
                           nil ;;empty dag-constant-alist
-                          nil ;;empty dag-variable-alist
-                          )))
+                          (empty-dag-variable-alist))))
 
 ;; We reason about make-dag-parent-array-with-name2 instead of make-dag-indices, which is more complicated.
 (defthm mv-nth-0-of-make-dag-indices
