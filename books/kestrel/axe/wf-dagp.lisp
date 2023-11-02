@@ -85,7 +85,8 @@
                     0
                     dag-parent-array-name
                     (make-empty-array dag-parent-array-name size)
-                    nil nil))
+                    nil
+                    (empty-dag-variable-alist)))
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 ;drop?

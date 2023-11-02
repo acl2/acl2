@@ -17072,7 +17072,7 @@
 ;;                                 0
 ;;                                 (make-empty-array 'dag-parent-array dag-len)
 ;;                                 nil ;; dag-constant-alist
-;;                                 nil ;;dag-variable-alist
+;;                                 (empty-dag-variable-alist) ;;dag-variable-alist
 ;;                                 nil ;;variable-node-alist-for-dag
 ;;                                 nil ;;translation-alist
 ;;                                 )
