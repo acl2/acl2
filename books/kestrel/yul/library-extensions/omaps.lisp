@@ -64,13 +64,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule keys-of-mfix
-  (equal (keys (mfix map))
-         (keys map))
-  :enable keys)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule keys-of-update*
   (equal (keys (update* new old))
          (set::union (keys new) (keys old)))

@@ -907,6 +907,11 @@
              (set::insert key (keys (tail map))))))
   ///
 
+  (defrule keys-of-mfix
+    (equal (keys (mfix map))
+           (keys map))
+    :enable keys)
+
   (defrule keys-when-empty
     (implies (empty map)
              (equal (keys map) nil))
