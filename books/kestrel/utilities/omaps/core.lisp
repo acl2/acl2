@@ -922,6 +922,11 @@
     (iff (keys map)
          (not (empty map))))
 
+  (defruled consp-of-in-to-in-of-keys
+    (equal (consp (in key map))
+           (set::in key (keys map)))
+    :enable in)
+
   (defruled in-to-in-of-keys
     (iff (in key map)
          (set::in key (keys map)))
