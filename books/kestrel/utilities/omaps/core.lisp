@@ -932,6 +932,14 @@
          (set::in key (keys map)))
     :enable in)
 
+  (defruled in-of-keys-to-in
+    (iff (set::in key (keys map))
+         (in key map))
+    :enable in)
+
+  (theory-invariant (incompatible (:rewrite in-to-in-of-keys)
+                                  (:rewrite in-of-keys-to-in)))
+
   (defruled in-keys-when-in-forward
     (implies (in key map)
              (set::in key (keys map)))
