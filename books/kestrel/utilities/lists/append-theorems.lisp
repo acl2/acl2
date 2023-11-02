@@ -1,6 +1,6 @@
 ; List Utilities -- Theorems about APPEND
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -64,4 +64,12 @@
                   (not (consp y)))
              (equal (append x y)
                     (true-list-fix x)))
+    :enable append)
+
+  (defruled equal-of-append-and-left
+    (implies (and (true-listp a)
+                  (true-listp b))
+             (equal (equal (append a b) a)
+                    (not (consp b))))
+    :induct t
     :enable append))
