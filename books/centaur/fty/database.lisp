@@ -54,10 +54,12 @@
    fix                ;; element fix, e.g., string-fix, or nil for an untyped field
    equiv              ;; element equiv, e.g., string-equiv, or nil for an untyped field
    reqfix             ;; dependent type fix (term)
+   reqfix-vars        ;; fields used in dependent type fix (optional)
    default            ;; default value
    doc                ;; short xdoc string about this field
    rule-classes       ;; for the return-type theorem: empty or (:rule-classes ...)
    recp               ;; is .type part of the mutual recursion?
+   shared             ;; shared across different products of the sum
    )
   :tag :field)
 

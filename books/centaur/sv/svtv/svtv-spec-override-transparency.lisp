@@ -1071,7 +1071,8 @@
                                                ref-env))
            :hints(("Goal" :in-theory (e/d (svar-overridekeys-envs-ok
                                              svtv-fsm-phase-inputs
-                                             SVTV-FSM-ENV-INVERSEMAP)
+                                             SVTV-FSM-ENV-INVERSEMAP
+                                             svtv-fsm-namemap-env)
                                           (SVARLIST-CHANGE-OVERRIDE-WHEN-OVERRIDE-P))))))
 
   (defthm overridekeys-envs-ok-of-svtv-fsm-phase-inputs-no-tests
@@ -1120,7 +1121,8 @@
                                                           namemap)
                                    (nth phase ref-envs)))
     :hints (("goal" :in-theory (e/d (svar-overridekeys-envs-ok
-                                       svtv-fsm-phase-inputs
+                                     svtv-fsm-phase-inputs
+                                     svtv-fsm-namemap-env
                                        svtv-fsm-env-inversemap)
                                     (SVARLIST-CHANGE-OVERRIDE-WHEN-OVERRIDE-P))
              :do-not-induct t)))
@@ -1730,9 +1732,39 @@
 
 (defsection overridekeys-envlists-ok-of-svex-envlist-x-override
 
+  (local (defthm member-when-svar-override-p*
+           (implies (and (svarlist-override-p* x types)
+                         (not (svar-override-p* k types)))
+                    (not (member-equal k x)))
+           :hints(("Goal" :in-theory (enable svarlist-override-p*)))))
+
+  (local (defthm 4vec-<<=-bitmux-id
+           (implies (and (4vec-<<= (4vec-bitmux impl-test impl-val spec-val)
+                                   spec-val)
+                         (4vec-<<= spec-val spec-val2))
+                    (4vec-<<= (4vec-bitmux impl-test impl-val spec-val2)
+                              spec-val2))
+           :hints(("Goal" :in-theory (enable 4vec-bitmux 4vec-<<=))
+                  (bitops::logbitp-reasoning))))
+
+  (local (defthm 4vec-<<=-bitmux-then
+           (implies (4vec-<<= then then2)
+                    (4vec-<<= (4vec-bitmux test then else)
+                              (4vec-bitmux test then2 else)))
+           :hints(("Goal" :in-theory (enable 4vec-bitmux 4vec-<<=))
+                  (bitops::logbitp-reasoning))))
+  
+  (local (defthm 4vec-override-mux-<<=-when-<<=-spec-val
+           (implies (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val spec-ref)
+                         (4vec-<<= spec-val spec-val2))
+                    (4vec-override-mux-<<= impl-test impl-val spec-test spec-val2 spec-ref))
+           :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
+                                             4vec-bit?!)))))
+  
   (defthm svar-overridekeys-envs-ok-of-svex-env-x-override
     (implies (and (svar-overridekeys-envs-ok v params overridekeys impl-env spec-env spec-outs)
-                  (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+                  (svarlist-override-p* (alist-keys (svex-env-fix base-ins)) '(nil :val))
+                  ;; (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
                   (svarlist-override-p params :test))
              (svar-overridekeys-envs-ok v params overridekeys impl-env (svex-env-x-override spec-env base-ins) spec-outs))
     :hints(("Goal" :in-theory (enable svar-overridekeys-envs-ok
@@ -1747,14 +1779,14 @@
 
   (defthm overridekeys-envs-ok-of-svex-env-x-override
     (implies (and (overridekeys-envs-ok params overridekeys impl-env spec-env spec-outs)
-                  (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+                  (svarlist-override-p* (alist-keys (svex-env-fix base-ins)) '(nil :val))
                   (svarlist-override-p params :test))
              (overridekeys-envs-ok params overridekeys impl-env (svex-env-x-override spec-env base-ins) spec-outs))
     :hints ((and stable-under-simplificationp
                  `(:expand (,(car (last clause)))))))
 
   (local (defthm svar-overridekeys-envs-ok-when-empty/nonoverride
-           (implies (and (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+           (implies (and (svarlist-override-p* (alist-keys (svex-env-fix base-ins)) '(nil :val))
                          (svarlist-override-p params :test))
                     (svar-overridekeys-envs-ok v params overridekeys nil base-ins spec-outs))
            
@@ -1769,14 +1801,14 @@
                                       4vec-<<=-transitive-2)))))
 
   (defthm overridekeys-envs-ok-when-empty/nonoverride
-    (implies (and (svarlist-override-p (alist-keys (svex-env-fix base-ins)) nil)
+    (implies (and (svarlist-override-p* (alist-keys (svex-env-fix base-ins)) '(nil :val))
                   (svarlist-override-p params :test))
              (overridekeys-envs-ok params overridekeys nil base-ins spec-outs))
     :hints ((and stable-under-simplificationp
                  `(:expand (,(car (last clause)))))))
 
   (defthm overridekeys-envlists-ok-when-empty/nonoverride
-    (implies (and (svarlist-override-p (svex-envlist-all-keys base-ins) nil)
+    (implies (and (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val))
                   (svarlist-override-p params :test))
              (overridekeys-envlists-ok params overridekeys nil base-ins spec-outs))
     :hints(("Goal" :in-theory (enable overridekeys-envlists-ok  svex-envlist-all-keys
@@ -1784,7 +1816,7 @@
   
   (defthm overridekeys-envlists-ok-of-svex-envlist-x-override
     (implies (and (overridekeys-envlists-ok params overridekeys impl-envs spec-envs spec-outs)
-                  (svarlist-override-p (svex-envlist-all-keys base-ins) nil)
+                  (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val))
                   (svarlist-override-p params :test))
              (overridekeys-envlists-ok params overridekeys impl-envs (svex-envlist-x-override spec-envs base-ins) spec-outs))
     :hints(("Goal" :in-theory (enable overridekeys-envlists-ok svex-envlist-x-override svex-envlist-all-keys
@@ -1858,7 +1890,7 @@
                     (svex-env-<<= (svex-env-extract (svex-alist-vars spec.initst-alist) pipe-env)
                                   spec-env)
 
-                    (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                    (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (enable svtv-spec-run
                                       svtv-spec-override-syntax-checks-implies))))
@@ -1903,7 +1935,7 @@
                     (svex-env-<<= (svex-env-extract (svex-alist-vars spec.initst-alist) pipe-env)
                                   spec-env)
                     
-                    (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                    (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (enable svtv-spec-run
                                       svtv-spec-override-syntax-checks-implies)))))

@@ -122,6 +122,19 @@
              (svarlist-fix keys) collision))
     (fast-alist-free (fast-alist-clean inverse-map))))
 
+(define svtv-fsm-namemap-env ((env svex-env-p)
+                              (namemap svtv-name-lhs-map-p)
+                              (overridetype svar-overridetype-p))
+  :Returns (ins svex-env-p)
+  (with-fast-alist env
+    (svtv-name-lhs-map-eval-x
+     (svtv-name-lhs-map-keys-change-override
+      (svtv-fsm-env-inversemap (alist-keys (svex-env-fix env))
+                               namemap)
+      overridetype)
+     env)))
+
+
 ;; (define svtv-fsm-values-inversemap ((keys svarlist-p)
 ;;                                     (map svtv-name-lhs-map-p)
 ;;                                     (updates svex-alist-p))
@@ -160,27 +173,9 @@
                                (override-tests svex-env-p)
                                (map svtv-name-lhs-map-p))
   :returns (phase-env svex-env-p)
-  (b* ((in-env (with-fast-alist inputs
-                 (svtv-name-lhs-map-eval-x
-                  (svtv-name-lhs-map-keys-change-override
-                   (svtv-fsm-env-inversemap (alist-keys (svex-env-fix inputs))
-                                            map)
-                   nil)
-                  inputs)))
-       (val-env (with-fast-alist override-vals
-                 (svtv-name-lhs-map-eval-x
-                  (svtv-name-lhs-map-keys-change-override
-                   (svtv-fsm-env-inversemap (alist-keys (svex-env-fix override-vals))
-                                            map)
-                   :val)
-                  override-vals)))
-       (test-env (with-fast-alist override-tests
-                 (svtv-name-lhs-map-eval-x
-                  (svtv-name-lhs-map-keys-change-override
-                   (svtv-fsm-env-inversemap (alist-keys (svex-env-fix override-tests))
-                                            map)
-                   :test)
-                  override-tests))))
+  (b* ((in-env (svtv-fsm-namemap-env inputs map nil))
+       (val-env (svtv-fsm-namemap-env override-vals map :val))
+       (test-env (svtv-fsm-namemap-env override-tests map :test)))
     (append test-env val-env in-env)))
 
 
@@ -235,32 +230,33 @@
 
 
 
+
+(define svtv-fsm-namemap-alist-subst ((alist svex-alist-p)
+                                      (namemap svtv-name-lhs-map-p)
+                                      (overridetype svar-overridetype-p))
+  :Returns (subst svex-alist-p)
+  (with-fast-alist alist
+    (svtv-name-lhs-map-subst-x
+     (svtv-name-lhs-map-keys-change-override
+      (svtv-fsm-env-inversemap (svex-alist-keys alist) namemap)
+      overridetype)
+     alist))
+  ///
+  (defret eval-of-<fn>
+    (equal (svex-alist-eval subst env)
+           (svtv-fsm-namemap-env (svex-alist-eval alist env) namemap overridetype))
+    :hints(("Goal" :in-theory (enable svtv-fsm-namemap-env)))))
+
+
+
 (define svtv-fsm-phase-inputsubst ((inputs svex-alist-p)
                                    (override-vals svex-alist-p)
                                    (override-tests svex-alist-p)
                                    (map svtv-name-lhs-map-p))
   :returns (phase-subst svex-alist-p)
-  (b* ((in-subst (with-fast-alist inputs
-                   (svtv-name-lhs-map-subst-x
-                    (svtv-name-lhs-map-keys-change-override
-                     (svtv-fsm-env-inversemap (svex-alist-keys inputs)
-                                              map)
-                     nil)
-                    inputs)))
-       (val-subst (with-fast-alist override-vals
-                    (svtv-name-lhs-map-subst-x
-                     (svtv-name-lhs-map-keys-change-override
-                      (svtv-fsm-env-inversemap (svex-alist-keys override-vals)
-                                               map)
-                      :val)
-                     override-vals)))
-       (test-subst (with-fast-alist override-tests
-                     (svtv-name-lhs-map-subst-x
-                      (svtv-name-lhs-map-keys-change-override
-                       (svtv-fsm-env-inversemap (svex-alist-keys override-tests)
-                                                map)
-                       :test)
-                      override-tests))))
+  (b* ((in-subst (svtv-fsm-namemap-alist-subst inputs map nil))
+       (val-subst (svtv-fsm-namemap-alist-subst override-vals map :val))
+       (test-subst (svtv-fsm-namemap-alist-subst override-tests map :test)))
     (append test-subst val-subst in-subst))
   ///
   (defret eval-of-<fn>

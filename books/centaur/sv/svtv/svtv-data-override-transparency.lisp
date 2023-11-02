@@ -135,7 +135,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                    (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                    (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (e/d (svtv-data-obj->ideal-spec)
                                    (design->ideal-fsm-overridekey-transparent))
@@ -145,18 +145,18 @@
 
 
 
-  (local (defthm base-fsm-partial-monotonic-of-svtv-data-obj->phase-fsm
-           (b* (((svtv-data-obj x))
-                ((flatnorm-res x.flatnorm))
-                (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
-                                                               (phase-fsm-config->override-config x.phase-fsm-setup))))
-             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                           x.flatten-validp
-                           x.flatnorm-validp
-                           x.phase-fsm-validp
-                           (flatnorm-setup->monotonify x.flatnorm-setup))
-                      (base-fsm-partial-monotonic (svarlist-change-override override-mux-keys :test) x.phase-fsm)))
-           :hints(("Goal" :in-theory (enable base-fsm-partial-monotonic)))))
+  (defthm base-fsm-partial-monotonic-of-svtv-data-obj->phase-fsm
+    (b* (((svtv-data-obj x))
+         ((flatnorm-res x.flatnorm))
+         (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
+                                                        (phase-fsm-config->override-config x.phase-fsm-setup))))
+      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                    x.flatten-validp
+                    x.flatnorm-validp
+                    x.phase-fsm-validp
+                    (flatnorm-setup->monotonify x.flatnorm-setup))
+               (base-fsm-partial-monotonic (svarlist-change-override override-mux-keys :test) x.phase-fsm)))
+    :hints(("Goal" :in-theory (enable base-fsm-partial-monotonic))))
 
   ;; (local (defthm base-fsm-overridekey-transparent-p-of-svtv-data-obj->phase-fsm
   ;;          (b* (((svtv-data-obj x))
@@ -206,7 +206,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                    (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                    (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (e/d (svtv-data-obj->spec
                                     base-fsm-overridekey-transparent-p
@@ -444,7 +444,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                     (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                     (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
                 (svex-env-<<= impl-run spec-run)))
      :hints(("Goal" :in-theory (e/d (svtv-data-obj->ideal-spec
                                      svtv-data-obj->spec
@@ -483,7 +483,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                     (svarlist-override-p (svex-envlist-all-keys base-ins) nil))
+                     (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
                 (svex-env-<<= impl-run spec-run)))
      :hints(("Goal" :use override-transparency-of-svtv-data-obj->spec/ideal-spec-abstraction-lemma)
             (and stable-under-simplificationp
