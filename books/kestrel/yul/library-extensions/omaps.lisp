@@ -14,13 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled consp-of-omap-in-to-set-in-of-omap-keys
-  (iff (consp (in key map))
-       (set::in key (keys map)))
-  :enable in)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled set-in-keys-to-in
   (iff (set::in key (keys map))
        (in key map))
