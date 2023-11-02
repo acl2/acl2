@@ -14,13 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled set-in-keys-to-in
-  (iff (set::in key (keys map))
-       (in key map))
-  :enable in)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule keys-of-restrict
   (equal (keys (restrict keys map))
          (set::intersect keys (keys map)))
