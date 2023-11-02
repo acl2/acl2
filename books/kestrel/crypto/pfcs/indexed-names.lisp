@@ -102,7 +102,15 @@
      (defret consp-of-iname-list-rev
        (equal (consp names-rev)
               (> (nfix n) 0))
-       :hints (("Goal" :induct t :in-theory (enable nfix))))))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))
+
+     (defruled base-not-member-of-iname-list-rev
+       (implies (stringp base)
+                (not (member-equal base (iname-list-rev base n))))
+       :induct t
+       :do-not '(preprocess) ; otherwise it throws away the (stringp base) hyp
+       :enable (iname-list-rev
+                iname-not-equal-to-base))))
   ///
 
   (defret len-of-iname-list
@@ -114,7 +122,13 @@
            (> (nfix n) 0)))
 
   (in-theory (disable consp-of-iname-list
-                      consp-of-iname-list-rev)))
+                      consp-of-iname-list-rev))
+
+  (defruled base-not-member-of-iname-list
+    (implies (stringp base)
+             (not (member-equal base (iname-list base n))))
+    :use base-not-member-of-iname-list-rev
+    :enable iname-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
