@@ -204,9 +204,9 @@
     (let* ((fn (sdag-fn n sdag))
            (dag-variable-alist
             (if (eq fn :var)
-                (acons (sdag-args n sdag) ;will be the single symbol
-                       n
-                       dag-variable-alist)
+                (add-to-dag-variable-alist (sdag-args n sdag) ;will be the single symbol
+                                           n
+                                           dag-variable-alist)
               dag-variable-alist)))
       (make-sdag-variable-alist-aux (+ 1 n)
                                     sdag
@@ -227,7 +227,7 @@
                                      (sdag-args-length sdag))
                               (<= (sdag-len sdag) (sdag-fns-length sdag))
                               (sdag-fns-and-args-okp 0 sdag))))
-  (make-sdag-variable-alist-aux 0 sdag nil))
+  (make-sdag-variable-alist-aux 0 sdag (empty-dag-variable-alist)))
 
 (defthm dag-variable-alistp-of-make-sdag-variable-alist
   (implies (sdag-fns-and-args-okp 0 sdag)

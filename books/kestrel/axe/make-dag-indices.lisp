@@ -1,7 +1,7 @@
 ; Making the 3 indices of a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -42,8 +42,8 @@
                               (natp n)
                               (<= n dag-len)
                               (<= dag-len (alen1 dag-parent-array-name dag-parent-array))
-                              (alistp dag-constant-alist)
-                              (alistp dag-variable-alist))))
+                              (alistp dag-constant-alist) ; strengthen?
+                              (dag-variable-alistp dag-variable-alist))))
   (if (or (>= n dag-len)
           (not (mbt (natp n)))
           (not (mbt (natp dag-len))))
@@ -53,7 +53,7 @@
           (make-dag-indices-aux (+ 1 n) dag-len dag-array-name dag-array
                                 dag-parent-array-name dag-parent-array
                                 dag-constant-alist
-                                (acons-fast expr n dag-variable-alist))
+                                (add-to-dag-variable-alist expr n dag-variable-alist))
         (let ((fn (ffn-symb expr)))
           (if (eq 'quote fn)
               (make-dag-indices-aux (+ 1 n) dag-len dag-array-name dag-array
@@ -143,8 +143,7 @@
                           dag-array-name dag-array
                           dag-parent-array-name dag-parent-array
                           nil ;;empty dag-constant-alist
-                          nil ;;empty dag-variable-alist
-                          )))
+                          (empty-dag-variable-alist))))
 
 ;; We reason about make-dag-parent-array-with-name2 instead of make-dag-indices, which is more complicated.
 (defthm mv-nth-0-of-make-dag-indices
