@@ -17,7 +17,10 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/std/strings/decimal-fty" :dir :system))
+(local (include-book "kestrel/std/strings/explode-implode-equalities" :dir :system))
+(local (include-book "kestrel/utilities/lists/append-theorems" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -59,8 +62,17 @@
   :short "Create an indexed name, from a base and an index."
   (str::cat base "_" (str::nat-to-dec-string i))
   ///
+
   (fty::deffixequiv iname
-    :args ((i natp))))
+    :args ((i natp)))
+
+  (defruled iname-not-equal-to-base
+    (implies (stringp base)
+             (not (equal (iname base i) base)))
+    :enable (string-append-lst
+             string-append
+             str::equal-of-implode-left-to-equal-of-explode-right
+             acl2::equal-of-append-and-left)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
