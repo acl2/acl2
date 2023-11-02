@@ -22,6 +22,23 @@
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 
+;move
+(local
+ (defthm nat-listp-of-append
+   (equal (nat-listp (append x y))
+          (and (nat-listp (true-list-fix x))
+               (nat-listp y)))
+   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;move
+(local
+ (defthm nat-listp-of-reverse-list
+   (equal (nat-listp (reverse-list x))
+          (nat-listp (true-list-fix x)))
+   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;;; End of library material
+
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When NEGATED-FLG is nil, EXTENDED-ACC is ACC extended with the disjuncts of ITEM, except that if a true disjunct is found, we signal it by returning T for PROVEDP.
 ;; When NEGATED-FLG is t, EXTENDED-ACC is ACC extended with the negations of the conjuncts of ITEM, except that if any of the negated conjuncts is true, we signal it by returning T for PROVEDP.
@@ -276,6 +293,8 @@
            (no-duplicatesp-equal (mv-nth 2 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-darg-disjuncts) (natp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Extends ACC with nodenums whose disjunction is equivalent to the disjunction of the NODENUMS.
 ;; Returns (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 (defund get-disjuncts-from-nodes (nodenums ;todo: we could now allow constants
@@ -310,7 +329,7 @@
   (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print)
   (mv erp provedp extended-acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
 
-;why is this needed?
+;; Needed for the guard conjecture of rewrite-clause-XXX.
 (defthm get-disjuncts-from-nodes-of-nil
   (equal (get-disjuncts-from-nodes nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print)
          (mv (erp-nil)
@@ -323,21 +342,6 @@
   (implies (no-duplicatesp-equal acc)
            (no-duplicatesp-equal (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
-
-;move
-(local
- (defthm nat-listp-of-append
-   (equal (nat-listp (append x y))
-          (and (nat-listp (true-list-fix x))
-               (nat-listp y)))
-   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
-
-;move
-(local
- (defthm nat-listp-of-reverse-list
-   (equal (nat-listp (reverse-list x))
-          (nat-listp (true-list-fix x)))
-   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
 ;; The disjuncts are always nodenums.
 (defthm nat-listp-of-mv-nth-2-of-get-disjuncts-from-nodes
@@ -392,9 +396,6 @@
   (implies  (integerp dag-len)
             (integerp (mv-nth 4 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
-
-
-
 
 ;can be used to test get-disjuncts:
 ;; (defun get-disjuncts-of-term (term)
