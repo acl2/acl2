@@ -1417,7 +1417,7 @@
            (new-dag-parent-array-name 'normalize-xors-new-parent-array)
            (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
            (new-dag-constant-alist nil)
-           (new-dag-variable-alist nil)
+           (new-dag-variable-alist (empty-dag-variable-alist))
            ;; indicates what each node in the old-dag becomes in the new-dag:
            (translation-array (make-empty-array 'translation-array old-dag-len)))
       (prog2$ (and print

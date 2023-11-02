@@ -1157,7 +1157,7 @@
                              0 ;initial dag-len
                              (make-empty-array dag-parent-array-name 10)
                              nil         ;dag-constant-alist
-                             nil         ;dag-variable-alist
+                             (empty-dag-variable-alist)
                              dag-array-name dag-parent-array-name
                              interpreted-function-alist))
 
@@ -1245,7 +1245,7 @@
                               0 ;initial dag-len
                               (make-empty-array dag-parent-array-name 1000)
                               nil ;empty dag-constant-alist
-                              nil ;empty dag-variable-alist
+                              (empty-dag-variable-alist)
                               dag-array-name dag-parent-array-name
                               interpreted-function-alist))
 
@@ -1448,7 +1448,7 @@
                  (dag-array (make-empty-array 'dag-array (+ 1 (top-nodenum main-dag))))
                  (dag-parent-array (make-empty-array 'dag-parent-array (+ 1 (top-nodenum main-dag))))
                  (dag-constant-alist nil)
-                 (dag-variable-alist nil)
+                 (dag-variable-alist (empty-dag-variable-alist))
                  ;; initially empty (the var gets renamed by the alist):
                  (renaming-array (make-empty-array 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum main-dag))))
                  ((mv erp renaming-array dag-array & & & &)

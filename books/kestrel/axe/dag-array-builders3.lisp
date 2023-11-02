@@ -1,7 +1,7 @@
 ; dag-array-builders that involve memoization
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,6 @@
 ;; book deal with the memoization (and one of them also passes through the
 ;; info, and one takes print arguments).
 
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "wf-dagp")
 ;(include-book "numeric-lists")
 ;(include-book "kestrel/typed-lists-light/all-less" :dir :system)
@@ -64,7 +63,7 @@
                               (maybe-memoizationp memoization)
                               (symbolp var))
                   :split-types t))
-  (let* ((nodenum-if-present (lookup-eq var dag-variable-alist))
+  (let* ((nodenum-if-present (lookup-in-dag-variable-alist var dag-variable-alist))
          (memoization (if (and memoization
                                trees-equal-to-tree)
                           (add-pairs-to-memoization
@@ -93,7 +92,7 @@
             (maybe-expand-array 'dag-parent-array dag-parent-array dag-len) ;fixme rethink this - must keep the arrays in sync
             dag-constant-alist
             ;;pairs var with its new nodenum in the DAG:
-            (acons-fast var dag-len dag-variable-alist)
+            (add-to-dag-variable-alist var dag-len dag-variable-alist)
             memoization
             info)))))
 
@@ -205,20 +204,20 @@
          dag-constant-alist)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
-(defthm dag-variable-listp-of-mv-nth-6-of-add-variable-to-dag-array-with-memo
+(defthm dag-variable-alistp-of-mv-nth-6-of-add-variable-to-dag-array-with-memo
   (implies (and (dag-variable-alistp dag-variable-alist)
                 (symbolp var)
                 (natp dag-len))
            (dag-variable-alistp (mv-nth 6 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
-(defthm all-<-of-strip-cdrs-of-mv-nth-6-of-add-variable-to-dag-array-with-memo
-  (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
-                (symbolp var)
-                (natp dag-len))
-           (all-< (strip-cdrs (mv-nth 6 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
-                  (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo bounded-dag-variable-alistp))))
+;; (defthm all-<-of-strip-cdrs-of-mv-nth-6-of-add-variable-to-dag-array-with-memo
+;;   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
+;;                 (symbolp var)
+;;                 (natp dag-len))
+;;            (all-< (strip-cdrs (mv-nth 6 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
+;;                   (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
+;;   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo bounded-dag-variable-alistp))))
 
 (defthm bounded-dag-variable-alistp-of-mv-nth-6-of-add-variable-to-dag-array-with-memo
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)

@@ -1229,6 +1229,8 @@
                   :guard (and (pseudo-dagp dag)
                               (natp external-context-array-len)
                               (natp slack-amount)
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
                               (rule-limitsp limits))))
   ;;Even if use-internal-contextsp is non-nil, we first simplify without internal contexts, to make sure that the contexts themselves are simplified (fixme might that take several passes? when we use them on the second pass (otherwise when using a term that came from a context we might have to simplify it before using it, which might be awkward (a whole subdag would be involved, and simplifying the context might cause other terms from context to be simplified)... and what about something like (if x (foo x) (bar x)) where the test x guards an appearance of itself? rethink this?
 ;in many cases the contexts will equate terms with constants..
@@ -1246,7 +1248,7 @@
        (dag-parent-array (make-empty-array 'dag-parent-array initial-array-size))
        (dag-parent-array (copy-array-vals max-external-context-nodenum external-context-parent-array-name external-context-parent-array 'dag-parent-array dag-parent-array))
        (dag-constant-alist external-context-dag-constant-alist) ;inline?
-       (dag-variable-alist external-context-dag-variable-alist) ;inline?
+       (dag-variable-alist (make-fast-alist external-context-dag-variable-alist)) ; to avoid stealing the hash-table of external-context-dag-variable-alist, which is a fast alist
        (- (and print (cw "(Simplifying without using contexts (memoize ~x0):~%" memoizep)))
        ;; Work hard on the first rewrite if there won't be a second one:
        (work-hard-on-first-rewrite (not use-internal-contextsp) ;nil ;work-hard-when-instructedp ;Mon Sep 20 09:54:39 2010 since we are not using contexts, working hard can be a big waste.  on the other hand, we are memoizing on this rewrite (but can't on the one with contexts), so work-hards would be memoized here but not there
@@ -1397,6 +1399,8 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
                               )
                   :stobjs state))
   (mv-let (erp result-dag limits state)
@@ -1446,6 +1450,8 @@
                                   limits state)
   (declare (xargs :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
                               (booleanp exhaustivep))
                   :mode :program
                   :stobjs state))
@@ -1479,6 +1485,8 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist)
                               (booleanp exhaustivep)
                               )
                   :stobjs state))
@@ -1533,6 +1541,8 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist)
                               (booleanp exhaustivep)
                               )
                   :stobjs state))
@@ -1589,7 +1599,9 @@
                               (acl2-numberp rule-set-number)
                               (alistp priorities)
                               (booleanp exhaustivep)
-                              (rule-limitsp limits))))
+                              (rule-limitsp limits)
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist))))
   (if (endp tagged-rule-sets)
       (mv (erp-nil) dag limits state)
     (b* ((- (and (> total-rule-set-count 1) (cw "(Applying rule set ~x0 of ~x1.~%" rule-set-number total-rule-set-count)))

@@ -721,13 +721,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;move
-(defthm dag-variable-alistp-forward-to-nat-of-cdr-of-assoc-equal
-  (implies (and (dag-variable-alistp alist)
-                (assoc-equal var alist))
-           (natp (cdr (assoc-equal var alist))))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable dag-variable-alistp))))
+;; ;move
+;; (defthm dag-variable-alistp-forward-to-nat-of-cdr-of-assoc-equal
+;;   (implies (and (dag-variable-alistp alist)
+;;                 (assoc-equal var alist))
+;;            (natp (cdr (assoc-equal var alist))))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable dag-variable-alistp))))
 
 ;; Marks the nodenum of each var in the VAR-ORDERING as depending on itself, unless it
 ;; is too large to be relevant.  This helps initialize the dependency calculation.
@@ -738,21 +738,20 @@
                               (equal (alen1 'candidate-deps-array candidate-deps-array)
                                      (+ 1 max-relevant-nodenum))
                               (dag-variable-alistp dag-variable-alist))
-                  :guard-hints (("Goal" :in-theory (e/d (NATP-OF-LOOKUP-EQUAL-WHEN-DAG-VARIABLE-ALISTP) (natp assoc-equal))))))
+                  :guard-hints (("Goal" :in-theory (e/d () (natp assoc-equal))))))
   (if (endp var-ordering)
       candidate-deps-array
     (let* ((var (first var-ordering))
-           (res (assoc-eq var dag-variable-alist)))
+           (res (lookup-in-dag-variable-alist var dag-variable-alist)))
       (if (not res) ; this var is not in the dag (anymore)
           (mark-nodes-of-ordering-vars (rest var-ordering) max-relevant-nodenum candidate-deps-array dag-variable-alist)
-        (let ((var-nodenum (cdr res)))
+        (let ((var-nodenum res))
           (mark-nodes-of-ordering-vars (rest var-ordering)
                                        max-relevant-nodenum
-                                       (if (and res
-                                                (<= var-nodenum max-relevant-nodenum))
+                                       (if (<= var-nodenum max-relevant-nodenum)
                                            ;; Mark the nodenum of the var as depending on itself:
                                            (aset1 'candidate-deps-array candidate-deps-array var-nodenum (list var-nodenum))
-                                         ;; This var nodenum is larger that all equated things, so none of them can depend on it:
+                                         ;; This var nodenum is larger than all equated things, so none of them can depend on it:
                                          candidate-deps-array)
                                        dag-variable-alist))))))
 
@@ -1290,7 +1289,7 @@
   (if (endp vars)
       nil
     (let* ((var (first vars))
-           (res (lookup-eq var dag-variable-alist)))
+           (res (lookup-in-dag-variable-alist var dag-variable-alist)))
       (if res
           (cons res (lookup-var-nodes (rest vars) dag-variable-alist))
         (prog2$ (cw "Warning: Var ~x0 is not in the dag." var)
