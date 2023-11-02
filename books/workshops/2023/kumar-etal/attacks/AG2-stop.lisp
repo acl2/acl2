@@ -1,11 +1,11 @@
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t
 
 (in-package "ACL2S")
-(ld "attack.lisp")
+(include-book "attack")
 
 ;; Setup TWP for AG3
 
-(definec alltopics () :lot
+(definec alltopics-ag2 () :lot
   '(AGG BLOCKS SUB1 SUB2 SUB3 SUB4 SUB5 SUB6 SUB7 SUB8 SUB9
         SUB10 SUB11 SUB12))
 
@@ -27,26 +27,26 @@
 ;;    DecayToZero                 = 0.01
 ;;    RetainScore                 = 100 epoch durations
 
-(defconst *decayToZero* 1/100)
+(defconst *decayToZero-ag2* 1/100)
 
 ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/
 ;;     shared/params/config.go#L123
 
-(defconst *seconds-per-slot* 1) ;; ARBITRARY 
-(defconst *one-epoch-duration* 1) ;; ARBITRARY 
+(defconst *seconds-per-slot-ag2* 1) ;; ARBITRARY 
+(defconst *one-epoch-duration-ag2* 1) ;; ARBITRARY 
 
-(defconst *aggregateWeight* (/ 1 2)) ;; weight for aggregate topic, see #L100
-(defconst *beaconBlockWeight* (/ 8 10)) ;; weight for beacon topic, see #L77
+(defconst *aggregateWeight-ag2* (/ 1 2)) ;; weight for aggregate topic, see #L100
+(defconst *beaconBlockWeight-ag2* (/ 8 10)) ;; weight for beacon topic, see #L77
 
 ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/
 ;;     beacon-chain/p2p/gossip_scoring_params.go#L154
-(defconst *slot-duration* (* *seconds-per-slot* 1))
+(defconst *slot-duration-ag2* (* *seconds-per-slot-ag2* 1))
 
 ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/
 ;;    shared/params/config.go#L48
-(defconst *slots-per-epoch* 10) ;; ARBITRARY 
-(defconst *blocks-per-epoch* *slots-per-epoch*) ;; #L75
-(defconst *decay-epoch* 5) ;; #L74
+(defconst *slots-per-epoch-ag2* 10) ;; ARBITRARY 
+(defconst *blocks-per-epoch-ag2* *slots-per-epoch-ag2*) ;; #L75
+(defconst *decay-epoch-ag2* 5) ;; #L74
 
 ;; In line number comments, if I write BC, I am referring to:
 ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/
@@ -60,38 +60,38 @@
 
 ;; I assume all times are given in units of 1 second ...
 
-(defconst *enable-larger-gossip-history* 'nil)
+(defconst *enable-larger-gossip-history-ag2* 'nil)
 
-(defconst *hbmInterval* (/ 700 1000))
+(defconst *hbmInterval-ag2* (/ 700 1000))
 
-(defconst *topicCap* (+ 32 (/ 72 100)))
+(defconst *topicCap-ag2* (+ 32 (/ 72 100)))
 
-(defconst *comm-count-per-slot* 10) ;; ARBITRARY - refer to #L173 ... they have not decided yet!
+(defconst *comm-count-per-slot-ag2* 10) ;; ARBITRARY - refer to #L173 ... they have not decided yet!
 ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/
 ;;     shared/params/config.go#L123
-(defconst *target-aggregators-per-committee* 5) ;; ARBITRARY
-(defconst *aggregators-per-slot* (* *comm-count-per-slot* *target-aggregators-per-committee*)) ;; #L1871
-(defconst *agg-per-epoch* (* *aggregators-per-slot* *slots-per-epoch*))
-(defconst *attestationTotalWeight* 1) ;; #L23
+(defconst *target-aggregators-per-committee-ag2* 5) ;; ARBITRARY
+(defconst *aggregators-per-slot-ag2* (* *comm-count-per-slot-ag2* *target-aggregators-per-committee-ag2*)) ;; #L1871
+(defconst *agg-per-epoch-ag2* (* *aggregators-per-slot-ag2* *slots-per-epoch-ag2*))
+(defconst *attestationTotalWeight-ag2* 1) ;; #L23
 ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/
 ;; shared/params/network_config.go#L40
-(defconst *AttestationSubnetCount* (- (len (alltopics)) 2))         ;; ARBITRARY 
-(defconst *MinGenesisActiveValidatorCount* 300) ;; ARBITRARY -----------------|
+(defconst *AttestationSubnetCount-ag2* (- (len (alltopics-ag2)) 2))         ;; ARBITRARY 
+(defconst *MinGenesisActiveValidatorCount-ag2* 300) ;; ARBITRARY -----------------|
 ;; -------> but currently needs to be divisible by 50 x attestationSubnetCount.
 
-(defconst *subnet-topicWeight* (/ *attestationTotalWeight* *AttestationSubnetCount*)) ;; #L121
-(defconst *activeValidators* *MinGenesisActiveValidatorCount*) ;; #L169
-(defconst *subnet-subnetWeight* (/ *activeValidators* *AttestationSubnetCount*)) ;; #L122
-(defconst *subnet-minimumWeight* (/ *subnet-subnetWeight* 50)) ;; #L123
-(defconst *subnet-numsPerSlot* (floor *subnet-subnetWeight* *slots-per-epoch*)) ;; #L124
-(defconst *subnet-comsPerSlot* *comm-count-per-slot*) ;; #L125
-(defconst *subnet-exceedsThreshold*
-  (>= *subnet-comsPerSlot*
-      (* 2 (/ *AttestationSubnetCount* *slots-per-epoch*)))) ;; #L126
-(defconst *subnet-firstDecay* (if *subnet-exceedsThreshold* 4 1)) ;; #L127, 130
-(defconst *subnet-meshDecay* (if *subnet-exceedsThreshold* 16 4)) ;; #L128, 131
+(defconst *subnet-topicWeight-ag2* (/ *attestationTotalWeight-ag2* *AttestationSubnetCount-ag2*)) ;; #L121
+(defconst *activeValidators-ag2* *MinGenesisActiveValidatorCount-ag2*) ;; #L169
+(defconst *subnet-subnetWeight-ag2* (/ *activeValidators-ag2* *AttestationSubnetCount-ag2*)) ;; #L122
+(defconst *subnet-minimumWeight-ag2* (/ *subnet-subnetWeight-ag2* 50)) ;; #L123
+(defconst *subnet-numsPerSlot-ag2* (floor *subnet-subnetWeight-ag2* *slots-per-epoch-ag2*)) ;; #L124
+(defconst *subnet-comsPerSlot-ag2* *comm-count-per-slot-ag2*) ;; #L125
+(defconst *subnet-exceedsThreshold-ag2*
+  (>= *subnet-comsPerSlot-ag2*
+      (* 2 (/ *AttestationSubnetCount-ag2* *slots-per-epoch-ag2*)))) ;; #L126
+(defconst *subnet-firstDecay-ag2* (if *subnet-exceedsThreshold-ag2* 4 1)) ;; #L127, 130
+(defconst *subnet-meshDecay-ag2* (if *subnet-exceedsThreshold-ag2* 16 4)) ;; #L128, 131
 
-(defconst *eth-default-block-weights*
+(defconst *eth-default-block-weights-ag2*
   (weights (/ 324 10000)  ;; w_1  = time in mesh weight                (#L78)
            1              ;; w_2  = first message deliveries weight    (#L81)
            (/ -717 1000)  ;; w_3  = mesh message deliveries weight     (#L84)
@@ -101,9 +101,9 @@
            (- -35 (/ 11 100))   ;; w_6  = IP-co-location factor weight (#L44, global)
            (- -15 (/ 92 100)))) ;; w_7 = behavioral penalty weight     (#L47, global)
 
-(check= t (weightsp *eth-default-block-weights*))
+(check= t (weightsp *eth-default-block-weights-ag2*))
 
-(defconst *eth-default-agg-weights*
+(defconst *eth-default-agg-weights-ag2*
   (weights (/ 324 10000) ;; w_1  = time in mesh weight              (#L101)
            (/ 128 1000)  ;; w_2  = first message deliveries weight  (#L104)
            (/ -64 1000)  ;; w_3  = mesh message deliveries weight   (#L107)
@@ -113,9 +113,9 @@
            (- -35 (/ 11 100))   ;; w_6  = IP-co-location factor weight (#L44, global)
            (- -15 (/ 92 100)))) ;; w_7 = behavioral penalty weight     (#L47, global)
 
-(check= t (weightsp *eth-default-agg-weights*))
+(check= t (weightsp *eth-default-agg-weights-ag2*))
 
-(defconst *eth-default-agg-subnet-weights*
+(defconst *eth-default-agg-subnet-weights-ag2*
   (weights (/ 324 10000) ;; w_1 = time in mesh weight                  (#L134)
            (/ 955 1000)  ;; w_2 = first message deliveries weight      (#L138)
            (- -37 (/ 55 100)) ;; w_3  = mesh message deliveries weight (#L141)
@@ -125,39 +125,39 @@
            (- -35 (/ 11 100))   ;; w_6  = IP-co-location factor weight (#L44, global)
            (- -15 (/ 92 100)))) ;; w_7 = behavioral penalty weight     (#L47, global)
 
-(check= t (weightsp *eth-default-agg-subnet-weights*))
+(check= t (weightsp *eth-default-agg-subnet-weights-ag2*))
 
 ;; ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/beacon-chain/p2p/gossip_scoring_params.go#L162
 ;; (definecd scoreDecay(x :non-neg-rational) :non-neg-rational
 ;;   (b* (((when (= x 0)) 0)
 ;;        (numOfTimes (/ x *slot-duration*)))
 ;;     3/4))
-;;     ;;(expt *decayToZero* (floor 1 numOfTimes))))
+;;     ;;(expt *decayToZero-ag2* (floor 1 numOfTimes))))
 
 ;; Currently failing ...
-(defconst *eth-default-block-params*
+(defconst *eth-default-block-params-ag2*
   (params 4               ;; activationWindow    : #L89 aka MeshMessageDeliveriesActivation
-	  *slot-duration* ;; meshTimeQuantum     : #L79
+	  *slot-duration-ag2* ;; meshTimeQuantum     : #L79
 	  23              ;; p2cap               : #L83 aka FirstMessageDeliveriesCap
 	  300             ;; timeQuantaInMeshCap : #L80
-	  (* *blocks-per-epoch*
-	     *decay-epoch*) ;; meshMessageDeliveriesCap : #L86
+	  (* *blocks-per-epoch-ag2*
+	     *decay-epoch-ag2*) ;; meshMessageDeliveriesCap : #L86
 	  ;; meshMessageDeliveriesThreshold             : #L87
-	  (/ (* *blocks-per-epoch* *decay-epoch*) 10)
-	  *topicCap*        ;; topiccap          : #L39 (global)
+	  (/ (* *blocks-per-epoch-ag2* *decay-epoch-ag2*) 10)
+	  *topicCap-ag2*        ;; topiccap          : #L39 (global)
 	  -16000            ;; greyListThreshold : #L33 (global)
 	  8                 ;; d                 : BC #L120
 	  6                 ;; dlow              : BC #L119
 	  12                ;; dhigh             : default in gossipsub.go
 	  6                 ;; dlazy             : default in gossipsub.go
-	  *hbmInterval* ;; hbmInterval (aka HeartbeatInterval) : BC #L118
+	  *hbmInterval-ag2* ;; hbmInterval (aka HeartbeatInterval) : BC #L118
 	  60 ;; fanoutTTL (defaults to GossipSubFanoutTTL) : default in gossipsub.go
 	  ;; mcacheLen (aka GossipSubHistoryLength) (see below)
-	  (if *enable-larger-gossip-history* 12 6) ;; BC #L122, 130, 131
+	  (if *enable-larger-gossip-history-ag2* 12 6) ;; BC #L122, 130, 131
 	  ;; mcacheGsp (aka GossipFactor) (defaults to GossipSubGossipFactor)
           ;; (see below)
 	  (/ 1 1) ;; default in gossipsub.go
-	  (* 500 *hbmInterval*) ;; seenTTL       : BC #L124
+	  (* 500 *hbmInterval-ag2*) ;; seenTTL       : BC #L124
 	  ;; https://github.com/silesiacoin/prysm-spike/blob/
 	  ;; d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/beacon-chain/p2p/gossip_scoring_params.go#L35
 	  5 ;; opportunisticGraftThreshold
@@ -166,7 +166,7 @@
 	  ;; https://github.com/silesiacoin/prysm-spike/blob/d5ac70f0406b445a276ee61ba10fdf0eb6aafa0f/
 	  ;;     beacon-chain/p2p/gossip_scoring_params.go#L73
 	  ;;
-	  *beaconBlockWeight*
+	  *beaconBlockWeight-ag2*
 	  ;; MeshMessageDeliveriesDecay = scoreDecay(decayEpoch * oneEpochDuration)
 	  398/1000
 	  ;; FirstMessageDeliveriesDecay = scoreDecay(20 * oneEpochDuration)
@@ -176,72 +176,72 @@
 	  398/1000
 	  ;; InvalidMessageDeliveriesDecay = scoreDecay(50 * oneEpochDuration)
 	  912/1000
-	  *decayToZero* ;; decayToZero
-	  *slot-duration* ;; decayInterval
+	  *decayToZero-ag2* ;; decayToZero
+	  *slot-duration-ag2* ;; decayInterval
 	  ))
 
-(check= t (paramsp *eth-default-block-params*))
+(check= t (paramsp *eth-default-block-params-ag2*))
 
-(defconst *eth-default-aggregate-params*
-  (params (* 32 *slot-duration*) ;; activationWindow               : #L112
-	  *slot-duration*        ;; meshTimeQuantum                : #L102
+(defconst *eth-default-aggregate-params-ag2*
+  (params (* 32 *slot-duration-ag2*) ;; activationWindow               : #L112
+	  *slot-duration-ag2*        ;; meshTimeQuantum                : #L102
 	  179                    ;; p2cap                          : #L106
 	  300                    ;; timeQuantaInMeshCap            : #L103
-	  *agg-per-epoch*        ;; meshMessageDeliveriesCap       : #L109
-	  (/ *agg-per-epoch* 50) ;; meshMessageDeliveriesThreshold : #L110
-	  *topicCap*             ;; topicCap,          see above (global)
+	  *agg-per-epoch-ag2*        ;; meshMessageDeliveriesCap       : #L109
+	  (/ *agg-per-epoch-ag2* 50) ;; meshMessageDeliveriesThreshold : #L110
+	  *topicCap-ag2*             ;; topicCap,          see above (global)
 	  -16000                 ;; greyListThreshold, see above (global)
 	  8                      ;; d                                   : BC #L120
 	  6                      ;; dlow                                : BC #L119
 	  12                     ;; dhigh                               : default in gossipsub.go
 	  6                      ;; dlazy                               : default in gossipsub.go
-	  *hbmInterval*          ;; hbmInterval (aka HeartbeatInterval) : BC #L118
+	  *hbmInterval-ag2*          ;; hbmInterval (aka HeartbeatInterval) : BC #L118
 	  60                     ;; fanoutTTL (defaults to GossipSubFanoutTTL) : default in gossipsub.go
 	  ;; mcacheLen (aka GossipSubHistoryLength) (see below)
-	  (if *enable-larger-gossip-history* 12 6) ;; BC #L122, 130, 131
+	  (if *enable-larger-gossip-history-ag2* 12 6) ;; BC #L122, 130, 131
 	  ;; mcacheGsp (aka GossipFactor) (defaults to GossipSubGossipFactor)
           ;; (see below)
           ;; TODO : clarify gossipfactor
 	  (/ 1 1) ;; default in gossipsub.go
-	  (* 500 *hbmInterval*) ;; seenTTL : BC #L124
+	  (* 500 *hbmInterval-ag2*) ;; seenTTL : BC #L124
 	  5 ;; opportunisticGraftThreshold
-	  *aggregateWeight* ;; topicWeight = aggregateWeight       #L100
+	  *aggregateWeight-ag2* ;; topicWeight = aggregateWeight       #L100
 	  1/100 ;; MeshMessageDeliveriesDecay  = scoreDecay(1 epoch) #L108
 	  1/100 ;; FirstMessageDeliveriesDecay = scoreDecay(1 epoch) #L105
 	  63/100 ;; behaviourPenaltyDecay
 	  1/100 ;; MeshFailurePenaltyDecay     = scoreDecay(1 epoch) #L114
 	  912/1000 ;; InvalidMessageDeliveriesDecay = scoreDecay(50 epochs) #L116
-	  *decayToZero*
-	  *slot-duration*
+	  *decayToZero-ag2*
+	  *slot-duration-ag2*
 	  ))
 
-(check= t (paramsp *eth-default-aggregate-params*))
+(check= t (paramsp *eth-default-aggregate-params-ag2*))
 
-(defconst *eth-default-aggregate-subnet-params*
-  (params (* 17 *slot-duration*) ;; activationWindow               : #L146
-	  *subnet-numsPerSlot*   ;; meshTimeQuantum                : #L136
+(defconst *eth-default-aggregate-subnet-params-ag2*
+  (params (* 17 *slot-duration-ag2*) ;; activationWindow               : #L146
+	  *subnet-numsPerSlot-ag2*   ;; meshTimeQuantum                : #L136
 	  24                     ;; p2cap                          : #L140
 	  300                    ;; timeQuantaInMeshCap            : #L137
-	  *subnet-subnetWeight*  ;; meshMessageDeliveriesCap       : #L143
-	  *subnet-minimumWeight* ;; meshMessageDeliveriesThreshold : #L144
-	   *topicCap*             ;; topicCap,          see above (global)
+	  *subnet-subnetWeight-ag2*  ;; meshMessageDeliveriesCap       : #L143
+	  *subnet-minimumWeight-ag2* ;; meshMessageDeliveriesThreshold : #L144
+	   *topicCap-ag2*             ;; topicCap,          see above (global)
 	  -16000                 ;; greyListThreshold, see above (global)
 	  8                      ;; d                                   : BC #L120
 	  6                      ;; dlow                                : BC #L119
 	  12                     ;; dhigh                               : default in gossipsub.go
 	  6                      ;; dlazy                               : default in gossipsub.go
-	  *hbmInterval*          ;; hbmInterval (aka HeartbeatInterval) : BC #L118
+	  *hbmInterval-ag2*          ;; hbmInterval (aka HeartbeatInterval) : BC #L118
 	  60                     ;; fanoutTTL (defaults to GossipSubFanoutTTL) : default in gossipsub.go
 	  ;; mcacheLen (aka GossipSubHistoryLength) (see below)
-	  (if *enable-larger-gossip-history* 12 6) ;; BC #L122, 130, 131
+	  (if *enable-larger-gossip-history-ag2* 12 6) ;; BC #L122, 130, 131
 	  ;; mcacheGsp (aka GossipFactor) (defaults to GossipSubGossipFactor)
           ;; (see below)
           ;; TODO
 	  (/ 1 1) ;; default in gossipsub.go
-	  (* 500 *hbmInterval*) ;; seenTTL : BC #L124
+	  (* 500 *hbmInterval-ag2*) ;; seenTTL : BC #L124
 	  5 ;; OpportunisticGraftThreshold
 	  ;; TODO: MeshMessageDeliveriesWindow   = 2 seconds                           #L145
-	  *subnet-topicWeight*  ;; topicWeight   = *subnet-topicWeight*                      #L134
+	  *subnet-topicWeight-ag2*  ;; topicWeight   = *subnet-topicWeight*                      #L134
 	  ;; MeshMessageDeliveriesDecay    = scoreDecay(*subnet-meshDecay* x 1 epoch)  #L142
 	  749/1000
 	  ;; FirstMessageDeliveriesDecay   = scoreDecay(*subnet-firstDecay* x 1 epoch) #L139
@@ -251,66 +251,65 @@
 	  749/1000
 	  ;; InvalidMessageDeliveriesDecay = scoreDecay(50 epochs)                     #L150
 	  912/1000
-	  *decayToZero*
-	  *slot-duration*
+	  *decayToZero-ag2*
+	  *slot-duration-ag2*
 	  ))
 
-(check= t (paramsp *eth-default-aggregate-subnet-params*))
+(check= t (paramsp *eth-default-aggregate-subnet-params-ag2*))
 
-(defconst *eth-twp*
-  `((AGG . (,*eth-default-agg-weights* . ,*eth-default-aggregate-params*))
-    (BLOCKS . (,*eth-default-block-weights* . ,*eth-default-block-params*))
+(defconst *eth-twp-ag2*
+  `((AGG . (,*eth-default-agg-weights-ag2* . ,*eth-default-aggregate-params-ag2*))
+    (BLOCKS . (,*eth-default-block-weights-ag2* . ,*eth-default-block-params-ag2*))
     ;; We can have 0 or more subnet aggregator topics.  For now, let's assume 3.
-    (SUB1 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB10 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB11 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB12 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB2 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB3 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB4 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB5 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB6 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB7 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB8 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
-    (SUB9 . (,*eth-default-agg-subnet-weights*
-             . ,*eth-default-aggregate-subnet-params*))
+    (SUB1 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB10 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB11 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB12 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB2 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB3 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB4 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB5 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB6 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB7 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB8 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
+    (SUB9 . (,*eth-default-agg-subnet-weights-ag2*
+             . ,*eth-default-aggregate-subnet-params-ag2*))
     ))
 
-(check= t (twpp *eth-twp*))
+(check= t (twpp *eth-twp-ag2*))
 
 
-
+#|
 ;; Gadget test
 (time$
  (b* ((ticks 100)
       (attacktopics '(SUB1 SUB2 SUB3))
-      (alltopics '(AGG BLOCKS SUB1 SUB2 SUB3 SUB4 SUB5 SUB6 SUB7 SUB8 SUB9
+      (alltopics-ag2 '(AGG BLOCKS SUB1 SUB2 SUB3 SUB4 SUB5 SUB6 SUB7 SUB8 SUB9
  SUB10 SUB11 SUB12))
       (grp (initialize-group-of-meshpeers '(A B)
                                           '(A B)
-                                          alltopics
+                                          alltopics-ag2
                                           100))
-      (evnts (emit-evnts-ticks 'A 'B alltopics attacktopics 20 0 18 ticks)))
+      (evnts (emit-evnts-ticks 'A 'B alltopics-ag2 attacktopics 20 0 18 ticks)))
     (eth-attack-violations grp evnts 'A 'B attacktopics (* 10 (len evnts))
-                           *eth-twp* 42 nil)))
+                           *eth-twp-ag2* 42 nil)))
 
-
+|#
 
 
 
 ;; we will now create an eclipse attack
-
 (skip-proofs
  ;; emit attack events from p1 to p2, in the attacked topic top
  (definecd emit-evnts-ps (ps :lop p2 :peer ts ats :lot n m elapsed :nat)
@@ -322,68 +321,8 @@
 		 (emit-meshmsgdeliveries-peer-topics p p2 ats m)
 		 (emit-evnts-ps rst p2 ts ats n m elapsed))))))
 
-(skip-proofs
-;; emit attack events from p1 to p2, in the attacked topic top
- (definecd emit-evnts-eclipse (ps :lop p2 :peer ts ats :lot n m elapsed :nat
-				  ticks :nat)
-   :loev
-   (app (emit-evnts-ps ps p2 ts ats n m elapsed)
-	(if (<= (- ticks elapsed) 0)
-           nil
-         (emit-evnts-eclipse ps p2 ts ats n m elapsed (- ticks elapsed))))))
-
-(set-ignore-ok t)
-(time$
- (b* ((ticks 100)
-      (attacktopics '(SUB1 SUB2 SUB3))
-      (alltopics '(AGG BLOCKS SUB1 SUB2 SUB3 SUB4 SUB5 SUB6 SUB7 SUB8 SUB9
- SUB10 SUB11 SUB12))
-      (grp (initialize-group-of-meshpeers '(A B V)
-                                          '(A B V)
-                                          alltopics
-                                          100))
-      (evnts (emit-evnts-eclipse '(A B) 'V alltopics attacktopics 20 0 18 ticks)))
-    (eth-attack-violations grp evnts 'A 'V attacktopics (* 1 (len evnts))
-                           *eth-twp* 42 nil)))
-
-(time$
- (b* ((ticks 100)
-      (attacktopics '(SUB1 SUB2 SUB3))
-      (alltopics '(AGG BLOCKS SUB1 SUB2 SUB3 SUB4 SUB5 SUB6 SUB7 SUB8 SUB9
- SUB10 SUB11 SUB12))
-      (grp (initialize-group-of-meshpeers '(A B V)
-                                          '(A B V)
-                                          alltopics
-                                          100))
-      (evnts (emit-evnts-eclipse '(A B) 'V alltopics attacktopics 20 0 18 ticks)))
-    (eth-attack-violations grp evnts 'B 'V attacktopics (* 1 (len evnts))
-                           *eth-twp* 42 nil)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#|
+"Some Tests with different network configurations"
 ;; attack on goerli network
 ; 43.51 seconds realtime, 37.49 seconds runtime
 ; (107,992,054,352 bytes allocated).
@@ -396,12 +335,12 @@
                                                   (topics)
                                                   100)
                    *goerli*
-                   (alltopics)))
-      (evnts (emit-evnts-ticks 'P222 'P834 (alltopics)
+                   (alltopics-ag2)))
+      (evnts (emit-evnts-ticks 'P222 'P834 (alltopics-ag2)
                                attacktopics 20 0 18 ticks)))
    ;; P222 is attacker, P834 is observer who records violations
-   (eth-attack-violations grp evnts 'P222 'P834 attacktopics (* 10 (len evnts))
-                          *eth-twp* 42 nil)))
+   (eth-attack-violations grp evnts evnts 'P222 'P834 attacktopics (* 10 (len evnts))
+                          *eth-twp-ag2* 42 nil)))
 
 
 ;; attack on rinkeby network
@@ -416,12 +355,12 @@
                                                   (topics)
                                                   100)
                    *rinkeby*
-                   (alltopics)))
-      (evnts (emit-evnts-ticks 'P256 'P436 (alltopics)
+                   (alltopics-ag2)))
+      (evnts (emit-evnts-ticks 'P256 'P436 (alltopics-ag2)
                                attacktopics 20 0 18 ticks)))
    ;; P222 is attacker, P834 is observer who records violations
-   (eth-attack-violations grp evnts 'P256 'P436 attacktopics (* 10 (len evnts))
-                          *eth-twp* 42 nil)))
+   (eth-attack-violations grp evnts evnts 'P256 'P436 attacktopics (* 10 (len evnts))
+                          *eth-twp-ag2* 42 nil)))
 
 
 ;; attack on ropsten network
@@ -436,9 +375,10 @@
                                                   (topics)
                                                   100)
                    *ropsten*
-                   (alltopics)))
-      (evnts (emit-evnts-ticks 'P256 'P448 (alltopics)
+                   (alltopics-ag2)))
+      (evnts (emit-evnts-ticks 'P256 'P448 (alltopics-ag2)
                                attacktopics 20 0 18 ticks)))
    ;; P222 is attacker, P834 is observer who records violations
-   (eth-attack-violations grp evnts 'P256 'P448 attacktopics (* 10 (len evnts))
-                          *eth-twp* 42 nil)))
+   (eth-attack-violations grp evnts evnts 'P256 'P448 attacktopics (* 10 (len evnts))
+                          *eth-twp-ag2* 42 nil)))
+|#
