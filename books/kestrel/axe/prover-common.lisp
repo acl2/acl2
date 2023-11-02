@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -756,7 +756,7 @@
 ;;            )
 ;;       (mv expr dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;     (if (variablep expr) ; BOZO this matches a nodenum too.  is that an error here?
-;;         (let ((possible-index (lookup-eq expr dag-variable-alist))) ;BOZO use hashing?
+;;         (let ((possible-index (lookup-in-dag-variable-alist expr dag-variable-alist))) ;BOZO use hashing?
 ;;           (if possible-index
 ;;               ;; if it's already present...
 ;;               (mv possible-index dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -767,7 +767,7 @@
 ;;                 dag-parent-array
 ;;                 dag-constant-alist
 ;;                 (if (not dont-add-permanently)
-;;                     (acons expr dag-len dag-variable-alist)
+;;                     (add-to-dag-variable-alist expr dag-len dag-variable-alist)
 ;;                   dag-variable-alist))))
 ;;       (if (all-consp (fargs expr)) ;; "constant" case
 ;;           (let ((possible-index (lookup-equal expr dag-constant-alist))) ;BOZO use hashing?
