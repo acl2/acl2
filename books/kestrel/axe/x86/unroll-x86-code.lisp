@@ -146,6 +146,7 @@
          ;;                       (cw ")~%"))))
          ((mv erp dag-or-quote state)
           (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                          :exhaustivep t
                           :rules rules ; todo: don't make the rule-alist each time
                           :assumptions assumptions
                           :monitor rules-to-monitor
@@ -336,7 +337,7 @@
                                  (lifter-rules32-new))
                        (append (lifter-rules64)
                                (lifter-rules64-new))))
-       (rules (append extra-rules lifter-rules))
+       (rules (append extra-rules lifter-rules)) ; todo: use union?
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
             (and non-existent-remove-rules
                  (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
@@ -356,15 +357,16 @@
                                      nil
                                    ;; needed to match the normal forms used during lifting:
                                    (lifter-rules64-new))))
-       ((mv erp rule-alist)
+       ((mv erp assumption-rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil state))
-       ;; TODO: Option to turn this off, or to do just one pass
+       ;; TODO: Option to turn this off, or to do just one pass:
        ((mv erp assumptions state)
-        (acl2::simplify-terms-repeatedly ;; simplify-terms-using-each-other
+        (acl2::simplify-terms-repeatedly
          assumptions
-         rule-alist
+         assumption-rule-alist
          rules-to-monitor
+         nil ; don't memoize (avoids time spent making empty-memoizations)
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))

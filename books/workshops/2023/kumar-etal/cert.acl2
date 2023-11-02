@@ -10,6 +10,9 @@
 
 #+acl2-par
 (set-parallel-execution nil)
+(include-book "acl2s/ccg/ccg" :dir :system :ttags :all)
+(include-book "acl2s/custom" :dir :system :ttags :all)
+(acl2s-common-settings)
 
 (in-package "ACL2S")
 (acl2s-defaults :set testing-enabled nil)

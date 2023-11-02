@@ -1,7 +1,7 @@
 ; Rules mentioned in rule-lists.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -47,9 +47,13 @@
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/len" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
+(include-book "kestrel/lists-light/take2" :dir :system)
+(include-book "kestrel/lists-light/subrange" :dir :system)
+(include-book "kestrel/lists-light/repeat-tail" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/cons" :dir :system)
 (include-book "kestrel/lists-light/rules" :dir :system) ; for CONS-EQUAL-REWRITE-CONSTANT-VERSION
+(include-book "kestrel/lists-light/rules2" :dir :system) ;for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/lists-light/union-equal" :dir :system)  ;for UNION-EQUAL-OF-NIL-ARG1
 ;(include-book "kestrel/alists-light/assoc-equal" :dir :system) ;only needed by axe prover?
@@ -61,6 +65,7 @@
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "rule-lists")
 (include-book "kestrel/utilities/mv-nth" :dir :system)
+(include-book "kestrel/utilities/fix" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; why?
 

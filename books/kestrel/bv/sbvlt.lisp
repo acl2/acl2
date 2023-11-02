@@ -476,7 +476,7 @@
 
 ;todo: gen the 0
 (defthm sbvlt-unique-weaken
-  (implies (and (syntaxp (acl2::want-to-weaken (sbvlt 32 i 0)))
+  (implies (and (syntaxp (want-to-weaken (sbvlt 32 i 0)))
                 (not (sbvlt 32 0 i)))
            (equal (sbvlt 32 i 0)
                   (not (equal 0 (bvchop 32 i)))))

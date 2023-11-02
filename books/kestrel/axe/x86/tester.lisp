@@ -31,6 +31,32 @@
 (acl2::ensure-rules-known (extra-tester-lifting-rules))
 (acl2::ensure-rules-known (tester-proof-rules))
 
+(local (in-theory (disable read-run-time
+                           get-real-time)))
+
+;move
+(defthm rationalp-of-mv-nth-0-of-read-run-time
+  (rationalp (mv-nth 0 (read-run-time state)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable read-run-time))))
+
+;move
+(defthm rationalp-of-mv-nth-0-of-get-real-time
+  (rationalp (mv-nth 0 (get-real-time state)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable get-real-time))))
+
+;; Returns (mv time-difference state).  Rounds up to the next second.
+(defun real-time-since (start-real-time state)
+  (declare (xargs :guard (rationalp start-real-time)
+                  :stobjs state))
+  (mv-let (now state)
+    (get-real-time state)
+    (mv (ceiling (- now start-real-time) 1)
+        state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: Parens in output may not be balanced?
 
 ;; TODO: move this stuff to mach-o-tools.lisp:
@@ -202,33 +228,7 @@
                                         ',stack-slots x86)))
       nil)))
 
-;move
-(local (in-theory (disable read-run-time)))
-
-;move
-(defthm rationalp-of-mv-nth-0-of-read-run-time
-  (rationalp (mv-nth 0 (read-run-time state)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable read-run-time))))
-
-;move
-(local (in-theory (disable get-real-time)))
-
-;move
-(defthm rationalp-of-mv-nth-0-of-get-real-time
-  (rationalp (mv-nth 0 (get-real-time state)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable get-real-time))))
-
-;; Returns (mv time-difference state).  Rounds up to the next second.
-(defun real-time-since (start-real-time state)
-  (declare (xargs :guard (rationalp start-real-time)
-                  :stobjs state))
-  (mv-let (now state)
-    (get-real-time state)
-    (mv (ceiling (- now start-real-time) 1)
-        state)))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Print OK if expected, otherwise ERROR
 (defund print-test-summary-aux (result-alist)
@@ -420,7 +420,7 @@
                   (extra-tester-lifting-rules))
           ;; remove-rules:
           (append
-           '(                        ;; x86isa::gpr-sub-spec-1
+           '(;; x86isa::gpr-sub-spec-1
              ;; x86isa::gpr-sub-spec-2
              ;; x86isa::gpr-sub-spec-4
              ;; x86isa::gpr-sub-spec-8
@@ -470,7 +470,7 @@
           t ; memoizep
           rules-to-monitor
           print
-          10 ; print-base
+          10 ; print-base (todo: consider 16)
           state))
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
@@ -504,6 +504,16 @@
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
        ;; Prove the test routine always returns 1 (we pass :bit for the type):
+       (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
+                                       (append remove-rules
+                                               remove-proof-rules
+                                               ;; these can introduce boolor: todo: remove from tester-proof-rules?
+                                               ;; todo: why is boolor bad?
+                                               '(acl2::boolif-x-x-y ;drop?
+                                                 acl2::boolif-when-quotep-arg2
+                                                 acl2::boolif-when-quotep-arg3
+                                                 acl2::bvchop-of-bvshr
+                                                 acl2::bvchop-of-bvashr))))
        ((mv result info-acc
             & ; actual-dag
             & ; assumptions-given
@@ -520,20 +530,12 @@
                                    t       ; call-stp-when-pruning
                                    t ; counterexamplep
                                    nil ; print-cex-as-signedp
-                                   (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
-                                                      (append remove-rules
-                                                              remove-proof-rules
-                                                              ;; these can introduce boolor:
-                                                              '(acl2::boolif-x-x-y
-                                                                acl2::boolif-when-quotep-arg2
-                                                                acl2::boolif-when-quotep-arg3
-                                                                acl2::bvchop-of-bvshr
-                                                                acl2::bvchop-of-bvashr)))
+                                   proof-rules
                                    nil ; interpreted-fns
                                    ;; monitor:
-                                   (append '(ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?
-;bvlt-reduce-when-not-equal-one-less
-;boolif-of-bvlt-strengthen-to-equal
+                                   (append '(;ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?
+                                             ;;bvlt-reduce-when-not-equal-one-less
+                                             ;;boolif-of-bvlt-strengthen-to-equal
                                              )
                                            rules-to-monitor)
                                    t ;normalize-xors

@@ -41,7 +41,6 @@
             bvif-of-myif-arg3
             bvif-of-myif-arg4
             getbit-of-myif
-            not-equal-of-nil-and-s ;drop
             not-equal-nil-when-array-refp
             sbvlt-of-bvsx-and-0 ; todo; consider sbvlt-of-bvsx-and-0-new
             sbvlt-of-bvcat-and-0
@@ -56,6 +55,8 @@
             jvm::pop-operand-of-myif
             jvm::top-long-of-myif
             jvm::pop-long-of-myif
+            getbit-list-of-bv-array-write-too-high
+            ;map-packbv-constant-opener ; drop?
             )
           (leftrotate-intro-rules) ;; try to recognize rotation idioms when lifting
           (map-rules)
@@ -70,9 +71,6 @@
           (update-nth2-intro-rules)
           (jvm-rules-unfiled-misc)
           (more-rules-yuck) ;drop?
-          '(getbit-list-of-bv-array-write-too-high
-            ;map-packbv-constant-opener ; drop?
-            )
           (jvm-semantics-rules)
           (jvm-simplification-rules)))
 
@@ -322,5 +320,3 @@
 ;; parameter-assumptions could return a map from the names of params to their
 ;; expressions.  then the user could specify that an additional input of
 ;; interest is (:field ... x)
-
-(in-theory (disable CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER))
