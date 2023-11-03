@@ -26,7 +26,7 @@
 (defund lookup-node-in-node-result-alist (nodenum alist)
   (declare (xargs :guard (and (natp nodenum)
                               (node-result-alistp alist))))
-  (cdr (hons-assoc-equal nodenum alist)))
+  (cdr (hons-get nodenum alist)))
 
 (defthm dargp-of-lookup-node-in-node-result-alist
   (implies (and (node-result-alistp alist)
