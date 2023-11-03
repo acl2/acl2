@@ -100,11 +100,6 @@
            (EQUAL (INTEGERP ITEM)
                   (NOT (CONSP ITEM)))))
 
-(DEFTHMd natp-WHEN-DARGP
-  (IMPLIES (DARGP ITEM)
-           (EQUAL (natp ITEM)
-                  (NOT (CONSP ITEM)))))
-
 (defthmd quotep-when-dargp
   (implies (dargp item)
            (equal (quotep item)

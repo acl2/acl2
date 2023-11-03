@@ -47,7 +47,8 @@
 (include-book "hit-counts")
 (include-book "get-args-not-done")
 (include-book "tries")
-(include-book "result-array")
+;(include-book "result-array")
+(include-book "result-alist")
 (include-book "alist-suitable-for-hypsp")
 (include-book "make-substitution-code-simple")
 ;; (include-book "make-instantiation-code-simple")
@@ -184,32 +185,32 @@
                 (not (member-equal 'quote free)))
            (not (equal 'quote x))))
 
-(defthm lookup-arg-in-result-array-when-not-get-args-not-done
-  (implies (and (not (get-args-not-done args result-array-name result-array acc untagged-foundp)) ;all args are done
-;               (not (consp arg))
-                (member-equal arg args)
-                ;; (OR (CONSP ARG)
-                ;;     (< ARG
-                ;;        (ALEN1 RESULT-ARRAY-NAME RESULT-ARRAY)))
-                )
-           (lookup-arg-in-result-array arg result-array-name result-array))
-  :hints (("Goal" :in-theory (enable get-args-not-done
-                                     lookup-arg-in-result-array))))
+;; (defthm lookup-arg-in-result-array-when-not-get-args-not-done
+;;   (implies (and (not (get-args-not-done args result-array-name result-array acc untagged-foundp)) ;all args are done
+;; ;               (not (consp arg))
+;;                 (member-equal arg args)
+;;                 ;; (OR (CONSP ARG)
+;;                 ;;     (< ARG
+;;                 ;;        (ALEN1 RESULT-ARRAY-NAME RESULT-ARRAY)))
+;;                 )
+;;            (lookup-arg-in-result-array arg result-array-name result-array))
+;;   :hints (("Goal" :in-theory (enable get-args-not-done
+;;                                      lookup-arg-in-result-array))))
 
-(defthm all-dargp-of-lookup-args-in-result-array
-  (implies (and (not (get-args-not-done args result-array-name result-array acc untagged-foundp)) ;; all args are done
-                (result-arrayp result-array-name result-array bound)
-                (bounded-darg-listp args (alen1 result-array-name result-array)))
-           (all-dargp (lookup-args-in-result-array args result-array-name result-array)))
-  :hints (("Goal" :in-theory (e/d (GET-ARGS-NOT-DONE lookup-args-in-result-array) (dargp)))))
+;; (defthm all-dargp-of-lookup-args-in-result-array
+;;   (implies (and (not (get-args-not-done args result-array-name result-array acc untagged-foundp)) ;; all args are done
+;;                 (result-arrayp result-array-name result-array bound)
+;;                 (bounded-darg-listp args (alen1 result-array-name result-array)))
+;;            (all-dargp (lookup-args-in-result-array args result-array-name result-array)))
+;;   :hints (("Goal" :in-theory (e/d (GET-ARGS-NOT-DONE lookup-args-in-result-array) (dargp)))))
 
-(defthm bounded-darg-listp-of-lookup-args-in-result-array
-  (implies (and (not (get-args-not-done args2 result-array-name result-array acc untagged-foundp)) ;; all args are done
-                (subsetp-equal args args2)
-                (result-arrayp result-array-name result-array bound)
-                (bounded-darg-listp args (alen1 result-array-name result-array)))
-           (bounded-darg-listp (lookup-args-in-result-array args result-array-name result-array) bound))
-  :hints (("Goal" :in-theory (e/d (get-args-not-done lookup-args-in-result-array) (dargp)))))
+;; (defthm bounded-darg-listp-of-lookup-args-in-result-array
+;;   (implies (and (not (get-args-not-done args2 result-array-name result-array acc untagged-foundp)) ;; all args are done
+;;                 (subsetp-equal args args2)
+;;                 (result-arrayp result-array-name result-array bound)
+;;                 (bounded-darg-listp args (alen1 result-array-name result-array)))
+;;            (bounded-darg-listp (lookup-args-in-result-array args result-array-name result-array) bound))
+;;   :hints (("Goal" :in-theory (e/d (get-args-not-done lookup-args-in-result-array) (dargp)))))
 
 ;; Rules used when admitting the generated prover
 (defconst *make-prover-simple-rules*
@@ -2799,9 +2800,9 @@
                   )))
 
        ;; Rewrites the nodes in WORKLIST and all of their supporters.
-       ;; Populates RESULT-ARRAY with the nodenums/quoteps that the nodes in WORKLIST rewrote to.
-       ;; Returns (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
-       ;; RESULT-ARRAY maps nodenums to the nodenums or quoteps to which they rewrote, or nil if the node hasn't been touched.
+       ;; Populates RESULT-ALIST with the nodenums/quoteps that the nodes in WORKLIST rewrote to.
+       ;; Returns (mv erp result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+       ;; RESULT-ALIST maps nodenums to the nodenums or quoteps to which they rewrote, or nil if the node hasn't been touched.
        ;; it seems possible for a node to get pushed onto the worklist more than once, but i guess a node cannot be pushed more times than it has parents (so not exponentially many times)?
        ;; todo: watch out for equality assumptions ordered the wrong way! - will they get rewritten the wrong way?
        ;; todo: special handling for if/myif/boolif/bvif/boolor/booland?
@@ -2809,7 +2810,7 @@
        ;; todo: track polarities?
        ;; todo: use a more modern worklist algorithm where we keep the worklist sorted?
        (defund ,rewrite-nodes-name (worklist ;could track the equivs and polarities?
-                                    result-array-name result-array
+                                    result-alist
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                     rule-alist equiv-alist interpreted-function-alist
@@ -2817,8 +2818,8 @@
                                     prover-depth options count)
          (declare (xargs :guard (and (nat-listp worklist)
                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                     (result-arrayp result-array-name result-array dag-len)
-                                     (all-< worklist (alen1 result-array-name result-array))
+                                     (bounded-node-result-alistp result-alist dag-len)
+                                     ;; (all-< worklist (alen1 result-array-name result-array))
                                      (all-< worklist dag-len)
                                      (nat-listp nodenums-to-assume-false)
                                      (all-< nodenums-to-assume-false dag-len)
@@ -2845,13 +2846,13 @@
                          :measure (+ 1 (nfix count))) ;todo: improve?
                   (type (unsigned-byte 59) count))
          (if (zp-fast count)
-             (mv :count-exceeded result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+             (mv :count-exceeded result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
            (if (endp worklist)
-               (mv (erp-nil) result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+               (mv (erp-nil) result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
              (let* ((nodenum (first worklist)))
-               (if (aref1 result-array-name result-array nodenum)
+               (if (lookup-node-in-node-result-alist nodenum result-alist)
                    ;;we've already handled this node:
-                   (,rewrite-nodes-name (rest worklist) result-array-name result-array
+                   (,rewrite-nodes-name (rest worklist) result-alist
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                         rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
@@ -2862,37 +2863,37 @@
                    (if (atom expr) ;must be a variable - just see if its node needs to be replaced
                        ;; Have to use 'equal as the equiv here, unless we track equivs better, but we may do better when we analyze the parent node:
                        (let ((new-nodenum-or-quotep (maybe-replace-nodenum-using-assumption-array nodenum 'equal assumption-array assumption-array-num-valid-nodes print)))
-                         (,rewrite-nodes-name (rest worklist) result-array-name
-                                              (aset1 result-array-name result-array nodenum new-nodenum-or-quotep) ;; either rewrote to itself or a constant from an equality assumption
+                         (,rewrite-nodes-name (rest worklist)
+                                              (update-node-result-alist nodenum new-nodenum-or-quotep result-alist) ;; either rewrote to itself or a constant from an equality assumption
                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                               nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                               rule-alist
                                               equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))
                      (let ((fn (ffn-symb expr)))
                        (if (eq 'quote fn) ;; it's a quoted constant, so it rewrites to itself:
-                           (,rewrite-nodes-name (rest worklist) result-array-name
-                                                ;; update the result-array (effectively eliminates the naked constant node):
-                                                (aset1 result-array-name result-array nodenum expr)
+                           (,rewrite-nodes-name (rest worklist)
+                                                ;; update the result-alist (effectively eliminates the naked constant node):
+                                                (update-node-result-alist nodenum expr result-alist)
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                 nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                 rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count))
                          ;; Regular function call or if:
                          (let* ((args (dargs expr))
-                                (extended-worklist-or-nil (get-args-not-done args result-array-name result-array worklist nil)))
+                                (extended-worklist-or-nil (get-unmapped-dargs args result-alist worklist nil)))
                            (if extended-worklist-or-nil
                                ;; Some args are not yet done, so recur on the extended worklist (which has them added to the front).
                                ;; When the current node is processed again, some analysis will be redone but we'll be in the case below (all args done):
-                               (,rewrite-nodes-name extended-worklist-or-nil result-array-name result-array
+                               (,rewrite-nodes-name extended-worklist-or-nil result-alist
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                     rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols
                                                     case-designator prover-depth options (+ -1 count))
-                             ;; All args have entries in the result-array (but only for an equiv of 'equal):
+                             ;; All args have entries in the result-alist (but only for an equiv of 'equal):
                              (if (and (or (eq fn 'if) (eq fn 'myif))
                                       (mbe :exec (consp (cddr args)) ;should always be true
                                            :logic (< 2 (len args))))
                                  ;; It's an IF/MYIF:
-                                 (let* ((simplified-test (lookup-arg-in-result-array (first args) result-array-name result-array))
+                                 (let* ((simplified-test (lookup-darg-in-node-result-alist (first args) result-alist))
                                         ;; Possibly replace the test using an assumption (since we use 'iff as the equiv here, this may succeed even though the test has already been simplified using an equiv of 'equal):
                                         (simplified-test (if (consp simplified-test) ;check for quotep
                                                              simplified-test
@@ -2901,14 +2902,14 @@
                                    (if (consp simplified-test) ; check for quotep
                                        (if (unquote simplified-test)
                                            ;; The if-test rewrote to true, so the if rewrites to whatever its then-branch rewrote to:
-                                           (,rewrite-nodes-name (rest worklist) result-array-name
-                                                                (aset1 result-array-name result-array nodenum (lookup-arg-in-result-array (second args) result-array-name result-array))
+                                           (,rewrite-nodes-name (rest worklist)
+                                                                (update-node-result-alist nodenum (lookup-darg-in-node-result-alist (second args) result-alist) result-alist)
                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                 nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                                 rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count))
                                          ;; The if-test rewrote to false, so the if rewrites to whatever its else-branch rewrote to:
-                                         (,rewrite-nodes-name (rest worklist) result-array-name
-                                                              (aset1 result-array-name result-array nodenum (lookup-arg-in-result-array (third args) result-array-name result-array))
+                                         (,rewrite-nodes-name (rest worklist)
+                                                              (update-node-result-alist nodenum (lookup-darg-in-node-result-alist (third args) result-alist) result-alist)
                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                               nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                               rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))
@@ -2918,7 +2919,7 @@
                                             fn ; if or myif
                                             ;; btw, since simplified-test was not a cons, we know it wasn't changed by maybe-replace-nodenum-using-assumption-array, which, at least for now, can only put in a constant:
                                             (cons-with-hint simplified-test
-                                                            (lookup-args-in-result-array (rest args) result-array-name result-array) ;or just call lookup-arg-in-result-array twice?
+                                                            (lookup-dargs-in-node-result-alist (rest args) result-alist) ;or just call lookup-darg-in-node-result-alist twice?
                                                             args)
                                             'equal ; best we can do for now
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -2927,14 +2928,14 @@
                                             equiv-alist print info tries interpreted-function-alist monitored-symbols
                                             0 ;todo: think about this
                                             case-designator prover-depth options count))
-                                          ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                                       (,rewrite-nodes-name (rest worklist) result-array-name
-                                                            (aset1 result-array-name result-array nodenum new-nodenum-or-quotep)
+                                          ((when erp) (mv erp result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                                       (,rewrite-nodes-name (rest worklist)
+                                                            (update-node-result-alist nodenum new-nodenum-or-quotep result-alist)
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                             rule-alist equiv-alist interpreted-function-alist print info tries monitored-symbols case-designator prover-depth options (+ -1 count)))))
                                (if (eq fn 'boolif)
-                                   (b* ((simplified-args (lookup-args-in-result-array args result-array-name result-array))
+                                   (b* ((simplified-args (lookup-dargs-in-node-result-alist args result-alist))
                                         (expr (cons fn simplified-args)) ; todo: consider cons-with-hint here, or avoid this cons
                                         ;; (- (and (member-eq print '(:verbose! :verbose))
                                         ;;         (cw "(Rewriting node ~x0." nodenum)))
@@ -2949,21 +2950,21 @@
                                                               info tries interpreted-function-alist monitored-symbols
                                                               0 ;todo: think about this
                                                               case-designator prover-depth options (+ -1 count)))
-                                        ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                                     (,rewrite-nodes-name (rest worklist) result-array-name
-                                                          (aset1 result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
+                                        ((when erp) (mv erp result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                                     (,rewrite-nodes-name (rest worklist)
+                                                          (update-node-result-alist nodenum new-nodenum-or-quotep result-alist)
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                           nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                           rule-alist equiv-alist interpreted-function-alist print info tries
                                                           monitored-symbols case-designator prover-depth options (+ -1 count)))
                                  ;; TODO: Should we add special handling for bvif?
                                  ;; Not an any kind of IF:
-                                 (b* ((simplified-args (lookup-args-in-result-array args result-array-name result-array)) ;todo: combine this with the maybe-replace below
+                                 (b* ((simplified-args (lookup-dargs-in-node-result-alist args result-alist)) ;todo: combine this with the maybe-replace below
                                       (equivs (get-equivs 'equal fn equiv-alist))
                                       ;; we could avoid this check if we know that arities were right:
                                       ((when (and equivs ;; (not (equal :equal equivs))
                                                   (not (= (len equivs) (len simplified-args)))))
-                                       (mv :bad-equivs result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                                       (mv :bad-equivs result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                                       ;; Try to replace the args now that we may know stronger equivs than equal:
                                       (simplified-args (if equivs
                                                            (maybe-replace-args-using-assumption-array simplified-args equivs assumption-array assumption-array-num-valid-nodes print)
@@ -2984,11 +2985,11 @@
                                              ;; normal case, evaluation worked:
                                              (mv (erp-nil) t val)))))
                                       ;; I suppose we could suppress any evaluator error here if we choose to (might be a bit faster)?
-                                      ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                                      ((when erp) (mv erp result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
                                    (if evaluatedp
                                        ;; We evaluated the ground term:
-                                       (,rewrite-nodes-name (rest worklist) result-array-name
-                                                            (aset1 result-array-name result-array nodenum (enquote val)) ;; update the result-array
+                                       (,rewrite-nodes-name (rest worklist)
+                                                            (update-node-result-alist nodenum (enquote val) result-alist)
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                             rule-alist equiv-alist interpreted-function-alist print info tries
@@ -3006,9 +3007,9 @@
                                                                     equiv-alist print info tries interpreted-function-alist monitored-symbols
                                                                     0 ;todo: think about this
                                                                     case-designator prover-depth options count))
-                                          ((when erp) (mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                                       (,rewrite-nodes-name (rest worklist) result-array-name
-                                                            (aset1 result-array-name result-array nodenum new-nodenum-or-quotep) ;; update the result-array
+                                          ((when erp) (mv erp result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+                                       (,rewrite-nodes-name (rest worklist)
+                                                            (update-node-result-alist nodenum new-nodenum-or-quotep result-alist)
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                             nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                                             rule-alist equiv-alist interpreted-function-alist print info tries
@@ -3055,8 +3056,8 @@
        (defthm ,(pack$ rewrite-nodes-name '-return-type)
          (implies (and (nat-listp worklist)
                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (result-arrayp result-array-name result-array dag-len)
-                       (all-< worklist (alen1 result-array-name result-array))
+                       (bounded-node-result-alistp result-alist dag-len)
+                       ;; (all-< worklist (alen1 result-array-name result-array))
                        (all-< worklist dag-len)
                        (nat-listp nodenums-to-assume-false)
                        (all-< nodenums-to-assume-false dag-len)
@@ -3072,8 +3073,8 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        (simple-prover-optionsp options))
-                  (mv-let (erp new-result-array new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
-                    (,rewrite-nodes-name worklist result-array-name result-array
+                  (mv-let (erp new-result-alist new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
+                    (,rewrite-nodes-name worklist result-alist
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          nodenums-to-assume-false assumption-array assumption-array-num-valid-nodes
                                          rule-alist equiv-alist interpreted-function-alist
@@ -3081,10 +3082,11 @@
                                          prover-depth options count)
                     (implies (not erp)
                              (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-                                  (result-arrayp result-array-name new-result-array new-dag-len)
-                                  (array1p result-array-name new-result-array) ;avoid an issue with a free var when backchaining from array1p to result-arrayp
-                                  (equal (alen1 result-array-name new-result-array)
-                                         (alen1 result-array-name result-array))
+                                  (bounded-node-result-alistp new-result-alist new-dag-len)
+                                  (node-result-alistp new-result-alist) ;redundant
+                                  ;; (array1p result-array-name new-result-array) ;avoid an issue with a free var when backchaining from array1p to result-arrayp
+                                  ;; (equal (alen1 result-array-name new-result-array)
+                                  ;;        (alen1 result-array-name result-array))
                                   (<= dag-len new-dag-len)
                                   (info-worldp info)
                                   (triesp tries)))))
@@ -3127,7 +3129,9 @@
                                      (natp prover-depth)
                                      (symbolp result-array-name)
                                      (symbol-listp known-booleans)
-                                     (simple-prover-optionsp options))))
+                                     (simple-prover-optionsp options)))
+                  (ignore result-array-name) ; todo
+                  )
          (b* ((- (and (or (eq :verbose print) (eq :verbose! print))
                       (cw "(Rewriting literal ~x0.~%" nodenum)))
               ;; See what info this literal contributed to the assumption-array:
@@ -3140,14 +3144,14 @@
               ;; expect the raw Lisp array previously allocated in
               ;; ,rewrite-clause-name to be reused each time, since it will
               ;; always be big enough:
-              (result-array (make-empty-array result-array-name (+ 1 nodenum) ;dag-len
-                                              ))
+              ;; (result-array (make-empty-array result-array-name (+ 1 nodenum) ;dag-len
+              ;;                                 ))
+              (result-alist nil) ; will become a fast-alist
               ;; Rewrite this literal:
-              ((mv erp result-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+              ((mv erp result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                ;; TODO: would it make sense to memoize in this?
                (,rewrite-nodes-name (list nodenum)
-                                    result-array-name
-                                    result-array
+                                    result-alist
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     nodenums-to-assume-false
                                     assumption-array ; has info from all literals except this one
@@ -3158,7 +3162,8 @@
               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
               (- (and (or (eq :verbose print) (eq :verbose! print))
                       (cw "  Done rewriting literal ~x0.)~%" nodenum)))
-              (new-nodenum-or-quotep (aref1 result-array-name result-array nodenum))
+              (new-nodenum-or-quotep (lookup-node-in-node-result-alist nodenum result-alist))
+              (- (fast-alist-free result-alist)) ; removes the hash table
               ((when (not new-nodenum-or-quotep)) ;todo: prove that this can't happen
                (er hard? ',rewrite-literal-name "Literal did not rewrite to anything!")
                (mv :error nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
@@ -3186,7 +3191,7 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (symbolp result-array-name)
+                       ;; (symbolp result-array-name)
                        ;; (symbol-listp known-booleans)
                        (simple-prover-optionsp options))
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries new-assumption-array)
@@ -3206,7 +3211,8 @@
                                   (equal (alen1 'assumption-array new-assumption-array)
                                          (alen1 'assumption-array assumption-array))))))
          :hints (("Goal" :in-theory (e/d (,rewrite-literal-name
-                                          type-of-aref1-when-result-arrayp-2)
+                                          ; type-of-aref1-when-result-arrayp-2
+                                          )
                                          (natp)))))
 
        (defthm ,(pack$ rewrite-literal-name '-return-type-corollary)
@@ -3972,7 +3978,13 @@
                                  (natp)))))
 
        (verify-guards ,apply-tactic-name :hints
-         (("Goal" :in-theory (e/d (simple-prover-tacticp simple-prover-tactic-listp <-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))
+         (("Goal" :in-theory (e/d (simple-prover-tacticp simple-prover-tactic-listp <-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe
+                                                         not-equal-of-len-and-1-when-dargp
+                                                         natp-when-dargp ; trying
+                                                         )
+                                  (natp
+                                   dargp ; trying
+                                   ))
            :do-not-induct t)))
 
        (defthm ,(pack$ apply-tactic-name '-return-type-corollary-linear)

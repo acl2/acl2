@@ -98,6 +98,12 @@
            (equal (true-listp darg)
                   (consp darg))))
 
+;; can this loop?
+(defthmd natp-when-dargp
+  (implies (dargp darg)
+           (equal (natp darg)
+                  (not (consp darg)))))
+
 (deftheory dargp-rules
   '(myquotep-when-dargp
     integerp-when-dargp
