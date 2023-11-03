@@ -174,7 +174,7 @@
 (defund-inline lookup-in-dag-variable-alist (var dag-variable-alist)
   (declare (xargs :guard (and (symbolp var)
                               (dag-variable-alistp dag-variable-alist))))
-  (cdr (hons-assoc-equal var dag-variable-alist)))
+  (cdr (hons-get var dag-variable-alist)))
 
 (defthm lookup-in-dag-variable-alist-type
   (implies (dag-variable-alistp dag-variable-alist)
