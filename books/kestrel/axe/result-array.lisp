@@ -58,6 +58,17 @@
   :hints (("Goal" :use (:instance type-of-aref1-when-result-arrayp)
            :in-theory (disable type-of-aref1-when-result-arrayp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;does this already exist?
+(defund lookup-node-in-result-array (nodenum result-array-name result-array)
+  (declare (xargs :guard (and ;; (result-arrayp result-array-name result-array dag-len) ;we don't have dag-len
+                          (array1p result-array-name result-array)
+                          (natp nodenum)
+                          (< nodenum (alen1 result-array-name result-array)))))
+  (aref1 result-array-name result-array nodenum))
+
+
 ;;;
 ;;; lookup-arg-in-result-array
 ;;;
@@ -233,3 +244,14 @@
                 )
            (bounded-axe-tree-listp (lookup-args-in-result-array args result-array-name result-array) bound))
   :hints (("Goal" :in-theory (enable LOOKUP-ARGS-IN-RESULT-ARRAY))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: avoid passing in result-array-len?
+(defun update-result-array (nodenum new-nodenum-or-quotep result-array-name result-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              ; (dargp new-nodenum-or-quotep)
+                              (array1p result-array-name result-array)
+                              ;;(result-arrayp result-array-name result-array result-array-len) ; we don't have the len
+                              (< nodenum (alen1 result-array-name result-array)))))
+  (aset1 result-array-name result-array nodenum new-nodenum-or-quotep))
