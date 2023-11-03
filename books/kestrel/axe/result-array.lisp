@@ -1,7 +1,7 @@
 ; An array for tracking results of operations on nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,7 +18,7 @@
 (include-book "axe-trees")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 
-;; The result array maps nodes to either nil (no result) or a nodenum or quotep.
+;; The result array maps nodes to either nil (no result) or a darg (nodenum or quotep) less than the bound.
 ;; TODO: Compare to bounded-node-replacement-array?
 (def-typed-acl2-array2 result-arrayp
   (or (null val) ;node is not yet processed
@@ -26,13 +26,13 @@
   :extra-vars (bound)
   :extra-guards ((natp bound)))
 
-;have def-typed-acl2-array generate this
-(DEFTHM DEFAULT-WHEN-result-ARRAYP-cheap
-  (IMPLIES (result-ARRAYP ARRAY-NAME ARRAY bound)
-           (EQUAL (DEFAULT ARRAY-NAME ARRAY)
-                  NIL))
-  :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST (0)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE result-ARRAYP))))
+;todo: have def-typed-acl2-array generate this
+(defthm default-when-result-arrayp-cheap
+  (implies (result-arrayp array-name array bound)
+           (equal (default array-name array)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable result-arrayp))))
 
 (defthm result-arrayp-aux-monotone-on-bound
   (implies (and (result-arrayp-aux array-name array index free)
