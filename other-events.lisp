@@ -24395,6 +24395,7 @@
          (fn (car def))
          (cond-tail (assoc-keyword :cond trace-options))
          (cond (cadr cond-tail))
+         (cond (oneify cond nil (w *the-live-state*) nil))
          (hide-tail (assoc-keyword :hide trace-options))
          (hide (or (null hide-tail) ; default is t
                    (cadr hide-tail)))
@@ -24402,10 +24403,12 @@
                     (list 'cons (kwote fn) 'arglist)))
          (entry-msgp (trace$-value-msgp entry :entry))
          (entry (if entry-msgp (cadr entry) entry))
+         (entry (oneify entry nil (w *the-live-state*) nil))
          (exit  (or (cadr (assoc-keyword :exit  trace-options))
                     (list 'cons (kwote fn) 'values)))
          (exit-msgp (trace$-value-msgp exit :exit))
          (exit (if exit-msgp (cadr exit) exit))
+         (exit (oneify exit nil (w *the-live-state*) nil))
          (notinline-tail (assoc-keyword :notinline trace-options))
          (notinline-nil (and notinline-tail
                              (null (cadr notinline-tail))))
