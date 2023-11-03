@@ -16217,14 +16217,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (verify-termination-boot-strap make-var-lst)
 
-(defthm true-listp-take
-
-; This rule was not needed until we added verify-termination-boot-strap for
-; first-n-ac and take.
-
-  (true-listp (take n l))
-  :rule-classes :type-prescription)
-
 (encapsulate
   ()
 
