@@ -1,7 +1,7 @@
 ; Get nodenums with no result in the result-array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,9 +21,8 @@
 (include-book "bounded-dag-exprs")
 (include-book "dag-arrays") ;for pseudo-dag-arrayp-list
 
-;drop?
 ;either returns nil (no args are untagged) or extends acc with the untagged args
-;fixme something like this already exists? extend-...
+;; See also extend-with-not-done-args (different behavior when no args are untagged) and get-args-not-done-array.
 (defund get-args-not-done (args result-array-name result-array acc untagged-foundp)
   (declare (xargs :guard (and (array1p result-array-name result-array)
                               (bounded-darg-listp args (alen1 result-array-name result-array)))))
@@ -36,7 +35,7 @@
               (aref1 result-array-name result-array arg) ;it's tagged as done, so skip it
               )
           (get-args-not-done (rest args) result-array-name result-array acc untagged-foundp)
-        ;; add the arg:
+        ;; add the arg and record the fact that we found an untagged arg:
         (get-args-not-done (rest args) result-array-name result-array (cons arg acc) t)))))
 
 (defthm natp-of-maxelem-of-get-args-not-done
