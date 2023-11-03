@@ -1,7 +1,7 @@
 ; Finding likely facts to break down a proof
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -155,6 +155,7 @@
 ;;returns (mv worklist worklist-extendedp) where nodenum-worklist has been extended by any args to compute (non quoteps not marked done)
 ;; and worklist-extendedp indicates whether there were any such args
 ;rename?
+;; Could combine with get-args-not-done-array?  But this one has the array name baked in.
 (defund add-args-not-done (dargs done-nodes-array worklist worklist-extendedp)
   (declare (xargs :guard (and (array1p 'done-nodes-array done-nodes-array)
                               (bounded-darg-listp dargs (alen1 'done-nodes-array done-nodes-array)))))
