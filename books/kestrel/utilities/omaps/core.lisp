@@ -972,6 +972,11 @@
              set::empty
              set::setp))
 
+  (defrule keys-of-update*
+    (equal (keys (update* new old))
+           (set::union (keys new) (keys old)))
+    :enable update*)
+
   (defrule keys-of-restrict
     (equal (keys (restrict keys map))
            (set::intersect keys (keys map)))
