@@ -900,7 +900,7 @@
                                      (cdr (omap::in new-var new-lstate2))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
-                   omap::in-of-restrict-2
+                   omap::in-of-restrict
                    old-var-in-renaming-old-when-in-renaming)
           :disable acl2::subsetp-member
           :use ((:instance acl2::subsetp-member
@@ -1030,7 +1030,7 @@
                                      (cdr (omap::in new-var new-lstate3))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
-                   omap::in-of-restrict-2
+                   omap::in-of-restrict
                    old-var-in-renaming-old-when-in-renaming)
           :disable acl2::subsetp-member
           :use ((:instance acl2::subsetp-member
