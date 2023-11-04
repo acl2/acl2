@@ -14,14 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule consp-of-in-of-update*
-  (equal (consp (in key (update* map1 map2)))
-         (or (consp (in key map1))
-             (consp (in key map2))))
-  :enable (in update*))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled in-keys-when-in
   (implies (equal (in a m)
                   (cons a b))
