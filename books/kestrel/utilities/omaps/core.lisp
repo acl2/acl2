@@ -892,7 +892,17 @@
   (defrule restrict-when-right-empty
     (implies (empty map)
              (equal (restrict keys map) nil))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defruled in-of-restrict
+    (equal (in key (restrict keys map))
+           (and (set::in key keys)
+                (in key map))))
+
+  (defruled in-of-restrict-when-in-keys
+    (implies (set::in key keys)
+             (equal (in key (restrict keys map))
+                    (in key map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
