@@ -14,13 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule keys-of-update*
-  (equal (keys (update* new old))
-         (set::union (keys new) (keys old)))
-  :enable update*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule consp-of-in-of-update*
   (equal (consp (in key (update* map1 map2)))
          (or (consp (in key map1))
