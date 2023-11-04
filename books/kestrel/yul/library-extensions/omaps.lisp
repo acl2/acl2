@@ -14,28 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule keys-of-restrict
-  (equal (keys (restrict keys map))
-         (set::intersect keys (keys map)))
-  :enable (set::double-containment
-           set::pick-a-point-subset-strategy)
-  :prep-lemmas
-  ((defrule lemma1
-     (implies (set::in x (keys (restrict keys map)))
-              (set::in x (keys map)))
-     :enable restrict)
-   (defrule lemma2
-     (implies (set::in x (keys (restrict keys map)))
-              (set::in x keys))
-     :enable restrict)
-   (defrule lemma3
-     (implies (and (set::in x (keys map))
-                   (set::in x keys))
-              (set::in x (keys (restrict keys map))))
-     :enable restrict)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled in-of-restrict-1
   (implies (set::in key keys)
            (equal (in key (restrict keys map))
