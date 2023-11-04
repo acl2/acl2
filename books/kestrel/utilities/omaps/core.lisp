@@ -535,7 +535,7 @@
     There are no other keys in the result.")
   (cond ((empty new) (mfix old))
         (t (mv-let (new-key new-val)
-             (head new)
+               (head new)
              (update new-key new-val
                      (update* (tail new) old)))))
   :verify-guards :after-returns
@@ -654,6 +654,12 @@
     (equal (in key (update* map1 map2))
            (or (in key map1)
                (in key map2)))
+    :enable update*)
+
+  (defrule consp-of-in-of-update*
+    (equal (consp (in key (update* map1 map2)))
+           (or (consp (in key map1))
+               (consp (in key map2))))
     :enable update*)
 
   (defrule update-of-cdr-of-in-when-in
