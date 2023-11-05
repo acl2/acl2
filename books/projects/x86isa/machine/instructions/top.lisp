@@ -85,6 +85,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "pio"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "cache"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

@@ -547,6 +547,12 @@
                         :fix (nfix x))
     (:doc "</li>")
 
+    (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping lists of virtual page number, a boolean for whether we're in supervisor mode, and access type to either the physical page number (if such an entry with the given access type is allowed) or (cons :pagefault <error code>) if the access does not have a valid mapping.<br/>")
+    (tlb   :type t
+           :initially :tlb
+           :fix x)
+    (:doc "</li>")
+
     (:doc "</ul>")))
 
 (defun xdoc-x86-state (xs) ;; xs: *x86isa-state*

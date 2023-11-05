@@ -987,6 +987,15 @@
                           (equal reg 0))
                    #.*cr8*
                    reg))
+
+               ;; Clear the tlb on loads to cr3
+               (x86 (if (equal ctr-index #.*cr3*)
+                      (b* ((tlb (tlb x86))
+                           (- (fast-alist-free tlb))
+                           (x86 (!tlb :tlb x86)))
+                          x86)
+                      x86))
+
                ;; TODO: What should be done when the register is too large for
                ;; the control register? ATM, !ctri-write takes the lowest n bits
                (x86

@@ -2494,6 +2494,17 @@
 
                  (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
                                      :exec lin-addr))
+
+                      (supervisor? (equal (cpl x86) 0))
+                      (vpn (ash lin-addr -12))
+                      (tlb (tlb x86))
+                      (tlb-entry (cdr (hons-get (list vpn supervisor? r-w-x) tlb)))
+                      ((when (integerp tlb-entry)) (mv nil 
+                                                       (logapp 12 lin-addr tlb-entry)
+                                                       x86))
+
+                      ;; We didn't find a valid tlb entry
+
                       (cr0
                         ;; CR0 is still a 32-bit register in 64-bit mode.
                         (n32 (ctri *cr0* x86)))
@@ -2516,8 +2527,12 @@
                           (ash (cr3Bits->pdb cr3) 12)
                           :exec
                           (the (unsigned-byte 52)
-                               (ash (the (unsigned-byte 40) (cr3Bits->pdb cr3)) 12)))))
-                     (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
+                               (ash (the (unsigned-byte 40) (cr3Bits->pdb cr3)) 12))))
+                      ((mv flg phys-addr x86)
+                       (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
+                      ((when flg) (mv t 0 x86))
+                      (x86 (!tlb (hons-acons (list vpn supervisor? r-w-x) (ash phys-addr -12) tlb) x86)))
+                     (mv flg phys-addr x86))
 
                  (mv t 0 x86))
 
@@ -3301,7 +3316,6 @@
     (mv (list :ia32e-paging-invalid-linear-address-or-not-in-sys-view
               lin-addr)
         0 x86)))
-(profile 'la-to-pa)
 
 ;; ======================================================================
 

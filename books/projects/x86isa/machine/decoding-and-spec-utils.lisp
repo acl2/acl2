@@ -1993,8 +1993,7 @@ reference made from privilege level 3.</blockquote>"
                           '(,name))
 
           ,@(and thms
-                 `(,@thms)))
-          (profile ',name))
+                 `(,@thms))))
 
     nil))
 

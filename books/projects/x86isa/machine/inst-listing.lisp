@@ -2377,8 +2377,6 @@
           'NIL
           '((:UD (UD-LOCK-USED))
             (:GP (GP-CPL-NOT-0))))
-    ;; This instruction invalidates the TLB
-    ;; cache. We have no caches, so this is a NOP
     (INST "INVLPG"
           (OP :OP #xF01
               :REG #x7
@@ -2386,7 +2384,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           (ARG :OP1 '(M B))
-          '(X86-TWO-BYTE-NOP)
+          '(X86-INVLPG)
           '((:UD (UD-LOCK-USED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))
             (:GP (GP-CPL-NOT-0))))
