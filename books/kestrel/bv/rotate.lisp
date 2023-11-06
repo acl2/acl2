@@ -322,13 +322,11 @@
   (implies (natp amt)
            (equal (rightrotate32 amt val)
                   (leftrotate32 (bvminus 5 0 amt) val)))
-  :hints (("Goal" :in-theory (e/d (bvminus rightrotate32
+  :hints (("Goal" :in-theory (enable bvminus rightrotate32
                                      leftrotate32
                                      leftrotate
                                      rightrotate
-                                     MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                     )
-                                  ()))))
+                                     mod-of-expt-of-2-constant-version))))
 
 (defthm leftrotate32-of-leftrotate32
   (implies (and (natp k1)

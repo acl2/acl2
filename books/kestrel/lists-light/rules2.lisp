@@ -938,7 +938,7 @@
                 (natp m))
            (equal (append (firstn m x) (subrange m n x))
                   (firstn (+ 1 n) x)))
-  :hints (("Goal" :in-theory (e/d (subrange) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 ;; (defthm append-of-final-cdr-arg1
 ;;   (equal (append (LIST::FINALCDR x) y)

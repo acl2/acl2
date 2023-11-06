@@ -324,8 +324,7 @@
   (implies (integerp x)
            (equal (logtail 1 (+ 1 (* 2 x)))
                   x))
-  :hints (("Goal" :in-theory (e/d (logtail)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable logtail))))
 
 (defthm <-of-logtail-arg1
   (implies (and (integerp i)

@@ -54,4 +54,4 @@
 ;; (defthm all->-of-reverse-list
 ;;   (equal (all-> (reverse-list x) a)
 ;;          (all-> x a))
-;;   :hints (("Goal" :in-theory (e/d (all-> reverse-list) ()))))
+;;   :hints (("Goal" :in-theory (enable all-> reverse-list))))

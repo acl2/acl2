@@ -66,7 +66,7 @@
   (implies (equal len (len x))
            (equal (equal (bvchop 8 (car x)) (bv-array-read 8 len 0 x))
                   t))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthm bv-array-read-of-bvchop-helper
   (implies (and (<= m n)
@@ -144,17 +144,17 @@
   (implies (< 0 index) ;prevents loops (could also do a syntactic check against '0 but not for axe?)
            (equal (bv-array-read element-size 1 index data)
                   (bv-array-read element-size 1 0 data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthm bv-array-read-of-nil
   (equal (bv-array-read width len index nil)
          0)
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthm bv-array-read-of-0-arg2
   (equal (bv-array-read size 0 index data)
          0)
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthmd bv-array-read-shorten-core
   (implies (and (unsigned-byte-p isize index)
@@ -243,8 +243,7 @@
                 )
            (equal (equal (bvchop 8 (nth n data)) (bv-array-read 8 16 n data))
                   t))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-when-i-is-not-an-integer))))
 
 ;rename and gen
 (defthm equal-of-bvchop-and-bv-array-read-gen

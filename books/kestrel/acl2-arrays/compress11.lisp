@@ -105,5 +105,4 @@
                       (assoc-equal index l)))))
   :hints (("Goal" :use (assoc-equal-of-compress11-too-high
                         (:instance assoc-equal-of-compress11))
-           :in-theory (e/d ()
-                           (assoc-equal)))))
+           :in-theory (disable assoc-equal))))

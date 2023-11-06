@@ -94,9 +94,8 @@
                 (natp highsize))
            (equal (bvand size (bvcat highsize highval lowsize lowval) y)
                   (bvand size (bvcat (- size lowsize) highval lowsize lowval) y)))
-  :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
-                                         bvchop-of-logapp-bigger)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
+                                     bvchop-of-logapp-bigger))))
 
 (defthm bvand-of-bvcat-tighten-arg3
   (implies (and (< size (+ lowsize highsize))
@@ -106,9 +105,8 @@
                 (natp highsize))
            (equal (bvand size x (bvcat highsize highval lowsize lowval))
                   (bvand size x (bvcat (- size lowsize) highval lowsize lowval))))
-  :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
-                                         bvchop-of-logapp-bigger)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
+                                     bvchop-of-logapp-bigger))))
 
 (defthmd bvand-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?

@@ -252,9 +252,8 @@
                   (empty-eval body (append (pairlis$ formals (empty-eval-list actuals a))
                                            a))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (make-lambda-application-simple
-                            intersection-equal-of-set-difference-equal-when-subsetp-equal)
-                           ()))))
+           :in-theory (enable make-lambda-application-simple
+                              intersection-equal-of-set-difference-equal-when-subsetp-equal))))
 
 ;true of any evaluator
 ;move or drop?

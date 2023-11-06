@@ -324,8 +324,7 @@
            (<= (alen1 array-name array)
                (alen1 array-name (maybe-expand-array array-name array index))))
   :rule-classes (:rewrite (:linear :trigger-terms ((alen1 array-name (maybe-expand-array array-name array index)))))
-  :hints (("Goal" :in-theory (e/d (maybe-expand-array-rewrite expand-array
-                                                        array1p-rewrite) ()))))
+  :hints (("Goal" :in-theory (enable maybe-expand-array-rewrite expand-array array1p-rewrite))))
 
 (defthm aref1-of-maybe-expand-array-small
   (implies (and (<= index2 (alen1 array-name array))
@@ -363,21 +362,19 @@
                 (natp index))
            (equal (alen1 array-name (aset1-expandable array-name array index val))
                   (alen1 array-name (maybe-expand-array array-name array index))))
-  :hints (("Goal" :in-theory (e/d (maybe-expand-array aset1-expandable aset1)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable maybe-expand-array aset1-expandable aset1))))
 
 (defthm <=-of-alen1-of-maybe-expand-array-and-max
   (implies (<= (alen1 array-name array) 2147483646)
            (<= (alen1 array-name (maybe-expand-array array-name array index)) 2147483646))
   :hints (("Goal" :in-theory (enable maybe-expand-array expand-array))))
 
-;; (defthm dimensions-of-aset1-expandable
-;;   (implies (and ;(array1p array-name array)
-;;                 (natp index))
-;;            (equal (dimensions array-name (aset1-expandable array-name array index val))
-;;                   (dimensions array-name (maybe-expand-array array-name array index))))
-;;   :hints (("Goal" :in-theory (e/d (maybe-expand-array aset1-expandable aset1)
-;;                                   ()))))
+(defthm dimensions-of-aset1-expandable
+  (implies (and ;(array1p array-name array)
+                (natp index))
+           (equal (dimensions array-name (aset1-expandable array-name array index val))
+                  (dimensions array-name (maybe-expand-array array-name array index))))
+  :hints (("Goal" :in-theory (enable maybe-expand-array aset1-expandable aset1))))
 
 ;;;
 ;;; aref1-expandable

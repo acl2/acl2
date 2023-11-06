@@ -196,7 +196,7 @@
                        (equal (nthcdr (+ 1 n) x)
                               (nthcdr (+ 1 n) y)))))
   :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
-           :in-theory (e/d (update-nth) ()))))
+           :in-theory (enable update-nth))))
 
 (defthm update-nth-of-take-of-+-of-1-same
   (implies (and (<= (len lst) n)
