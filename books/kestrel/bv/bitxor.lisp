@@ -230,8 +230,7 @@
                 (getbit 0 y)))
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x))
-                   (equal 1 (getbit 0 x)))
-           :in-theory (enable))))
+                   (equal 1 (getbit 0 x))))))
 
 (defthm equal-of-bitxor-same
   (equal (equal x (bitxor x y))

@@ -254,8 +254,7 @@
 (defthmd bvchop-of-logxor-back
   (implies (and (natp n) (natp a) (natp b)) ;used to have integerp hyps
            (equal (logxor (bvchop n a) (bvchop n b))
-                  (bvchop n (logxor a b))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvchop n (logxor a b)))))
 
 (theory-invariant (incompatible (:rewrite bvchop-of-logxor) (:rewrite bvchop-of-logxor-back)))
 

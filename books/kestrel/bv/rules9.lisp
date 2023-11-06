@@ -325,8 +325,7 @@
                                1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
                   (bvxor (+ 1 n1)
                                (slice high1 mid1minus1 x)
-                               (slice high2 mid2minus1 y))))
-  :hints (("Goal" :in-theory (enable))))
+                               (slice high2 mid2minus1 y)))))
 
 ;;this one commutes the args of the first bvxor
 (defthmd bvcat-of-bvxor-and-bitxor-adjacent-bits-alt
@@ -356,8 +355,7 @@
                                1 (bitxor (getbit mid1minus1 x) (getbit mid2minus1 y)))
                   (bvxor (+ 1 n1)
                                (slice high1 mid1minus1 x)
-                               (slice high2 mid2minus1 y))))
-  :hints (("Goal" :in-theory (enable))))
+                               (slice high2 mid2minus1 y)))))
 
 ;only needed for axe
 (defthmd bvcat-equal-rewrite-constant-alt
@@ -563,8 +561,7 @@
                                (+ 1 n1)
                                (bvxor (+ 1 n1)
                                             (slice high1 mid1minus1 x)
-                                            (slice high2 mid2minus1 y)))))
-  :hints (("Goal" :in-theory (enable))))
+                                            (slice high2 mid2minus1 y))))))
 
 ;has the first xor commuted
 (defthmd bvcat-of-bvxor-and-bitxor-adjacent-bits-extra-left-assoc-alt
@@ -599,8 +596,7 @@
                                (+ 1 n1)
                                (bvxor (+ 1 n1)
                                             (slice high1 mid1minus1 x)
-                                            (slice high2 mid2minus1 y)))))
-  :hints (("Goal" :in-theory (enable))))
+                                            (slice high2 mid2minus1 y))))))
 
 ;; this is for when we are associating to the left (unusual)
 (defthmd bvcat-of-getbit-and-getbit-adjacent-2-left-assoc
