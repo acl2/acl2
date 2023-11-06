@@ -286,7 +286,7 @@
            (equal (log2 x)
                   -1))
   :hints (("Goal" :expand (log2 x)
-           :in-theory (e/d () (log2-of-*-of-2)))))
+           :in-theory (disable log2-of-*-of-2))))
 
 (defthm log2-of-+-of-expt-and---when-small
   (implies (and (< 0 x)

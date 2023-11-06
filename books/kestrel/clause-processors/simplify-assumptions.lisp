@@ -65,7 +65,7 @@
 (defthm all-eval-to-false-with-if-and-not-eval-of-simplify-assumptions-in-clause
   (iff (all-eval-to-false-with-if-and-not-eval (simplify-assumptions-in-clause clause) a)
        (all-eval-to-false-with-if-and-not-eval clause a))
-  :hints (("Goal" :in-theory (e/d (simplify-assumptions-in-clause) ()))))
+  :hints (("Goal" :in-theory (enable simplify-assumptions-in-clause))))
 
 ;; ;;move
 ;; ;; Correctness of simplify-assumptions.

@@ -723,7 +723,7 @@
                 (natp low)
                 (natp high))
            (unsigned-byte-p n (slice high low x)))
-  :hints (("Goal" :in-theory (e/d (slice) ()))))
+  :hints (("Goal" :in-theory (enable slice))))
 
 ; todo: replace the other?
 (defthm slice-of-logtail-gen

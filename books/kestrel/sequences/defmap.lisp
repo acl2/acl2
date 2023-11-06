@@ -124,12 +124,12 @@
 (defthm true-listp-of-generic-map
   (equal (true-listp (generic-map x))
          t)
-  :hints (("Goal" :in-theory (e/d (generic-map) ()))))
+  :hints (("Goal" :in-theory (enable generic-map))))
 
 (defthm generic-map-of-nil
   (equal (generic-map nil)
          nil)
-  :hints (("Goal" :in-theory (e/d (generic-map) ()))))
+  :hints (("Goal" :in-theory (enable generic-map))))
 
 (defthm generic-map-of-true-list-fix
   (equal (generic-map (true-list-fix x))
