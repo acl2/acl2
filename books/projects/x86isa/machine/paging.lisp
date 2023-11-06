@@ -2498,7 +2498,14 @@
                       (supervisor? (equal (cpl x86) 0))
                       (vpn (ash lin-addr -12))
                       (tlb (tlb x86))
-                      (tlb-entry (cdr (hons-get (list vpn supervisor? r-w-x) tlb)))
+                      (tlb-key (logior 
+                                 (ash vpn 3)
+                                 (ash (if supervisor? 1 0) 2)
+                                 (case r-w-x
+                                   (:r 0)
+                                   (:w 1)
+                                   (:x 2))))
+                      (tlb-entry (cdr (hons-get tlb-key tlb)))
                       ((when (integerp tlb-entry)) (mv nil 
                                                        (logapp 12 lin-addr tlb-entry)
                                                        x86))
@@ -2531,7 +2538,7 @@
                       ((mv flg phys-addr x86)
                        (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
                       ((when flg) (mv t 0 x86))
-                      (x86 (!tlb (hons-acons (list vpn supervisor? r-w-x) (ash phys-addr -12) tlb) x86)))
+                      (x86 (!tlb (hons-acons tlb-key (ash phys-addr -12) tlb) x86)))
                      (mv flg phys-addr x86))
 
                  (mv t 0 x86))
