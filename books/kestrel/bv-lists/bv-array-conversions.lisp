@@ -273,8 +273,7 @@
                   (bv-array-read width total-len n x)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (list-to-bv-array-aux width elements-left total-len x)
-           :in-theory (e/d (bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux)
-                           ()))))
+           :in-theory (enable bv-array-read bv-array-read-of-bv-array-write-both-better list-to-bv-array-aux))))
 
 (defthm bv-array-read-of-list-to-bv-array
   (implies (and (natp n)

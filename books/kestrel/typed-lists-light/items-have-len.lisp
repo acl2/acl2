@@ -85,4 +85,4 @@
                 (<= end (len lst))
                 (items-have-len n lst))
            (items-have-len n (take end lst)))
-  :hints (("Goal" :in-theory (e/d (take) ()))))
+  :hints (("Goal" :in-theory (enable take))))

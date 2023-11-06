@@ -98,8 +98,7 @@
 ;in case we don't have commutativity - drop, since we'll always commute??
 (defthmd bvand-of-0-arg3
   (equal (bvand size x 0)
-         0)
-  :hints (("Goal" :in-theory (enable))))
+         0))
 
 (defthm bvand-combine-constants
   (implies (syntaxp (and (quotep y) ;tested first to fail fast

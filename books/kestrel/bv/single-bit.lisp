@@ -61,5 +61,4 @@
 ;fixme just choose bitnot or bitxor 1...
 (defthm bitnot-of-bitxor-of-1
   (equal (bitnot (bitxor 1 x))
-         (getbit 0 x))
-  :hints (("Goal" :in-theory (enable))))
+         (getbit 0 x)))

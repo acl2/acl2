@@ -254,8 +254,7 @@
 (defthmd bvchop-of-logxor-back
   (implies (and (natp n) (natp a) (natp b)) ;used to have integerp hyps
            (equal (logxor (bvchop n a) (bvchop n b))
-                  (bvchop n (logxor a b))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvchop n (logxor a b)))))
 
 (theory-invariant (incompatible (:rewrite bvchop-of-logxor) (:rewrite bvchop-of-logxor-back)))
 
@@ -289,7 +288,7 @@
   :hints (("Goal"
            :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE (x (bvxor size x y))
                            (newsize size))
-           :in-theory (e/d () (LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
+           :in-theory (disable LOGTAIL-BECOMES-SLICE-BIND-FREE))))
 
 ;(bvmult 4 (bvxor 4 12 10) 6)
 ;(bvxor 4 (bvmult 4 12 6) (bvmult 4 10 6))
@@ -456,9 +455,8 @@
                 (integerp newsize))
            (equal (bvmult size x y)
                   (bvmult size (bvchop size x) y)))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (bvmult-pad-arg1
-                                   bvmult-pad-arg2)))))
+  :hints (("Goal" :in-theory (enable bvmult-pad-arg1
+                                     bvmult-pad-arg2))))
 
 ;todo: use trim, not bvchop
 (defthm bvmult-trim-arg2
@@ -468,8 +466,7 @@
                 (integerp newsize))
            (equal (BVMULT size x y)
                   (bvmult size x (bvchop size y))))
-  :hints (("Goal" :in-theory (e/d () (bvmult-pad-arg1
-                                                bvmult-pad-arg2)))))
+  :hints (("Goal" :in-theory (disable bvmult-pad-arg1 bvmult-pad-arg2))))
 
 ;add theory invars?
 ;(in-theory (disable BVCAT-OF-BVCHOP-HIGH BVCAT-OF-BVCHOP-low))

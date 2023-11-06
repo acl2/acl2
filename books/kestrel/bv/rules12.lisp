@@ -46,7 +46,7 @@
                   (bvxor (+ 1 high2 (- low))
                          (slice high2 low y)
                          (slice high2 low x))))
-  :hints (("Goal" :use ()
+  :hints (("Goal"; :use ()
            :in-theory (e/d (;bvxor
                             )
                            ( ;BVXOR-TRIM-ARG1 ;BVXOR-CANCEL BVXOR-CANCEL-alt BVXOR-CANCEL-cross-2
@@ -216,8 +216,8 @@
                 (force (integerp y)))
            (equal (slice high low (+ (logext size y) x))
                   (slice high low (+ x y))))
-  :hints (("Goal" :in-theory (e/d () (;anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGEXT-of-logtail
-                                           )))))
+  :hints (("Goal" :in-theory (disable ;anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGEXT-of-logtail
+                              ))))
 
 ;instead, inner sum should go to bvplus...
 (defthm bvxor-of-sum-logext
