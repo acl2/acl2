@@ -961,6 +961,11 @@
              (set::in key (keys map)))
     :rule-classes :forward-chaining)
 
+  (defruled in-keys-when-in-is-cons
+    (implies (equal (in a m)
+                    (cons a b))
+             (set::in a (keys m))))
+
   (defrule keys-of-update
     (equal (keys (update key val m))
            (set::insert key (keys m)))
@@ -1019,7 +1024,12 @@
   (defrule values-when-empty
     (implies (empty map)
              (equal (values map) nil))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defruled in-values-when-in
+    (implies (equal (in a m)
+                    (cons a b))
+             (set::in b (values m)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
