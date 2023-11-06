@@ -2,17 +2,21 @@
 
 (include-book "../decoding-and-spec-utils"
 	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
 ;; INSTRUCTION: OUT
 ;; ======================================================================
 
-(skip-proofs (defun read-cstr-from-memory1 (addr x86 acc)
-  (declare (xargs :stobjs (x86)))
-  (b* (((mv flg byt x86) (rml08 addr :r x86))
-       ((when flg) (mv nil x86))
-       ((when (equal byt 0)) (mv acc x86)))
-      (read-cstr-from-memory1 (1+ addr) x86 (cons (code-char byt) acc)))))
+(skip-proofs
+ ;; [Shilpi] can't prove that this terminates. Need a clock arg.?
+ (define read-cstr-from-memory1 ((addr :type (signed-byte 48))
+                                 x86
+                                 acc)
+   (b* (((mv flg byt x86) (rml08 addr :r x86))
+        ((when flg) (mv nil x86))
+        ((when (equal byt 0)) (mv acc x86)))
+     (read-cstr-from-memory1 (1+ addr) x86 (cons (code-char byt) acc)))))
 
 (defmacro read-cstr-from-memory (addr x86)
   `(b* (((mv bytes x86) (read-cstr-from-memory1 ,addr ,x86 nil)))
