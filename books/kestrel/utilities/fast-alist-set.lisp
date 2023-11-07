@@ -10,10 +10,13 @@
 
 (in-package "ACL2")
 
+;; STATUS: IN-PROGRESS
+
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
+(include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 
 (local (in-theory (disable hons-assoc-equal hons-acons fast-alist-fork fast-alist-clean)))
 
@@ -46,6 +49,11 @@
              (cons key val)
            (hons-assoc-equal key map)))
   :hints (("Goal" :in-theory (enable hons-assoc-equal hons-acons))))
+
+(defthm true-listp-of-hons-acons
+  (equal (true-listp (hons-acons key val alist))
+         (true-listp alist))
+  :hints (("Goal" :in-theory (enable hons-acons))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -185,6 +193,11 @@
   (implies (fast-alist-setp alist)
            (fast-alist-setp (fast-alist-clean alist)))
   :hints (("Goal" :in-theory (enable fast-alist-clean))))
+
+(defthm all-consp-when-FAST-ALIST-SETP
+  (implies (FAST-ALIST-SETP set)
+           (all-consp set))
+  :hints (("Goal" :in-theory (enable FAST-ALIST-SETP all-consp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -357,6 +370,7 @@
                                      member-equal-of-fast-alist-keys-simple-iff-hons-assoc-equal))))
 
 ;; The order of the result is arbitrary, so consider sorting it.
+;; Warning: This steals the hash table from set?  TODO: So should we return the cleaned alist?
 (defund fast-alist-set-to-list (set)
   (declare (xargs :guard (fast-alist-setp set)))
   (fast-alist-free-on-exit set (fast-alist-set-to-list-aux (fast-alist-clean set) nil)))
@@ -372,3 +386,146 @@
            (iff (member-equal val (fast-alist-set-to-list set))
                 (fast-alist-set-memberp val set)))
   :hints (("Goal" :in-theory (enable fast-alist-set-to-list))))
+
+(local
+  (defthm not-consp-of-cdr-of-last-type
+    (not (consp (CDR (LAST alist))))
+    :rule-classes :type-prescription))
+
+;(include-book "kestrel/alists-light/clear-key" :dir :system)
+
+(defun clear-key2 (key alist)
+  (declare (xargs :guard (alistp alist)))
+  (if (endp alist)
+      alist ; preserve fast alist name or size
+    (if (equal key (caar alist))
+        (clear-key2 key (cdr alist))
+      (cons (car alist)
+            (clear-key2 key (cdr alist))))))
+
+(defund remove-bad-and-shadowed-pairs (alist)
+  (declare (xargs :measure (len alist)))
+  (if (atom alist)
+      alist
+    (let ((entry (first alist)))
+      (if (not (consp entry))
+          (remove-bad-and-shadowed-pairs (rest alist))
+        (cons entry (remove-bad-and-shadowed-pairs (clear-key2 (car entry) (rest alist))))))))
+
+;; (defthm true-list-of-remove-bad-and-shadowed-pairs-type
+;;   (implies (true-listp alist)
+;;            (true-listp (remove-bad-and-shadowed-pairs alist)))
+;;   :rule-classes :type-prescription)
+
+(defund clear-keys-simple (keys alist)
+  (if (endp alist)
+      alist
+    (let ((entry (first alist)))
+      (if (not (consp entry))
+          (clear-keys-simple keys (rest alist)) ; removes non-conses
+        (if (member-equal (car entry) keys)
+            (clear-keys-simple keys (rest alist))
+          (cons entry (clear-keys-simple keys (rest alist))))))))
+
+(defthm true-list-of-clear-keys-simple-type
+  (implies (true-listp alist)
+           (true-listp (clear-keys-simple keys alist)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable clear-keys-simple))))
+
+(defthm clear-keys-simple-of-nil
+  (implies (alistp alist)
+           (equal (clear-keys-simple nil alist)
+                  alist))
+  :hints (("Goal" :in-theory (enable clear-keys-simple))))
+
+(defthm not-member-equal-of-strip-cars-of-clear-keys-simple
+  (implies (not (member-equal key (strip-cars alist)))
+           (not (member-equal key (strip-cars (clear-keys-simple keys alist)))))
+  :hints (("Goal" :in-theory (enable clear-keys-simple))))
+
+(defthm clear-keys-simple-of-cons
+  (implies t ;(true-listp alist)
+           (equal (clear-keys-simple (cons key keys) alist)
+                  (clear-key2 key (clear-keys-simple keys alist))))
+  :hints (("Goal" :in-theory (enable clear-keys-simple clear-key2))))
+
+(defthm clear-keys-simple-of-nil-arg1
+  (implies (all-consp set)
+           (equal (clear-keys-simple nil set)
+                  set))
+  :hints (("Goal" :in-theory (enable clear-keys-simple))))
+
+;move
+(defthmd hons-assoc-equal-iff
+  (implies (alistp alist)
+           (iff (HONS-ASSOC-EQUAL key alist)
+                (member-equal key (strip-cars alist))))
+  :hints (("Goal" :in-theory (enable HONS-ASSOC-EQUAL member-equal strip-cars))))
+
+(local (include-book "kestrel/lists-light/reverse" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+
+;better?
+(local
+  (DEFTHM HONS-ASSOC-EQUAL-IFF-2
+    (IMPLIES (all-consp alist)
+             (IFF (HONS-ASSOC-EQUAL KEY ALIST)
+                  (MEMBER-EQUAL KEY (STRIP-CARS ALIST))))
+    :HINTS
+    (("Goal" :IN-THEORY (ENABLE HONS-ASSOC-EQUAL
+                                MEMBER-EQUAL STRIP-CARS)))))
+
+(defthmd fast-alist-fork-redef
+  (implies (and ;(true-listp alist)
+                ;(alistp ans)
+                (all-consp ans)
+                )
+           (equal (fast-alist-fork alist ans)
+                  (append (reverse (remove-bad-and-shadowed-pairs (clear-keys-simple (strip-cars ans) alist)))
+                          ans)))
+  :hints (("Goal" :expand (REMOVE-BAD-AND-SHADOWED-PAIRS (CONS (CAR ALIST)
+                                                               (CLEAR-KEYS-SIMPLE (STRIP-CARS ANS)
+                                                                                  (CDR ALIST))))
+           :in-theory (enable fast-alist-fork REMOVE-BAD-AND-SHADOWED-PAIRS
+                              hons-assoc-equal-iff
+                              clear-keys-simple))))
+
+;; (thm
+;;   (implies (and (not (HONS-ASSOC-EQUAL KEY ANS))
+;;                 (not (HONS-ASSOC-EQUAL KEY alist))
+;;                 (true-listp alist)
+;;                 (alistp alist) ; todo
+;;                 (alistp ans))
+;;            (equal (fast-alist-fork (hons-acons key val alist) ans)
+;;                   (hons-acons key val (fast-alist-fork alist ans))))
+;;   :hints (("Goal" :in-theory (e/d (fast-alist-fork-redef) (STRIP-CARS CLEAR-KEYS-SIMPLE alistp)))))
+
+(defthm cdr-of-last-of-hons-acons
+  (Implies (true-listp alist) ; gen?
+           (equal (cdr (last (hons-acons key val alist)))
+                  (cdr (last alist))))
+  :hints (("Goal" :in-theory (enable hons-acons))))
+
+(local (in-theory (disable last)))
+
+(defthm all-consp-of-hons-acons
+  (implies (all-consp l)
+           (all-consp (hons-acons key val l)))
+  :hints (("Goal" :in-theory (enable hons-acons))))
+
+;; (thm
+;;   (implies (fast-alist-setp set)
+;;            (equal (fast-alist-set-to-list (add-to-fast-alist-set a set))
+;;                   (if (fast-alist-set-memberp a set)
+;;                       set
+;;                     (cons a (fast-alist-set-to-list set)))))
+;;   :otf-flg t
+;;   :hints (("Goal" :in-theory (enable fast-alist-set-to-list
+;;                                      fast-alist-set-to-list-aux
+;;                                      add-to-fast-alist-set
+;;                                      fast-alist-set-memberp
+;;                                      FAST-ALIST-CLEAN
+;;                                      fast-alist-fork-redef
+;;                                      ;HONS-ASSOC-EQUAL
+;;                                      ))))
