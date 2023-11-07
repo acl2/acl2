@@ -339,13 +339,15 @@
 ;; rename make-supporters-tag-array-for-nodes
 ;; The "-with-name" suffix indicates that this function takes the dag-array-name and tag-array-name as arguments.
 (defund tag-supporters-of-nodes-with-name (nodenums
+                                           max-nodenum ; often one less than the tag-array-length, we pass it in since the called usually computes the maxelem
                                            dag-array-name dag-array
                                            tag-array-name ;; the name of the tag array to create
-                                           tag-array-length ;; the array length to use  -- if we might look up nodes higher than the nodenums, we can make this larger than (+ 1 (maxelem nodenums)) to prevent errors
+                                           tag-array-length ;; the array length to use  -- if we might look up nodes higher than the nodenums, we can make this larger than (+ 1 (maxelem nodenums)) to prevent errors (todo: do we ever need that?)
                                            )
   (declare (xargs :guard (and (true-listp nodenums)
                               (all-natp nodenums)
                               (consp nodenums) ;so we can call maxelem
+                              (equal max-nodenum (maxelem nodenums))
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                               (integerp tag-array-length)
                               (all-< nodenums tag-array-length) ;implies that tag-array-length is positive
@@ -353,53 +355,57 @@
                               (symbolp tag-array-name))))
   (let* ((tag-array (make-empty-array tag-array-name tag-array-length))
          (tag-array (aset1-list tag-array-name tag-array nodenums t)))
-    (tag-supporters-with-name (maxelem nodenums) dag-array-name dag-array tag-array-name tag-array)))
+    (tag-supporters-with-name max-nodenum dag-array-name dag-array tag-array-name tag-array)))
 
 (defthm array1p-of-tag-supporters-of-nodes-with-name
   (implies (and (all-natp nodenums)
                 (consp nodenums)
+                (equal max-nodenum (maxelem nodenums))
                 (posp tag-array-length)
                 (<= tag-array-length 2147483646)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
-           (array1p tag-array-name (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array tag-array-name tag-array-length)))
+           (array1p tag-array-name (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array tag-array-name tag-array-length)))
   :hints (("Goal" :in-theory (e/d (tag-supporters-of-nodes-with-name) (natp)))))
 
 (defthm alen1-of-tag-supporters-of-nodes-with-name
   (implies (and (all-natp nodenums)
                 (consp nodenums)
+                (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                 (posp tag-array-length)
                 (<= tag-array-length 2147483646)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length))
-           (equal (alen1 tag-array-name (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array tag-array-name tag-array-length))
+           (equal (alen1 tag-array-name (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array tag-array-name tag-array-length))
                   tag-array-length))
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name))))
 
 (defthm aref1-of-tag-supporters-of-nodes-with-name-and-maxelem
   (implies (and (all-natp nodenums)
                 (consp nodenums)
+                (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                 (posp tag-array-length)
                 (<= tag-array-length 2147483646)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length))
            (aref1 tag-array-name
-                  (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array tag-array-name tag-array-length)
+                  (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array tag-array-name tag-array-length)
                   (maxelem nodenums)))
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name maxelem))))
 
 (defthm all-taggedp-with-name-of-tag-supporters-of-nodes-with-name-same
   (implies (and (all-natp nodenums)
                 (consp nodenums)
+                (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                 (posp tag-array-length)
                 (<= tag-array-length 2147483646)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length))
-           (all-taggedp-with-name nodenums tag-array-name (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array tag-array-name tag-array-length)))
+           (all-taggedp-with-name nodenums tag-array-name (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array tag-array-name tag-array-length)))
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name
                                      all-taggedp-with-name))))
 
@@ -417,7 +423,7 @@
                               (< nodenum tag-array-length) ;implies that tag-array-length is positive
                               (<= tag-array-length 2147483646)
                               (symbolp tag-array-name))))
-  (tag-supporters-of-nodes-with-name (list nodenum) dag-array-name dag-array tag-array-name tag-array-length))
+  (tag-supporters-of-nodes-with-name (list nodenum) nodenum dag-array-name dag-array tag-array-name tag-array-length))
 
 (defthm array1p-of-tag-supporters-of-node-with-name
   (implies (and (natp nodenum)
@@ -450,7 +456,7 @@
            (aref1 tag-array-name
                   (tag-supporters-of-node-with-name nodenum dag-array-name dag-array tag-array-name tag-array-length)
                   nodenum))
-  :hints (("Goal" :use (:instance aref1-of-tag-supporters-of-nodes-with-name-and-maxelem (nodenums (list nodenum)))
+  :hints (("Goal" :use (:instance aref1-of-tag-supporters-of-nodes-with-name-and-maxelem (nodenums (list nodenum)) (max-nodenum nodenum))
            :in-theory (e/d (tag-supporters-of-node-with-name) (aref1-of-tag-supporters-of-nodes-with-name-and-maxelem)))))
 
 ;;;
@@ -925,7 +931,7 @@
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                  :in-theory (enable pseudo-dag-arrayp  ;fixme?
                                                     )))))
-  (let* ((tag-array (tag-supporters-of-nodes-with-name (list smaller-nodenum larger-nodenum) dag-array-name dag-array 'tag-array (+ 1 larger-nodenum)))
+  (let* ((tag-array (tag-supporters-of-nodes-with-name (list smaller-nodenum larger-nodenum) (max smaller-nodenum larger-nodenum) dag-array-name dag-array 'tag-array (+ 1 larger-nodenum)))
          (translation-array (make-empty-array 'translation-array (+ 1 larger-nodenum))))
     (mv-let (dag-lst translation-array)
             (build-reduced-dag-with-name 0 larger-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
