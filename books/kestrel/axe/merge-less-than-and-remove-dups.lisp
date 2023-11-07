@@ -25,20 +25,14 @@
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 
+(local (in-theory (enable <=-of-car-and-cadr-when-sortedp-<=)))
+
 ;move
 (defthmd not-intersection-equal-when-all-<-of-car-and-sortedp-<=
   (implies (and (all-< y (car x))
                 (sortedp-<= x))
            (not (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable all-< sortedp-<= intersection-equal))))
-
-;move
-(defthmd <=-of-car-and-cadr-when-sortedp-<=
-  (implies (and (sortedp-<= x)
-                (consp (cdr x)))
-           (<= (car x) (cadr x)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable sortedp-<=))))
 
 ;move
 (defthmd <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal
@@ -82,10 +76,7 @@
                 (all-<=-all acc l1)
                 (all-<=-all acc l2))
            (sortedp-<= (merge-<-and-remove-dups-aux l1 l2 acc)))
-  :hints (("Goal" :expand ((merge-<-and-remove-dups-aux l1 l2 acc)
-                           (sortedp-<= l1) ;todo
-                           (sortedp-<= l2) ;todo
-                           )
+  :hints (("Goal" :expand ((merge-<-and-remove-dups-aux l1 l2 acc))
            :induct (merge-<-and-remove-dups-aux l1 l2 acc)
            :in-theory (enable merge-<-and-remove-dups-aux
                               revappend-lemma
@@ -106,7 +97,6 @@
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
                                      revappend-lemma
                                      not-intersection-equal-when-all-<-of-car-and-sortedp-<=
-                                     <=-of-car-and-cadr-when-sortedp-<=
                                      <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
