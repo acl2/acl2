@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nat-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -101,3 +101,9 @@
                   (and (<= (nfix n) (len l)) ;might be adding to the end
                        (natp val))))
   :hints (("Goal" :in-theory (enable nat-listp update-nth))))
+
+(defthm nat-listp-of-revappend
+  (equal (nat-listp (revappend x y))
+         (and (nat-listp (true-list-fix x))
+              (nat-listp y)))
+  :hints (("Goal" :in-theory (enable nat-listp revappend))))
