@@ -495,3 +495,9 @@
 (def-rp-rule nfix-opener
   (implies (natp x) (equal (nfix x) x)))
 
+
+
+(def-rp-rule not-equal-of-1-of-bitp
+   (implies (bitp x)
+            (equal (if (equal x 1) nil t)
+                   (equal x 0))))
