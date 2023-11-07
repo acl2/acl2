@@ -85,13 +85,46 @@
            (equal (equal x (mul y (mul z (inv w p) p) p))
                   (equal (mul x w p) (mul y z p)))))
 
+(defthm equal-of-mul-and-add-of-mul-cancel
+  (implies (and (fep x p)
+                (fep y p)
+                (fep z p)
+                (primep p))
+           (equal (equal (mul x y p) (add x (mul x z p) p))
+                  (if (equal x 0)
+                      t
+                  (equal y (add 1 z p)))))
+  :hints (("Goal" :use (:instance PFIELD::EQUAL-OF-MUL-AND-MUL-SAME
+                                  (x x)
+                                  (y y)
+                                  (z (add 1 z p))
+                                  (p p))
+           :in-theory (disable PFIELD::EQUAL-OF-MUL-AND-MUL-SAME))))
+
+(defthm booleanp-of-if
+  (equal (booleanp (if test x y))
+         (if test (booleanp x) (booleanp y))))
+
+;; somewhat fragile
+(defthm helper
+  (implies (and (fep x p)
+                (not (equal 1 x))
+                (primep p))
+           (equal (equal (inv (add 1 (neg x p) p) p)
+                         (add 1 (mul (inv (add '1 (neg x p) p) p) x p) p))
+                  t))
+  :hints (("Goal" :in-theory (disable PFIELD::EQUAL-OF-ADD-CANCEL-BIND-FREE ;todo: loop
+                                      PFIELD::MUL-OF-ADD-ARG1
+;PFIELD::MUL-OF-ADD-ARG2
+                                      ))))
+
 ;; TODO: Can the proof be done by opening up less?
 (verify-zcash-r1cs
  *a-3-3-3-simp-lifted*
  (implies (and (not (equal '1 v/num))
                (not (equal '0 u/num)))
           (edwards-montgomery-spec u/num v/num x/num y/num))
- :monitor '(equal-of-mul-of-mul-of-inv-arg1-arg2)
+; :monitor '(ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP equal-of-mul-and-add-of-mul-cancel)
  :global-rules '(pfield::fep-of-sub
                  pfield::fep-of-add
                  pfield::fep-of-neg
@@ -109,7 +142,20 @@
                  pfield::equal-of-neg-solve
                  pfield::equal-of-neg-solve-alt
                  pfield::equal-of-0-and-mul
-                 acl2::pos-fix)
+                 acl2::pos-fix
+                 equal-of-mul-and-add-of-mul-cancel
+                 PFIELD::FEP-OF-INV
+                 ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP
+                 booleanp-of-if
+                 ACL2::BOOLEANP-OF-EQUAL
+                 ACL2::IF-SAME-BRANCHES
+                 ACL2::IF-BECOMES-BOOLIF
+                 ACL2::BOOLIF-WHEN-QUOTEP-ARG2
+                 ;PFIELD::MUL-OF--1-BECOMES-NEG-ALT
+                 ;PFIELD::MUL-OF--1-BECOMES-NEG
+                 PFIELD::MUL-OF-1-ARG1
+                 PFIELD::MUL-OF-1-ARG2
+                 )
  :rule-lists '((edwards-montgomery-spec
                 ecurve::twisted-edwards-point-to-montgomery-point
                 ;; point-on-jubjub-p
@@ -158,4 +204,19 @@
                 )
                (div ;expose mul of inv
                 equal-of-mul-of-mul-of-inv-arg1-arg2
-                pfield::mul-associative)))
+                pfield::mul-associative)
+               (helper
+;PFIELD::EQUAL-OF-INV
+;                 PFIELD::MUL-OF-ADD-ARG1
+ ;                PFIELD::MUL-OF-ADD-ARG2
+;;                 PFIELD::MUL-OF-NEG-ARG1
+;;                 PFIELD::MUL-OF-NEG-ARG2
+                  ;;
+                  )
+                ;; (PFIELD::MUL-OF-ADD-ARG1
+                ;;   PFIELD::MUL-OF-ADD-ARG2
+                ;;   PFIELD::ADD-ASSOCIATIVE
+                ;;   )
+                ;; (PFIELD::MUL-OF-NEG-ARG1
+                ;;   PFIELD::MUL-OF-NEG-ARG2)
+                ))
