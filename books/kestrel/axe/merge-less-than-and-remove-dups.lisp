@@ -70,6 +70,12 @@
            (nat-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
 
+(defthm true-listp-of-merge-<-and-remove-dups-aux
+  (implies (and (true-listp l1)
+                (true-listp l2))
+           (true-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
+
 (defthm rational-listp-of-merge-<-and-remove-dups-aux
   (implies (and (rational-listp l1)
                 (rational-listp l2)
@@ -125,6 +131,12 @@
   (implies (and (nat-listp l1)
                 (nat-listp l2))
            (nat-listp (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+(defthm true-listp-of-merge-<-and-remove-dups
+  (implies (and (true-listp l1)
+                (true-listp l2))
+           (true-listp (merge-<-and-remove-dups l1 l2)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
 (defthm rational-listp-of-merge-<-and-remove-dups
