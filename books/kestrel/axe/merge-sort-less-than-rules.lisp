@@ -28,6 +28,8 @@
 
 (in-theory (disable mv-nth)) ; so the rules fire
 
+;todo: move a lot of this stuff to books/kestrel/typed-lists-light/rational-lists.lisp
+
 ;move
 (defthm all-<-of-+-of-1
   (implies (and (syntaxp (not (quotep y)))
