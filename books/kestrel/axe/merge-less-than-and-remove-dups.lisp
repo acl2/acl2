@@ -20,6 +20,7 @@
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (local (include-book "merge-sort-less-than-rules")) ; todo: move some of these
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
@@ -67,6 +68,13 @@
                 (nat-listp l2)
                 (nat-listp acc))
            (nat-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
+
+(defthm rational-listp-of-merge-<-and-remove-dups-aux
+  (implies (and (rational-listp l1)
+                (rational-listp l2)
+                (rational-listp acc))
+           (rational-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
 
 (defthm sortedp-<=-of-merge-<-and-remove-dups-aux
@@ -117,6 +125,12 @@
   (implies (and (nat-listp l1)
                 (nat-listp l2))
            (nat-listp (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+(defthm rational-listp-of-merge-<-and-remove-dups
+  (implies (and (rational-listp l1)
+                (rational-listp l2))
+           (rational-listp (merge-<-and-remove-dups l1 l2)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
 ; strengthen to sortedp-< ?
