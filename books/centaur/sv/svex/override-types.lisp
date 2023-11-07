@@ -138,6 +138,47 @@
                                     (acl2::element-list-p (lambda (x) (svarlist-override-p* x types))))
                          (x x) (y x-equiv)))
            :in-theory (enable svarlist-override-p*)))))
+
+
+(define svarlist-nonoverride-p ((x svarlist-p)
+                             (type svar-overridetype-p))
+  (if (atom x)
+      t
+    (and (not (svar-override-p (car x) type))
+         (svarlist-nonoverride-p (cdr x) type)))
+  ///
+  (defthm svarlist-nonoverride-p-of-append
+    (iff (svarlist-nonoverride-p (append x y) type)
+         (and (svarlist-nonoverride-p x type)
+              (svarlist-nonoverride-p y type))))
+
+  (defcong set-equiv equal (svarlist-nonoverride-p x type) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (not (svar-override-p x type))))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-nonoverride-p x type))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-nonoverride-p)))))
+
+(define svarlist-nonoverride-p* ((x svarlist-p)
+                              (types svar-overridetypelist-p))
+  (if (atom x)
+      t
+    (and (not (svar-override-p* (car x) types))
+         (svarlist-nonoverride-p* (cdr x) types)))
+  ///
+  (defthm svarlist-nonoverride-p*-of-append
+    (iff (svarlist-nonoverride-p* (append x y) types)
+         (and (svarlist-nonoverride-p* x types)
+              (svarlist-nonoverride-p* y types))))
+
+  (defcong set-equiv equal (svarlist-nonoverride-p* x types) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (not (svar-override-p* x types))))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-nonoverride-p* x types))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-nonoverride-p*)))))
   
 
 (define svar-change-override ((x svar-p)

@@ -534,25 +534,6 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
     :hints ((acl2::equal-by-nths-hint)
             '(:in-theory (enable mod)))))
 
-(encapsulate nil
-  (local (defun base-fsm-ind (ins ins-equiv initst x)
-           (if (atom ins)
-               (list ins-equiv initst)
-             (base-fsm-ind (cdr ins) (cdr ins-equiv)
-                           (base-fsm-step (car ins) initst (base-fsm->nextstate x))
-                           x))))
-
-  (defcong svex-envlists-similar equal (base-fsm-eval ins initst x) 1
-    :hints(("Goal" :in-theory (enable base-fsm-eval
-                                      base-fsm-step-outs
-                                      base-fsm-step
-                                      base-fsm-step-env
-                                      svex-envlists-similar-rec
-                                      svex-envlist-x-override)
-            :induct (base-fsm-ind ins ins-equiv initst x)
-            :expand ((base-fsm-eval ins initst x)
-                     (base-fsm-eval ins-equiv initst x))))))
-
 (define svtv-spec->cycle-fsm ((x svtv-spec-p))
   :guard (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x)))))
   (b* (((svtv-spec x)))

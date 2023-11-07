@@ -519,7 +519,7 @@
                             (svtv-override-triplemaplist-envs-match
                              (<triplemaps>) env <const-overrides>)
                             (:@ (or :use-ideal :use-svtv-spec)
-                             (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val))))
+                             (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test)))
                        (b* (((svassocs <outputs>) run))
                          <concl>)))
             <args>

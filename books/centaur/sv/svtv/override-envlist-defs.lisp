@@ -118,6 +118,94 @@
   (local (in-theory (enable svex-env-fix))))
 
 
+(define svex-env-remove-override ((x svex-env-p)
+                                  (type svar-overridetype-p))
+  :returns (new-x svex-env-p)
+  (if (atom x)
+      nil
+    (if (and (mbt (and (consp (car x))
+                       (svar-p (caar x))))
+             (not (svar-override-p (caar x) type)))
+        (cons (mbe :logic (cons (caar x) (4vec-fix (cdar x)))
+                   :exec (car x))
+              (svex-env-remove-override (cdr x) type))
+      (svex-env-remove-override (cdr x) type)))
+  ///
+  (defret boundp-of-<fn>
+    (equal (svex-env-boundp k new-x)
+           (and (not (svar-override-p k type))
+                (svex-env-boundp k x)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
+  (defret lookup-of-<fn>
+    (equal (svex-env-lookup k new-x)
+           (if (svar-override-p k type)
+               (4vec-x)
+             (svex-env-lookup k x)))
+    :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
+  (defthm svex-env-remove-override-of-append
+    (equal (svex-env-remove-override (append x y) type)
+           (append (svex-env-remove-override x type)
+                   (svex-env-remove-override y type))))
+
+  (local (in-theory (enable svar-override-p-when-other)))
+
+
+  (local
+   (defret svex-env-remove-override-when-keys-override-p-lemma
+     (implies (svarlist-override-p (alist-keys (svex-env-fix x)) key-type)
+              (equal new-x
+                     (and (not (svar-overridetype-equiv type key-type))
+                          (svex-env-fix x))))
+     :hints(("Goal" :in-theory (e/d (svex-env-fix
+                                     svarlist-override-p
+                                     alist-keys)
+                                    (svar-overridetype-equiv))))))
+
+  (defret svex-env-remove-override-when-keys-override-p
+    (implies (and (equal keys (alist-keys (svex-env-fix x)))
+                  (svarlist-override-p keys key-type))
+             (equal new-x
+                    (and (not (svar-overridetype-equiv type key-type))
+                         (svex-env-fix x)))))
+
+  (local
+   (defret svex-env-remove-override-when-keys-nonoverride-p-lemma
+     (implies (svarlist-nonoverride-p (alist-keys (svex-env-fix x)) type)
+              (equal new-x
+                     (svex-env-fix x)))
+     :hints(("Goal" :in-theory (enable svarlist-nonoverride-p
+                                       alist-keys
+                                       svex-env-fix)))))
+  
+  (defret svex-env-remove-override-when-keys-nonoverride-p
+    (implies (and (equal keys (alist-keys (svex-env-fix x)))
+                  (svarlist-nonoverride-p keys key-type)
+                  (svar-overridetype-equiv type key-type))
+             (equal new-x
+                    (svex-env-fix x)))
+    :hints(("Goal" :in-theory (disable svar-overridetype-equiv))))
+
+  (defret svex-env-remove-override-when-keys-change-override-p
+    (implies (and (equal keys (alist-keys (svex-env-fix x)))
+                  (bind-free (case-match keys
+                               (('svarlist-change-override & key-type)
+                                `((key-type . ,key-type)))
+                               (& nil))
+                             (key-type))
+                  (svarlist-override-p keys key-type))
+             (equal new-x
+                    (and (not (svar-overridetype-equiv type key-type))
+                         (svex-env-fix x)))))
+
+  (defret svarlist-nonoverride-p-alist-keys-of-<fn>
+    (svarlist-nonoverride-p (alist-keys new-x) type)
+    :hints(("Goal" :in-theory (enable svarlist-nonoverride-p alist-keys))))
+
+  (local (in-theory (enable svex-env-fix))))
+
+
 (define svex-env-filter-override* ((x svex-env-p)
                                    (types svar-overridetypelist-p))
   :returns (new-x svex-env-p)
@@ -198,6 +286,86 @@
   (local (in-theory (enable svex-env-fix))))
 
 
+(define svex-env-remove-override* ((x svex-env-p)
+                                   (types svar-overridetypelist-p))
+  :returns (new-x svex-env-p)
+  (if (atom x)
+      nil
+    (if (and (mbt (and (consp (car x))
+                       (svar-p (caar x))))
+             (not (svar-override-p* (caar x) types)))
+        (cons (mbe :logic (cons (caar x) (4vec-fix (cdar x)))
+                   :exec (car x))
+              (svex-env-remove-override* (cdr x) types))
+      (svex-env-remove-override* (cdr x) types)))
+  ///
+  (defret boundp-of-<fn>
+    (equal (svex-env-boundp k new-x)
+           (and (not (svar-override-p* k types))
+                (svex-env-boundp k x)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp))))
+
+  (defret lookup-of-<fn>
+    (equal (svex-env-lookup k new-x)
+           (if (not (svar-override-p* k types))
+               (svex-env-lookup k x)
+             (4vec-x)))
+    :hints(("Goal" :in-theory (enable svex-env-lookup))))
+
+  (defthm svex-env-remove-override*-of-append
+    (equal (svex-env-remove-override* (append x y) types)
+           (append (svex-env-remove-override* x types)
+                   (svex-env-remove-override* y types))))
+
+  (local (defthm equal-of-svar-overridetype-fix
+           (implies (Equal (svar-overridetype-fix x) (svar-overridetype-fix y))
+                    (svar-overridetype-equiv x y))
+           :rule-classes :forward-chaining))
+  
+  (local (defthm svar-override-p*-when-svar-override-p-member
+           (implies (and (svar-override-p x type)
+                         (member-equal (svar-overridetype-fix type)
+                                       (svar-overridetypelist-fix types)))
+                    (svar-override-p* x types))
+           :hints(("Goal" :in-theory (enable svar-override-p* svar-overridetypelist-fix)))))
+
+  (local (defthm svar-override-p*-when-svar-override-p*-subset
+           (implies (and (svar-override-p* x types1)
+                         (not (intersectp-equal (svar-overridetypelist-fix types1)
+                                                (svar-overridetypelist-fix types2))))
+                    (not (svar-override-p* x types2)))
+           :hints(("Goal" :in-theory (enable svar-override-p* svar-overridetypelist-fix)))))
+
+  (defret svex-env-remove-override*-when-keys-override-p*
+    (implies (and (svarlist-override-p* (alist-keys (svex-env-fix x)) key-types)
+                  (not (intersectp-equal (svar-overridetypelist-fix key-types)
+                                         (svar-overridetypelist-fix types))))
+             (equal new-x
+                    (svex-env-fix x)))
+    :hints(("Goal" :in-theory (e/d (svex-env-fix
+                                    svarlist-override-p*
+                                    alist-keys)))))
+
+  
+  
+  (defret svex-env-remove-override*-when-keys-override-p
+    (implies (svarlist-override-p (alist-keys (svex-env-fix x)) key-type)
+             (equal new-x
+                    (and (not (member-equal (svar-overridetype-fix key-type)
+                                            (svar-overridetypelist-fix types)))
+                         (svex-env-fix x))))
+    :hints(("Goal" :in-theory (e/d (svex-env-fix
+                                    svarlist-override-p
+                                    alist-keys)))))
+
+
+  (defret svarlist-nonoverride-p*-alist-keys-of-<fn>
+    (svarlist-nonoverride-p* (alist-keys new-x) types)
+    :hints(("Goal" :in-theory (enable svarlist-nonoverride-p* alist-keys))))
+
+  (local (in-theory (enable svex-env-fix))))
+
+
 
 
 (define svex-alistlist-all-keys ((x svex-alistlist-p))
@@ -263,7 +431,72 @@
              (equal new-x
                     (if (svar-overridetype-equiv key-type type)
                         (svex-envlist-fix x)
-                      (repeat (len x) nil))))))
+                      (repeat (len x) nil)))))
+
+  (defret svarlist-override-p-all-keys-of-<fn>
+    (svarlist-override-p (svex-envlist-all-keys new-x) type)
+    :hints(("Goal" :in-theory (enable svarlist-override-p
+                                      svex-envlist-all-keys)))))
+
+(define svex-envlist-remove-override ((x svex-envlist-p)
+                                       (type svar-overridetype-p))
+  :returns (new-x svex-envlist-p)
+  (if (atom x)
+      nil
+    (cons (svex-env-remove-override (car x) type)
+          (svex-envlist-remove-override (cdr x) type)))
+  ///
+
+  (defthm svex-envlist-remove-override-of-append
+    (equal (svex-envlist-remove-override (append x y) type)
+           (append (svex-envlist-remove-override x type)
+                   (svex-envlist-remove-override y type))))
+
+
+  (local
+   (defret svex-envlist-remove-override-when-keys-override-p-lemma
+     (implies (svarlist-override-p (svex-envlist-all-keys x) key-type)
+              (equal new-x
+                     (if (svar-overridetype-equiv key-type type)
+                         (repeat (len x) nil)
+                       (svex-envlist-fix x))))
+     :hints(("Goal" :in-theory (enable svex-envlist-all-keys
+                                       svarlist-override-p
+                                       repeat)))))
+
+  (defret svex-envlist-remove-override-when-keys-override-p
+    (implies (and (equal keys (svex-envlist-all-keys x))
+                  (svarlist-override-p keys key-type))
+             (equal new-x
+                    (if (svar-overridetype-equiv key-type type)
+                        (repeat (len x) nil)
+                      (svex-envlist-fix x)))))
+
+  (defret svexlist-env-remove-override-when-keys-nonoverride-p
+    (implies (and (equal keys (svex-envlist-all-keys x))
+                  (svarlist-nonoverride-p keys key-type)
+                  (svar-overridetype-equiv type key-type))
+             (equal new-x
+                    (svex-envlist-fix x)))
+    :hints(("Goal" :in-theory (enable svex-envlist-all-keys))))
+  
+  (defret svex-envlist-remove-override-when-keys-change-override-p
+    (implies (and (equal keys (svex-envlist-all-keys x))
+                  (bind-free (case-match keys
+                               (('svarlist-change-override & key-type)
+                                `((key-type . ,key-type)))
+                               (& nil))
+                             (key-type))
+                  (svarlist-override-p keys key-type))
+             (equal new-x
+                    (if (svar-overridetype-equiv key-type type)
+                        (repeat (len x) nil)
+                      (svex-envlist-fix x)))))
+
+  (defret svarlist-nonoverride-p-all-keys-of-<fn>
+    (svarlist-nonoverride-p (svex-envlist-all-keys new-x) type)
+    :hints(("Goal" :in-theory (enable svarlist-nonoverride-p
+                                      svex-envlist-all-keys)))))
 
 
 (define svex-envlist-filter-override* ((x svex-envlist-p)
@@ -329,7 +562,83 @@
                     (if (member-equal (svar-overridetype-fix key-type)
                                       (svar-overridetypelist-fix types))
                         (svex-envlist-fix x)
-                      (repeat (len x) nil))))))
+                      (repeat (len x) nil)))))
+
+  (defret svarlist-override-p*-all-keys-of-<fn>
+    (svarlist-override-p* (svex-envlist-all-keys new-x) types)
+    :hints(("Goal" :in-theory (enable svarlist-override-p*
+                                      svex-envlist-all-keys)))))
+
+
+(define svex-envlist-remove-override* ((x svex-envlist-p)
+                                       (types svar-overridetypelist-p))
+  :returns (new-x svex-envlist-p)
+  (if (atom x)
+      nil
+    (cons (svex-env-remove-override* (car x) types)
+          (svex-envlist-remove-override* (cdr x) types)))
+  ///
+
+  (defthm svex-envlist-remove-override*-of-append
+    (equal (svex-envlist-remove-override* (append x y) types)
+           (append (svex-envlist-remove-override* x types)
+                   (svex-envlist-remove-override* y types))))
+
+
+  (local
+   (defret svex-envlist-remove-override*-when-keys-override-p*-lemma
+     (implies (and (svarlist-override-p* (svex-envlist-all-keys x) key-types)
+                   (not (intersectp-equal (svar-overridetypelist-fix key-types)
+                                          (svar-overridetypelist-fix types))))
+              (equal new-x
+                     (svex-envlist-fix x)))
+     :hints(("Goal" :in-theory (enable svex-envlist-all-keys)))))
+
+  (defret svex-envlist-remove-override*-when-keys-override-p*
+    (implies (and (equal keys (svex-envlist-all-keys x))
+                  (svarlist-override-p* keys key-types)
+                  (not (intersectp-equal (svar-overridetypelist-fix key-types)
+                                         (svar-overridetypelist-fix types))))
+             (equal new-x
+                    (svex-envlist-fix x))))
+
+  (local
+   (defret svex-envlist-remove-override*-when-keys-override-p-lemma
+     (implies (svarlist-override-p (svex-envlist-all-keys x) key-type)
+              (equal new-x
+                     (if (member-equal (svar-overridetype-fix key-type)
+                                       (svar-overridetypelist-fix types))
+                         (repeat (len x) nil)
+                       (svex-envlist-fix x))))
+     :hints(("Goal" :in-theory (enable svex-envlist-all-keys repeat)))))
+
+  (defret svex-envlist-remove-override*-when-keys-override-p
+    (implies (and (equal keys (svex-envlist-all-keys x))
+                  (svarlist-override-p keys key-type))
+             (equal new-x
+                    (if (member-equal (svar-overridetype-fix key-type)
+                                      (svar-overridetypelist-fix types))
+                        (repeat (len x) nil)
+                      (svex-envlist-fix x)))))
+
+  (defret svex-envlist-remove-override*-when-keys-change-override-p
+    (implies (and (equal keys (svex-envlist-all-keys x))
+                  (bind-free (case-match keys
+                               (('svarlist-change-override & key-type)
+                                `((key-type . ,key-type)))
+                               (& nil))
+                             (key-type))
+                  (svarlist-override-p keys key-type))
+             (equal new-x
+                    (if (member-equal (svar-overridetype-fix key-type)
+                                      (svar-overridetypelist-fix types))
+                        (repeat (len x) nil)
+                      (svex-envlist-fix x)))))
+
+  (defret svarlist-nonoverride-p*-all-keys-of-<fn>
+    (svarlist-nonoverride-p* (svex-envlist-all-keys new-x) types)
+    :hints(("Goal" :in-theory (enable svarlist-nonoverride-p*
+                                      svex-envlist-all-keys)))))
 
 
 
@@ -479,6 +788,55 @@
               (member-equal v (svarlist-fix x))))))
 
 
+(define svarlist-remove-override ((x svarlist-p)
+                                  (type svar-overridetype-p))
+  :returns (new-x svarlist-p)
+  (if (Atom x)
+      nil
+    (if (svar-override-p (car x) type)
+        (svarlist-remove-override (cdr x) type)
+      (cons (svar-fix (car x))
+              (svarlist-remove-override (cdr x) type))))
+  ///
+
+  ;; (defret svarlist-override-p-of-<fn>
+  ;;   (svarlist-override-p new-x type)
+  ;;   :hints(("Goal" :in-theory (enable svarlist-override-p))))
+
+  (local (defthm svar-fix-equals-x
+           (equal (equal (svar-fix x) x)
+                  (svar-p x))))
+
+  (defret member-of-<fn>
+    (iff (member-equal v new-x)
+         (and (not (svar-override-p v type))
+              (member-equal v (svarlist-fix x))))))
+
+(define svarlist-remove-override* ((x svarlist-p)
+                                   (types svar-overridetypelist-p))
+  :returns (new-x svarlist-p)
+  (if (Atom x)
+      nil
+    (if (svar-override-p* (car x) types)
+        (svarlist-remove-override* (cdr x) types)
+      (cons (svar-fix (car x))
+              (svarlist-remove-override* (cdr x) types))))
+  ///
+
+  ;; (defret svarlist-override-p*-of-<fn>
+  ;;   (svarlist-override-p* new-x types)
+  ;;   :hints(("Goal" :in-theory (enable svarlist-override-p*))))
+
+  (local (defthm svar-fix-equals-x
+           (equal (equal (svar-fix x) x)
+                  (svar-p x))))
+
+  (defret member-of-<fn>
+    (iff (member-equal v new-x)
+         (and (not (svar-override-p* v types))
+              (member-equal v (svarlist-fix x))))))
+
+
 
 
 
@@ -489,6 +847,7 @@
 
 (defcong svex-envlists-equivalent equal (svex-envlist-<<= x y) 2
   :hints(("Goal" :in-theory (enable svex-envlist-<<= svex-envlists-equivalent-redef))))
+
 
 
 

@@ -877,7 +877,7 @@ but did not resolve the branch ~%" first))))
             (4VEC-P SVEX))
    :rule-classes :forward-chaining
    :hints (("Goal"
-            :in-theory (e/d (svex-p) ())))))
+            :in-theory (e/d (svex-p sv::svar-p) ())))))
 
 (with-output
   :off :All

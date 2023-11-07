@@ -840,7 +840,7 @@
             <specname>
             svtv-spec->fsm-of-svtv-data-obj->spec
             (svex-envlist-all-keys)
-            (svarlist-override-p*))
+            (svarlist-nonoverride-p))
           :do-not-induct t)))
 
       (:@ :svtv-spec
@@ -857,8 +857,7 @@
              (svex-env-<<= (svex-env-reduce (<name>-input-vars)
                                             pipe-env)
                            spec-pipe-env)
-             (svarlist-override-p* (svex-envlist-all-keys spec-base-ins)
-                                   '(nil :val)))
+             (svarlist-nonoverride-p (svex-envlist-all-keys spec-base-ins) :test))
             (svex-env-<<= impl-run spec-run)))
          :hints
          (("goal"
@@ -883,7 +882,7 @@
              <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
              (svex-envlist-all-keys)
-             (svarlist-override-p*))
+             (svarlist-nonoverride-p))
            :do-not-induct t)))
 
        (defthm
@@ -899,8 +898,7 @@
              (svex-env-<<= (svex-env-reduce (<name>-input-vars)
                                             pipe-env)
                            spec-pipe-env)
-             (svarlist-override-p* (svex-envlist-all-keys spec-base-ins)
-                                   '(nil :val)))
+             (svarlist-nonoverride-p (svex-envlist-all-keys spec-base-ins) :test))
             (svex-env-<<= impl-run spec-run)))
          :hints
          (("goal"
@@ -924,7 +922,7 @@
              <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
              (svex-envlist-all-keys)
-             (svarlist-override-p*))
+             (svarlist-nonoverride-p))
            :do-not-induct t)))))
 
      ;; (local (defthm <data>-syntax-checks
@@ -1100,7 +1098,7 @@
 
                     (svex-env-<<= (svex-env-reduce (<name>-input-vars) pipe-env)
                                   spec-pipe-env)
-                    (svarlist-override-p* (svex-envlist-all-keys spec-base-ins) '(nil :val)))
+                    (svarlist-nonoverride-p (svex-envlist-all-keys spec-base-ins) :test))
                    (svex-env-<<= impl-run spec-run)))
         :hints(("Goal" :in-theory '((:CONGRUENCE
                                      SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
@@ -1134,7 +1132,7 @@
 
                     (svex-env-<<= (svex-env-reduce (<name>-input-vars) pipe-env)
                                   spec-pipe-env)
-                    (svarlist-override-p* (svex-envlist-all-keys spec-base-ins) '(nil :val)))
+                    (svarlist-nonoverride-p (svex-envlist-all-keys spec-base-ins) :test))
                    (svex-env-<<= impl-run spec-run)))
         :hints(("Goal" :in-theory '((:CONGRUENCE
                                      SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
@@ -1162,26 +1160,26 @@
       (defret <ideal-name>-refines-<name>-on-same-envs
         (b* ((spec-run (svtv-spec-run spec pipe-env :base-ins spec-base-ins :initst spec-initst))
              (impl-run (svtv-run (<name>) pipe-env)))
-          (implies (svarlist-override-p* (svex-envlist-all-keys spec-base-ins) '(nil :val))
+          (implies (svarlist-nonoverride-p (svex-envlist-all-keys spec-base-ins) :test)
                    (svex-env-<<= impl-run spec-run)))
         :hints (("goal" :in-theory '(<ideal-name>-refines-<name>
                                      svtv-override-triplemaplist-envs-ok-of-same-envs
                                      svex-env-reduce-<<=-same
                                      (svex-envlist-all-keys)
-                                     (svarlist-override-p*))))
+                                     (svarlist-nonoverride-p))))
         :fn <ideal-name>)
 
       (defret <ideal-name>-refines-<ideal-name>-on-same-envs
         (b* (((svtv-spec spec))
              (spec-run (svtv-spec-run spec spec-pipe-env :base-ins spec-base-ins :initst spec-initst))
              (impl-run (svtv-spec-run spec spec-pipe-env)))
-          (implies (svarlist-override-p* (svex-envlist-all-keys spec-base-ins) '(nil :val))
+          (implies (svarlist-nonoverride-p (svex-envlist-all-keys spec-base-ins) :test)
                    (svex-env-<<= impl-run spec-run)))
         :hints (("goal" :in-theory '(<ideal-name>-refines-<ideal-name>
                                      svtv-override-triplemaplist-envs-ok-of-same-envs
                                      svex-env-reduce-<<=-same
                                      (svex-envlist-all-keys)
-                                     (svarlist-override-p*))))
+                                     (svarlist-nonoverride-p))))
         :fn <ideal-name>)
 
       (define <ideal-name>-exec ((env svex-env-p)
@@ -1196,7 +1194,7 @@
                                     (svex-env-p)
                                     (svex-envlist-p)
                                     (svex-envlist-all-keys)
-                                    (svarlist-override-p*)
+                                    (svarlist-nonoverride-p)
                                     svtv-run
                                     svtv-p-of-<name>
                                     svtv-spec-p-of-<ideal-name>
@@ -1252,7 +1250,7 @@
                                 (svex-env-p)
                                 (svex-envlist-p)
                                 (svex-envlist-all-keys)
-                                (svarlist-override-p*)
+                                (svarlist-nonoverride-p)
                                 svtv-run
                                 svtv-p-of-<name>
                                 svtv-spec-p-of-<ideal-name>
@@ -3084,7 +3082,7 @@ additional setting of input and initial
 state variables not set by the SVTV itself; these are given respectively by
 @('base-ins') and @('initst') in the theorem.  Base-ins, however, must be
 assumed not to set any additional override test variables.  The
-@('svarlist-override-p') hypothesis of the theorem below ensures this.</p>
+@('svarlist-nonoverride-p') hypothesis of the theorem below ensures this.</p>
 
 <p>For example, the form above produces approximately the following generalized
 theorem, which we have annotated to say where each binding and hypothesis comes
@@ -3115,7 +3113,7 @@ from:</p>
                     env
                     '((override-clkgates . -1)))
                    ;; Base-ins doesn't add any override test settings
-                   (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
+                   (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test))
              ;; Conclusion given by the user
              (equal product (sum-partial-products partial-products)))))
  })

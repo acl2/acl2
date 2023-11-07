@@ -135,7 +135,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                    (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
+                    (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (e/d (svtv-data-obj->ideal-spec)
                                    (design->ideal-fsm-overridekey-transparent))
@@ -206,7 +206,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                    (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
+                    (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (e/d (svtv-data-obj->spec
                                     base-fsm-overridekey-transparent-p
@@ -444,7 +444,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                     (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
+                     (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test))
                 (svex-env-<<= impl-run spec-run)))
      :hints(("Goal" :in-theory (e/d (svtv-data-obj->ideal-spec
                                      svtv-data-obj->spec
@@ -483,7 +483,7 @@
                                                    pipe-env)
                                   spec-env)
 
-                     (svarlist-override-p* (svex-envlist-all-keys base-ins) '(nil :val)))
+                     (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test))
                 (svex-env-<<= impl-run spec-run)))
      :hints(("Goal" :use override-transparency-of-svtv-data-obj->spec/ideal-spec-abstraction-lemma)
             (and stable-under-simplificationp
