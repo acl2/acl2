@@ -38,6 +38,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -1685,13 +1686,6 @@
   :hints (("Goal" :in-theory (enable keep-atoms))))
 
 (local (in-theory (enable all-<-when-all-dargp)))
-
-;restrict?
-;move
-(defthm all-<=-when-all-<
-  (implies (all-< x bound)
-           (all-<= x bound))
-  :hints (("Goal" :in-theory (enable all-< all-<=))))
 
 (defthm not-bv-array-typep-when-bv-typep-cheap
   (implies (bv-typep x)

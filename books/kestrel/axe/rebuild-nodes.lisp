@@ -1,7 +1,7 @@
 ; Tools to rebuild DAGs while applying node translations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
 (include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
@@ -134,11 +135,6 @@
                             all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp
                             ;;bounded-darg-listp-of-args-when-bounded-dag-exprp
                             )))))
-;dup
-(defthm all-<=-when-all-<
-  (implies (all-< x bound)
-           (all-<= x bound))
-  :hints (("Goal" :in-theory (enable all-< all-<=))))
 
 ;; Rebuilds all the nodes in WORKLIST, and their supporters, while performing the substitution indicated by TRANSLATION-ARRAY.
 ;; Returns (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).

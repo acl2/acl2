@@ -19,8 +19,8 @@
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (local (include-book "merge-sort-less-than-rules")) ; todo: move some of these
-(local (include-book "rebuild-nodes")) ; todo: move some of these
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
