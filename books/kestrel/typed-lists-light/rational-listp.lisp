@@ -52,3 +52,9 @@
            (equal (rational-listp items)
                   (true-listp items)))
   :hints (("Goal" :in-theory (enable nat-listp rational-listp))))
+
+(defthm rational-listp-of-revappend
+  (equal (rational-listp (revappend x y))
+         (and (rational-listp (true-list-fix x))
+              (rational-listp y)))
+  :hints (("Goal" :in-theory (enable rational-listp revappend))))
