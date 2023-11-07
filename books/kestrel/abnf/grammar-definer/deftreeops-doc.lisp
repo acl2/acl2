@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -79,12 +79,12 @@
       "It must be a symbol in a package different from
        the Common Lisp package and the keyword package.")
      (xdoc::p
-      "A good choice for this symbol could be @('p::cst'),
-       where @('p') is the package of the application at hand
+      "A good choice for this symbol could be @('<p>::cst'),
+       where @('<p>') is the package of the application at hand
        and where @('cst') stands for CST (Concrete Syntax Tree).
-       If the application involves multiple gramamrs for different languages,
-       a good choice for this symbol could be @('p::lang-cst'),
-       where @('lang') indicates the language that the grammar refers to.")
+       If the application involves multiple grammars for different languages,
+       a good choice for this symbol could be @('<p>::<lang>-cst'),
+       where @('<lang>') indicates the language that the grammar refers to.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('<prefix>') be this symbol.")))
@@ -99,7 +99,7 @@
       (i.e. the symbol obtained by adding @('-tree-operations')
       to the name of the constant whose value is the grammar),
       and whose only parent is the @('*grammar*') symbol.
-      That is, the generated section is meant to be
+      That is, the generated section is
       a sub-topic of the XDOC topic for the grammar.")
 
     (xdoc::desc
@@ -126,7 +126,7 @@
         or a concatenation (for the fourth one),
         or an alternation (for the fifth one)."))
      (xdoc::p
-      "Each predicate holds iff the (list of (list of)) tree(s)
+      "Each predicate holds iff the (list of (list(s) of)) tree(s)
        is terminated and
        matches the element or repetition or concatenation or alternation.
        While in the @(see semantics) it makes sense
@@ -185,10 +185,10 @@
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that
-       if a list of list of trees matches
+       if a list of lists of trees matches
        the alternation that defines the rule name
-       then the list of list of trees matches
-       one of the alternatives (each of which is a concatenation."))
+       then the list of lists of trees matches
+       one of the alternatives (each of which is a concatenation)."))
 
     (xdoc::desc
      "@('<prefix>-match-alt<i>-<rulename>')"
@@ -197,9 +197,9 @@
        and for each alternative @('<i>') (starting from 1)
        that defines the rule name,
        a theorem saying that
-       if a list of list of trees matches that alternative
+       if a list of lists of trees matches that alternative
        (which is a concatenation)
-       then the list of list of trees has the same length as the concatenation
+       then the list of lists of trees has the same length as the concatenation
        and each list of trees matches
        the corresponding repetition of the concatenation.
        For now we only generate this theorem

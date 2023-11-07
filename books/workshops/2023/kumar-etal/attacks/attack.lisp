@@ -1,11 +1,7 @@
+; cert-flags: ? t :ttags :all :skip-proofs-okp t
+
 (in-package "ACL2S")
-(include-book "../higher-order")
-(include-book "../utils")
-
-(include-book "../network")
-(include-book "../utilities")
-(include-book "../graphs")
-
+(include-book "../top")
 
 ;; Event emission
 ;; I need skip-proofs because I can't prove:
@@ -259,9 +255,6 @@
   (b* ((mc (msgs-state-pld-cache (peer-state-mst ps))))
     (^ (> (len mc) 0)
        (! (pldcache-topic-rcvd ats mc)))))
-       
-                                             
-
 
 ;; Optimized version of run-network, which only records violations
 (skip-proofs

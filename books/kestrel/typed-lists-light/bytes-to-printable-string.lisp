@@ -26,12 +26,12 @@
     #\.))
 
 (defun map-code-char-printable (codes)
-  (declare (xargs :guard (acl2::all-unsigned-byte-p 8 codes)))
+  (declare (xargs :guard (all-unsigned-byte-p 8 codes)))
   (if (atom codes)
       nil
     (cons (code-char-printable (first codes))
           (map-code-char-printable (rest codes)))))
 
 (defun bytes-to-printable-string (bytes)
-  (declare (xargs :guard (acl2::all-unsigned-byte-p 8 bytes)))
-  (acl2::coerce (map-code-char-printable bytes) 'string))
+  (declare (xargs :guard (all-unsigned-byte-p 8 bytes)))
+  (coerce (map-code-char-printable bytes) 'string))

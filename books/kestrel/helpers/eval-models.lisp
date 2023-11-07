@@ -1016,6 +1016,11 @@
                   :stobjs state))
   (b* ( ;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
        (current-book-absolute-path (canonical-pathname filename nil state))
+       ((mv existsp state)
+        (file-existsp current-book-absolute-path state))
+       ((when (not existsp))
+        (cw "WARNING: Can't replay ~s0 because it does not exist.~%" current-book-absolute-path)
+        (mv nil (cons nil rand) state))
        ((when (member-equal current-book-absolute-path
                             (all-included-books (w state))))
         (cw "WARNING: Can't replay ~s0 because it is already included in the world.~%" filename)

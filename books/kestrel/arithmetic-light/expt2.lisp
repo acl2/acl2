@@ -305,3 +305,10 @@
                        (<= 0 i)
                        (<= (+ 1 i) size))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;rename
+(defthm cancel-expts-from-<
+  (implies (integerp i)
+           (equal (< (+ (expt 2 (+ -1 i)) x) (expt 2 i))
+                  (< x (expt 2 (+ -1 i)))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
