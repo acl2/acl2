@@ -41,3 +41,8 @@
 (defthm sortedp-<=-of-singleton
   (sortedp-<= (list x))
   :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthm sortedp-<=-when-not-consp-of-cdr
+  (implies (not (consp (cdr x)))
+           (sortedp-<= x))
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
