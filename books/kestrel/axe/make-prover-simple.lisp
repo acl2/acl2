@@ -780,6 +780,7 @@
          (rewrite-literals-name (pack$ 'rewrite-literals-for- suffix '-prover))
          (rewrite-clause-name (pack$ 'rewrite-clause-for- suffix '-prover))
          (apply-tactic-name (pack$ 'apply-tactic-for- suffix '-prover))
+         (apply-rep-tactic-name (pack$ 'apply-rep-tactic-for- suffix '-prover))
          (apply-tactics-name (pack$ 'apply-tactics-for- suffix '-prover))
          ;(rewrite-subst-and-elim-with-rule-alist-name (pack$ 'rewrite-subst-and-elim-with-rule-alist-for- suffix '-prover))
          (apply-tactic-for-rule-alists-name (pack$ 'apply-tactics-for-rule-alists-for- suffix '-prover))
@@ -3719,13 +3720,14 @@
          :hints (("Goal" :use (:instance ,(pack$ rewrite-clause-name '-return-type))
                   :in-theory (disable ,(pack$ rewrite-clause-name '-return-type)))))
 
-       ;; Apply the given tactic.
-       ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
-       ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant.
-       ;; otherwise, we return the simplified clause (as the list of literal nodenums and the dag-array, etc.)
-       ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned?
-       ;; In general, this can loop (e.g., due to looping rules), so we use a count to ensure termination.
        (mutual-recursion
+
+        ;; Apply the given tactic.
+        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+        ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant.
+        ;; otherwise, we return the simplified clause (as the list of literal nodenums and the dag-array, etc.)
+        ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned?
+        ;; In general, this can loop (e.g., due to looping rules), so we use a count to ensure termination.
         (defund ,apply-tactic-name (tactic
                                     literal-nodenums
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3809,40 +3811,79 @@
                                         nil ; no change yet
                                         (+ -1 count)))
                   ((call-of :rep tactic)
-                   (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                         (,apply-tactics-name (fargs tactic)
-                                              literal-nodenums
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                              rule-alist rule-set-number
-                                              interpreted-function-alist monitored-symbols
-                                              case-designator print
-                                              info tries prover-depth known-booleans var-ordering options
-                                              nil ; no change yet
-                                              (+ -1 count)))
-                        ((when erp)
-                         (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                        ((when provedp)
-                         (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-                     (if changep
-                         ;; something changed, so apply the :rep tactic again
-                         (,apply-tactic-name tactic ;the original :rep tactic
-                                             literal-nodenums
-                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                             rule-alist rule-set-number
-                                             interpreted-function-alist monitored-symbols
-                                             case-designator print
-                                             info tries prover-depth known-booleans var-ordering options (+ -1 count))
-                       ;; :rep tactic finished (no change this time):
-                       (mv (erp-nil)
-                           nil ;provedp
-                           nil ;changep
-                           literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))
+                   (,apply-rep-tactic-name (fargs tactic)
+                                           literal-nodenums
+                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                           rule-alist rule-set-number
+                                           interpreted-function-alist monitored-symbols
+                                           case-designator print
+                                           info tries prover-depth known-booleans var-ordering options
+                                           (+ -1 count)))
                   (t ;this case is impossible
                    (prog2$ (er hard ',apply-tactic-name "Unknown tactic: ~x0." tactic)
                            (mv :unknown-tactic
                                nil ;provedp
                                nil ;changep
                                literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))))))
+
+        ;; Repeatedly apply the tactic-sequence until nothing changes.
+        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
+        (defund ,apply-rep-tactic-name (tactic-sequence
+                                        literal-nodenums
+                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                        rule-alist rule-set-number
+                                        interpreted-function-alist monitored-symbols
+                                        case-designator print ;move print arg?
+                                        info tries prover-depth known-booleans var-ordering options count)
+          (declare (xargs :guard (and (simple-prover-tactic-listp tactic-sequence)
+                                      (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (nat-listp literal-nodenums)
+                                      (all-< literal-nodenums dag-len)
+                                      (rule-alistp rule-alist)
+                                      (interpreted-function-alistp interpreted-function-alist)
+                                      (info-worldp info)
+                                      (triesp tries)
+                                      (symbol-listp monitored-symbols)
+                                      (stringp case-designator)
+                                      (print-levelp print)
+                                      (natp prover-depth)
+                                      (symbol-listp known-booleans)
+                                      (symbol-listp var-ordering)
+                                      (simple-prover-optionsp options))
+                          :verify-guards nil ; done below
+                          :measure (+ 1 (nfix count)))
+                   (type (unsigned-byte 59) count))
+          (if (zp-fast count)
+              (mv :count-exceeded nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+            ;; Apply the whole tactic-sequence:
+            (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                  (,apply-tactics-name tactic-sequence
+                                       literal-nodenums
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                       rule-alist rule-set-number
+                                       interpreted-function-alist monitored-symbols
+                                       case-designator print
+                                       info tries prover-depth known-booleans var-ordering options
+                                       nil ; no change yet
+                                       (+ -1 count)))
+                 ((when erp)
+                  (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                 ((when provedp)
+                  (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+              (if changep
+                  ;; something changed, so keep going:
+                  (,apply-rep-tactic-name tactic-sequence
+                                          literal-nodenums
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          rule-alist rule-set-number
+                                          interpreted-function-alist monitored-symbols
+                                          case-designator print
+                                          info tries prover-depth known-booleans var-ordering options (+ -1 count))
+                ;; :rep tactic finished (no change this time):
+                (mv (erp-nil)
+                    nil ;provedp
+                    nil ;changep
+                    literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))
 
         ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries).
         (defund ,apply-tactics-name (tactics
@@ -3903,9 +3944,11 @@
 
        (make-flag ,apply-tactic-name)
 
+       ;; The main return type theorem, proved using defthm-flag:
        (,(pack$ 'defthm-flag- apply-tactic-name)
         (defthm ,(pack$ apply-tactic-name '-return-type)
-          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+          (implies (and ;; (simple-prover-tacticp tactic)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (nat-listp literal-nodenums)
                         (all-< literal-nodenums dag-len)
                         (rule-alistp rule-alist)
@@ -3914,7 +3957,9 @@
                         (triesp tries)
                         (symbol-listp monitored-symbols)
                         (stringp case-designator)
+                        ;; (print-levelp print)
                         (natp prover-depth)
+                        ;; (symbol-listp known-booleans)
                         ;; (symbol-listp var-ordering)
                         (simple-prover-optionsp options))
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
@@ -3936,8 +3981,10 @@
                                    (implies (< 0 prover-depth)
                                             (<= dag-len new-dag-len))))))
           :flag ,apply-tactic-name)
-        (defthm ,(pack$ apply-tactics-name '-return-type)
-          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+
+        (defthm ,(pack$ apply-rep-tactic-name '-return-type)
+          (implies (and ;; (simple-prover-tactic-listp tactic-sequence)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                         (nat-listp literal-nodenums)
                         (all-< literal-nodenums dag-len)
                         (rule-alistp rule-alist)
@@ -3946,7 +3993,45 @@
                         (triesp tries)
                         (symbol-listp monitored-symbols)
                         (stringp case-designator)
+                        ;; (print-levelp print)
                         (natp prover-depth)
+                        ;; (symbol-listp known-booleans)
+                        ;; (symbol-listp var-ordering)
+                        (simple-prover-optionsp options))
+                   (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
+                     (,apply-rep-tactic-name tactic-sequence
+                                             literal-nodenums
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             rule-alist rule-set-number
+                                             interpreted-function-alist monitored-symbols
+                                             case-designator print ;move print arg?
+                                             info tries prover-depth known-booleans var-ordering options count)
+                     (implies (not erp)
+                              (and (booleanp provedp)
+                                   (booleanp changep)
+                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+                                   (nat-listp new-literal-nodenums)
+                                   (all-< new-literal-nodenums new-dag-len)
+                                   (info-worldp new-info)
+                                   (triesp new-tries)
+                                   (implies (< 0 prover-depth)
+                                            (<= dag-len new-dag-len))))))
+          :flag ,apply-rep-tactic-name)
+
+        (defthm ,(pack$ apply-tactics-name '-return-type)
+          (implies (and ;; (simple-prover-tactic-listp tactics)
+                        (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                        (nat-listp literal-nodenums)
+                        (all-< literal-nodenums dag-len)
+                        (rule-alistp rule-alist)
+                        (interpreted-function-alistp interpreted-function-alist)
+                        (info-worldp info)
+                        (triesp tries)
+                        (symbol-listp monitored-symbols)
+                        (stringp case-designator)
+                        ;; (print-levelp print)
+                        (natp prover-depth)
+                        ;; (symbol-listp known-booleans)
                         ;; (symbol-listp var-ordering)
                         (simple-prover-optionsp options)
                         (booleanp changep-acc))
@@ -3971,6 +4056,7 @@
           :flag ,apply-tactics-name)
         :hints (("Goal" ;:induct t
                  :in-theory (e/d (,apply-tactic-name
+                                  ,apply-rep-tactic-name
                                   ,apply-tactics-name
                                   <-OF-+-OF-1-STRENGTHEN-2
                                   NATP-OF-+-OF-1
@@ -4030,6 +4116,19 @@
                      (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                      (true-listp new-literal-nodenums)))
           :flag ,apply-tactic-name)
+        (defthm ,(pack$ apply-rep-tactic-name '-return-type-2)
+          (implies (true-listp literal-nodenums)
+                   (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
+                     (,apply-rep-tactic-name tactic-sequence
+                                             literal-nodenums
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             rule-alist rule-set-number
+                                             interpreted-function-alist monitored-symbols
+                                             case-designator print ;move print arg?
+                                             info tries prover-depth known-booleans var-ordering options count)
+                     (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
+                     (true-listp new-literal-nodenums)))
+          :flag ,apply-rep-tactic-name)
         (defthm ,(pack$ apply-tactics-name '-return-type-2)
           (implies (true-listp literal-nodenums)
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
@@ -4044,6 +4143,7 @@
                      (true-listp new-literal-nodenums)))
           :flag ,apply-tactics-name)
         :hints (("Goal" :in-theory (e/d (,apply-tactic-name
+                                         ,apply-rep-tactic-name
                                          ,apply-tactics-name
                                          <-of-+-of-1-strengthen-2
                                          natp-of-+-of-1
