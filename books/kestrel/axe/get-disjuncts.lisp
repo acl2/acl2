@@ -16,19 +16,12 @@
 (include-book "kestrel/booleans/boolor" :dir :system) ;; since this tool knows about boolor
 (include-book "dag-array-builders")
 (include-book "def-dag-builder-theorems")
-(include-book "merge-sort-less-than")
+(include-book "merge-sort-less-than-and-remove-dups")
 (include-book "kestrel/utilities/forms" :dir :system) ; for call-of
-(local (include-book "kestrel/lists-light/nth" :dir :system))
+;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
-(local (include-book "merge-sort-less-than-rules"))
-
-;move
-(local
- (defthm nat-listp-of-append
-   (equal (nat-listp (append x y))
-          (and (nat-listp (true-list-fix x))
-               (nat-listp y)))
-   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+;(local (include-book "merge-sort-less-than-rules"))
 
 ;move
 (local
@@ -36,6 +29,59 @@
    (equal (nat-listp (reverse-list x))
           (nat-listp (true-list-fix x)))
    :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+(local
+  (progn
+    (defthm all-<-of-mv-nth-0-of-split-list-fast-aux
+      (implies (and (all-< acc bound)
+                    (all-< lst bound)
+                    (all-< tail bound)
+                    (<= (len tail) (len lst)) ; needed in general for such proofs?
+                    )
+               (all-< (mv-nth 0 (acl2::split-list-fast-aux lst tail acc)) bound))
+      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+
+    (defthm all-<-of-mv-nth-1-of-split-list-fast-aux
+      (implies (and (all-< acc bound)
+                    (all-< lst bound)
+                    (all-< tail bound)
+                    (<= (len tail) (len lst)) ; needed in general for such proofs?
+                    )
+               (all-< (mv-nth 1 (acl2::split-list-fast-aux lst tail acc)) bound))
+      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+
+    (defthm all-<-of-mv-nth-0-of-split-list-fast
+      (implies (all-< lst bound)
+               (all-< (mv-nth 0 (acl2::split-list-fast lst)) bound))
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))
+
+    (defthm all-<-of-mv-nth-1-of-split-list-fast
+      (implies (all-< lst bound)
+               (all-< (mv-nth 1 (acl2::split-list-fast lst)) bound))
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))))
+
+(local
+ (defthm all-<-of-merge-<-and-remove-dups-aux
+   (implies (and (all-< l1 bound)
+                 (all-< l2 bound)
+                 (all-< acc bound))
+            (all-< (merge-<-and-remove-dups-aux l1 l2 acc) bound))
+   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
+
+(local
+ (defthm all-<-of-merge-<-and-remove-dups
+   (implies (and (all-< l1 bound)
+                 (all-< l2 bound))
+            (all-< (merge-<-and-remove-dups l1 l2) bound))
+   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups)))))
+
+(local
+ (defthm all-<-of-merge-sort-<-and-remove-dups
+   (implies (all-< l bound)
+            (all-< (merge-sort-<-and-remove-dups l) bound))
+   :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups)))))
 
 ;;; End of library material
 
@@ -45,7 +91,8 @@
 ;; Throughout, we maintain IFF-equivalence but not necessarily equality.
 ;; This may extend the dag, since some of the disjuncts may not already exist in the dag (ex: for (not (booland x y)), the disjuncts are (not x) and (not y), and these may not exist in the dag).
 ;; TODO: In theory this could blow up due to shared structure, but I haven't seen that happen.
-;ffixme handle non-predicates (in which case we'll have an if nest, not a boolor nest)?
+;; The caller should remove duplicates from the result (extended-acc) of this function.
+;; TODO: handle non-predicates (in which case we'll have an if nest, not a boolor nest)?
 (defund get-darg-disjuncts (item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print)
   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (dargp-less-than item dag-len)
@@ -54,7 +101,7 @@
                   :measure (if (consp item)
                                0
                              (+ 1 (nfix item)))
-                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
+;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
                   :verify-guards nil ; done below
                   ))
   ;; drop this check?
@@ -84,7 +131,7 @@
                 ;; Can't get disjuncts from a variable:
                 (mv (erp-nil)
                     nil ; provedp
-                    (add-to-set-eql item acc)
+                    (cons item acc)
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
               (let ((fn (ffn-symb expr)))
                 ;;todo: handle fn=quote ?
@@ -129,7 +176,7 @@
                           ;; TODO: Handle more cases of if, such as (if x t y)
                           (mv (erp-nil)
                               nil ; provedp
-                              (add-to-set-eql item acc)
+                              (cons item acc)
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))))
                   (not (if (not (= 1 (len (dargs expr))))
                            (prog2$ (er hard? 'get-darg-disjuncts "Bad arity for NOT.")
@@ -164,7 +211,7 @@
                   (t ;;it's not something we know how to get disjuncts from:
                     (mv (erp-nil)
                         nil ; provedp
-                        (add-to-set-eql item acc)
+                        (cons item acc)
                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))
       ;; The negated-flag is t, so we are returning the negations of the conjuncts of ITEM:
       (if (consp item) ;test for quotep
@@ -186,7 +233,7 @@
                 (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist)
                 (mv erp
                     nil                                   ; provedp
-                    (add-to-set-eql negation-nodenum acc) ;meaningless if erp is t.
+                    (cons negation-nodenum acc) ;meaningless if erp is t.
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
             (let ((fn (ffn-symb expr)))
               (case fn
@@ -228,7 +275,7 @@
                           (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist)
                           (mv erp
                               nil                                   ; provedp
-                              (add-to-set-eql negation-nodenum acc) ;meaningless if erp is t.
+                              (cons negation-nodenum acc) ;meaningless if erp is t.
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
                 (not (if (not (= 1 (len (dargs expr))))
                          (prog2$ (er hard? 'get-darg-disjuncts "Bad arity for NOT.")
@@ -244,7 +291,7 @@
                     (add-function-call-expr-to-dag-array 'not (list item) dag-array dag-len dag-parent-array dag-constant-alist)
                     (mv erp
                         nil                                  ; provedp
-                        (add-to-set-eql negation-nodenum acc) ;meaningless if erp is t.
+                        (cons negation-nodenum acc) ;meaningless if erp is t.
                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))))))
 
 ;; (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -266,7 +313,7 @@
            (nat-listp (mv-nth 2 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-darg-disjuncts) (natp)))))
 
-(verify-guards get-darg-disjuncts :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (natp)))))
+(verify-guards get-darg-disjuncts :hints (("Goal" :in-theory (e/d () (natp)))))
 
 (defthm true-listp-of-mv-nth-2-of-get-darg-disjuncts
   (implies (true-listp acc)
@@ -286,12 +333,12 @@
                  (not (mv-nth 0 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
             (all-< (mv-nth 2 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))
                    (mv-nth 4 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
-  :hints (("Goal" :in-theory (e/d (get-darg-disjuncts CAR-BECOMES-NTH-OF-0) (natp)))))
-
-(defthm no-duplicatesp-equal-of-mv-nth-2-of-get-darg-disjuncts
-  (implies (no-duplicatesp-equal acc)
-           (no-duplicatesp-equal (mv-nth 2 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-darg-disjuncts) (natp)))))
+
+;; (defthm no-duplicatesp-equal-of-mv-nth-2-of-get-darg-disjuncts
+;;   (implies (no-duplicatesp-equal acc)
+;;            (no-duplicatesp-equal (mv-nth 2 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
+;;   :hints (("Goal" :in-theory (e/d (get-darg-disjuncts) (natp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,13 +352,11 @@
                               (nat-listp nodenums)
                               (all-< nodenums dag-len)
                               (nat-listp acc)
-                              (all-< acc dag-len))
-;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
-                  ))
+                              (all-< acc dag-len))))
   (if (endp nodenums)
       (mv (erp-nil)
           nil ;provedp
-          (merge-sort-< acc)
+          (merge-sort-<-and-remove-dups acc)
           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (b* ( ;; todo add handling of constant disjuncts, currently not returned by get-darg-disjuncts
          ((mv erp provedp acc dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -334,12 +379,17 @@
   (equal (get-disjuncts-from-nodes nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print)
          (mv (erp-nil)
              nil ;provedp
-             (merge-sort-< acc)
+             (merge-sort-<-and-remove-dups acc)
              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
   :hints (("Goal" :in-theory (enable get-disjuncts-from-nodes))))
 
 (defthm no-duplicatesp-equal-of-mv-nth-2-of-get-disjuncts-from-nodes
-  (implies (no-duplicatesp-equal acc)
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (nat-listp nodenums)
+                (all-< nodenums dag-len)
+                (nat-listp acc)
+                (all-< acc dag-len)
+                (rational-listp acc))
            (no-duplicatesp-equal (mv-nth 2 (get-disjuncts-from-nodes nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc print))))
   :hints (("Goal" :in-theory (e/d (get-disjuncts-from-nodes) (natp)))))
 
