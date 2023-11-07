@@ -3818,6 +3818,7 @@
                                            interpreted-function-alist monitored-symbols
                                            case-designator print
                                            info tries prover-depth known-booleans var-ordering options
+                                           0 ; interation count
                                            (+ -1 count)))
                   (t ;this case is impossible
                    (prog2$ (er hard ',apply-tactic-name "Unknown tactic: ~x0." tactic)
@@ -3834,7 +3835,7 @@
                                         rule-alist rule-set-number
                                         interpreted-function-alist monitored-symbols
                                         case-designator print ;move print arg?
-                                        info tries prover-depth known-booleans var-ordering options count)
+                                        info tries prover-depth known-booleans var-ordering options iteration-count count)
           (declare (xargs :guard (and (simple-prover-tactic-listp tactic-sequence)
                                       (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (nat-listp literal-nodenums)
@@ -3849,14 +3850,16 @@
                                       (natp prover-depth)
                                       (symbol-listp known-booleans)
                                       (symbol-listp var-ordering)
-                                      (simple-prover-optionsp options))
+                                      (simple-prover-optionsp options)
+                                      (natp iteration-count))
                           :verify-guards nil ; done below
                           :measure (+ 1 (nfix count)))
                    (type (unsigned-byte 59) count))
           (if (zp-fast count)
               (mv :count-exceeded nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             ;; Apply the whole tactic-sequence:
-            (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+            (b* ((- (and print (cw "(Iteration #~x0 for :rep tactic:" iteration-count)))
+                 ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                   (,apply-tactics-name tactic-sequence
                                        literal-nodenums
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3868,6 +3871,7 @@
                                        (+ -1 count)))
                  ((when erp)
                   (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+                 (- (and print (cw "End Iteration #~x0.)" iteration-count)))
                  ((when provedp)
                   (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
               (if changep
@@ -3878,7 +3882,7 @@
                                           rule-alist rule-set-number
                                           interpreted-function-alist monitored-symbols
                                           case-designator print
-                                          info tries prover-depth known-booleans var-ordering options (+ -1 count))
+                                          info tries prover-depth known-booleans var-ordering options (+ 1 iteration-count) (+ -1 count))
                 ;; :rep tactic finished (no change this time):
                 (mv (erp-nil)
                     nil ;provedp
@@ -3997,7 +4001,9 @@
                         (natp prover-depth)
                         ;; (symbol-listp known-booleans)
                         ;; (symbol-listp var-ordering)
-                        (simple-prover-optionsp options))
+                        (simple-prover-optionsp options)
+                        ;; (natp iteration-count)
+                        )
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                      (,apply-rep-tactic-name tactic-sequence
                                              literal-nodenums
@@ -4005,7 +4011,7 @@
                                              rule-alist rule-set-number
                                              interpreted-function-alist monitored-symbols
                                              case-designator print ;move print arg?
-                                             info tries prover-depth known-booleans var-ordering options count)
+                                             info tries prover-depth known-booleans var-ordering options iteration-count count)
                      (implies (not erp)
                               (and (booleanp provedp)
                                    (booleanp changep)
@@ -4125,7 +4131,7 @@
                                              rule-alist rule-set-number
                                              interpreted-function-alist monitored-symbols
                                              case-designator print ;move print arg?
-                                             info tries prover-depth known-booleans var-ordering options count)
+                                             info tries prover-depth known-booleans var-ordering options iteration-count count)
                      (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                      (true-listp new-literal-nodenums)))
           :flag ,apply-rep-tactic-name)
