@@ -61,6 +61,12 @@
                   (reverse-list x)))
   :hints (("Goal" :in-theory (enable reverse reverse-list revappend-lemma))))
 
+(defthm reverse-becomes-reverse-list-gen
+  (implies (not (stringp x))
+           (equal (reverse x)
+                  (reverse-list x)))
+  :hints (("Goal" :in-theory (enable reverse reverse-list revappend-lemma))))
+
 (defthm true-listp-of-reverse-list
   (true-listp (reverse-list x))
   :hints (("Goal" :in-theory (enable reverse-list))))
