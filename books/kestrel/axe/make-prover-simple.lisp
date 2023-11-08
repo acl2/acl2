@@ -3214,15 +3214,15 @@
               ((mv assumption-nodenum assumption-item)
                (assumption-array-info-for-literal nodenum dag-array dag-len known-booleans print))
               ;; Clear out the assumption info from this node, so we don't use it to rewrite this literal to true:
-              ;; Note that the index used here may not be in nodenum of the literal:
+              ;; Note that the index used here may not be the nodenum of the literal:
               (assumption-array (aset1 'assumption-array assumption-array assumption-nodenum nil))
-              ;; Make an array to track results in the worklist algorithm.  We
-              ;; expect the raw Lisp array previously allocated in
-              ;; ,rewrite-clause-name to be reused each time, since it will
-              ;; always be big enough:
+              ;; ;; Make an array to track results in the worklist algorithm.  We
+              ;; ;; expect the raw Lisp array previously allocated in
+              ;; ;; ,rewrite-clause-name to be reused each time, since it will
+              ;; ;; always be big enough:
               ;; (result-array (make-empty-array result-array-name (+ 1 nodenum) ;dag-len
               ;;                                 ))
-              (result-alist nil) ; will become a fast-alist
+              (result-alist nil) ; will become a fast-alist when we do the first hons-acons
               ;; Rewrite this literal:
               ((mv erp result-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                ;; TODO: would it make sense to memoize in this?
