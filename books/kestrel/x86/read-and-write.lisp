@@ -1897,13 +1897,16 @@
                   (read n1 addr1 x86)))
   :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (read n1 addr1 x86)
+           :induct t
            :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus
                                    read-byte ; todo
                                    )
                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     ACL2::SLICE-OF-+ ;looped
                                                     ACL2::BVCAT-OF-+-HIGH
+                                                    ;; for speed:
+                                                    X86ISA::MEMI
+                                                    acl2::BVCHOP-IDENTITY
                                                     )))))
 
 (local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ;todo: reduce?
@@ -2489,7 +2492,7 @@
                             (WRITE-BYTES (+ 1 AD2) (CDR VALS2) X86)))
            :induct ;(write-bytes ad2 vals2 x86)
            (double-write-bytes-induct-two-ads-two-lists ad1 ad2 vals1 vals2 x86)
-           :in-theory (e/d (write-bytes bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
+           :in-theory (e/d (write-bytes bvplus bvuminus bvminus)
                            (;(:e ash) ;blows out the memory
                             ;(:e expt)
                             acl2::bvminus-becomes-bvplus-of-bvuminus)))))
@@ -2526,8 +2529,13 @@
                                         )
                            (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             ACL2::BVCAT-OF-+-LOW ;looped
-                            ;ACL2::TAKE-OF-CDR-BECOMES-SUBRANGE
-                            )))))
+                            ;;ACL2::TAKE-OF-CDR-BECOMES-SUBRANGE
+                            ;;for speed:
+                            acl2::IMPOSSIBLE-VALUE-1
+                            acl2::CONSP-FROM-LEN-CHEAP
+                            acl2::<-OF-BVCHOP-AND-BVCHOP-WHEN-TOP-BITS-EQUAL
+                            ACL2::BVCHOP-IDENTITY
+                            ACL2::BVCHOP-PLUS-1-SPLIT)))))
 
 (defthm write-bytes-of-append-gen
   (implies (integerp ad)
@@ -2575,8 +2583,10 @@
 ;                            append-take-nthcdr
                             ;acl2::append-of-take-and-nthcdr-2 ;compare to  list::append-take-nthcdr
     ;write-bytes-of-append-gen write-bytes-of-append
-                            ;list::equal-append-reduction!
-                            )))))
+    ;list::equal-append-reduction!
+                            ;; for speed:
+                            acl2::DISTRIBUTIVITY-OF-MINUS-OVER-+
+                            X::WRITE-BYTES-OF-WRITE-BYTES-SAME-GEN)))))
 
 ;todo: very slow
 ;; to state this, we manually put in an append for vals2. next we'll replace it with just vals2 (using helper2 above)
@@ -2640,6 +2650,10 @@
                             ;LIST::EQUAL-APPEND-REDUCTION!
                             WRITE-BYTES-OF-WRITE-BYTES-DISJOINT
                             ;ACL2::TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+                            ;; for speed:
+                            acl2::BVCHOP-IDENTITY
+                            ;acl2::LEN-OF-IF
+                            X::WRITE-BYTES-OF-WRITE-BYTES-SAME-GEN
                             )))))
 
 (defthmd write-bytes-of-write-bytes-same-contained
