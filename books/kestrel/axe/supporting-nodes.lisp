@@ -163,50 +163,9 @@
 ;;                   bound))
 ;;   :hints (("Goal" :in-theory (enable aref1-list))))
 
-;;;
-;;; tag-nodenums-with-name
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Set the tag bit for each thing in ITEMS that is a nodeum.  ITEMS are nodenums
-;or quoted constants.
-;; The "-with-name" suffix indicates that this function takes the tag-array-name as an argument.
-(defund tag-nodenums-with-name (items tag-array-name array)
-  (declare (xargs :guard (and (array1p tag-array-name array)
-                              (true-listp items)
-                              (bounded-darg-listp items (alen1 tag-array-name array)))))
-  (if (endp items)
-      array
-    (let ((item (first items)))
-      (if (consp item) ;; test for quoted constant
-          (tag-nodenums-with-name (cdr items) tag-array-name array)
-        (tag-nodenums-with-name (cdr items) tag-array-name (aset1 tag-array-name array item t))))))
-
-(defthm alen1-of-tag-nodenums-with-name
-  (implies (bounded-darg-listp items (alen1 tag-array-name array))
-           (equal (alen1 tag-array-name (tag-nodenums-with-name items tag-array-name array))
-                  (alen1 tag-array-name array)))
-  :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
-
-(defthm array1p-of-tag-nodenums-with-name
-  (implies (and (array1p tag-array-name array)
-                (bounded-darg-listp items (alen1 tag-array-name array)))
-           (array1p tag-array-name (tag-nodenums-with-name items tag-array-name array)))
-  :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
-
-;; the tag doesn't become unset
-(defthm aref1-of-tag-nodenums-with-name-when-aref1
-  (implies (and (aref1 tag-array-name tag-array nodenum)
-                (array1p tag-array-name tag-array)
-                (natp nodenum)
-                (< nodenum (alen1 tag-array-name tag-array))
-                (bounded-darg-listp items (alen1 tag-array-name tag-array)))
-           (aref1 tag-array-name (tag-nodenums-with-name items tag-array-name tag-array) nodenum))
-  :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
-
-;;;
-;;; all-taggedp-with-name
-;;;
-
+;; Used to express some theorems
 ;; Check that each of the NODENUMS is tagged in the array.
 ;; The "-with-name" suffix indicates that this function takes the tag-array-name as an argument.
 (defund all-taggedp-with-name (nodenums tag-array-name array)
@@ -231,10 +190,47 @@
                 (< nodenum (alen1 tag-array-name tag-array))
                 (all-natp nodenums)
                 (all-< nodenums (alen1 tag-array-name tag-array))
-                (array1p tag-array-name tag-array)
-                )
+                (array1p tag-array-name tag-array))
            (all-taggedp-with-name nodenums tag-array-name (aset1 tag-array-name tag-array nodenum t)))
   :hints (("Goal" :in-theory (enable all-taggedp-with-name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;Set the tag bit for each thing in DARGS that is a nodeum.  DARGS are nodenums
+;or quoted constants.
+;; The "-with-name" suffix indicates that this function takes the tag-array-name as an argument.
+(defund tag-nodenums-with-name (dargs tag-array-name array)
+  (declare (xargs :guard (and (array1p tag-array-name array)
+                              (true-listp dargs)
+                              (bounded-darg-listp dargs (alen1 tag-array-name array)))))
+  (if (endp dargs)
+      array
+    (let ((darg (first dargs)))
+      (if (consp darg) ;; test for quoted constant
+          (tag-nodenums-with-name (cdr dargs) tag-array-name array)
+        (tag-nodenums-with-name (cdr dargs) tag-array-name (aset1 tag-array-name array darg t))))))
+
+(defthm alen1-of-tag-nodenums-with-name
+  (implies (bounded-darg-listp dargs (alen1 tag-array-name array))
+           (equal (alen1 tag-array-name (tag-nodenums-with-name dargs tag-array-name array))
+                  (alen1 tag-array-name array)))
+  :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
+
+(defthm array1p-of-tag-nodenums-with-name
+  (implies (and (array1p tag-array-name array)
+                (bounded-darg-listp dargs (alen1 tag-array-name array)))
+           (array1p tag-array-name (tag-nodenums-with-name dargs tag-array-name array)))
+  :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
+
+;; the tag doesn't become unset
+(defthm aref1-of-tag-nodenums-with-name-when-aref1
+  (implies (and (aref1 tag-array-name tag-array nodenum)
+                (array1p tag-array-name tag-array)
+                (natp nodenum)
+                (< nodenum (alen1 tag-array-name tag-array))
+                (bounded-darg-listp dargs (alen1 tag-array-name tag-array)))
+           (aref1 tag-array-name (tag-nodenums-with-name dargs tag-array-name tag-array) nodenum))
+  :hints (("Goal" :in-theory (enable tag-nodenums-with-name))))
 
 ;; tags don't become unset
 (defthm all-taggedp-with-name-of-tag-nodenums-with-name-when-all-taggedp-with-name
@@ -246,16 +242,14 @@
            (all-taggedp-with-name nodenums tag-array-name (tag-nodenums-with-name nodenums2 tag-array-name tag-array)))
   :hints (("Goal" :in-theory (enable all-taggedp-with-name tag-nodenums-with-name))))
 
-;;;
-;;; tagging supporters
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;processes the nodes top down in order
 ;before calling this, you should tag the node(s) whose supporters you want to compute (by setting their entries in the tag-array to t)
 ;if a node is tagged when we reach it, its children get tagged too
 ;could also use a worklist algorithm (might be better if the number of tagged nodes will be small - saves looping over the whole array)
 ;; The "-with-name" suffix indicates that this function takes the dag-array-name and tag-array-name as arguments.
-(defund tag-supporters-with-name (n dag-array-name dag-array tag-array-name tag-array)
+(defund tag-supporters-of-nodes-with-name-aux (n dag-array-name dag-array tag-array-name tag-array)
   (declare (xargs :measure (nfix (+ 1 n))
                   :guard (and (integerp n)
                               (<= -1 n)
@@ -275,37 +269,36 @@
             (if (or (variablep expr)
                     (fquotep expr))
                 ;;no children to tag
-                (tag-supporters-with-name (+ -1 n) dag-array-name dag-array tag-array-name tag-array)
+                (tag-supporters-of-nodes-with-name-aux (+ -1 n) dag-array-name dag-array tag-array-name tag-array)
               (let ((args (dargs expr)))
-                (tag-supporters-with-name (+ -1 n) dag-array-name dag-array tag-array-name (tag-nodenums-with-name args tag-array-name tag-array)))))
+                (tag-supporters-of-nodes-with-name-aux (+ -1 n) dag-array-name dag-array tag-array-name (tag-nodenums-with-name args tag-array-name tag-array)))))
         ;;node isn't tagged
-        (tag-supporters-with-name (+ -1 n) dag-array-name dag-array tag-array-name tag-array)))))
+        (tag-supporters-of-nodes-with-name-aux (+ -1 n) dag-array-name dag-array tag-array-name tag-array)))))
 
-(defthm alen1-of-tag-supporters-with-name
+(defthm alen1-of-tag-supporters-of-nodes-with-name-aux
   (implies (and (natp top-nodenum)
                 (array1p tag-array-name tag-array)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum))
                 (< top-nodenum (alen1 tag-array-name tag-array)))
-           (equal (alen1 tag-array-name (tag-supporters-with-name top-nodenum dag-array-name dag-array tag-array-name tag-array))
+           (equal (alen1 tag-array-name (tag-supporters-of-nodes-with-name-aux top-nodenum dag-array-name dag-array tag-array-name tag-array))
                   (alen1 tag-array-name tag-array)))
-  :hints (("Goal" :in-theory (enable tag-supporters-with-name)
-           :expand ((tag-supporters-with-name 0 dag-array-name
+  :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name-aux)
+           :expand ((tag-supporters-of-nodes-with-name-aux 0 dag-array-name
                                     dag-array tag-array-name tag-array))
            :do-not '(generalize eliminate-destructors))))
 
-(defthm array1p-of-tag-supporters-with-name
+(defthm array1p-of-tag-supporters-of-nodes-with-name-aux
   (implies (and (natp top-nodenum)
                 (array1p tag-array-name tag-array)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum))
                 (< top-nodenum (alen1 tag-array-name tag-array)))
-           (array1p tag-array-name (tag-supporters-with-name top-nodenum dag-array-name dag-array tag-array-name tag-array)))
-  :hints (("Goal" :in-theory (enable tag-supporters-with-name)
-           :expand ((TAG-SUPPORTERS-WITH-NAME 0 DAG-ARRAY-NAME
-                                    DAG-ARRAY TAG-ARRAY-NAME TAG-ARRAY))
+           (array1p tag-array-name (tag-supporters-of-nodes-with-name-aux top-nodenum dag-array-name dag-array tag-array-name tag-array)))
+  :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name-aux)
+           :expand ((tag-supporters-of-nodes-with-name-aux 0 dag-array-name dag-array tag-array-name tag-array))
            :do-not '(generalize eliminate-destructors))))
 
 ;; the tag doesn't become unset
-(defthm aref1-of-tag-supporters-with-name-when-aref1
+(defthm aref1-of-tag-supporters-of-nodes-with-name-aux-when-aref1
   (implies (and (aref1 tag-array-name tag-array nodenum)
                 ;; the guard:
                 (and (integerp n)
@@ -315,11 +308,11 @@
                                    (< n (alen1 tag-array-name tag-array)))))
                 (natp nodenum)
                 (< nodenum (alen1 tag-array-name tag-array)))
-           (aref1 tag-array-name (tag-supporters-with-name n dag-array-name dag-array tag-array-name tag-array) nodenum))
-  :hints (("Goal" :in-theory (enable tag-supporters-with-name))))
+           (aref1 tag-array-name (tag-supporters-of-nodes-with-name-aux n dag-array-name dag-array tag-array-name tag-array) nodenum))
+  :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name-aux))))
 
 ;; tags don't become unset
-(defthm all-taggedp-with-name-of-tag-supporters-with-name-when-all-taggedp-with-name
+(defthm all-taggedp-with-name-of-tag-supporters-of-nodes-with-name-aux-when-all-taggedp-with-name
   (implies (and (all-taggedp-with-name nodenums tag-array-name tag-array)
                 ;; the guard:
                 (integerp n)
@@ -328,10 +321,9 @@
                               (array1p tag-array-name tag-array)
                               (< n (alen1 tag-array-name tag-array))))
                 (all-natp nodenums)
-                (all-< nodenums (alen1 tag-array-name tag-array))
-                )
-           (all-taggedp-with-name nodenums tag-array-name (tag-supporters-with-name n dag-array-name dag-array tag-array-name tag-array)))
-  :hints (("Goal" :in-theory (enable tag-supporters-with-name NAT-LISTP))))
+                (all-< nodenums (alen1 tag-array-name tag-array)))
+           (all-taggedp-with-name nodenums tag-array-name (tag-supporters-of-nodes-with-name-aux n dag-array-name dag-array tag-array-name tag-array)))
+  :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name-aux NAT-LISTP))))
 
 ;; Returns the TAG-ARRAY, named TAG-ARRAY-NAME, which maps each nodenum to a
 ;; boolean indicating whether it is a supporter of any of the NODENUMS (nodes
@@ -354,8 +346,11 @@
                               (<= tag-array-length 2147483646)
                               (symbolp tag-array-name))))
   (let* ((tag-array (make-empty-array tag-array-name tag-array-length))
-         (tag-array (aset1-list tag-array-name tag-array nodenums t)))
-    (tag-supporters-with-name max-nodenum dag-array-name dag-array tag-array-name tag-array)))
+         ;; Tag all the NODENUMS...
+         (tag-array (aset1-list tag-array-name tag-array nodenums t))
+         ;; ... and their supporters:
+         (tag-array (tag-supporters-of-nodes-with-name-aux max-nodenum dag-array-name dag-array tag-array-name tag-array)))
+    tag-array))
 
 (defthm array1p-of-tag-supporters-of-nodes-with-name
   (implies (and (all-natp nodenums)
@@ -382,6 +377,7 @@
                   tag-array-length))
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name))))
 
+;; the max nodenum gets tagged
 (defthm aref1-of-tag-supporters-of-nodes-with-name-and-maxelem
   (implies (and (all-natp nodenums)
                 (consp nodenums)
@@ -396,6 +392,7 @@
                   (maxelem nodenums)))
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name maxelem))))
 
+;; all of the nodenums get tagged
 (defthm all-taggedp-with-name-of-tag-supporters-of-nodes-with-name-same
   (implies (and (all-natp nodenums)
                 (consp nodenums)
@@ -409,7 +406,9 @@
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name
                                      all-taggedp-with-name))))
 
-;; Special case for one node
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Special case for one node.
 ;; rename make-supporters-tag-array-for-node
 ;; The "-with-name" suffix indicates that this function takes the dag-array-name and tag-array-name as arguments.
 (defund tag-supporters-of-node-with-name (nodenum
