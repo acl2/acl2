@@ -178,35 +178,39 @@
 ;; Currently only 'equal and 'iff are supported as equivs.
 ;; No entries are needed here for IF, MYIF, or BOOLIF, because all Axe provers handle them specially.
 ;; We could drop BVIF except the simple provers do not (yet) handle it specially.
+;; This is a fast-alist.
 (defconst *equiv-alist*
-  (acons 'iff ; outer equiv that must be preserved
-         (acons 'not '(iff)
-                (acons 'iff '(iff iff)
-                       (acons 'implies '(iff iff)
-                              (acons 'bool-to-bit '(iff)
-                                     (acons 'bool-fix$inline '(iff)
+  (make-fast-alist
+   (acons 'iff ; outer equiv that must be preserved
+          (make-fast-alist
+           (acons 'not '(iff)
+                  (acons 'iff '(iff iff)
+                         (acons 'implies '(iff iff)
+                                (acons 'bool-to-bit '(iff)
+                                       (acons 'bool-fix$inline '(iff)
                                             ;; TODO: Remove this?  A BVIF in an IFF context is just T:
                                             ;; (acons 'bvif '(equal iff equal equal)
-                                            (acons 'boolor '(iff iff)
-                                                   (acons 'boolxor '(iff iff)
-                                                          (acons 'booland '(iff iff)
-                                                                 nil)))
+                                              (acons 'boolor '(iff iff)
+                                                     (acons 'boolxor '(iff iff)
+                                                            (acons 'booland '(iff iff)
+                                                                   nil)))
                                             ;;)
-                                            )))))
-         (acons 'equal ; outer equiv that must be preserved
+                                              ))))))
+          (acons 'equal ; outer equiv that must be preserved
                 ;; We only include things here for which we can do better than using
                 ;; an equiv of EQUAL for all arguments:
-                (acons 'not '(iff)
-                       (acons 'iff '(iff iff)
-                              (acons 'implies '(iff iff)
-                                     (acons 'bool-to-bit '(iff)
-                                            (acons 'bool-fix$inline '(iff)
-                                                   (acons 'bvif '(equal iff equal equal)
-                                                          (acons 'boolor '(iff iff)
-                                                                 (acons 'boolxor '(iff iff)
-                                                                        (acons 'booland '(iff iff)
-                                                                               nil)))))))))
-                nil)))
+                 (make-fast-alist
+                  (acons 'not '(iff)
+                         (acons 'iff '(iff iff)
+                                (acons 'implies '(iff iff)
+                                       (acons 'bool-to-bit '(iff)
+                                              (acons 'bool-fix$inline '(iff)
+                                                     (acons 'bvif '(equal iff equal equal)
+                                                            (acons 'boolor '(iff iff)
+                                                                   (acons 'boolxor '(iff iff)
+                                                                          (acons 'booland '(iff iff)
+                                                                                 nil))))))))))
+                 nil))))
 
 (thm
  (equiv-alistp *equiv-alist*))

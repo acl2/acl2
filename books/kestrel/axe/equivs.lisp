@@ -15,6 +15,16 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 
+(local
+ (defthm hons-assoc-equal-becomes-assoc-equal
+   (implies (alistp alist)
+            (equal (hons-assoc-equal key alist)
+                   (assoc-equal key alist)))))
+
+(defund hons-lookup-equal (key alist)
+  (declare (xargs :guard t)) ; strengthen but note that fast alists can be non-true-lists
+  (cdr (hons-get key alist)))
+
 ;; We may some day support more equivalence relation, but for now we only
 ;; support 'equal and 'iff.
 (defund equivp (x)
@@ -70,10 +80,10 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable symbol-to-equivs-alistp))))
 
-(defthm equiv-listp-of-lookup-equal-when-symbol-to-equivs-alistp
+(defthm equiv-listp-of-hons-lookup-equal-when-symbol-to-equivs-alistp
   (implies (symbol-to-equivs-alistp alist)
-           (equiv-listp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable symbol-to-equivs-alistp))))
+           (equiv-listp (hons-lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable hons-lookup-equal symbol-to-equivs-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,14 +94,14 @@
     (and (symbol-to-equivs-alistp (first x))
          (all-symbol-to-equivs-alistp (rest x)))))
 
-(defthm symbol-to-equivs-alistp-of-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
+(defthm symbol-to-equivs-alistp-of-hons-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
   (implies (all-symbol-to-equivs-alistp (strip-cdrs alist))
-           (symbol-to-equivs-alistp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
+           (symbol-to-equivs-alistp (hons-lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable hons-lookup-equal all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
 
-(defthm symbol-alistp-of-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
+(defthm symbol-alistp-of-hons-lookup-equal-when-all-symbol-to-equivs-alistp-of-strip-cdrs
   (implies (all-symbol-to-equivs-alistp (strip-cdrs alist))
-           (symbol-alistp (lookup-equal key alist)))
+           (symbol-alistp (hons-lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,10 +118,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Get the equivs that should be used when rewriting the args of FN, if we are to preserve OUTER-EQUIV on the call of FN.
+;; EQUIV-ALIST should be a fast-alist.
 (defund get-equivs (outer-equiv fn equiv-alist)
   (declare (xargs :guard (equiv-alistp equiv-alist)
                   :guard-hints (("Goal" :in-theory (enable equiv-alistp)))))
-  (lookup-eq fn (lookup-eq outer-equiv equiv-alist)))
+  (hons-lookup-equal fn (hons-lookup-equal outer-equiv equiv-alist)))
 
 (defthm equiv-listp-of-get-equivs
   (implies (equiv-alistp equiv-alist)
