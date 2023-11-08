@@ -193,3 +193,8 @@
            (<= (maxelem (cdr lst)) (maxelem lst)))
   :rule-classes ((:linear :trigger-terms ((maxelem (cdr lst)))))
   :hints (("Goal" :in-theory (enable maxelem))))
+
+(defthm member-equal-of-maxelem-same
+  (iff (member-equal (maxelem x) x)
+       (consp x))
+  :hints (("Goal" :in-theory (enable maxelem member-equal))))

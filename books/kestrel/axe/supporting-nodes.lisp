@@ -39,17 +39,6 @@
 
 (local (in-theory (disable (:i alistp))))
 
-;; ;kill
-;; (defthm memberp-of-maxelem-same
-;;   (implies (consp x)
-;;            (memberp (maxelem x) x))
-;;   :hints (("Goal" :in-theory (enable maxelem memberp))))
-
-(defthm member-equal-of-maxelem-same
-  (implies (consp x)
-           (member-equal (maxelem x) x))
-  :hints (("Goal" :in-theory (enable maxelem member-equal))))
-
 ;move
 (defthm all-<-forward-to-posp-when-all-natp
   (implies (and (all-< items x)
@@ -59,29 +48,6 @@
            (posp x))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable all-<))))
-
-;move
-(defthm reverse-becomes-reverse-list-gen
-  (implies (not (stringp x))
-           (equal (reverse x)
-                  (reverse-list x)))
-  :hints
-  (("Goal"
-    :in-theory (enable reverse reverse-list revappend-lemma))))
-
-;move
-(local
- (defthm stringp-of-reverse
-   (equal (stringp (reverse x))
-          (stringp x))
-   :hints (("Goal" :in-theory (enable reverse)))))
-
-(local
- (defthm stringp-of-reverse-type
-   (implies (stringp x)
-            (stringp (reverse x)))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable reverse)))))
 
 ;move
 (defthm all-<-of-reverse
