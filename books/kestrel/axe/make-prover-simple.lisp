@@ -3882,7 +3882,7 @@
                  (elapsed-time (let ((diff (- end-time start-time))) (if (<= 0 diff) diff 0)))
                  ((when erp)
                   (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-                 (- (and print (progn$ (cw "End Iteration #~x0." iteration-count)
+                 (- (and print (progn$ (cw "End Iteration #~x0: " iteration-count)
                                        (print-to-hundredths elapsed-time)
                                        (cw "s.)~%") ; s for "seconds"
                                        )))
