@@ -1893,7 +1893,7 @@
                      ;; Now we simplify the function applied to the simplified args:
                      (if (consp fn) ;;tests for lambda
                          ;; It's a lambda, so we beta-reduce and simplify the result:
-                         ;; note that we don't look up lambdas in the nodenums-to-assume-false (this is consistent with simplifying first)
+                         ;; note that we don't look up lambdas in the nodenums-to-assume-false (this is consistent with simplifying first).  actually, we only use the nodenums-to-assume-false for free var matching now.
                          (let* ((formals (second fn))
                                 (body (third fn))
                                 ;;BOZO could optimize this pattern: (,sublis-var-and-eval-name (my pairlis$ formals args) body ..)
@@ -3291,10 +3291,10 @@
        ;; other literals (from WORK-LIST and DONE-LIST) false.
        ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries),
        ;; where if PROVEDP is t, then the disjunction of WORK-LIST and DONE-LIST was proved to be non-nil,
-       ;; and if PROVEDP is nil, then that disjunction is equuialent to the LITERAL-NODENUMS returned.
+       ;; and if PROVEDP is nil, then that disjunction is equivalent to the LITERAL-NODENUMS returned.
        ;; If provedp is non-nil, changep is meaningless..
-       ;; Not a worklist algorithm of the usual sort (all elements of work-list are literals)
-       ;; may extend the dag but doesn't change any nodes (new!).
+       ;; Not a worklist algorithm of the usual sort (all elements of work-list are literals).
+       ;; May extend the dag but doesn't change any nodes (new!).
        ;; TODO: If the only change is that some literals were dropped, perhaps we don't want to make another pass?
        (defund ,rewrite-literals-name (work-list ;a list of nodenums, with no extractable disjuncts
                                        done-list ;a list of nodenums, with no extractable disjuncts
@@ -3336,12 +3336,12 @@
                          changep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
            (b* ((literal-nodenum (first work-list))
                 (rest-work-list (rest work-list))
-                (other-literals (append rest-work-list done-list)) ;todo: save this append somehow?
+                (nodenums-to-assume-false (append rest-work-list done-list)) ;todo: save this append when no rules have free vars?  or pass this in 2 pieces?
                 ;; Rewrite the literal:
                 ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array)
                  (,rewrite-literal-name literal-nodenum
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                        other-literals
+                                        nodenums-to-assume-false
                                         assumption-array assumption-array-num-valid-nodes
                                         rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth result-array-name known-booleans options))
                 ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
