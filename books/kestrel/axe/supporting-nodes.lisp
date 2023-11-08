@@ -40,94 +40,15 @@
 (local (in-theory (disable (:i alistp))))
 
 ;move
-(defthm all-<-forward-to-posp-when-all-natp
-  (implies (and (all-< items x)
-                (all-natp items)
-                (consp items)
-                (integerp x))
-           (posp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable all-<))))
-
-;move
-(defthm all-<-of-reverse
-  (implies t;(true-listp x)
-           (equal (all-< (reverse x) bound)
-                  (all-< x bound)))
-  :hints (("Goal" :cases ((stringp x))
-           :in-theory (e/d (reverse-becomes-reverse-list) ()))))
-
-;move
-(defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux
-  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
-                (all-<= nodenums top-nodenum-to-check)
-                (all-natp nodenums)
-                (natp top-nodenum-to-check)
-                ;(aref1 'translation-array translation-array nodenum)
-                ;(not (consp (aref1 'translation-array translation-array nodenum)))
-                (all-integerp (aref1-list 'translation-array translation-array nodenums))
-                (all-< acc bound)
-                )
-           (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
-                  bound))
-  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
-
-(defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux-gen
-  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
-                (<= bound bound2)
-                (all-<= nodenums top-nodenum-to-check)
-                (all-natp nodenums)
-                (natp top-nodenum-to-check)
-                ;(aref1 'translation-array translation-array nodenum)
-                ;(not (consp (aref1 'translation-array translation-array nodenum)))
-                (all-integerp (aref1-list 'translation-array translation-array nodenums))
-                (all-< acc bound2)
-                )
-           (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
-                  bound2))
-  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
-
-(defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
-  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
-                (<= bound bound2)
-                (all-<= nodenums top-nodenum-to-check)
-                (all-natp nodenums)
-                (natp top-nodenum-to-check)
-                ;(aref1 'translation-array translation-array nodenum)
-                ;(not (consp (aref1 'translation-array translation-array nodenum)))
-                (all-integerp (aref1-list 'translation-array translation-array nodenums))
-                )
-           (all-< (aref1-list 'translation-array translation-array nodenums)
-                  bound2))
-  :hints (("Goal" :in-theory (enable aref1-list))))
-
-(defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-no-free
-  (implies (and (bounded-translation-arrayp-aux (maxelem nodenums) translation-array bound)
-                (consp nodenums) ;because of the call to maxelem
-                (all-natp nodenums)
-                ;(aref1 'translation-array translation-array nodenum)
-                ;(not (consp (aref1 'translation-array translation-array nodenum)))
-                (all-integerp (aref1-list 'translation-array translation-array nodenums))
-                )
-           (all-< (aref1-list 'translation-array translation-array nodenums)
-                  bound))
-  :hints (("Goal" :use (:instance all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
-                                  (bound2 bound)
-                                  (top-nodenum-to-check (maxelem nodenums))))))
-
-;; (defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux
-;;   (implies (and (bounded-translation-arrayp-aux nodenum2 translation-array bound2)
-;;                 (<= bound2 bound)
-;;                 (all-<= nodenums nodenum2)
-;;                 (all-natp nodenums)
-;;                 (natp nodenum2)
-;;                 ;(aref1 'translation-array translation-array nodenum)
-;;                 ;(not (consp (aref1 'translation-array translation-array nodenum)))
-;;                 (all-integerp (aref1-list 'translation-array translation-array nodenums))
-;;                 )
-;;            (all-< (aref1-list 'translation-array translation-array nodenums)
-;;                   bound))
-;;   :hints (("Goal" :in-theory (enable aref1-list))))
+(local
+ (defthm all-<-forward-to-posp-when-all-natp
+   (implies (and (all-< items x)
+                 (all-natp items)
+                 (consp items)
+                 (integerp x))
+            (posp x))
+   :rule-classes :forward-chaining
+   :hints (("Goal" :in-theory (enable all-<)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
