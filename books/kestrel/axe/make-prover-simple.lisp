@@ -524,6 +524,7 @@
    (declare (xargs :guard t
                    :ruler-extenders :all))
    (or (eq x :rewrite)       ; rewrite all literals once
+       (eq x :rewrite-top)   ; rewrite all literals once, only lits whose top nodes match rules
        (eq x :subst)         ; substitute vars
        (eq x :elim)          ; eliminate tuples
        (and (consp x) ; apply the given tactics in sequence
@@ -746,6 +747,56 @@
   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp-for-axe) (pseudo-termp
                                                                                         perm-implies-equal-subsetp-equal-1 ; why?
                                                                                         )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund some-rule-matches-nodep (stored-rules dargs dag-array dag-len)
+  (declare (xargs :guard  (and (true-listp stored-rules)
+                               (all-stored-axe-rulep stored-rules)
+                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                               (bounded-darg-listp dargs dag-len))))
+  (if (endp stored-rules)
+      nil ; no rule matched
+    (let* ((stored-rule (first stored-rules))
+           (res (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) dargs dag-array dag-len)))
+      (if (eq :fail res)
+          ;; keep looking:
+          (some-rule-matches-nodep (rest stored-rules) dargs dag-array dag-len)
+        ;; The rule matched (but of course we don't know whether its hyps will
+        ;; be relieved when we get to that):
+        t))))
+
+;; Determines whether some rule from the RULE-ALIST matches the top expression
+;; in the literal at NODENNUM (except we strip a not if needed, to get to the
+;; interesting part of the literal).  Just a heuristic.
+(defund literal-matches-some-rulep (nodenum dag-array dag-len rule-alist)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (natp nodenum)
+                              (< nodenum dag-len)
+                              (rule-alistp rule-alist))))
+  (b* (;; Try to extract the function symbol and args for the top node (stripping a not if present):
+       ((mv fun-callp fn dargs)
+        (let ((expr (aref1 'dag-array dag-array nodenum)))
+          (if (or (variablep expr)
+                  (quotep expr))
+              (mv nil nil nil) ; no rule matches a constant or variable
+            ;; it's a function call, but we might need to strip a not:
+            (if (and (eq 'not (ffn-symb expr))
+                     (consp (dargs expr)) ; for the guard proof
+                     (not (consp (darg1 expr))) ; ensures it's a nodenum
+                     )
+                ;; Strip the not:
+                (let* ((expr (aref1 'dag-array dag-array (darg1 expr))))
+                  (if (or (variablep expr)
+                          (quotep expr))
+                      (mv nil nil nil) ; no rule matches a constant or variable
+                    (mv t (ffn-symb expr) (dargs expr))))
+              ;; not a call of not:
+              (mv t (ffn-symb expr) (dargs expr))))))
+       ((when (not fun-callp)) nil)
+       ;; it's a function call:
+       (stored-rules (get-rules-for-fn fn rule-alist)))
+    (some-rule-matches-nodep stored-rules dargs dag-array dag-len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3184,7 +3235,7 @@
                                       info tries monitored-symbols print case-designator ;none of these should affect soundness
                                       prover-depth
                                       result-array-name ;same for each literal
-                                      known-booleans options)
+                                      known-booleans options top-node-must-matchp)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (natp nodenum)
                                      (< nodenum dag-len)
@@ -3205,10 +3256,15 @@
                                      (natp prover-depth)
                                      (symbolp result-array-name)
                                      (symbol-listp known-booleans)
-                                     (simple-prover-optionsp options)))
-                  (ignore result-array-name) ; todo
+                                     (simple-prover-optionsp options)
+                                     (booleanp top-node-must-matchp)))
+                  (ignore result-array-name) ; todo!
                   )
-         (b* ((- (and (or (eq :verbose print) (eq :verbose! print))
+         (b* (;; Give up quickly if the top node must match some rule but it doesn't:
+              ((when (and top-node-must-matchp
+                          (not (literal-matches-some-rulep nodenum dag-array dag-len rule-alist))))
+               (mv nil nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries assumption-array))
+              (- (and (or (eq :verbose print) (eq :verbose! print))
                       (cw "(Rewriting literal ~x0.~%" nodenum)))
               ;; See what info this literal contributed to the assumption-array:
               ((mv assumption-nodenum assumption-item)
@@ -3278,7 +3334,7 @@
                                            nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth result-array-name known-booleans options)
+                                           prover-depth result-array-name known-booleans options top-node-must-matchp)
                     (implies (not erp)
                              (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                   (<= dag-len new-dag-len)
@@ -3321,7 +3377,7 @@
                                            nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth result-array-name known-booleans options)
+                                           prover-depth result-array-name known-booleans options top-node-must-matchp)
                     (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array))
                     (implies (not erp)
                              (natp new-dag-len))))
@@ -3356,7 +3412,7 @@
                                            nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes
                                            rule-alist interpreted-function-alist
                                            info tries monitored-symbols print case-designator ;none of these should affect soundness
-                                           prover-depth result-array-name known-booleans options)
+                                           prover-depth result-array-name known-booleans options top-node-must-matchp)
                     (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array))
                     (implies (not erp)
                              (<= dag-len new-dag-len))))
@@ -3382,7 +3438,7 @@
                                        interpreted-function-alist monitored-symbols print case-designator
                                        info tries prover-depth
                                        result-array-name ;same for all literals
-                                       known-booleans options)
+                                       known-booleans options top-node-must-matchp)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp work-list)
                                      (all-< work-list dag-len)
@@ -3403,7 +3459,8 @@
                                      (natp prover-depth)
                                      (symbolp result-array-name)
                                      (symbol-listp known-booleans)
-                                     (simple-prover-optionsp options))
+                                     (simple-prover-optionsp options)
+                                     (booleanp top-node-must-matchp))
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
              (progn$ (and (member-eq print '(t :verbose :verbose!))
@@ -3421,7 +3478,7 @@
                                         rest-work-list ; nodenums-to-assume-false1 (we avoid appending these 2, for speed since they may be large)
                                         done-list ; nodenums-to-assume-false2
                                         assumption-array assumption-array-num-valid-nodes
-                                        rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth result-array-name known-booleans options))
+                                        rule-alist interpreted-function-alist info tries monitored-symbols print case-designator prover-depth result-array-name known-booleans options top-node-must-matchp))
                 ((when erp) (mv erp nil nil done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                 ;; (- (cw "Node ~x0 rewrote to ~x1 in dag:~%" literal-nodenum new-nodenum-or-quotep))
                 ;; (- (if (quotep new-nodenum-or-quotep) (cw ":elided") (if (eql literal-nodenum new-nodenum-or-quote) :no-change (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep))))
@@ -3433,7 +3490,7 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          assumption-array assumption-array-num-valid-nodes
                                          changep ;; no change to changep
-                                         rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth result-array-name known-booleans options)
+                                         rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth result-array-name known-booleans options top-node-must-matchp)
                ;; Rewriting changed the literal.  Harvest the disjuncts, raising them to top level, and add them to the done-list:
                (b* (((mv erp provedp extended-done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                      (get-darg-disjuncts new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3457,7 +3514,7 @@
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            assumption-array assumption-array-num-valid-nodes
                                            t ;; something changed
-                                           rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth result-array-name known-booleans options)))))))
+                                           rule-alist interpreted-function-alist monitored-symbols print case-designator info tries prover-depth result-array-name known-booleans options top-node-must-matchp)))))))
 
        (defthm ,(pack$ rewrite-literals-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -3488,7 +3545,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth result-array-name known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options top-node-must-matchp)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (booleanp changep)
@@ -3532,7 +3589,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth result-array-name known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options top-node-must-matchp)
                     (declare (ignore provedp changep literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (implies (not erp)
                              (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
@@ -3550,7 +3607,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth result-array-name known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options top-node-must-matchp)
                     (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (true-listp literal-nodenums)))
          :rule-classes :type-prescription
@@ -3587,7 +3644,7 @@
                                             changep
                                             rule-alist
                                             interpreted-function-alist monitored-symbols print case-designator
-                                            info tries prover-depth result-array-name known-booleans options)
+                                            info tries prover-depth result-array-name known-booleans options top-node-must-matchp)
                     (declare (ignore provedp changep literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (implies (not erp)
                              (<= dag-len new-dag-len))))
@@ -3618,7 +3675,7 @@
                                      rule-alist rule-set-number
                                      interpreted-function-alist monitored-symbols
                                      case-designator print ;move print arg?
-                                     info tries prover-depth known-booleans options)
+                                     info tries prover-depth known-booleans options top-node-must-matchp)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
@@ -3630,7 +3687,8 @@
                                      (stringp case-designator)
                                      (natp prover-depth)
                                      (symbol-listp known-booleans)
-                                     (simple-prover-optionsp options))
+                                     (simple-prover-optionsp options)
+                                     (booleanp top-node-must-matchp))
                          :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe)
                                                                (natp))
                                         :do-not-induct t))))
@@ -3671,7 +3729,7 @@
                                        nil     ;changep
                                        rule-alist
                                        interpreted-function-alist monitored-symbols print case-designator
-                                       info tries prover-depth result-array-name known-booleans options))
+                                       info tries prover-depth result-array-name known-booleans options top-node-must-matchp))
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
               (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
@@ -3718,7 +3776,7 @@
                                           rule-alist rule-set-number
                                           interpreted-function-alist monitored-symbols
                                           case-designator print ;move print arg?
-                                          info tries prover-depth known-booleans options)
+                                          info tries prover-depth known-booleans options top-node-must-matchp)
                     (implies (not erp)
                              (and (booleanp provedp)
                                   (booleanp changep)
@@ -3752,7 +3810,7 @@
                                           rule-alist rule-set-number
                                           interpreted-function-alist monitored-symbols
                                           case-designator print ;move print arg?
-                                          info tries prover-depth known-booleans options)
+                                          info tries prover-depth known-booleans options top-node-must-matchp)
                     (declare (ignore provedp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (implies (< 0 prover-depth)
@@ -3769,7 +3827,7 @@
                                           rule-alist rule-set-number
                                           interpreted-function-alist monitored-symbols
                                           case-designator print ;move print arg?
-                                          info tries prover-depth known-booleans options)
+                                          info tries prover-depth known-booleans options top-node-must-matchp)
                     (declare (ignore erp provedp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (true-listp  new-literal-nodenums)))
          :rule-classes :type-prescription
@@ -3795,7 +3853,7 @@
                                           rule-alist rule-set-number
                                           interpreted-function-alist monitored-symbols
                                           case-designator print ;move print arg?
-                                          info tries prover-depth known-booleans options)
+                                          info tries prover-depth known-booleans options top-node-must-matchp)
                     (declare (ignore provedp changep new-literal-nodenums new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries))
                     (implies (not erp)
                              (pseudo-dag-arrayp 'dag-array new-dag-array new-dag-len))))
@@ -3838,7 +3896,7 @@
                    (type (unsigned-byte 59) count))
           (if (zp-fast count)
               (mv :count-exceeded nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-            (cond ((eq :rewrite tactic)
+            (cond ((member-eq tactic '(:rewrite :rewrite-top))
                    ;; TODO: After rewriting, we could drop any literal of the form (equal <constant> <var>) - if the var appears in any other literal, rewriting should have put in the constant for it, so the var will no longer appear.
                    (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
                          (,rewrite-clause-name literal-nodenums
@@ -3846,7 +3904,8 @@
                                                rule-alist rule-set-number
                                                interpreted-function-alist monitored-symbols
                                                case-designator print
-                                               info tries prover-depth known-booleans options)))
+                                               info tries prover-depth known-booleans options
+                                               (eq tactic :rewrite-top))))
                      (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
                   ((eq :subst tactic)
                    (b* ((- (and print (cw "(Substituting:~%")))
