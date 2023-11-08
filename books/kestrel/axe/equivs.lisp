@@ -1,6 +1,6 @@
 ; Equivalence relations used by Axe
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,6 +27,8 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable equivp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund equiv-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -45,12 +47,16 @@
            (equiv-listp (cdr equivs)))
   :hints (("Goal" :in-theory (enable equiv-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun equiv-list-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
       (null x)
     (and (equiv-listp (first x))
          (equiv-list-listp (rest x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize an alist that maps symbols to lists of equivs
 (defund symbol-to-equivs-alistp (x)
@@ -69,6 +75,8 @@
            (equiv-listp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable symbol-to-equivs-alistp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund all-symbol-to-equivs-alistp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -86,12 +94,10 @@
            (symbol-alistp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable all-symbol-to-equivs-alistp lookup-equal assoc-equal))))
 
-;;;
-;;; equiv-alistp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize an equiv-alist, which is used by the Axe Prover to decide which equivs to use when rewriting.
-;; To use such a table, you look up the outer equivalence to preserve and, in the result of that, you look up the function being
+;; To use the equiv-alist, you first look up the outer equivalence to preserve.  Then, in the result of that, you look up the function being
 ;; rewritten.  The result is the list of equivalences to maintain when rewriting each of the function's arguments.
 (defund equiv-alistp (equiv-alist)
   (declare (xargs :guard t))
@@ -99,9 +105,7 @@
        (equiv-listp (strip-cars equiv-alist))
        (all-symbol-to-equivs-alistp (strip-cdrs equiv-alist))))
 
-;;;
-;;; get-equivs
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Get the equivs that should be used when rewriting the args of FN, if we are to preserve OUTER-EQUIV on the call of FN.
 (defund get-equivs (outer-equiv fn equiv-alist)
