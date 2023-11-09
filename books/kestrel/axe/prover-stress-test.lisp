@@ -52,6 +52,7 @@
          nil ; no ifns
          nil ; no-splitp
          nil ; don't print as clauses
+         nil ; don't elide any functions
          nil ; no monitored rules
          nil ; print
          nil ; :use hint
