@@ -956,6 +956,7 @@
        (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
+       (set-inhibit-warnings "double-rewrite") ; todo: think about these
 
 ;(in-theory (disable add-to-end))
 
@@ -2862,7 +2863,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-fun-call
                     (declare (ignore new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2893,7 +2895,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-fun-call
                     (declare (ignore nodenum-or-quotep new-dag-len new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2926,7 +2929,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-fun-call
                     (declare (ignore nodenum-or-quotep new-dag-variable-alist info tries))
@@ -2961,7 +2965,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-fun-call
                     (declare (ignore new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -3478,7 +3483,8 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-single-node-name nodenum
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
