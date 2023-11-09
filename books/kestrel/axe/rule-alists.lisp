@@ -33,8 +33,7 @@
            (let ((fn (car entry))
                  (stored-rules (cdr entry)))
              (and (symbolp fn)
-                  (all-stored-axe-rulep stored-rules)
-                  (true-listp stored-rules)))
+                  (stored-axe-rule-listp stored-rules)))
            (rule-alistp (cdr alist))))))
 
 ;disable outside of axe?
@@ -43,9 +42,9 @@
            (true-listp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal rule-alistp))))
 
-(defthm all-stored-axe-rulep-of-lookup-equal-when-rule-alistp
+(defthm stored-axe-rule-listp-of-lookup-equal-when-rule-alistp
   (implies (rule-alistp alist)
-           (all-stored-axe-rulep (lookup-equal key alist)))
+           (stored-axe-rule-listp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal rule-alistp))))
 
 ;really of acons?
@@ -54,13 +53,12 @@
          (and (rule-alistp alist)
               (true-listp val)
               (symbolp key)
-              (all-stored-axe-rulep val)))
+              (stored-axe-rule-listp val)))
   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal rule-alistp))))
 
 (defthm rule-alistp-of-acons
   (implies (and (symbolp fn)
-                (all-stored-axe-rulep stored-rules)
-                (true-listp stored-rules)
+                (stored-axe-rule-listp stored-rules)
                 (rule-alistp rule-alist))
            (rule-alistp (acons fn stored-rules rule-alist)))
   :hints (("Goal" :in-theory (enable rule-alistp acons))))
@@ -420,7 +418,7 @@
   :hints (("Goal" :in-theory (enable remove-from-rule-alist rule-alistp))))
 
 (verify-guards remove-from-rule-alist
-  :hints (("Goal" :in-theory (enable all-stored-axe-rulep
+  :hints (("Goal" :in-theory (enable stored-axe-rule-listp
                                      stored-axe-rulep
                                      rule-alistp))))
 
