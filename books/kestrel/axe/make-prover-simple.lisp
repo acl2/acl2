@@ -2181,7 +2181,7 @@
                          (natp embedded-dag-depth)
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options)
+                         ;; (simple-prover-optionsp options)
                          )
                     (mv-let (erp hyps-relievedp extended-alist new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-RELIEVE-FREE-VAR-HYP-AND-ALL-OTHERS
@@ -2219,7 +2219,8 @@
                          (natp embedded-dag-depth) ;can we just use the prover depth?
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp hyps-relievedp extended-alist new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-relieve-rule-hyps
                       (declare (ignore HYPS-RELIEVEDP))
@@ -2253,7 +2254,8 @@
                          (natp embedded-dag-depth) ;can we just use the prover depth?
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp new-rhs-or-nil new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-try-to-apply-rules
                       (implies (not erp)
@@ -2289,7 +2291,8 @@
                          (natp embedded-dag-depth) ;can we just use the prover depth?
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-simplify-if-tree
                       (implies (not erp)
@@ -2323,7 +2326,8 @@
                          (natp embedded-dag-depth) ;can we just use the prover depth?
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-simplify-boolif-tree
                       (implies (not erp)
@@ -2355,7 +2359,8 @@
                          (natp embedded-dag-depth)
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-simplify-fun-call
                       (implies (not erp)
@@ -2387,7 +2392,8 @@
                          (natp embedded-dag-depth) ;can we just use the prover depth?
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-simplify-tree
                       (implies (not erp)
@@ -2420,7 +2426,8 @@
                          (natp embedded-dag-depth) ;can we just use the prover depth?
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp nodenums-or-quoteps new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-simplify-trees
                       (implies (not erp)
@@ -2562,7 +2569,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp hyps-relievedp extended-alist new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-relieve-rule-hyps
                     (declare (ignore hyps-relievedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2592,7 +2600,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-rhs-or-nil new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-try-to-apply-rules
                     (declare (ignore new-dag-variable-alist info tries))
@@ -2635,7 +2644,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-rhs-or-nil new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-try-to-apply-rules
                     (declare (ignore new-rhs-or-nil new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2667,7 +2677,8 @@
                        (natp embedded-dag-depth) ;can we just use the prover depth?
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-tree
                     (declare (ignore new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2712,7 +2723,8 @@
                        (natp embedded-dag-depth) ;can we just use the prover depth?
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-tree
                     (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2747,7 +2759,8 @@
                          (natp embedded-dag-depth)
                          (stringp case-designator)
                          (natp prover-depth)
-                         (simple-prover-optionsp options))
+                         ;; (simple-prover-optionsp options)
+                         )
                     (mv-let (erp nodenums-or-quoteps new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                       ,call-of-simplify-trees
                       (declare (ignore new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2782,7 +2795,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp nodenums-or-quoteps new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-trees
                     (declare (ignore nodenums-or-quoteps new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -2814,7 +2828,8 @@
                        (natp embedded-dag-depth)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     ,call-of-simplify-fun-call
                     (declare (ignore nodenum-or-quotep new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
@@ -3197,7 +3212,8 @@
                        (symbol-listp monitored-symbols)
                        (stringp case-designator)
                        (natp prover-depth)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-result-alist new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-nodes-name worklist result-alist
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3327,7 +3343,8 @@
                        (natp prover-depth)
                        ;; (symbolp result-array-name)
                        ;; (symbol-listp known-booleans)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries new-assumption-array)
                     (,rewrite-literal-name nodenum
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3370,7 +3387,8 @@
                        (natp prover-depth)
                        (symbolp result-array-name)
                        ;; (symbol-listp known-booleans)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array)
                     (,rewrite-literal-name nodenum
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3405,7 +3423,8 @@
                        (natp prover-depth)
                        (symbolp result-array-name)
                        ;; (symbol-listp known-booleans)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries assumption-array)
                     (,rewrite-literal-name nodenum
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3464,7 +3483,7 @@
                          :guard-hints (("Goal" :do-not-induct t))))
          (if (endp work-list)
              (progn$ (and (member-eq print '(t :verbose :verbose!))
-                          (print-axe-prover-case done-list 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options)))
+                          (print-axe-prover-case done-list 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))
                      (mv (erp-nil)
                          nil ;did not prove the clause
                          changep done-list dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
@@ -3536,7 +3555,8 @@
                        (triesp tries)
                        (natp prover-depth)
                        (symbolp result-array-name)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp provedp changep literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-literals-name work-list
                                             done-list
@@ -3580,7 +3600,8 @@
                        (triesp tries)
                        (natp prover-depth)
                        (symbolp result-array-name)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp provedp changep literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-literals-name work-list
                                             done-list
@@ -3635,7 +3656,8 @@
                        (triesp tries)
                        (natp prover-depth)
                        (symbolp result-array-name)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp provedp changep literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries)
                     (,rewrite-literals-name work-list
                                             done-list
@@ -3735,7 +3757,7 @@
               (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
               (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
               (- (and (member-eq print '(t :verbose :verbose!))
-                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options)))))
+                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
            (if provedp
                (prog2$ (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
                        (mv (erp-nil)
@@ -3769,7 +3791,8 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp known-booleans)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,rewrite-clause-name literal-nodenums
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3803,7 +3826,8 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp known-booleans)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,rewrite-clause-name literal-nodenums
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3846,7 +3870,8 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp known-booleans)
-                       (simple-prover-optionsp options))
+                       ;; (simple-prover-optionsp options)
+                       )
                   (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries)
                     (,rewrite-clause-name literal-nodenums
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -3930,7 +3955,7 @@
                         ;;      literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
                         (- (and print (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
                         (- (and (member-eq print '(t :verbose :verbose!))
-                                (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "after subst" (lookup-eq :print-as-clausesp options)))))
+                                (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "after subst" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
                      (mv (erp-nil)
                          nil ;provedp
                          changep
@@ -4117,7 +4142,7 @@
                         (natp prover-depth)
                         ;; (symbol-listp known-booleans)
                         ;; (symbol-listp var-ordering)
-                        (simple-prover-optionsp options)
+                        ;; (simple-prover-optionsp options)
                         (state-p state))
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                      (,apply-tactic-name tactic
@@ -4155,7 +4180,7 @@
                         (natp prover-depth)
                         ;; (symbol-listp known-booleans)
                         ;; (symbol-listp var-ordering)
-                        (simple-prover-optionsp options)
+                        ;; (simple-prover-optionsp options)
                         ;; (natp iteration-count)
                         (state-p state))
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
@@ -4194,7 +4219,7 @@
                         (natp prover-depth)
                         ;; (symbol-listp known-booleans)
                         ;; (symbol-listp var-ordering)
-                        (simple-prover-optionsp options)
+                        ;; (simple-prover-optionsp options)
                         (booleanp changep-acc)
                         (state-p state))
                    (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
@@ -4248,7 +4273,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp provedp changep new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,apply-tactic-name tactic
@@ -4349,7 +4374,7 @@
              (prog2$
               (and (print-level-at-least-tp print)
                    (prog2$ (cw "Case ~s0 didn't simplify to true.~%" case-designator)
-                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len case-designator (lookup-eq :print-as-clausesp options))))
+                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len case-designator (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
               (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
            (b* (((mv erp provedp
                      & ;;changep
@@ -4385,7 +4410,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,apply-tactic-for-rule-alists-name tactic literal-nodenums
@@ -4552,7 +4577,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,prove-case-name literal-nodenums
@@ -4587,7 +4612,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,prove-case-name literal-nodenums
@@ -4617,7 +4642,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,prove-case-name literal-nodenums
@@ -4647,7 +4672,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,prove-case-name literal-nodenums
@@ -4677,7 +4702,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp provedp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,prove-case-name literal-nodenums
@@ -4763,7 +4788,7 @@
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                  (- (cw "(True case reduced dag: ~x0)~%" (drop-non-supporters-array-with-name 'dag-array dag-array nodenum nil)))
                  (- (and (member-eq print '(t :verbose :verbose!))
-                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true" (lookup-eq :print-as-clausesp options)))))
+                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "true" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
               ;; Attempt to prove case #1:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -4822,7 +4847,7 @@
                  ((when erp) (mv erp :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                  ((when provedp) (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                  (- (and (member-eq print '(t :verbose :verbose!))
-                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false" (lookup-eq :print-as-clausesp options)))))
+                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "false" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
               ;; Attempt to prove case #2:
               (,prove-or-split-case-name literal-nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -4894,7 +4919,7 @@
               (if (lookup-eq :no-splitp options) ;; Check whether we are allowed to split
                   (progn$ (and print
                                (progn$ (cw "(Not splitting into cases because :no-splitp is true.  Failed to prove case ~s0~%" case-designator)
-                                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" (lookup-eq :print-as-clausesp options))
+                                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))
                                        (cw ")~%")))
                           (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                 ;; Now maybe try to split on an if-then-else test (or an argument to a bool op).
@@ -4902,7 +4927,7 @@
                   (if (not nodenum)
                       (progn$ (and print
                                    (progn$ (cw "(Couldn't find a node to split on.  Failed to prove case ~s0~%" case-designator)
-                                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" (lookup-eq :print-as-clausesp options))
+                                           (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))
                                            (cw ")~%")))
                               (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
                     ;;splitting on nodenum (which is not a call of NOT):
@@ -5014,7 +5039,7 @@
                          (stringp case-1-designator)
                          (natp prover-depth)
                          ;; (symbol-listp var-ordering)
-                         (simple-prover-optionsp options)
+                         ;; (simple-prover-optionsp options)
                          (state-p state))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                       (,prove-true-case-name nodenum
@@ -5050,7 +5075,7 @@
                          (stringp case-2-designator)
                          (natp prover-depth)
                          ;; (symbol-listp var-ordering)
-                         (simple-prover-optionsp options)
+                         ;; (simple-prover-optionsp options)
                          (state-p state))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                       (,prove-false-case-name nodenum
@@ -5084,7 +5109,7 @@
                          (stringp case-designator)
                          (natp prover-depth)
                          ;; (symbol-listp var-ordering)
-                         (simple-prover-optionsp options)
+                         ;; (simple-prover-optionsp options)
                          (state-p state))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                       (,prove-or-split-case-name literal-nodenums
@@ -5126,7 +5151,7 @@
                          (stringp case-1-designator)
                          (natp prover-depth)
                          ;; (symbol-listp var-ordering)
-                         (simple-prover-optionsp options)
+                         ;; (simple-prover-optionsp options)
                          (state-p state))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                       (,prove-true-case-name nodenum
@@ -5161,7 +5186,7 @@
                          (stringp case-1-designator)
                          (natp prover-depth)
                          ;; (symbol-listp var-ordering)
-                         (simple-prover-optionsp options)
+                         ;; (simple-prover-optionsp options)
                          (state-p state))
                     (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                       (,prove-true-case-name nodenum
@@ -5199,7 +5224,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,prove-or-split-case-name literal-nodenums
@@ -5233,7 +5258,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (state-p state))
                   (mv-let (erp result new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-info new-tries state)
                     (,prove-or-split-case-name literal-nodenums
@@ -5327,7 +5352,7 @@
                (and print (cw "! Proved case ~s0 (one literal had a non-nil constant disjunct!)~%" case-designator))
                (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
               (- (and (member-eq print '(t :verbose :verbose!))
-                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options)))))
+                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
            (,prove-or-split-case-name literal-nodenums
                                       dag-array
                                       dag-len
@@ -5356,7 +5381,7 @@
                        (stringp case-designator)
                        (natp prover-depth)
                        ;; (symbol-listp var-ordering)
-                       (simple-prover-optionsp options)
+                       ;; (simple-prover-optionsp options)
                        (axe-use-hintp use-hint)
                        (plist-worldp wrld)
                        (state-p state))
@@ -5494,6 +5519,7 @@
                                             interpreted-function-alist
                                             no-splitp
                                             print-as-clausesp
+                                            no-print-fns
                                             monitor
                                             print
                                             use
@@ -5560,6 +5586,9 @@
               ((when (not (booleanp print-as-clausesp)))
                (er hard? ',prove-dag-implication-name "Bad :print-as-clausesp hint: ~x0." print-as-clausesp)
                (mv :bad-input nil state))
+              ((when (not (symbol-listp no-print-fns)))
+               (er hard? ',prove-dag-implication-name "Bad :no-print-fns hint: ~x0." no-print-fns)
+               (mv :bad-input nil state))
               ;; Form the implication to prove:
               ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
               ((when erp) (mv erp nil state))
@@ -5609,6 +5638,7 @@
               (options nil)
               (options (if no-splitp (acons :no-splitp t options) options))
               (options (if print-as-clausesp (acons :print-as-clausesp t options) options))
+              (options (if no-print-fns (acons :no-print-fns no-print-fns options) options))
               (- (and print (cw "(Proving ~s0:~%" case-designator)))
               ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                    info tries state)
@@ -5655,6 +5685,7 @@
                                            interpreted-function-alist
                                            no-splitp
                                            print-as-clausesp
+                                           no-print-fns
                                            monitor
                                            print
                                            use
@@ -5668,6 +5699,7 @@
                                      (interpreted-function-alistp interpreted-function-alist)
                                      (booleanp no-splitp)
                                      (booleanp print-as-clausesp)
+                                     (symbol-listp no-print-fns)
                                      (symbol-listp monitor)
                                      (print-levelp print)
                                      (symbol-listp var-ordering)
@@ -5689,6 +5721,7 @@
                                         interpreted-function-alist
                                         no-splitp
                                         print-as-clausesp
+                                        no-print-fns
                                         monitor
                                         print
                                         use
@@ -5707,6 +5740,7 @@
                                           (interpreted-function-alist 'nil)
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (print-as-clausesp 'nil)
+                                          (no-print-fns 'nil)
                                           (monitor 'nil)
                                           (print ':brief)
                                           (use 'nil)
@@ -5723,6 +5757,7 @@
                      interpreted-function-alist
                      no-splitp
                      print-as-clausesp
+                     no-print-fns
                      monitor
                      print
                      use
@@ -5797,6 +5832,7 @@
                                      (true-listp (lookup-equal :rule-lists hint))
                                      (booleanp (lookup-equal :no-splitp hint))
                                      (booleanp (lookup-equal :print-as-clausesp hint))
+                                     (symbol-listp (lookup-equal :no-print-fns hint))
                                      (symbol-listp (lookup-equal :monitor hint))
                                      (axe-use-hintp (lookup-equal :use hint))
                                      (print-levelp (lookup-equal :print hint))
@@ -5830,6 +5866,7 @@
               (monitored-symbols (lookup-eq :monitor hint))
               (no-splitp (lookup-eq :no-splitp hint))
               (print-as-clausesp (lookup-eq :print-as-clausesp hint))
+              (no-print-fns (lookup-eq :no-print-fns hint))
               (var-ordering (lookup-eq :var-ordering hint))
               (print (lookup-eq :print hint))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
@@ -5838,6 +5875,7 @@
               (options nil)
               (options (if no-splitp (acons :no-splitp t options) options))
               (options (if print-as-clausesp (acons :print-as-clausesp t options) options))
+              (options (if no-print-fns (acons :no-print-fns no-print-fns options) options))
               ;; Attempt the proof:
               ((mv erp provedp state)
                (,prove-clause-name clause
