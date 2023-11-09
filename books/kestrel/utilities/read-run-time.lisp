@@ -14,3 +14,8 @@
   (rationalp (mv-nth 0 (read-run-time state)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable read-run-time))))
+
+(defthm state-p-of-mv-nth-1-of-read-run-time
+  (implies (state-p state)
+           (state-p (mv-nth 1 (read-run-time state))))
+  :hints (("Goal" :in-theory (enable read-run-time))))
