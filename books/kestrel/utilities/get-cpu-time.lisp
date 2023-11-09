@@ -15,13 +15,6 @@
 (in-theory (disable get-cpu-time))
 
 ;move
-(defthm state-p-of-update-acl2-oracle
-  (implies (and (state-p state)
-                (true-listp x))
-           (state-p (update-acl2-oracle x state)))
-  :hints (("Goal" :in-theory (enable state-p))))
-
-;move
 (defthm rationalp-of-mv-nth-0-of-read-run-time
   (rationalp (mv-nth 0 (read-run-time state)))
   :hints (("Goal" :in-theory (enable read-run-time))))
