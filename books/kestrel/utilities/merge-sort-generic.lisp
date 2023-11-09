@@ -19,7 +19,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (enable revappend-lemma)))
+(local (in-theory (enable revappend-becomes-append-of-reverse-list)))
 
 ;; ;todo: use remove1?
 ;; (defthm remove-1-of-true-list-fix
