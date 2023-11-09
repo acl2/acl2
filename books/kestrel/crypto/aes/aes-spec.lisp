@@ -630,8 +630,8 @@
     state))
 
 (defthm statep-of-ciphercore
-  (implies  (aes::statep state)
-            (aes::statep (aes::cipher-core state w nk)))
+  (implies (aes::statep state)
+           (aes::statep (aes::cipher-core state w nk)))
   :hints (("Goal" :in-theory (enable AES::CIPHER-CORE))))
 
 ;W is the expanded key
@@ -889,8 +889,8 @@
     state))
 
 (defthm statep-of-invciphercore
-  (implies  (aes::statep state)
-            (aes::statep (aes::invcipher-core state w nk)))
+  (implies (aes::statep state)
+           (aes::statep (aes::invcipher-core state w nk)))
   :hints (("Goal" :in-theory (enable aes::invcipher-core))))
 
 (defun invcipher (in w nk)

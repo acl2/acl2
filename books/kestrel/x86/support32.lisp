@@ -2340,12 +2340,12 @@
                                      SEGMENT-BASE-AND-BOUNDS))))
 
 (defthm esp-bound
-  (implies  (and (stack-segment-assumptions32 stack-slots-needed x86-orig) ;binds the free var stack-slots-needed
-                 (stack-segment-assumptions32 stack-slots-needed x86)
-                 (natp k)
-                 (<= 4294967284 k) ;gen?
-                 )
-            (not (< k (ESP X86))))
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig) ;binds the free var stack-slots-needed
+                (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (<= 4294967284 k) ;gen?
+                )
+           (not (< k (ESP X86))))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm eff-addrs-okp-of-esp
