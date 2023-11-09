@@ -155,4 +155,4 @@
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (not (if x y nil)) ;; "not and"
-                  (acl2::boolor (not x) (not y)))))
+                  (boolor (not x) (not y)))))

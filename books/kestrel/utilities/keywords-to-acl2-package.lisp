@@ -19,7 +19,7 @@
                                'defthm))
 
 (defund keywords-to-acl2-package-aux (keywords acc)
-  (declare (xargs :guard (acl2::keyword-listp keywords)))
+  (declare (xargs :guard (keyword-listp keywords)))
   (if (endp keywords)
       acc
     (keywords-to-acl2-package-aux (rest keywords)
@@ -49,7 +49,7 @@
   :hints (("Goal" :in-theory (enable keywords-to-acl2-package-aux))))
 
 (defund keywords-to-acl2-package (keywords)
-  (declare (xargs :guard (acl2::keyword-listp keywords)))
+  (declare (xargs :guard (keyword-listp keywords)))
   (reverse (keywords-to-acl2-package-aux keywords nil)))
 
 (defthm len-of-keywords-to-acl2-package

@@ -191,7 +191,7 @@
 ;; TODO: For stability, consider comparing the rule names if there priorities are the same.
 (defun merge-sort-by-rule-priority (stored-rules priorities)
   (declare (xargs :measure (len stored-rules)
-                  :hints (("Goal" :in-theory (e/d () (len))))
+                  :hints (("Goal" :in-theory (disable len)))
                   :guard (and (alistp priorities)
                               (stored-axe-rule-listp stored-rules))
                   :verify-guards nil ;done below

@@ -157,7 +157,7 @@
       (mv-let (erp objects state)
         (if (eq :current pkg)
             (read-objects-from-channel-error-triple channel state)
-          (state-global-let* ((acl2::current-package pkg)) ; gets undone upon abort
+          (state-global-let* ((current-package pkg)) ; gets undone upon abort
                              (read-objects-from-channel-error-triple channel state)))
         (declare (ignore erp)) ; always nil
         (let ((state (close-input-channel channel state)))
