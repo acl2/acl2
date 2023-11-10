@@ -560,7 +560,6 @@
     atom-listp-forward-to-true-listp
     eqlable-listp-forward-to-atom-listp
     true-listp-revappend-type-prescription
-    true-listp-take
     keyword-value-listp-forward-to-true-listp
     true-list-listp-forward-to-true-listp
     true-listp-nthcdr-type-prescription
