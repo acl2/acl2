@@ -93,7 +93,7 @@
   :hints (("Goal" :expand ((merge-<-and-remove-dups-aux l1 l2 acc))
            :induct (merge-<-and-remove-dups-aux l1 l2 acc)
            :in-theory (enable merge-<-and-remove-dups-aux
-                              revappend-lemma
+                              revappend-becomes-append-of-reverse-list
                               all-<=-all))))
 
 (defthm no-duplicatesp-equal-of-merge-<-and-remove-dups-aux
@@ -109,7 +109,7 @@
                 (all-rationalp l2))
            (no-duplicatesp-equal (merge-<-and-remove-dups-aux l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
-                                     revappend-lemma
+                                     revappend-becomes-append-of-reverse-list
                                      not-intersection-equal-when-all-<-of-car-and-sortedp-<=
                                      <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal))))
 

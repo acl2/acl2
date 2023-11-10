@@ -114,7 +114,7 @@
 ;;          (and (all-> l1 bound)
 ;;               (all-> l2 bound)
 ;;               (all-> acc bound)))
-;;   :hints (("Goal" :in-theory (enable merge-< ALL-> REVAPPEND-LEMMA))))
+;;   :hints (("Goal" :in-theory (enable merge-< ALL-> REVAPPEND-BECOMES-APPEND-OF-REVERSE-LIST))))
 
 ;; (defthm all->-of-merge-sort-<
 ;;   (equal (all-> (merge-sort-< l1) bound)
@@ -176,7 +176,7 @@
   (equal (<-all a (revappend x y))
          (and (<-all a x)
               (<-all a y)))
-  :hints (("Goal" :in-theory (enable all-> revappend-lemma))))
+  :hints (("Goal" :in-theory (enable all-> revappend-becomes-append-of-reverse-list))))
 
 (defthm <-all-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (<-all a lst)

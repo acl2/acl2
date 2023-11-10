@@ -49,7 +49,7 @@
   (equal (all-> (revappend x y) a)
          (and (all-> x a)
               (all-> y a)))
-  :hints (("Goal" :in-theory (enable all-> revappend-lemma))))
+  :hints (("Goal" :in-theory (enable all-> revappend-becomes-append-of-reverse-list))))
 
 ;; (defthm all->-of-reverse-list
 ;;   (equal (all-> (reverse-list x) a)

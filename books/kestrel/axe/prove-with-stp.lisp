@@ -81,7 +81,7 @@
                 (no-nodes-are-variablesp l2 dag-array-name dag-array dag-len)
                 (no-nodes-are-variablesp acc dag-array-name dag-array dag-len))
            (no-nodes-are-variablesp (merge-< l1 l2 acc) dag-array-name dag-array dag-len))
-  :hints (("Goal" :in-theory (enable merge-< revappend-lemma no-nodes-are-variablesp))))
+  :hints (("Goal" :in-theory (enable merge-< revappend-becomes-append-of-reverse-list no-nodes-are-variablesp))))
 
 (defthm no-nodes-are-variablesp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (no-nodes-are-variablesp lst dag-array-name dag-array dag-len)
