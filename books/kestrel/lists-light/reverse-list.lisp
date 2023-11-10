@@ -44,7 +44,7 @@
        :exec (revappend x nil)))
 
 ;enable?
-(defthmd revappend-lemma
+(defthmd revappend-becomes-append-of-reverse-list
   (equal (revappend x acc)
          (append (reverse-list x)
                  acc))
@@ -52,20 +52,20 @@
 
 (verify-guards reverse-list :hints (("Goal" :expand ((reverse-list x))
                                      :do-not '(generalize eliminate-destructors)
-                                     :in-theory (e/d (revappend-lemma) (append-of-nil-arg2)))))
+                                     :in-theory (e/d (revappend-becomes-append-of-reverse-list) (append-of-nil-arg2)))))
 
 ;; Reasoning should be done about reverse-list, not reverse, when possible.
 (defthm reverse-becomes-reverse-list
   (implies (true-listp x) ;rules out strings
            (equal (reverse x)
                   (reverse-list x)))
-  :hints (("Goal" :in-theory (enable reverse reverse-list revappend-lemma))))
+  :hints (("Goal" :in-theory (enable reverse reverse-list revappend-becomes-append-of-reverse-list))))
 
 (defthm reverse-becomes-reverse-list-gen
   (implies (not (stringp x))
            (equal (reverse x)
                   (reverse-list x)))
-  :hints (("Goal" :in-theory (enable reverse reverse-list revappend-lemma))))
+  :hints (("Goal" :in-theory (enable reverse reverse-list revappend-becomes-append-of-reverse-list))))
 
 (defthm true-listp-of-reverse-list
   (true-listp (reverse-list x))

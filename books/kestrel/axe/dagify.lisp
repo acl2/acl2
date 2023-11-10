@@ -74,7 +74,7 @@
   :hints (("Goal" :in-theory (enable strip-cars))))
 
 (local (in-theory (enable <-of-car-of-car-when-all-<-of-strip-cars
-                          revappend-lemma)))
+                          revappend-becomes-append-of-reverse-list)))
 
 (in-theory (disable strip-cdrs
                     ;strip-cars todo
