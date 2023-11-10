@@ -27,8 +27,8 @@
                     (rational-listp tail)
                     (<= (len tail) (len lst)) ; needed in general for such proofs?
                     )
-               (rational-listp (mv-nth 0 (acl2::split-list-fast-aux lst tail acc))))
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+               (rational-listp (mv-nth 0 (split-list-fast-aux lst tail acc))))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
     (defthm rational-listp-of-mv-nth-1-of-split-list-fast-aux
       (implies (and (rational-listp acc)
@@ -36,20 +36,20 @@
                     (rational-listp tail)
                     (<= (len tail) (len lst)) ; needed in general for such proofs?
                     )
-               (rational-listp (mv-nth 1 (acl2::split-list-fast-aux lst tail acc))))
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+               (rational-listp (mv-nth 1 (split-list-fast-aux lst tail acc))))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
     (defthm rational-listp-of-mv-nth-0-of-split-list-fast
       (implies (rational-listp lst)
-               (rational-listp (mv-nth 0 (acl2::split-list-fast lst))))
+               (rational-listp (mv-nth 0 (split-list-fast lst))))
       :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))
+      :hints (("Goal" :in-theory (enable split-list-fast))))
 
     (defthm rational-listp-of-mv-nth-1-of-split-list-fast
       (implies (rational-listp lst)
-               (rational-listp (mv-nth 1 (acl2::split-list-fast lst))))
+               (rational-listp (mv-nth 1 (split-list-fast lst))))
       :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))))
+      :hints (("Goal" :in-theory (enable split-list-fast))))))
 
 (local
   (progn
@@ -59,8 +59,8 @@
                     (nat-listp tail)
                     (<= (len tail) (len lst)) ; needed in general for such proofs?
                     )
-               (nat-listp (mv-nth 0 (acl2::split-list-fast-aux lst tail acc))))
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+               (nat-listp (mv-nth 0 (split-list-fast-aux lst tail acc))))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
     (defthm nat-listp-of-mv-nth-1-of-split-list-fast-aux
       (implies (and (nat-listp acc)
@@ -68,20 +68,20 @@
                     (nat-listp tail)
                     (<= (len tail) (len lst)) ; needed in general for such proofs?
                     )
-               (nat-listp (mv-nth 1 (acl2::split-list-fast-aux lst tail acc))))
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+               (nat-listp (mv-nth 1 (split-list-fast-aux lst tail acc))))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
     (defthm nat-listp-of-mv-nth-0-of-split-list-fast
       (implies (nat-listp lst)
-               (nat-listp (mv-nth 0 (acl2::split-list-fast lst))))
+               (nat-listp (mv-nth 0 (split-list-fast lst))))
       :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))
+      :hints (("Goal" :in-theory (enable split-list-fast))))
 
     (defthm nat-listp-of-mv-nth-1-of-split-list-fast
       (implies (nat-listp lst)
-               (nat-listp (mv-nth 1 (acl2::split-list-fast lst))))
+               (nat-listp (mv-nth 1 (split-list-fast lst))))
       :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))))
+      :hints (("Goal" :in-theory (enable split-list-fast))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

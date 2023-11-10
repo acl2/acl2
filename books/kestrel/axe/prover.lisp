@@ -461,8 +461,7 @@
                                            interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options count state)
    (declare (xargs :stobjs state
                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                               (true-listp stored-rules)
-                               (all-stored-axe-rulep stored-rules)
+                               (stored-axe-rule-listp stored-rules)
                                (rule-alistp rule-alist)
                                (bounded-darg-listp args-to-match dag-len)
                                (nat-listp nodenums-to-assume-false)
