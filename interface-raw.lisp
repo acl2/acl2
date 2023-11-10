@@ -1212,8 +1212,8 @@
                           (loop for dcl in dcls
                                 when (eq (car dcl) 'type)
                                 append
-                                (loop for var in (cddr dcl)
-                                      with pred = (cadr dcl)
+                                (loop with pred = (cadr dcl)
+                                      for var in (cddr dcl)
                                       collect
                                       (oneify `(the ,pred ,var)
                                               fns w program-p)))))
@@ -2008,8 +2008,8 @@
 
                 (eq (symbol-class fn wrld) :common-lisp-compliant)))
           (formals (cadr def))
-          (optimize-dcls (loop for tail on (cddr def)
-                               with tmp = nil
+          (optimize-dcls (loop with tmp = nil
+                               for tail on (cddr def)
                                do
                                (if (null (cdr tail)) ; avoid the body
                                    (return (reverse tmp))
