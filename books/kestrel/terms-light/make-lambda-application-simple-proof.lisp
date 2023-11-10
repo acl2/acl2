@@ -37,21 +37,21 @@
 (local (in-theory (disable alistp no-duplicatesp-equal)))
 
 (defthm empty-eval-of-append-of-pairlis$-of-EMPTY-EVAL-LIST-when-relevant-actuals-are-formals
-  (IMPLIES  (and (pseudo-termp body)
-                 (no-nils-in-termp body)
-                 (symbol-listp formals)
-                 (no-duplicatesp-equal formals)
-                 (pseudo-term-listp actuals)
-                 (equal (len formals)
-                        (len actuals))
+  (implies (and (pseudo-termp body)
+                (no-nils-in-termp body)
+                (symbol-listp formals)
+                (no-duplicatesp-equal formals)
+                (pseudo-term-listp actuals)
+                (equal (len formals)
+                       (len actuals))
                  ;; the relevant actuals are all vars (unusual!):
-                 (EQUAL
-                  (MV-NTH 0
-                          (FILTER-FORMALS-AND-ACTUALS FORMALS
-                                                      ACTUALS (FREE-VARS-IN-TERM BODY)))
-                  (MV-NTH 1
-                          (FILTER-FORMALS-AND-ACTUALS FORMALS
-                                                      ACTUALS (FREE-VARS-IN-TERM BODY)))))
+                (EQUAL
+                 (MV-NTH 0
+                         (FILTER-FORMALS-AND-ACTUALS FORMALS
+                                                     ACTUALS (FREE-VARS-IN-TERM BODY)))
+                 (MV-NTH 1
+                         (FILTER-FORMALS-AND-ACTUALS FORMALS
+                                                     ACTUALS (FREE-VARS-IN-TERM BODY)))))
 
             (EQUAL (EMPTY-EVAL BODY
                                (APPEND (PAIRLIS$ FORMALS (EMPTY-EVAL-LIST ACTUALS A))
