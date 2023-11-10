@@ -1083,7 +1083,7 @@
     bvcat-bound-hack-1
     natp-of-myif2  ; slow?  limit?
 ;    BVOR-6--64-HACK2
-    <-of-myif-arg1 ;bad?
+    <-of-myif-arg1-when-constant ;bad?
 ;    bvxor-bound-3
 ;    bvor-bound-3
 
@@ -2110,7 +2110,7 @@
 
 ;     ALL-UNSIGNED-BYTE-P-OF-TAKE ;Fri Dec 17 01:55:59 2010
      len-of-nthcdr
-     <-of-myif-arg1-gen                                    ;bad?
+     <-of-myif-arg1                                    ;bad?
      <-of-myif-arg2                                        ;bad?
      cancel-from-<-of-+
      <-+-negative-0-1
@@ -2481,7 +2481,7 @@
      myif-of-bv-array-write-arg2-safe ;may have caused big problems
      unsigned-byte-p-of-myif
      bvplus-commutative-2-sizes-differ ;also the 2 rule?
-     <-of-myif-arg1-gen
+     <-of-myif-arg1
      <-of-myif-arg2)))
 
               ;;ffixme remove duplicate rules!

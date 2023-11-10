@@ -625,9 +625,27 @@
 ;;      :in-theory (e/d (BVXOR) (LOGXOR-BVCHOP-BVCHOP))))))
 
 (defthmd <-of-myif-arg1
-  (implies (and (syntaxp (quotep k)))
+  (equal (< (myif test a b) k)
+         (myif test (< a k) (< b k)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthmd <-of-myif-arg2
+  (equal (< k (myif test a b))
+         (myif test (< k a) (< k b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; could require even more to be constant, like a and/or b
+(defthmd <-of-myif-arg1-when-constant
+  (implies (syntaxp (quotep k))
            (equal (< (myif test a b) k)
                   (myif test (< a k) (< b k))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; could require even more to be constant, like a and/or b
+(defthmd <-of-myif-arg2-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< k (myif test a b))
+                  (myif test (< k a) (< k b))))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;; ;bozo gen
@@ -1660,15 +1678,9 @@
 ;;          (myif test z y))
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
-
 (defthm myif-lemma
   (equal (equal x (myif test y x))
          (myif test (equal x y) t))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm <-of-myif-arg2
-  (equal (< k (myif test a b))
-         (myif test (< k a) (< k b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;; ;just rewrite (boolif x 'nil 't)

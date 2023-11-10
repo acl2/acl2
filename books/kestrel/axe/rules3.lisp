@@ -7340,12 +7340,6 @@
 
 ;;remove -dag from BVLT-TIGHTEN-FREE-DAG, etc.
 
-;redo the non-gen version?
-(defthmd <-of-myif-arg1-gen
-  (equal (< (myif test a b) k)
-         (myif test (< a k) (< b k)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 (defthm slice-when-not-bvlt-gen
   (implies (and (syntaxp (quotep k))
                 (syntaxp (quotep highsize))
