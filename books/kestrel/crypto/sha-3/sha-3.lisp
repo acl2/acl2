@@ -463,11 +463,11 @@
            (bit-stringp (car bit-strings))))
 
 (defthm plane-listp-of-map-bit-string-to-plane
-  (implies  (and (posp w)
-                 (all-bit-stringp bit-strings)
-                 (true-listp bit-strings)
-                 (items-have-len (* 5 w) bit-strings))
-            (plane-listp (map-bit-string-to-plane bit-strings w) w)))
+  (implies (and (posp w)
+                (all-bit-stringp bit-strings)
+                (true-listp bit-strings)
+                (items-have-len (* 5 w) bit-strings))
+           (plane-listp (map-bit-string-to-plane bit-strings w) w)))
 
 (defthm state-arrayp-of-bits-to-state-array
   (implies (and (posp w)
@@ -1690,7 +1690,7 @@
   :hints (("Goal" :in-theory (enable keccak-sponge-aux2))))
 
 ;; (defthm padding-hack
-;;   (implies  (and (posp x)
+;;   (implies (and (posp x)
 ;;                  (natp m))
 ;;             (equal (equal (+ (mod m x)
 ;;                              (mod (len (pad10*1 x m)) x))
@@ -1698,7 +1698,7 @@
 ;;                    (not (equal 0 (mod m x))))))
 
 ;; (defthm padding-hack2
-;;   (implies  (and (posp x)
+;;   (implies (and (posp x)
 ;;                  (natp m))
 ;;             (equal (< (+ (mod m x)
 ;;                          (mod (len (pad10*1 x m)) x))
@@ -1706,20 +1706,20 @@
 ;;                    (equal 0 (mod m x)))))
 
 (defthm padding-hack3
-  (implies  (and (posp x)
-                 (natp m))
-            (INTEGERP (+ (* (/ x) m)
-                         (* (/ x) (LEN (PAD10*1 x m ))))))
+  (implies (and (posp x)
+                (natp m))
+           (INTEGERP (+ (* (/ x) m)
+                        (* (/ x) (LEN (PAD10*1 x m ))))))
   :hints (("Goal" :use (:instance pad10*1-correct-1)
            :in-theory (e/d (acl2::equal-of-0-and-mod)
                            (pad10*1-correct-1)))))
 
 (defthm padding-hack4
-  (implies  (and (posp x)
-                 (natp m))
-            (<= 1
-                (+ (* (/ x) m)
-                   (* (/ x) (LEN (PAD10*1 x m))))))
+  (implies (and (posp x)
+                (natp m))
+           (<= 1
+               (+ (* (/ x) m)
+                  (* (/ x) (LEN (PAD10*1 x m))))))
   :hints (("Goal" :use (pad10*1-correct-1
                         pad10*1-correct-2)
            :in-theory (e/d (acl2::equal-of-0-and-mod)

@@ -8251,10 +8251,10 @@
                                    bvchop-of-*)))))
 
 (defthm bvlt-of-bvmult-for-sha1
-  (implies  (and (bvle 5 x 6)
-                 (unsigned-byte-p 5 x))
-            (equal (BVLT '5 '20 (BVMULT '5 '5 x))
-                   (BVLT '5 4 x)))
+  (implies (and (bvle 5 x 6)
+                (unsigned-byte-p 5 x))
+           (equal (BVLT '5 '20 (BVMULT '5 '5 x))
+                  (BVLT '5 4 x)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
@@ -8448,12 +8448,12 @@
   :hints (("Goal" :in-theory (e/d (bvmult) (BVCHOP-OF-*)))))
 
 (defthm bvlt-of-bvmult-for-sha1-gen
-  (implies  (and (bvle 5 x 6)
-                 (equal k 24)
-                 (unsigned-byte-p 5 x)
-                 (unsigned-byte-p 5 k))
-            (equal (BVLT '5 (BVMULT '5 '5 x) k)
-                   (BVLT '5 x 5)))
+  (implies (and (bvle 5 x 6)
+                (equal k 24)
+                (unsigned-byte-p 5 x)
+                (unsigned-byte-p 5 k))
+           (equal (BVLT '5 (BVMULT '5 '5 x) k)
+                  (BVLT '5 x 5)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
@@ -8471,13 +8471,13 @@
                                    bvchop-of-*)))))
 
 (defthm bvlt-of-bvmult-for-sha1-gen2
-  (implies  (and (bvle 5 x 6)
-                 (equal k 19)
-                 (unsigned-byte-p 5 x)
-                 (unsigned-byte-p 5 k))
-            (equal (BVLT '5 (BVMULT '5 '5 x) k)
-                   (BVLT '5 x 4;(ceiling k 5)
-                         )))
+  (implies (and (bvle 5 x 6)
+                (equal k 19)
+                (unsigned-byte-p 5 x)
+                (unsigned-byte-p 5 k))
+           (equal (BVLT '5 (BVMULT '5 '5 x) k)
+                  (BVLT '5 x 4;(ceiling k 5)
+                        )))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
@@ -8495,13 +8495,13 @@
                                    bvchop-of-*)))))
 
 (defthm bvlt-of-bvmult-for-sha1-gen3
-  (implies  (and (bvle 5 x 6)
-                 (equal k 23)
-                 (unsigned-byte-p 5 x)
-                 (unsigned-byte-p 5 k))
-            (equal (BVLT '5 (BVMULT '5 '5 x) k)
-                   (BVLT '5 x 5;(ceiling k 5)
-                         )))
+  (implies (and (bvle 5 x 6)
+                (equal k 23)
+                (unsigned-byte-p 5 x)
+                (unsigned-byte-p 5 k))
+           (equal (BVLT '5 (BVMULT '5 '5 x) k)
+                  (BVLT '5 x 5;(ceiling k 5)
+                        )))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
@@ -8572,7 +8572,7 @@
 
 ;gen the 5..
 (defthm bvlt-of-bvmult-for-sha1-gen4
-  (implies  (and                         ;(bvle 10 (bvmult '5 '5 x) 31)
+  (implies (and                         ;(bvle 10 (bvmult '5 '5 x) 31)
              (bvle 5 x (floor 31 j))     ;the bvmult doesn't overflow
 ;                 (equal j 6)
              (posp j)
@@ -14731,12 +14731,12 @@
 
 ;use polarity?
 (defthm not-equal-of-max-when-huge
-  (implies  (and (bvlt '2 free x)
-                 (syntaxp (quotep free))
-                 (equal 1 free) ;poor man's backchain limit..
-                 )
-            (equal (equal 'nil (equal '3 (bvchop '2 x))) ;commute?
-                   (equal 2 (bvchop 2 x))))
+  (implies (and (bvlt '2 free x)
+                (syntaxp (quotep free))
+                (equal 1 free) ;poor man's backchain limit..
+                )
+           (equal (equal 'nil (equal '3 (bvchop '2 x))) ;commute?
+                  (equal 2 (bvchop 2 x))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvplus-of-bvplus-32-1-31

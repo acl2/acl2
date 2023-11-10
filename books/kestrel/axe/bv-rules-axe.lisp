@@ -2229,7 +2229,7 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvand-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvand size x y)
                   (bvand size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -2243,7 +2243,7 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvor-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvor size x y)
                   (bvor size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
@@ -2257,7 +2257,7 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvxor-convert-arg3-to-bv-axe
-  (implies  (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvxor size x y)
                   (bvxor size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
