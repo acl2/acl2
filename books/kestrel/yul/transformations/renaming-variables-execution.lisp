@@ -210,7 +210,7 @@
                                 (renaming->list ren)))
              (iff (set::in old-var (omap::keys old-lstate))
                   (set::in new-var (omap::keys new-lstate))))
-    :enable omap::set-in-keys-to-in
+    :enable omap::in-of-keys-to-in
     :use ((:instance lstate-match-renamevarp-rewrite
            (old old-lstate)
            (new new-lstate))
@@ -900,7 +900,7 @@
                                      (cdr (omap::in new-var new-lstate2))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
-                   omap::in-of-restrict-2
+                   omap::in-of-restrict
                    old-var-in-renaming-old-when-in-renaming)
           :disable acl2::subsetp-member
           :use ((:instance acl2::subsetp-member
@@ -1030,7 +1030,7 @@
                                      (cdr (omap::in new-var new-lstate3))))))
           :enable (lstate-renamevarp
                    lstate-match-renamevarp-rewrite
-                   omap::in-of-restrict-2
+                   omap::in-of-restrict
                    old-var-in-renaming-old-when-in-renaming)
           :disable acl2::subsetp-member
           :use ((:instance acl2::subsetp-member
@@ -1230,7 +1230,7 @@
        :enable (lstate-renamevarp
                 lstate-match-renamevarp-rewrite
                 old-var-in-renaming-old-when-in-renaming
-                omap::set-in-keys-to-in
+                omap::in-of-keys-to-in
                 set::subset-in)
        :use ((:instance lemma1
               (a old-var)

@@ -535,7 +535,7 @@
     There are no other keys in the result.")
   (cond ((empty new) (mfix old))
         (t (mv-let (new-key new-val)
-             (head new)
+               (head new)
              (update new-key new-val
                      (update* (tail new) old)))))
   :verify-guards :after-returns
@@ -654,6 +654,12 @@
     (equal (in key (update* map1 map2))
            (or (in key map1)
                (in key map2)))
+    :enable update*)
+
+  (defrule consp-of-in-of-update*
+    (equal (consp (in key (update* map1 map2)))
+           (or (consp (in key map1))
+               (consp (in key map2))))
     :enable update*)
 
   (defrule update-of-cdr-of-in-when-in
@@ -892,7 +898,17 @@
   (defrule restrict-when-right-empty
     (implies (empty map)
              (equal (restrict keys map) nil))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defruled in-of-restrict
+    (equal (in key (restrict keys map))
+           (and (set::in key keys)
+                (in key map))))
+
+  (defruled in-of-restrict-when-in-keys
+    (implies (set::in key keys)
+             (equal (in key (restrict keys map))
+                    (in key map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -907,6 +923,11 @@
              (set::insert key (keys (tail map))))))
   ///
 
+  (defrule keys-of-mfix
+    (equal (keys (mfix map))
+           (keys map))
+    :enable keys)
+
   (defrule keys-when-empty
     (implies (empty map)
              (equal (keys map) nil))
@@ -917,15 +938,33 @@
     (iff (keys map)
          (not (empty map))))
 
+  (defruled consp-of-in-to-in-of-keys
+    (equal (consp (in key map))
+           (set::in key (keys map)))
+    :enable in)
+
   (defruled in-to-in-of-keys
     (iff (in key map)
          (set::in key (keys map)))
     :enable in)
 
+  (defruled in-of-keys-to-in
+    (iff (set::in key (keys map))
+         (in key map))
+    :enable in)
+
+  (theory-invariant (incompatible (:rewrite in-to-in-of-keys)
+                                  (:rewrite in-of-keys-to-in)))
+
   (defruled in-keys-when-in-forward
     (implies (in key map)
              (set::in key (keys map)))
     :rule-classes :forward-chaining)
+
+  (defruled in-keys-when-in-is-cons
+    (implies (equal (in a m)
+                    (cons a b))
+             (set::in a (keys m))))
 
   (defrule keys-of-update
     (equal (keys (update key val m))
@@ -942,7 +981,32 @@
              set::head
              set::tail
              set::empty
-             set::setp)))
+             set::setp))
+
+  (defrule keys-of-update*
+    (equal (keys (update* new old))
+           (set::union (keys new) (keys old)))
+    :enable update*)
+
+  (defrule keys-of-restrict
+    (equal (keys (restrict keys map))
+           (set::intersect keys (keys map)))
+    :enable (set::double-containment
+             set::pick-a-point-subset-strategy)
+    :prep-lemmas
+    ((defrule lemma1
+       (implies (set::in x (keys (restrict keys map)))
+                (set::in x (keys map)))
+       :enable restrict)
+     (defrule lemma2
+       (implies (set::in x (keys (restrict keys map)))
+                (set::in x keys))
+       :enable restrict)
+     (defrule lemma3
+       (implies (and (set::in x (keys map))
+                     (set::in x keys))
+                (set::in x (keys (restrict keys map))))
+       :enable restrict))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -960,7 +1024,12 @@
   (defrule values-when-empty
     (implies (empty map)
              (equal (values map) nil))
-    :rule-classes (:rewrite :type-prescription)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defruled in-values-when-in
+    (implies (equal (in a m)
+                    (cons a b))
+             (set::in b (values m)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
