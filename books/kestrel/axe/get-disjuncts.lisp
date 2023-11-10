@@ -121,7 +121,7 @@
                     nil ; meaningless
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
               ;; A nil constant gets dropped:
-              (prog2$ (and print (cw "NOTE: Dropping nil disjunct.~%"))
+              (prog2$ (and print (cw "NOTE: Dropping a true assumption or false conclusion.~%")) ; a disjunct is a negated assumption (or perhaps the conclusion), we can't tell which
                       (mv (erp-nil)
                           nil ;provedp
                           acc ; not extended
