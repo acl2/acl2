@@ -16,6 +16,7 @@
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
+(include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
@@ -745,8 +746,9 @@
 
 ;; Returns (mv erp event state) an event (a progn containing an event for each test).
 ;; TODO: Return an error if any test is not as expected, but not until the end.
-(defun test-functions-fn (function-name-strings ; can be :all
-                          executable
+(defun test-functions-fn (executable
+                          include-fns ; a list of strings (names of functions), or :all
+                          exclude-fns ; a list of strings (names of functions)
                           executable-form ; used to get the executable name for the summary
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
@@ -754,33 +756,33 @@
                           print monitor step-limit step-increment prune
                           tactics max-conflicts stack-slots position-independent
                           expected-failures
-                          exclude
                           state)
-  (declare (xargs :guard (and (or (string-listp function-name-strings)
-                                  (eq :all function-name-strings))
+  (declare (xargs :guard (and ;; executable is a string or parsed executable (todo: disallow the latter?)
+                          (or (string-listp include-fns)
+                              (eq :all include-fns))
+                          (string-listp exclude-fns)
                               ;; assumptions
-                              (symbol-listp extra-rules)
-                              (symbol-listp extra-lift-rules)
-                              (symbol-listp extra-proof-rules)
-                              (symbol-listp remove-rules)
-                              (symbol-listp remove-lift-rules)
-                              (symbol-listp remove-proof-rules)
-                              (or (eq :debug monitor)
-                                  (symbol-listp monitor))
-                              (natp step-limit)
-                              (natp step-increment)
-                              (or (eq nil prune)
-                                  (eq t prune)
-                                  (natp prune))
-                              (acl2::tacticsp tactics)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (or (natp stack-slots)
-                                  (eq :auto stack-slots))
-                              (member-eq position-independent '(t nil :auto))
-                              (or (eq :auto expected-failures)
-                                  (string-listp expected-failures))
-                              (string-listp exclude))
+                          (symbol-listp extra-rules)
+                          (symbol-listp extra-lift-rules)
+                          (symbol-listp extra-proof-rules)
+                          (symbol-listp remove-rules)
+                          (symbol-listp remove-lift-rules)
+                          (symbol-listp remove-proof-rules)
+                          (or (eq :debug monitor)
+                              (symbol-listp monitor))
+                          (natp step-limit)
+                          (natp step-increment)
+                          (or (eq nil prune)
+                              (eq t prune)
+                              (natp prune))
+                          (acl2::tacticsp tactics)
+                          (or (null max-conflicts)
+                              (natp max-conflicts))
+                          (or (natp stack-slots)
+                              (eq :auto stack-slots))
+                          (member-eq position-independent '(t nil :auto))
+                          (or (eq :auto expected-failures)
+                              (string-listp expected-failures)))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
@@ -800,7 +802,7 @@
                                       t))
                                 position-independent))
        ;; We will test all functions whose names begin with test_ or fail_test_
-       (function-name-strings (if (eq :all function-name-strings)
+       (function-name-strings (if (eq :all include-fns)
                                   (if (eq :elf-64 executable-type)
                                       (let ((all-functions (acl2::get-all-elf-symbols parsed-executable)))
                                         (append (acl2::strings-starting-with "test_" all-functions)
@@ -813,8 +815,8 @@
                                 ;; The functions to test were given explicitly:
                                 (if (eq executable-type :mach-o-64)
                                     ;; todo: why do we always have to add the underscore?
-                                    (acl2::add-prefix-to-strings "_" function-name-strings)
-                                  function-name-strings)))
+                                    (acl2::add-prefix-to-strings "_" include-fns)
+                                  include-fns)))
        (assumption-alist (if (null assumptions)
                              nil
                            (let ((first-assumption-item (first assumptions)))
@@ -837,11 +839,13 @@
                             ;; The expected failures were given explicitly:
                             expected-failures))
        ;; Handle any excludes:
-       (exclude (if (eq executable-type :mach-o-64)
-                    (acl2::add-prefix-to-strings "_" exclude)
-                  exclude))
-       (function-name-strings (set-difference-equal function-name-strings exclude))
-       (expected-failures (set-difference-equal expected-failures exclude))
+       (exclude-fns (if (eq executable-type :mach-o-64)
+                        (acl2::add-prefix-to-strings "_" exclude-fns)
+                      exclude-fns))
+       (function-name-strings (set-difference-equal function-name-strings exclude-fns))
+       (expected-failures (set-difference-equal expected-failures exclude-fns))
+       ;; Sort the functions (TODO: What determines the order in the executable?)
+       (function-name-strings (acl2::merge-sort-string< function-name-strings))
        ;; Test the functions:
        ((mv erp result-alist state)
         (test-functions-fn-aux function-name-strings parsed-executable
@@ -865,6 +869,7 @@
           state))))
 
 ;; Test a list of functions:
+;; deprecate this?
 (defmacro test-functions (function-name-strings ; or can be :all
                           executable ; a string or a parsed executable
                           &key
@@ -886,8 +891,9 @@
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                           )
-  `(acl2::make-event-quiet (test-functions-fn ',function-name-strings
-                                              ,executable ; gets evaluated (often a constant like *foo.o*)
+  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated (often a constant like *foo.o* ?  now usually a string?)
+                                              ',function-name-strings
+                                              nil ; no need for excludes (just don't list the functions you don't want to test)
                                               ',executable  ; unevaluated
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
@@ -901,14 +907,16 @@
                                               ',step-limit ',step-increment ',prune
                                               ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
-                                              nil ; no need for excludes (just don't list the functions you don't want to test)
                                               state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Tests all the functions in the file
+;; Tests all the functions in the file.
+;; Use :include to test only a given set of functions.
+;; Use :exclude to test all but a given set of functions.
 (defmacro test-file (executable ; a string or a parsed executable
                      &key
+                     (include ':all) ; names of functions (strings) to test, or can be :all
                      (exclude 'nil) ; names of functions (strings) to exclude from testing
                      (extra-rules 'nil)
                      (extra-lift-rules 'nil)
@@ -928,8 +936,9 @@
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                      )
-  `(acl2::make-event-quiet (test-functions-fn :all
-                                              ,executable ; gets evaluated (often a constant like *foo.o*)
+  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated (often a constant like *foo.o*)
+                                              ',include ; todo: evaluate?
+                                              ',exclude ; todo: evaluate?
                                               ',executable  ; unevaluated
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
@@ -943,5 +952,4 @@
                                               ',step-limit ',step-increment ',prune
                                               ',tactics ',max-conflicts ',stack-slots ',position-independent
                                               ',expected-failures
-                                              ',exclude
                                               state)))
