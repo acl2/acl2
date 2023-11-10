@@ -16,6 +16,7 @@
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
+(include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
@@ -843,6 +844,8 @@
                       exclude-fns))
        (function-name-strings (set-difference-equal function-name-strings exclude-fns))
        (expected-failures (set-difference-equal expected-failures exclude-fns))
+       ;; Sort the functions (TODO: What determines the order in the executable?)
+       (function-name-strings (acl2::merge-sort-string< function-name-strings))
        ;; Test the functions:
        ((mv erp result-alist state)
         (test-functions-fn-aux function-name-strings parsed-executable
