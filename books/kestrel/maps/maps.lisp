@@ -291,7 +291,7 @@
 ;return the keys of the map as a list
 (defun key-list (map)
   (declare (type t map))
-  (set::2list (acl2::rkeys map)))
+  (set::2list (rkeys map)))
 
 ;fixme flesh out - or use a different version of maps
 (defund mapp (map)

@@ -126,7 +126,7 @@
                 (assoc-equal n l))
            (equal (aref1 name l n)
                   (acl2::lookup-equal n l)))
-  :hints (("Goal" :in-theory (e/d (acl2::lookup-equal aref1) ()))))
+  :hints (("Goal" :in-theory (enable acl2::lookup-equal aref1))))
 
 (acl2::defopeners x86isa::64-bit-mode-two-byte-opcode-modr/m-p
                   :hyps ((syntaxp (quotep x86isa::opcode))
