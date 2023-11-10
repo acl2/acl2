@@ -255,7 +255,7 @@
                 (assoc-equal key x)))
   :hints (("Goal" :in-theory (enable reverse-list))))
 
-(local (in-theory (enable revappend-lemma)))
+(local (in-theory (enable revappend-becomes-append-of-reverse-list)))
 
 ;use list fix in concl?
 (defthm bounded-integer-alistp-of-reverse-list
