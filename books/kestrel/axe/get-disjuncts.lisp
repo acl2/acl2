@@ -38,8 +38,8 @@
                     (all-< tail bound)
                     (<= (len tail) (len lst)) ; needed in general for such proofs?
                     )
-               (all-< (mv-nth 0 (acl2::split-list-fast-aux lst tail acc)) bound))
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+               (all-< (mv-nth 0 (split-list-fast-aux lst tail acc)) bound))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
     (defthm all-<-of-mv-nth-1-of-split-list-fast-aux
       (implies (and (all-< acc bound)
@@ -47,20 +47,20 @@
                     (all-< tail bound)
                     (<= (len tail) (len lst)) ; needed in general for such proofs?
                     )
-               (all-< (mv-nth 1 (acl2::split-list-fast-aux lst tail acc)) bound))
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast-aux))))
+               (all-< (mv-nth 1 (split-list-fast-aux lst tail acc)) bound))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
 
     (defthm all-<-of-mv-nth-0-of-split-list-fast
       (implies (all-< lst bound)
-               (all-< (mv-nth 0 (acl2::split-list-fast lst)) bound))
+               (all-< (mv-nth 0 (split-list-fast lst)) bound))
       :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))
+      :hints (("Goal" :in-theory (enable split-list-fast))))
 
     (defthm all-<-of-mv-nth-1-of-split-list-fast
       (implies (all-< lst bound)
-               (all-< (mv-nth 1 (acl2::split-list-fast lst)) bound))
+               (all-< (mv-nth 1 (split-list-fast lst)) bound))
       :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable acl2::split-list-fast))))))
+      :hints (("Goal" :in-theory (enable split-list-fast))))))
 
 (local
  (defthm all-<-of-merge-<-and-remove-dups-aux
@@ -313,7 +313,7 @@
            (nat-listp (mv-nth 2 (get-darg-disjuncts item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc negated-flg print))))
   :hints (("Goal" :in-theory (e/d (get-darg-disjuncts) (natp)))))
 
-(verify-guards get-darg-disjuncts :hints (("Goal" :in-theory (e/d () (natp)))))
+(verify-guards get-darg-disjuncts :hints (("Goal" :in-theory (disable natp))))
 
 (defthm true-listp-of-mv-nth-2-of-get-darg-disjuncts
   (implies (true-listp acc)

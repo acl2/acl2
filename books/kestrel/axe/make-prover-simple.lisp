@@ -246,7 +246,7 @@
     (:EXECUTABLE-COUNTERPART ALL-<)
     (:EXECUTABLE-COUNTERPART AXE-TREE-LISTP)
     (:EXECUTABLE-COUNTERPART ALL-NATP)
-    (:EXECUTABLE-COUNTERPART ALL-STORED-AXE-RULEP)
+    (:EXECUTABLE-COUNTERPART stored-axe-rule-listp)
     (:EXECUTABLE-COUNTERPART ASSOC-KEYWORD)
     (:EXECUTABLE-COUNTERPART AXE-RULE-HYP-LISTP)
     (:EXECUTABLE-COUNTERPART AXE-TREEP)
@@ -350,8 +350,8 @@
     (:REWRITE ALL-NATP-OF-CDR)
     (:REWRITE ALL-NATP-WHEN-NAT-LISTP)
     (:REWRITE ALL-NATP-WHEN-NOT-CONSP-CHEAP)
-    (:REWRITE ALL-STORED-AXE-RULEP-OF-CDR)
-    (:REWRITE ALL-STORED-AXE-RULEP-OF-LOOKUP-EQUAL-WHEN-RULE-ALISTP)
+    (:REWRITE STORED-AXE-RULE-LISTP-OF-CDR)
+    (:REWRITE STORED-AXE-RULE-LISTP-OF-LOOKUP-EQUAL-WHEN-RULE-ALISTP)
     (:REWRITE AXE-BIND-FREE-RESULT-OKAYP-REWRITE)
     (:REWRITE AXE-RULE-HYP-LISTP-OF-CDR)
     (:REWRITE AXE-RULE-HYP-LISTP-OF-STORED-RULE-HYPS)
@@ -428,7 +428,7 @@
     (:REWRITE TRIESP-OF-INCREMENT-TRIES)
     (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP)
     (:REWRITE TRUE-LISTP-OF-LOOKUP-EQUAL-WHEN-RULE-ALISTP)
-    (:REWRITE USE-ALL-STORED-AXE-RULEP-FOR-CAR)
+    (:REWRITE stored-axe-rulep-of-car)
     (:REWRITE WF-DAGP-AFTER-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
     (:TYPE-PRESCRIPTION posp-of-alen1)
@@ -438,7 +438,7 @@
     (:TYPE-PRESCRIPTION BOUNDED-AXE-TREE-LISTP)
     (:TYPE-PRESCRIPTION ALL-CONSP)
     (:TYPE-PRESCRIPTION BOUNDED-DARG-LISTP)
-    (:TYPE-PRESCRIPTION ALL-STORED-AXE-RULEP)
+    (:TYPE-PRESCRIPTION STORED-AXE-RULE-LISTP)
     (:TYPE-PRESCRIPTION ARRAY1P)
     (:TYPE-PRESCRIPTION ASSOC-KEYWORD)
     (:TYPE-PRESCRIPTION SIMPLE-PROVER-OPTIONSP)
@@ -1323,8 +1323,7 @@
                                           equiv-alist print info tries
                                           interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                                      (true-listp stored-rules)
-                                      (all-stored-axe-rulep stored-rules)
+                                      (stored-axe-rule-listp stored-rules)
                                       (rule-alistp rule-alist)
                                       (bounded-darg-listp args-to-match dag-len)
                                       (nat-listp nodenums-to-assume-false1)
@@ -2236,8 +2235,7 @@
            :FLAG ,RELIEVE-rule-HYPS-name)
          (DEFTHM ,(pack$ TRY-TO-APPLY-RULES-name '-return-type)
            (IMPLIES (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                         (true-listp stored-rules)
-                         (all-stored-axe-rulep stored-rules)
+                         (stored-axe-rule-listp stored-rules)
                          (rule-alistp rule-alist)
                          (bounded-darg-listp args-to-match dag-len)
                          (nat-listp nodenums-to-assume-false1)
@@ -2583,8 +2581,7 @@
 
        (defthm ,(pack$ try-to-apply-rules-name '-return-type-corollary)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (true-listp stored-rules)
-                       (all-stored-axe-rulep stored-rules)
+                       (stored-axe-rule-listp stored-rules)
                        (rule-alistp rule-alist)
                        (bounded-darg-listp args-to-match dag-len)
                        (nat-listp nodenums-to-assume-false1)
@@ -2627,8 +2624,7 @@
 
        (defthm ,(pack$ try-to-apply-rules-name '-return-type-corollary-linear)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                       (true-listp stored-rules)
-                       (all-stored-axe-rulep stored-rules)
+                       (stored-axe-rule-listp stored-rules)
                        (rule-alistp rule-alist)
                        (bounded-darg-listp args-to-match dag-len)
                        (nat-listp nodenums-to-assume-false1)
@@ -3024,7 +3020,7 @@
                                integerp-of-sub-tries
                                axe-rule-hypp
                                stored-axe-rulep
-                               all-stored-axe-rulep
+                               stored-axe-rule-listp
                                true-listp-of-unify-terms-and-dag-items-fast
                                (:type-prescription integerp-of-largest-non-quotep)
                                (:type-prescription pseudo-term-listp)

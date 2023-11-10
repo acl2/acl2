@@ -33,7 +33,7 @@
 ;; some cruft that brings in dependencies.
 (defun get-event-tuple2 (name world)
   (declare (xargs :mode :program))
-  (b* ((ev-world (acl2::decode-logical-name name world))
+  (b* ((ev-world (decode-logical-name name world))
        ((unless (consp ev-world))
         (er hard 'get-event-tuple2 "Not a logical name: ~x0." name))
        (landmark (car ev-world))
@@ -43,7 +43,7 @@
         (er hard 'get-event-tuple2 "Expected (EVENT-LANDMARK GLOBAL-VALUE . <event-tuple>) but found ~x0."
             landmark))
        (tuple (cddr landmark))
-       (form (acl2::access-event-tuple-form tuple)))
+       (form (access-event-tuple-form tuple)))
     (cond ((and (consp form)
                 (eq (car form) 'acl2::verify-termination-boot-strap))
 ; Check added by Matt K.  (Without it, the check below involving

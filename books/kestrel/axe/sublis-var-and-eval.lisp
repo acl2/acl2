@@ -154,10 +154,8 @@
 (verify-guards sublis-var-and-eval
   :hints (("Goal"
            :use (:instance myquotep-of-sublis-var-and-eval
-                           (form (CADR FORM)))
-           :in-theory (e/d ()
-                           (;list::memberp-of-cons
-                            myquotep SYMBOL-ALISTP STRIP-CDRS myquotep-of-sublis-var-and-eval)))))
+                           (form (cadr form)))
+           :in-theory (disable myquotep symbol-alistp strip-cdrs myquotep-of-sublis-var-and-eval))))
 
 (defthm-flag-sublis-var-and-eval
   (defthm axe-treep-of-sublis-var-and-eval
