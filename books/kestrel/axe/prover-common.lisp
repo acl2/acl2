@@ -39,8 +39,6 @@
 (include-book "equivs")
 (include-book "rebuild-literals")
 (include-book "dag-array-printing")
-;(include-book "splitting")
-;(include-book "elim")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
 (include-book "dag-size-sparse")
