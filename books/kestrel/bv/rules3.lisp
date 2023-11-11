@@ -624,30 +624,6 @@
 ;;    (("Goal"
 ;;      :in-theory (e/d (BVXOR) (LOGXOR-BVCHOP-BVCHOP))))))
 
-(defthmd <-of-myif-arg1
-  (equal (< (myif test a b) k)
-         (myif test (< a k) (< b k)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthmd <-of-myif-arg2
-  (equal (< k (myif test a b))
-         (myif test (< k a) (< k b)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-;; could require even more to be constant, like a and/or b
-(defthmd <-of-myif-arg1-when-constant
-  (implies (syntaxp (quotep k))
-           (equal (< (myif test a b) k)
-                  (myif test (< a k) (< b k))))
-  :hints (("Goal" :in-theory (enable myif))))
-
-;; could require even more to be constant, like a and/or b
-(defthmd <-of-myif-arg2-when-constant
-  (implies (syntaxp (quotep k))
-           (equal (< k (myif test a b))
-                  (myif test (< k a) (< k b))))
-  :hints (("Goal" :in-theory (enable myif))))
-
 ;; ;bozo gen
 ;; (DEFTHM BVOR-6--64-HACK2
 ;;   (equal (< (BVOR 6 X Y) 64)
@@ -678,13 +654,6 @@
 ;;      :in-theory (e/d (BVOR logior) (;LOGIOR-BVCHOP-BVCHOP
 ;;                                     LOGNOT-OF-LOGAND
 ;;                                 ))))))
-
-
-(DEFTHM natp-of-myif2
-  (IMPLIES (AND (natp A)
-                (natp B))
-           (natp (MYIF TEST A B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
 
 (defthm bvcat-bound-hack-1
   (implies (integerp x)
@@ -1051,12 +1020,6 @@
                          (+ -1 size)
                          (bvchop (+ -1 size) x)))))
 
-(defthm myif-of-myif-test
-  (equal (myif (myif test t nil) a b)
-         (myif test a b))
-  :hints (("Goal" :in-theory (enable myif))))
-
-
 ;move
 (defthmd bvif-blast
   (implies (and (< 1 size)
@@ -1377,20 +1340,6 @@
 ;; (defthm myif-nil-becomes-and
 ;;   (equal (myif a b nil)
 ;;          (and a b)))
-
-;i suppose we could use any predicate here in place of booleanp
-;shouldn't we turn myif into boolif in this case?
-(defthm booleanp-of-myif
-  (implies (and (booleanp y)
-                (booleanp z))
-           (booleanp (myif x y z)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm myif-x-x-t-not-nil
-  (implies (not (equal nil val))
-           (equal (equal nil (myif x x val))
-                  nil))
-  :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd bvif-blast-when-quoteps
   (implies (and (syntaxp (quotep x))

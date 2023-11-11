@@ -89,6 +89,36 @@
 
 (local (in-theory (disable <-OF-IF-ARG1)))
 
+;todo: move these (and disable them)?
+
+;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
+(defthm equal-of-myif-same-1
+  (equal (equal x (myif test x y))
+         (if test t (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
+(defthm equal-of-myif-same-2
+  (equal (equal x (myif test y x))
+         ;rephrase rhs?
+         (or (not test) (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; may not be needed if we flip equalities to bring smaller terms first
+(defthm equal-of-myif-same-1-alt
+  (equal (equal (myif test x y) x)
+         (if test t (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; may not be needed if we flip equalities to bring smaller terms first
+(defthm equal-of-myif-same-2-alt
+  (equal (equal (myif test y x) x)
+         ;rephrase rhs?
+         (or (not test) (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+
+
 ;; surprising that this is needed
 (local
   (defthm integerp-of-+-type
@@ -6726,34 +6756,6 @@
          (bvlt 31 x 4))
   :hints (("Goal" :use (:instance bvdiv-equal-0-rewrite)
            :in-theory (disable bvdiv-equal-0-rewrite))))
-
-;move these:
-
-;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-1
-  (equal (equal x (myif test x y))
-         (if test t (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-2
-  (equal (equal x (myif test y x))
-         ;rephrase rhs?
-         (or (not test) (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-;; may not be needed if we flip equalities to bring smaller terms first
-(defthm equal-of-myif-same-1-alt
-  (equal (equal (myif test x y) x)
-         (if test t (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-;; may not be needed if we flip equalities to bring smaller terms first
-(defthm equal-of-myif-same-2-alt
-  (equal (equal (myif test y x) x)
-         ;rephrase rhs?
-         (or (not test) (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
 
 ;todo: why is -dag in the name?
 (defthmd bvlt-of-max-when-bvlt-constant-dag
