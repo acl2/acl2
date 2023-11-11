@@ -1,7 +1,7 @@
 ; The code query tool
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,6 +20,14 @@
 
 (include-book "tactic-prover")
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
+;; Some rules that may be useful in queries
+
+;move
+(defthmd not-of-if
+  (equal (not (if test tp ep))
+         (if test (not tp) (not ep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *sat* :sat)
 (defconst *unsat* :unsat)
@@ -119,16 +127,3 @@
   `(assert-equal-with-stobjs ,query
                              ',expected-result
                              :stobjs (state)))
-
-;; Some rules that may be useful in queries
-
-;move
-(defthmd not-of-if
-  (equal (not (if test tp ep))
-         (if test (not tp) (not ep))))
-
-;move
-(defthmd not-of-myif
-  (equal (not (myif test tp ep))
-         (myif test (not tp) (not ep)))
-  :hints (("Goal" :in-theory (enable myif))))
