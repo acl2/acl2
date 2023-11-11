@@ -5961,31 +5961,22 @@
                                      (symbol-listp no-print-fns)
                                      (symbol-listp monitor)
                                      (print-levelp print)
+                                     ;; use
                                      (symbol-listp var-ordering)
                                      (ilks-plist-worldp (w state)))
                          :stobjs state
                          :mode :program ;because this translates its args if they are terms
                          ))
-         (b* (((mv erp dag1) (dag-or-term-to-dag-basic-unguarded dag-or-term1 (w state)))
+         (b* (;; Convert both arguments to DAGs (if not already).
+              ;; We use the unguarded version here to avoid invariant-risk:
+              ((mv erp dag1) (dag-or-term-to-dag-basic-unguarded dag-or-term1 (w state)))
               ((when erp) (mv erp nil state))
               ((mv erp dag2) (dag-or-term-to-dag-basic-unguarded dag-or-term2 (w state)))
               ((when erp) (mv erp nil state)))
            ;; This helper function is in :logic mode and is guard-verified:
-           (,prove-dag-implication-name dag1
-                                        dag2
-                                        tactic
-                                        rule-lists
-                                        global-rules
-                                        extra-global-rules
-                                        interpreted-function-alist
-                                        no-splitp
-                                        print-as-clausesp
-                                        no-print-fns
-                                        monitor
-                                        print
-                                        use
-                                        var-ordering
-                                        state)))
+           (,prove-dag-implication-name dag1 dag2
+                                        tactic rule-lists global-rules extra-global-rules interpreted-function-alist
+                                        no-splitp print-as-clausesp no-print-fns monitor print use var-ordering state)))
 
        ;; Attempt to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
        ;; Causes an error if the proof attempt fails.
