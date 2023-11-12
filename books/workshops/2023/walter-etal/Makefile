@@ -1,4 +1,4 @@
-all: prove-file-java prove-file-read parser-cli
+all: build-debug-binary build-java-binary parser-cli
 
 ACL2S_EXE ?= acl2s
 ACL2_CERT_PL ?= ${ACL2_SYSTEM_BOOKS}/build/cert.pl
