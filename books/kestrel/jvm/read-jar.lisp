@@ -82,12 +82,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp event byte-array-stobj constant-pool state).
-(defund read-jar-fn (jar-path dir class-names whole-form state byte-array-stobj constant-pool)
+(defund read-jar-fn (jar-path dir class-names verbosep whole-form state byte-array-stobj constant-pool)
   (declare (xargs :guard (and (stringp jar-path)
                               (or (null dir)
                                   (keywordp dir))
                               (or (eq :all class-names)
                                   (string-listp class-names))
+                              (booleanp verbosep)
                               (consp whole-form)
                               (symbolp (car whole-form)))
                   :stobjs (state byte-array-stobj constant-pool)))
@@ -106,9 +107,9 @@
        ;; Read the .jar:
        ((mv erp path-to-decompressed-bytes-alist byte-array-stobj state)
         (if (eq :all class-names)
-            (unzip jar-path :all byte-array-stobj state)
+            (unzip jar-path :all verbosep byte-array-stobj state)
           (let ((paths (class-names-to-paths class-names))) ; turns dots into slashes
-            (unzip jar-path paths byte-array-stobj state))))
+            (unzip jar-path paths verbosep byte-array-stobj state))))
        ((when erp) (mv erp nil state byte-array-stobj constant-pool))
        ;; Parse each of the class files and create events to register it:
        ((mv erp events constant-pool count)
@@ -131,5 +132,6 @@
                            &key
                            (dir 'nil)
                            (classes ':all) ; names of classes (fully-qualified), or :all
+                           (verbosep 'nil)
                            )
-  `(make-event-quiet (read-jar-fn ,jar-path ,dir ',classes ',whole-form state byte-array-stobj constant-pool)))
+  `(make-event-quiet (read-jar-fn ,jar-path ,dir ',classes ,verbosep ',whole-form state byte-array-stobj constant-pool)))

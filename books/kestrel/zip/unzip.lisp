@@ -32,7 +32,9 @@
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
-(local (in-theory (disable mv-nth natp true-listp)))
+(local (in-theory (disable mv-nth natp true-listp
+                           ;assoc-equal
+                           )))
 
 (local (in-theory (enable true-listp-when-string-listp)))
 
@@ -348,7 +350,7 @@
 
 ;; Returns (mv erp header index)
 ;; TODO: Read less of this?
-(defun read-local-file-header (index byte-array-stobj)
+(defund read-local-file-header (index byte-array-stobj)
   (declare (xargs :guard (natp index)
                   :stobjs byte-array-stobj))
   (b* (((when (> (+ index 30) ; size of required part
@@ -385,6 +387,12 @@
           (:file-name . ,file-name)
           (:extra-field . ,extra-field-bytes))
         index)))
+
+(local
+ (defthm natp-of-mv-nth-2-of-read-local-file-header
+   (implies (natp index)
+            (natp (mv-nth 2 (read-local-file-header index byte-array-stobj))))
+   :hints (("Goal" :in-theory (enable read-local-file-header)))))
 
 ;; Check whether the BYTES are present in BYTE-ARRAY-STOBJ's byte array, starting at
 ;; position INDEX.
@@ -427,7 +435,7 @@
 
 ;; Returns (mv erp end-of-central-directory-record byte-array-stobj state), where
 ;; BYTE-ARRAY-STOBJ has been populated with the contents of FILENAME.
-(defun read-file-and-locate-end-of-central-directory-record (filename byte-array-stobj state)
+(defund read-file-and-locate-end-of-central-directory-record (filename byte-array-stobj state)
   (declare (xargs :guard (stringp filename)
                   :stobjs (byte-array-stobj state)))
   (b* (;; Read in the whole file (TODO: Can we read in less?):
@@ -450,6 +458,11 @@
        (end-of-central-directory-record (read-end-of-central-directory-record maybe-end-of-central-directory-record byte-array-stobj)))
     (mv (erp-nil)
         end-of-central-directory-record byte-array-stobj state)))
+
+(local
+ (defthm alistp-of-mv-nth-1-of-read-file-and-locate-end-of-central-directory-record
+   (alistp (mv-nth 1 (read-file-and-locate-end-of-central-directory-record filename byte-array-stobj state)))
+   :hints (("Goal" :in-theory (enable read-file-and-locate-end-of-central-directory-record)))))
 
 ;; Go through the central-directory-headers.  For each, add the file name and size to the result
 ;; Returns (mv erp file-infos index)
@@ -511,12 +524,14 @@
 (defund unzip-files (target-paths
                      num-headers
                      index ; location of the next central directory header to read, an index in the byte-array-stobj
+                     verbosep
                      byte-array-stobj
                      acc)
   (declare (xargs :guard (and (or (string-listp target-paths)
                                   (eq target-paths :all))
                               (natp num-headers)
                               (natp index)
+                              (booleanp verbosep)
                               (alistp acc))
                   :guard-hints (("Goal" :in-theory (enable read-central-directory-header)))
                   :stobjs byte-array-stobj))
@@ -533,8 +548,11 @@
          ((mv erp acc)
           (if (or (eq target-paths :all)
                   (member-equal filename target-paths))
-              (b* ((compressed-size (lookup-eq :compressed-size header))
+              (b* ((- (and verbosep (cw "Exracting ~s0.~%" filename))) ; todo: option to suppress this and other printing
+                   (compressed-size (lookup-eq :compressed-size header))
+                   (- (and verbosep (cw "  Size: ~x0.~%" compressed-size)))
                    (compression-method (lookup-eq :compression-method header))
+                   (- (and verbosep (cw "  Compression method: ~x0.~%" compression-method)))
                    (relative-offset-of-local-header (nfix (lookup-eq :relative-offset-of-local-header header)))
                    ((mv erp & ; local-file-header
                         index2) (read-local-file-header relative-offset-of-local-header byte-array-stobj))
@@ -559,22 +577,22 @@
                 (mv (erp-nil) (acons filename decompressed-file-bytes acc)))
             (mv (erp-nil) acc)))
          ((when erp) (mv erp nil)))
-      (unzip-files target-paths (+ -1 num-headers) index byte-array-stobj acc))))
+      (unzip-files target-paths (+ -1 num-headers) index verbosep byte-array-stobj acc))))
 
 (defthm alist-of-mv-nth-1-of-unzip-files
   (implies (alistp acc)
-           (alistp (mv-nth 1 (unzip-files target-paths num-headers index byte-array-stobj acc))))
+           (alistp (mv-nth 1 (unzip-files target-paths num-headers index verbosep byte-array-stobj acc))))
   :hints (("Goal" :in-theory (enable unzip-files))))
 
 (defthm string-listp-of-strip-cars-of-mv-nth-1-of-unzip-files
   (implies (string-listp (strip-cars acc))
-           (string-listp (strip-cars (mv-nth 1 (unzip-files target-paths num-headers index byte-array-stobj acc)))))
+           (string-listp (strip-cars (mv-nth 1 (unzip-files target-paths num-headers index verbosep byte-array-stobj acc)))))
   :hints (("Goal" :in-theory (enable unzip-files))))
 
 (defthm byte-list-listp-of-strip-cdrs-of-mv-nth-1-of-unzip-files
   (implies (and (byte-list-listp (strip-cdrs acc))
                 (true-listp acc))
-           (byte-list-listp (strip-cdrs (mv-nth 1 (unzip-files target-paths num-headers index byte-array-stobj acc)))))
+           (byte-list-listp (strip-cdrs (mv-nth 1 (unzip-files target-paths num-headers index verbosep byte-array-stobj acc)))))
   :hints (("Goal" :in-theory (enable unzip-files))))
 
 
@@ -587,10 +605,12 @@
 ;; (unzip "../derivations/monitor/cp-2.4/rosjava/AIJ.jar" :all byte-array-stobj state)
 (defund unzip (zip-filename
                paths ; paths within the zipfile to be extracted, or :all
+               verbosep
                byte-array-stobj state)
   (declare (xargs :guard (and (stringp zip-filename)
                               (or (eq :all paths)
-                                  (string-listp paths)))
+                                  (string-listp paths))
+                              (booleanp verbosep))
                   :stobjs (byte-array-stobj state)))
   (b* (((mv erp end-of-central-directory-record byte-array-stobj state)
         (read-file-and-locate-end-of-central-directory-record zip-filename byte-array-stobj state))
@@ -598,7 +618,7 @@
        (num-entries (nfix (lookup-eq :number-of-entries-in-central-dir end-of-central-directory-record))) ; todo: drop the nfix
        (central-dir-offset (nfix (lookup-eq :offset-of-start-of-central-dir end-of-central-directory-record)))
        ;; Decompress the desired files:
-       ((mv erp path-to-decompressed-bytes-alist) (unzip-files paths num-entries central-dir-offset byte-array-stobj nil))
+       ((mv erp path-to-decompressed-bytes-alist) (unzip-files paths num-entries central-dir-offset verbosep byte-array-stobj nil))
        ((when erp) (mv erp nil byte-array-stobj state))
        ;; Check whether any of the desired files were missing:
        (missing-paths (if (eq :all paths)
@@ -611,13 +631,13 @@
     (mv (erp-nil) path-to-decompressed-bytes-alist byte-array-stobj state)))
 
 (defthm alistp-of-mv-nth-1-of-unzip
-  (alistp (mv-nth 1 (unzip zip-filename paths byte-array-stobj state)))
+  (alistp (mv-nth 1 (unzip zip-filename paths verbosep byte-array-stobj state)))
   :hints (("Goal" :in-theory (enable unzip))))
 
 (defthm string-listp-of-strip-cars-of-mv-nth-1-of-unzip
-  (string-listp (strip-cars (mv-nth 1 (unzip zip-filename paths byte-array-stobj state))))
+  (string-listp (strip-cars (mv-nth 1 (unzip zip-filename paths verbosep byte-array-stobj state))))
   :hints (("Goal" :in-theory (enable unzip))))
 
 (defthm byte-list-listp-of-strip-cdrs-of-mv-nth-1-of-unzip
-  (byte-list-listp (strip-cdrs (mv-nth 1 (unzip zip-filename paths byte-array-stobj state))))
+  (byte-list-listp (strip-cdrs (mv-nth 1 (unzip zip-filename paths verbosep byte-array-stobj state))))
   :hints (("Goal" :in-theory (enable unzip))))
