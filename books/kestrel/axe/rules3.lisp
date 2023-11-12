@@ -905,13 +905,6 @@
                       (bvlt 32 x (- k2 k1)))))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus) (anti-bvplus )))))
 
-(defthm bvuminus-less-than-true
-  (implies (and (syntaxp (quotep k))
-                (<= (expt 2 size) k)
-                (natp size))
-           (< (bvuminus size x) k))
-  :hints (("Goal" :in-theory (e/d (bvuminus) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
-
 (defthm bvlt-of-bvuminus-trim
   (implies (unsigned-byte-p 31 z)
            (equal (BVLT 32 (BVUMINUS 31 x) z)
