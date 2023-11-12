@@ -195,6 +195,8 @@
                    (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(id ,(darg2 expr)) dag-acc) state))
                   ;; Try to resolve the IF test:
                   ((mv erp result state)
+                   ;; TODO: What if the test is among the context assumptions?
+                   ;; TODO: Should we use any rewriting here?
                    (try-to-resolve-node-with-stp (darg1 expr) ; the test of the IF/MYIF
                                                  context      ; the assumptions
                                                  dag-array dag-len dag-parent-array
@@ -203,8 +205,8 @@
                                                  max-conflicts
                                                  state))
                   ((when erp) (mv erp nil state))
-                  ;; We use a wrapper of ID here so as to ensure the node is
-                  ;; still legal (not a naked nodenum) and not change the node
+                  ;; We use a wrapper of ID here to ensure the node is
+                  ;; still legal (not a naked nodenum) and to preserve the node
                   ;; numbering (calls to ID will later be removed by rewriting):
                   (expr (if (eq result :true)
                             `(id ,(darg2 expr)) ; the IF/MYIF is equal to its then-branch
@@ -256,11 +258,12 @@
        (dag-parent-array (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array))
        ((mv erp dag state)
         (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array
-                                     t         ;print
+                                     t         ;todo print
                                      60000     ;todo max-conflicts
                                      nil       ; dag-acc
                                      state))
        ((when erp) (mv erp nil state))
+       ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
        ((mv erp rule-alist) (make-rule-alist '(id) ; todo: more rules
                                              (w state)))
        ((when erp) (mv erp nil state))
