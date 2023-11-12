@@ -1,0 +1,172 @@
+(definec rem-dups (l :tl) :tl
+  (cond ((endp l) l)
+        ((in (car l) (cdr l)) (rem-dups (cdr l)))
+        (t (cons (car l) (rem-dups (cdr l))))))
+
+Lemma L1:
+(implies (and (tlp l)
+              (in e (rem-dups l)))
+         (in e l))
+
+Context:
+C1. (tlp l) 
+
+Proof by: Induction on (rem-dups l)
+
+
+Induction Case 0:
+(implies (not (tlp l))
+	 (implies (and (tlp l)
+                       (in e (rem-dups l)))
+		  (in e l)))
+
+Exportation:
+(implies (and (not (tlp l))
+	      (tlp l)
+              (in e (rem-dups l)))
+	 (in e l))
+
+Context:
+C2. (not (tlp l))
+C3. (in e (rem-dups l))
+
+Derived Context:
+D1. nil { C1, C2, PL }
+
+QED
+
+
+
+Induction Case 1:
+(implies (and (tlp l)
+	      (endp l))
+	 (implies (and (tlp l)
+                       (in e (rem-dups l)))
+		  (in e l)))
+
+Context:
+C2. (endp l)
+C3. (in e (rem-dups l))
+
+Derived Context:
+D1. (== l nil) { Def tlp, C1, C2  }
+D2. (== (rem-dups l) nil) { Def rem-dups, D1 }
+D3. (consp (rem-dups l)) { Def in, C3 }
+D4. nil { D2, D3, PL }
+
+QED
+
+
+Induction Case 2:
+(implies (and (not (endp l))
+              (in (car l) (cdr l))
+              (implies (and (tlp (cdr l))
+                            (in e (rem-dups (cdr l))))
+                       (in e (cdr l))))
+         (implies (and (tlp l)
+                       (in e (rem-dups l)))
+                  (in e l)))
+
+Exportation:
+(implies (and (tlp l)
+              (not (endp l))
+              (in e (rem-dups l))
+              (in (car l) (cdr l))
+              (implies (and (tlp (cdr l))
+                            (in e (rem-dups (cdr l))))
+                       (in e (cdr l))))
+         (in e l))
+
+Context:
+C2. (not (endp l))
+C3. (in e (rem-dups l))
+C4. (in (car l) (cdr l))
+C5. (implies (and (tlp (cdr l))
+                  (in e (rem-dups (cdr l))))
+             (in e (cdr l)))
+
+Derived Context:
+D1. (in e (rem-dups (cdr l))) { Def rem-dups, C2, C3, C4 }
+D2. (tlp (cdr l)) { Def tlp, C1, C2 }
+D3. (in e (cdr l)) { C5, D1, D2, MP }
+
+Goal: (in e l)
+
+Proof:
+(in e l)
+== { Def in }
+(and (consp l)
+     (or (== e (car l))
+         (in e (cdr l))))
+== { C2, D3, PL }
+t
+
+QED
+
+
+Induction Case 3:
+(implies (and (not (endp l))
+              (not (in (car l) (cdr l)))
+              (implies (and (tlp (cdr l))
+                            (in e (rem-dups (cdr l))))
+                       (in e (cdr l))))
+         (implies (and (tlp l)
+                       (in e (rem-dups l)))
+                  (in e l)))
+
+Exportation:
+(implies (and (tlp l)
+              (not (endp l))
+              (in e (rem-dups l))
+              (not (in (car l) (cdr l)))
+              (implies (and (tlp (cdr l))
+                            (in e (rem-dups (cdr l))))
+                       (in e (cdr l))))
+         (in e l))
+
+Context:
+C2. (not (endp l))
+C3. (in e (rem-dups l))
+C4. (not (in (car l) (cdr l)))
+C5. (implies (and (tlp (cdr l))
+                  (in e (rem-dups (cdr l))))
+             (in e (cdr l)))
+
+Derived Context:
+D1. (tlp (cdr l)) { Def tlp, C1, C2 }
+D2. (in e (cons (car l) (rem-dups (cdr l)))) {C3, Def rem-dups, C2, C4}
+D3. (or (== e (car l)) (in e (rem-dups (cdr l)))) {D2, Def in, cons axioms, PL}
+
+Goal: (in e l)
+
+Proof:
+(in e l)
+== { Def in }
+(and (consp l)
+     (or (== e (car l))
+         (in e (cdr l))))
+== { C2, PL }
+(or (== e (car l))
+    (in e (cdr l)))
+== { D1, D3, C5, MP,PL }
+t
+
+QED
+
+Induction Case 4:
+(implies nil t)
+
+Exportation:
+(implies nil t)
+
+Context:
+C2. nil
+
+Goal: t
+
+Proof:
+t
+
+QED
+
+QED

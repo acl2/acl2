@@ -1,0 +1,234 @@
+#|
+
+ Author: Pete Manolios
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD12xx/EWD1297.html
+
+ I first came up with a visual proof, and later with a calculational one. In both proofs we restrict ourselves to
+
+ (0)a/b < c/d
+
+ The visual proof
+
+ Connect the points (b, a) and (d, c) to the origin and complete the parallelogram
+
+ figure
+
+ Because of the monotonicity of the tangent in the 1st quadrant and the fact the diagonal of a parallelogram lies inside that parallelogram, i.e., between the two sides, we conclude
+
+ (1)a/b < (a+c)/(b+d) < c/d
+
+ The calculational proof
+
+ For the left inequality of (1) we observe
+
+ a/b < (a+c)/(b+d)
+
+ ≡{ b·(b+d) > 0 }
+
+ a·(b+d) < (a+c)·b
+
+ ≡{ algebra }
+
+ a·d < c·b
+
+ ≡{ b·d > 0 }
+
+ a/b < c/d
+
+
+|#
+
+(encapsulate
+  ()
+  (local
+   (property cross-help1 (a b c d :pos)
+             (=> (< (/ a b) (/ c d))
+                 (< (* b (/ a b))
+                    (* b (/ c d))))))
+
+  (local
+   (property cross-help2 (a b c d :pos)
+             (=> (< a (* b (/ c d)))
+                 (< (* d a)
+                    (* d (* b (/ c d)))))))
+
+  (property cross-ping (a b c d :pos)
+            (=> (< (/ a b) (/ c d))
+                (< (* a d) (* c b)))
+            :hints (("Goal" :use (cross-help1 cross-help2)))))
+
+(encapsulate
+  ()
+  (local
+   (property cross-help3 (a b c d :pos)
+             (=> (< (* a d) (* c b))
+                 (< (/ (* a d) d)
+                    (/ (* c b) d)))))
+   
+  (local
+   (property cross-help4 (a b c d :pos)
+             (=> (< a (/ (* c b) d))
+                 (< (/ a b)
+                    (/ (/ (* c b) d) b)))))
+  
+  (property cross-pong (a b c d :pos)
+            (=> (< (* a d) (* c b))
+                (< (/ a b) (/ c d)))
+            :hints (("Goal" :use (cross-help3 cross-help4)))))
+
+(property cross (a b c d :pos)
+          (== (< (/ a b) (/ c d))
+              (< (* a d) (* c b)))
+          :hints (("Goal" :use (cross-ping cross-pong))))
+
+
+; Dijkstra says that fractions are restricted to quotients of positive
+; integers, so the theorem he is trying to prove is this:
+
+(property (a b c d :pos)
+  :proofs? nil
+  :hyps (< (/ a b) (/ c d))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; ACL2s does not get it automatically, so let's use proof checker.
+; But that fails too, so how can we get the proof to go through?
+; Use the proof builder and find appropriate lemmas.
+
+Conjecture EWD-1297-1:
+(=> (^ (posp a)
+       (posp b)
+       (posp c)
+       (posp d)
+       (< (/ a b) (/ c d)))
+    (< (/ a b) (/ (+ a c) (+ b d))))
+
+Context:
+C1. (posp a)
+C2. (posp b)
+C3. (posp c)
+C4. (posp d)
+C5. (< (/ a b) (/ c d))
+
+Goal: (< (/ a b) (/ (+ a c) (+ b d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { Lemma cross ((c (+ a c)) (d (+ b d))) }
+(< (* a (+ b d)) (* (+ a c) b))
+== { Arith }
+(< (* a d) (* c b))
+== { Lemma cross }
+(< (/ a b) (/ c d))
+== { C5 }
+t
+
+QED
+
+; Then Dijkstra says "A similar proof shows that also the right
+; inequality of (1) is equivalent to (0), to which we could restrict
+; ourselves “without loss of generality”." 
+;
+; We formalize that also.
+
+Conjecture EWD-1297-2:
+(=> (^ (posp a)
+       (posp b)
+       (posp c)
+       (posp d)
+       (< (/ a b) (/ c d)))
+    (< (/ (+ a c) (+ b d)) (/ c d)))
+
+Context:
+C1. (posp a)
+C2. (posp b)
+C3. (posp c)
+C4. (posp d)
+C5. (< (/ a b) (/ c d))
+
+Goal: (< (/ (+ a c) (+ b d)) (/ c d))
+
+Proof:
+(< (/ (+ a c) (+ b d)) (/ c d))
+== { Lemma cross ((a (+ a c)) (b (+ b d))) }
+(< (* (+ a c) d) (* c (+ b d)))
+== { Arith }
+(< (* a d) (* c b))
+== { Lemma cross }
+(< (/ a b) (/ c d))
+== { C5 }
+t
+
+QED
+
+#|
+
+          *            *
+                *
+
+; But, what if we wan to generalize?
+; Start by assuming everything is a rational and
+; use counterexamples to fix.
+
+(property (a b c d :rational)
+  :hyps (< (/ a b) (/ c d))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; but i get a counterexample when b=0
+
+(property (a c d :rational b :non-0-rational)
+  :hyps (< (/ a b) (/ c d))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; but counterexample when b=-1, d=1, ...
+; and that's a problem because i'm dividing by b+d
+; so will add hyps that all denominators are not 0 at once.
+
+(property (a b c d :rational)
+  :h (^ (/= 0 b)
+        (/= 0 d)
+        (/= 0 (+ b d))
+        (< (/ a b) (/ c d)))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; now we found counterexamples, when b<0 and d<0, so assume that they
+; are not <0 and wind up with the following, which isn't proved, but
+; which has no counterexample.
+
+
+(property (a b c d :rational)
+  :h (^ (< 0 b)
+        (< 0 d)
+        (/= 0 (+ b d))
+        (< (/ a b) (/ c d)))
+  (^ (< (/ a b) (/ (+ a c) (+ b d)))
+     (< (/ (+ a c) (+ b d)) (/ c d))))
+
+; Question: Can we prove it using the same proof as above?
+
+
+; After reviewing Dijkstra's proof, the above hypotheses are the only
+; hypotheses he used. Here's why 
+
+; The first hint gives us b, b+d>0 
+; The last hint gives us d>0 
+; Simplifying we get b, d >0 ;
+; And the /= 0 hyp comes from the use of b+d as a denominator ;
+; The < hyp was just a hypothesis. ;
+
+; To make the above proof go through note that ;
+
+ (property (x y :rational z :pos-rational) (iff (< x y) (< (* x z) (* y z))))
+
+; shows the name of the theorem we need, which is ;
+
+ (:rewrite acl2::|(< x (/ y)) with (< 0 y)|)
+
+|#

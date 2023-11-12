@@ -1,0 +1,167 @@
+(definec sub-setp (x :tl y :tl) :boolean
+  (or (endp x)
+      (and (in (first x) y)
+           (sub-setp (rest x) y))))
+
+
+Lemma sub1: 
+(implies (and (tlp x) (tlp y) (sub-setp x y))
+         (sub-setp x (cons a y)))
+
+Proof by: Induction on (tlp x)
+
+
+Induction Case 0:
+(implies (not (consp x))
+         (implies (and (tlp x) (tlp y) (sub-setp x y))
+                  (sub-setp x (cons a y))))
+
+Exportation:
+(implies (and (tlp x) 
+              (tlp y) 
+              (not (consp x))
+              (sub-setp x y))
+         (sub-setp x (cons a y)))
+
+Context:
+C1. (tlp x) 
+C2. (tlp y) 
+C3. (not (consp x))
+C4. (sub-setp x y)
+
+Derived Context:
+D1. (equal x nil) { C1, C3 }
+
+Goal: (sub-setp x (cons a y))
+
+Proof:
+(sub-setp x (cons a y))
+== { Def sub-setp, D1 }
+t
+
+QED
+
+
+Induction Case 1:
+(implies (and (consp x)
+              (implies (and (tlp (cdr x)) (tlp y) (sub-setp (cdr x) y))
+                       (sub-setp (cdr x) (cons a y))))
+         (implies (and (tlp x) (tlp y) (sub-setp x y))
+                  (sub-setp x (cons a y))))
+
+Exportation:
+(implies (and (tlp x) 
+              (tlp y) 
+              (sub-setp x y)
+              (consp x)
+              (implies (and (tlp (cdr x)) (tlp y) (sub-setp (cdr x) y))
+                       (sub-setp (cdr x) (cons a y))))
+         (sub-setp x (cons a y)))
+
+Context:
+C1. (tlp x) 
+C2. (tlp y) 
+C3. (sub-setp x y)
+C4. (consp x)
+C5. (implies (and (tlp (cdr x)) (tlp y) (sub-setp (cdr x) y))
+                       (sub-setp (cdr x) (cons a y)))
+
+Derived Context:
+D1. (tlp (cdr x)) { C1, C4, Def tlp }
+D2. (sub-setp (rest x) y) { C3, Def sub-setp, C4 }
+D3. (sub-setp (cdr x) (cons a y)) { D1, C2, D2, C5, MP } 
+D4. (in (first x) y)  { C1, C2, C3, Def sub-setp, C4 }
+
+Goal: (sub-setp x (cons a y))
+
+Proof:
+(sub-setp x (cons a y))
+== { C1, C2, C4, car-cdr axioms, Def sub-setp }
+(and (in (first x) (cons a y))
+     (sub-setp (rest x) (cons a y)))
+== { D3 }
+(in (first x) (cons a y))
+== { C1, C4, car-cdr axioms, C2, Def in }
+(or (equal (first x) a)
+           (in (first x) y))
+== { D4 }
+t
+
+QED
+
+QED
+
+
+Theorem subset-reflexive:
+(implies (tlp x)
+         (sub-setp x x))
+
+Proof by: Induction on (tlp x)
+
+Induction Case 0:
+(implies (not (consp x))
+         (implies (tlp x)
+                  (sub-setp x x)))
+
+Exportation:
+(implies (and (tlp x)
+              (not (consp x)))
+         (sub-setp x x))
+
+Context:
+C1. (tlp x)
+C2. (not (consp x))
+
+Derived Context:
+D1. (equal x nil) { C1, C2 }
+
+Goal: (sub-setp x x)
+
+Proof:
+(sub-setp x x)
+== { D1, Def sub-setp }
+t
+
+QED
+
+Induction Case 1:
+(implies (and (consp x)
+              (implies (tlp (cdr x))
+                       (sub-setp (cdr x) (cdr x))))
+         (implies (tlp x)
+                  (sub-setp x x)))
+
+Exportation:
+(implies (and (tlp x)
+              (consp x)
+              (implies (tlp (cdr x))
+                       (sub-setp (cdr x) (cdr x))))
+         (sub-setp x x))
+
+Context:
+C1. (tlp x)
+C2. (consp x)
+C3. (implies (tlp (cdr x))
+                       (sub-setp (cdr x) (cdr x)))
+
+Derived Context:
+D1. (tlp (cdr x)) { C1, C2, Def tlp }
+D2. (sub-setp (cdr x) (cdr x)) { D1, C3, MP }
+
+Goal: (sub-setp x x)
+
+Proof:
+(sub-setp x x)
+== { C1, C2, Def sub-setp }
+(and (in (first x) x)
+     (sub-setp (rest x) x))
+== { C1, C2, car-cdr axioms, Def in }
+(sub-setp (rest x) x)
+== { C1, C2, car-cdr axioms }
+(sub-setp (rest x) (cons (first x) (rest x)))
+== { D1, D2, Lemma sub1 ((x (rest x)) (a (first x)) (y (rest x))) }
+t
+
+QED
+
+QED

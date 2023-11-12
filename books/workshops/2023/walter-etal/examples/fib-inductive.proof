@@ -1,0 +1,106 @@
+; We turned testing off, since fib is really slow.
+(acl2s-defaults :set testing-enabled nil)
+
+(definec fib (n :pos) :pos
+  (if (< n 3)
+      n
+    (+ (fib (- n 1)) (fib (- n 2)))))
+
+Problem FibBound:
+(=> (posp n)
+    (<= n (fib n)))
+
+Proof by: Induction on (fib n)
+
+    Contract Case 1:
+    (=> (! (posp n))
+        (=> (posp n)
+            (<= n (fib n))))
+
+    Exportation:
+    (=> (and (posp n)
+             (! (posp n)))
+        (<= n (fib n)))
+
+    Context:
+    C1. (posp n)
+    C2. (! (posp n))
+
+    Derived Context:
+    D1. nil { C1, C2 }
+
+    QED
+
+    Base Case 1:
+    (=> (and (posp n)
+             (< n 3))
+        (=> (posp n)
+            (<= n (fib n))))
+
+    Exportation:
+    (=> (and (posp n)
+             (< n 3))
+        (<= n (fib n)))
+
+    Context:
+    C1. (posp n)
+    C2. (< n 3)
+
+    Goal:
+    (<= n (fib n))
+
+    Proof:
+    (fib n)
+    = { Def fib, C2 }
+    n
+
+    QED
+
+    Induction Case 1:
+    (=> (and (posp n)
+             (! (< n 3))
+             (=> (posp (- n 1))
+                 (<= (- n 1) (fib (- n 1))))
+             (=> (posp (- n 2))
+                 (<= (- n 2) (fib (- n 2)))))
+        (=> (posp n)
+            (<= n (fib n))))
+
+    Exportation:
+    (=> (and (posp n)
+             (! (< n 3))
+             (=> (posp (- n 1))
+                 (<= (- n 1) (fib (- n 1))))
+             (=> (posp (- n 2))
+                 (<= (- n 2) (fib (- n 2)))))
+        (<= n (fib n)))
+
+    Context:
+    C1. (posp n)
+    C2. (! (< n 3))
+    C3. (=> (posp (- n 1))
+            (<= (- n 1) (fib (- n 1))))
+    C4. (=> (posp (- n 2))
+            (<= (- n 2) (fib (- n 2))))
+
+    Derived Context:
+    D1. (posp (- n 1)) { C1, C2, Arith }
+    D2. (posp (- n 2)) { C1, C2, Arith }
+    D3. (<= (- n 1) (fib (- n 1))) { C3, D1, MP }
+    D4. (<= (- n 2) (fib (- n 2))) { C4, D2, MP }
+
+    Goal:
+    (<= n (fib n))
+
+    Proof:
+    (fib n)
+    = { Def fib, C2 }
+    (+ (fib (- n 1)) (fib (- n 2)))
+    >= { D3, D4, Arith }
+    (+ (- n 1) (- n 2))
+    >= { Arith, C2 }
+    n
+
+    QED
+
+QED
