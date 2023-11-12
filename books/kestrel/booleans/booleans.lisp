@@ -1,7 +1,7 @@
 ; Theorems about boolean operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -77,11 +77,6 @@
   (equal (not (boolor x y))
          (booland (not x) (not y)))
   :hints (("Goal" :in-theory (enable boolor))))
-
-;use a congruence
-(defthm not-of-bool-fix
-  (equal (not (bool-fix x))
-         (not x)))
 
 ;do we prefer (equal nil x) or (not x) - maybe it depends on whether x is boolean
 ;(equal nil x) allows substitution
