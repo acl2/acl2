@@ -607,6 +607,7 @@
 ;;
 
 ;; Returns (mv exhaustivep state)
+;; Tries to show that the given CASES are exhaustive, given the ASSUMPTIONS.
 (defun prove-cases-exhaustivep (cases assumptions state)
   (declare (xargs :stobjs state
                   :mode :program ; because this calls prove$-fn
