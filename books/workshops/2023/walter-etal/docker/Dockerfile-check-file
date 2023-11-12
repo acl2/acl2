@@ -1,0 +1,37 @@
+FROM atwalter/acl2s:latest
+
+# Need to mkdir /usr/share/man/man1 because https://github.com/geerlingguy/ansible-role-java/issues/64
+RUN mkdir /root/checker &&\
+    mkdir -p /usr/share/man/man1 &&\
+    apt-get update &&\
+    apt-get install -y openjdk-17-jdk-headless
+
+# Install and setup quicklisp
+
+WORKDIR /tmp
+
+RUN curl -O https://beta.quicklisp.org/quicklisp.lisp
+
+RUN if [ -z "$HTTP_PROXY" ] ; then \
+        sbcl --load quicklisp.lisp --quit --eval '(quicklisp-quickstart:install)' ;\
+    else \
+        sbcl --load quicklisp.lisp --quit --eval "(quicklisp-quickstart:install :proxy \"$HTTP_PROXY\")" ;\
+    fi
+
+ENV QUICKLISP_SETUP /root/quicklisp/setup.lisp
+
+# Build the lisp part and then the XText part
+ADD ./ /root/checker/
+WORKDIR /root/checker
+
+ENV ACL2S_EXE="acl2s"
+ENV ACL2S_NUM_JOBS=4
+
+RUN chmod +x /root/checker/prove-file-java.sh &&\
+    make cert &&\
+    make build-java-binary &&\
+    make parser-cli
+
+ENV PROVE_FILE_SH="/root/checker/prove-file-java.sh"
+
+ENTRYPOINT ["/root/checker/check-file.sh"]

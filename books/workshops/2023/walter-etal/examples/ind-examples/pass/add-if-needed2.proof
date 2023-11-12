@@ -1,0 +1,118 @@
+(definec add-if-needed (e :all l :tl) :tl
+  (cond
+   ((endp l) (list e))
+   ((== (car l) e) (cons e (cdr l)))
+   (t (cons (car l) (add-if-needed e (cdr l))))))
+
+;; this is what we want to prove!
+(property (l :tl e :all)
+  (=> (in e l)
+      (== (len (add-if-needed e l))
+          (len l)))
+  :hints (("goal" :induct (tlp l))))
+
+Conjecture len-add-if-needed-preserved:
+(=> (^ (tlp l)
+         (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Proof by: induction on (tlp l)
+
+Base Case 1:
+(=> (! (consp l))
+    (=> (^ (tlp l)
+           (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+(=> (^ (! (consp l))
+       (tlp l)
+       (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Context:
+C1. (! (consp l))
+C2. (tlp l)
+C3. (in e l)
+
+Derived Context:
+D1. nil { C1, C3, Def in }
+
+QED
+
+Induction Case 1:
+(=> (^ (consp l)
+       (=> (^ (tlp (cdr l))
+              (in e (cdr l)))
+           (== (len (add-if-needed e (cdr l)))
+               (len (cdr l)))))
+    (=> (^ (tlp l)
+           (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+(=> (^ (consp l)
+       (=> (^ (tlp (cdr l))
+              (in e (cdr l)))
+           (== (len (add-if-needed e (cdr l)))
+               (len (cdr l))))
+       (tlp l)
+       (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Context:
+C1. (consp l)
+C2. (=> (^ (tlp (cdr l))
+           (in e (cdr l)))
+        (== (len (add-if-needed e (cdr l)))
+            (len (cdr l))))
+C3. (tlp l)
+C4. (in e l)
+
+Derived Context:
+D1. (tlp (cdr l)) { C3, Def tlp, C1 }
+D2. (=> (in e (cdr l))
+        (== (len (add-if-needed e (cdr l)))
+            (len (cdr l))))
+    { C2, D1, PL }
+D3. (=> (!= (car l) e) (in e (cdr l))) {C4, Def in, cons axioms}
+
+Goal:
+(== (len (add-if-needed e l))
+    (len l))
+
+Proof:
+(len (add-if-needed e l))
+== { def add-if-needed, C1 }
+(len (if (== (car l) e) (cons e (cdr l)) (cons (car l) (add-if-needed e (cdr l)))))
+== { PL }
+(if (== (car l) e)
+    (len (cons e (cdr l)))
+  (len (cons (car l) (add-if-needed e (cdr l)))))
+== { Def len, cons axioms, Arith }
+(if (== (car l) e)
+    (+ 1 (len (cdr l)))
+  (+ 1 (len (add-if-needed e (cdr l)))))
+== { Def len, C1 }
+(if (== (car l) e)
+    (len l)
+  (+ 1 (len (add-if-needed e (cdr l)))))
+== { D2, D3 }
+(if (== (car l) e)
+    (len l)
+  (+ 1 (len (cdr l))))
+== { Def len, C1, cons axioms }
+(len l)
+
+
+QED
+QED
+
+
+;; I tried combining multiple steps in inductive proofs and there were
+;; failures. Investigate.

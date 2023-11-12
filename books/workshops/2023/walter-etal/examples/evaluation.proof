@@ -1,0 +1,25 @@
+(definec aapp (a :tl b :tl) :tl
+  (if (endp a)
+      b
+    (cons (first a) (aapp (rest a) b))))
+
+(definec rrev (x :tl) :tl
+  (if (endp x)
+      nil
+    (aapp (rrev (rest x)) (list (first x)))))
+
+
+Conjecture 1:
+(equal (aapp (rrev '(1 2 3)) '(4 5 6))
+       (rrev (aapp '(6 5) '(4 1 2 3))))
+
+Goal:
+(equal (aapp (rrev '(1 2 3)) '(4 5 6))
+       (rrev (aapp '(6 5) '(4 1 2 3))))
+
+Proof:
+(aapp (rrev '(1 2 3)) '(4 5 6))
+== { Eval }
+(rrev (aapp '(6 5) '(4 1 2 3)))
+
+QED

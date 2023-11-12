@@ -1,0 +1,235 @@
+grammar org.neu.acl2.handproof.HandProof
+hidden(WS, ML_COMMENT, SL_COMMENT)
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+generate handProof "http://www.neu.org/acl2/handproof/HandProof"
+
+ProofDocument: (proofsAndStatements+=(Proof | TerminationProof | SExpression))*;
+
+PROOF_BY: "proof" (=> "by" ":");
+//Proof: NormalProof | InductionProof;
+
+ContractCompletionSection:
+//	{ContractCompletion}
+	"contract" "completion" ":"
+	expression=SExpression
+;
+
+ExportationSection:
+//	{Exportation}
+	"exportation" ":"
+	expression=SExpression
+;
+
+Proof:
+	{Proof}
+	header=Proofheader
+	statement=SExpression
+//	("exportation" ":" exportation=SExpression)?
+//	(ContractCompletion completion=SExpression)?
+	(exportation=ExportationSection)?
+	(completion=ContractCompletionSection)?
+	(context=Context)?
+	(derivedContext=DerivedContext)?
+	(proofby=ProofBy)?
+	(goal=Goal)?
+	//(body=ProofBody)?
+	(body=(ProofBody|ProofList))?
+	'qed'
+;
+
+//ProofBody or nested proofs
+ProofBody: 'proof' ':' firstStatement=SExpression (rels+=MaybePackageQualifiedSymbol hints+=HintList restStatements+=SExpression)*;
+ProofList: (proofs+=Proof)+;
+	
+TerminationProof:
+	{TerminationProof}
+	head=TermProofHeader
+	(definitions+=SExpression)*
+	(cases+=TermProofCase)+
+	"qed"
+;
+
+Goal:
+	'goal' {Goal} ':' goal=SExpression
+;
+
+Context: 'context' ':' {Context} (context+=contextItem)*;
+DerivedContext: 'derived' 'context' ':' {DerivedContext} (derivedContext+=dcontextItem)*;
+
+terminal CONTEXTNAME: "C" DIGIT+;
+contextItem: name=CONTEXTNAME '.' body=SExpression;
+
+terminal DERIVEDCONTEXTNAME: "D" DIGIT+;
+dcontextItem: name=DERIVEDCONTEXTNAME '.' body=SExpression hints=HintList;
+
+TermCaseHeader:
+	{RecCall} "recursive" "call" name=(MaybePackageQualifiedSymbol|NUMERIC) ":"
+;
+
+TermProofCase:
+	head=TermCaseHeader
+	stmt=SExpression
+	exportation=ExportationSection? //Assume contract completion is already done b/c comes from func def
+	context=Context?
+	derivedContext=DerivedContext?
+	("goal" ":" goal=SExpression)?
+	("proof" ":" body=ProofBody)?
+;
+
+//Relation: "=" | ">" | ">=" | "<" | "<=" | "->" | "iff";
+
+Hint:
+	{ModusPonensHint} ("mp" | ("modus" "ponens")) |
+	{PropLogicHint} ("PL" | (("prop" | "propositional") ("logic" "reasoning"))) |
+	{ArithmeticHint} ("arith" | "arithmetic" | "algebra") |
+	{ObviousMagicHint} ("obvious" | "magic") |
+	{EvalHint} ("eval" | "evaluation" | (("const" | "constant") ("prop" | "propagation"))) |
+	{DefHint} ("def" | "definition") name=MaybePackageQualifiedSymbol |
+	{ContextHint} name=(CONTEXTNAME | DERIVEDCONTEXTNAME) |
+	{AxiomHint} name=MaybePackageQualifiedSymbol ("axiom" | "axioms") |
+	{LemmaHint} name=ProofName instantiation=SExpList?
+;
+HintList: "{" first=Hint ("," rest+=Hint)* "}";
+
+TermProofHeader: 'termination' 'proof' 'of' target+=MaybePackageQualifiedSymbol+ 'using' measure+=SYMBOL+ ":";
+Proofheader: name=ProofName ':';
+ProofName: kind=PROOFHEADER_KIND name=(MaybePackageQualifiedSymbol|NUMERIC);
+
+ProofBy:
+	{ProofBy}
+	(PROOF_BY type=ProofType)
+	cases=SExpression?
+;
+
+ProofType:
+	('equational' 'reasoning' {ProofTypeEquationalReasoning}) |
+	('cases' {ProofTypeCases}) |
+	('induction' 'on'? {ProofTypeInduction})
+;
+
+PROOFHEADER_KIND: "proof" | "lemma" | "theorem" | "thm" | "conjecture" | "claim" | "problem" | "property" | "prop" |
+	("induction" "case") | ("contract" "case") | ("base" "case")
+;
+
+DefineC:
+	{DefineC} LPAR 'definec' name=MaybePackageQualifiedSymbol parameters=SExpList returnType=MaybePackageQualifiedSymbol (ic=InputContract)? (oc=OutputContract)? (body+=SExpression)+ RPAR
+;
+
+DefunC:
+	{DefunC} LPAR 'defunc' name=MaybePackageQualifiedSymbol arguments=SExpList ic=InputContract oc=OutputContract (body+=SExpression)+ RPAR
+;
+
+Property:
+	{Property} LPAR 'property' name=MaybePackageQualifiedSymbol? args=SExpList body+=SExpression+ RPAR
+;
+
+InputContract:
+	(':input-contract' | ':ic' | ':pre-condition' | ':pre' | ':require' | ':assume') body=SExpression
+;
+
+OutputContract:
+	(':output-contract' | ':oc' | ':post-condition' | ':post' | ':ensure' | ':guarantee') body=SExpression
+;
+
+SExpression:
+	{PropertySExp} value=Property |
+	{DefineCSExp} value=DefineC |
+	{DefunCSExp} value=DefunC |
+	{Symbol} value=MaybePackageQualifiedSymbol |
+	{Const} value=Constant |
+	{OptionallyDottedSExpListExpr} list=OptionallyDottedSExpList |
+	{QuotedSExpressionExpr} "'" sexp=SExpression |
+	{BackquotedSExpressionExpr} "`" sexp=SExpression |
+	{CommaSExpression} "," (splice="@")? sexp=SExpression
+;
+	
+SExpList: LPAR {SExpList} (body+=SExpression)* RPAR;
+
+// TODO: do we want the body to be * or + below?
+// I changed it to * to support some files containing '()
+OptionallyDottedSExpList:
+	LPAR {OptionallyDottedSExpList} (body+=SExpression)* ("." right=SExpression)? RPAR
+;
+
+Constant:
+	 NUMERIC | CHAR_LIT | STRING;
+
+terminal LPAR: '(';
+terminal RPAR: ')';
+
+terminal CHAR_LIT:
+'#\\' .;
+
+terminal fragment ESCAPED_CHAR:
+'\\' .;
+
+terminal fragment ESCAPED_SYMBOL_FRAGMENT:
+	'|' ('#\\|' | !('|'))* '|';
+
+terminal fragment ALPHANUM:
+'a'..'z' | 'A' .. 'Z' | '0' .. '9';
+
+terminal fragment ALPHA:
+	'a'..'z' | 'A'..'Z';
+
+// CLHS 2.3.1
+terminal fragment SIGN:
+	'+'|'-';
+
+terminal fragment DIGIT:
+	'0'..'9';
+
+terminal RATIO:
+	SIGN? DIGIT+ '/' DIGIT+;
+
+terminal INTEGER:
+	SIGN? DIGIT+ '.'?;
+
+terminal NUMERIC:
+	INTEGER | RATIO;
+
+terminal STRING: 
+	'"' ( '\\'('b'|'t'|'n'|'f'|'r'|'u'|'"'|"'"|'\\') | !('\\'|'"') )* '"';
+
+//terminal SYMBOL:
+//	':'?
+//(ESCAPED_CHAR | ESCAPED_SYMBOL_FRAGMENT | ALPHACHAR | '[' | ']' | 
+////'{' | '}' | 
+//'!' | '?' | '$' | '@' | '%' | '^' | '+' | '-' | '*' | '/' | '=' | '>' | '<')+;
+
+// Note: we do not support curly braces in symbols unless they're escaped, due to ambiguity with hintlists
+terminal fragment SYMBOLCHAR:
+	'[' | ']' |  '!' | '?' | '$' | '@' | '%' | '^' | '+' | '-' | '*' | '/' | '=' | '>' | '<' | '&' | '_';
+
+terminal fragment SYMBOLCHAR_INCL_DIGIT:
+	(ESCAPED_CHAR | ESCAPED_SYMBOL_FRAGMENT | ALPHANUM | SYMBOLCHAR);
+
+terminal fragment SYMBOLCHAR_NODIGIT:
+	(ESCAPED_CHAR | ESCAPED_SYMBOL_FRAGMENT | ALPHA | SYMBOLCHAR);
+
+terminal SYMBOL:
+	// keyword package
+	(':' SYMBOLCHAR_INCL_DIGIT+) |
+	// symbols
+	(DIGIT* SYMBOLCHAR_NODIGIT SYMBOLCHAR_INCL_DIGIT*);
+
+// note that this can't be a lexer rule, because it would require backtracking and we don't have enough control
+// over the generated lexer to deal with that.
+MaybePackageQualifiedSymbol:
+ SYMBOL ->(':' ':'? SYMBOL)?;
+
+// https://www.eclipse.org/forums/index.php?t=msg&th=208085&goto=1061492&#msg_1061492
+terminal fragment MLC_ANY    : !( '|' | '#' );
+terminal fragment MLC_POUND  : '#'+ ( '|' MLC_BODY | MLC_ANY );
+terminal fragment MLC_BAR    : '|'+ ( MLC_ANY );
+terminal fragment MLC_BODY   : ( MLC_ANY | MLC_POUND | MLC_BAR )* '|'+ '#';
+terminal ML_COMMENT          : '#|' MLC_BODY;
+ 
+terminal SL_COMMENT: 
+    ';' !('\n'|'\r')* ('\r'? '\n')?;
+
+terminal WS: 
+    (' '|'\t'|'\r'|'\n')+;
+ 
+terminal ANY_OTHER: 
+    .;

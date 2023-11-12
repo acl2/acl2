@@ -1,0 +1,55 @@
+(defdata tree (or nil (list tree nat tree)))
+
+;; check if a value is in the tree
+(definec in-tree (tree :tree e :nat) :boolean
+  (cond
+   ((endp tree) nil)
+   ((== e (second tree)) t)
+   (t (or (in-tree (first tree) e)
+          (in-tree (third tree) e)))))
+
+;; swap the left and right branches of each element of the tree
+(definec flip-tree (tree :tree) :tree
+  (if (endp tree)
+      nil
+    (list (flip-tree (third tree)) (second tree) (flip-tree (first tree)))))
+
+Conjecture 2:
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (== e (second tree)))
+    (=> (^ (treep tree)
+           (natp e)
+           (in-tree tree e))
+        (in-tree (flip-tree tree) e)))
+
+Exportation:
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (== e (second tree)) 
+       (in-tree tree e))
+    (in-tree (flip-tree tree) e))
+
+Context:
+C1. (treep tree)
+C2. (natp e)
+C3. (! (endp tree))
+C4. (== e (second tree))
+C5. (in-tree tree e)
+
+Goal:
+(in-tree (flip-tree tree) e)
+
+Proof:
+(in-tree (flip-tree tree) e)
+== { def flip-tree, C3, cons axioms, Def treep } ;; you shouldn't need this def treep
+(in-tree (list (flip-tree (third tree))
+               (second tree)
+               (flip-tree (first tree))) e)
+== { def in-tree, C3, C4, cons axioms, Def treep } ;; you shouldn't need this def treep
+t
+
+QED
+

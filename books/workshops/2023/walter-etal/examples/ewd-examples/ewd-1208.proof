@@ -1,0 +1,98 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/ewd12xx/EWD1208.PDF
+
+ The first line says : In this note, all variables are of the same type.
+We satisfy this requirement by considering all variables to be of type all.
+
+|#
+
+(defstub o (* *) => *)
+
+(skip-proofs
+ (property o-symmetric (a b :all)
+           (== (o a b) (o b a))))
+
+(skip-proofs
+ (property o-assoc (a b c :all)
+           (== (o (o a b) c)
+               (o a (o b c)))))
+
+;; forall a,b, equation a = (o b x) can be solved
+;; here, solve is a constructive proof of the solution of the above requirement.
+(defstub solve (* *) => *)
+
+;; this property states that solve indeed solves an equation
+(skip-proofs
+ (property o-solves (a b :all)
+           (== (o b (solve a b))
+               a)))
+
+(property (x y z :all)
+          :proofs? nil
+          (=> (== (o x y)
+                  (o x z))
+              (== x z)))
+
+
+Conjecture 1:
+(=> (== (o x y) (o x z))
+    (== y z))
+
+Context:
+C1. (== (o x y) (o x z))
+
+Derived Context:
+;; (2) in Dijkstra's proof
+D1. (== y (o (o x y) (solve y (o x y)))) { Lemma o-solves ((a y) (b (o x y))) }
+;; (3) in Dijkstra's proof
+D2. (== z (o y (solve z y))) { Lemma o-solves ((a z) (b y)) }
+
+Goal: (== y z)
+
+Proof:
+y
+== { D1 }
+;; (solve y (o x y)) stands for p in Dijkstra's proof
+(o (o x y) (solve y (o x y)))
+== { C1 }
+(o (o x z) (solve y (o x y)))
+== { D2 }
+;; (solve z y) stands for q in Dijkstra's proof
+(o (o x (o y (solve z y))) (solve y (o x y)))
+== { Lemma o-assoc ((a x) (b (o y (solve z y))) (c (solve y (o x y)))) }
+(o x (o (o y (solve z y)) (solve y (o x y))))
+;; In Dijkstra's proof on page 4, the next four steps are missing, which
+;; we need to elaborate for this proof to go through
+== { Lemma o-assoc ((a y) (b (solve z y)) (c (solve y (o x y)))) }
+(o x (o y (o (solve z y) (solve y (o x y)))))
+== { Lemma o-symmetric ((a (solve z y)) (b (solve y (o x y)))) }
+(o x (o y (o (solve y (o x y)) (solve z y))))
+== { Lemma o-assoc ((a x) (b y) (c (o (solve y (o x y)) (solve z y)))) }
+(o (o x y) (o (solve y (o x y)) (solve z y)))
+== { Lemma o-assoc ((a (o x y)) (b (solve y (o x y))) (c (solve z y))) }
+(o (o (o x y) (solve y (o x y))) (solve z y))
+== { D1 }
+(o y (solve z y))
+== { D2 }
+z
+
+QED
+
+
+#|
+While comparing his proof to Tarski's, Dijkstra notes "The structure of|#
+#|Tarski's proof was further obscured by his insistence of fully parenthesizing|#
+#|his expressions: symmetry and associativity thus add(ing) another 7 steps to|#
+#|the proof, which I consider a high price for so little."
+
+In my humble opinion, the price is not that high, considering it simplifies the|#
+#|proof so much that it can be checked automatically.
+
+|#
+
