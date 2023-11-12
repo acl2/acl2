@@ -10,7 +10,7 @@
 
 (in-package "ZKSEMAPHORE")
 
-(include-book "kestrel/ethereum/semaphore/r1cs-proof-support" :dir :system)
+(include-book "r1cs-proof-support")
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/axe/r1cs/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system)

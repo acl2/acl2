@@ -28,4 +28,6 @@
   :arg-descriptions
   ((jar-path "A path to a .jar file, relative to the directory indicated by the @('dir') argument.")
    (dir "Either @('nil'), in which case the @('class-file') is interpreted relative to the @(tsee cbd), or a keyword indicating a directory registered with @(tsee add-include-book-dir) or @(tsee add-include-book-dir!).")
-   (classes "Classes to read from the .jar.  Either @(':all'), or a list of strings representing class or interface names (usually fully-qualified).  Note that using @(':all') on a large .jar file may cause a huge amount of code to be read in.")))
+   (classes "Classes to read from the .jar.  Either @(':all'), or a list of strings representing class or interface names (usually fully-qualified).  Note that using @(':all') on a large .jar file may cause a huge amount of code to be read in.")
+   (verbosep "Whether to print information about the unzipping process.") ; todo: generalize this to cause other kinds of info to be printed
+   ))
