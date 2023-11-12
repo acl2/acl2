@@ -89,6 +89,39 @@
 
 (local (in-theory (disable <-OF-IF-ARG1)))
 
+;move these (and disable them)?
+
+;reorder lhs?
+;use IF in conclusion?
+(defthm equal-of-myif-same
+  (implies (booleanp test)
+           (equal (equal (myif test x y) x)
+                  (or test
+                      (equal y x)))))
+
+;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
+(defthm equal-of-myif-same-1
+  (equal (equal x (myif test x y))
+         (or (bool-fix test) (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
+(defthm equal-of-myif-same-2
+  (equal (equal x (myif test y x))
+         (or (not test) (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm equal-of-myif-same-1-alt
+  (equal (equal (myif test x y) x)
+         (or (bool-fix test) (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm equal-of-myif-same-2-alt
+  (equal (equal (myif test y x) x)
+         (or (not test) (equal x y)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+
 ;; surprising that this is needed
 (local
   (defthm integerp-of-+-type
@@ -6726,37 +6759,6 @@
          (bvlt 31 x 4))
   :hints (("Goal" :use (:instance bvdiv-equal-0-rewrite)
            :in-theory (disable bvdiv-equal-0-rewrite))))
-
-;move
-;reorder lhs?
-;use IF in conclusion?
-(defthm equal-of-myif-same
-  (implies (booleanp test)
-           (equal (equal (myif test x y) x)
-                  (or test
-                      (equal y x)))))
-
-;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-1
-  (equal (equal x (myif test x y))
-         (or (bool-fix test) (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-2
-  (equal (equal x (myif test y x))
-         (or (not test) (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm equal-of-myif-same-1-alt
-  (equal (equal (myif test x y) x)
-         (or (bool-fix test) (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm equal-of-myif-same-2-alt
-  (equal (equal (myif test y x) x)
-         (or (not test) (equal x y)))
-  :hints (("Goal" :in-theory (enable myif))))
 
 ;todo: why is -dag in the name?
 (defthmd bvlt-of-max-when-bvlt-constant-dag
