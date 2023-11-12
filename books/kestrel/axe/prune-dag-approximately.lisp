@@ -17,10 +17,19 @@
 (include-book "prove-with-stp")
 (include-book "rewriter-basic")
 (include-book "dag-size-fast")
+(include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)
+(local (include-book "cars-decreasing-by-1"))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 
 (local (in-theory (disable state-p natp w)))
+
+(defthmd integer-listp-of-strip-cars-when-weak-dagp-aux
+  (implies (weak-dagp-aux dag)
+           (integer-listp (strip-cars dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm bounded-possibly-negated-nodenumsp-when-bounded-contextp
   (implies (bounded-contextp context bound)
@@ -157,22 +166,37 @@
                                      prove-node-implication-with-stp
                                      ))))
 
+(defthm true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
+  (implies (and (pseudo-dagp dag)
+                (consp dag))
+           (true-listp (dargs (cdr (car dag)))))
+  :rule-classes :type-prescription)
+
 ;; Returns (mv erp dag state).
 (defund prune-dag-approximately-aux (dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
-                              (bounded-weak-dagp-aux dag dag-len)
+                              (or (null dag)
+                                  (pseudo-dagp dag))
+                              (<= (len dag) dag-len)
+                              ;; (bounded-weak-dagp-aux dag dag-len)
                               (bounded-context-arrayp 'context-array context-array dag-len dag-len)
                               ;; print
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (alistp dag-acc)
-                              )
-                  :guard-hints (("Goal" :expand (bounded-weak-dagp-aux dag dag-len)
+                              (weak-dagp-aux dag-acc) ; ignores the order
+                              (cars-increasing-by-1 dag-acc)
+                              (if (and (consp dag)
+                                       (consp dag-acc))
+                                  (equal (car (first dag-acc)) (+ 1 (car (first dag))))
+                                t))
+                  :guard-hints (("Goal" ;:expand (bounded-weak-dagp-aux dag dag-len)
                                  :do-not '(generalize eliminate-destructors)
-                                 :in-theory (enable pseudo-dagp-aux)))
+                                 :in-theory (enable ;pseudo-dagp-aux
+                                             true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
+                                             car-of-car-when-pseudo-dagp)))
                   :stobjs state))
   (if (endp dag)
       (mv (erp-nil) (reverse-list dag-acc) state)
@@ -219,10 +243,124 @@
             (t
              (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
 
-(defthm w-of-mv-nth-2-of-prune-dag-approximately-aux
-  (equal (w (mv-nth 2 (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable prune-dag-approximately-aux))))
+;; These justify the pruning done above:
+(thm (implies test (equal (if test x y) (id x))))
+(thm (implies test (equal (myif test x y) (id x))))
+(thm (implies (not test) (equal (if test x y) (id y))))
+(thm (implies (not test) (equal (myif test x y) (id y))))
+
+
+(local
+ (defthmd pseudo-dagp-aux-of-top-nodenum-of-dag-when-weak-dagp-aux-and-cars-decreasing-by-1
+   (implies (and (consp dag)
+                 (cars-decreasing-by-1 dag)
+                 (equal 0 (car (car (last dag))))
+                 (weak-dagp-aux dag))
+            (pseudo-dagp-aux dag (top-nodenum-of-dag dag)))
+   :hints (("Goal" :induct (weak-dagp-aux dag)
+            :in-theory (enable cars-decreasing-by-1
+                               weak-dagp-aux
+                               pseudo-dagp-aux
+                               top-nodenum-of-dag)))))
+
+(local
+ (defthm prune-dag-approximately-aux-return-type
+   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                 (equal (alen1 'dag-parent-array dag-parent-array)
+                        (alen1 'dag-array dag-array))
+                 (or (null dag)
+                     (pseudo-dagp dag))
+                 (<= (len dag) dag-len)
+                 (bounded-context-arrayp 'context-array context-array dag-len dag-len)
+                 (or (null max-conflicts)
+                     (natp max-conflicts))
+                 (weak-dagp-aux dag-acc) ; ignores the order
+                 (cars-increasing-by-1 dag-acc)
+                 (if (and (consp dag)
+                          (consp dag-acc))
+                     (equal (car (first dag-acc)) (+ 1 (car (first dag))))
+                   t)
+                 (or (consp dag) (consp dag-acc)) ; at least one of them is a cons
+                 (if (not (consp dag))
+                     (equal (car (first dag-acc)) 0)
+                   t))
+            (mv-let (erp new-dag state)
+              (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
+              (declare (ignore state))
+              (implies (not erp)
+                       (and (cars-decreasing-by-1 new-dag)
+                            (weak-dagp-aux new-dag)
+                            (consp new-dag)
+                            (equal (car (car (last new-dag))) 0)))))
+   :rule-classes nil
+   :hints (("Goal" :induct t
+            :expand ((prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print nil dag-acc state)
+                     (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print nil nil state))
+            :in-theory (e/d (prune-dag-approximately-aux
+                             true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
+                             car-of-car-when-pseudo-dagp
+                             integer-listp-of-strip-cars-when-weak-dagp-aux)
+                            (nth
+                             member-equal
+                             weak-dagp-aux
+                             myquotep))))))
+
+;for dag-acc=nil
+(local
+ (defthm prune-dag-approximately-aux-return-type-special
+   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                 (equal (alen1 'dag-parent-array dag-parent-array)
+                        (alen1 'dag-array dag-array))
+                 (or (null dag)
+                     (pseudo-dagp dag))
+                 (<= (len dag) dag-len)
+                 (bounded-context-arrayp 'context-array context-array dag-len dag-len)
+                 (or (null max-conflicts)
+                     (natp max-conflicts))
+                 (consp dag))
+            (mv-let (erp new-dag state)
+              (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts nil state)
+              (declare (ignore state))
+              (implies (not erp)
+                       (and (cars-decreasing-by-1 new-dag)
+                            (weak-dagp-aux new-dag)
+                            (consp new-dag)
+                            (equal (car (car (last new-dag))) 0)))))
+   :hints (("Goal" :use (:instance prune-dag-approximately-aux-return-type (dag-acc nil))))))
+
+;gen?
+(local
+ (defthm prune-dag-approximately-aux-return-type-special-corollary
+   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                 (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                 (equal (alen1 'dag-parent-array dag-parent-array)
+                        (alen1 'dag-array dag-array))
+                 (or (null dag)
+                     (pseudo-dagp dag))
+                 (<= (len dag) dag-len)
+                 (bounded-context-arrayp 'context-array context-array dag-len dag-len)
+                 (or (null max-conflicts)
+                     (natp max-conflicts))
+                 (consp dag))
+            (mv-let (erp new-dag state)
+              (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts nil state)
+              (declare (ignore state))
+              (implies (not erp)
+                       (pseudo-dagp new-dag))))
+   :hints (("Goal" :use (prune-dag-approximately-aux-return-type-special
+                         (:instance pseudo-dagp-aux-of-top-nodenum-of-dag-when-weak-dagp-aux-and-cars-decreasing-by-1
+                                    (dag (mv-nth 1 (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts nil state)))))
+            :in-theory (e/d (pseudo-dagp top-nodenum-of-dag) (prune-dag-approximately-aux-return-type-special))))))
+
+(local
+ (defthm w-of-mv-nth-2-of-prune-dag-approximately-aux
+   (equal (w (mv-nth 2 (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
+          (w state))
+   :hints (("Goal" :in-theory (enable prune-dag-approximately-aux)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-or-quotep state).
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
@@ -245,7 +383,7 @@
                               ;;     (natp call-stp))
                               (booleanp check-fnsp)
                               (ilks-plist-worldp (w state)))
-                  :verify-guards nil ; todo
+                  :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))
                   :stobjs state))
   (b* ((prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t))
        ((when (not prunep))
@@ -263,6 +401,10 @@
                                      nil       ; dag-acc
                                      state))
        ((when erp) (mv erp nil state))
+       ;; Ensure we can do the array-based simp below:
+       ((when (>= (top-nodenum-of-dag dag) 2147483646))
+        (mv :dag-too-big nil state))
+
        ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
        ((mv erp rule-alist) (make-rule-alist '(id) ; todo: more rules
                                              (w state)))
@@ -288,7 +430,6 @@
                               (pseudo-dagp dag)
                               (<= (len dag) 2147483646)
                               (ilks-plist-worldp (w state)))
-                  :verify-guards nil ; todo
                   :stobjs state))
   (b* (((when (not prune-branches))
         ;; don't even print anything in this case, as we've been told not to prune

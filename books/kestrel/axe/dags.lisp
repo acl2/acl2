@@ -103,6 +103,7 @@
 ;;
 
 ;; Checks that DAG is a true-list of pairs of the form (<nodenum> . <bounded-dag-expr>).
+;; TODO: Disable?
 (defun weak-dagp-aux (dag)
   (declare (xargs :guard t))
   (if (atom dag)
@@ -136,6 +137,14 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux bounded-dag-exprp))))
 
+(defthm weak-dagp-aux-of-acons
+  (equal (weak-dagp-aux (acons nodenum expr dag))
+         (and (natp nodenum)
+              (bounded-dag-exprp nodenum expr)
+              (weak-dagp-aux dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+
 (defthm rational-listp-of-strip-cars-when-weak-dagp-aux
   (implies (weak-dagp-aux dag)
            (rational-listp (strip-cars dag)))
@@ -149,6 +158,11 @@
 (defthm weak-dagp-aux-forward-to-alistp
   (implies (weak-dagp-aux dag)
            (alistp dag))
+  :rule-classes :forward-chaining)
+
+(defthm weak-dagp-aux-forward-to-true-alistp
+  (implies (weak-dagp-aux dag)
+           (true-listp dag))
   :rule-classes :forward-chaining)
 
 (defthm integerp-of-car-of-car-when-weak-dagp-aux-cheap
