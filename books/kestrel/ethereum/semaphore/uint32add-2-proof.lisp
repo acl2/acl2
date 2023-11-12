@@ -10,14 +10,14 @@
 
 (in-package "ZKSEMAPHORE")
 
-(include-book "kestrel/ethereum/semaphore/r1cs-proof-support" :dir :system)
+(include-book "r1cs-proof-support")
 (include-book "kestrel/crypto/r1cs/sparse/rules-axe" :dir :system) ;todo: reduce
 (include-book "kestrel/crypto/r1cs/sparse/rules" :dir :system) ;todo: reduce
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/axe/r1cs/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
 (include-book "kestrel/bv/rules9" :dir :system)
-(include-book "kestrel/ethereum/semaphore/r1cs-proof-rules" :dir :system)
+(include-book "r1cs-proof-rules")
 
 ;; Load the R1CS:
 ;; (depends-on "json/uint32add-2.json")

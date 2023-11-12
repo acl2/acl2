@@ -12,6 +12,14 @@
 
 (in-package "ACL2")
 
+;; This is the legacy Axe Prover.  It uses rewriting, substitution, tuple
+;; elimination, and case splitting.
+
+;; See also tactic-prover.lisp.
+
+;; See also make-prover-simple.lisp and the new generated Axe Provers, such as
+;; prover-basic.lisp.
+
 ;todo: move all utility functions out to a book that does not use the trust tag
 ;todo: remove any mentions of sha1, md5, rc4, etc. in the file and other files in this dir.
 ;todo: implement backchain limits, polarities, improve handling of equivs
