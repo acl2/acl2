@@ -784,6 +784,16 @@
     mv-nth-1-of-get-prefixes-of-set-rsp
     mv-nth-1-of-get-prefixes-of-set-rbp))
 
+(defun float-rules ()
+  (declare (xargs :guard t))
+  '(is-nan-intro
+    if-of-equal-of-indef-and-is-nan
+    if-of-equal-of-qnan-and-is-nan
+    if-of-equal-of-snan-and-is-nan
+    booleanp-of-is-nan))
+;; Try to introduce is-nan as soon as possible:
+(table axe-rule-priorities-table 'is-nan-intro -1)
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
@@ -810,6 +820,7 @@
           (acl2::convert-to-bv-rules)
           '(ACL2::BOOLOR-OF-NON-NIL)
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
+          (float-rules)
           ;;(acl2::core-rules-bv) ;acl2::not-equal-max-int-when-<= not defined
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
