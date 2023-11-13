@@ -14,12 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun omap-induction (map)
-  (cond ((empty map) nil)
-        (t (omap-induction (tail map)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defun omap-induction2 (map1 map2)
   (cond ((empty map1) nil)
         ((empty map2) nil)
@@ -31,6 +25,6 @@
   (implies (not (consp (in key map)))
            (equal (values (update key val map))
                   (set::insert val (values map))))
-  :induct (omap-induction map)
-  :enable values
+  :induct (size map)
+  :enable (values size)
   :expand (values (update key val map)))
