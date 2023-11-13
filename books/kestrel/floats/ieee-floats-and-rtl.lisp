@@ -1,6 +1,14 @@
-(in-package "ACL2")
+; Connecting our spec to similar notions from the RTL library
+;
+; Copyright (C) 2022 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
 
-;; Attempt to connect the ideas in our spec to similar ideas in the RTL library
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
 
 (include-book "ieee-floats")
 (include-book "rtl/rel11/lib/reps" :dir :system)
@@ -27,8 +35,7 @@
 
 (defthm representable-normalp-becomes-nrepp
   (implies (and (rationalp rat)
-                (formatp k p)
-)
+                (formatp k p))
            (equal (representable-normalp k p rat)
                   (rtl::nrepp rat (list nil ; formal doesn't store the leading bit of significand
                                         p   ; precision
