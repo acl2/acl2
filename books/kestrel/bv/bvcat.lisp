@@ -137,7 +137,7 @@
                        (equal (slice (+ -1 lowsize highsize) lowsize x)
                               (bvchop highsize highval)))))
   :hints (("Goal" :in-theory (disable bvcat-equal-rewrite)
-           :use (:instance bvcat-equal-rewrite))))
+           :use bvcat-equal-rewrite)))
 
 ;dup?
 (defthm bvcat-of-bvchop-high
@@ -337,7 +337,7 @@
                       lowsize lowval)
                (+ -1 (expt 2 (+ highsize lowsize)))))
   :rule-classes :linear
-  :hints (("Goal" :use (:instance bvcat-upper-bound-linear)
+  :hints (("Goal" :use bvcat-upper-bound-linear
            :in-theory (disable bvcat-upper-bound-linear))))
 
 ;was disabled (why?)
@@ -476,7 +476,7 @@
            (equal (getbit k (bvcat highsize highval lowsize lowval))
                   (getbit k lowval)))
   :hints
-  (("Goal" ;:use (:instance getbit-of-bvcat-low)
+  (("Goal" ;:use getbit-of-bvcat-low
     :cases ((not (integerp highsize))
             (and (integerp highsize) (integerp lowval) (integerp highval))
             (and (integerp highsize) (integerp lowval) (not (integerp highval)))
@@ -1252,7 +1252,7 @@
                   (+ (* (expt 2 (+ -1 size))
                         (getbit (+ -1 size) x))
                      (bvchop (+ -1 size) x))))
-  :hints (("Goal" :use (:instance split-bv-top)
+  :hints (("Goal" :use split-bv-top
            :cases ((equal size 1))
            :in-theory (e/d (bvcat logapp getbit) (bvchop-1-becomes-getbit))))
   :rule-classes nil)
@@ -1378,7 +1378,7 @@
                 (posp size))
            (equal (bvchop size x)
                   (bvchop (+ -1 size) x)))
-  :hints (("Goal" :use (:instance bvchop-when-top-bit-not-1))))
+  :hints (("Goal" :use bvchop-when-top-bit-not-1)))
 
 (defthmd bvchop-reduce-when-top-bit-known
   (implies (and (equal (getbit k x) free)
