@@ -98,7 +98,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;; "<h3 id=\"6\">6. Godel's Incompleteness Theorem</h3>"
+     "<h3 id=\"6\">6. Godel's Incompleteness Theorem</h3>"
+
+     "<p>By Natarajan Shankar, using Nqthm, a predecessor to ACL2.</p>"
+
+     "<p>See <a href=\"https://www.cs.utexas.edu/users/boyer/ftp/nqthm/nqthm-1992/examples/shankar/goedel.events\">this file</a>.  See also <a href=\"https://philpapers.org/rec/SHAMMA-3\">this book</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
