@@ -211,3 +211,9 @@
 (defthm boolor-of-not-of-boolor-of-not-same
   (equal (boolor x (not (boolor y (not x))))
          (bool-fix x)))
+
+;; where should this go?
+(defthm myif-of-bool-fix-arg1
+  (equal (myif (bool-fix test) x y)
+         (myif test x y))
+  :hints (("Goal" :in-theory (enable myif))))
