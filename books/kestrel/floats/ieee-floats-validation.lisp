@@ -1,3 +1,13 @@
+; Some validation theorems for the floating-point model
+;
+; Copyright (C) 2022-2023 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "ieee-floats-as-bvs")
@@ -7,9 +17,6 @@
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-
-;; Some validation theorems for the floating-point model
-
 (local (include-book "kestrel/bv/rules" :dir :system))
 
 ;; Library stuff:
