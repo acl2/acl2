@@ -49,11 +49,17 @@ example as noted previously in this README.
 ## Running the CLI locally
 
 ### Prerequisites
+- ACL2 built using SBCL (NOT CCL)
 - Java 17
 - An ACL2s image (see [the scripts](https://gitlab.com/acl2s/external-tool-support/scripts) repo)
 - Quicklisp
 
 ### Instructions
+Note that we use [extended package prefix
+syntax](https://www.sbcl.org/manual/#Extended-Package-Prefix-Syntax)
+in many places in our code. This is not supported by CCL, so you
+cannot build this system using CCL. We use SBCL.
+
 If the ACL2s image is not on your `PATH`, you must set the `ACL2S_EXE`
 environment variable to the absolute path to the image.
 

@@ -60,16 +60,16 @@
   '(min-theory executable-theory))
 
 (deftheory arith-theory
-  'acl2::(Associativity-of-+
-          Commutativity-of-+
-          Unicity-of-0
-          Inverse-of-+
-          Associativity-of-*
-          Commutativity-of-*
-          Unicity-of-1
-          Inverse-of-*
-          Distributivity
-          Rational-implies2))
+  '(acl2::Associativity-of-+
+    acl2::Commutativity-of-+
+    acl2::Unicity-of-0
+    acl2::Inverse-of-+
+    acl2::Associativity-of-*
+    acl2::Commutativity-of-*
+    acl2::Unicity-of-1
+    acl2::Inverse-of-*
+    acl2::Distributivity
+    acl2::Rational-implies2))
 
 (defun valid-acl2s-termp (term state)
   (declare (xargs :mode :program :stobjs state))
