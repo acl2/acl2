@@ -14,13 +14,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun omap-induction2 (map1 map2)
-  (cond ((empty map1) nil)
-        ((empty map2) nil)
-        (t (omap-induction2 (tail map1) (tail map2)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule value-of-update-when-not-in
   (implies (not (consp (in key map)))
            (equal (values (update key val map))
