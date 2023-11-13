@@ -1172,3 +1172,13 @@
      will be in the resulting omap."))
   (cond ((endp keys) nil)
         (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection omap-induction2
+  :short "Induction on two omaps, applying @(tsee tail) to both."
+
+  (defun omap-induction2 (map1 map2)
+    (cond ((empty map1) nil)
+          ((empty map2) nil)
+          (t (omap-induction2 (tail map1) (tail map2))))))
