@@ -297,6 +297,7 @@ cert.pl build system
 \item Support for ACL2\_PROJECTS file specifying project directories for book relocation
 \item \texttt{build/include-events}: utility for including books that
   are bundles of other books without needing to certify the bundles
+\item For Jenkins: improve Makefile, improve script printing and documentation, and limit the max load.
 \end{itemize}
 
 \end{frame}
@@ -631,11 +632,40 @@ Formalizations of group theory and number theory.
 
 \implibtitle
 
+\bookpath{rtl}:
+Register Transfer Logic
+\begin{itemize}
+\item Switch some utilities, such as \code{local-defun}, to ACL2 package.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{std/io}:
 Standard I/O library.
 \begin{itemize}
-\item Extended \code{read-string} and \code{read-string-light-fn}
-      to take an optional package as argument.
+\item Extended \code{read-string}
+  to take an optional package as argument.
+\item Added a lightweight version of \code{read-string}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{std/lists}:
+Standard Lists library.
+\begin{itemize}
+\item Have \code{deflist} add \code{-compound-recognizer} to some rule names, to avoid clashes.
 \end{itemize}
 
 \end{frame}
@@ -650,7 +680,9 @@ Standard I/O library.
 Standard utilities library.
 \begin{itemize}
 \item The \code{er} binder of \code{b*} has been extended with
-      an option \code{:iferr} to return an alternative value in case of error.
+  an option \code{:iferr} to return an alternative value in case of error.
+\item Calls of \code{defaggregate} can now (usually) be local, and its proofs are more robust.
+\item Calls of \code{define} no longer turn on error output if it was off before the \code{define}.
 \end{itemize}
 
 \end{frame}
