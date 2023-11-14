@@ -209,6 +209,20 @@ Utilities for manipulating hints and parts of hints (combining, removing, renami
 
 \newlibtitle
 
+\bookpath{kestrel/tests}:
+Tests of various constructs, to understand precisely what they do in all cases.
+\begin{itemize}
+\item Add tests of \code{b*}, \code{case-match}, \code{mv-let}, \code{defthm}, \code{defrule}, \code{xargs}, and \code{hints}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{kestrel/world-light}:
 Lightweight world utilities.
 \begin{itemize}
@@ -456,10 +470,140 @@ Automated Program Transformations (APT).
 
 \implibtitle
 
+\bookpath{kestrel/axe (1)}:
+The Axe Toolkit
+\begin{itemize}
+\item Many improvements and fixes (clarified code, added and verified guards, removed skip-proofs from legacy tools, new proofs about implementation, deprecated old code, fixed names, more robust proofs).
+\item Added, improved, and organized rules.
+\item Improved rule-lists and built in more rules.
+\item Improved printing, error handling, and reporting.
+\item Improved counterexample machinery.
+\item Optimized: Use hash-tables and fast-alists), avoid some quadratic behaviors, use \code{tshell-call} instead of \code{sys-call}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe (2)}:
+The Axe Toolkit
+\begin{itemize}
+\item Improved pruning (apply to DAGs, use more assumptions, evaluate new ground terms) and use during lifting.
+\item Evaluate more ground terms.  Improve use of memoization.
+\item The \code{ACL2\_STP\_VARIETY} environment variable now governs how STP is to be called (which option syntax).
+\item Proved some theorems validating Axe's translation to SMT solvers.
+\item Improved \code{unroll-spec-basic} (set of rules used).
+\item Added tests.  Improved documentation.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe (3)}:
+The Axe Toolkit
+\begin{itemize}
+\item Added \code{:max-conflicts} option to query tool.
+\item Renamed \code{prove-equivalence2} to \code{prove-equal-with-tactics}.
+\item Allow each generated prover to have its own set of \code{default-global-rules}, add \code{:extra-global-rules} option.
+\item Fix rare completeness issue in provers.
+\item Add \code{:var-ordering} option to prevent undesirable substitutions.
+\item Add new prover tactic \code{:rewrite-top}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe/jvm}:
+The Axe Toolkit for JVM
+\begin{itemize}
+\item Added JVM Formal Unit Tester.
+\item Simplified \code{unroll-java-code} in several ways.
+\item Added examples: Axe proofs of AES implementations, Formal Unit Tester examples.
+\end{itemize}
+
+\bookpath{kestrel/axe/r1cs}:
+The Axe Toolkit for R1CSes
+\begin{itemize}
+\item Built in more global rules.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe/x86}:
+The Axe Toolkit for x86
+\begin{itemize}
+\item Added prototype Formal Unit Tester for x86 binaries.
+\item Added support for parsing and lifting ELF files.
+\item Misc improvements to x86 lifting.
+\item More readable normal forms, better debugging.
+\item Added :position-independent option.
+\item Added examples: TEA block cipher, recursive factorial, popcount.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/booleans}:
 Rules and definitions involving booleans (supports Axe).
 \begin{itemize}
 \item New and improved rules.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/bv}:
+Bit vectors.
+\begin{itemize}
+\item Added, improved, renamed, and organized rules.  Improved names.
+\item Macro fixes.  Tweaked \code{repeatbit}.
+\item New scheme for converting terms to use bv functions.
+\item Added \code{bitxor\$}, \code{bitand\$}, and \code{bitor\$} (faster, stricter guards).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/bv-lists}:
+Lists of bit vectors.
+\begin{itemize}
+\item Added and organized rules.
+\item New bv-array conversion utilities.
 \end{itemize}
 
 \end{frame}
@@ -490,6 +634,36 @@ Models, proofs, and tools for C.
 
 \implibtitle
 
+\bookpath{kestrel/clause-processors}:
+Clause processors and utilities for them.
+\begin{itemize}
+\item Organize library, misc cleanups.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/crypto}:
+Cryptography
+\begin{itemize}
+\item Added a formal spec for the AES block cipher.
+\item Added a formal spec of the SHA-3 hash function (proved equivalence to Keccak spec in some cases).
+\item Added a formal spec of the TEA block cipher.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/crypto/pfcs}:
 Prime Field Constraint Systems (PFCS).
 (Discussed in a paper at this Workshop.)
@@ -501,6 +675,203 @@ Prime Field Constraint Systems (PFCS).
 \item Added a translator from R1CS to PFCS,
       along with a checker for the R1CS subset of PFCS.
 \item Added a proof-generating lifter from deeply to shallowly embedded PFCS.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/crypto/r1cs}:
+Rank-1 constraint systems.
+\begin{itemize}
+\item Added and generalized rules.
+\item Added dense form of R1CSes (legacy).
+\item Added optimized function \code{r1cs-constraint-list-vars}.
+\item Imported \code{primep} into package.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/evaluators}:
+Evaluators (e.g., to support meta-reasoning).
+\begin{itemize}
+\item New tool \code{defevaluator-theorems}.
+\item Added theorems.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/file-io-light}:
+Lightwight library about file input and output.
+\begin{itemize}
+\item Added rules about \code{princ\$}, \code{prin1\$}, \code{open-output-channel}, \code{open-output-channel!}, etc.
+\item New books on \code{close-input-channel}, \code{close-output-channel}, \code{typed-io-listp}, \code{print-object\$-fn}, and \code{newline}.
+\item Added \code{read-objects-from-file-with-pkg}, \code{read-file-into-line-list}, and \code{read-file-into-line-list-no-error}.
+\item Added and improved rules.  Organized and optimized.  Fixed names.
+\item Proved that various functions don't change the world.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/floats}:
+Cleanroom formalization of IEEE-754 floating point (in progress).
+\begin{itemize}
+\item Model of floating point formats, representable rationals, encoding/decoding, normals, subnormals, zeros, infinities, NaNs, comparisons.  No rounding yet!
+\item Tries to match the official spec as closely as possible.
+\item Proved some connection theorems to the RTL formalization.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/helpers}:
+Helper tools for finding / repairing proofs and improving ACL2 books.
+\begin{itemize}
+\item New Proof Advice tool to get proof help over the web, based on ML models and other heuristics.
+\item Tools to evaluate proof advice on one or many books.
+\item Improvements to \code{improve-book} tool.  Improve linter and move it here.
+\item New \code{speed-up-event} utility that tries to speed up theorems.
+\item Add initial \code{repair} tool to fix broken proofs.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/htclient}:
+Communication via HTTP.
+\begin{itemize}
+\item Lightweight variant of HTTP POST.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/json-parser}:
+JSON Parser.
+\begin{itemize}
+\item Added \code{parse-string-as-json}, \code{defconst-from-json-file}.
+\item Improved implementation (more tail recursion).
+\item Added and improved rules.
+\item Organized and sped up proofs.
+\item Added and improved tests.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/jvm}:
+JVM model.
+\begin{itemize}
+\item Clarified model and added new rules.
+\item Better normal forms and abstractions.
+\item Renamed \code{load-class-XXX} to \code{read-class-XXX}.
+\item Support for reading code directly from jar files.
+\item Put more names in \code{JVM} package.
+\item Worked on verifying guards.
+\item Improved handling of floats/doubles, LDC bytecode.
+\item Improved error reporting in class file parser.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/lists-light}:
+Lightweight lists library.
+\begin{itemize}
+\item Added various rules, organized library.
+\item New books on \code{position-equal-ac}, \code{position-equal}.
+\item Added \code{filter-non-members}.
+\item Added \code{union-equal-alt} (keeps earlier duplicates).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/meta}:
+Metafunctions / meta rules.
+\begin{itemize}
+\item Add some experiments verifying rewriter-like tools using \code{meta-extract}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/number-theory}:
+Number theory library.
+\begin{itemize}
+\item Import some symbols into the \code{PRIMES} package, including \code{dm}::primep.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/prime-fields}:
+Prime field library.
+\begin{itemize}
+\item Add and improve rules, and simplify.
+\item Import some symbols into the \code{PRIMES} package, including \code{dm}::primep.
 \end{itemize}
 
 \end{frame}
@@ -551,13 +922,132 @@ Standard system library (extension of Std).
 
 \implibtitle
 
-\bookpath{kestrel/utilities}:
+\bookpath{kestrel/string-light}:
+Lightwight library about strings.
+\begin{itemize}
+\item Added \code{string-starts-withp}, \code{add-prefix-to-strings},
+  \code{split-string-last}, \code{strip-prefix-from-string},
+  \code{strip-suffix-from-string}, \code{strip-suffix-from-strings},
+  \code{decimal-digit-to-char},
+  \code{decimal-digit-to-string},\code{strnthcdr},
+\item New books about \item{subseq}, \code{strcar}, \code{strcdr}, \code{char}.
+\item Renamed \code{string-ends-inp} to \code{string-ends-withp}
+\item Added rules and tests.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/terms-light}:
+Lightweight library for manipulating terms.
+\begin{itemize}
+\item New and improved rules. Various fixes. Generalized, optimized, and clarified.
+\item New books about \code{all-fnnames1}, \code{trivial-formals}, \code{get-conjuncts}, and \code{get-hyps-and-conc}, and \code{replace-corresponding-arg}.
+\item Improved \code{reconstruct-lets-in-term} to handle \code{mv-let} and ignored vals.
+\item Improved \code{substitute-unnecessary-lambda-vars}.
+\item Added \code{subst-var-alt} (avoids creating unserialized lambdas).
+\item Proved that some utilities return / preserve closed lambdas.
+\item Added tests.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/typed-lists-light}:
+Lightweight library for lists of elements of various types.
+\begin{itemize}
+\item Added rules and organized library.
+\item New books about \code{alist-listp}, \code{symbol-alist-listp}, \code{symbol-term-alist-listp}, \code{map-strip-cdrs}, \code{all-digit-charsp}.
+\item Added \code{string-list-listp}.
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/untranslated-terms}:
+Utilities about untranslated terms.
+\begin{itemize}
+\item Various improvements, especially about \code{case}, \code{case-match}, and \code{cond}.
+\item Improvements for \code{b*} (e.g., support for \code{\&}, \code{list}, and \code{er} binders).
+\item Added utilities for extracting conjuncts and disjuncts, and for getting free variables from terms.
+\item Improved support for \code{let} and \code{mv-let}.
+\end{itemize}
+
+\bookpath{kestrel/untranslated-terms-old}:
+Old utilities about untranslated terms.
+\begin{itemize}
+\item Moved to \code{kestrel/untranslated-terms/untranslated-terms-old}.
+\item Fixed some checks.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities (1)}:
 Various utilities in the Kestrel books.
 \begin{itemize}
 \item Added \code{show-books} utility,
       which returns a tree representing
       the books included in the current ACL2 session.
 \item Improved \code{checkpoint-list} and related utilities.
+\item Added parser for CSV files and utils for handling parsed CSV files.
+\item Split \code{byte-array-stobj} into separate book.
+\item Proved that \code{merge-sort-symbol<} returns a sorted list.
+\item Deprecated \code{defopeners-mut-rec} (use \code{defopeners}).
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities (2)}:
+Various utilities in the Kestrel books.
+\begin{itemize}
+\item New books on \code{read-acl2-oracle}, \code{update-acl2-oracle}, \code{invariant-risk}, \code{getenv\$}, \code{get-serialize-character}, \code{plist-worldp}, \code{char-code}, widening margins, \code{strip-cadrs}, \code{>=-len}, \code{our-digit-char-p}, \code{read-run-time}, \code{get-cpu-time}.
+\item Added misc rules (e.g., about \code{world}, \code{state}, \code{channels}, \code{assoc-keyword}, setting margins, \code{coerce}, \code{non-trivial-bindings}, \code{acl2-count}).
+\item New utilities: \code{most-recent-failed-theorem-goal}, \code{translatable-term-listp}, parsing of strings, \code{dir-of-path}, \code{all-included-books}, \code{defthms-in-world}, \code{sys-call-event}, \code{split-path}, \code{reduce-print-level}, \code{pack-in-package}, \code{eval-tests}, \code{fast-alist-set}, \code{array-stobj}, \code{setenv\$-event}, \code{prove\$-nice-trying-hints}, \code{prove\$-nice-with-time-and-steps}, \code{last-prover-steps\$}, \code{merge-sort-string<}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/utilities (3)}:
+Various utilities in the Kestrel books.
+\begin{itemize}
+\item Improved \code{prove\$-nice} and \code{prove\$+}, \code{declare} utilities, \code{defmergsort}, \code{defxdoc-for-macro}, utilities for temp dirs, and material about conjuncts/disjuncts and \code{acl2-count}.
+\item New tests. Better error reporing.
+\item Improved utilities: \code{defmergesort} (\code{:extra-theorems} option), \code{ld-history} utils, \code{ubi}, \code{defstobj+} (generate more theorems, e.g., about hash-table fields).
+\item New utils \code{shuffle-array-stobj} / \code{shuffle-array-stobj2} and \code{shuffle-list} / \code{shuffle-list2}, using a Fisher-Yates shuffle.
 \end{itemize}
 
 \end{frame}
@@ -588,6 +1078,36 @@ Ordered maps (omaps).
 \begin{itemize}
 \item Added several theorems.
 \item Improved documentation and organization.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/x86}:
+Kestrel's additions to support working with the \code{x86isa} model
+\begin{itemize}
+\item Improved and added various rules, e.g., about condition codes.
+\item Clarified and improved rule lists (used by Axe).
+\item Improved parsers, fixed ELF parser bug.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/zcash}:
+The Zcash protocol.
+\begin{itemize}
+\item Add \code{:var-ordering} option to \code{verify-zcash-r1cs}.
 \end{itemize}
 
 \end{frame}
