@@ -11,13 +11,3 @@
 (in-package "OMAP")
 
 (include-book "kestrel/utilities/omaps/core" :dir :system)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule value-of-update-when-not-in
-  (implies (not (consp (in key map)))
-           (equal (values (update key val map))
-                  (set::insert val (values map))))
-  :induct (size map)
-  :enable (values size)
-  :expand (values (update key val map)))
