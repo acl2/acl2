@@ -65,8 +65,7 @@
 
 ;; The eof flag is non-nil iff the channel contents are empty
 (defthm mv-nth-0-of-read-object-iff
-  (implies (and (open-input-channel-p channel :object state)
-                (state-p1 state))
+  (implies (state-p1 state)
            (iff (mv-nth 0 (read-object channel state))
                 (not (consp (cddr (assoc-equal channel (open-input-channels state)))))))
   :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
@@ -108,18 +107,16 @@
   :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
 
 (defthm open-input-channels-of-mv-nth-2-of-read-object
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel :object state))
-           (equal (open-input-channels (mv-nth 2 (read-object channel state)))
-                  (if (cddr (assoc-equal channel (open-input-channels state)))
-                      ;; more data to read:
-                      (add-pair channel
-                                (cons (cadr (assoc-equal channel (open-input-channels state))) ;header
-                                      (cdddr (assoc-equal channel (open-input-channels state))) ;cdr of values
-                                      )
-                                (open-input-channels state))
+  (equal (open-input-channels (mv-nth 2 (read-object channel state)))
+         (if (cddr (assoc-equal channel (open-input-channels state)))
+             ;; more data to read:
+             (add-pair channel
+                       (cons (cadr (assoc-equal channel (open-input-channels state))) ;header
+                             (cdddr (assoc-equal channel (open-input-channels state))) ;cdr of values
+                             )
+                       (open-input-channels state))
                     ;; no more data to read:
-                    (open-input-channels state))))
+           (open-input-channels state)))
   :hints (("Goal" :in-theory (enable read-object))))
 
 ;; (defthm <-of-len-of-channel-contents-of-mv-nth-2-of-read-object
