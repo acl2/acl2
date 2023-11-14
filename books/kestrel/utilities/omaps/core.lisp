@@ -1029,7 +1029,12 @@
   (defruled in-values-when-in
     (implies (equal (in a m)
                     (cons a b))
-             (set::in b (values m)))))
+             (set::in b (values m))))
+
+  (defrule value-of-update-when-not-in
+    (implies (not (consp (in key map)))
+             (equal (values (update key val map))
+                    (set::insert val (values map))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
