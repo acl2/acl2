@@ -97,7 +97,7 @@
         David Russinoff\inst{2},
         Eric W. Smith\inst{5,6,1},\\
         Sol Swords\inst{4},
-        Max von Hippel\inst{7},}
+        Max von Hippel\inst{7}}
 
 \institute{\inst{1}Aleo Systems Inc.,
            \inst{2}{Arm Inc.},
@@ -471,14 +471,14 @@ Automated Program Transformations (APT).
 \implibtitle
 
 \bookpath{kestrel/axe (1)}:
-The Axe Toolkit
+The Axe Toolkit.
 \begin{itemize}
 \item Many improvements and fixes (clarified code, added and verified guards, removed skip-proofs from legacy tools, new proofs about implementation, deprecated old code, fixed names, more robust proofs).
 \item Added, improved, and organized rules.
 \item Improved rule-lists and built in more rules.
 \item Improved printing, error handling, and reporting.
 \item Improved counterexample machinery.
-\item Optimized: Use hash-tables and fast-alists), avoid some quadratic behaviors, use \code{tshell-call} instead of \code{sys-call}.
+\item Optimized: Use hash-tables and fast-alists, avoid some quadratic behaviors, use \code{tshell-call} instead of \code{sys-call}.
 \end{itemize}
 
 \end{frame}
@@ -490,7 +490,7 @@ The Axe Toolkit
 \implibtitle
 
 \bookpath{kestrel/axe (2)}:
-The Axe Toolkit
+The Axe Toolkit.
 \begin{itemize}
 \item Improved pruning (apply to DAGs, use more assumptions, evaluate new ground terms) and use during lifting.
 \item Evaluate more ground terms.  Improve use of memoization.
@@ -509,7 +509,7 @@ The Axe Toolkit
 \implibtitle
 
 \bookpath{kestrel/axe (3)}:
-The Axe Toolkit
+The Axe Toolkit.
 \begin{itemize}
 \item Added \code{:max-conflicts} option to query tool.
 \item Renamed \code{prove-equivalence2} to \code{prove-equal-with-tactics}.
@@ -528,7 +528,7 @@ The Axe Toolkit
 \implibtitle
 
 \bookpath{kestrel/axe/jvm}:
-The Axe Toolkit for JVM
+The Axe Toolkit for JVM.
 \begin{itemize}
 \item Added JVM Formal Unit Tester.
 \item Simplified \code{unroll-java-code} in several ways.
@@ -550,13 +550,13 @@ The Axe Toolkit for R1CSes
 \implibtitle
 
 \bookpath{kestrel/axe/x86}:
-The Axe Toolkit for x86
+The Axe Toolkit for x86.
 \begin{itemize}
 \item Added prototype Formal Unit Tester for x86 binaries.
 \item Added support for parsing and lifting ELF files.
 \item Misc improvements to x86 lifting.
 \item More readable normal forms, better debugging.
-\item Added :position-independent option.
+\item Added \code{:position-independent} option.
 \item Added examples: TEA block cipher, recursive factorial, popcount.
 \end{itemize}
 
@@ -649,7 +649,7 @@ Clause processors and utilities for them.
 \implibtitle
 
 \bookpath{kestrel/crypto}:
-Cryptography
+Cryptography.
 \begin{itemize}
 \item Added a formal spec for the AES block cipher.
 \item Added a formal spec of the SHA-3 hash function (proved equivalence to Keccak spec in some cases).
@@ -1045,7 +1045,7 @@ Various utilities in the Kestrel books.
 Various utilities in the Kestrel books.
 \begin{itemize}
 \item Improved \code{prove\$-nice} and \code{prove\$+}, \code{declare} utilities, \code{defmergsort}, \code{defxdoc-for-macro}, utilities for temp dirs, and material about conjuncts/disjuncts and \code{acl2-count}.
-\item New tests. Better error reporing.
+\item New tests. Better error reporting.
 \item Improved utilities: \code{defmergesort} (\code{:extra-theorems} option), \code{ld-history} utils, \code{ubi}, \code{defstobj+} (generate more theorems, e.g., about hash-table fields).
 \item New utils \code{shuffle-array-stobj} / \code{shuffle-array-stobj2} and \code{shuffle-list} / \code{shuffle-list2}, using a Fisher-Yates shuffle.
 \end{itemize}
