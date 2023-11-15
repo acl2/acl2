@@ -17,7 +17,11 @@
 (include-book "prove-with-stp")
 (include-book "rewriter-basic")
 (include-book "dag-size-fast")
+(include-book "kestrel/utilities/if" :dir :system) ; for rules mentioned below
 (include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)
+(include-book "kestrel/booleans/boolif" :dir :system) ; do not remove (since this book knows about boolif)
+(include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove (since this book knows about bool-fix$inline)
+(include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (local (include-book "cars-decreasing-by-1"))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -172,6 +176,15 @@
            (true-listp (dargs (cdr (car dag)))))
   :rule-classes :type-prescription)
 
+;; These justify the pruning done by prune-dag-approximately-aux:
+(thm (implies test (equal (myif test x y) (if test x y)))) ; myif can be treated just like if
+(thm (implies test (equal (if test x y) (id x))))
+(thm (implies test (equal (myif test x y) (id x))))
+(thm (implies (not test) (equal (if test x y) (id y))))
+(thm (implies (not test) (equal (myif test x y) (id y))))
+(thm (implies test (equal (boolif test x y) (bool-fix$inline x))))
+(thm (implies (not test) (equal (boolif test x y) (bool-fix$inline y))))
+
 ;; Returns (mv erp dag state).
 (defund prune-dag-approximately-aux (dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -239,16 +252,40 @@
                             ;; Could not resolve the test:
                             expr))))
                (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
-            ;; todo: add support for boolif and bvif?
+            ((boolif)
+             (b* (((when (not (consp (cdr (cdr (dargs expr))))))
+                   (mv :bad-boolif-arity nil state))
+                  ;; Get the context for this BOOLIF node (note that its test node may appear in other contexts too):
+                  (context (aref1 'context-array context-array nodenum))
+                  ((when (eq (false-context) context))
+                   (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
+                   (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(bool-fix$inline ,(darg2 expr)) dag-acc) state))
+                  ;; Try to resolve the BOOLIF test:
+                  ((mv erp result state)
+                   ;; TODO: What if the test is among the context assumptions?
+                   ;; TODO: Should we use any rewriting here?
+                   (try-to-resolve-node-with-stp (darg1 expr) ; the test of the BOOLIF
+                                                 context      ; the assumptions
+                                                 dag-array dag-len dag-parent-array
+                                                 "PRUNE" ; todo: improve?
+                                                 print
+                                                 max-conflicts
+                                                 state))
+                  ((when erp) (mv erp nil state))
+                  ;; Even if we can resolve the test, we have to keep the
+                  ;; bool-fixing.  This also ensures the node is still legal
+                  ;; (not a naked nodenum) and preserves the node numbering
+                  ;; (calls to bool-fix$inline will later be removed by rewriting):
+                  (expr (if (eq result :true)
+                            `(bool-fix$inline ,(darg2 expr)) ; the BOOLIF is equal to the bool-fix of its then-branch
+                          (if (eq result :false)
+                              `(bool-fix$inline ,(darg3 expr)) ; the BOOLIF is equal to the bool-fix of its else-branch
+                            ;; Could not resolve the test:
+                            expr))))
+               (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
+            ;; todo: add support for bvif?
             (t
              (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
-
-;; These justify the pruning done above:
-(thm (implies test (equal (if test x y) (id x))))
-(thm (implies test (equal (myif test x y) (id x))))
-(thm (implies (not test) (equal (if test x y) (id y))))
-(thm (implies (not test) (equal (myif test x y) (id y))))
-
 
 (local
  (defthmd pseudo-dagp-aux-of-top-nodenum-of-dag-when-weak-dagp-aux-and-cars-decreasing-by-1
@@ -362,6 +399,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund prune-dag-helper-rules ()
+  (declare (xargs :guard t))
+  '(id
+    bool-fix-when-booleanp ; todo: add more booleanp rules, or even pass them in?
+    bool-fix-of-bool-fix
+    boolif-of-bool-fix-arg1
+    boolif-of-bool-fix-arg2
+    boolif-of-bool-fix-arg3
+    if-of-bool-fix-arg1
+    myif-of-bool-fix-arg1
+    bvif-of-bool-fix
+    not-of-bool-fix
+    boolor-of-bool-fix-arg1
+    boolor-of-bool-fix-arg2
+    booland-of-bool-fix-arg1
+    booland-of-bool-fix-arg2
+    booleanp-of-bool-fix
+    if-same-branches
+    if-when-non-nil-constant
+    if-of-nil
+    ;; if-of-not ; maybe
+    if-of-t-and-nil-when-booleanp ; or bool-fix it
+    myif-same-branches
+    myif-of-nil
+    myif-of-constant-when-not-nil
+    myif-nil-t
+    myif-t-nil
+    ;; todo: more rules?
+    ))
+
+(ensure-rules-known (prune-dag-helper-rules))
+
 ;; Returns (mv erp dag-or-quotep state).
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
 ;; todo: may need multiple passes, but watch for loops!
@@ -404,21 +473,24 @@
        ;; Ensure we can do the array-based simp below:
        ((when (>= (top-nodenum-of-dag dag) 2147483646))
         (mv :dag-too-big nil state))
-
        ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
-       ((mv erp rule-alist) (make-rule-alist '(id) ; todo: more rules
+       ;; Similarly, try to get rid of calls of BOOL-FIX$INLINE that got introduced.
+       ;; And try to propagate successful resolution of tests upward in the DAG.
+       ((mv erp rule-alist) (make-rule-alist (prune-dag-helper-rules)
                                              (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp dag-or-quotep) (simplify-dag-basic dag
-                                                   nil ;assumptions
-                                                   nil nil
+                                                   nil ; assumptions
+                                                   nil ; interpreted-function-alist
+                                                   nil ; limits
                                                    rule-alist
-                                                   nil
+                                                   nil ; count-hits
                                                    nil ; print
                                                    nil ; known-booleans
                                                    nil ; monitored-symbols
-                                                   nil
-                                                   nil))
+                                                   nil ; normalize-xors
+                                                   nil ; memoize
+                                                   ))
        ((when erp) (mv erp nil state))
        (- (cw "Done pruning DAG.)~%")))
     (mv (erp-nil) dag-or-quotep state)))
