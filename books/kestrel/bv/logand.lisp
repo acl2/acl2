@@ -86,7 +86,7 @@
               (< j 0)
               (integerp i)
               (integerp j)))
-  :hints (("Goal" :use (:instance <-of-logand-and-0-helper)
+  :hints (("Goal" :use <-of-logand-and-0-helper
            :in-theory (disable <-of-logand-and-0-helper))))
 
 (defthm logand-non-negative-type
@@ -171,7 +171,7 @@
 (defthm logand-commutative-2
   (equal (logand i j k)
          (logand j i k))
-  :hints (("Goal" :use ((:instance logand-associative)
+  :hints (("Goal" :use (logand-associative
                         (:instance logand-associative (i j) (j i)))
            :in-theory (disable logand-associative))))
 
@@ -349,7 +349,7 @@
   (implies (integerp i)
            (equal (logand i (+ -1 (- i)))
                   0))
-  :hints (("Goal" :use (:instance logand-of-lognot-same)
+  :hints (("Goal" :use logand-of-lognot-same
            :in-theory (e/d (lognot)
                            (logand-of-lognot-same)))))
 
@@ -443,7 +443,7 @@
                        (< j 0)
                        (or (< i (- (expt 2 n)))
                            (< j (- (expt 2 n)))))))
-  :hints (("Goal" :use (:instance logand-lower-bound-negative-2)
+  :hints (("Goal" :use logand-lower-bound-negative-2
            :in-theory (disable logand-lower-bound-negative-2))))
 
 (defthm unsigned-byte-p-of-logand
@@ -555,7 +555,7 @@
   (equal (< -1 (logand i j))
          (not (and (< (ifix i) 0)
                    (< (ifix j) 0))))
-  :hints (("Goal" :use (:instance <-of-logand-and-0)
+  :hints (("Goal" :use <-of-logand-and-0
            :in-theory (disable <-of-logand-and-0))))
 
 (local

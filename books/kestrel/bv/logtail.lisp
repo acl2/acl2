@@ -66,7 +66,7 @@
                 (natp n))
            (equal (logtail n (* (expt 2 n) x))
                   (ifix x)))
-  :hints (("Goal" :use (:instance logtail-shift)
+  :hints (("Goal" :use logtail-shift
            :in-theory (disable logtail-shift))))
 
 (defthm logtail-of-sum
@@ -125,7 +125,7 @@
                 (natp pos))
            (equal (logtail pos1 (logtail pos i))
                   (logtail (+ pos pos1) i)))
-  :hints (("Goal" :use (:instance logtail-logtail)
+  :hints (("Goal" :use logtail-logtail
            :in-theory (disable logtail-logtail))))
 
 (defthm logtail-of-minus-expt
@@ -160,7 +160,7 @@
                 (integerp x))
            (equal (logtail size (* (expt 2 n) x))
                   (logtail (- size n) x)))
-  :hints (("Goal" :use (:instance logtail-shift-gen)
+  :hints (("Goal" :use logtail-shift-gen
            :in-theory (disable logtail-shift-gen))))
 
 (defthm logtail-of-expt

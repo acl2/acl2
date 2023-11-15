@@ -86,7 +86,7 @@
                 (natp n))
            (equal (getbit n x)
                   (getbit (+ -1 size) x)))
-  :hints (("Goal" :use (:instance getbit-when-signed-byte-p-high-helper))))
+  :hints (("Goal" :use getbit-when-signed-byte-p-high-helper)))
 
 (defthm slice-when-signed-byte-p-high
   (implies (and (signed-byte-p size x)
@@ -124,7 +124,7 @@
                 (natp size))
            (equal (< (+ y (* (EXPT 2 size) (LOGTAIL size X))) X)
                   (< y (bvchop size x))))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
+  :hints (("Goal" :use bvchop-plus-times-expt-logtail
            :in-theory (disable bvchop-plus-times-expt-logtail))))
 
 (defthm <-of-times-expt-logtail-cancel2
@@ -132,7 +132,7 @@
                 (natp size))
            (equal (< X (+ y (* (EXPT 2 size) (LOGTAIL size X))))
                   (< (bvchop size x) y)))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
+  :hints (("Goal" :use bvchop-plus-times-expt-logtail
            :in-theory (disable bvchop-plus-times-expt-logtail))))
 
 (defthm low-bits-dont-matter
@@ -328,7 +328,7 @@
                                (< (bvchop lowsize x)
                                   (bvchop lowsize lowval))))))))
   :hints (("Goal" :use ((:instance BVCAT-NUMERIC-BOUND (k (EXPT 2 (+ LOWSIZE HIGHSIZE))))
-                        (:instance <-of-bvcat-alt-helper))
+                        <-of-bvcat-alt-helper)
            :in-theory (e/d (UNSIGNED-BYTE-P)(<-OF-BVCAT <-of-bvcat-alt-helper)))))
 
 (defthm bvlt-of-bvcat-arg3

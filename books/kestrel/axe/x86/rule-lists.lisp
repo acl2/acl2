@@ -790,7 +790,26 @@
     if-of-equal-of-indef-and-is-nan
     if-of-equal-of-qnan-and-is-nan
     if-of-equal-of-snan-and-is-nan
-    booleanp-of-is-nan))
+    booleanp-of-is-nan
+    not-mv-nth-0-of-sse-cmp
+    mxcsrbits->daz-of-bvchop-32
+    mxcsrbits->daz-of-ifix
+    mxcsrbits->dm-of-bvchop-32
+    mxcsrbits->dm-of-ifix
+    mxcsrbits->im-of-bvchop-32
+    mxcsrbits->im-of-ifix
+    mxcsrbits->daz-of-mv-nth-2-of-sse-cmp
+    mxcsrbits->dm-of-mv-nth-2-of-sse-cmp
+    mxcsrbits->im-of-mv-nth-2-of-sse-cmp
+    sse-cmp-of-bvchop-arg2-32
+    sse-cmp-of-bvchop-arg3-32
+    sse-cmp-of-bvchop-arg4-32
+    unsigned-byte-p-of-mv-nth-1-of-sse-cmp-32
+    integerp-of-mv-nth-2-of-sse-cmp
+    mv-nth-1-of-sse-cmp-of-sse-cmp
+    sse-cmp-of-op-ucomi-same
+    x86isa::sse-cmp-base ; when operation and operands are constant
+    ))
 ;; Try to introduce is-nan as soon as possible:
 (table axe-rule-priorities-table 'is-nan-intro -1)
 
@@ -3478,7 +3497,7 @@
             X86ISA::MXCSRBITS->Daz-of-if
             sse-daz-of-nil
             X86ISA::N32P-XR-MXCSR
-            X86ISA::SSE-CMP ; scary
+            ;X86ISA::SSE-CMP ; scary
             x86isa::dp-sse-cmp
             app-view-of-if
             program-at-of-if

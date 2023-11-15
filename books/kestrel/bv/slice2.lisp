@@ -52,9 +52,9 @@
                                   (n m)
                                   (k (+ -1 n))
                                   (m (- n m)))
-           :in-theory (e/d () ( BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE
-                                                             ;DAGIFY-INSIDE-HIDE-META-RULE
-                                                           )))))
+           :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE
+                               ;;DAGIFY-INSIDE-HIDE-META-RULE
+                               ))))
 
 ;ex: (UNSIGNED-BYTE-P 8 (BVXOR 9 X$0 X$1))
 ;not sure where this should go
