@@ -58,6 +58,8 @@
 
 (include-book "find-adders/top")
 
+(include-book "int-vector-adders-meta")
+
 (include-book "doc")
 
 (include-book "centaur/bitops/extra-defs" :dir :system)

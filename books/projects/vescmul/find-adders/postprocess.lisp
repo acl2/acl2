@@ -39,7 +39,6 @@
 (include-book "misc")
 (include-book "quick-search")
 
-
 (local
  (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -148,12 +147,7 @@
                      (cons (sv::svex-eval$ (car lst) env)
                            (sv::svexlist-eval$ (cdr lst) env)))))))
 
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 (defines collect-ha-args-under-gates
   ;; collects to a fast-alist. Keys are args in any order.
@@ -1232,8 +1226,6 @@
                               sv::svex-alist-eval)
                              ())))))
 
-
-
 (defines adders-under-gates?
   (define adders-under-gates? ((x sv::Svex-p)
                                (under-gate?))
@@ -1269,3 +1261,493 @@
                 nil)
       (or (adders-under-gates? (cdar alist) nil)
           (adders-under-gates?-alist (cdr alist))))))
+
+
+
+(define max-val-of-int-vector-adder ((x sv::Svex-p)
+                                     &key
+                                     ((env) 'env)
+                                     ((context rp-term-listp) 'context)
+                                     ((config svl::svex-reduce-config-p) 'config))
+
+  :returns (res acl2::maybe-natp)
+  :prepwork ((local
+              (in-theory (e/d (natp
+                               acl2::maybe-natp) ())))
+             ;; (local
+             ;;  (include-book "centaur/bitops/top" :dir :system))
+
+             (local
+              (use-arithmetic-5 t))
+             )
+  (case-match x
+    (('int-vector-adder arg1 arg2)
+     (b* ((max1 (max-val-of-int-vector-adder arg1))
+          (max2 (max-val-of-int-vector-adder arg2)))
+       (and (natp max1)
+            (natp max2)
+            (+ max1 max2))))
+    (('sv::concat size arg1 arg2)
+     (b* ((max1 (max-val-of-int-vector-adder arg1))
+          (max2 (max-val-of-int-vector-adder arg2)))
+       (and (natp size) (natp max1) (natp max2)
+            ;;(svl::integerp-of-svex arg1)
+            ;;(svl::integerp-of-svex arg2)
+            ;;(logapp size max1 max2)
+            (+ max1 (ash max2 size))
+            )))
+    (&
+     (b* (((when (natp x)) x)
+          (width (svl::width-of-svex x)))
+       (and (natp width)
+            (svl::integerp-of-svex x)
+            (1- (expt 2 width))))))
+
+  ///
+
+  (local
+   (defthm lemma1
+     (implies (and (<= a x)
+                   (<= b y)
+                   (natp x)
+                   (natp y))
+              (<= (+ (ifix a) (ifix b))
+                  (+ x y)))
+     :hints (("Goal"
+              :in-theory (e/d (ifix) ())))))
+
+  
+  (local
+   (defthm loghead-upper-lemma
+     (implies (and (natp max1)
+                   (natp size)
+                   (natp arg1)
+                   (<= arg1 max1))
+              (<= (loghead size arg1) max1))
+     :hints (("Goal"
+              :in-theory (e/d* (bitops::ihsext-recursive-redefs
+                                bitops::ihsext-inductions)
+                               ())))))
+
+  (local
+   (defthm dummy-equivs
+     (implies (and (<= x y)
+                   (<= a b))
+              (<= (+ x a)
+                  (+ y b)))))
+  
+  (local
+   (defthm logapp-upper-lemma
+     (implies (and (natp max1)
+                   (natp max2)
+                   (natp size)
+                   (natp arg1)
+                   (integerp arg2)
+                   (<= arg1 max1)
+                   (<= arg2 max2)
+                   )
+              (<= (logapp size arg1 arg2)
+                  (+ max1 (ash max2 size))))
+     :hints (("Goal"
+              :use ((:instance loghead-upper-lemma))
+              :in-theory (e/d* (logapp 
+                                )
+                               (loghead-upper-lemma))))))
+  
+  
+  (local
+   (use-arithmetic-5 nil))
+  
+
+  (local
+   (defthmd to-unsigned-byte-p
+     (implies (and (equal x (loghead size x))
+                   (integerp x)
+                   (natp size))
+              (unsigned-byte-p size x))))
+
+  (local
+   (defthm 4vec-p-implies-svex-p
+     (implies (sv::4vec-p x) (sv::svex-p x))
+     :hints (("Goal"
+              :expand ((SV::SVEX-P X))
+              :in-theory (e/d (sv::svex-p sv::4vec-p) ())))))
+
+
+
+  (defret <fn>-is-correct
+    (implies (and (sv::svex-p x)
+                  (rp::rp-term-listp context)
+                  (rp::valid-sc env-term a)
+                  (rp::eval-and-all context a)
+                  (rp::falist-consistent-aux env env-term)
+                  (svl::width-of-svex-extn-correct$-lst
+                   (svl::svex-reduce-config->width-extns config))
+                  (svl::integerp-of-svex-extn-correct$-lst
+                   (svl::svex-reduce-config->integerp-extns config))
+                  (warrants-for-adder-pattern-match)
+                  res
+                  )
+             (and (natp (sv::svex-eval$ x (rp-evlt env-term a)))
+                  (<= (sv::svex-eval$ x (rp-evlt env-term a)) res)))
+    :hints (("Goal"
+             :do-not-induct t
+             :induct (MAX-VAL-OF-INT-VECTOR-ADDER X)
+             :expand ((MAX-VAL-OF-INT-VECTOR-ADDER X)
+                      (:free (args) (SV::SVEX-APPLY$ 'INT-VECTOR-ADDER args))
+                      (:free (args) (SV::SVEX-APPLY 'sv::concat args)))
+             :in-theory (e/d (sv::4vec-part-select
+                              sv::4vec
+                              sv::svex-call->fn
+                              sv::svex-call->args
+                              ;;sv::svex-apply$
+                              int-vector-adder
+                              sv::4vec-concat
+                              (:type-prescription acl2::expt-type-prescription-integerp-base)
+                              (:type-prescription acl2::expt-type-prescription-nonnegative-base)
+                              (:type-prescription acl2::expt-type-prescription-positive-base)
+                              (:rewrite acl2::|(< (+ (- c) x) y)|)
+                              SV::4VEC->UPPER
+                              sv::4vec->lower)
+                             (svl::svex-eval$-width-of-svex-is-correct)))
+            (and stable-under-simplificationp
+                 '(:use ((:instance svl::svex-eval$-of-integerp-of-svex-is-correct
+                                    (svl::big-env env)
+                                    (svl::x x)
+                                    (svl::env-term env-term)
+                                    (svl::a a))
+                         (:instance to-unsigned-byte-p
+                                    (x (SV::SVEX-EVAL$ X (rp-evlt env-term a)))
+                                    (size (SVL::WIDTH-OF-SVEX X)))
+                         (:instance svl::svex-eval$-width-of-svex-is-correct
+                                    (svl::x x)
+                                    (svl::env (rp-evlt env-term a))
+                                    (SVL::FREE-VAR-WIDTH (SVL::WIDTH-OF-SVEX X)))))
+                 ))))
+
+
+(local
+ (defthm 4vec-rsh-to-4vec-part-select-equiv
+   (implies (and (natp size)
+                 (natp start)
+                 (equal (sv::4vec-part-select 0 (+ start size) x)
+                        x))
+            (equal (equal (sv::4vec-rsh start x)
+                          (sv::4vec-part-select start size x))
+                   t))))
+
+(defines remove-partsels-around-plus
+
+  :verify-guards nil
+  :prepwork
+  ((create-case-match-macro +-pattern
+                            ('+ arg1 arg2))
+
+   (create-case-match-macro partsel-of-int-vector-adder
+                            ('sv::partsel start size term)
+                            (and (natp size)
+                                 (natp start)
+                                 (case-match term (('int-vector-adder & &) t)))))
+
+  (define remove-partsels-around-plus ((x sv::Svex-p)
+                                       &key
+                                       ((env) 'env)
+                                       ((context rp-term-listp) 'context)
+                                       ((config svl::svex-reduce-config-p) 'config))
+    :returns (res )
+    :measure (sv::svex-count x)
+    (sv::svex-case
+     x
+     :var x
+     :quote x
+     :call
+     (b* ((x.args (remove-partsels-around-plus-lst x.args))
+          (x (sv::svex-call x.fn x.args)))
+       (cond ((partsel-of-int-vector-adder-p x)
+              (partsel-of-int-vector-adder-body
+               x
+               (b* ((max-val (max-val-of-int-vector-adder term))
+                    ((unless max-val) x)
+                    (max-size (integer-length max-val)))
+                 (cond ((<= max-size (+ start size))
+                        (if (= start 0)
+                            term
+                          (hons-list 'sv::rsh start term))) 
+                       (t 
+                        x)))))
+             ((and*-exec (+-pattern-p x)
+                         (+-pattern-body x
+                                         (and*-exec (svl::integerp-of-svex arg1)
+                                                    (svl::integerp-of-svex arg2))))
+              (hons 'int-vector-adder x.args))
+             (t x)))))
+
+  (define remove-partsels-around-plus-lst  ((lst sv::Svexlist-p)
+                                            &key
+                                            ((env) 'env)
+                                            ((context rp-term-listp) 'context)
+                                            ((config svl::svex-reduce-config-p) 'config))
+    :returns (res-lst )
+    :measure (sv::Svexlist-count lst)
+    (if (atom lst)
+        nil
+      (hons (remove-partsels-around-plus (car lst))
+            (remove-partsels-around-plus-lst (cdr lst)))))
+
+  ///
+
+  (local
+   (progn
+     (defret cdr-of-<fn>
+       (equal (cdr res-lst)
+              (remove-partsels-around-plus-lst (cdr lst)))
+       :FN remove-partsels-around-plus-lst
+       :hints (("Goal"
+                :INDUCT (len lst)
+                :in-theory (e/d (REMOVE-PARTSELS-AROUND-PLUS-LST) ()))))
+
+     (defret car-of-<fn>
+       (equal (car res-lst)
+              (remove-partsels-around-plus (car lst)))
+       :FN remove-partsels-around-plus-lst
+       :hints (("Goal"
+                :INDUCT (len lst)
+                :in-theory (e/d (REMOVE-PARTSELS-AROUND-PLUS-LST) ()))))
+
+     (defret consp-of-<fn>
+       (equal (consp res-lst)
+              (consp lst))
+       :FN remove-partsels-around-plus-lst
+       :hints (("Goal"
+                :INDUCT (len lst)
+                :in-theory (e/d (REMOVE-PARTSELS-AROUND-PLUS-LST) ()))))))
+
+  (local
+   (defthm svex-p-of-fncall
+     (implies (sv::Svexlist-p y)
+              (SV::SVEX-P
+               (LIST* (SV::SVEX-CALL->FN X) y)))
+     :hints (("Goal"
+              :expand ()
+              :in-theory (e/d (SV::SVEX-P
+                               sv::Svar-p
+                               SV::SVEX-CALL->FN
+                               SV::FNSYM-FIX)
+                              ())))))
+
+  ;;(local
+  ;;(defthm svex-p-and-PARTSEL-OF-INT-VECTOR-ADDER-P-lemma
+
+  (defret-mutual res-type-of-<fn>
+    (defret svex-p-of-fn
+      (sv::svex-p res)
+      :hyp (sv::svex-p x)
+      :fn remove-partsels-around-plus)
+    (defret svexlist-p-of-fn
+      (sv::svexlist-p res-lst)
+      :hyp (sv::svexlist-p lst)
+      :fn remove-partsels-around-plus-lst)
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((remove-partsels-around-plus x)
+                      ;;(:free (x y) (SV::SVEX-P (CONS x y)))
+                      ;;(:free (x y) (SV::SVAR-P (CONS x y)))
+                      )
+             :in-theory (e/d (partsel-of-int-vector-adder-p
+                              sv::svex-call->args)
+                             (sv::svex-kind$inline)))))
+
+  (verify-guards remove-partsels-around-plus-fn
+    :hints (("Goal"
+             :in-theory (e/d (partsel-of-int-vector-adder-p
+                              +-pattern-p)
+                             ()))))
+
+  (memoize 'remove-partsels-around-plus
+           ;; :condition '(eq (sv::svex-kind x) :call)
+           )
+
+  (local
+   (defthm car-of-svex-call
+     (equal (car (sv::Svex-call x y))
+            (SV::FNSYM-FIX X))
+     :hints (("Goal"
+              :in-theory (e/d (sv::Svex-call) ())))))
+
+  (local
+   (defthm 4vec-plus-to-int-vector-adder
+     (implies (and (integerp x)
+                   (integerp y))
+              (equal (sv::4vec-plus x y)
+                     (INT-VECTOR-ADDER x y)))
+     :hints (("Goal"
+              :in-theory (e/d (int-vector-adder sv::4vec-plus) ())))))
+
+  (local
+   (defthm unsigned-byte-p-of-integer-length
+     (implies (natp x)
+              (unsigned-byte-p (integer-length x) x))
+     :hints(("Goal" :in-theory (enable* ihsext-inductions
+                                        ihsext-recursive-redefs)))))
+
+  (local
+   (defthm remove-partsel-lemma
+     (implies (and (force (integerp term))
+                   (<= (integer-length term-max-val)
+                       size)
+                   (natp term)
+                   (natp term-max-val)
+                   (natp size)
+                   (<= term term-max-val))
+              (equal (sv::4vec-part-select 0 size term)
+                     term))
+     :hints (("Goal"
+              :use ((:instance unsigned-byte-p-of-integer-length
+                               (x term)))
+              :in-theory (e/d (sv::4vec-concat
+                               sv::4vec-part-select)
+                              (unsigned-byte-p
+                               unsigned-byte-p-of-integer-length))))))
+
+  (defret-mutual svex-eval$-correctness
+    (defret <fn>-is-correct
+      (implies (and (sv::svex-p x)
+                    (rp::rp-term-listp context)
+                    (rp::valid-sc env-term a)
+                    (rp::eval-and-all context a)
+                    (rp::falist-consistent-aux env env-term)
+                    (svl::width-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->width-extns config))
+                    (svl::integerp-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->integerp-extns config))
+                    (warrants-for-adder-pattern-match))
+               (equal
+                (sv::svex-eval$ res (rp-evlt env-term a))
+                (sv::svex-eval$ x (rp-evlt env-term a))))
+      :fn remove-partsels-around-plus)
+    (defret <fn>-is-correct
+      (implies (and (sv::svexlist-p lst)
+                    (rp::rp-term-listp context)
+                    (rp::valid-sc env-term a)
+                    (rp::eval-and-all context a)
+                    (rp::falist-consistent-aux env env-term)
+                    (svl::width-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->width-extns config))
+                    (svl::integerp-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->integerp-extns config))
+                    (warrants-for-adder-pattern-match))
+               (equal
+                (sv::svexlist-eval$ res-lst (rp-evlt env-term a))
+                (sv::svexlist-eval$ lst (rp-evlt env-term a))))
+      :fn remove-partsels-around-plus-lst)
+
+    :hints (("Goal"
+             :do-not-induct t
+             :expand ((remove-partsels-around-plus x)
+                      (:free (args) (sv::svex-apply$ 'int-vector-adder args))
+                      (:free (args) (sv::svex-call '+ args))
+                      (:free (args) (sv::svex-call 'sv::partsel args))
+                      (:free (args) (sv::svex-apply '+ args))
+                      (:free (args) (sv::svex-apply 'sv::rsh args))
+                      (:free (args) (sv::svex-apply 'sv::partsel args))
+                      ;; (:free (x y) (sv::svex-kind (cons x y)))
+                      )
+             :in-theory (e/d (SV::SVEX-CALL->FN
+                              SV::SVEX-CALL->args
+                              SV::4VECLIST-NTH-SAFE
+                              +-pattern-p
+                              partsel-of-int-vector-adder-p)
+                             (ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP
+                              ACL2::SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP
+                              SYMBOL-LISTP
+                              (:TYPE-PRESCRIPTION SYMBOL-LISTP)
+                              
+                              ;;SV::SVEX-KIND$INLINE
+                              
+                              eval-and-all
+                              (:DEFINITION VALID-SC)
+                              (:DEFINITION
+                               SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$-LST)
+                              (:DEFINITION
+                               SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$)
+                              (:DEFINITION INTEGER-LISTP)
+                              (:REWRITE DEFAULT-CDR)
+                              (:REWRITE DEFAULT-CAR)
+                              ;;(:DEFINITION SV::SVEX-KIND$INLINE)
+                              (:DEFINITION RP-TRANS)
+                              (:REWRITE ACL2::NATP-OF-CAR-WHEN-NAT-LISTP)
+                              ;;cons-equal
+                              rp::rp-term-listp
+                              falist-consistent-aux
+                              svl::svex-eval$-of-integerp-of-svex-is-correct
+                              MAX-VAL-OF-INT-VECTOR-ADDER-IS-CORRECT)))
+            (and stable-under-simplificationp
+                 '(:use ((:instance svl::svex-eval$-of-integerp-of-svex-is-correct
+                                    (svl::big-env env)
+                                    (svl::X (REMOVE-PARTSELS-AROUND-PLUS (CAdDR X)))
+                                    (svl::env-term env-term)
+                                    (svl::a a))
+                         (:instance svl::svex-eval$-of-integerp-of-svex-is-correct
+                                    (svl::big-env env)
+                                    (svl::X (REMOVE-PARTSELS-AROUND-PLUS (CADR X)))
+                                    (svl::env-term env-term)
+                                    (svl::a a)))))
+            (and stable-under-simplificationp
+                 '(:use ((:instance MAX-VAL-OF-INT-VECTOR-ADDER-IS-CORRECT
+                                    (x (REMOVE-PARTSELS-AROUND-PLUS (CADDDR X)))))))))
+
+  (define remove-partsels-around-plus-alist ((alist sv::Svex-alist-p)
+                                             &key
+                                             ((env) 'env)
+                                             ((context rp-term-listp) 'context)
+                                             ((config svl::svex-reduce-config-p) 'config))
+    :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p alist))
+    (if (atom alist)
+        nil
+      (acons (caar alist)
+             (remove-partsels-around-plus (hons-copy (cdar alist)))
+             (remove-partsels-around-plus-alist (cdr alist))))
+    ///
+    (defret <fn>-is-correct
+      (implies (and (sv::svex-alist-p alist)
+                    (rp::rp-term-listp context)
+                    (rp::valid-sc env-term a)
+                    (rp::eval-and-all context a)
+                    (rp::falist-consistent-aux env env-term)
+                    (svl::width-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->width-extns config))
+                    (svl::integerp-of-svex-extn-correct$-lst
+                     (svl::svex-reduce-config->integerp-extns config))
+                    (warrants-for-adder-pattern-match))
+               (equal
+                (sv::svex-alist-eval$ res (rp-evlt env-term a))
+                (sv::svex-alist-eval$ alist (rp-evlt env-term a))))
+      :fn remove-partsels-around-plus-alist
+      :hints (("Goal"
+               :in-theory (e/d (sv::svex-alist-eval$)
+                               (remove-partsels-around-plus
+                                eval-and-all
+                                rp::rp-term-listp
+                                falist-consistent-aux))))))
+
+  )
+
+;; (remove-partsels-around-plus
+;;  '(sv::partsel 0 7
+;;                (+
+;;                 (SV::PARTSEL
+;;                  0 80
+;;                  (+
+;;                   (SV::PARTSEL
+;;                    0 70
+;;                    (+
+;;                     (SV::PARTSEL
+;;                      0 4
+;;                      (+
+;;                       10 20))
+;;                     30))
+;;                   40))
+;;                 41))
+;;  :config (svex-reduce-w/-env-config-1)
+;;  :env nil
+;;  :context nil)
