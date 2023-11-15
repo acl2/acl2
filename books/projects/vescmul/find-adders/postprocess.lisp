@@ -1262,7 +1262,10 @@
       (or (adders-under-gates? (cdar alist) nil)
           (adders-under-gates?-alist (cdr alist))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Remove partselects around Pluses (+ operand rewritten to int-vector-adder)
 
 (define max-val-of-int-vector-adder ((x sv::Svex-p)
                                      &key
@@ -1280,28 +1283,36 @@
              (local
               (use-arithmetic-5 t))
              )
+  :guard-hints (("Goal"
+                 :do-not-induct t
+                 :in-theory (e/d () ())))
   (case-match x
     (('int-vector-adder arg1 arg2)
      (b* ((max1 (max-val-of-int-vector-adder arg1))
           (max2 (max-val-of-int-vector-adder arg2)))
-       (and (natp max1)
-            (natp max2)
-            (+ max1 max2))))
+       (and*-exec (natp max1)
+                  (natp max2)
+                  (+ max1 max2))))
     (('sv::concat size arg1 arg2)
      (b* ((max1 (max-val-of-int-vector-adder arg1))
           (max2 (max-val-of-int-vector-adder arg2)))
-       (and (natp size) (natp max1) (natp max2)
-            ;;(svl::integerp-of-svex arg1)
-            ;;(svl::integerp-of-svex arg2)
-            ;;(logapp size max1 max2)
-            (+ max1 (ash max2 size))
-            )))
+       (and*-exec
+        (natp size) (natp max1) (natp max2)
+        ;;(svl::integerp-of-svex arg1)
+        ;;(svl::integerp-of-svex arg2)
+        ;;(logapp size max1 max2)
+        (+ max1 (ash max2 size))
+        )))
+    (('sv::rsh size arg1)
+     (b* ((max1 (max-val-of-int-vector-adder arg1)))
+       (and*-exec (natp size) (natp max1)
+                  (ash max1 (- size)))))
     (&
      (b* (((when (natp x)) x)
           (width (svl::width-of-svex x)))
-       (and (natp width)
-            (svl::integerp-of-svex x)
-            (1- (expt 2 width))))))
+       (and*-exec (natp width)
+                  (svl::integerp-of-svex x)
+                  (1- (expt 2 width))))))
 
   ///
 
@@ -1354,6 +1365,21 @@
                                 )
                                (loghead-upper-lemma))))))
   
+
+  (local
+   (defthm left-shift-of-logtail-same-size
+      (implies (natp size)
+               (<= (* (EXPT 2 size) (logtail size x))
+                   (ifix x)))
+      :hints (("Goal"
+               :in-theory (e/d (logtail ifix) ())))))
+
+  (local
+   (defthm dummy-equiv-rw
+     (implies (and (<= x big)
+                   (<= med x))
+              (<= med big))))
+              
   
   (local
    (use-arithmetic-5 nil))
@@ -1374,6 +1400,20 @@
               :in-theory (e/d (sv::svex-p sv::4vec-p) ())))))
 
 
+  
+   
+  
+  ;; (local
+  ;;  (defthm logtail-to-ash
+  ;;    (implies (natp size)
+  ;;             (equal (logtail size x)
+  ;;                    (ash x (- size))))
+  ;;    :hints (("Goal"
+  ;;             :in-theory (e/d* (bitops::ihsext-inductions
+  ;;                               bitops::ihsext-recursive-redefs)
+  ;;                              ())))))
+
+  
 
   (defret <fn>-is-correct
     (implies (and (sv::svex-p x)
@@ -1395,7 +1435,8 @@
              :induct (MAX-VAL-OF-INT-VECTOR-ADDER X)
              :expand ((MAX-VAL-OF-INT-VECTOR-ADDER X)
                       (:free (args) (SV::SVEX-APPLY$ 'INT-VECTOR-ADDER args))
-                      (:free (args) (SV::SVEX-APPLY 'sv::concat args)))
+                      (:free (args) (SV::SVEX-APPLY 'sv::concat args))
+                      (:free (args) (SV::SVEX-APPLY 'sv::Rsh args)))
              :in-theory (e/d (sv::4vec-part-select
                               sv::4vec
                               sv::svex-call->fn
@@ -1403,15 +1444,27 @@
                               ;;sv::svex-apply$
                               int-vector-adder
                               sv::4vec-concat
+                              sv::4vec-rsh
+                              sv::4vec-shift-core 
                               (:type-prescription acl2::expt-type-prescription-integerp-base)
                               (:type-prescription acl2::expt-type-prescription-nonnegative-base)
                               (:type-prescription acl2::expt-type-prescription-positive-base)
                               (:rewrite acl2::|(< (+ (- c) x) y)|)
-                              SV::4VEC->UPPER
-                              sv::4vec->lower)
-                             (svl::svex-eval$-width-of-svex-is-correct)))
+                              ;;SV::4VEC->UPPER
+                              ;;sv::4vec->lower
+                              )
+                             (;;RIGHT-SHIFT-TO-LOGTAIL
+                              ;;sv::4vec-equal
+                              left-shift-of-logtail-same-size
+                              svl::svex-eval$-of-integerp-of-svex-is-correct
+                              svl::svex-eval$-width-of-svex-is-correct)))
             (and stable-under-simplificationp
-                 '(:use ((:instance svl::svex-eval$-of-integerp-of-svex-is-correct
+                 '(:use ((:instance svl::svex-eval$-width-of-svex-is-correct
+                                    (svl::x x)
+                                    (svl::env (rp-evlt env-term a))
+                                    (SVL::FREE-VAR-WIDTH (SVL::WIDTH-OF-SVEX
+                                                          X)))
+                         (:instance svl::svex-eval$-of-integerp-of-svex-is-correct
                                     (svl::big-env env)
                                     (svl::x x)
                                     (svl::env-term env-term)
@@ -1419,11 +1472,14 @@
                          (:instance to-unsigned-byte-p
                                     (x (SV::SVEX-EVAL$ X (rp-evlt env-term a)))
                                     (size (SVL::WIDTH-OF-SVEX X)))
-                         (:instance svl::svex-eval$-width-of-svex-is-correct
-                                    (svl::x x)
-                                    (svl::env (rp-evlt env-term a))
-                                    (SVL::FREE-VAR-WIDTH (SVL::WIDTH-OF-SVEX X)))))
-                 ))))
+                         ))
+                 )
+            (and stable-under-simplificationp
+                 '(:use ((:instance left-shift-of-logtail-same-size
+                                    (size (cadr x))
+                                    (x (SV::SVEX-EVAL$ (CADDR X)
+                                         (RP-EVLT ENV-TERM A)))))))
+            )))
 
 
 (local

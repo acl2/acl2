@@ -2159,6 +2159,21 @@
                                    :prepwork
                                    ())
 
+
+(svl::create-integerp-of-svex-extn :fn half-adder
+                                   :prepwork
+                                   ((Local (in-theory (enable fa-s-chain
+                                                              fa-c-chain
+                                                              svl::4vec-concat$
+                                                              SV::4VEC-CONCAT)))))
+
+(svl::create-integerp-of-svex-extn :fn full-adder
+                                   :prepwork
+                                   ((Local (in-theory (enable fa-s-chain
+                                                              fa-c-chain
+                                                              svl::4vec-concat$
+                                                              SV::4VEC-CONCAT)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

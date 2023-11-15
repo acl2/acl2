@@ -371,6 +371,21 @@
     (& (mv term nil))))
 
 (progn
+  (defun was-full-adder (x)
+    (declare (ignorable x))
+    t)
+  (defthm was-full-adder-thm
+    (was-full-adder (full-adder x y z)))
+
+  
+  (defun was-half-adder (x)
+    (declare (ignorable x))
+    t)
+
+  (defthm was-half-adder-thm
+    (was-half-adder (half-adder x y))))
+
+(progn
   ;; Rw rules to open 
   (def-rp-rule int-vector-adder-lst-w/carry-no-lst
     (implies (integerp carry)
@@ -386,18 +401,78 @@
                 (+ (ifix (sv::4vec-fix x))
                    (int-vector-adder-lst rest)))
          )
+    :hints (("goal"
+             :in-theory (e/d (int-vector-adder-lst
+                              int-vector-adder) ()))))
+
+  (def-rp-rule int-vector-adder-lst-opener-3-elements
+    (and (equal (int-vector-adder-lst (list x y z))
+                (+ (ifix (sv::4vec-fix x))
+                   (ifix (sv::4vec-fix y))
+                   (ifix (sv::4vec-fix z))))
+         )
+    :rw-direction :both
+    :hints (("goal"
+             :in-theory (e/d (int-vector-adder-lst
+                              int-vector-adder) ()))))
+
+  (def-rp-rule int-vector-adder-lst-opener-3-bitp
+    (implies (and (bitp x) (bitp y) (bitp z))
+             (equal (int-vector-adder-lst (list x y z))
+                    (full-adder x y z)
+                    ))
+    :rw-direction :both
     :hints (("Goal"
-             :in-theory (e/d (INT-VECTOR-ADDER-LST
-                              INT-VECTOR-ADDER) ()))))
+             :in-theory (e/d (bitp) ()))))
+  (rp-attach-sc int-vector-adder-lst-opener-3-bitp
+                was-full-adder-thm)
+
+
+
+  (def-rp-rule int-vector-adder-lst-half-1
+    (implies (and (bitp x)
+		  (bitp y))
+	     (equal (svl::bits (+ x y) start size)
+		    (svl::bits (half-adder x y)
+			       start size)))
+  
+    :hints (("Goal"
+	     :in-theory (e/d (bitp) ()))))
+  (rp-attach-sc int-vector-adder-lst-half-1
+                was-half-adder-thm)
+
+  (def-rp-rule int-vector-adder-lst-half-2
+    (implies (and (bitp x)
+		  (bitp y))
+	     (equal (sv::4vec-rsh size (+ x y))
+		    (sv::4vec-rsh size (half-adder x y))))
+  
+    :hints (("Goal"
+	     :in-theory (e/d (bitp) ()))))
+  (rp-attach-sc int-vector-adder-lst-half-2
+                was-half-adder-thm)
+  
+  (def-rp-rule int-vector-adder-lst-half-3
+    (implies (and (bitp x)
+		  (bitp y))
+	     (equal (SV::4VEC-XDET (+ x y))
+		    (SV::4VEC-XDET (half-adder x y))))
+  
+    :hints (("Goal"
+	     :in-theory (e/d (bitp) ()))))
+
+  (rp-attach-sc int-vector-adder-lst-half-3
+                was-half-adder-thm)
+  
 
   (def-rp-rule int-vector-adder-lst-carry-opener
     (and (equal (int-vector-adder-lst-w/carry lst carry)
                 (+ (ifix (sv::4vec-fix carry))
                    (int-vector-adder-lst lst)))
          )
-    :hints (("Goal"
+    :hints (("goal"
              :in-theory (e/d (int-vector-adder-lst-w/carry
-                              INT-VECTOR-ADDER) ())))))
+                              int-vector-adder) ())))))
 
 
 ;; !!!!! When  deciding   to  prove  the   below,  make  sure  to   change  the
