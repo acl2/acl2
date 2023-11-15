@@ -16,7 +16,7 @@
 (local (include-book "channels2"))
 (local (include-book "open-input-channel-p"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/lists-light/cdr" :dir :system))
+;(local (include-book "kestrel/lists-light/cdr" :dir :system))
 
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-byte$))
