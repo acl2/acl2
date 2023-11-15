@@ -46,7 +46,7 @@
                   (bvxor (+ 1 high2 (- low))
                          (slice high2 low y)
                          (slice high2 low x))))
-  :hints (("Goal"; :use ()
+  :hints (("Goal"
            :in-theory (e/d (;bvxor
                             )
                            ( ;BVXOR-TRIM-ARG1 ;BVXOR-CANCEL BVXOR-CANCEL-alt BVXOR-CANCEL-cross-2

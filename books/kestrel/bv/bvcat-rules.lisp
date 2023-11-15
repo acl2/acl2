@@ -130,7 +130,7 @@
                          (bvand highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvand lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :use (:instance bvand-of-bvcat-arg3)
+  :hints (("Goal" :use bvand-of-bvcat-arg3
            :in-theory (disable bvand-of-bvcat-arg3))))
 
 (defthm bvand-of-bvcat-gen
@@ -212,7 +212,7 @@
                          (bvor highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :use (:instance bvor-of-bvcat-arg3)
+  :hints (("Goal" :use bvor-of-bvcat-arg3
            :in-theory (disable bvor-of-bvcat-arg3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -383,7 +383,7 @@
            (equal (bvmult size2 (bvcat n z size y) x)
                   (bvmult size2 y x)))
   :hints (("Goal"
-           :use (:instance bvmult-of-bvcat-low-arg3)
+           :use bvmult-of-bvcat-low-arg3
            :in-theory (disable bvmult-of-bvcat-low-arg3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

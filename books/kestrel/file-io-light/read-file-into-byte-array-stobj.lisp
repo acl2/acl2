@@ -21,7 +21,7 @@
 (local (include-book "read-byte-dollar"))
 (local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/lists-light/cons" :dir :system))
+;(local (include-book "kestrel/lists-light/cons" :dir :system))
 
 (local (in-theory (disable assoc-equal
                            channel-contents

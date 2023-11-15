@@ -302,7 +302,7 @@
                   (and (unsigned-byte-p 32 k)
                        (equal (rightrotate32 amt k)
                               (bvchop 32 val)))))
-  :hints (("Goal" :use (:instance equal-of-constant-and-leftrotate)
+  :hints (("Goal" :use equal-of-constant-and-leftrotate
            :in-theory (e/d (leftrotate32 rightrotate32 natp) (equal-of-constant-and-leftrotate)))))
 
 ;; maybe there is not a nice blast rule.  just use the definition?
