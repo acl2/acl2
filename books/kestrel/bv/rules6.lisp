@@ -346,7 +346,7 @@
            (equal (bvmult size k x)
                   (bvand size k (repeatbit size x))))
   :hints (("Goal" :in-theory (enable repeatbit)
-           :use ((:instance usb1-cases)))))
+           :use (usb1-cases))))
 
 ;; ;bozo why did this arise?
 ;; (IMPLIES (SIGNED-BYTE-P 32 X)
@@ -630,7 +630,7 @@
                 (posp xsize))
            (equal (+ x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
-  :hints (("Goal" :use (:instance plus-becomes-bvplus)
+  :hints (("Goal" :use plus-becomes-bvplus
            :in-theory (e/d (unsigned-byte-p-forced) (plus-becomes-bvplus)))))
 
 (defthmd plus-becomes-bvplus-arg2-free
@@ -640,6 +640,6 @@
                 (posp xsize))
            (equal (+ y x)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
-  :hints (("Goal" :use (:instance plus-becomes-bvplus-arg1-free)
+  :hints (("Goal" :use plus-becomes-bvplus-arg1-free
            :in-theory (e/d (<-of-constant-when-unsigned-byte-p-size-param)
                            ( plus-becomes-bvplus-arg1-free)))))

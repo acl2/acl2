@@ -261,7 +261,7 @@
                 (integerp n))
            (equal (bvand size x (+ -1 (expt 2 n)))
                   (bvchop size x)))
-  :hints (("Goal" :use (:instance bvand-with-mask-basic-gen)
+  :hints (("Goal" :use bvand-with-mask-basic-gen
            :in-theory (disable bvand-with-mask-basic-gen))))
 
 ;drop in favor of a general trim rule?

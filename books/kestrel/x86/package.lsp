@@ -190,6 +190,19 @@
     x86isa::!rip
 
     x86isa::ctri
+
+    ;; floating-point stuff:
+    x86isa::fp-decode
+    x86isa::sse-cmp
+    x86isa::sse-cmp-special
+    x86isa::mxcsrbits->daz$inline x86isa::mxcsrbits->daz$
+    x86isa::mxcsrbits->dm$inline x86isa::mxcsrbits->dm$
+    x86isa::mxcsrbits->im$inline x86isa::mxcsrbits->im$
+    x86isa::*op-ucomi*
+    x86isa::snan
+    x86isa::qnan
+    x86isa::indef
+
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -221,6 +234,7 @@
     boolif
     boolor
     booland
+    loghead
     logapp
     logmask
 

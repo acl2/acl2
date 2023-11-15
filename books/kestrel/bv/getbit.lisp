@@ -98,7 +98,7 @@
 (defthm unsigned-byte-p-of-getbit
   (implies (posp size)
            (unsigned-byte-p size (getbit n x)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-1-of-getbit)
+  :hints (("Goal" :use unsigned-byte-p-1-of-getbit
            :in-theory (disable unsigned-byte-p-from-bounds))))
 
 ;gen the 1
@@ -164,7 +164,7 @@
                 (equal 1 free))
            (equal (getbit 0 x)
                   x))
-  :hints (("Goal" :use (:instance getbit-identity)
+  :hints (("Goal" :use getbit-identity
            :in-theory (disable getbit-identity))))
 
 ;; In case we are using bitp instead of unsigned-byte-p as the normal form.
@@ -471,7 +471,7 @@
                   (if (< n i)
                       0
                     (getbit (- n i) x))))
-  :hints (("Goal" :use (:instance getbit-of-*-of-expt-arg1)
+  :hints (("Goal" :use getbit-of-*-of-expt-arg1
            :in-theory (disable getbit-of-*-of-expt-arg1))))
 
 ;; ;yuck! can loop!

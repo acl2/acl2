@@ -67,7 +67,7 @@
   (implies (syntaxp (quotep y))
            (equal (bitor x y)
                   (bitor y x)))
-  :hints (("Goal" :use (:instance bitor-commutative)
+  :hints (("Goal" :use bitor-commutative
            :in-theory (disable bitor-commutative))))
 
 ;drop once we commute
@@ -82,7 +82,7 @@
 (defthm bitor-of-1-arg1
   (equal (bitor 1 x)
          1)
-  :hints (("Goal" :use (:instance bitor-of-1-arg2)
+  :hints (("Goal" :use bitor-of-1-arg2
            :in-theory (disable bitor-of-1-arg2))))
 
 (defthm bitor-of-0-arg1
