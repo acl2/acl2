@@ -2157,7 +2157,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           term))
       rp-state))
     ((or (eq (car term) 'quote)
-         (eq (car term) 'list)) ;; a list instance is created by a meta rule,
+         #|(eq (car term) 'list)|#) ;; a list instance is created by a meta rule,
      ;; do not try to rewrite it again.
      (mv term rp-state))
     ((should-not-rw dont-rw);; exit right away if said to not rewrite
