@@ -1,7 +1,7 @@
 ; Counting the number of 1 bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,19 +27,6 @@
 (local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 
 (local (in-theory (disable expt)))
-
-;move
-(defthmd nonnegative-integer-quotient-by-2
-  (implies (natp x)
-           (equal (nonnegative-integer-quotient x 2)
-                  (floor x 2)))
-  :hints (("Goal" :in-theory (enable floor))))
-
-(defthmd floor-by-2
-  (implies (integerp i)
-           (equal (floor i 2)
-                  (logtail 1 i)))
-  :hints (("Goal" :in-theory (enable logtail))))
 
 ;; Count the number of 1 bits in X, which should be SIZE bits wide.  The result
 ;; fits in B bits where B is (integer-length SIZE).
@@ -68,7 +55,7 @@
 ;;            (<= (logcount x) n))
 ;;   :hints (("Goal" :induct (logcount-induct x n)
 ;;            :do-not '(generalize eliminate-destructors)
-;;            :in-theory (enable expt acl2::expt-of-+))))
+;;            :in-theory (enable expt expt-of-+))))
 
 ;; ;;sanity check
 ;; (defthmd bvcount-is-logcount
@@ -115,7 +102,7 @@
                 (natp size)
                 (integerp size2))
            (unsigned-byte-p size2 (bvcount size x)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcount)
+  :hints (("Goal" :use unsigned-byte-p-of-bvcount
            :in-theory (disable unsigned-byte-p-of-bvcount))))
 
 (defthm bvcount-of-bvchop
@@ -219,7 +206,7 @@
            (equal (bvcount size (bvchop xsize x))
                   (bvcount size x)))
   :hints (("Goal" :use (:instance split-bv
-                                  (y (bvchop size x))
+                                  (x (bvchop size x))
                                   (n size)
                                   (m xsize))
            :in-theory (disable bvcat-of-getbit-and-x-adjacent

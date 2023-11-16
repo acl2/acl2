@@ -34,11 +34,12 @@
 (include-book "centaur/misc/u32-listp" :dir :system)
 (include-book "centaur/misc/s32-listp" :dir :system)
 (include-book "std/alists/alist-keys" :dir :system)
+(include-book "is-xor")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
-(local (in-theory (disable nth update-nth)))
+(local (in-theory (disable nth update-nth acl2::resize-list-when-atom)))
 (local (include-book "centaur/fty/fixequiv" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 ;; Each node has a next and a head.  The head is the lowest-numbered node in
@@ -93,6 +94,19 @@
   :guard-hints (("goal" :in-theory (enable classes-size)))
   :inline t
   (lnfix (class-headsi node classes)))
+
+(define node-class-head ((node natp) classes)
+  :guard (< node (classes-size classes)) ;; (classes-sized (+ 1 node) classes)
+  :returns (class-head natp :rule-classes :type-prescription)
+  (b* ((node (lnfix node))
+       (head (node-head node classes)))
+    (if (<= head node)
+        head
+      node))
+  ///
+  (defret node-class-head-bound
+    (<= (node-class-head node classes) (nfix node))
+    :rule-classes :linear))
 
 (define classes-wellformed-aux ((n natp)
                                 classes)
@@ -242,6 +256,54 @@
         (cons n (class-list next classes))))
     (list n)))
 
+(define class-size ((n natp) classes)
+  :guard (and (< n (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  (b* ((n (lnfix n))
+       (next (node-next n classes))
+       ((when (and (mbt (and (< n (classes-size classes))
+                             (classes-wellformed classes)))
+                   (< n next)))
+        (+ 1 (class-size next classes))))
+    1))
+
+(define classes-record-sizes ((n natp) acl2::natarr classes)
+  :guard (and (<= n (classes-size classes))
+              (classes-wellformed classes))
+  :returns (new-natarr)
+  (b* (((when (zp n)) acl2::natarr)
+       (n (1- n))
+       (head (node-head n classes))
+       ((when (< head n))
+        (classes-record-sizes n acl2::natarr classes))
+       (size (class-size n classes))
+       (acl2::natarr (if (>= size (acl2::nats-length acl2::natarr))
+                         (acl2::resize-nats (+ 1 size (ash size -1)) acl2::natarr)
+                       acl2::natarr))
+       (acl2::natarr (acl2::set-nat size (+ 1 (acl2::get-nat size acl2::natarr)) acl2::natarr)))
+    (classes-record-sizes n acl2::natarr classes)))
+
+(define classes-report-sizes-aux ((n natp) acl2::natarr)
+  :measure (nfix (- (acl2::nats-length acl2::natarr) (nfix n)))
+  (if (mbe :logic (zp (- (acl2::nats-length acl2::natarr) (nfix n)))
+           :exec (<= (acl2::nats-length acl2::natarr) n))
+      nil
+    (prog2$ (b* ((count (acl2::get-nat n acl2::natarr)))
+              (and (< 0 count)
+                   (cw "~x0 classes of size ~x1~%" count n)))
+            (classes-report-sizes-aux (1+ (lnfix n)) acl2::natarr))))
+
+(define classes-report-sizes (classes)
+  :guard (classes-wellformed classes)
+  (b* (((acl2::local-stobjs acl2::natarr)
+        (mv acl2::natarr null))
+       (acl2::natarr (classes-record-sizes (classes-size classes) acl2::natarr classes)))
+    (classes-report-sizes-aux 2 acl2::natarr)
+    (mv acl2::natarr nil)))
+       
+       
+
 
 (define class-consistent ((n natp) (head natp) classes)
   :guard (and (< n (classes-size classes))
@@ -263,20 +325,26 @@
                 ;;         n next))
                 )))))
 
+(define class-check-consistency ((n natp) classes)
+  :guard (and (< n (classes-size classes))
+              (classes-wellformed classes))
+  (b* ((n (lnfix n))
+       (head (node-head n classes))
+       ((when (<= head n))
+        (or (<= n (node-head head classes))
+            (cw "Node ~x0's head node ~x1 has head (tail) node ~x2, which is less than that node~%"
+                n head (node-head head classes)))))
+    (or (class-consistent (node-next n classes) n classes)
+        (cw "inconsistent class: head ~x0 next ~x1 tail ~x2~%"
+            n (node-next n classes) (node-head n classes)))))
+
+
 (define classes-check-consistency ((n natp) classes)
   :guard (and (<= n (classes-size classes))
               (classes-wellformed classes))
   (b* (((when (zp n)) t)
-       (n (1- n))
-       (head (node-head n classes))
-       ((when (<= head n))
-        (and (or (<= n (node-head head classes))
-                 (cw "Node ~x0's head node ~x1 has head (tail) node ~x2, which is less than that node~%"
-                     n head (node-head head classes)))
-             (classes-check-consistency n classes))))
-    (and (or (class-consistent (node-next n classes) n classes)
-             (cw "inconsistent class: head ~x0 next ~x1 tail ~x2~%"
-                 n (node-next n classes) (node-head n classes)))
+       (n (1- n)))
+    (and (class-check-consistency n classes)
          (classes-check-consistency n classes))))
        
     
@@ -535,6 +603,616 @@
             :induct t))))
 
 
+
+(define classes-init-empty-aux ((n natp) classes)
+  :guard (<= n (classes-size classes))
+  :guard-hints (("goal" :in-theory (enable acl2::maybe-natp)))
+  :guard-debug t
+  :returns (new-classes)
+  (b* (((when (zp n)) classes)
+       (n-1 (1- n))
+       (classes (node-set-head n-1 n-1 classes))
+       (classes (node-set-next n-1 n-1 classes)))
+    (classes-init-empty-aux (1- n) classes))
+  ///
+  (std::defret classes-size-of-classes-init-empty-aux
+    (<= (classes-size classes)
+        (classes-size new-classes))
+    :rule-classes :linear)
+
+  (std::defret classes-size-of-classes-init-empty-aux-equal
+    (implies (<= (nfix n) (classes-size classes))
+             (equal (classes-size new-classes)
+                    (classes-size classes))))
+
+  ;; (local (std::defret len-of-arrays-prserved-of-classes-init-empty-aux-equal
+  ;;          (implies (<= (nfix n) (classes-size classes))
+  ;;                   (and (equal (len (nth *class-nextsi* new-classes))
+  ;;                               (len (nth *class-nextsi* classes)))
+  ;;                        (equal (len (nth *class-headsi* new-classes))
+  ;;                               (len (nth *class-headsi* classes)))))
+  ;;          :hints(("Goal" :in-theory (enable classes-size node-set-next node-set-head)))))
+
+  (std::defret classes-init-empty-aux-preserves-upper
+    (implies (<= (nfix n) (nfix m))
+             (and (equal (node-head m new-classes)
+                         (node-head m classes))
+                  (equal (node-next m new-classes)
+                         (node-next m classes)))))
+
+  (std::defret classes-wellformed-aux-of-classes-init-empty-aux
+    (implies (<= (nfix n) (classes-size classes))
+             (classes-wellformed-aux n new-classes))
+    :hints(("Goal" :in-theory (enable classes-wellformed-aux
+                                      ;; node-set-head node-head
+                                      ;; node-set-next node-next
+                                      ;; classes-size
+                                      )
+            :induct t)))
+
+  (std::defret classes-wellformed-of-classes-init-empty-aux
+    (implies (equal (nfix n) (classes-size classes))
+             (classes-wellformed new-classes))
+    :hints(("Goal" :in-theory (e/d (classes-wellformed) (<fn>)
+                                      ;; node-set-head node-head
+                                      ;; node-set-next node-next
+                                      ;; classes-size
+                                      )))))
+
+
+(define add-equiv-class-to-other ((head natp) (class natp) classes)
+  :guard (and (< class (classes-size classes))
+              (< head class)
+              (classes-wellformed classes))
+  ;; Class is a node which may be in an equiv class.  Set the heads of all
+  ;; nodes in its equiv class to head, and set the head of head (tail) of the
+  ;; class to the last node.  This is appropriate when class is greater than
+  ;; the greatest node currently in the equivalence class of head.  Otherwise,
+  ;; need to use join-equiv-classes-aux. Note that we don't update the nexts
+  ;; here, because class is already assumed to be fully linked. So before
+  ;; calling, the last node of head's current class should have been set to
+  ;; class.
+  :measure (nfix (- (classes-size classes) (nfix class)))
+  :returns (new-classes)
+  (b* ((ok (mbt (and (< (lnfix class) (classes-size classes))
+                     (classes-wellformed classes))))
+       (classes (node-set-head class head classes))
+       (next (node-next class classes))
+       ((when (and (mbt ok)
+                   (> next (lnfix class))))
+        (add-equiv-class-to-other head next classes)))
+    ;; class is the last node in the new class; set the head of head to it
+    (b* ((classes (node-set-head head class classes)))
+      (or (class-check-consistency head classes)
+          (cw "add-equiv-class-to-other: inconsistent class: head ~x0 next ~x1 tail ~x2~%"
+              head (node-next head classes) (node-head head classes))
+          (break$))
+      classes))
+  ///
+  (defret classes-size-of-<fn>
+    (implies (and (< (nfix class) (classes-size classes))
+                  (< (nfix head) (nfix class))
+                  (classes-wellformed classes))
+             (equal (classes-size new-classes)
+                    (classes-size classes))))
+
+  (defret classes-wellformed-of-<fn>
+    (implies (and (< (nfix class) (classes-size classes))
+                  (< (nfix head) (nfix class))
+                  (classes-wellformed classes))
+             (classes-wellformed new-classes))))
+       
+
+(define join-equiv-classes-aux ((head natp)
+                                (prev natp)
+                                (class1 natp)
+                                (class2 natp)
+                                classes)
+  :guard (and (<= head prev)
+              (< prev class1)
+              (< prev class2)
+              (< class1 (classes-size classes))
+              (< class2 (classes-size classes))
+              (classes-wellformed classes))
+  :measure (+ (nfix (- (classes-size classes) (nfix class1)))
+              (nfix (- (classes-size classes) (nfix class2))))
+  :returns (new-classes)
+  (b* ((class1 (lnfix class1))
+       (class2 (lnfix class2))
+       (prev   (lnfix prev))
+       (ok (mbt (and (< prev (classes-size classes))
+                     (< class1 (classes-size classes))
+                     (< class2 (classes-size classes))
+                     (classes-wellformed classes))))
+       ((when (eql class1 class2))
+        ;; same class already -- shouldn't happen
+        classes)
+       ((mv class1 class2)
+        (if (< class1 class2)
+            (mv class1 class2)
+          (mv class2 class1)))
+       (classes (node-set-next prev class1 classes))
+       (classes (node-set-head class1 (lnfix head) classes))
+       (next (node-next class1 classes))
+       
+       ((when (and (mbt ok)
+                   (> next class1)))
+        (join-equiv-classes-aux head class1 next class2 classes))
+
+       ;; class1 is the last node in its class.  Set its next to class2 and use
+       ;; add-equiv-class-to-other to finish.
+       (classes (node-set-next class1 class2 classes)))
+    (add-equiv-class-to-other head class2 classes))
+  ///
+  (fty::deffixequiv join-equiv-classes-aux
+    :hints (("goal" :induct (join-equiv-classes-aux head prev class1 class2 classes)
+             :expand ((:free (head) (join-equiv-classes-aux head prev class1 class2 classes))
+                      (:free (prev) (join-equiv-classes-aux head prev class1 class2 classes))
+                      (:free (class1) (join-equiv-classes-aux head prev class1 class2 classes))
+                      (:free (class2) (join-equiv-classes-aux head prev class1 class2 classes))))))
+
+  (defret classes-size-of-<fn>
+    (implies (and (<= (nfix head) (nfix prev))
+                  (< (nfix prev) (nfix class1))
+                  (< (nfix prev) (nfix class2))
+                  (< (nfix class1) (classes-size classes))
+                  (< (nfix class2) (classes-size classes))
+                  (classes-wellformed classes))
+             (equal (classes-size new-classes)
+                    (classes-size classes))))
+
+  (defret classes-wellformed-of-<fn>
+    (implies (and (<= (nfix head) (nfix prev))
+                  (< (nfix prev) (nfix class1))
+                  (< (nfix prev) (nfix class2))
+                  (< (nfix class1) (classes-size classes))
+                  (< (nfix class2) (classes-size classes))
+                  (classes-wellformed classes))
+             (classes-wellformed new-classes))))
+
+  
+(define join-equiv-classes ((head1 natp)
+                            (head2 natp)
+                            classes)
+  :guard (and (< head1 (classes-size classes))
+              (< head2 (classes-size classes))
+              (classes-wellformed classes))
+  :returns (new-classes)
+  (b* ((head1 (lnfix head1))
+       (head2 (lnfix head2)))
+    (if (< head1 head2)
+        (b* ((next (node-next head1 classes))
+             ((when (< head1 next))
+              (join-equiv-classes-aux head1 head1 next head2 classes))
+             ;; head1 is a singleton class
+             (classes (node-set-next head1 head2 classes)))
+          (add-equiv-class-to-other head1 head2 classes))
+      (if (< head2 head1)
+          (b* ((next (node-next head2 classes))
+               ((when (< head2 next))
+                (join-equiv-classes-aux head2 head2 next head1 classes))
+               ;; head2 is a singleton class
+               (classes (node-set-next head2 head1 classes)))
+            (add-equiv-class-to-other head2 head1 classes))
+        ;; already the same class
+        classes)))
+  ///
+  (defret classes-size-of-<fn>
+    (implies (and (< (nfix head1) (classes-size classes))
+                  (< (nfix head2) (classes-size classes))
+                  (classes-wellformed classes))
+             (equal (classes-size new-classes)
+                    (classes-size classes))))
+
+  (defret classes-wellformed-of-<fn>
+    (implies (and (< (nfix head1) (classes-size classes))
+                  (< (nfix head2) (classes-size classes))
+                  (classes-wellformed classes))
+             (classes-wellformed new-classes))))
+
+(define classes-join-miters-rec ((lit litp) mark aignet classes)
+  ;; If lit is a non-negated AND gate recur into its children.
+  ;; If it is an XOR/IFF, join the equivalence classes of the two.
+  :guard (and (fanin-litp lit aignet)
+              (<= (num-fanins aignet) (classes-size classes))
+              (classes-wellformed classes)
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (mv new-mark new-classes)
+  :measure (lit->var lit)
+  :verify-guards nil
+  (b* ((id (lit->var lit))
+       ((when (eql 1 (get-bit id mark)))
+        (mv mark classes))
+       (mark (set-bit id 1 mark))
+       ((unless (int= (id->type id aignet) (gate-type)))
+        (mv mark classes))
+       ((mv is-xor child1 child2) (id-is-xor id aignet))
+       ((when is-xor)
+        (b* ((classes (join-equiv-classes (node-class-head (lit->var child1) classes)
+                                          (node-class-head (lit->var child2) classes)
+                                          classes)))
+          (mv mark classes)))
+       ;; AND gate
+       ((when (eql (lit->neg lit) 1))
+        (mv mark classes))
+       ;; non-negated AND -- recur on branches
+       ((mv mark classes)
+        (classes-join-miters-rec (gate-id->fanin0 id aignet) mark aignet classes)))
+    (classes-join-miters-rec (gate-id->fanin1 id aignet) mark aignet classes))
+  ///
+  
+  (defret mark-len-of-<fn>
+    (implies (and (equal len (len mark))
+                  (< (lit->var lit) len))
+             (equal (len new-mark) len)))
+
+  (defret mark-len-incr-of-<fn>
+    (<= (len mark) (len new-mark))
+    :rule-classes :linear)
+  
+  (defret classes-size/wellformed-of-<fn>
+    (implies (and (<= (num-fanins aignet) (classes-size classes))
+                  (classes-wellformed classes))
+             (and (equal (classes-size new-classes)
+                         (classes-size classes))
+                  (classes-wellformed new-classes))))
+
+  (verify-guards classes-join-miters-rec
+    :hints(("Goal" :in-theory (enable aignet-idp)))))
+
+
+
+(define classes-join-po-miters ((n natp) mark aignet classes)
+  :guard (and (<= n (num-outs aignet))
+              (<= (num-fanins aignet) (classes-size classes))
+              (classes-wellformed classes)
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (mv new-mark new-classes)
+  (b* (((when (zp n)) (mv mark classes))
+       (n-1 (1- n))
+       (fanin-id (lit->var (outnum->fanin n-1 aignet)))
+       ((mv mark classes) (classes-join-miters-rec (make-lit fanin-id 0) mark aignet classes)))
+    (classes-join-po-miters n-1 mark aignet classes))
+  ///
+  
+  (defret classes-size/wellformed-of-<fn>
+    (implies (and (<= (num-fanins aignet) (classes-size classes))
+                  (classes-wellformed classes))
+             (and (equal (classes-size new-classes)
+                         (classes-size classes))
+                  (classes-wellformed new-classes))))
+  
+  (defret mark-len-of-<fn>
+    (implies (and (equal len (len mark))
+                  (< (fanin-count aignet) len)
+                  (<= (nfix n) (num-outs aignet)))
+             (equal (len new-mark) len)))
+
+  (defret mark-len-incr-of-<fn>
+    (<= (len mark) (len new-mark))
+    :rule-classes :linear))
+
+
+(define classes-join-nxst-miters ((n natp) mark aignet classes)
+  :guard (and (<= n (num-regs aignet))
+              (<= (num-fanins aignet) (classes-size classes))
+              (classes-wellformed classes)
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (mv new-mark new-classes)
+  (b* (((when (zp n)) (mv mark classes))
+       (n-1 (1- n))
+       (fanin-id (lit->var (regnum->nxst n-1 aignet)))
+       ((mv mark classes) (classes-join-miters-rec (make-lit fanin-id 0) mark aignet classes)))
+    (classes-join-nxst-miters n-1 mark aignet classes))
+  ///
+  
+  (defret classes-size/wellformed-of-<fn>
+    (implies (and (<= (num-fanins aignet) (classes-size classes))
+                  (classes-wellformed classes))
+             (and (equal (classes-size new-classes)
+                         (classes-size classes))
+                  (classes-wellformed new-classes))))
+  
+  (defret mark-len-of-<fn>
+    (implies (and (equal len (len mark))
+                  (< (fanin-count aignet) len)
+                  (<= (nfix n) (num-regs aignet)))
+             (equal (len new-mark) len)))
+
+  (defret mark-len-incr-of-<fn>
+    (<= (len mark) (len new-mark))
+    :rule-classes :linear))
+
+
+
+(define classes-init-out-miters (classes aignet)
+  ;; Finds mitered pairs in outputs and turns them into the initial equiv classes.
+  :returns (new-classes)
+  :prepwork ((local (defthm classes-size-of-resize
+                      (implies (equal (len a) (len b))
+                               (equal (classes-size (update-nth *class-headsi*
+                                                                a
+                                                                (update-nth *class-nextsi* b classes)))
+                                      (len a)))
+                      :hints(("Goal" :in-theory (enable classes-size)))))
+             (local (in-theory (disable acl2::lower-bound-of-len-when-sublistp
+                                        acl2::resize-list-when-atom))))
+  :guard-hints (("goal" :do-not-induct t))
+  ;; :guard-hints ((and stable-under-simplificationp
+  ;;                    '(:in-theory (enable classes-sized))))
+  (b* ((size (num-fanins aignet))
+       (classes (resize-class-nexts size classes))
+       (classes (resize-class-heads size classes))
+       ((when (zp size)) classes)
+       ((acl2::local-stobjs  mark)
+        (mv mark classes))
+       (mark (resize-bits size mark))
+       (classes (classes-init-empty-aux (num-fanins aignet) classes))
+       ((mv mark classes) (classes-join-po-miters (num-outs aignet) mark aignet classes))
+       ((mv mark classes)
+        (classes-join-nxst-miters (num-regs aignet) mark aignet classes)))
+    (classes-report-sizes classes)
+    (classes-check-consistency (num-fanins aignet) classes)
+    (mv mark classes))
+       
+  ///
+
+  (std::defret classes-size-of-<fn>
+    (equal (classes-size new-classes) (+ 1 (fanin-count aignet))))
+
+  (std::defret classes-wellformed-of-<fn>
+    (classes-wellformed new-classes)
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable classes-wellformed)
+                  :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
+
+
+(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes)
+  ;; N is the maximum first index, offset is the offset of the second index.
+  :guard (and (<= (+ offset n) (num-outs aignet))
+              (<= idx n)
+              (<= (num-fanins aignet) (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (nfix n) (nfix idx)))
+  :returns new-classes
+  (b* (((when (mbe :logic (zp (- (nfix n) (nfix idx)))
+                   :exec (eql idx n)))
+        classes)
+       (id1 (lit->var (outnum->fanin idx aignet)))
+       (id2 (lit->var (outnum->fanin (+ (lnfix idx) (lnfix offset)) aignet)))
+       (classes (join-equiv-classes (node-class-head id1 classes)
+                                    (node-class-head id2 classes)
+                                    classes)))
+    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes))
+  ///
+  
+  (defret classes-size/wellformed-of-<fn>
+    (implies (and (<= (num-fanins aignet) (classes-size classes))
+                  (classes-wellformed classes))
+             (and (equal (classes-size new-classes)
+                         (classes-size classes))
+                  (classes-wellformed new-classes)))))
+
+
+(define classes-init-n-outputs ((n natp)
+                                (lastp "if nonnil, use the last 2N outputs instead of the first 2N outputs")
+                                classes aignet)
+  ;; Pairs the first N outputs with the next N outputs to form the initial equivalence classes.
+  :returns (new-classes)
+  :prepwork ((local (defthm classes-size-of-resize
+                      (implies (equal (len a) (len b))
+                               (equal (classes-size (update-nth *class-headsi*
+                                                                a
+                                                                (update-nth *class-nextsi* b classes)))
+                                      (len a)))
+                      :hints(("Goal" :in-theory (enable classes-size)))))
+             (local (in-theory (disable acl2::lower-bound-of-len-when-sublistp
+                                        acl2::resize-list-when-atom))))
+  :guard-hints (("goal" :do-not-induct t))
+  ;; :guard-hints ((and stable-under-simplificationp
+  ;;                    '(:in-theory (enable classes-sized))))
+  (b* ((size (num-fanins aignet))
+       (classes (resize-class-nexts size classes))
+       (classes (resize-class-heads size classes))
+       ((when (zp size)) classes)
+       (classes (classes-init-empty-aux (num-fanins aignet) classes))
+       ((when (> (* 2 (lnfix n)) (num-outs aignet)))
+        (cw " **********  TRANSFORMATION FAILED **********~%~
+Fraig transform was attempted with option ~x0 set to ~x1. ~
+When this value is a natural number N, there must be at least 2*N outputs, ~
+so in this case the aignet should have at least ~x2 outputs, but in fact it has ~x3.~%"
+            :n-outputs-are-initial-equiv-classes
+            (lnfix n) (* 2 (lnfix n)) (num-outs aignet))
+        classes)
+       (classes (if lastp
+                    (b* ((start (- (num-outs aignet) (* 2 (lnfix n)))))
+                      (classes-join-po-pairs start n (+ start (lnfix n)) aignet classes))
+                  (classes-join-po-pairs 0 n n aignet classes))))
+    (classes-report-sizes classes)
+    (classes-check-consistency (num-fanins aignet) classes)
+    classes)
+       
+  ///
+
+  (std::defret classes-size-of-<fn>
+    (equal (classes-size new-classes) (+ 1 (fanin-count aignet))))
+
+  (std::defret classes-wellformed-of-<fn>
+    (classes-wellformed new-classes)
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable classes-wellformed)
+                  :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(define classes-init-miters-rec ((lit litp) bitarr mark aignet)
+  ;; If lit is a non-negated AND gate recur into its children.
+  ;; If it is a negated AND gate or variable, mark it in bitarr
+  ;; If it is an XOR/IFF, mark its children in bitarr.
+  :guard (and (fanin-litp lit aignet)
+              (<= (num-fanins aignet) (bits-length bitarr))
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (mv new-bitarr new-mark)
+  :measure (lit->var lit)
+  :verify-guards nil
+  (b* ((id (lit->var lit))
+       ((when (eql 1 (get-bit id mark)))
+        (mv bitarr mark))
+       (mark (set-bit id 1 mark))
+       ((unless (int= (id->type id aignet) (gate-type)))
+        (b* ((bitarr (set-bit id 1 bitarr)))
+          (mv bitarr mark)))
+       ((mv is-xor child1 child2) (id-is-xor id aignet))
+       ((when is-xor)
+        (b* ((bitarr (set-bit (lit->var child1) 1 bitarr))
+             (bitarr (set-bit (lit->var child2) 1 bitarr)))
+          (mv bitarr mark)))
+       ;; AND gate
+       ((when (eql (lit->neg lit) 1))
+        (b* ((bitarr (set-bit id 1 bitarr)))
+          (mv bitarr mark)))
+       ;; non-negated AND -- recur on branches
+       ((mv bitarr mark)
+        (classes-init-miters-rec (gate-id->fanin0 id aignet) bitarr mark aignet)))
+    (classes-init-miters-rec (gate-id->fanin1 id aignet) bitarr mark aignet))
+  ///
+  (defret bitarr-len-of-<fn>
+    (implies (and (equal len (len bitarr))
+                  (< (lit->var lit) len))
+             (equal (len new-bitarr) len)))
+
+  (defret bitarr-len-incr-of-<fn>
+    (<= (len bitarr) (len new-bitarr))
+    :rule-classes :linear)
+  
+  (defret mark-len-of-<fn>
+    (implies (and (equal len (len mark))
+                  (< (lit->var lit) len))
+             (equal (len new-mark) len)))
+
+  (defret mark-len-incr-of-<fn>
+    (<= (len mark) (len new-mark))
+    :rule-classes :linear)
+  
+  (verify-guards classes-init-miters-rec
+    :hints(("Goal" :in-theory (enable aignet-idp)))))
+
+
+(define classes-init-po-miters-bitarr ((n natp) bitarr mark aignet)
+  :guard (and (<= n (num-outs aignet))
+              (<= (num-fanins aignet) (bits-length bitarr))
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (mv new-bitarr new-mark)
+  (b* (((when (zp n)) (mv bitarr mark))
+       (n-1 (1- n))
+       (fanin-id (lit->var (outnum->fanin n-1 aignet)))
+       ((mv bitarr mark) (classes-init-miters-rec (make-lit fanin-id 0) bitarr mark aignet)))
+    (classes-init-po-miters-bitarr n-1 bitarr mark aignet))
+  ///
+  (defret bitarr-len-of-<fn>
+    (implies (and (equal len (len bitarr))
+                  (< (fanin-count aignet) len)
+                  (<= (nfix n) (num-outs aignet)))
+             (equal (len new-bitarr) len)))
+
+  (defret bitarr-len-incr-of-<fn>
+    (<= (len bitarr) (len new-bitarr))
+    :rule-classes :linear)
+  
+  (defret mark-len-of-<fn>
+    (implies (and (equal len (len mark))
+                  (< (fanin-count aignet) len)
+                  (<= (nfix n) (num-outs aignet)))
+             (equal (len new-mark) len)))
+
+  (defret mark-len-incr-of-<fn>
+    (<= (len mark) (len new-mark))
+    :rule-classes :linear))
+
+(define classes-init-nxst-miters-bitarr ((n natp) bitarr mark aignet)
+  :guard (and (<= n (num-regs aignet))
+              (<= (num-fanins aignet) (bits-length bitarr))
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (mv new-bitarr new-mark)
+  (b* (((when (zp n)) (mv bitarr mark))
+       (n-1 (1- n))
+       (fanin-id (lit->var (regnum->nxst n-1 aignet)))
+       ((mv bitarr mark) (classes-init-miters-rec (make-lit fanin-id 0) bitarr mark aignet)))
+    (classes-init-nxst-miters-bitarr n-1 bitarr mark aignet))
+  ///
+  (defret bitarr-len-of-<fn>
+    (implies (and (equal len (len bitarr))
+                  (< (fanin-count aignet) len)
+                  (<= (nfix n) (num-regs aignet)))
+             (equal (len new-bitarr) len)))
+
+  (defret bitarr-len-incr-of-<fn>
+    (<= (len bitarr) (len new-bitarr))
+    :rule-classes :linear)
+  
+  (defret mark-len-of-<fn>
+    (implies (and (equal len (len mark))
+                  (< (fanin-count aignet) len)
+                  (<= (nfix n) (num-regs aignet)))
+             (equal (len new-mark) len)))
+
+  (defret mark-len-incr-of-<fn>
+    (<= (len mark) (len new-mark))
+    :rule-classes :linear))
+
+(define classes-init-out-miters-old (classes aignet)
+  ;; Calculates equiv classes filtered on only nodes that are part of the output miter.
+  :returns (new-classes)
+  :prepwork ((local (defthm classes-size-of-resize
+                      (implies (equal (len a) (len b))
+                               (equal (classes-size (update-nth *class-headsi*
+                                                                a
+                                                                (update-nth *class-nextsi* b classes)))
+                                      (len a)))
+                      :hints(("Goal" :in-theory (enable classes-size)))))
+             (local (in-theory (disable acl2::lower-bound-of-len-when-sublistp
+                                        acl2::resize-list-when-atom))))
+  :guard-hints (("goal" :do-not-induct t))
+  ;; :guard-hints ((and stable-under-simplificationp
+  ;;                    '(:in-theory (enable classes-sized))))
+  (b* ((size (num-fanins aignet))
+       (classes (resize-class-nexts size classes))
+       (classes (resize-class-heads size classes))
+       ((when (zp size)) classes)
+       ((acl2::local-stobjs bitarr mark)
+        (mv bitarr mark classes))
+       (bitarr (resize-bits size bitarr))
+       (mark (resize-bits size mark))
+       ((mv bitarr mark) (classes-init-po-miters-bitarr (num-outs aignet) bitarr mark aignet))
+       ((mv bitarr mark) (classes-init-nxst-miters-bitarr (num-regs aignet) bitarr mark aignet))
+       ;; Always flag the constant node so that it will be in the class.
+       (bitarr (set-bit 0 1 bitarr))
+       (classes (classes-init-filtered-aux size nil bitarr classes)))
+    (mv bitarr mark classes))
+  ///
+
+  (std::defret classes-size-of-<fn>
+    (equal (classes-size new-classes) (+ 1 (fanin-count aignet))))
+
+  (std::defret classes-wellformed-of-<fn>
+    (classes-wellformed new-classes)
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable classes-wellformed)
+                  :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
+
+
 (define classes-init-pos-bitarr ((n natp) bitarr aignet)
   :guard (and (<= n (num-outs aignet))
               (<= (num-fanins aignet) (bits-length bitarr)))
@@ -609,6 +1287,8 @@
     :hints((and stable-under-simplificationp
                 '(:in-theory (enable classes-wellformed)
                   :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
+
+
 
 (local (in-theory (disable unsigned-byte-p)))
 

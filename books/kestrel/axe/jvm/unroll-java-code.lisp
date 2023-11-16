@@ -439,6 +439,7 @@
                            (desugar-nice-output-indicatorp maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
+       ;; Decide which symbolic execution rule to use:
        (symbolic-execution-rules (if (eq :auto steps)
                                      (if (eq branches :smart)
                                          (run-until-return-from-stack-height-rules-smart)
@@ -447,20 +448,19 @@
                                          (er hard 'unroll-java-code-fn "Illegal value for :branches: ~x0.  Must be :smart or :split." branches)))
                                    (symbolic-execution-rules-for-run-n-steps) ;todo: add a :smart analogue of this rule set
                                    ))
-       ((mv erp default-rule-alist)
-        (make-rule-alist (append (unroll-java-code-rules)
-                                 symbolic-execution-rules)
-                         (w state)))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ;; todo: if rule-alists are applied, should we at least include the symbolic-execution-rules?
        (rule-alists (or rule-alists ;use user-supplied rule-alists, if any
                         ;; by default, we use 1 rule-alist:
-                        (list default-rule-alist)))
+                        ;; todo: pre-compute each possibility here (but what about priorities?)
+                        (list (make-rule-alist! (append (unroll-java-code-rules)
+                                                        symbolic-execution-rules)
+                                                (w state)))))
        ;; maybe add some rules (can't call add-to-rule-alists because these are not theorems in the world):
        (rule-alists (extend-rule-alists2 ;; Maybe include the ignore-XXX rules:
-                     (append (and ignore-exceptions *ignore-exception-axe-rule-set*)
-                             (and ignore-errors *ignore-error-state-axe-rule-set*))
-                     rule-alists
-                     (w state)))
+                      (append (and ignore-exceptions *ignore-exception-axe-rule-set*)
+                              (and ignore-errors *ignore-error-state-axe-rule-set*))
+                      rule-alists
+                      (w state)))
        ;; Include any :extra-rules given:
        ((mv erp rule-alists) (add-to-rule-alists extra-rules rule-alists (w state)))
        ((when erp) (mv erp nil nil nil nil nil state))
@@ -495,7 +495,7 @@
        ;;; Prune irrelevant branches, if instructed:
        ;; TODO: Consider calling prune-dag-approximately here:
        ((mv erp dag state)
-        (if (if (booleanp prune-branches-precisely)
+        (if (if (booleanp prune-branches-precisely) ;todo: consider calling something like maybe-prune-dag-precisely, but we have a rule-alist here
                 prune-branches-precisely
               ;; prune-branches is a natp (a limit on the size):
               (dag-or-quotep-size-less-thanp dag prune-branches-precisely))
@@ -506,6 +506,7 @@
                                                  nil ; interpreted-function-alist
                                                  monitored-rules
                                                  call-stp
+                                                 t ; check-fnsp
                                                  state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))

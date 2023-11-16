@@ -1,7 +1,7 @@
 ; BV Library: bitxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,20 @@
            (type integer y)
            (xargs :type-prescription (bitp (bitxor x y))))
   (bvxor 1 x y))
+
+;; This version requires bitp inputs and so may be faster and may also help
+;; catch bugs via stricter guard obligations.  We intened to keep this enabled
+;; for reasoning.
+(defun bitxor$ (x y)
+  (declare (xargs :guard (and (bitp x) (bitp y))
+                  :split-types t
+                  :type-prescription (bitp (bitxor$ x y)))
+           (type bit x y))
+  (mbe :logic (bitxor x y)
+       :exec (the bit (logxor x y))))
+
+(defthm bitp-of-bitxor
+  (bitp (bitxor x y)))
 
 (defthm bitxor-associative
   (equal (bitxor (bitxor x y) z)
@@ -41,7 +55,7 @@
   (implies (syntaxp (quotep y))
            (equal (bitxor x y)
                   (bitxor y x)))
-  :hints (("Goal" :use (:instance bitxor-commutative)
+  :hints (("Goal" :use bitxor-commutative
            :in-theory (disable bitxor-commutative))))
 
 (defthmd bitxor-combine-constants
@@ -205,10 +219,10 @@
 
 (defthm bitxor-of-*-of-2 ;todo: gen the 2
   (implies (integerp bit2)
-           (equal (acl2::bitxor bit1 (* 2 bit2))
-                  (acl2::bitxor bit1 0)))
-  :hints (("Goal" :in-theory (e/d (acl2::bitxor acl2::bvxor getbit)
-                                  (acl2::bvxor-1-becomes-bitxor bvchop-1-becomes-getbit slice-becomes-getbit)))))
+           (equal (bitxor bit1 (* 2 bit2))
+                  (bitxor bit1 0)))
+  :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit)
+                                  (bvxor-1-becomes-bitxor bvchop-1-becomes-getbit slice-becomes-getbit)))))
 
 (defthm equal-of-0-and-bitxor
   (equal (equal 0 (bitxor x y))
@@ -216,8 +230,7 @@
                 (getbit 0 y)))
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x))
-                   (equal 1 (getbit 0 x)))
-           :in-theory (enable))))
+                   (equal 1 (getbit 0 x))))))
 
 (defthm equal-of-bitxor-same
   (equal (equal x (bitxor x y))
@@ -229,7 +242,7 @@
   (equal (equal x (bitxor y x))
          (and (unsigned-byte-p 1 x)
               (equal 0 (getbit 0 y))))
-  :hints (("Goal" :use (:instance equal-of-bitxor-same)
+  :hints (("Goal" :use equal-of-bitxor-same
            :in-theory (e/d (bitxor-commutative) (equal-of-bitxor-same)))))
 
 (defthm equal-of-bitxor-and-bitxor-same-2
@@ -280,7 +293,7 @@
   (implies (posp size)
            (equal (bitxor y (bvchop size x))
                   (bitxor y x)))
-  :hints (("Goal" :use (:instance bitxor-of-bvchop-arg1)
+  :hints (("Goal" :use bitxor-of-bvchop-arg1
            :in-theory (disable bitxor-of-bvchop-arg1))))
 
 (defthm bitxor-of-bvxor-arg1

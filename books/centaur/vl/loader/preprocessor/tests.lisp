@@ -531,7 +531,7 @@ assign b = `foo(c /* blah, la, la */
 // more comments, la, la
 );"
  :output "
-assign b =  c  /* la, la */ +b ;"
+assign b =  c /* la, la */ +b ;"
  :defines (simple-test-defines nil))
 
 (preprocessor-basic-test
@@ -934,7 +934,7 @@ assign w =  "bar";
 
 
     
-    FOO_FN((null), (("oink") ), (( 5 ) ), "test.v", 7, (($psprintf("lalala %x %y", xxx, yyy) ) ));
+    FOO_FN((null), (("oink")), (( 5)), "test.v", 7, (($psprintf("lalala %x %y", xxx, yyy))));
 """})
 
 

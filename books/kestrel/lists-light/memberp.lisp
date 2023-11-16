@@ -52,7 +52,7 @@
 
 (defthm memberp-of-cons-same
   (memberp x (cons x y))
-  :hints (("Goal" :in-theory (enable acl2::memberp))))
+  :hints (("Goal" :in-theory (enable memberp))))
 
 (defthm memberp-of-append
   (equal (memberp a (append x y))

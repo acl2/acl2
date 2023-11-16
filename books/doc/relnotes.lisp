@@ -189,6 +189,11 @@
      @(':untranslate t'), removes some unused @(tsee let) bindings and @(tsee
      let*) bindings that formerly remained.")
 
+   (xdoc::p
+    "The @(tsee apt::restrict) transformation has been improved
+     to generate more robust proofs,
+     which get around certain ACL2 heuristics.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
@@ -311,6 +316,12 @@
 
    (xdoc::p
     "Added some theorems.")
+
+   (xdoc::p
+    "Disabled some rules.")
+
+   (xdoc::p
+    "Improved documentation and organization.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -510,6 +521,25 @@
      install-not-normalized-event) have been tweaked to use the so-called
      <i>unnormalized</i> body, which can avoid errors for functions that call
      @(tsee wormhole-eval).")
+
+   (xdoc::p
+    "The utilities @(tsee er-soft-logic) and @(tsee er-soft+) are unchanged.
+     But one might consider avoiding those two utilities now that @('(er soft
+     ...)') may be used in @(':')@(tsee logic) mode (however, at the cost of
+     generating @(see guard) proof obligations).")
+
+   (xdoc::p
+    "The book @('system/top.lisp') has changed, the main effect being that
+     although it still includes the book @('fmx-cw') in that directory, that
+     book has changed significantly.  The lemmas formerly in @('fmx-cw') are
+     now in a new book, @('fmx-cw-support'), which is not included in
+     @('system/top.lisp').")
+
+   (xdoc::p
+    "The behavior of function @('computed-hint-rewrite') in @(see
+     community-book) @('books/misc/computed-hint-rewrite.lisp') has been
+     tweaked to be properly in sync with that of source function
+     @('simplify-clause').")
 
    ))
 

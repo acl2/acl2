@@ -61,18 +61,18 @@
   :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthmd integerp-of-nth-when-bv-arrayp
-  (implies (and (acl2::bv-arrayp freewidth freelen val)
+  (implies (and (bv-arrayp freewidth freelen val)
                 (natp n)
                 (< n freelen))
            (integerp (nth n val)))
-  :hints (("Goal" :in-theory (enable acl2::bv-arrayp))))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthmd <=-of-0-and-nth-when-bv-arrayp
-  (implies (and (acl2::bv-arrayp freewidth freelen val)
+  (implies (and (bv-arrayp freewidth freelen val)
                 (natp n)
                 (< n freelen))
            (<= 0 (nth n val)))
-  :hints (("Goal" :in-theory (enable acl2::bv-arrayp))))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 ;; Do not remove: helps justify the correctness of intersect-types in Axe.
 (defthm bv-arrayp-when-bv-arrayp-narrower

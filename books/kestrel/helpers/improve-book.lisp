@@ -28,6 +28,7 @@
 ;; TOOD: Handle defsection
 ;; TODO: Handle define (prepwork, ///, etc.)
 ;; TODO: Handle defrule
+;; TODO: Handle with-output
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
@@ -177,7 +178,7 @@
       (if skipp
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
-          (submit-event (if skip-proofsp event `(skip-proofs ,event))
+          (submit-event (if skip-proofsp `(skip-proofs ,event) event)
                         nil ;print
                         nil state)
           (if erp
@@ -318,28 +319,6 @@
              description
              (theorems-with-new-hints defthm-variant name term (rest alist))))))
 
-;; Returns a string
-(defun decode-breakage-type (bt)
-  (declare (xargs :guard (consp bt)
-                  :mode :program))
-  (let ((type (car bt))
-        (arg (cadr bt)))
-    (case type
-      (:remove-by (concatenate 'string "Drop :by " (print-to-string arg)))
-      (:remove-cases (concatenate 'string "Drop :cases " (print-to-string arg)))
-      (:remove-induct (concatenate 'string "Drop :induct " (print-to-string arg)))
-      (:remove-nonlinearp (concatenate 'string "Drop :nonlinearp  " (print-to-string arg)))
-      (:remove-do-not (concatenate 'string "Drop :do-not " (print-to-string arg)))
-      (:remove-do-not-item (concatenate 'string "Drop :do-not item " (print-to-string arg)))
-      (:remove-expand (concatenate 'string "Drop :expand " (print-to-string arg)))
-      (:remove-expand-item (concatenate 'string "Drop :expand item " (print-to-string arg)))
-      (:remove-use (concatenate 'string "Drop :use " (print-to-string arg)))
-      (:remove-use-item (concatenate 'string "Drop :use item " (print-to-string arg)))
-      (:remove-enable-item (concatenate 'string "Drop enable of " (print-to-string arg)))
-      (:remove-disable-item (concatenate 'string "Drop disable of " (print-to-string arg)))
-      (:remove-in-theory (concatenate 'string "Drop :in-theory " (print-to-string arg)))
-      (otherwise (er hard? 'decode-breakage-type "Unknown breakage type: ~x0." bt)))))
-
 ;; Returns an alist from new keyword-value-lists to decsriptions
 (defun remove-hint-parts-and-label-aux (n ways keyword-value-list goal-name)
   (declare (xargs :mode :program))
@@ -347,17 +326,17 @@
           (not (mbt (natp ways)))
           (<= ways n))
       nil
-    (mv-let (breakage-type new-keyword-value-list)
-      (break-hint-keyword-value-list-in-nth-way n keyword-value-list)
+    (mv-let (removal-type new-keyword-value-list)
+      (remove-from-hint-keyword-value-list-in-nth-way n keyword-value-list)
       (acons new-keyword-value-list
-             ;; the breakage-type currently include the "remove":
-             (concatenate 'string (newline-string) "  For \"" goal-name "\": " (decode-breakage-type breakage-type))
+             ;; the removal-type currently include the "remove":
+             (concatenate 'string (newline-string) "  For \"" goal-name "\": " (decode-removal-type removal-type))
              (remove-hint-parts-and-label-aux (+ 1 n) ways keyword-value-list goal-name)))))
 
 ;; Returns an alist from new keyword-value-lists to decsriptions
 (defun remove-hint-parts-and-label (keyword-value-list goal-name)
   (declare (xargs :mode :program))
-  (let ((ways (num-ways-to-break-hint-keyword-value-list keyword-value-list)))
+  (let ((ways (num-ways-to-remove-from-hint-keyword-value-list keyword-value-list)))
     (remove-hint-parts-and-label-aux 0 ways keyword-value-list goal-name)))
 
 (defun replace-hints-for-goal-name (hints goal-name new-keyword-value-list)
@@ -623,7 +602,7 @@
     ((defun defund) (improve-defun-event event rest-events print state))
     ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
      )
-    ((encapsulate) (submit-event event nil nil state) ; todo: handle!
+    ((encapsulate) (submit-event event nil nil state) ; todo: handle! may be easy if no constrained functions and no local events
      )
     (include-book (improve-include-book-event event rest-events initial-included-books print state) )
     ((in-package) (improve-in-package-event event rest-events print state))

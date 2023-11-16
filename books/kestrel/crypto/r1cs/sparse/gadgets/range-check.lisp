@@ -46,7 +46,7 @@
 
 (in-theory (disable mv-nth)) ;todo
 
-(local (in-theory (enable acl2::natp-of-+-of-1-alt)))
+(local (in-theory (enable acl2::natp-of-+-of-1-alt acl2::slice-becomes-getbit)))
 
 (local
  (defthm symbolp-of-if
@@ -1896,7 +1896,7 @@
            (equal (bvchop i c)
                   (+ -1 (expt 2 i))))
   :hints (("subGoal *1/5" :use (:instance acl2::split-bv
-                                          (y (BVCHOP I C))
+                                          (x (BVCHOP I C))
                                           (n i)
                                           (m (+ -1 i)))
            :in-theory (enable bvcat acl2::logapp))))

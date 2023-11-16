@@ -121,8 +121,7 @@
   :hints (("Goal" :in-theory (enable open-channels-p))))
 
 (defthm typed-io-listp-of-cdddr-of-assoc-equal-and-cadr-of-cadr-of-assoc-equal
-  (implies (and (symbolp channel)
-                (open-channel-listp channels))
+  (implies (open-channel-listp channels)
            (typed-io-listp (cdddr (assoc-equal channel channels))
                            (cadr (cadr (assoc-equal channel channels)))))
   :hints (("Goal" :in-theory (enable open-channel-listp channel-headerp typed-io-listp))))

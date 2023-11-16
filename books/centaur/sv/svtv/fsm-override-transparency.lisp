@@ -42,7 +42,11 @@
     (and (ec-call (svex-alist-overridekey-transparent-p x.values overridekeys x.values))
          (ec-call (svex-alist-overridekey-transparent-p x.nextstate overridekeys x.values))))
   ///
-  (defcong set-equiv equal (base-fsm-overridekey-transparent-p x overridekeys) 2))
+  (defcong set-equiv equal (base-fsm-overridekey-transparent-p x overridekeys) 2)
+
+  (defthm base-fsm-overridekey-transparent-p-of-svarlist-change-override
+    (equal (base-fsm-overridekey-transparent-p x (svarlist-change-override overridekeys type))
+           (base-fsm-overridekey-transparent-p x overridekeys))))
 
 (define base-fsm-partial-monotonic ((params svarlist-p)
                                     (x base-fsm-p))

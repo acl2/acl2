@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See also firstn.lisp for a related function.
+
 (in-theory (disable take))
 
 ;; Param name changed to match std.
@@ -299,3 +301,13 @@
            (< (acl2-count (take n l)) (acl2-count l)))
   :rule-classes ((:linear :trigger-terms ((acl2-count (take n l)))))
   :hints (("Goal" :in-theory (enable take))))
+
+(defthm nth-when-equal-of-take-and-constant
+  (implies (and (equal k (take m x))
+                (syntaxp (and (quotep k)
+                              (not (quotep x)))) ;gen to that k is a smaller term?
+                (< n m)
+                (natp n)
+                (natp m))
+           (equal (nth n x)
+                  (nth n k))))

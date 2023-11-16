@@ -1,0 +1,177 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/ewd11xx/EWD1186.PDF
+
+|#
+
+(defstub dn (* *) => *)
+
+(skip-proofs
+ (property dn-idempotent (x :all)
+           (== (dn x x) x)))
+
+(skip-proofs
+ (property dn-symmetric (x y :all)
+           (== (dn x y) (dn y x))))
+
+(skip-proofs
+ (property dn-assoc (x y z :all)
+           (== (dn (dn x y) z)
+               (dn x (dn y z)))))
+
+;; define relation <<== in terms of dn
+(definec <<== (x y :all) :boolean
+  (== (dn x y) x))
+
+
+;; We use Leibniz's Principle in the form
+;; (=> (^ (== a b) (f a)) (f b))
+;; Here, f is the partial application (dn _ b)
+(property leibniz-dn (a b c :all)
+          (=> (^ (== a b)
+                 (== (dn a c) a))
+              (== (dn b c) a)))
+
+Lemma pong:
+(=> (^ (== (dn w x) w)
+       (== (dn w y) w))
+    (== (dn w (dn x y)) w))
+
+Context:
+C1. (== (dn w x) w)
+C2. (== (dn w y) w)
+
+Derived Context:
+D1. (== (dn (dn w x) y) w) { C1, C2, Lemma leibniz-dn ((a w) (b (dn w x)) (c y)) }
+D2. (== (dn w (dn x y)) w) { D1, Lemma dn-assoc ((x w) (y x) (z y)) }
+
+Goal: (== (dn w (dn x y)) w)
+
+QED
+
+
+Lemma ping-1:
+(=> (== (dn w (dn x y)) w)
+    (== (dn w x) w))
+
+Context:
+C1. (== (dn w (dn x y)) w)
+
+Derived Context:
+D1. (^ (== (dn w (dn x y)) w) (== (dn w (dn x y)) w)) { C1, PL }
+D2. (^ (== (dn w (dn x y)) w) (== (dn w (dn (dn x x) y)) w))
+    { D1, Lemma dn-idempotent }
+D3. (^ (== (dn w (dn x y)) w) (== (dn w (dn x (dn x y))) w))
+    { D2, Lemma dn-assoc ((y x) (z y)) }
+D4. (^ (== (dn w (dn x y)) w) (== (dn w (dn x (dn y x))) w))
+    { D3, Lemma dn-symmetric }
+D5. (^ (== (dn w (dn x y)) w) (== (dn w (dn (dn x y) x)) w))
+    { D4, Lemma dn-assoc ((z x)) }
+D6. (^ (== (dn w (dn x y)) w) (== (dn (dn w (dn x y)) x) w))
+    { D5, Lemma dn-assoc ((x w) (y (dn x y)) (z x)) }
+D7. (== (dn w x) w) { D6, Lemma leibniz-dn ((a (dn w (dn x y))) (b w) (c x)) }
+
+Goal: (== (dn w x) w)
+
+QED
+
+Lemma ping-2:
+(=> (== (dn w (dn x y)) w)
+    (== (dn w y) w))
+
+Context:
+C1. (== (dn w (dn x y)) w)
+
+Derived Context:
+D1. (^ (== (dn w (dn x y)) w) (== (dn w (dn x y)) w)) { C1, PL }
+D2. (^ (== (dn w (dn x y)) w) (== (dn w (dn x (dn y y))) w))
+    { D1, Lemma dn-idempotent }
+D3. (^ (== (dn w (dn x y)) w) (== (dn w (dn (dn x y) y)) w))
+    { D2, Lemma dn-assoc ((z y)) }
+D4. (^ (== (dn w (dn x y)) w) (== (dn (dn w (dn x y)) y) w))
+    { D3, Lemma dn-assoc ((x w) (y (dn x y)) (z y)) }
+D5. (== (dn w y) w) { D4, Lemma leibniz-dn ((a (dn w (dn x y))) (b w) (c y)) }
+
+Goal: (== (dn w y) w)
+
+QED
+
+Lemma ping:
+(=> (== (dn w (dn x y)) w)
+    (^ (== (dn w x) w)
+       (== (dn w y) w)))
+
+Context:
+C1. (== (dn w (dn x y)) w)
+
+Derived Context:
+D1. (== (dn w x) w) { C1, Lemma ping-1 }
+D2. (== (dn w y) w) { C1, Lemma ping-2 }
+D3. (^ (== (dn w x) w)
+       (== (dn w y) w))
+{ D1, D2, PL }
+
+Goal: (^ (== (dn w x) w)
+         (== (dn w y) w))
+
+QED
+
+
+Lemma l2:
+(== (== (dn w (dn x y)) w)
+    (^ (== (dn w x) w)
+       (== (dn w y) w)))
+
+Goal: (== (== (dn w (dn x y)) w)
+          (^ (== (dn w x) w)
+             (== (dn w y) w)))
+
+Proof:
+(== (== (dn w (dn x y)) w)
+    (^ (== (dn w x) w)
+       (== (dn w y) w)))
+== {PL}
+(^ (=> (== (dn w (dn x y)) w)
+       (^ (== (dn w x) w)
+          (== (dn w y) w)))
+   (=> (^ (== (dn w x) w)
+          (== (dn w y) w))
+       (== (dn w (dn x y)) w)))
+={ Lemma ping, PL }
+(=> (^ (== (dn w x) w)
+       (== (dn w y) w))
+    (== (dn w (dn x y)) w))
+={ Lemma pong }
+t
+
+QED
+
+
+Conjecture 0:
+(== (<<== w (dn x y))
+    (^ (<<== w x) (<<== w y)))
+
+Goal: (== (<<== w (dn x y))
+          (^ (<<== w x) (<<== w y)))
+
+Proof:
+(^ (<<== w x) (<<== w y))
+== { Def <<== }
+(^ (== (dn w x) w) (<<== w y))
+== { Def <<== }
+(^ (== (dn w x) w) (== (dn w y) w))
+;; Leibniz
+== { Lemma l2 }
+(== (dn w (dn x y)) w)
+== { Def <<== }
+(<<== w (dn x y))
+
+QED
+
+
+

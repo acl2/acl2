@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,19 +36,31 @@
 
 ;; TODO: add an option to enforce a rewrite step limit in the lifter, for debugging?  May require a change to the rewriter.
 
+;; TODO: Allow the :monitor option to be or include :debug, as we do for other tools.
+
 ;; TODO: Switch to using a simpler rewriter, that doesn't depend on skip-proofs
 
+;; TODO: Consider updating this to use the new normal forms, at least for 64-bit mode
+
 (include-book "misc/defp" :dir :system)
-(include-book "kestrel/x86/tools/support-axe" :dir :system)
+(include-book "kestrel/x86/x86-changes" :dir :system)
+(include-book "kestrel/x86/support" :dir :system)
+(include-book "support-axe")
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
+(include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules32" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules32" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
-(include-book "kestrel/x86/tools/rule-lists" :dir :system)
-(include-book "kestrel/x86/tools/assumptions" :dir :system)
-(include-book "kestrel/x86/tools/assumptions32" :dir :system)
-(include-book "kestrel/x86/tools/assumptions64" :dir :system)
-(include-book "kestrel/x86/tools/conditions" :dir :system)
-(include-book "kestrel/x86/tools/read-over-write-rules" :dir :system)
-(include-book "kestrel/x86/tools/write-over-write-rules" :dir :system)
+(include-book "rule-lists")
+(include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/assumptions" :dir :system)
+(include-book "kestrel/x86/assumptions32" :dir :system)
+(include-book "kestrel/x86/assumptions64" :dir :system)
+(include-book "kestrel/x86/floats" :dir :system)
+(include-book "kestrel/x86/conditions" :dir :system)
 (include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
@@ -56,13 +68,14 @@
 ;(include-book "kestrel/axe/rules2" :dir :system) ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "axe/basic-rules" :dir :kestrel-acl2)
 (include-book "kestrel/bv/arith" :dir :system) ;todo
+(include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 ;(include-book "kestrel/arithmetic-light/mod" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../dags2") ; for compose-term-and-dags
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
-(include-book "kestrel/x86/tools/read-and-write" :dir :system)
+(include-book "kestrel/x86/read-and-write" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
@@ -246,7 +259,9 @@
                      (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
                      (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
 
-(defun symbolic-execution-rules ()
+;; For the loop lifter
+(defun symbolic-execution-rules-loop ()
+  (declare (xargs :guard t))
   '(;;run-until-exit-segment-or-hit-loop-header-opener-1
     run-until-exit-segment-or-hit-loop-header-opener-2
     run-until-exit-segment-or-hit-loop-header-base-case-1
@@ -255,7 +270,7 @@
     run-until-exit-segment-or-hit-loop-header-of-myif-split
     run-until-exit-segment-or-hit-loop-header-of-if))
 
-(acl2::ensure-rules-known (symbolic-execution-rules))
+(acl2::ensure-rules-known (symbolic-execution-rules-loop))
 
 ;; Essay on Variables: The main variable used to represent the state is x86
 ;; (once we support nested loops, I guess we'll use x86_0, x86_1, etc.).  Other
@@ -292,7 +307,7 @@
 
 ;; todo: move this?
 (defun lifter-rules2 ()
-  (append ;or put these in symbolic-execution-rules ?:
+  (append ;or put these in symbolic-execution-rules-loop ?:
    '(stack-height-increased-wrt
      stack-height-decreased-wrt
      get-pc
@@ -317,7 +332,7 @@
      x86p-of-write ;move
      read-of-write-same ;move
      get-flag-of-write
-     xr-of-write
+     xr-of-write-when-not-mem
      read-of-xw-irrel
      64-bit-modep-of-write
      program-at-of-write
@@ -325,15 +340,11 @@
      mod-of-plus-reduce-constants
      mv-nth-1-of-rb-becomes-read
      mv-nth-1-of-wb-becomes-write
-     xr-of-write
      write-of-xw-irrel
      read-of-xw-irrel
      read-of-set-flag
      x86p-of-write
-     64-bit-modep-of-write
-     program-at-of-write
      set-flag-of-write
-     alignment-checking-enabled-p-of-write
      read-of-write-disjoint2
      write-of-write-same
      read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
@@ -349,10 +360,13 @@
 ;(x86isa::lifter-rules)
    ))
 
+;; some of these (e.g., about non-loop symbolic execution functions) may not be needed:
+
 (acl2::ensure-rules-known (lifter-rules2))
 
 (acl2::ensure-rules-known (lifter-rules32))
 (acl2::ensure-rules-known (lifter-rules64))
+(acl2::ensure-rules-known (lifter-rules64-new))
 
 ;; Eventually we may add these rules about read to lifter-rules2.
 (defun invariant-preservation-rules ()
@@ -705,14 +719,14 @@
                   (second triple))
             (get-xw-pairs (rest xw-triples))))))
 
-;; Keep only the numbytes and base-addrs (drop the values)
-(defun get-write-pairs (write-triples)
-  (if (endp write-triples)
-      nil
-    (let ((triple (first write-triples)))
-      (cons (list (first triple)
-                  (second triple))
-            (get-write-pairs (rest write-triples))))))
+;; ;; Keep only the numbytes and base-addrs (drop the values)
+;; (defun get-write-pairs (write-triples)
+;;   (if (endp write-triples)
+;;       nil
+;;     (let ((triple (first write-triples)))
+;;       (cons (list (first triple)
+;;                   (second triple))
+;;             (get-write-pairs (rest write-triples))))))
 
 ;; Keep only the addresses (drop the numbytes and value)
 (defun get-write-addresses (write-triples)
@@ -987,7 +1001,7 @@
   (if (endp write-triples)
       (mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
     (b* ((write-triple (first write-triples))
-         (n (first write-triple))  ;often quoted
+         (n (first write-triple)) ; must be quoted
          (base-addr (second write-triple))
          (value-term (third write-triple))
          (updated-state-term `(write ,n ,base-addr (nth ',next-param-number :loop-function-result) ,updated-state-term))
@@ -1292,7 +1306,7 @@
  ;; TODO: What answers are needed?
  (defun lift-loop (loop-top-state-dag ;should be standing at a loop header
                    loop-depth
-                   generated-events
+                   generated-events ; an accumulator
                    next-loop-num
                    assumptions ;over x86_0 and perhaps other vars (see the Essay on Variables) ?
 ;                   original-rsp-term ; the RSP for the initial state (which the assumptions describe)
@@ -1434,30 +1448,11 @@
         (loop-body-assumptions (cons pc-assumption loop-invariants))
         (- (cw "(Assumptions for symbolically executing the loop body: ~x0)~%" (untranslate-terms loop-body-assumptions nil (w state))))
 
-
-        ;; Perform the symbolic execution of the loop body:
-        ((mv erp loop-body-dag generated-events
-             ;; & ;generated-rules
-             next-loop-num
-             state
-            )
-         (lift-code-segment loop-depth
-                            generated-events
-                            next-loop-num
-                            this-loop-offsets-no-header
-                            loop-body-assumptions
-                            extra-rules
-                            remove-rules
-                            rules-to-monitor
-                            loop-alist
-                            print
-                            measure-alist
-                            base-name
-                            lifter-rules
-                            state
-                           ))
-        ((when erp)
-         (mv erp nil nil nil state))
+        ;; Symbolically execute the loop body:
+        ((mv erp loop-body-dag generated-events next-loop-num state)
+         (lift-code-segment loop-depth generated-events next-loop-num this-loop-offsets-no-header loop-body-assumptions extra-rules
+                            remove-rules rules-to-monitor loop-alist print measure-alist base-name lifter-rules state))
+        ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
         (loop-body-term (dag-to-term loop-body-dag)) ;todo: watch for blow-up here
         (- (cw "(Loop body term: ~x0)~%" (untranslate loop-body-term nil (w state))))
@@ -1466,7 +1461,7 @@
          (cw "~X01" (dag-to-term loop-body-dag) nil) ;todo: can blow up
          (er hard 'lift-loop "Symbolic execution for loop body did not finish; a call of run-until-exit-segment-or-hit-loop-header remains in the DAG (see above).")
          (mv erp nil nil nil state))
-        ;; Figure out which leaves returned to the loop top, etc.:
+        ;; Ananlyze the lifted loop body (e.g., Figure out which leaves returned to the loop top):
         ;; TODO: Maybe use dags instead of terms here
         ((mv erp one-rep-term exit-term exit-test-term state)
          (analyze-loop-body loop-body-term loop-top-pc-term '(xr ':rgf '4 x86_1) extra-rules remove-rules lifter-rules assumptions state))
@@ -1481,27 +1476,17 @@
              failed-invariants
              state)
          ;; TODO: In general, we may need to assume the negation of the exit test here:
-         (prove-invariants-preserved loop-invariants
-                                     state-var
-                                     one-rep-term
-                                     loop-invariants ;assume the invariants hold on the state-var
-                                     extra-rules
-                                     remove-rules
-                                     rules-to-monitor
-                                     nil
-                                     nil
-                                     lifter-rules
-                                     state))
+         (prove-invariants-preserved loop-invariants state-var one-rep-term loop-invariants ;assume the invariants hold on the state-var
+                                     extra-rules remove-rules rules-to-monitor nil nil lifter-rules state))
         ((when erp) (mv erp nil nil nil state))
-        ((when failed-invariants) ;todo: be more flexible: throw out failed invariants and try again
+        ((when failed-invariants) ;todo: be more flexible: throw out failed invariants and try again?
          (prog2$ (er hard? 'lift-loop "An invariant failed (see above).")
                  (mv (erp-t) nil nil nil state)))
         (- (cw "All invariants proved)~%"))
-
-        ;; Process the state updates done by the loop body:
+        ;; Now process the state updates done by the loop body (3 kinds: call of xw, calls of write, and calls of set-flag):
         ((mv okp xw-triples write-triples flag-pairs)
          (check-and-split-one-rep-term one-rep-term state-var))
-        ((if (not okp))
+        ((when (not okp))
          (prog2$ (er hard? 'lift-loop "Bad one rep term: ~x0." one-rep-term)
                  (mv (erp-t) nil nil nil state)))
         (- (cw "(xw-triples: ~x0.)~%" xw-triples))
@@ -1514,10 +1499,10 @@
          (er hard 'lift-loop "Duplicates detected in flag updates: ~x0." flag-pairs)
          (mv (erp-t) nil nil nil state))
         ;; Writes are harder (have to show unchangedness and lack of aliasing):
-
-        ;(write-pairs (get-write-pairs write-triples))
+        ;; We are going to make a loop param for each chunk of memory written
+        ;; in the loop, so we must show that the base addresses of the chunks
+        ;; (which are arbirary terms) do not change in the loop.
         (write-addresses (get-write-addresses write-triples))
-
         (- (cw "(Proving that ~x0 addresses are unchanged:~%" (len write-addresses))) ;todo: also throw in read-addresses here!
         ((mv erp res state)
          (ensure-addresses-unchanged-by-body write-addresses ;todo: what vars are in these?
@@ -1534,8 +1519,7 @@
          (mv (erp-t) nil nil nil state))
         (- (cw "Done proving that addresses are unchanged.)~%"))
 
-
-        ;; Make the params:
+        ;; Make the loop params:
         (next-param-number 0)
 
         ;; UPDATED-STATE-TERM represents writing the return values of the loop
@@ -1558,29 +1542,27 @@
         (paramnum-name-alist nil)
 
         (- (cw "(Making loop params for XW triples:~%"))
-        ((mv next-param-number
-             updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+        ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-xw-triples xw-triples next-param-number updated-state-term
                                               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
 
         (- (cw "(Making loop params for write triples:~%"))
-        ((mv next-param-number
-             updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+        ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-write-triples write-triples next-param-number updated-state-term
                                                  paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
 
         (- (cw "(Making loop params for flag pairs:~%"))
-        ((mv next-param-number
-             updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+        ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-loop-parameters-for-flag-pairs flag-pairs next-param-number updated-state-term
                                               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist))
         (- (cw "Done.)~%"))
-
+        ;; We are done with the state components that get written by the loop,
+        ;; but other state components may get read in the loop, and we have to
+        ;; pass these values around as loop params as well.
         (- (cw "(Making read-only loop params:~%"))
-        ((mv next-param-number
-             updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
+        ((mv next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-read-only-parameters paramnum-update-alist next-param-number updated-state-term
                                     paramnum-update-alist paramnum-extractor-alist paramnum-name-alist
                                     state-var
@@ -1923,7 +1905,7 @@
                    :rules (set-difference-eq
                            (append (lifter-rules2)
                                    lifter-rules
-                                   (symbolic-execution-rules)
+                                   (symbolic-execution-rules-loop)
                                    extra-rules)
                            remove-rules)
                    :assumptions assumptions
@@ -2030,7 +2012,9 @@
         ((when erp) (mv erp nil nil nil state))
         ((mv erp assumptions state)
          ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
-         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor state))
+         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
+                                          nil ; don't memoize (avoids time spent making empty-memoizations)
+                                          state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
         (state-var (pack-in-package-of-symbol 'x86 'x86_ loop-depth))
@@ -2091,7 +2075,7 @@
 ;; Returns (mv erp event state)
 (defun lift-subroutine-fn (lifted-name
                            subroutine-name
-                           parsed-executable
+                           executable
                            stack-slots-needed
                            subroutine-length ;todo: drop this (would need to support :all for the segment-pcs?)
                            loop-alist
@@ -2099,7 +2083,7 @@
                            remove-rules
                            produce-theorem
                            ;;output
-                           user-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.)
+                           user-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
                            non-executable
                            ;;restrict-theory
                            rules-to-monitor
@@ -2135,7 +2119,17 @@
                 (mv (erp-t) nil state)))
 
        ;; Generate assumptions for lifting:
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (acl2::ensure-x86 parsed-executable))
        (user-assumptions (acl2::translate-terms user-assumptions 'lift-subroutine-fn (w state)))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if (eq :mach-o-64 executable-type)
@@ -2161,7 +2155,10 @@
                         (doublets-to-alist measures)))
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
                          (lifter-rules32)
-                       (lifter-rules64)))
+                       (append (lifter-rules64)
+                               '(x86isa::rip x86isa::rip$a) ; todo
+                               ;(lifter-rules64-new); todo
+                               )))
        ((mv erp dag events
             ;; & ;;rules
             & ;;next-loop-num
@@ -2193,7 +2190,7 @@
                   :rules (set-difference-eq
                           (append (lifter-rules2)
                                   lifter-rules
-                                  (symbolic-execution-rules)
+                                  (symbolic-execution-rules-loop)
                                   extra-rules)
                           remove-rules)
                   :assumptions assumptions
@@ -2252,25 +2249,25 @@
                            whole-form
                            lifted-name ;the name to use for the function created by the lifter
                            subroutine-name
-                           parsed-executable
+                           executable ; a string (filename), or (for example) a defconst created by defconst-x86
                            stack-slots-needed
                            subroutine-length
-                           loop-alist ;offsets (from start of method) of loops, paired with offset lists for their bodies
+                           loop-alist ;offsets (from start of subroutine) of loops, paired with offset lists for their bodies
                            &key
                            (extra-rules 'nil)
                            (remove-rules 'nil)
                            (produce-theorem 't) ;todo: not used.
                            ;;output
-                           (assumptions 'nil) ;TODO: Translate these
+                           (assumptions 'nil)
                            (non-executable 'nil)
                            ;;restrict-theory
                            (monitor 'nil)
                            (print 't)
-                           (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets)
+                           (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
                            )
   `(make-event (lift-subroutine-fn ',lifted-name
                                    ',subroutine-name
-                                   ,parsed-executable
+                                   ,executable
                                    ',stack-slots-needed
                                    ',subroutine-length
                                    ',loop-alist
@@ -2278,7 +2275,7 @@
                                    ,remove-rules
                                    ',produce-theorem
                                    ;;output
-                                   ,assumptions ;TODO: Translate these
+                                   ,assumptions
                                    ',non-executable
                                    ;;restrict-theory
                                    ,monitor

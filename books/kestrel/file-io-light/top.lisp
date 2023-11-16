@@ -48,6 +48,7 @@
 (include-book "prin1-with-slashes") ; built-in, supports prin1$
 (include-book "prin1-dollar") ; prin1$ is built-in, print an atom
 (include-book "write-strings-to-channel") ; uses princ$, todo: make a version for prin1$
+(include-book "newline")
 
 ;; Reading from :object channels:
 (include-book "read-object") ; built-in

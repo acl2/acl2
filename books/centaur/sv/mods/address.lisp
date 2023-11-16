@@ -34,6 +34,7 @@
 (include-book "std/util/defprojection" :dir :System)
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :System))
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (enable svexlist-vars-of-svex-alist-vals)))
@@ -246,8 +247,7 @@ address with empty index and scope qualifier 0.</p>"
   :short "An svar containing an address."
   (b* (((svar x)))
     (and (address-p x.name)
-         (not x.override-test)
-         (not x.override-val)))
+         (equal (loghead 8 x.bits) 0)))
   ///
   (defthm svar-addr-p-of-address->svar
     (svar-addr-p (address->svar x))
@@ -276,8 +276,7 @@ address with empty index and scope qualifier 0.</p>"
   (mbe :logic (if (svar-addr-p x)
                   (svar-fix x)
                 (change-svar x :name (svar->address x)
-                             :override-test nil
-                             :override-val nil))
+                             :bits (logand #x-100 (svar->bits x))))
        :exec x)
   ///
   (defthm svar-addr-fix-when-svar-addr-p

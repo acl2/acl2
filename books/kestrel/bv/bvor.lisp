@@ -43,7 +43,7 @@
   (equal (bvor size y (bvor size x z))
          (bvor size x (bvor size y z)))
   :hints (("Goal" :in-theory (e/d (bvor-commutative) (bvor-associative))
-           :use ((:instance bvor-associative)
+           :use (bvor-associative
                  (:instance bvor-associative (x y) (y x))))))
 
 (defthmd bvor-commute-constant
@@ -158,7 +158,7 @@
            (equal (unsigned-byte-p size2 (bvor size x y))
                   (natp size2)))
   :hints (("Goal" :in-theory (disable unsigned-byte-p-of-bvor)
-           :use (:instance unsigned-byte-p-of-bvor))))
+           :use unsigned-byte-p-of-bvor)))
 
 ;use trim instead?
 ;drop?
@@ -455,4 +455,63 @@
            (equal (unsigned-byte-p n (bvor size a b))
                   (and (unsigned-byte-p n (bvchop size a))
                        (unsigned-byte-p n (bvchop size b)))))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthmd bvor-tighten-free
+  (implies (and (unsigned-byte-p newsize y)
+                (< newsize oldsize)
+                (unsigned-byte-p newsize x)
+                (natp oldsize))
+           (equal (bvor oldsize x y)
+                  (bvor newsize x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-slice-tighten
+   (implies (and (<= size (- high low))
+                 (natp size)
+                 (< 0 size)
+                 (natp low)
+                 (natp high)
+                 (integerp x)
+                 (integerp y)
+                 )
+            (equal (bvor size x (slice high low y))
+                   (bvor size x (slice (+ low size -1) low y))))
+   :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-slice-tighten-alt
+   (implies (and (<= size (- high low))
+                 (natp size)
+                 (< 0 size)
+                 (natp low)
+                 (natp high)
+                 (integerp x)
+                 (integerp y)
+                 )
+            (equal (bvor size (slice high low y) x)
+                   (bvor size (slice (+ low size -1) low y) x)))
+   :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-slice-tighten-2
+  (implies (and (< size (+ 1 high (- low)))
+                (< 0 size)
+                (natp size)
+                (natp low)
+                (natp high)
+                (integerp x)
+                (integerp y))
+           (equal (bvor size y (slice high low x))
+                  (bvor size y (slice (+ low size -1) low x))))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-slice-tighten-1
+   (implies (and (< size (+ 1 high (- low)))
+                 (< 0 size)
+                 (natp size)
+                 (natp low)
+                 (natp high)
+                 (integerp x)
+                 (integerp y))
+            (equal (bvor size (slice high low x) y)
+                   (bvor size (slice (+ low size -1) low x) y)))
   :hints (("Goal" :in-theory (enable bvor))))

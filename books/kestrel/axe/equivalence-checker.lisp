@@ -11076,6 +11076,7 @@
                                                                               equal-of-cons-when-equal-nth-0
                                                                               NTHCDR-IFF
                                                                               ,@(list-rules2)
+                                                                              ,@(subrange-rules)
                                                                               ,@(list-rules2-executable-counterparts)))
                                           ;;i guess because of substitution, this may not be reliable:
                                           ;;:expand ((,connection-relation-name ,@update-expr-list ,@new-update-exprs ,@old-vars-in-explanations))
@@ -11167,6 +11168,7 @@
                                           :in-theory (union-theories '(,invariant-name
                                                                        ,connection-relation-name
                                                                        ,@(append (list-rules2)
+                                                                                 (subrange-rules)
                                                                                  (list-rules2-executable-counterparts)) ;fixme why are we using these?
                                                                        ;;i found a case where we needed to prove (EQUAL (SUBRANGE 5 9 PARAMS) (FIRSTN 5 (NTHCDR 5 PARAMS)))
                                                                        ;;add some rules to list-rules-etc?
@@ -14696,22 +14698,25 @@
         ;; FIXME first try rewriting without this external context? fixme could just rewrite the equality node?
 ;ffixme i wonder if the rewrites here are so expensive that we should just rewrite the dag after every merge?
         ;;fffixme delay generating the context until after the first rewrite below (which will handle ifs with constant tests - seems common)
-        (- (cw " (Context for node ~x0: " original-nodenum2))
         (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len ;sweep-info-array
-                                          )) ;fixme compute before the sweep?  how would tranforming the dag affect things?
-        (- (cw "~x0)~%" context))
-        (context-nodenums (get-nodenums-mentioned-in-context context))
-;now including the miter name in this name, in case there are nested calls with live context arrays (can that happen?):
-        (external-context-array-name (pack$ miter-array-name '-external-context-array))
+                                          )) ; todo: compute before the sweep?  how would tranforming the dag affect things?
+        (- (cw " (Context for node ~x0: ~x1)~%" original-nodenum2 context))
+        ((when (false-contextp context))
+         (cw "! Nodes are equal because context is false !")
+         (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
+        ;; TODO: optimize if the context is (true-context)
+        (context-nodenums (get-nodenums-mentioned-in-non-false-context context))
+        ;;now including the miter name in this name, in case there are nested calls with live context arrays (can that happen?):
+        (external-context-array-name (and context-nodenums (pack$ miter-array-name '-external-context-array)))
         ;;To pass the context information into the rewriter, we extract only the stuff that supports the context nodes into the new array context-array:
         ((mv context-array context-array-len translation-array)
          (if context-nodenums
              (extract-dag-array context-nodenums miter-array-name miter-array miter-len external-context-array-name)
            (mv nil nil nil)))
         ;;fixup the context to use the node numbering in context-array:
-        (context (and context (fixup-context context 'translation-array translation-array)))
-        ((when (false-contextp context)) ;check higher up?
-         (cw "! Nodes are equal because context is false !")
+        (context (and context-nodenums (fixup-non-false-context context 'translation-array translation-array))) ; could drop the context-nodenums text
+        ((when (false-contextp context)) ; todo: ensure this can't happen given the false-contextp test above
+         (cw "! Nodes are equal because fixed-up context is false !")
          (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
         ((mv renamed-smaller-nodenum renamed-larger-nodenum dag-lst)
 ;fixme: do we really need to rewrite the two nodes themselves, rather than just their equality?  i guess rewriting might commute things consistently.  call something like rewrite-nodenum?
@@ -14747,9 +14752,9 @@
                    :use-internal-contextsp nil ;trying nil, Tue Mar  8 18:32:40 2011 t ;new
                    :memoizep nil               ;because of internal contexts?
                    :slack-amount (+ 1 original-nodenum2) ;this is more like the initial slack space for the array to grow
+                   :context context ; may be nil, in which case the 3 args just below are meaningless
                    :context-array-name external-context-array-name
                    :context-array context-array ;fixme this gets smashed!
-                   :context context
                    :context-array-len context-array-len
                    :check-inputs nil))
         ((when erp) (mv erp nil nil nil rand state result-array-stobj)))
@@ -15463,10 +15468,10 @@
                                                  (list prover-rule-alist)
                                                  interpreted-function-alist monitored-symbols
                                                  print case-name
+                                                 context ;;nil ;;tried nil for speed but that left out some important stuff
                                                  external-context-array-name ;fixme is this still live?
                                                  context-array
                                                  context-array-len
-                                                 context ;;nil ;;tried nil for speed but that left out some important stuff
                                                  max-conflicts
                                                  (not some-goal-timed-outp) ; print-max-conflicts-goalp
                                                  nil ;options
@@ -15705,11 +15710,13 @@
          (b* ( ;; First simplify the equality of the node and the constant:  FFIXME first rewrite (and maybe call the prover) without using external contexts..
               (- (cw "(Making the equality and rewriting:~%"))
 ;ffixme if rewriting or proving ends in a goal that is clearly not valid then stop right there?
-              (- (cw " (Context for node ~x0: " nodenum))
               (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len ;sweep-info-array
                                                 )) ;fixme check if any of the context nodes are quoteps?
-              (- (cw "~x0)~%" context))
-              (context-nodenums (get-nodenums-mentioned-in-context context))
+              (- (cw " (Context for node ~x0: ~x1)~%" nodenum context))
+              ((when (false-contextp context))
+               (cw "! Proof succeeded due to contradictory context !") ;fffixme close paren?
+               (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
+              (context-nodenums (get-nodenums-mentioned-in-non-false-context context))
               ;;To pass the context information into the rewriter, we extract only
               ;;the stuff that supports the context nodes into the new array assumptions-array:
               ((mv assumptions-array assumptions-array-len translation-array)
@@ -15717,9 +15724,9 @@
                    (extract-dag-array context-nodenums miter-array-name miter-array miter-len 'assumptions-array) ; fixme could there be nested calls with live assumptions-arrays? if so, might need to include the depth in this
                  (mv nil 0 nil)))
               ;;Fix up the context to mention the right nodes in assumptions-array:
-              (context (and context (fixup-context context 'translation-array translation-array)))
-              ((when (false-contextp context))
-               (cw "! Proof succeeded due to contradictory context !") ;fixme close paren?
+              (context (and context-nodenums (fixup-non-false-context context 'translation-array translation-array))) ; could drop the context-nodenums text
+              ((when (false-contextp context)) ; todo: ensure this can't happen, given the false-contextp check above
+               (cw "! Proof succeeded due to contradictory fixed-up context !") ;fffixme close paren?
                (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
               ;;ffixme eventually drop the conversion and pass the miter-array to the rewriter (but don't overwrite any existing nodes)??
               ;;  for now the rewriter can only work on an array named 'dag-array
@@ -15744,9 +15751,9 @@
                          :memoizep nil ;Tue Jan 26 03:19:43 2010 - ffixme ;maybe don't do it on the first pass, which is supposed to be fast
 ;ffixme add the option of passing in a list of flags for use-internal-contextsp, one for each rule set.. we already do a rewrite without internal contexts first...
                          :context context
-                         :context-array-name 'assumptions-array
-                         :context-array assumptions-array
-                         :context-array-len assumptions-array-len
+                         :context-array-name 'assumptions-array ; meaningless if context is nil
+                         :context-array assumptions-array ; meaningless if context is nil
+                         :context-array-len assumptions-array-len ; meaningless if context is nil
                          :check-inputs nil))
               ((when erp) (mv erp nil nil rand state result-array-stobj)))
            (if (quotep simplified-dag-lst)
@@ -15780,10 +15787,10 @@
                                                    (list prover-rule-alist)
                                                    interpreted-function-alist monitored-symbols
                                                    print case-name
-                                                   'assumptions-array
+                                                   context
+                                                   'assumptions-array ; these 3 args are meaningless if context is nil
                                                    assumptions-array ;ffffffixme this may be changed under the hood by the rewrite, giving a slow array warning..?! is it even sound?  now i think it's okay because prove-dag-with-axe-prover doesn't seem to trash the context-array it is passed.
                                                    assumptions-array-len
-                                                   context
                                                    max-conflicts
                                                    (not some-goal-timed-outp) ;print-max-conflicts-goalp
                                                    nil ;options
@@ -17065,7 +17072,7 @@
 ;;                                 0
 ;;                                 (make-empty-array 'dag-parent-array dag-len)
 ;;                                 nil ;; dag-constant-alist
-;;                                 nil ;;dag-variable-alist
+;;                                 (empty-dag-variable-alist) ;;dag-variable-alist
 ;;                                 nil ;;variable-node-alist-for-dag
 ;;                                 nil ;;translation-alist
 ;;                                 )

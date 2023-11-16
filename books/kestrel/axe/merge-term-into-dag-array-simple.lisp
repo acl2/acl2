@@ -16,6 +16,7 @@
 ;; See also merge-term-into-dag-array-basic.lisp.
 
 (include-book "dag-array-builders2")
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))

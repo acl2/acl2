@@ -10,12 +10,11 @@
 
 (in-package "ZKSEMAPHORE")
 
-(include-book "kestrel/ethereum/semaphore/r1cs-proof-support" :dir :system)
-(include-book "kestrel/ethereum/semaphore/r1cs-proof-rules" :dir :system)
+(include-book "r1cs-proof-support")
+(include-book "r1cs-proof-rules")
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (include-book "kestrel/bv/rules7" :dir :system) ; for BVCAT-OF-BVNOT-AND-BVNOT
-(include-book "kestrel/axe/r1cs/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system)
 (include-book "kestrel/axe/r1cs/axe-rules-r1cs" :dir :system)
 (include-book "kestrel/bv/rules9" :dir :system)
@@ -191,7 +190,7 @@
                  acl2::unsigned-byte-p-of-bvnot
                  acl2::unsigned-byte-p-of-bvplus
                  ;; bitp rules:
-                 r1cs::bitp-of-bitxor
+                 acl2::bitp-of-bitxor
                  acl2::bitp-of-bitnot
                  acl2::bitp-of-getbit
                  ;; acl2::bitp-of-bvchop-of-1 ; drop?

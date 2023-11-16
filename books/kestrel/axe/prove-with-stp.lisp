@@ -38,6 +38,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -80,7 +81,7 @@
                 (no-nodes-are-variablesp l2 dag-array-name dag-array dag-len)
                 (no-nodes-are-variablesp acc dag-array-name dag-array dag-len))
            (no-nodes-are-variablesp (merge-< l1 l2 acc) dag-array-name dag-array dag-len))
-  :hints (("Goal" :in-theory (enable merge-< revappend-lemma no-nodes-are-variablesp))))
+  :hints (("Goal" :in-theory (enable merge-< revappend-becomes-append-of-reverse-list no-nodes-are-variablesp))))
 
 (defthm no-nodes-are-variablesp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (no-nodes-are-variablesp lst dag-array-name dag-array dag-len)
@@ -1329,7 +1330,7 @@
                                                                    (+ -1 (expt 2 arg3-width)))))
                                          (prog2$ (and print (cw ", which is a BVMULT: ~x0" expr))
                                                  (list* "ASSERT(BVLE("
-                                                        (makevarname n)
+                                                        (make-node-var n)
                                                         ","
                                                         (translate-bv-constant max-product-value (unquote (darg1 expr)))
                                                         "));"
@@ -1685,13 +1686,6 @@
   :hints (("Goal" :in-theory (enable keep-atoms))))
 
 (local (in-theory (enable all-<-when-all-dargp)))
-
-;restrict?
-;move
-(defthm all-<=-when-all-<
-  (implies (all-< x bound)
-           (all-<= x bound))
-  :hints (("Goal" :in-theory (enable all-< all-<=))))
 
 (defthm not-bv-array-typep-when-bv-typep-cheap
   (implies (bv-typep x)

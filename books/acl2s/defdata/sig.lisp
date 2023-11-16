@@ -464,7 +464,7 @@ Please send this example to the implementors for considering removal of this res
   (if (atom ptype)
       0
     (case (car ptype)
-      (oneof 1) ; TODO
+      ((oneof or anyof) 1) ; TODO
       (listof (+ 2 (poly-type-size (cadr ptype))))
       (alistof (+ 3 (+ (poly-type-size (second ptype))
                        (poly-type-size (third ptype)))))
@@ -898,6 +898,7 @@ constant). In the latter return a lambda expression"
         ((atom (cdr L)) (consp (car L)))
         (t (or (in-all (caar L) (cdr L))
                (common-instances-listp (cons (cdar L) (cdr L)))))))
+
 #|
 (defun make-sig-hint-body (name arg-types poly-gen-name kwd-alist wrld)
   (b* ((M (append (table-alist 'tvar-metadata-table wrld)
@@ -960,13 +961,18 @@ constant). In the latter return a lambda expression"
                                       (cons instances-name map-instances))))
                     common-insts))
              ;; Left this here in case I come back and want to trace the code
-             ;;(prog2$ (cw "~%*****Chint ~x0, Clause: ~x1~%" ',poly-gen-name clause)
-             '(:in-theory (enable ,poly-gen-name))
-           ;;)
-          ;; (prog2$ (cw "~%XXXXXChint ~x0, Clause: ~x1, ~x2~%"
-          ;;             ',poly-gen-name clause stable-under-simplificationp)
+             ;; (prog2$ (cw "~%*****Chint ~x0, Clause: ~x1~%" ',poly-gen-name clause)
+             '(:in-theory
+               (acl2::union-theories
+                (current-theory :here)
+                '(,poly-gen-name)))
+           ;; (prog2$ (cw "~%XXXXXChint ~x0, Clause: ~x1, ~x2, ~x3~%"
+           ;;             ',poly-gen-name
+           ;;             clause
+           ;;             stable-under-simplificationp
+           ;;             (acl2::access acl2::history-entry (car hist) :processor))
            nil)))
-    ;;)
+;;    )
     psig-hint-body))
 
 (defun sig-events1 (name suffix arg-types ret-type kwd-alist ctx wrld)

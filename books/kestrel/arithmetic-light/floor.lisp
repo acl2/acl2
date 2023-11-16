@@ -20,17 +20,17 @@
 (local (include-book "times-and-divide"))
 (local (include-book "nonnegative-integer-quotient"))
 (local (include-book "integerp"))
-;(local (include-book "expt"))
-;(local (include-book "../../meta/meta-plus-lessp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;rename and move
-(defthm floor-bound-hack-eric
-  (implies (and (<= 1 j)
-                (<= 0 i)
-                (rationalp i)
-                (rationalp j))
-           (<= (* i (/ j)) i)))
+;drop?  but used below
+(local
+  (defthm floor-bound-hack-eric
+    (implies (and (<= 1 j)
+                  (<= 0 i)
+                  (rationalp i)
+                  (rationalp j))
+             (<= (* i (/ j)) i))))
 
 ;move
 (defthm <-of-numerator-and-denominator-same
@@ -276,6 +276,19 @@
                   (if (integerp (* i (/ j)))
                       (- (floor i j))
                     (+ -1 (- (floor i j))))))
+  :hints (("Goal" :in-theory (enable floor))))
+
+(defthmd floor-of---special-case
+  (implies (and (not (rationalp j)) ; unusual!
+                (acl2-numberp i)
+                ;; (not (rationalp i))
+                (acl2-numberp j))
+           (equal (floor (- i) j)
+                  (if (rationalp (* i (/ j)))
+                      (if (integerp (* i (/ j)))
+                          (- (floor i j))
+                        (+ -1 (- (floor i j))))
+                    0)))
   :hints (("Goal" :in-theory (enable floor))))
 
 (defthm floor-minus-arg1-better
@@ -1187,10 +1200,9 @@
                   (floor i 1))))
 
 (defthm floor-of-/-arg2
-  (implies (and (rationalp i)
-                (rationalp j1))
-           (equal (floor i (/ j1))
-                  (floor (* i j1) 1))))
+  (equal (floor i (/ j))
+         (floor (* i j) 1))
+  :hints (("Goal" :in-theory (enable floor))))
 
 (defthm floor-of-*-of-/-arg2
   (implies (and (rationalp i)
@@ -1444,3 +1456,29 @@
                 (rationalp j))
            (equal (< (floor i j) i)
                   (not (equal i 0)))))
+
+;; a kind of cancellation rule (todo: add more)
+;; or just normalize the denominator to 1
+(defthm floor-of-*-same-2+-1
+  (equal (floor (* i1 j i2) j)
+         (if (equal (fix j) 0)
+             0
+           (floor (* i1 i2) 1)))
+  :hints (("Goal" :in-theory (enable floor))))
+
+;todo: improve
+(defthm floor-of-*-same-2-1
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)))
+           (equal (floor (* i j) j)
+                  (floor i 1)))
+  :hints (("Goal" :use (:instance floor-of-*-same)
+           :in-theory (disable floor-of-*-same))))
+
+;gen and rename
+(defthmd nonnegative-integer-quotient-by-2
+  (implies (natp x)
+           (equal (nonnegative-integer-quotient x 2)
+                  (floor x 2)))
+  :hints (("Goal" :in-theory (enable floor))))

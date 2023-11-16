@@ -28,20 +28,10 @@
 (include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
+(include-book "kestrel/utilities/print-to-string" :dir :system)
 (include-book "kestrel/hints/combine-hints" :dir :system)
 
-;; move these:
-
-;; todo: make this lowercase?
-(defun print-to-string (item)
-  (declare (xargs :mode :program))
-  (mv-let (col string)
-    (fmt1-to-string "~X01" (acons #\0 item (acons #\1 nil nil)) 0
-                    :fmt-control-alist
-                    `((fmt-soft-right-margin . 10000)
-                      (fmt-hard-right-margin . 10000)))
-    (declare (ignore col))
-    string))
+;; move these?
 
 (verify-termination get-event-data-1)
 ;(verify-guards get-event-data-1) ; todo: needs a guard, perhaps (and (symbolp key) (symbol-alistp event-data)).
@@ -231,7 +221,7 @@
                   :stobjs state))
   ;; Record the start time:
   (mv-let (start-time state)
-    (acl2::get-real-time state)
+    (get-real-time state)
     ;; Try the event with the rune disabled::
     (mv-let (erp state)
       (submit-and-revert-event `(saving-event-data (progn (in-theory (disable ,rune))
@@ -239,7 +229,7 @@
                                nil nil state)
       ;; Record the end time:
       (mv-let (end-time state)
-        (acl2::get-real-time state)
+        (get-real-time state)
         (if erp
             state ; the event failed after doing the disable
           (if (member-equal rune (get-event-data 'rules state))
@@ -292,13 +282,13 @@
   (let ((name (cadr event)))
     ;; Record the start time:
     (mv-let (start-time state)
-      (acl2::get-real-time state)
+      (get-real-time state)
       ;; Do the proof and time it (todo: do it twice, like we do for defthm, for better timings):
       (mv-let (erp state)
         (submit-and-revert-event `(saving-event-data ,event) nil nil state)
         ;; Record the end time:
         (mv-let (end-time state)
-          (acl2::get-real-time state)
+          (get-real-time state)
           (if erp
               (prog2$ (er hard? 'speed-up-defrule "~x0 was expected to prove, but it failed." name)
                       (mv erp state))

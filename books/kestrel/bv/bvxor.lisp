@@ -46,7 +46,7 @@
   (equal (bvxor size x (bvxor size y z))
          (bvxor size y (bvxor size x z)))
   :hints (("Goal" :in-theory (e/d (bvxor-commutative) (bvxor-associative))
-           :use ((:instance bvxor-associative)
+           :use (bvxor-associative
                  (:instance bvxor-associative (x y) (y x))))))
 
 (defthmd bvxor-commute-constant
@@ -265,7 +265,7 @@
 (defthm bvxor-numeric-bound
   (implies (<= (expt 2 size) k)
            (< (bvxor size x y) k))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvxor)
+  :hints (("Goal" :use unsigned-byte-p-of-bvxor
            :in-theory (disable unsigned-byte-p-of-bvxor unsigned-byte-p-of-bvxor-gen))))
 
 (defthm bvxor-cancel-lemma1
@@ -282,7 +282,7 @@
            (equal (equal x (bvxor size y x))
                   (and (unsigned-byte-p size x)
                        (equal (bvchop size y) 0))))
-  :hints (("Goal" :use (:instance bvxor-cancel-lemma1)
+  :hints (("Goal" :use bvxor-cancel-lemma1
            :in-theory (e/d (bvxor-commutative)
                            (bvxor-cancel-cross-2 bvxor-cancel-cross-1 bvxor-cancel-lemma1)))))
 
@@ -508,3 +508,7 @@
   :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
                                   (bvchop-of-logtail-becomes-slice
                                    logtail-of-bvchop-becomes-slice)))))
+
+(defthm bvxor-cancel-2-of-more-and-1-of-more
+  (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
+         (equal (bvxor size y z) (bvchop size w))))

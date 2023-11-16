@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -674,7 +674,7 @@
                       (cstate-to-vars cstate))))
     :enable (write-var-value
              cstate-to-vars
-             omap::consp-of-omap-in-to-set-in-of-omap-keys))
+             omap::consp-of-in-to-in-of-keys))
 
   (defrule cstate-to-vars-of-write-vars-values
     (b* ((cstate1 (write-vars-values vars vals cstate)))
@@ -819,7 +819,7 @@
              read-var-value
              not-reserrp-when-valuep
              cstate-to-vars
-             omap::consp-of-omap-in-to-set-in-of-omap-keys))
+             omap::consp-of-in-to-in-of-keys))
 
   (defruled read-vars-values-when-check-var-list
     (implies (check-var-list vars (cstate-to-vars cstate))
@@ -852,7 +852,7 @@
     :enable (add-var
              add-var-value
              cstate-to-vars
-             omap::consp-of-omap-in-to-set-in-of-omap-keys))
+             omap::consp-of-in-to-in-of-keys))
 
   (defrule add-vars-values-when-add-vars
     (b* ((varset1 (add-vars vars (cstate-to-vars cstate)))
@@ -917,7 +917,7 @@
     :enable (write-var-value
              check-var
              cstate-to-vars
-             omap::consp-of-omap-in-to-set-in-of-omap-keys))
+             omap::consp-of-in-to-in-of-keys))
 
   (defrule write-var-value-when-check-safe-path
     (implies (not (reserrp
@@ -979,7 +979,7 @@
     :enable (add-var
              add-var-value
              cstate-to-vars
-             omap::consp-of-omap-in-to-set-in-of-omap-keys
+             omap::consp-of-in-to-in-of-keys
              not-reserrp-when-cstatep
              not-reserrp-when-identifier-setp))
 

@@ -1,0 +1,46 @@
+(definec rem-dups (l :tl) :tl
+  (cond ((endp l) l)
+        ((in (car l) (cdr l)) (rem-dups (cdr l)))
+        (t (cons (car l) (rem-dups (cdr l))))))
+
+
+
+Conjecture L2:
+(implies (and (tlp l)
+              (in e (rem-dups l)))
+         (in e l))
+
+
+Context:
+C1. (tlp l)
+C2. (in e (rem-dups l))
+
+;; We give  a wrong induction term, which has no variable.
+Proof by: Induction on (tlp l p)
+
+Induction Case 0:
+(implies (not (consp l))
+         (implies (and (tlp l)
+                       (in e (rem-dups l)))
+                  (in e l)))
+
+
+Exportation:
+(implies (and (tlp l)
+              (not (consp l))
+              (in e (rem-dups l)))
+         (in e l))
+
+
+Context:
+C3. (not (consp l))
+
+Derived Context:
+D1. (== l nil) { Def tlp, C1, C3  }
+D2. (== (rem-dups l) nil) { Def rem-dups, D1 }
+D3. (consp (rem-dups l)) { Def in, C2 }
+D4. nil { D2, D3, PL }
+
+QED
+
+QED

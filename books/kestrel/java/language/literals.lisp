@@ -19,7 +19,7 @@
 
 (defxdoc+ literals
   :parents (syntax)
-  :short "Java literals [JLS:3.10]."
+  :short "Java literals [JLS14:3.10]."
   :order-subtopics t
   :default-parent t)
 
@@ -30,7 +30,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to the grammar rule for @('literal') [JLS:3.10].")
+    "This corresponds to the grammar rule for @('literal') [JLS14:3.10].")
    (xdoc::p
     "Note that we just use the built-in ACL2 booleans
      for the boolean literals, since they are so simple."))

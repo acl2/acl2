@@ -1,7 +1,7 @@
 ; Another book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -80,10 +80,6 @@
                 (rationalp x))
            (equal (< 0 (mod x y))
                   (not (equal 0 (mod x y))))))
-
-(local (include-book "floor")) ;move?!
-
-
 
 (local (in-theory (disable mod-minus)))
 

@@ -1,7 +1,7 @@
 ; A function to subtract two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -167,5 +167,25 @@
                 (natp size2))
            (equal (bvchop size1 (bvminus size2 y z))
                   (bvminus size1 y z)))
-  :hints (("Goal" :in-theory (enable bvminus ;bvchop-bvchop
-                                   ))))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvplus-same-arg2
+  (equal (bvminus size k (bvplus size j k))
+         (bvuminus size j))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))
+
+;; gets rid of x
+(defthm bvminus-of-+-same-arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvminus size x (binary-+ x y))
+                  (bvuminus size y)))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus acl2::bvchop-of-sum-cases bvminus))))
+
+;; gets rid of x
+(defthm bvminus-of-+-same-arg2-alt
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvminus size x (binary-+ y x))
+                  (bvuminus size y)))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus acl2::bvchop-of-sum-cases bvminus))))

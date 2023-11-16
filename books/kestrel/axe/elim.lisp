@@ -1,7 +1,7 @@
 ; Support for the Axe Prover tuple elimination
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -162,18 +162,17 @@
   (declare (xargs :guard (and (symbol-listp vars)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-dag-variable-alistp dag-variable-alist dag-len)
-                              (subsetp-equal vars (strip-cars dag-variable-alist))
+                              (subsetp-equal vars (strip-cars dag-variable-alist)) ; todo: breaks abstraction
                               (nat-listp literal-nodenums)
                               (consp literal-nodenums)
                               (all-< literal-nodenums dag-len))
                   :guard-hints (("Goal" :in-theory (e/d (;integerp-of-maxelem-when-all-integerp
-                                                         natp-of-lookup-equal-when-dag-variable-alistp
                                                          symbolp-of-car-when-symbol-listp)
                                                         (natp))))))
   (if (endp vars)
       nil
     (let* ((var (first vars))
-           (nodenum (lookup-eq-safe var dag-variable-alist))
+           (nodenum (lookup-in-dag-variable-alist var dag-variable-alist))
            (max-literal-nodenum (maxelem literal-nodenums))
            )
       (if (nodenum-only-appears-in literal-nodenums dag-array dag-len nodenum '(nth true-listp len)
@@ -241,6 +240,7 @@
                 (nat-listp nodenums-to-assume-false)
                 (all-< nodenums-to-assume-false dag-len))
            (subsetp-equal (get-known-true-listp-vars nodenums-to-assume-false dag-array dag-len)
+                          ;; todo: abstract this:
                           (strip-cars (make-dag-variable-alist 'dag-array dag-array dag-len))))
   :hints (("Goal" :in-theory (e/d (get-known-true-listp-vars) (natp)))))
 
@@ -309,8 +309,7 @@
                                                            <-of-nth-when-all-<
                                                            ;FIND-VAR-AND-EXPR-TO-SUBST
                                                            ;NODENUM-OF-VAR-TO-SUBSTP
-                                                           natp-of-lookup-equal-when-dag-variable-alistp
-                                                           natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+                                                           )
                                                         (natp))))))
   (b* (((when (not (consp literal-nodenums))) ;; because var-okay-to-elim asks for the max literal nodenum
         (mv (erp-nil)
@@ -326,10 +325,10 @@
     (if (not var-to-elim)
         (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
       (b* ((var var-to-elim) ;fixme
-           (res (assoc-eq var dag-variable-alist))
+           (res (lookup-in-dag-variable-alist var dag-variable-alist))
            ((when (not res)) ;todo: strengthen guard and prove that this cannot happen
             (mv :var-not-in-dag-variable-alist nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-           (nodenum-of-var (cdr res)))
+           (nodenum-of-var res))
         (progn$ (cw "(Eliminating destructors for variable ~x0." var)
                 (and (eq :verbose print) (cw "literals: ~x0~%" literal-nodenums))
                 (and (eq :verbose print) (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array))
@@ -391,7 +390,7 @@
                            (all-< new-literal-nodenums new-dag-len)
                            (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                            (<= dag-len new-dag-len)))))
-  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple)
                                   (natp)))))
 
 (defthm eliminate-a-tuple-return-type-corollary
@@ -434,7 +433,7 @@
              (declare (ignore erp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (natp new-dag-len)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple)
                                   (natp)))))
 
 (defthm eliminate-a-tuple-return-type-3
@@ -443,7 +442,7 @@
              (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print)
              (declare (ignore erp changep new-literal-nodenums new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (integerp new-dag-len)))
-  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple)
                                   (natp)))))
 
 (defthm eliminate-a-tuple-return-type-4
@@ -453,5 +452,5 @@
              (declare (ignore erp changep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (true-listp new-literal-nodenums)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple natp-of-cdr-of-assoc-equal-when-dag-variable-alistp)
+  :hints (("Goal" :in-theory (e/d (eliminate-a-tuple)
                                   (natp)))))

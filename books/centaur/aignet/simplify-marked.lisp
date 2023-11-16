@@ -572,15 +572,32 @@
     (equal (w new-state) (w state))))
 
 
+(define aignet-output-lits-aux ((top natp)
+                                (n natp)
+                                aignet
+                                acc)
+  :guard (and (<= top (num-outs aignet))
+              (<= n top))
+  :measure (nfix (- (nfix top) (nfix n)))
+  (if (mbe :logic (zp (- (nfix top) (nfix n)))
+           :exec (eql top n))
+      acc
+    (aignet-output-lits-aux (1- top) n aignet
+                            (cons (outnum->fanin (1- top) aignet) acc))))
+
+
 (define aignet-output-lits ((n natp) aignet)
   :guard (<= n (num-outs aignet))
   :measure (nfix (- (num-outs aignet) (nfix n)))
   :returns (lits lit-listp)
-  (if (mbe :logic (zp (- (num-outs aignet) (nfix n)))
-           :exec (eql (num-outs aignet) n))
-      nil
-    (cons (outnum->fanin n aignet)
-          (aignet-output-lits (1+ (lnfix n)) aignet)))
+  :verify-guards nil
+  (mbe :logic
+       (if (mbe :logic (zp (- (num-outs aignet) (nfix n)))
+                :exec (eql (num-outs aignet) n))
+           nil
+         (cons (outnum->fanin n aignet)
+               (aignet-output-lits (1+ (lnfix n)) aignet)))
+       :exec (aignet-output-lits-aux (num-outs aignet) n aignet nil))
   ///
   (defret aignet-lit-listp-of-<fn>
     (aignet-lit-listp lits aignet))
@@ -600,7 +617,29 @@
 
   (defret len-of-<fn>
     (equal (len lits)
-           (nfix (- (num-outs aignet) (nfix n))))))
+           (nfix (- (num-outs aignet) (nfix n)))))
+
+  (local (defun myind (top n)
+           (declare (xargs :measure (nfix (- (nfix top) (nfix n)))))
+           (if (zp (- (nfix top) (nfix n)))
+               (list top n)
+             (myind (1- top) n))))
+  
+  (local (defthm aignet-output-lits-aux-elim
+           (implies (and (<= (nfix n) (nfix top))
+                         (<= (nfix top) (num-outs aignet)))
+                    (equal (aignet-output-lits-aux top n aignet (aignet-output-lits top aignet))
+                           (aignet-output-lits n aignet)))
+           :hints(("Goal" :in-theory (enable* aignet-output-lits-aux
+                                              acl2::arith-equiv-forwarding)
+                   :induct (myind top n)
+                   :expand ((aignet-output-lits n aignet)
+                            (:free (acc) (aignet-output-lits-aux top n aignet acc)))))))
+
+  (verify-guards aignet-output-lits
+    :hints (("goal" :use ((:instance aignet-output-lits-aux-elim
+                           (top (num-outs aignet))))
+             :in-theory (disable aignet-output-lits-aux-elim)))))
 
 (local (defthm lit-listp-of-take
          (implies (and (lit-listp x)

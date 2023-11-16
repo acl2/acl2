@@ -177,19 +177,25 @@ of adding the namespace.</p>"
   :guard (svar-addr-p x)
   :guard-hints (("goal" :in-theory (enable svar-addr-p)))
   :returns (x (and (svar-p x) (svar-addr-p x))
-              :hints(("Goal" :in-theory (enable svar-addr-p))))
-  (b* (((svar x))
+              ;; :hints(("Goal" :in-theory (enable svar-addr-p)))
+              )
+  :prepwork ((local (defthm svar-addr-p-of-change-svar-name
+                      (implies (and (svar-addr-p x)
+                                    (address-p name))
+                               (svar-addr-p (change-svar x :name name)))
+                      :hints(("Goal" :in-theory (enable svar-addr-p))))))
+  (b* (((svar x) (svar-addr-fix x))
        ((address x.name))
        ((when (eq x.name.scope :root))
-        (mbe :logic (change-svar x :name (change-address x.name)
-                                 :override-test nil :override-val nil)
+        (mbe :logic (change-svar x :name (change-address x.name))
              :exec x))
        (new-addr (if (eql 0 x.name.scope)
                      (change-address
                       x.name :path (make-path-scope :namespace namespace
                                                     :subpath x.name.path))
                    (change-address x.name :scope (1- x.name.scope)))))
-    (change-svar x :name new-addr :override-test nil :override-val nil)))
+    (change-svar x :name new-addr)))
+
 (defines svex-add-namespace
   (define svex-add-namespace ((namespace name-p) (x svex-p))
     :verify-guards nil

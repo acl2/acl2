@@ -1,7 +1,7 @@
 ; A stobj to track results of rewriting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,8 @@
 
 (include-book "all-dargp")
 (include-book "dargp-less-than")
-(include-book "bounded-dag-exprs") ; todo: reduce, for largest-non-quotep
+(include-book "largest-non-quotep")
+(include-book "bounded-darg-listp")
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
 (local (include-book "kestrel/lists-light/resize-list" :dir :system))
 
@@ -359,8 +360,7 @@
   (implies (and (dargp darg)
                 (good-renumbering-stobj (if (consp darg) -1 darg) renumbering-stobj))
            (dargp (renumber-darg-with-stobj darg renumbering-stobj)))
-  :hints (("Goal" :in-theory (e/d (renumber-darg-with-stobj good-renumbering-stobj)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobj))))
 
 (defthm dargp-less-than-of-renumber-darg-with-stobj
   (implies (and (dargp darg)
@@ -377,7 +377,7 @@
                 (dargp darg))
            (equal (natp (renumber-darg-with-stobj darg renumbering-stobj))
                   (not (consp (renumber-darg-with-stobj darg renumbering-stobj)))))
-  :hints (("Goal" :in-theory (e/d (renumber-darg-with-stobj GOOD-RENUMBERING-STOBJ) ()))))
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobj))))
 
 ; use "not consp" as the normal form for dargs
 ;; Disabled since hung on natp.
@@ -386,7 +386,7 @@
                 (dargp darg))
            (equal (integerp (renumber-darg-with-stobj darg renumbering-stobj))
                   (not (consp (renumber-darg-with-stobj darg renumbering-stobj)))))
-  :hints (("Goal" :in-theory (e/d (renumber-darg-with-stobj GOOD-RENUMBERING-STOBJ) ()))))
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobj))))
 
 ;;;
 ;;; renumber-dargs-with-stobj

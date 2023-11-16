@@ -40,6 +40,8 @@
 (include-book "centaur/misc/starlogic" :dir :system)
 (include-book "checks")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "primitive-lemmas"))
+(local (std::add-default-post-define-hook :fix))
 
 (disable-definition intcons)
 (disable-definition intcons*)
@@ -943,6 +945,11 @@
               (iff (xor t x) (not x))
               (iff (xor x t) (not x)))))
 
+
+(fty::deffixcong acl2::pos-equiv equal (logext n x) n
+  :hints(("Goal" 
+          :in-theory (enable pos-fix bitops::logext**))))
+
 (define +carry-ext ((width posp)
                       (c booleanp)
                       (x integerp)
@@ -1236,3 +1243,88 @@
   :hints(("Goal" :in-theory (enable pos-fix))))
 
 
+(define s-append (lsb-bits (msb-bits true-listp))
+  (if (atom lsb-bits)
+      (if (atom msb-bits) '(nil)
+        (mbe :logic (true-list-fix msb-bits)
+             :exec msb-bits))
+    (scons (car lsb-bits) (s-append (cdr lsb-bits) msb-bits)))
+  ///
+  (defthm eval-of-s-append
+    (equal (bools->int (gobj-bfr-list-eval (s-append lsb-bits msb-bits) env))
+           (logapp (len lsb-bits)
+                   (bools->int (gobj-bfr-list-eval lsb-bits env))
+                   (bools->int (gobj-bfr-list-eval msb-bits env))))
+    :hints(("Goal" :in-theory (enable len)
+            :induct (s-append lsb-bits msb-bits)
+            :expand ((gobj-bfr-list-eval lsb-bits env)))
+           (and stable-under-simplificationp
+                '(:in-theory (e/d* (s-endp scdr
+                                           bitops::ihsext-recursive-redefs))))
+           (and stable-under-simplificationp
+                '(:expand ((gobj-bfr-list-eval msb-bits env))))))
+
+  (defthm member-of-s-append
+    (implies (and (not (member v msb-bits))
+                  (not (member v lsb-bits))
+                  v)
+             (not (member v (s-append lsb-bits msb-bits))))))
+
+
+
+(local (defthm logcdr-neg-bit
+         (implies (bitp x)
+                  (equal (logcdr (- x)) (- x)))
+         :hints(("Goal" :in-theory (enable bitp)))))
+
+
+(local (defthm logext-neg-bit
+         (implies (bitp x)
+                  (equal (logext n (- x)) (- x)))
+         :hints(("Goal" :in-theory (enable bitp)))))
+
+(local (defthm logcons-neg-bit
+         (implies (bitp x)
+                  (equal (logcons x (- x)) (- x)))
+         :hints(("Goal" :in-theory (enable bitp)))))
+
+
+(define extend-bits ((n natp) x)
+  :guard-hints (("goal" :in-theory (enable default-car)))
+  (b* (((when (zp n)) nil)
+       (first (mbe :logic (car x)
+                   :exec (and (consp x) (car x))))
+       ((when (eql n 1)) (list first))
+       ((when (or (atom x) (atom (cdr x))))
+        (cons first (extend-bits (1- n) x))))
+    (cons first (extend-bits (1- n) (cdr x))))
+  ///
+  (defthm len-of-extend-bits
+    (Equal (len (extend-bits n x)) (nfix n)))
+
+  (defthm consp-of-extend-bits
+    (Equal (consp (extend-bits n x))
+           (posp n)))
+
+  (defthm bools->int-of-extend-bits
+    (equal (bools->int (extend-bits n x))
+           (if (zp n)
+               0
+             (logext n (bools->int x))))
+    :hints(("Goal" :in-theory (enable bools->int bitops::logext**))))
+
+  
+  (local (defthm gobj-bfr-list-eval-under-iff
+           (iff (gobj-bfr-list-eval x env)
+                (consp x))
+           :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))
+
+  (defthm gobj-bfr-list-eval-of-extend-bits
+    (equal (gobj-bfr-list-eval (extend-bits n x) env)
+           (extend-bits n (gobj-bfr-list-eval x env)))
+    :hints(("Goal" :in-theory (enable gobj-bfr-list-eval))))
+
+  (defthm member-of-extend-bits
+    (implies (and (not (member v x))
+                  v)
+             (not (member v (extend-bits n x))))))

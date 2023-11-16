@@ -1,7 +1,7 @@
 ; More general functions to create and extend dag-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,7 +16,6 @@
 ;; dag-array-builders-maybe.lisp, the functions in this book do not assume that
 ;; the dag-array and dag-parent-array have particular names.
 
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "wf-dagp")
 (include-book "numeric-lists")
 (include-book "make-dag-constant-alist")
@@ -41,7 +40,7 @@
            (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbolp var))
                   :split-types t))
-  (let* ((nodenum-if-present (lookup-eq var dag-variable-alist)))
+  (let* ((nodenum-if-present (lookup-in-dag-variable-alist var dag-variable-alist)))
     (if nodenum-if-present
         (mv (erp-nil)
             nodenum-if-present
@@ -61,7 +60,7 @@
             (maybe-expand-array dag-parent-array-name dag-parent-array dag-len) ;; must keep the arrays in sync (parents of the new node are nil, the default)
             dag-constant-alist
             ;;pair var with its new nodenum in the DAG :
-            (acons-fast var dag-len dag-variable-alist))))))
+            (add-to-dag-variable-alist var dag-len dag-variable-alist))))))
 
 (DEFTHM NATP-OF-MV-NTH-3-OF-ADD-VARIABLE-TO-DAG-ARRAY-WITH-NAME
   (IMPLIES (NATP DAG-LEN)
@@ -72,6 +71,12 @@
                           DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME))))
   :RULE-CLASSES (:REWRITE :TYPE-PRESCRIPTION)
   :HINTS (("Goal" :IN-THEORY (ENABLE ADD-VARIABLE-TO-DAG-ARRAY-WITH-NAME))))
+
+(defthm integerp-of-mv-nth-3-of-add-variable-to-dag-array-with-name
+  (implies (integerp dag-len)
+           (integerp (mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name))))
 
 (defthm bound-on-mv-nth-3-of-add-variable-to-dag-array-with-name-3
   (implies (natp dag-len)
@@ -188,27 +193,20 @@
          dag-constant-alist)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name))))
 
-(defthm dag-variable-listp-of-mv-nth-6-of-add-variable-to-dag-array-with-name
+(defthm dag-variable-alistp-of-mv-nth-6-of-add-variable-to-dag-array-with-name
   (implies (and (dag-variable-alistp dag-variable-alist)
                 (symbolp var)
                 (natp dag-len))
            (dag-variable-alistp (mv-nth 6 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name))))
 
-(defthm dag-variable-alistp-of-mv-nth-6-of-add-variable-to-dag-array-with-name
-  (implies (and (dag-variable-alistp dag-variable-alist)
-                (natp dag-len)
-                (symbolp var))
-           (dag-variable-alistp (mv-nth 6 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name dag-variable-alistp))))
-
-(defthm all-<-of-strip-cdrs-of-mv-nth-6-of-add-variable-to-dag-array-with-name
-  (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
-                (symbolp var)
-                (natp dag-len))
-           (all-< (strip-cdrs (mv-nth 6 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
-                  (mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name bounded-dag-variable-alistp))))
+;; (defthm all-<-of-strip-cdrs-of-mv-nth-6-of-add-variable-to-dag-array-with-name
+;;   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
+;;                 (symbolp var)
+;;                 (natp dag-len))
+;;            (all-< (strip-cdrs (mv-nth 6 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
+;;                   (mv-nth 3 (add-variable-to-dag-array-with-name var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+;;   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-name bounded-dag-variable-alistp))))
 
 (defthm bounded-dag-variable-alistp-of-add-variable-to-dag-array-with-name
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)

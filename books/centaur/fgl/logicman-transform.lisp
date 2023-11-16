@@ -503,7 +503,7 @@
                    (invals (alist-to-bitarr (aignet::num-ins (logicman->aignet logicman)) env nil))
                    (regvals nil)))
             :do-not-induct t)))
-
+  
   (defret bfr-litarr-correct-p-of-<fn>
     (implies (and (bfrs-markedp bfrs bitarr)
                   (lbfr-mode-is :aignet)
@@ -534,6 +534,15 @@
     (equal (bfr-nvars new-logicman)
            (bfr-nvars logicman))
     :hints(("Goal" :in-theory (enable bfr-nvars))))
+
+  (defret bfr-eval-bfr-var-of-<fn>
+    (implies (and (< (nfix n) (bfr-nvars logicman))
+                  (lbfr-mode-is :aignet))
+             (equal (bfr-eval (bfr-var n new-logicman) env new-logicman)
+                    (bfr-eval (bfr-var n logicman) env logicman)))
+    :hints(("Goal" :in-theory (enable bfr-eval bfr-var bfr-nvars)
+            :expand ((:free (n aignet ins)
+                      (aignet::lit-eval (satlink::make-lit n 0) ins nil aignet))))))
 
   (defret logicman-invar-of-<fn>
     (implies (logicman-invar logicman)

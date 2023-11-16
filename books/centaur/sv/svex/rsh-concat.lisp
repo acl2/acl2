@@ -76,11 +76,12 @@
   :hints(("Goal" :in-theory (enable 4vec-rsh 4vec-shift-core))))
 
 
-(defthmd equal-of-logapp
-  (equal (equal (logapp w x1 y1) (logapp w x2 y2))
-         (and (equal (ifix y1) (ifix y2))
-              (equal (loghead w x1) (loghead w x2))))
-  :hints ((acl2::logbitp-reasoning :prune-examples nil)))
+(local
+ (defthmd equal-of-logapp
+   (equal (equal (logapp w x1 y1) (logapp w x2 y2))
+          (and (equal (ifix y1) (ifix y2))
+               (equal (loghead w x1) (loghead w x2))))
+   :hints ((acl2::logbitp-reasoning :prune-examples nil))))
 
 (defthm 4vec-rsh-of-concat
   (implies (and (2vec-p sh)

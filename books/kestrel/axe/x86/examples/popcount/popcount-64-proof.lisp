@@ -1,6 +1,6 @@
-; A proof of popcount_64
+; An Axe proof of popcount_64
 ;
-; Copyright (C) 2016-2022 Kestrel Technology, LLC
+; Copyright (C) 2016-2023 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,29 +19,32 @@
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 (include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
+(include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/equivalence-checker" :dir :system) ;has skip-proofs
 (include-book "kestrel/bv/bvcount" :dir :system) ; the spec
 
-;; bring in the code:
-(acl2::defconst-x86 *popcount-macho-64.executable* "popcount-macho-64.executable") ; (depends-on "popcount-macho-64.executable")
+;; (depends-on "popcount-macho-64.executable")
 
 ;; Lift the code into logic (1 second):
-(def-unrolled popcount_64 *popcount-macho-64.executable*
+(def-unrolled popcount_64 "popcount-macho-64.executable"
   :target "_popcount_64"
   :stack-slots 8
   :output (:register 0)
+  :produce-function nil ; just make the DAG
   ;; Introduce x as the input var:
   :assumptions '((equal (xr :rgf *rdi* x86) x)))
 
-;; Prove equivalence of the lifted code and the spec (16 seconds):
-(prove-equivalence '(popcount_64 x) ; lifted code
-                   '(acl2::bvcount '64 x) ; spec
+;; Unroll the spec:
+(acl2::unroll-spec-basic *popcount-64-spec*
+                         '(acl2::bvcount '64 x)
+                         ;; Extra rules to use for unrolling:
+                         :extra-rules (append '(acl2::bvcount-unroll
+                                                acl2::bvcount-of-0-arg1)))
+
+;; Prove equivalence of the lifted code and the spec:
+(prove-equivalence *popcount_64* ; lifted code
+                   *popcount-64-spec*
                    :max-conflicts 4000000
-                   ;; Rules to open and unroll the spec:
-                   :extra-rules (append '(popcount_64
-                                          acl2::bvcount-unroll
-                                          acl2::bvcount-of-0-arg1)
-                                        (acl2::core-rules-bv))
                    :types '((x . 64))
                    ;; avoid bit-blasting:
                    :initial-rule-sets nil)

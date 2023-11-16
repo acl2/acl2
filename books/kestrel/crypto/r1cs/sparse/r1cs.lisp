@@ -322,7 +322,7 @@
 
 (verify-guards dot-product
   :hints (("Goal" :in-theory (e/d (valuation-bindsp)
-                                  (strip-cars)))))
+                                  (strip-cars acl2::floor-mod-elim-rule)))))
 
 (defthm dot-product-of-append
   (implies (posp prime)

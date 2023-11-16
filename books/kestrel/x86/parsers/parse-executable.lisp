@@ -1,7 +1,7 @@
 ; Parsing an x86 executable
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -47,7 +47,7 @@
             (mv t
                 (er hard? 'parse-executable-bytes "Unexpected kind of file (not PE, ELF, or Mach-O).  Magic number is ~x0. PE file signature is ~x1" magic-number sig))))))))
 
-;; Parse a PE or Mach-O executable (TODO: Add support for ELF).
+;; Parses a PE or Mach-O or ELF executable.
 ;; Returns (mv erp contents state) where contents in an alist representing
 ;; the contents of the executable (exact format depends on the type of
 ;; the executable).

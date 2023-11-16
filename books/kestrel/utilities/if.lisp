@@ -22,25 +22,25 @@
 
 (defthmd if-of-t
   (equal (if t thenpart elsepart)
-         thenpart)
-  :hints (("Goal" :in-theory (enable if))))
+         thenpart))
 
 (defthmd if-when-non-nil-constant
   (implies (and (syntaxp (quotep test))
                 test)
            (equal (if test thenpart elsepart)
-                  thenpart))
-  :hints (("Goal" :in-theory (enable if))))
+                  thenpart)))
 
 (defthmd if-of-nil
   (equal (if nil thenpart elsepart)
-         elsepart)
-  :hints (("Goal" :in-theory (enable if))))
+         elsepart))
 
 (defthmd if-of-not
   (equal (if (not test) x y)
-         (if test y x))
-  :hints (("Goal" :in-theory (enable if))))
+         (if test y x)))
+
+(defthmd if-nil-t
+  (equal (if test nil t)
+         (not test)))
 
 ;; When rewriting an IF in an IFF context (e.g., when it appears in the test of
 ;; another IF), replace (if test t nil) with just the test.  This was needed

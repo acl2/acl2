@@ -257,6 +257,16 @@
                   nil))
   :hints (("Goal" :in-theory (enable nthcdr))))
 
+;rename to nthcdr-when-<=-of-len
+;see LIST::NTHCDR-WHEN-<=
+;seemed quite slow!  do we need it?  maybe go to final-cdr instead?
+(defthmd nthcdr-is-nil
+  (implies (and (<= (len x) n)
+                (integerp n)
+                (true-listp x))
+           (equal (nthcdr n x)
+                  nil)))
+
 ;; Often we'll know (true-listp x) and no case split will occur.
 ;; Not quite the same as true-listp-of-nthcdr in std.
 (defthm true-listp-of-nthcdr-2

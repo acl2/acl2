@@ -1,0 +1,291 @@
+
+(definec app2 (x :tl y :tl) :tl
+  (if (endp x)
+      y
+    (cons (car x) (app2 (cdr x) y))))
+
+(definec rev2 (x :tl) :tl
+  (if (endp x)
+      x
+    (app2 (rev2 (cdr x)) (list (car x)))))
+
+(defthm app2-associative
+  (implies (and (tlp x) (tlp y) (tlp z))
+           (equal (app2 (app2 x y) z)
+                  (app2 x (app2 y z)))))
+
+(defthm app2-nil
+  (implies (tlp x)
+           (equal (app2 x nil)
+                  x)))
+
+(defthm rev2-over-app2
+  (implies (and (tlp x) (tlp y))
+           (equal (rev2 (app2 x y))
+                  (app2 (rev2 y) (rev2 x)))))
+
+(defthm rev2-rev2
+  (implies (tlp x) 
+           (equal (rev2 (rev2 x))
+                  x)))
+
+(definec revt (x :tl acc :tl) :tl
+  (if (endp x)
+      acc
+    (revt (cdr x) (cons (car x) acc))))
+
+(definec rev* (x :tl) :tl
+  (revt x nil))
+
+(defthm revt-rev2
+  (implies (and (tlp x)
+                (tlp acc))
+           (equal (revt x acc)
+                  (app2 (rev2 x) acc))))
+
+                  
+(definec no-dups (l :tl) :bool
+  (or (endp l)
+      (and (not (in (car l) (cdr l)))
+           (no-dups (cdr l)))))
+           
+(definec rem-dups (l :tl) :tl
+  (cond ((endp l) l)
+        ((in (car l) (cdr l)) (rem-dups (cdr l)))
+        (t (cons (car l) (rem-dups (cdr l))))))
+
+
+(definec rem-dups-t (l :tl  acc :tl) :tl
+  (cond ((endp l) (rev2 acc))
+        ((in (car l) (cdr l)) (rem-dups-t (cdr l) acc))
+        (t (rem-dups-t (cdr l) (cons (car l) acc)))))
+
+
+(definec rem-dups* (l :tl) :tl
+  (rem-dups-t l nil))
+
+
+
+
+
+
+(defthm app2-associative
+  (implies (and (tlp x) (tlp y) (tlp z))
+           (equal (app2 (app2 x y) z)
+                  (app2 x (app2 y z)))))
+
+
+(defthm app2-nil
+  (implies (tlp x)
+           (equal (app2 x nil)
+                  x)))
+
+
+
+Conjecture REM-DUPS-T-REM-DUPS:
+(implies (and (tlp l)
+              (tlp acc))
+         (equal (rem-dups-t l acc)
+                (app2 (rev2 acc) (rem-dups l))))
+
+Context:
+C1. (tlp l)
+C2. (tlp acc)
+
+Proof by: Induction on (rem-dups-t l l)
+
+Induction Case 0:
+(implies (not (and (tlp l)
+                   (tlp acc)))
+         (implies (and (tlp l)
+                       (tlp acc))
+                  (equal (rem-dups-t l acc)
+                         (app2 (rev2 acc) (rem-dups l)))))
+
+Exportation:
+(implies (and (not (and (tlp l) (tlp acc)))
+              (tlp l)
+              (tlp acc))
+         (equal (rem-dups-t l acc)
+                (app2 (rev2 acc) (rem-dups l))))
+
+
+Context:
+C3. (not (and (tlp l) (tlp acc)))
+
+Derived Context:
+D1. nil { C1, C2, C3, PL }
+
+QED
+
+Induction Case 3:
+(implies (and (tlp l)
+              (tlp acc)
+              (not (endp l))
+              (not (in (car l) (cdr l)))
+              (implies (and (tlp (cdr l))
+                            (tlp (cons (car l) acc)))
+                       (equal (rem-dups-t (cdr l)
+                                          (cons (car l) acc))
+                              (app2 (rev2 (cons (car l) acc))
+                                    (rem-dups (cdr l))))))
+         (implies (and (tlp l)
+                       (tlp acc))
+                  (equal (rem-dups-t l acc)
+                         (app2 (rev2 acc) (rem-dups l)))))
+
+Exportation:
+(implies (and (tlp l)
+              (tlp acc)
+              (not (endp l))
+              (not (in (car l) (cdr l)))
+              (implies (and (tlp (cdr l))
+                            (tlp (cons (car l) acc)))
+                       (equal (rem-dups-t (cdr l)
+                                          (cons (car l) acc))
+                              (app2 (rev2 (cons (car l) acc))
+                                    (rem-dups (cdr l))))))
+         (equal (rem-dups-t l acc)
+                (app2 (rev2 acc) (rem-dups l))))
+
+Context:
+C3. (not (endp l))
+C4. (not (in (car l) (cdr l)))
+C5. (implies (and (tlp (cdr l))
+                  (tlp (cons (car l) acc)))
+             (equal (rem-dups-t (cdr l)
+                                (cons (car l) acc))
+                    (app2 (rev2 (cons (car l) acc))
+                          (rem-dups (cdr l)))))
+
+Derived Context:
+D1. (tlp (cdr l)) { Def tlp, C1, C2 }
+D2. (tlp (cons (car l) acc)) { cons axioms, Def tlp, C2 }
+D3. (equal (rem-dups-t (cdr l) (cons (car l) acc))
+           (app2 (rev2 (cons (car l) acc)) (rem-dups (cdr l)))) { C5, D1, D2, MP }
+
+Goal:
+(equal (rem-dups-t l acc)
+                (app2 (rev2 acc) (rem-dups l)))
+
+Proof:
+(rem-dups-t l acc)
+== { Def rem-dups-t, C3, C4 }
+(rem-dups-t (cdr l) (cons (car l) acc))
+== { D3 }
+(app2 (rev2 (cons (car l) acc)) (rem-dups (cdr l)))
+== { Def rev2, cons axioms }
+(app2 (app2 (rev2 acc) (list (car l)))
+      (rem-dups (cdr l)))
+== { Lemma app2-associative ((x (rev2 acc)) (y (list (car l))) (z (rem-dups (cdr l)))) }
+(app2 (rev2 acc)
+      (app2 (list (car l)) (rem-dups (cdr l))))
+== { Def app2, cons axioms }
+(app2 (rev2 acc)
+      (cons (car l) (rem-dups (cdr l))))
+== { Def rem-dups, C3, C4 }
+(app2 (rev2 acc) (rem-dups l))
+
+QED
+
+
+
+
+Induction Case 2:
+(implies (and (tlp l)
+              (tlp acc)
+              (not (endp l))
+              (in (car l) (cdr l))
+              (implies (and (tlp (cdr l))
+                            (tlp acc))
+                       (equal (rem-dups-t (cdr l) acc)
+                              (app2 (rev2 acc) (rem-dups (cdr l))))))
+         (implies (and (tlp l)
+                       (tlp acc))
+                  (equal (rem-dups-t l acc)
+                         (app2 (rev2 acc) (rem-dups l)))))
+
+Exportation:
+(implies (and (tlp l)
+              (tlp acc)
+              (not (endp l))
+              (in (car l) (cdr l))
+              (implies (and (tlp (cdr l))
+                            (tlp acc))
+                       (equal (rem-dups-t (cdr l) acc)
+                              (app2 (rev2 acc) (rem-dups (cdr l))))))
+         (equal (rem-dups-t l acc)
+                (app2 (rev2 acc) (rem-dups l))))
+
+Context:
+C3. (not (endp l))
+C4. (in (car l) (cdr l))
+C5. (implies (and (tlp (cdr l))
+                  (tlp acc))
+             (equal (rem-dups-t (cdr l) acc)
+                    (app2 (rev2 acc) (rem-dups (cdr l)))))
+
+Derived Context:
+D1. (tlp (cdr l)) { Def tlp, C1, C2 }
+D2. (equal (rem-dups-t (cdr l) acc)
+           (app2 (rev2 acc) (rem-dups (cdr l))))
+{ C5, D1, C2, MP }
+
+Goal: 
+(equal (rem-dups-t l acc)
+       (app2 (rev2 acc) (rem-dups l)))
+
+Proof:
+(rem-dups-t l acc)
+== { Def rem-dups-t, C3, C4 }
+(rem-dups-t (cdr l) acc)
+== { D2 }
+(app2 (rev2 acc) (rem-dups (cdr l)))
+== { Def rem-dups, C3, C4 }
+(app2 (rev2 acc) (rem-dups l))
+
+QED
+
+
+
+
+Induction Case 1:
+(implies (and (tlp l)
+              (tlp acc)
+              (endp l))
+         (implies (and (tlp l)
+                       (tlp acc))
+                  (equal (rem-dups-t l acc)
+                         (app2 (rev2 acc) (rem-dups l)))))
+
+Exportation:
+(implies (and (tlp l)
+              (tlp acc)
+              (endp l))
+         (equal (rem-dups-t l acc)
+                (app2 (rev2 acc) (rem-dups l))))
+
+Context:
+C3. (endp l)
+
+Derived Context:
+D1. (equal l nil) { Def tlp, C1, C3 }
+D2. (equal (rem-dups l) nil) { Def rem-dups, D1 }
+
+Goal: (equal (rem-dups-t l acc)
+                (app2 (rev2 acc) (rem-dups l)))
+                
+Proof:
+(rem-dups-t l acc)
+== { C3, Def rem-dups-t }
+(rev2 acc)
+== { C2, Contract rev2, Lemma app2-nil ((x (rev2 acc))) }
+(app2 (rev2 acc) nil)
+== { D2 }
+(app2 (rev2 acc) (rem-dups l))
+
+QED
+
+
+QED
+

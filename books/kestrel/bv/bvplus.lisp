@@ -325,14 +325,27 @@
 
 ;; Rewrite bvplus to + when possible
 (defthmd bvplus-becomes-+
-  (implies (and (< (+ x y) (expt 2 n))
+  (implies (and (< (+ x y) (expt 2 size))
                 (natp x)
                 (natp y))
-           (equal (bvplus n x y)
+           (equal (bvplus size x y)
                   (+ x y)))
   :hints (("Goal" :in-theory (e/d (expt ;why?
                                    bvchop-identity)
                                   (expt-hack)))))
+
+;; Similar to the above
+;rename
+;here we drop the bvchop (and thus avoid conflicts with the anti-bvplus rules)
+(defthmd bvplus-opener
+  (implies (and (unsigned-byte-p size (+ x y))
+                (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvplus size x y)
+                  (+ x y)))
+  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
+                                            )))))
 
 ;; x plus 1 is greater than x unless the addition overflows or x is just wider than size.
 ;todo: gen the 1.
@@ -409,16 +422,6 @@
 
 (theory-invariant (incompatible (:definition bvplus) (:rewrite bvplus-recollapse)))
 
-;here we drop the bvchop (and thus avoid conflicts with the anti-bvplus rules)
-(defthmd bvplus-opener
-  (implies (and (unsigned-byte-p size (+ x y))
-                (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (bvplus size x y)
-                  (+ x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
-                                            )))))
 
 ;todo: instead, introduce bvminus
 ;todo: rename
@@ -431,3 +434,9 @@
            (equal (bvplus size y (bvplus size (- y) x))
                   (bvchop size x)))
     :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-of-expt-same-arg2
+  (implies (natp size)
+           (equal (bvplus size x (expt 2 size))
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvplus))))

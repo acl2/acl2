@@ -20,6 +20,7 @@
 (include-book "projects/groups/sylow" :dir :system)
 (include-book "projects/numbers/ballot" :dir :system)
 (include-book "projects/numbers/birthday" :dir :system)
+(include-book "projects/numbers/derangements" :dir :system)
 (include-book "projects/numbers/divisors" :dir :system)
 (include-book "projects/numbers/div3" :dir :system)
 (include-book "projects/numbers/eisenstein" :dir :system)
@@ -27,12 +28,17 @@
 (include-book "projects/numbers/euler" :dir :system)
 (include-book "projects/numbers/girard" :dir :system)
 (include-book "projects/numbers/harmonic" :dir :system)
+(include-book "projects/numbers/konigsberg" :dir :system)
 (include-book "projects/numbers/partitions" :dir :system)
+(include-book "projects/numbers/subseq" :dir :system)
+(include-book "projects/numbers/subsets" :dir :system)
 (include-book "projects/numbers/sum4squares" :dir :system)
 (include-book "projects/numbers/triangular" :dir :system)
 (include-book "projects/numbers/triples" :dir :system)
 (include-book "projects/numbers/z2q" :dir :system)
 (include-book "workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac" :dir :system)
+;; (include-book "workshops/2018/kwan-greenstreet/cauchy-schwarz" :dir :system) ; needs ACL2r
+;; (include-book "workshops/2020/kwan-peng-greenstreet/abstract-cs" :dir :system) ; needs ACL2r
 
 ;; TODO: How to support theorems only provable in acl2(r)?
 
@@ -89,7 +95,14 @@
 
      ;; "<h3 id=\"4\">4. Pythagorean Theorem</h3>"
      ;; "<h3 id=\"5\">5. Prime Number Theorem</h3>"
-     ;; "<h3 id=\"6\">6. Godel's Incompleteness Theorem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"6\">6. Godel's Incompleteness Theorem</h3>"
+
+     "<p>By Natarajan Shankar, using Nqthm, a predecessor to ACL2.</p>"
+
+     "<p>See <a href=\"https://www.cs.utexas.edu/users/boyer/ftp/nqthm/nqthm-1992/examples/shankar/goedel.events\">this file</a>.  See also <a href=\"https://philpapers.org/rec/SHAMMA-3\">this book</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -321,15 +334,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;; "<h3 id=\"52\">52. The Number of Subsets of a Set</h3>"
+     "<h3 id=\"52\">52. The Number of Subsets of a Set</h3>"
+
+     "@(def dm::len-subsets)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/subsets.lisp\">books/projects/numbers/subsets.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"53\">53. Pi is Transcendental</h3>"
-     ;; "<h3 id=\"54\">54. Konigsberg Bridges Problem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"54\">54. Konigsberg Bridges Problem</h3>"
+
+     "@(def dm::konigsberg)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/konigsberg.lisp\">books/projects/numbers/konigsberg.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"55\">55. Product of Segments of Chords</h3>"
      ;; "<h3 id=\"56\">56. The Hermite-Lindemann Transcendence Theorem</h3>"
      ;; "<h3 id=\"57\">57. Heron's Formula</h3>"
-     ;; "<h3 id=\"58\">58. Formula for the Number of Combinations</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"58\">58. Formula for the Number of Combinations</h3>"
+
+     "@(def dm::len-subsets-of-order)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/subsets.lisp\">books/projects/numbers/subsets.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
      ;; "<h3 id=\"59\">59. The Laws of Large Numbers</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
      ;; "<h3 id=\"60\">60. Bezout's Theorem</h3>"
+
+     ;; TODO: John Cowles proved this?
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"61\">61. Theorem of Ceva</h3>"
      ;; "<h3 id=\"62\">62. Fair Games Theorem</h3>"
      ;; "<h3 id=\"63\">63. Cantor's Theorem</h3>"
@@ -349,7 +399,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
      ;; "<h3 id=\"67\">67. e is Transcendental</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"68\">68. Sum of an arithmetic series</h3>"
+
+     ;; TODO: Ruben Gamboa proved this?
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -390,7 +445,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;; "<h3 id=\"73\">73. Ascending or Descending Sequences</h3>"
+     "<h3 id=\"73\">73. Ascending or Descending Sequences</h3>"
+
+     "@(def dm::asc-desc-subseqp)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/subseq.lisp\">books/projects/numbers/subseq.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"74\">74. The Principle of Mathematical Induction</h3>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -407,7 +469,22 @@
 
      ;; "<h3 id=\"76\">76. Fourier Series</h3>"
      ;; "<h3 id=\"77\">77. Sum of kth powers</h3>"
-     ;; "<h3 id=\"78\">78. The Cauchy-Schwarz Inequality</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"78\">78. The Cauchy-Schwarz Inequality</h3>"
+
+     "<p>Theorems @('cauchy-schwarz-1'), @('cauchy-schwarz-2'), @('cauchy-schwarz-3'), and @('cauchy-schwarz-4').</p>"
+
+     "<p>By Carl Kwan and Mark R. Greenstreet, in <a href=\"https://github.com/acl2/acl2/blob/master/books/workshops/2018/kwan-greenstreet/cauchy-schwarz.lisp\">books/workshops/2018/kwan-greenstreet/cauchy-schwarz.lisp</a>.</p>"
+
+     "<p>Note: These theorems require <see topic=\"@(url real)\">ACL2(r)</see>.</p>"
+
+     "<p>Theorems @('cs1'), @('cs2'), @('cs1-equality-implies-linear-dependence'), @('cs2-equality-implies-linear-dependence'), @('linear-dependence-implies-cs1-equality'), and @('linear-dependence-implies-cs2-equality').</p>"
+
+     "<p>By Carl Kwan, Yan Peng, and Mark R. Greenstreet, in <a href=\"https://github.com/acl2/acl2/blob/master/books/workshops/2020/kwan-peng-greenstreet/abstract-cs.lisp\">books/workshops/2020/kwan-peng-greenstreet/abstract-cs.lisp</a>.</p>"
+
+     "<p>Note: These theorems require <see topic=\"@(url real)\">ACL2(r)</see>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -469,10 +546,29 @@
 
      ;; "<h3 id=\"86\">86. Lebesgue Measure and Integration</h3>"
      ;; "<h3 id=\"87\">87. Desargues's Theorem</h3>"
-     ;; "<h3 id=\"88\">88. Derangements Formula</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"88\">88. Derangements Formula</h3>"
+
+     "@(def dm::derangements-formula)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/derangements.lisp\">books/projects/numbers/derangements.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
      ;; "<h3 id=\"89\">89. The Factor and Remainder Theorems</h3>"
      ;; "<h3 id=\"90\">90. Stirling's Formula</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"91\">91. The Triangle Inequality</h3>"
+
+     ;; TODO: Ruben Gamboa proved this?
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"92\">92. Pick's Theorem</h3>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -489,7 +585,17 @@
 
      ;; "<h3 id=\"94\">94. The Law of Cosines</h3>"
      ;; "<h3 id=\"95\">95. Ptolemy's Theorem</h3>"
-     ;; "<h3 id=\"96\">96. Principle of Inclusion/Exclusion</h3>"
+
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"96\">96. Principle of Inclusion/Exclusion</h3>"
+
+     "@(def dm::inclusion-exclusion-principle)"
+
+     "<p>By David Russinoff, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/numbers/sylvester.lisp\">books/projects/numbers/sylvester.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"97\">97. Cramer's Rule</h3>"
      ;; "<h3 id=\"98\">98. Bertrand's Postulate</h3>"
      ;; "<h3 id=\"99\">99. Buffon Needle Problem</h3>"

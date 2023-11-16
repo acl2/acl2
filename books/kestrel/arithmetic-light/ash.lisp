@@ -63,7 +63,7 @@
            :in-theory (e/d (ash expt-of-+)
                            (<-of-*-and-*-cancel)))))
 
-(defthm acl2::unsigned-byte-p-ash-alt-strong
+(defthm unsigned-byte-p-ash-alt-strong
   (implies (and (natp i)
                 (natp size)
                 (natp count)

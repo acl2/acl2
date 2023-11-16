@@ -1,6 +1,6 @@
 ; A stobj to gather parameters used in rewriting
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,10 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
-
 (include-book "kestrel/utilities/print-levels" :dir :system)
+
+;; TODO: Consider adding more things to this, such as:
+;; interpreted-function-alist, memoization, info, tries, limits.
 
 (defstobj+ rewrite-stobj
   (known-booleans :type (satisfies symbol-listp) :initially nil)

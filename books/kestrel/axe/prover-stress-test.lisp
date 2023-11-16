@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; STATUS: INCOMPLETE
+
 ;; Since Axe and ACL2 are two provers for the same logic, we can test them
 ;; against each other.  This book contains a tool to do that by systematically
 ;; generating small formulas and calling both provers on each.  Formulas
@@ -30,9 +32,11 @@
 (include-book "tools/prove-dollar" :dir :system)
 
 ;; Returns state
+;; TODO: Arrange to return an indication of what happened, so a caller can throw an error if the 2 provers differ.
 (defun compare-axe-and-acl2-on-formula (formula state)
   (declare (xargs :stobjs state
-                  :mode :program))
+                  :mode :program ;; todo
+                  ))
   (b* (;; Try to prove FORMULA with ACL2:
        ((mv & acl2-provedp state)
         (prove$ formula))
@@ -40,15 +44,19 @@
        ((mv failedp & state)
         (prove-implication-with-basic-prover-fn
          *t* ;use a hyp of t
-         '(:rep :rewrite :subst)
          formula
-         nil ; no rules
-         nil ; no global rules
+         '(:rep :rewrite :subst)
+         nil ; no rule-lists
+         nil ; no global-rules
+         nil ; no extra-global-rules
          nil ; no ifns
          nil ; no-splitp
+         nil ; don't print as clauses
+         nil ; don't elide any functions
          nil ; no monitored rules
          nil ; print
          nil ; :use hint
+         nil ; var-ordering
          state))
        (axe-provedp (not failedp)))
     (if (and acl2-provedp
@@ -82,6 +90,13 @@
                   :mode :program))
   (prog2$ (cw "(COMPARING PROVERS on ~x0 formulas~%" (len formulas))
           (compare-axe-and-acl2-on-formulas-aux formulas state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; simple test:
+;; (compare-axe-and-acl2-on-formula '(if t 3 4) state)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;; constants and variables to use
@@ -141,6 +156,7 @@
 ;(compare-axe-and-acl2-on-formulas (make-formulas *atoms* *fns-and-arities* 1) state)
 ;(compare-axe-and-acl2-on-formulas (make-formulas *atoms* *fns-and-arities* 2) state)
 
+;;; todo: uncomment
 ;; (compare-axe-and-acl2-on-formulas (make-formulas
 ;;                                    '(t nil 7 a b)
 ;;                                    '((if . 3)

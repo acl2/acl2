@@ -33,6 +33,13 @@
 
 (local (std::add-default-post-define-hook :fix))
 
+(local (defthm equal-of-ash-same
+         (implies (natp n)
+                  (equal (equal (ash x n) (ash y n))
+                         (equal (ifix x) (ifix y))))
+         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                           bitops::ihsext-recursive-redefs)))))
+
 (define svar-equiv-nonoverride ((x svar-p) (y svar-p))
   :guard-hints (("goal" :in-theory (enable svar-change-override)))
   (mbe :logic
@@ -41,7 +48,30 @@
        (b* (((svar x)) ((svar y)))
          (and (equal x.name y.name)
               (eql x.delay y.delay)
-              (eq x.nonblocking y.nonblocking)))))
+              (equal x.props y.props)
+              (eql (logtail 3 x.bits)
+                   (logtail 3 y.bits))))))
+
+
+
+(define overridekeys->override-vars ((x svarlist-p))
+  :returns (override-vars svarlist-p)
+  (if (atom x)
+      nil
+    (cons (svar-change-override (car x) :test)
+          (cons (svar-change-override (car x) :val)
+                (overridekeys->override-vars (cdr x)))))
+  ///
+  (defthmd overridekeys->override-vars-under-set-equiv
+    (set-equiv (overridekeys->override-vars x)
+               (append (svarlist-change-override x :test)
+                       (svarlist-change-override x :val)))
+    :hints(("Goal" :in-theory (enable svarlist-change-override))))
+
+  (defret svarlist-override-okp-of-<fn>
+    (svarlist-override-okp override-vars)
+    :hints(("Goal" :in-theory (enable svarlist-override-okp)))))
+
 
 (define svarlist-member-nonoverride ((x svar-p)
                                      (lst svarlist-p))
@@ -66,6 +96,7 @@
                            (x x) (y x-equiv)))
              :expand ((svarlist-change-override x type)))))
   (defcong set-equiv equal (svarlist-member-nonoverride x lst) 2))
+
 
 
 (define svar-overridekeys-envs-agree ((x svar-p)
@@ -169,7 +200,10 @@
              (equal (svex-env-lookup x impl-env)
                     (svex-env-lookup x spec-env))))
 
-             
+  (defret <fn>-of-svarlist-change-override
+    (equal (let ((overridekeys (svarlist-change-override overridekeys type))) <call>)
+           agree))
+  
 
   (defcong svex-envs-similar equal (svar-overridekeys-envs-agree x overridekeys impl-env spec-env spec-outs) 3)
   (defcong svex-envs-similar equal (svar-overridekeys-envs-agree x overridekeys impl-env spec-env spec-outs) 4)
@@ -214,7 +248,11 @@
   (defthm svarlist-overridekeys-envs-agree-badguy-of-append
     (equal (svarlist-overridekeys-envs-agree-badguy (append x y) overridekeys impl-env spec-env spec-outs)
            (or (svarlist-overridekeys-envs-agree-badguy x overridekeys impl-env spec-env spec-outs)
-               (svarlist-overridekeys-envs-agree-badguy y overridekeys impl-env spec-env spec-outs)))))
+               (svarlist-overridekeys-envs-agree-badguy y overridekeys impl-env spec-env spec-outs))))
+
+  (defret <fn>-of-svarlist-change-override
+    (iff (let ((overridekeys (svarlist-change-override overridekeys type))) <call>)
+         badguy)))
 
 (define svarlist-overridekeys-envs-agree ((x svarlist-p)
                                           (overridekeys svarlist-p)
@@ -415,7 +453,11 @@
                (and (svar-overridekeys-envs-agree (car x) overridekeys impl-env spec-env spec-outs)
                     (svarlist-overridekeys-envs-agree (cdr x) overridekeys impl-env spec-env spec-outs))))
     :hints(("Goal" :in-theory (enable svarlist-overridekeys-envs-agree-badguy)))
-    :rule-classes ((:definition :controller-alist ((svarlist-overridekeys-envs-agree t nil nil nil nil))))))
+    :rule-classes ((:definition :controller-alist ((svarlist-overridekeys-envs-agree t nil nil nil nil)))))
+
+  (defret <fn>-of-svarlist-change-override
+    (equal (let ((overridekeys (svarlist-change-override overridekeys type))) <call>)
+           agree)))
 
 
 
@@ -654,6 +696,7 @@
            (alist-keys (svex-env-fix spec-env)))
    overridekeys impl-env spec-env spec-outs)
   ///
+  
   (defret <fn>-implies
     (implies agree
              (svar-overridekeys-envs-agree v overridekeys impl-env spec-env spec-outs))
@@ -679,6 +722,10 @@
                                     svarlist-overridekeys-envs-agree-badguy)
                                    (<fn>)))))
 
+  (defret <fn>-of-svarlist-change-override
+    (equal (let ((overridekeys (svarlist-change-override overridekeys type))) <call>)
+           agree))
+  
   (local (in-theory (enable 4vec-muxtest-subsetp-when-svar-overridekeys-envs-agree-test
                             4vec-override-mux-agrees-when-svar-overridekeys-envs-agree-test
                             4vec-override-mux-agrees-when-svar-overridekeys-envs-agree-val
@@ -888,6 +935,19 @@
                      :use ((:instance svex-overridekey-transparent-p-necc
                             (overridekeys ,other)
                             (impl-env (mv-nth 0 (svex-overridekey-transparent-p-witness . ,(cdr lit))))
+                            (spec-env (mv-nth 1 (svex-overridekey-transparent-p-witness . ,(cdr lit)))))))))))
+
+  (defthm svex-overridekey-transparent-p-of-svarlist-change-override
+    (equal (svex-overridekey-transparent-p x (svarlist-change-override overridekeys type) subst)
+           (svex-overridekey-transparent-p x overridekeys subst))
+    :hints (("goal" :cases ((svex-overridekey-transparent-p x overridekeys subst)))
+            (And stable-under-simplificationp
+                 (b* ((lit (assoc 'svex-overridekey-transparent-p clause))
+                      (other (if (eq (nth 2 lit) 'overridekeys) '(svarlist-change-override overridekeys type) 'overridekeys)))
+                   `(:expand (,lit)
+                     :use ((:instance svex-overridekey-transparent-p-necc
+                            (overridekeys ,other)
+                            (impl-env (mv-nth 0 (svex-overridekey-transparent-p-witness . ,(cdr lit))))
                             (spec-env (mv-nth 1 (svex-overridekey-transparent-p-witness . ,(cdr lit))))))))))))
 
 (defsection svexlist-overridekey-transparent-p
@@ -951,6 +1011,19 @@
                  (b* ((lit (assoc 'svexlist-overridekey-transparent-p clause))
                       (other (if (eq (nth 2 lit) 'overridekeys) '(svarlist-fix overridekeys) 'overridekeys)))
                    `(:expand (,lit)
+                     :use ((:instance svexlist-overridekey-transparent-p-necc
+                            (overridekeys ,other)
+                            (impl-env (mv-nth 0 (svexlist-overridekey-transparent-p-witness . ,(cdr lit))))
+                            (spec-env (mv-nth 1 (svexlist-overridekey-transparent-p-witness . ,(cdr lit)))))))))))
+
+  (defthm svexlist-overridekey-transparent-p-of-svarlist-change-override
+    (equal (svexlist-overridekey-transparent-p x (svarlist-change-override overridekeys type) subst)
+           (svexlist-overridekey-transparent-p x overridekeys subst))
+    :hints (("goal" :cases ((svexlist-overridekey-transparent-p x overridekeys subst)))
+            (And stable-under-simplificationp
+                 (b* ((lit (assoc 'svexlist-overridekey-transparent-p clause))
+                      (other (if (eq (nth 2 lit) 'overridekeys) '(svarlist-change-override overridekeys type) 'overridekeys)))
+                   `(:expand ((:with svexlist-overridekey-transparent-p ,lit))
                      :use ((:instance svexlist-overridekey-transparent-p-necc
                             (overridekeys ,other)
                             (impl-env (mv-nth 0 (svexlist-overridekey-transparent-p-witness . ,(cdr lit))))
@@ -1020,6 +1093,19 @@
                  (b* ((lit (assoc 'svex-alist-overridekey-transparent-p clause))
                       (other (if (eq (nth 2 lit) 'overridekeys) '(svarlist-fix overridekeys) 'overridekeys)))
                    `(:expand (,lit)
+                     :use ((:instance svex-alist-overridekey-transparent-p-necc
+                            (overridekeys ,other)
+                            (impl-env (mv-nth 0 (svex-alist-overridekey-transparent-p-witness . ,(cdr lit))))
+                            (spec-env (mv-nth 1 (svex-alist-overridekey-transparent-p-witness . ,(cdr lit)))))))))))
+
+  (defthm svex-alist-overridekey-transparent-p-of-svarlist-change-override
+    (equal (svex-alist-overridekey-transparent-p x (svarlist-change-override overridekeys type) subst)
+           (svex-alist-overridekey-transparent-p x overridekeys subst))
+    :hints (("goal" :cases ((svex-alist-overridekey-transparent-p x overridekeys subst)))
+            (And stable-under-simplificationp
+                 (b* ((lit (assoc 'svex-alist-overridekey-transparent-p clause))
+                      (other (if (eq (nth 2 lit) 'overridekeys) '(svarlist-change-override overridekeys type) 'overridekeys)))
+                   `(:expand ((:with svex-alist-overridekey-transparent-p ,lit))
                      :use ((:instance svex-alist-overridekey-transparent-p-necc
                             (overridekeys ,other)
                             (impl-env (mv-nth 0 (svex-alist-overridekey-transparent-p-witness . ,(cdr lit))))

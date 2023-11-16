@@ -18,14 +18,14 @@
 
 ;; TODO: Add support for :axe-prover option to call the Axe prover
 
-;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
+;; See also the provers created by make-prover-simple (they are more
+;; lightweight and do not depend on skip-proofs).
 
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
 (include-book "dag-size")
 (include-book "make-term-into-dag-basic")
 (include-book "equivalent-dags")
-;(include-book "dagify") ;todo
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system) ; for INTEGERP-OF--
 (include-book "kestrel/arithmetic-light/plus" :dir :system) ; for INTEGERP-OF-+
@@ -204,6 +204,7 @@
        (- (and print (cw "(Applying the Axe rewriter~%")))
        ((mv erp new-dag state)
         (simp-dag dag ; TODO: Use the basic rewriter (but it will need to support rewriting nodes assuming their [approximate] contexts)
+                  ;; todo: consider :exhaustivep t
                   :rule-alist rule-alist
                   :interpreted-function-alist interpreted-function-alist
                   :monitor monitor
@@ -891,6 +892,7 @@
             (simplify-terms-repeatedly ;; simplify-terms-using-each-other
              assumptions rule-alist
              nil ; monitored-rules
+             t ; memoizep
              state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))

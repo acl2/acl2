@@ -583,25 +583,75 @@
                                            (svtv-assigns-override-vars)
                                            (svarlist-change-override)))))))
 
+     ;; (:@ :triplecheck
+     ;;  (local (defthm svexlist-check-overridetriples-of-<data>
+     ;;           (b* (((svtv-data-obj x) (<data>))
+     ;;                ((base-fsm x.phase-fsm))
+     ;;                (overridekeys (<name>-overridekeys))
+     ;;                (triples (svar->svex-override-triplelist
+     ;;                          (svarlist-to-override-triples overridekeys)
+     ;;                          x.phase-fsm.values)))
+     ;;             (and (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.values) triples))
+     ;;                  (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.nextstate) triples))))
+     ;;           :hints (("goal" :in-theory '((<data>)
+     ;;                                        (svex-alist-vals)
+     ;;                                        (svtv-data-obj->phase-fsm)
+     ;;                                        (<name>-overridekeys)
+     ;;                                        (svar->svex-override-triplelist)
+     ;;                                        (svarlist-to-override-triples)
+     ;;                                        (base-fsm->values)
+     ;;                                        (base-fsm->nextstate)
+     ;;                                        (svexlist-check-overridetriples)))))))
+
      (:@ :triplecheck
-      (local (defthm svexlist-check-overridetriples-of-<data>
+      (:@ :fgl-semantic-check
+       
+       (local (fgl::disable-definition sv::svex-env-fix$inline))
+       (local (fgl::disable-definition sv::svex-env-lookup))
+       (local (memoize 'svex-mask-alist-p))
+       
+       (:@ :default-aignet-transforms
+        (local (defun tmp-svtv-generalize-fgl-transforms-config ()
+                 (declare (xargs :guard t
+                                 :guard-hints (("goal" :in-theory (executable-counterpart-theory :here)))))
+                 #!aignet
+                 (list (change-fraig-config *fraig-default-config*
+                                            :random-seed-name nil
+                                            :ctrex-queue-limit 64
+                                            :sim-words 2
+                                            :initial-sim-words 1
+                                            :initial-sim-rounds 1
+                                            :ctrex-force-resim t
+                                            :ipasir-limit 100
+                                            :miters-only t
+                                            :ipasir-recycle-count 40000
+                                            ))))
+        (local (defattach fgl::fgl-aignet-transforms-config
+                 tmp-svtv-generalize-fgl-transforms-config))
+
+        (local (define tmp-svtv-generalize-monolithic-sat-with-transforms ()
+                 :guard-hints (("goal" :in-theory '((booleanp))))
+                 (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
+        (local (defattach fgl::fgl-toplevel-sat-check-config tmp-svtv-generalize-monolithic-sat-with-transforms)))
+       
+       
+       (local (fgl::def-fgl-thm base-fsm-override-smart-check-on-env-of-<data>
+                (b* (((svtv-data-obj x) (<data>))
+                     (overridekeys (<name>-overridekeys)))
+                  (base-fsm-override-smart-check-on-env x.phase-fsm overridekeys env)))))
+      
+      (local (defthm base-fsm-override-smart-check-of-<data>
                (b* (((svtv-data-obj x) (<data>))
-                    ((base-fsm x.phase-fsm))
-                    (overridekeys (<name>-overridekeys))
-                    (triples (svar->svex-override-triplelist
-                              (svarlist-to-override-triples overridekeys)
-                              x.phase-fsm.values)))
-                 (and (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.values) triples))
-                      (not (svexlist-check-overridetriples (svex-alist-vals x.phase-fsm.nextstate) triples))))
-               :hints (("goal" :in-theory '((<data>)
-                                            (svex-alist-vals)
-                                            (svtv-data-obj->phase-fsm)
-                                            (<name>-overridekeys)
-                                            (svar->svex-override-triplelist)
-                                            (svarlist-to-override-triples)
-                                            (base-fsm->values)
-                                            (base-fsm->nextstate)
-                                            (svexlist-check-overridetriples)))))))
+                    (overridekeys (<name>-overridekeys)))
+                 (base-fsm-override-smart-check x.phase-fsm overridekeys))
+               (:@ :fgl-semantic-check
+                :hints(("Goal" :in-theory '(base-fsm-override-smart-check-in-terms-of-badguy
+                                            base-fsm-override-smart-check-on-env-of-<data>))))
+               (:@ (not :fgl-semantic-check)
+                :hints (("goal" :in-theory '((<data>)
+                                             (<name>-overridekeys)
+                                             (svtv-data-obj->phase-fsm)
+                                             (base-fsm-override-smart-check))))))))
 
      (:@ :triplecheck
         
@@ -634,8 +684,8 @@
             (:type-prescription svex-env-<<=)
             svtv-spec->initst-alist-of-svtv-data-obj->spec
             svtv-spec->in-alists-of-svtv-data-obj->spec
-            override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
-            svexlist-check-overridetriples-of-<data>
+            override-transparency-of-svtv-data-obj->spec-with-smart-check
+            base-fsm-override-smart-check-of-<data>
             <data>-generalize-override-syntax-check
             <specname>
             svtv-spec->fsm-of-svtv-data-obj->spec
@@ -677,8 +727,8 @@
              (:type-prescription svex-env-<<=)
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
-             override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
-             svexlist-check-overridetriples-of-<data>
+             override-transparency-of-svtv-data-obj->spec-with-smart-check
+             base-fsm-override-smart-check-of-<data>
              <data>-generalize-override-syntax-check
              <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
@@ -718,8 +768,8 @@
              (:type-prescription svex-env-<<=)
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
-             override-transparency-of-svtv-data-obj->spec-with-check-overridetriples
-             svexlist-check-overridetriples-of-<data>
+             override-transparency-of-svtv-data-obj->spec-with-smart-check
+             base-fsm-override-smart-check-of-<data>
              <data>-generalize-override-syntax-check
              <specname>
              svtv-spec->fsm-of-svtv-data-obj->spec
@@ -1080,6 +1130,8 @@
 (defun def-svtv-refinement-fn (svtv-name
                                data-name
                                ideal
+                               fgl-semantic-check
+                               omit-default-aignet-transforms
                                svtv-spec
                                pkg-sym)
   (declare (xargs :mode :program))
@@ -1094,23 +1146,31 @@
                         :features (append (if ideal
                                               '(:ideal)
                                             '(:triplecheck))
-                                          (and svtv-spec '(:svtv-spec)))
+                                          (and fgl-semantic-check
+                                               '(:fgl-semantic-check))
+                                          (and svtv-spec '(:svtv-spec))
+                                          (and (not omit-default-aignet-transforms)
+                                               '(:default-aignet-transforms)))
                         :pkg-sym (or pkg-sym ideal svtv-name)))
 
 (defmacro def-svtv-refinement (svtv-name data-name
-                                         &key ideal svtv-spec pkg-sym)
+                                         &key ideal fgl-semantic-check
+                                         omit-default-aignet-transforms
+                                         svtv-spec pkg-sym)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal ',svtv-spec ',pkg-sym)))
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal ',fgl-semantic-check
+      ',omit-default-aignet-transforms
+      ',svtv-spec ',pkg-sym)))
 
 
 
 (defmacro def-svtv-ideal (ideal-name svtv-name data-name &key pkg-sym svtv-spec)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal-name ',svtv-spec ',pkg-sym)))
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal-name nil nil ',svtv-spec ',pkg-sym)))
 
 (defmacro def-svtv-override-thms (name export &key pkg-sym svtv-spec)
   `(make-event
-    (def-svtv-refinement-fn ',name ',export ',nil ',svtv-spec ',pkg-sym)))
+    (def-svtv-refinement-fn ',name ',export nil nil nil ',svtv-spec ',pkg-sym)))
 
 
 ;;; For each decomposition proof, we'll have a fixed set of signals overridden
@@ -2293,7 +2353,7 @@ of the partial-products-value of our multiplier design:</p>
  })
 
 <p>This theorem, along with a couple of other simpler facts that allow the
-generalization of the input environment would be sufficient to let us
+generalization of the input environment, would be sufficient to let us
 generalize @('multiplier-pp-sum-correct-override') to
 @('multiplier-pp-sum-correct-gen').</p>
 
@@ -2318,15 +2378,22 @@ to prove it for all designs.  However, it is actually a fairly deep property of
 the design object, and as we'll see, depending how we compose the design
 together it may or may not be true.</p>
 
-<p>We have two underlying methods for ensuring that this property holds.  One
-is a syntactic check, which has the advantage that it proves this property for
-the SVTV we're used to working with; however, this will not work with all
-designs, particularly ones with latch-based logic.  The other, which uses an
-uncomputed idealized version of the SVTV, will work on any design but does the
-proof composition on the idealized version of the SVTV even though the
-lower-level proofs by symbolic simulation are done on the usual SVTV.  This can
-be a disadvantage because we don't then know whether the properties shown by
-composition are true of the SVTV. See @(see
+<p>We have two underlying methods for ensuring that this property holds. The
+first method method proves this property of the actual SVTV we're used to
+working with. This uses a syntactic check, which is fast and reliable but may
+fail on designs with apparent combinational loops, such as designs with
+latch-based logic or signals that feed into their own clock gates.  If the
+syntactic check fails, an equivalence check using <see topic='@(url
+fgl::fgl)'>FGL</see> may also be used; performance of this check is uncertain
+but seems to usually work in practice.</p>
+
+<p>The second method does not prove the overrides-transparent condition of the
+actual SVTV, but instead proves it of an uncomputed idealized version of the
+SVTV.  This method doesn't require a syntactic check or equivalence check and
+will work on any design.  However, proofs by composition will then be about the
+idealized SVTV, even though the lower-level proofs by symbolic simulation are
+done on the usual SVTV.  This can be a disadvantage because we don't then know
+whether the properties shown by composition are true of the SVTV. See @(see
 svtv-decomposition-choosing-a-method) for more on this topic.</p>
 
 <p>The syntactic check method works by checking the expressions that make up
@@ -2405,9 +2472,9 @@ design based on the approximate composition -- in particular, using @(see
 defsvtv$).</li>
 
 <li>Check that the approximate composition satisfies the syntactic check
-described above regarding override muxes. Use this to prove the
-overrides-correct property of the SVTV.  This can be done using
-@('def-svtv-refinement').</li>
+described above regarding override muxes, or fall back on the FGL equivalence
+check to prove override transparency if the syntactic check fails.  This can be
+done using @('def-svtv-refinement').</li>
 
 <li>To prove composition-friendly facts about the SVTV, first prove a lemma
 with overrides along with the overrides-correct
@@ -2500,14 +2567,15 @@ idealized SVTV-spec based on a fixpoint composition (without needing the
 syntactic check).</p>
 
 <p>The main advantage of the ideal-based method is that the syntactic check of
-the other method might not pass on your design.  If it does, you can do your
-decomposition proofs using the syntax check method, and subsequently if needed
-you can always define an ideal later; any theorems already proved about the
-SVTV are true of it as well.  However, it's also possible that the syntactic
-check will work on some set of overrides but fail if more override signals are
-added because some new signal to be overridden is involved in an apparent
-combinational loop. This is mainly of concern if there is latch-based logic in
-the design, but can come up in other situations.</p>
+the other method might not pass on your design, and the FGL equivalence
+check-based fallback method might be too expensive.  If these checks pass, you
+can do your decomposition proofs using the syntax check method, and
+subsequently if needed you can always define an ideal later; any theorems
+already proved about the SVTV are true of it as well.  However, it's also
+possible that the syntactic check will work on some set of overrides but fail
+if more override signals are added because some new signal to be overridden is
+involved in an apparent combinational loop. This is mainly of concern if there
+is latch-based logic in the design, but can come up in other situations.</p>
 
 <p>The disadvantage of the ideal-based method is that what you've proved about
 the ideal isn't always provable about the computed SVTV.  Generally we only
@@ -2722,10 +2790,32 @@ the (non-ideal) svtv-spec, rather than the SVTV.</li>
 
 <li>@(':lemma-nonlocal') makes the lemma not be local.</li>
 
+<li>@(':lemma-custom-concl') gives a custom conclusion for the lemma, different
+from the one to be used in the final theorem.  Can be convenient if it is
+easier to prove the lemma in a different form which still implies the form of
+the conclusion in the final theorem.</li>
+
+<li>@(':lemma-no-run') makes the lemma not bind the output variables, skipping
+the svtv-run (in the common case, or the svtv-spec-run in others); may be
+useful with @(':lemma-custom-concl').</li>
+
 <li>@(':no-integerp') says to skip proving @('integerp') of each output in the
 initial override theorem.  The @(':enable') option typically must be used to
 provide additional rules for the final theorem to show that the lemma implies
 the outputs are integers.</li>
+
+<li>@(':integerp-separate') says to prove @('integerp') of each output in a second
+lemma, not the initial override theorem.</li>
+
+<li>@(':integerp-defthm') defaults to @('defthm') but can be set to (e.g.)
+@('fgl::def-fgl-thm') to choose a different method of proving the integerp
+lemma, when @(':integerp-separate') is set.</li>
+
+<li>@(':integerp-args') gives a list of arguments for the event proving the
+integerp lemma, when @(':integerp-separate') is set).  If none are given, the
+default is to provide a hint using an instance of the override lemma and
+disabling it, since commonly the override lemma itself implies all the outputs
+are integers.</li>
 
 <li>@(':final-defthm') defaults to @('defthm') but can be set to a different
 macro to change how the final generalized theorem is proved</li>
@@ -2741,6 +2831,9 @@ hypotheses for each input and override variable.</li>
 <li>@(':run-before-concl') gives a term that is placed in the override lemma
 within @('(progn$ run-before-concl concl)'), perhaps to do some extra printing
 in case of a counterexample.</li>
+
+<li>@(':integerp-run-before-concl') gives a term to add to the integerp lemma
+when @(':integerp-separate') is set, similar to @(':run-before-concl').</li>
 
 <li>@(':pkg-sym') defaults to the theorem name, and picks the package that
 various symbols are generated in.</li>
@@ -2890,6 +2983,8 @@ defining that SVTV.</p>
 @({
  (def-svtv-refinement svtv-name data-name
          ;; optional:
+         :fgl-semantic-check t
+         :omit-default-aignet-transforms t
          :ideal idealname
          :svtv-spec specname
          :pkg-sym pkg-sym)
@@ -2916,10 +3011,32 @@ override-transparency property on its own) and
 SVTV).</p>
 
 <p>If not, then the syntactic check method is used to prove the
-override-transparency property of the given SVTV itself. The main theorem,
-showing that it satisfies the override-transparency property, is
-@('svtvname-refines-svtvname').  If the @(':svtv-spec') argument is given, this
-also defines a function (with the given name) with the same behavior as the
-original SVTV and adds another refinement theorem,
+override-transparency property of the given SVTV itself. If the
+@(':fgl-semantic-check') keyword argument is set, then if any overrides fail
+the syntactic check for the override transparency property, an FGL proof will
+be attempted to show the same property using equivalence checking -- see below.
+The main theorem, showing that it satisfies the override-transparency
+property, is @('svtvname-refines-svtvname').  If the @(':svtv-spec') argument
+is given, this also defines a function (with the given name) with the same
+behavior as the original SVTV and adds another refinement theorem,
 @('specname-refines-svtvname').</p>
+
+<p>The FGL proof of override transparency, attempted only when
+@(':fgl-semantic-check') is set and some overrides fail the syntactic check,
+requires the \"centaur/fgl/top\" book to be included.  Additionally, by default
+a special <see topic='@(url aignet::aignet)'>AIGNET</see> simplification
+routine is used in the equivalence check.  This can be overridden with
+@(':omit-default-aignet-transforms'), but if not, the
+\"centaur/aignet/transforms\" and \"centaur/ipasir/ipasir-backend\" books must
+also be loaded.  The latter requires an <see topic='@(url
+ipasir::ipasir)'>IPASIR</see> shared library to be available and the
+IPASIR_SHARED_LIBRARY environment variable set accordingly; see @(see
+ipasir::building-an-ipasir-solver-library) for how to get one. In summary, the
+following include-books are usually needed when using the FGL semantic
+check:</p>
+@({
+ (include-book \"centaur/fgl/top\" :dir :system)
+ (include-book \"centaur/aignet/transforms\" :dir :system)
+ (include-book \"centaur/ipasir/ipasir-backend\" :dir :system)
+ })
 ")

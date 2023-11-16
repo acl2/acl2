@@ -41,7 +41,7 @@
     "We model a Java primitive array essentially as
      a list of Java primitive values whose length is below @($2^{31}$).
      This length limit is derived from the fact that
-     the @('length') field of an array has type @('int') [JLS:10.7],
+     the @('length') field of an array has type @('int') [JLS14:10.7],
      and the maximum integer representable with @('int') is @($2^{31}-1$).
      We tag the list, via @(tsee fty::defprod),
      with an indication of the primitive types.")
@@ -70,7 +70,7 @@
      "Operations to create new Java primitive arrays of given lengths
       (and with every component the default value for the component type,
       i.e. @('false') for @('boolean') and 0 for the integral types
-      [JLS:4.12.5]):
+      [JLS14:4.12.5]):
       these model array creation expressions
       with lengths and without initializers.
       The size is (our ACL2 model of) a Java @('int'),

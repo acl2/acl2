@@ -1,7 +1,7 @@
 ; Making the dag-variable-alist
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,7 +14,6 @@
 
 (include-book "dag-variable-alist")
 (include-book "dag-arrays")
-(include-book "kestrel/utilities/acons-fast" :dir :system)
 
 ;;;
 ;;; make-dag-variable-alist-aux
@@ -39,7 +38,7 @@
       (make-dag-variable-alist-aux (+ 1 n)
                                    dag-array-name dag-array dag-len
                                    (if (atom expr) ;tests for variable
-                                       (acons-fast expr n dag-variable-alist)
+                                       (add-to-dag-variable-alist expr n dag-variable-alist)
                                      dag-variable-alist)))))
 
 (defthm dag-variable-alistp-of-make-dag-variable-alist-aux
@@ -94,7 +93,7 @@
            (equal (make-dag-variable-alist-aux n dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len) dag-variable-alist)
                   (if (consp expr)
                       (make-dag-variable-alist-aux n dag-array-name dag-array dag-len dag-variable-alist)
-                    (acons-fast expr dag-len (make-dag-variable-alist-aux n dag-array-name dag-array dag-len dag-variable-alist)))))
+                    (add-to-dag-variable-alist expr dag-len (make-dag-variable-alist-aux n dag-array-name dag-array dag-len dag-variable-alist)))))
   :hints (("Goal" :expand ((make-dag-variable-alist-aux n dag-array-name
                                                         (aset1-expandable dag-array-name dag-array dag-len expr)
                                                         (+ 1 dag-len)
@@ -112,7 +111,7 @@
 ;; See also make-dag-indices.
 (defund make-dag-variable-alist (dag-array-name dag-array dag-len)
   (declare (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
-  (make-dag-variable-alist-aux 0 dag-array-name dag-array dag-len nil))
+  (make-dag-variable-alist-aux 0 dag-array-name dag-array dag-len (empty-dag-variable-alist)))
 
 (defthm dag-variable-alistp-of-make-dag-variable-alist
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -121,7 +120,7 @@
 
 (defthm make-dag-variable-alist-of-0
   (equal (make-dag-variable-alist dag-array-name dag-array 0)
-         nil)
+         (empty-dag-variable-alist))
   :hints (("Goal" :in-theory (enable make-dag-variable-alist))))
 
 (defthm all-<-of-strip-cdrs-of-make-dag-variable-alist
@@ -152,7 +151,7 @@
            (equal (make-dag-variable-alist dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len))
                   (if (consp expr)
                       (make-dag-variable-alist dag-array-name dag-array dag-len)
-                    (acons-fast expr dag-len (make-dag-variable-alist dag-array-name dag-array dag-len)))))
+                    (add-to-dag-variable-alist expr dag-len (make-dag-variable-alist dag-array-name dag-array dag-len)))))
   :hints (("Goal" :expand ((make-dag-variable-alist-aux
                             0 dag-array-name
                             (aset1-expandable dag-array-name dag-array dag-len expr)
@@ -160,31 +159,32 @@
                             nil))
            :in-theory (enable make-dag-variable-alist make-dag-variable-alist-aux))))
 
+;drop?
 (defthm <-of-cdr-of-assoc-equal-when-all-<-of-strip-cdrs
   (implies (and (all-< (strip-cdrs alist) bound)
                 (ASSOC-EQUAL key alist))
            (< (CDR (ASSOC-EQUAL key alist)) bound)))
 
-(defthm <-of-cdr-of-assoc-equal-of-make-dag-variable-alist-aux
-  (implies (and (assoc-equal var (make-dag-variable-alist-aux n dag-array-name dag-array dag-len dag-variable-alist))
-                (bounded-dag-variable-alistp dag-variable-alist dag-len)
-                ;; (pseudo-dag-arrayp-aux dag-array-name dag-array (+ -1 dag-len))
-                ;;(<= n dag-len)
-                )
-           (< (cdr (assoc-equal var (make-dag-variable-alist-aux n dag-array-name dag-array dag-len dag-variable-alist)))
-              dag-len))
-  :hints (("Goal" :in-theory (enable make-dag-variable-alist-aux bounded-dag-variable-alistp))))
+;; (defthm <-of-cdr-of-assoc-equal-of-make-dag-variable-alist-aux
+;;   (implies (and (assoc-equal var (make-dag-variable-alist-aux n dag-array-name dag-array dag-len dag-variable-alist))
+;;                 (bounded-dag-variable-alistp dag-variable-alist dag-len)
+;;                 ;; (pseudo-dag-arrayp-aux dag-array-name dag-array (+ -1 dag-len))
+;;                 ;;(<= n dag-len)
+;;                 )
+;;            (< (cdr (assoc-equal var (make-dag-variable-alist-aux n dag-array-name dag-array dag-len dag-variable-alist)))
+;;               dag-len))
+;;   :hints (("Goal" :in-theory (enable make-dag-variable-alist-aux bounded-dag-variable-alistp))))
 
-(defthm <-of-cdr-of-assoc-equal-of-make-dag-variable-alist
-  (implies (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len))
-           (< (cdr (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len)))
-              dag-len))
-  :hints (("Goal" :in-theory (enable make-dag-variable-alist))))
+;; (defthm <-of-cdr-of-assoc-equal-of-make-dag-variable-alist
+;;   (implies (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len))
+;;            (< (cdr (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len)))
+;;               dag-len))
+;;   :hints (("Goal" :in-theory (enable make-dag-variable-alist))))
 
-(defthm <-of-cdr-of-assoc-equal-of-make-dag-variable-alist-alt
-  (implies (and (<= dag-len bound)
-                (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len)))
-           (< (cdr (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len)))
-              bound))
-  :hints (("Goal" :use (:instance <-of-cdr-of-assoc-equal-of-make-dag-variable-alist)
-           :in-theory (disable <-of-cdr-of-assoc-equal-of-make-dag-variable-alist))))
+;; (defthm <-of-cdr-of-assoc-equal-of-make-dag-variable-alist-alt
+;;   (implies (and (<= dag-len bound)
+;;                 (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len)))
+;;            (< (cdr (assoc-equal var (make-dag-variable-alist 'dag-array dag-array dag-len)))
+;;               bound))
+;;   :hints (("Goal" :use (:instance <-of-cdr-of-assoc-equal-of-make-dag-variable-alist)
+;;            :in-theory (disable <-of-cdr-of-assoc-equal-of-make-dag-variable-alist))))

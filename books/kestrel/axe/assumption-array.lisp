@@ -147,6 +147,19 @@
   :hints (("Goal" :use (:instance maybe-replace-nodenum-using-assumption-array-return-type)
            :in-theory (disable maybe-replace-nodenum-using-assumption-array-return-type))))
 
+;; use consp as the normal form
+(defthm natp-of-maybe-replace-nodenum-using-assumption-array
+  (implies (and (assumption-arrayp 'assumption-array assumption-array)
+                (natp nodenum)
+;(equivp equiv)
+                (assumption-arrayp 'assumption-array assumption-array)
+                (natp assumption-array-num-valid-nodes)
+                (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
+           (equal (natp (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print))
+                  (not (consp (maybe-replace-nodenum-using-assumption-array nodenum equiv assumption-array assumption-array-num-valid-nodes print)))))
+  :hints (("Goal" :use (:instance dargp-of-maybe-replace-nodenum-using-assumption-array)
+           :in-theory (disable dargp-of-maybe-replace-nodenum-using-assumption-array))))
+
 (defthm dargp-less-than-of-maybe-replace-nodenum-using-assumption-array
   (implies (and (assumption-arrayp 'assumption-array assumption-array)
                 (natp nodenum)

@@ -571,7 +571,7 @@
                 (< 1 n))
            (equal (logext n (* 2 x))
                   (* 2 (logext (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (logext) ()))))
+  :hints (("Goal" :in-theory (enable logext))))
 
 (defthm logext-of-expt-of-one-less
   (implies (posp size)
@@ -586,7 +586,7 @@
                 (< i size))
            (equal (logext size (* (expt 2 i) x))
                   (* (expt 2 i) (logext (- size i) x))))
-  :hints (("Goal" :in-theory (e/d (logext) ()))))
+  :hints (("Goal" :in-theory (enable logext))))
 
 (defthm logext-when-low-bits-known
   (implies (and (equal (bvchop 31 x) free)
@@ -747,3 +747,49 @@
                            (x (bvchop n x))
                            (y (bvchop n y)) (size n))
            :in-theory (disable signed-byte-p))))
+
+;todo gen
+(defthm signed-byte-p-of-one-less-of-logext
+  (equal (signed-byte-p 32 (+ -1 (logext 32 x)))
+         (not (equal (expt 2 31) (bvchop 32 x))))
+  :hints (("Goal"
+           :use (:instance split-bv-top-add (size 32) (x (bvchop 32 x)))
+           :in-theory (enable logext-cases signed-byte-p
+                                     ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Can help if our limit-expt scheme, to avoid huge calls of expt, is in use
+;; and prevents a :linear rule from firing.
+(defthm <-of-logext-true
+  (implies (<= (expt 2 (+ -1 size)) k)
+           (< (logext size x) k))
+  :hints (("Goal" :in-theory (enable logext logapp))))
+
+;; Can help if our limit-expt scheme, to avoid huge calls of expt, is in use
+;; and prevents a :linear rule from firing.
+(defthm <-of-logext-false
+  (implies (and (<= k (- (expt 2 (+ -1 size))))
+                (posp size))
+           (not (< (logext size x) k)))
+  :hints (("Goal" :in-theory (enable logext logapp))))
+
+(defthm bvchop-of-sum-of-logext
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2)
+                (integerp x)
+                (integerp y)
+                )
+           (equal (bvchop size (+ x (logext size2 y)))
+                  (bvchop size (+ x y)))))
+
+(defthm bvchop-of-sum-of-logext-alt
+  (implies (and (<= size size2)
+                (natp size)
+                (natp size2)
+                (integerp x)
+                (integerp y)
+                )
+           (equal (bvchop size (+ (logext size2 y) x))
+                  (bvchop size (+ x y)))))

@@ -2318,14 +2318,6 @@
   ///
   (local (in-theory (disable iff not)))
 
-  (local (defthm svar-by-fields
-           (b* (((svar v)))
-             (implies (and (equal delay v.delay)
-                           (equal nonblocking v.nonblocking)
-                           (equal override-test v.override-test)
-                           (equal override-val v.override-val))
-                      (equal (svar v.name delay nonblocking override-test override-val) (svar-fix v))))))
-
   (defthm svtv-name-lhs-map-keys-change-override-of-lhs-accumulate-name-lhs-map
     (b* (((mv ?collision inv) (lhs-accumulate-name-lhs-map-inverse dom-var offset lhs inverse-acc))
          ((mv ?collision2 renamed-inv)

@@ -1,7 +1,7 @@
 ; Bit-vector rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,10 +12,18 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv/rules6" :dir :system)
+(include-book "bvcat")
+(include-book "bvxor")
+(include-book "bitwise")
+(include-book "bvif")
+(include-book "bvplus")
+(include-book "bv-syntax")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
 
 ;(local (in-theory (disable expt)))
@@ -38,7 +46,7 @@
                   (bvxor (+ 1 high2 (- low))
                          (slice high2 low y)
                          (slice high2 low x))))
-  :hints (("Goal" :use ()
+  :hints (("Goal"
            :in-theory (e/d (;bvxor
                             )
                            ( ;BVXOR-TRIM-ARG1 ;BVXOR-CANCEL BVXOR-CANCEL-alt BVXOR-CANCEL-cross-2
@@ -106,8 +114,11 @@
            (equal (bvif size test (logext size2 x) y)
                   (bvif size test x y)))
   :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (bvif BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;BVCHOP-BVCHOP
-                                                                   )))))
+           :in-theory (e/d (getbit bvif BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
+                                   LOGTAIL-OF-BVCHOP-BECOMES-SLICE)
+                           (;BVCHOP-BVCHOP
+                            BVCHOP-1-BECOMES-GETBIT
+                            )))))
 
 (defthm bvif-of-logext-2
   (implies (and (<= size size2)
@@ -116,8 +127,10 @@
                 (< 0 size))
            (equal (bvif size test y (logext size2 x))
                   (bvif size test y x)))
-  :hints (("Goal" :in-theory (e/d (bvif BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;BVCHOP-BVCHOP
-                                                                          )))))
+  :hints (("Goal" :in-theory (e/d (bvif BVCHOP-WHEN-I-IS-NOT-AN-INTEGER getbit LOGTAIL-OF-BVCHOP-BECOMES-SLICE)
+                                  ( ;BVCHOP-BVCHOP
+                                   BVCHOP-1-BECOMES-GETBIT
+                                   )))))
 
 (defthm myif-equal-bit-0-expt-2-n
   (implies (and (unsigned-byte-p 1 bit)
@@ -169,8 +182,9 @@
                     (equal 0 y))))
   :hints (("Goal"
            :cases ((integerp x))
-           :use (:instance add-bvchops-to-equality-of-sbps-4))))
+           :use (:instance EQUAL-OF-LOGEXT (n newsize) (y x) (x y)))))
 
+;move
 (theory-invariant (incompatible (:rewrite logapp-0) (:rewrite times-4-becomes-logapp)))
 
 ;slow?
@@ -185,7 +199,10 @@
            (equal (SLICE high low (+ x (LOGEXT size y)))
                   (SLICE high low (+ x y))))
   :hints (("Goal" :in-theory (e/d (SLICE bvchop-of-logtail expt-of-+)
-                                  (anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGTAIL-OF-LOGEXT)))))
+                                  (;anti-slice
+                                   ;LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+                                   ;LOGTAIL-OF-LOGEXT
+                                   )))))
 
 ;todo: (theory-invariant (incompatible (:rewrite LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE) (:rewrite slice)))
 
@@ -199,7 +216,8 @@
                 (force (integerp y)))
            (equal (slice high low (+ (logext size y) x))
                   (slice high low (+ x y))))
-  :hints (("Goal" :in-theory (e/d (slice) (anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGEXT-of-logtail)))))
+  :hints (("Goal" :in-theory (disable ;anti-slice LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE LOGEXT-of-logtail
+                              ))))
 
 ;instead, inner sum should go to bvplus...
 (defthm bvxor-of-sum-logext
@@ -210,7 +228,8 @@
                 (integerp z))
            (equal (bvxor size x (+ (logext size2 y) z))
                   (bvxor size x (+ y z))))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
+  :hints (("Goal" :in-theory (e/d (bvxor) (;logxor-bvchop-bvchop
+                                           )))))
 
 ;instead, inner sum should go to bvplus...
 ;BOZO handle this stuff better?
@@ -222,7 +241,8 @@
                 (integerp z))
            (equal (bvxor size x (+ z (logext size2 y)))
                   (bvxor size x (+ y z))))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
+  :hints (("Goal" :in-theory (e/d (bvxor) (;logxor-bvchop-bvchop
+                                           )))))
 
 ;trying this and the above...
 (in-theory (disable bvxor-of-slice-tighten-1 bvxor-of-slice-tighten-2 bvxor-of-slice-tighten-alt bvxor-of-slice-tighten))
@@ -234,22 +254,21 @@
                          (+ x y))
                   (signed-byte-p 32 (+ x y))))
   :hints (("Goal" :in-theory (e/d (BVPLUS) (;anti-bvplus
-                                            logext-of-plus)))))
-
-;move?
-(defthmd usb-of-bvplus-from-bounds
-  (implies (and (< x (- (expt 2 n) k)) ;use bvlt?
-                (natp x)
-                (natp k)
-                (natp n))
-           (unsigned-byte-p n (bvplus m k x)))
-  :hints (("Goal" :in-theory (e/d (bvplus ;usb-plus-from-bounds
-                                   ) (
+                                            ;logext-of-plus
                                             )))))
 
-; rules needed to prove the lemmas that result from my tool (mostly size junk)
+;; ;move?
+;; (defthmd usb-of-bvplus-from-bounds
+;;   (implies (and (< x (- (expt 2 n) k)) ;use bvlt?
+;;                 (natp x)
+;;                 (natp k)
+;;                 (natp n))
+;;            (unsigned-byte-p n (bvplus m k x)))
+;;   :hints (("Goal" :in-theory (e/d (bvplus ;usb-plus-from-bounds
+;;                                    ) (
+;;                                             )))))
 
-(theory-invariant (incompatible (:rewrite LOGAPP-0) (:rewrite LOGAPP-RECOLLECT-FROM-SHIFT)))
+; rules needed to prove the lemmas that result from my tool (mostly size junk)
 
 (theory-invariant (incompatible (:rewrite rewrite-unsigned-byte-p-when-term-size-is-larger) (:rewrite logtail-equal-0)))
 

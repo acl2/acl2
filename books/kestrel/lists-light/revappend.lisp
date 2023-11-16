@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function revappend.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (local (include-book "butlast"))
 (local (include-book "true-list-fix"))
 (local (include-book "take"))
+(local (include-book "intersection-equal"))
 
 (in-theory (disable revappend))
 
@@ -126,3 +127,27 @@
          (acl2-count y)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable revappend))))
+
+(defthm intersection-equal-of-revappend-arg1-iff
+  (iff (intersection-equal (revappend x y) z)
+       (or (intersection-equal x z)
+           (intersection-equal y z)))
+  :hints (("Goal" :in-theory (enable revappend))))
+
+(defthm intersection-equal-of-revappend-arg2-iff
+  (iff (intersection-equal z (revappend x y))
+       (or (intersection-equal z x)
+           (intersection-equal z y)))
+  :hints (("Goal" :in-theory (enable revappend))))
+
+(local
+  (defthm member-equal-of-revappend-when-member-equal-arg2-iff
+    (implies (member-equal a y)
+             (member-equal a (revappend x y)))
+    :hints (("Goal" :in-theory (enable revappend member-equal)))))
+
+(defthm member-equal-of-revappend-iff
+  (iff (member-equal a (revappend x y))
+       (or (member-equal a x)
+           (member-equal a y)))
+  :hints (("Goal" :in-theory (enable revappend member-equal))))

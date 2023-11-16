@@ -20,6 +20,8 @@
       binary-logand binary-logior binary-logxor binary-logeqv ; used in lib/log.lisp
       b*
       const-fns-gen
+      expand-reduce-cp
+      alt-const-fns-gen
       def-gl-rule
       def-gl-thm
       defundd

@@ -1,7 +1,7 @@
 ; A library for reasoning about ACL2 arrays (aref1, aset1, etc.)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -229,8 +229,7 @@
                     (< len maximum-length)
                     (<= maximum-length *maximum-positive-32-bit-integer*)
                     (bounded-integer-alistp l len)))))))
-  :hints (("Goal" :in-theory (e/d (array1p-rewrite)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable array1p-rewrite))))
 
 (defthm alistp-of-reverse-list
   (equal (alistp (reverse-list x))
@@ -256,7 +255,7 @@
                 (assoc-equal key x)))
   :hints (("Goal" :in-theory (enable reverse-list))))
 
-(local (in-theory (enable revappend-lemma)))
+(local (in-theory (enable revappend-becomes-append-of-reverse-list)))
 
 ;use list fix in concl?
 (defthm bounded-integer-alistp-of-reverse-list
@@ -369,53 +368,40 @@
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm dimensions-of-make-empty-array-with-default
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (dimensions array-name (make-empty-array-with-default array-name len default))
-                  (list len)))
+  (equal (dimensions array-name (make-empty-array-with-default array-name len default))
+         (list len))
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
 (defthm alen1-of-make-empty-array-with-default
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (alen1 array-name (make-empty-array-with-default array-name len default))
-                  len))
+  (equal (alen1 array-name (make-empty-array-with-default array-name len default))
+         len)
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
 (defthm dimensions-of-make-empty-array
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (dimensions array-name (make-empty-array array-name len))
-                  (list len)))
+  (equal (dimensions array-name (make-empty-array array-name len))
+         (list len))
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
 (defthm alen1-of-make-empty-array
-  (implies (and (posp len)
-                (<= len 2147483646)
-                (symbolp array-name))
-           (equal (alen1 array-name (make-empty-array array-name len))
-                  len))
+  (equal (alen1 array-name (make-empty-array array-name len))
+         len)
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
-;requires that the arrays must be big enough for max-index to be a valid index
-;when copying a whole array, consider calling compress1 for speed?
-(defun copy-array-vals (max-index from-array-name from-array to-array-name to-array)
-  (declare (xargs :measure (nfix (+ 1 max-index))
-                  :guard (and (rationalp max-index)
+;; Copies the values at locations INDEX down to 0 from FROM-ARRAY to the same
+;; locations in TO-ARRAY.  Requires that the arrays be big enough for INDEX to
+;; be a valid index.  NOTE: when copying a whole array, consider calling
+;; compress1 for speed?
+(defund copy-array-vals (index from-array-name from-array to-array-name to-array)
+  (declare (xargs :measure (nfix (+ 1 index))
+                  :guard (and (rationalp index)
                               (array1p from-array-name from-array)
                               (array1p to-array-name to-array)
-                              (< max-index (alen1 from-array-name from-array))
-                              (< max-index (alen1 to-array-name to-array)))))
-  (if (not (natp max-index))
+                              (< index (alen1 from-array-name from-array))
+                              (< index (alen1 to-array-name to-array)))))
+  (if (not (natp index))
       to-array
-    (copy-array-vals (+ -1 max-index)
-                     from-array-name
-                     from-array
-                     to-array-name
-                     (aset1 to-array-name to-array max-index (aref1 from-array-name from-array max-index)))))
+    (let ((to-array (aset1 to-array-name to-array index (aref1 from-array-name from-array index))))
+      (copy-array-vals (+ -1 index) from-array-name from-array to-array-name to-array))))
 
 ;; (defthm natp-of-car-of-assoc-equal
 ;;   (equal (natp (car (assoc-equal :header array)))
@@ -473,7 +459,7 @@
   (implies (and (not (equal index1 index2))
                 (array1p array-name array)
                 (natp index1)
-                (< index1 (alen1 array-name array))
+                ;; (< index1 (alen1 array-name array))
                 (natp index2)
                 (< index2 (alen1 array-name array)))
            (equal (aref1 array-name (aset1 array-name array index1 val) index2)
@@ -583,7 +569,7 @@
   :hints (("Goal" :in-theory (enable ARRAY1P-rewrite))))
 
 (defthm aref1-of-make-empty-array-with-default
-  (implies (and (symbolp array-name)
+  (implies (and ;(symbolp array-name)
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
@@ -599,7 +585,7 @@
                               aref1))))
 
 (defthm aref1-of-make-empty-array
-  (implies (and (symbolp array-name)
+  (implies (and ;(symbolp array-name)
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
@@ -614,7 +600,9 @@
                               make-empty-array
                               aref1))))
 
-(in-theory (disable (:executable-counterpart break$))) ;keeps it from breaking when it's evaluted during a proof, e.g., proofs about aset1-safe
+(in-theory (disable (:executable-counterpart break$))) ;keeps it from breaking when it's evaluated during a proof, e.g., proofs about aset1-safe
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;this makes sure the index is in bounds, which prevents memory from getting trashed if this is called on bad arguments
 (defund aset1-safe (name l n val)
@@ -631,10 +619,12 @@
             (aset1 name l n val))))
 
 (defthm aset1-safe-becomes-aset1
-  (implies (< n (alen1 name l))
+  (implies t ;(< n (alen1 name l))
            (equal (aset1-safe name l n val)
                   (aset1 name l n val)))
   :hints (("Goal" :in-theory (enable aset1-safe))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;drop?
 (defun valid-array-indexp (index array-name array)
@@ -647,9 +637,8 @@
                 (array1p array-name array)
                 (natp index))
            (not (assoc-equal index array)))
-  :hints (("Goal" :in-theory (e/d (not-assoc-equal-when-bounded-integer-alistp-out-of-bounds
-                                   array1p-rewrite header)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable not-assoc-equal-when-bounded-integer-alistp-out-of-bounds
+                                     array1p-rewrite header))))
 
 ;; Disabled since this can be expensive and is rarely needed.
 (defthmd aref1-when-too-large
@@ -658,8 +647,7 @@
                 (natp n))
            (equal (aref1 array-name array n)
                   (default array-name array)))
-  :hints (("Goal" :in-theory (e/d (AREF1 ARRAY1P-rewrite HEADER not-assoc-equal-when-bounded-integer-alistp-out-of-bounds)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable AREF1 ARRAY1P-rewrite HEADER not-assoc-equal-when-bounded-integer-alistp-out-of-bounds))))
 
 (defthm aref1-when-too-large-cheap
   (implies (and (<= (alen1 array-name array) n)
@@ -713,7 +701,7 @@
 
 ;; This one has no IF in the RHS
 (defthm aref1-of-cons-of-cons-of-header-alt
-  (implies (and (natp n)
+  (implies (and ;(natp n)
                 (equal (default array-name array)
                        (cadr (assoc-keyword :default header-args))))
            (equal (aref1 array-name (cons (cons :header header-args) array) n)
@@ -729,7 +717,7 @@
 ;; (defthm assoc-equal-of-header-of-compress1
 ;;   (equal (assoc-equal :header (compress1 array-name array))
 ;;          (assoc-equal :header array))
-;;   :hints (("Goal" :in-theory (e/d (compress1) ()))))
+;;   :hints (("Goal" :in-theory (enable compress1))))
 
 (defthm array1p-forward-to-<=-of-alen1
   (implies (array1p array-name array)
@@ -773,7 +761,7 @@
 (defthm aref1-of-aset1-of-aset1-same
   (implies (and (array1p array-name array)
                 (natp index)
-                (< index (alen1 array-name array))
+                ;; (< index (alen1 array-name array))
                 (natp read-index)
                 (< read-index (alen1 array-name array)))
            (equal (aref1 array-name (aset1 array-name (aset1 array-name array index val1) index val2) read-index)

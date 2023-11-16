@@ -188,6 +188,21 @@
     x86isa::seg-hidden-basei
     x86isa::seg-visiblei
     x86isa::!rip
+
+    x86isa::ctri
+
+    ;; floating-point stuff:
+    x86isa::fp-decode
+    x86isa::sse-cmp
+    x86isa::sse-cmp-special
+    x86isa::mxcsrbits->daz$inline x86isa::mxcsrbits->daz$
+    x86isa::mxcsrbits->dm$inline x86isa::mxcsrbits->dm$
+    x86isa::mxcsrbits->im$inline x86isa::mxcsrbits->im$
+    x86isa::*op-ucomi*
+    x86isa::snan
+    x86isa::qnan
+    x86isa::indef
+
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -219,6 +234,7 @@
     boolif
     boolor
     booland
+    loghead
     logapp
     logmask
 
@@ -247,6 +263,9 @@
 
     lookup-eq-safe
 
+    want-to-weaken ; for polarity-based reasoning
+    want-to-strengthen ; for polarity-based reasoning
+
     ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
     common-lisp::ignorable
     my-sublis-var
@@ -274,6 +293,7 @@
     make-axe-rules!
     result-array-stobj
     dag-to-term
+    dag-info
     make-term-into-dag
     ;; simplify-terms-using-each-other
     make-cons-nest
@@ -305,14 +325,16 @@
     when
     ///
 
-    ;; APT stuff:
-    def
+    ;; APT transformations (sometimes used to verify listed code):
     wrap-output
+    extract-output
+    rename-params
     flatten-params
     drop-irrelevant-params
     tailrec
     make-tail-rec-bv-up
     make-tail-rec-bv-up2
+    def ; handy APT utility
 
     ;; utilities:
     call-of

@@ -40,6 +40,11 @@
 (include-book "ctrex-utils")
 (include-book "centaur/misc/starlogic" :dir :system)
 
+
+;; this makes it much less likely to get a stack overflow when symbolically simulating
+(fgl::add-fgl-rewrite sv::svex-varmasks/env->aig-env-rec-in-terms-of-rec-log)
+(fgl::add-fgl-rewrite sv::4veclist-from-bitlist-in-terms-of-4veclist-from-bitlist-log-rec)
+
 #!sv
 (fgl::def-fgl-rewrite svexlist-eval-for-fgl
   (equal (svexlist-eval-for-symbolic x env symbolic-params)

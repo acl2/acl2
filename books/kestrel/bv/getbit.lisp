@@ -73,12 +73,19 @@
 
 (theory-invariant (incompatible (:rewrite bvchop-1-becomes-getbit) (:definition getbit)))
 
-(defthm slice-becomes-getbit
+;; Not sure we want this enabled, at least during library development
+(defthmd slice-becomes-getbit
   (equal (slice n n x)
          (getbit n x))
   :hints (("Goal" :in-theory (e/d (getbit) (bvchop-1-becomes-getbit)))))
 
 (theory-invariant (incompatible (:rewrite slice-becomes-getbit) (:definition getbit)))
+
+;; In case we are not enforcing either normal form
+(defthm equal-of-slice-and-getbit
+  (equal (equal (slice n n x) (getbit n x))
+         t)
+  :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 ;justifies the correctness of some operations performed by Axe
 (defthmd unsigned-byte-p-1-of-getbit
@@ -91,7 +98,7 @@
 (defthm unsigned-byte-p-of-getbit
   (implies (posp size)
            (unsigned-byte-p size (getbit n x)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-1-of-getbit)
+  :hints (("Goal" :use unsigned-byte-p-1-of-getbit
            :in-theory (disable unsigned-byte-p-from-bounds))))
 
 ;gen the 1
@@ -157,7 +164,7 @@
                 (equal 1 free))
            (equal (getbit 0 x)
                   x))
-  :hints (("Goal" :use (:instance getbit-identity)
+  :hints (("Goal" :use getbit-identity
            :in-theory (disable getbit-identity))))
 
 ;; In case we are using bitp instead of unsigned-byte-p as the normal form.
@@ -464,7 +471,7 @@
                   (if (< n i)
                       0
                     (getbit (- n i) x))))
-  :hints (("Goal" :use (:instance getbit-of-*-of-expt-arg1)
+  :hints (("Goal" :use getbit-of-*-of-expt-arg1
            :in-theory (disable getbit-of-*-of-expt-arg1))))
 
 ;; ;yuck! can loop!
@@ -606,3 +613,43 @@
   (equal (equal (getbit 0 x) x)
          (unsigned-byte-p 1 x))
   :hints (("Goal" :in-theory (enable getbit-identity))))
+
+(defthmd mod-of-2-becomes-getbit-0
+  (implies (integerp x)
+           (equal (mod x 2)
+                  (getbit 0 x)))
+  :hints (("Goal" :in-theory (e/d (getbit bvchop)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of-expt-gen
+  (implies (and (natp m)
+                (natp n))
+           (equal (getbit m (expt 2 n))
+                  (if (equal m n)
+                      1
+                    0)))
+  :hints (("Goal" :in-theory (e/d (getbit slice)
+                                  (bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice
+                                   slice-becomes-getbit)))))
+
+(defthm getbit-of-if-two-constants
+  (implies (and (syntaxp (and (quotep n)
+                              (quotep x1)
+                              (quotep x2))))
+           (equal (getbit n (if test x1 x2))
+                  (if test (getbit n x1)
+                    (getbit n x2)))))
+
+;enable?
+(defthmd getbit-when-negative-and-small
+  (implies (and (< x 0)
+                (<= (- (expt 2 n)) x)
+                (natp n)
+                (integerp x))
+           (equal (getbit n x)
+                  1))
+  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
+                                  (slice-becomes-getbit
+                                   bvchop-1-becomes-getbit)))))

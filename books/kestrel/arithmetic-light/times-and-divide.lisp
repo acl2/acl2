@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operations * and /.
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (local (include-book "times"))
 (local (include-book "divide"))
 
+;; A stronger rewrite rule than the built-in axiom INVERSE-OF-*.
 (defthm *-of-/-same
   (equal (* x (/ x))
          (if (equal 0 (fix x))
@@ -119,7 +120,8 @@
   :hints (("Goal" :use (:instance <-of-*-of-/-arg1-arg1 (y (* y y2)))
            :in-theory (disable <-of-*-of-/-arg1-arg1))))
 
-(defthm <-of-*-of-constant-and-constant
+;; todo: add the other variant of this
+(defthm <-of-*-of-constant-and-constant-gen
   (implies (and (syntaxp (and (quotep k2)
                               (quotep k1)))
                 (rationalp x)

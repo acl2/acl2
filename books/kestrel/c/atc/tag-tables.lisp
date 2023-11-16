@@ -406,8 +406,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee type-to-recognizer),
-     but it takes a tag table as argument instead of a world."))
+    "For a supported integer type,
+     the predicate is the recognizer of values of that type.
+     For a structure type,
+     the predicate is the recognizer of structures of that type.
+     For a pointer to integer type,
+     the predicate is the recognizer of that referenced type.
+     For a pointer to structure type,
+     the predicate is the recognizer of structures of that type.
+     For an array of integer type,
+     the predicate is the recognizer of arrays of that element type.")
+   (xdoc::p
+    "This is based on our current ACL2 representation of C types,
+     which may be extended in the future.
+     Note that, in the current representation,
+     the predicate corresponding to each type
+     is never a recognizer of pointer values."))
   (type-case
    type
    :void (raise "Internal error: type ~x0." type)

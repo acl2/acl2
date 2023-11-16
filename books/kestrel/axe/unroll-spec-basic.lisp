@@ -1,7 +1,7 @@
 ; A version of unroll-spec that uses rewriter-basic.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -37,6 +37,7 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "dag-info")
+(include-book "kestrel/axe/util2" :dir :system) ; not strictly needed but brings in symbolic-list
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
@@ -146,7 +147,7 @@
                    disable-function))
         (er hard? 'unroll-spec-basic-fn ":disable-function should not be true if :produce-function is nil.")
         (mv (erp-t) nil state))
-       ((mv start-time state) (acl2::get-real-time state))
+       ((mv start-time state) (get-real-time state))
        (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (assumptions (translate-terms assumptions 'unroll-spec-basic-fn (w state)))
@@ -293,7 +294,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
        (defun-variant (if disable-function 'defund 'defun))
-       ((mv end-time state) (acl2::get-real-time state))
+       ((mv end-time state) (get-real-time state))
        (- (if (= 1 (len items-created))
               (cw "Created ~x0.~%~%" (first items-created))
             (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
@@ -303,7 +304,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
               (cw "~x0 is a pure dag.~%" defconst-name)
             (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
        (- (progn$ (cw "~%SPEC UNROLLING FINISHED (")
-                  (acl2::print-to-hundredths (- end-time start-time))
+                  (print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds
                   ))
        (- (cw ")~%~%")))

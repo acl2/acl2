@@ -1,7 +1,7 @@
 ; Arithmetic negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,6 +39,12 @@
                 (integerp size1))
            (unsigned-byte-p size1 (bvuminus size i)))
   :hints (("Goal" :in-theory (e/d (bvuminus unsigned-byte-p) (BVCHOP-OF-MINUS)))))
+
+(defthm bvuminus-upper-bound-linear-strong
+  (implies (natp size)
+           (<= (bvuminus size x) (+ -1 (expt 2 size))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvuminus-when-arg-is-not-an-integer
   (implies (not (integerp x))
@@ -109,12 +115,12 @@
                 (integerp size1))
            (equal (bvuminus size (bvchop size1 x))
                   (bvuminus size x)))
-  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvuminus-of-bvchop-arg2-same
   (equal (bvuminus size (bvchop size x))
          (bvuminus size x))
-  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvplus-of-bvuminus-same
   (equal (bvplus size (bvuminus size x) x)
@@ -124,7 +130,7 @@
 (defthm bvplus-of-bvuminus-same-alt
   (equal (bvplus size x (bvuminus size x))
          0)
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same)
+  :hints (("Goal" :use bvplus-of-bvuminus-same
            :in-theory (disable bvplus-of-bvuminus-same))))
 
 (defthm equal-of-bvuminus-and-bvchop-same
@@ -165,7 +171,7 @@
   (implies (natp size)
            (equal (bvplus size (bvuminus size x) (bvplus size x y))
                   (bvchop size y)))
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same-2)
+  :hints (("Goal" :use bvplus-of-bvuminus-same-2
            :in-theory (disable bvplus-of-bvuminus-same-2))))
 
 

@@ -1,7 +1,7 @@
 ; BV Library: logior
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -118,7 +118,7 @@
 (defthm logior-commutative-2
   (equal (logior j i k)
          (logior i j k))
-  :hints (("Goal" :use ((:instance logior-associative)
+  :hints (("Goal" :use (logior-associative
                         (:instance logior-associative (i j) (j i)))
            :in-theory (disable logior-associative))))
 
@@ -296,7 +296,7 @@
                 (integerp j))
            (equal (logior i (logand i j) k)
                   (logior i k)))
-  :hints (("Goal" :use (:instance logior-of-logand-same-arg-1)
+  :hints (("Goal" :use logior-of-logand-same-arg-1
            :in-theory (disable logior-of-logand-same-arg-1))))
 
 (defthm logand-of-logior
@@ -369,3 +369,10 @@
   :hints (("Goal" :use (:instance <-of-logior-and-expt-of-2
                                   (n (+ -1 (integer-length k))))
            :in-theory (disable <-of-logior-and-expt-of-2))))
+
+(defthm logior-of-all-ones
+  (implies (and (natp n)
+                (unsigned-byte-p n x))
+           (equal (logior (+ -1 (expt 2 n)) x)
+                  (+ -1 (expt 2 n))))
+  :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))

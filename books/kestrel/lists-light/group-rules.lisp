@@ -96,7 +96,6 @@
                             ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;disable above
                             take-of-nthcdr-becomes-subrange
                             nthcdr-of-take-becomes-subrange
-                            cdr-of-take-becomes-subrange-better
                             TAKE-OF-CDR-BECOMES-SUBRANGE
                             nthcdr-of-take
                             ))
@@ -149,7 +148,6 @@
                             take-of-nthcdr-becomes-subrange
                             nthcdr-of-take-becomes-subrange
                             TAKE-OF-CDR-BECOMES-SUBRANGE
-                            cdr-of-take-becomes-subrange-better
                             nthcdr-of-take
                             ))
            :use ((:instance list-split (x x) (n n))
@@ -256,7 +254,6 @@
            (equal (subrange m m2 (group n x))
                   (group n (subrange (* n m) (+ (* n m) (+ -1 (* n (+ 1 (- m2 m))))) x))))
   :hints (("Goal" :in-theory (e/d (subrange) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                              CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                               TAKE-OF-CDR-BECOMES-SUBRANGE
                                               NTHCDR-OF-TAKE-BECOMES-SUBRANGE)))))
 

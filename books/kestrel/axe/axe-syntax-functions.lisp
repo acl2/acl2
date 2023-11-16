@@ -1,7 +1,7 @@
 ; General-purpose syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,42 +25,17 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
+;; quotep gets converted this this
 (defund-inline axe-quotep (item)
   (declare (xargs :guard (dargp item)))
   (consp item) ;; means that it is a quotep, not a nodenum
   )
 
-;; might be better to check not consp, if we know the thing is a dag-item
-;todo: deprecate now that things can be negated
-(defun not-quotep (item)
-  (declare (xargs :guard (dargp item)))
-  (not (quotep item)))
-
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
-
-;move these?
-
-;; (defun arg1-safe (fn expr)
-;;   (declare (xargs :guard (true-listp expr))) ;think about this
-;;   (if (equal fn (ffn-symb expr))
-;;       (farg1 expr)
-;;     (hard-error 'arg1-safe "Found an unexpected expr: ~x0.  We expected one that started with ~x1" (acons #\0 expr (acons #\1 fn nil)))))
-
-;; (defun arg2-safe (fn expr)
-;;   (declare (xargs :guard (true-listp expr))) ;think about this
-;;   (if (equal fn (ffn-symb expr))
-;;       (farg2 expr)
-;;     (hard-error 'arg2-safe "Found an unexpected expr: ~x0.  We expected one that started with ~x1" (acons #\0 expr (acons #\1 fn nil)))))
-
-;; (defun arg3-safe (fn expr)
-;;   (declare (xargs :guard (true-listp expr))) ;think about this
-;;   (if (equal fn (ffn-symb expr))
-;;       (farg3 expr)
-;;     (hard-error 'arg3-safe "Found an unexpected expr: ~x0.  We expected one that started with ~x1" (acons #\0 expr (acons #\1 fn nil)))))
-
 
 ; Check whether x is 'heavier' than y.  Helps us decide when to reorder terms
 ; (e.g., to put 'light terms first).  x and y are either quoteps or nodenums.
+;; todo: rename heavier-darg?
 (defund heavier-dag-term (x y)
   (declare (xargs :guard (and (dargp x)
                               (dargp y))))
@@ -129,8 +104,6 @@
             nil
           ;;compare the nodenums - yuck?!  i've seen loops where this put in a gross term for a nice term
           (< y x))))))
-
-;(skip- proofs (verify-guards should-reverse-equality))
 
 (defund syntactic-call-of (quoted-fn nodenum-or-quotep dag-array)
   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
@@ -234,94 +207,92 @@
 
 ;; we really only want this to fire at the leafmost bitxor in a nest??
 
-;move?
 ;BBOZO rethink this?
 ;; Determines whether we should we bring TERM2 in front of TERM1.
-;; FN is the function whose nests we are rewriting (e.g., BVXOR, BVPLUS, etc.).
+;; QUOTED-FN is the function whose arguments we are considering (e.g., BVXOR, BVPLUS, etc.).
 ;; DAG-ARRAY is the entire DAG
 ;; If term2 is a call of FN, it should not be commuted (that would mess up associativity)
 ;; Also, TERM1 should not be a call to FN?
 ;example of use: (axe-syntaxp (should-commute-axe-argsp 'bvxor x y dag-array)) <- note that the FN is quoted
 ;bozo should we check that a bvuminus has the same size as the enclosing bvplus before ignoring the bvuminus?
-(defund should-commute-axe-argsp (quoted-fn term1 term2 dag-array)
-  (declare (xargs :guard (and (or (myquotep term1)
-                                  (and (natp term1)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term1))))
-                              (or (myquotep term2)
-                                  (and (natp term2)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term2)))))))
-  (if (quotep term2)
-      (if (quotep term1)
+(defund should-commute-axe-argsp (quoted-fn darg1 darg2 dag-array)
+  (declare (xargs :guard (and (or (myquotep darg1)
+                                  (and (natp darg1)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg1))))
+                              (or (myquotep darg2)
+                                  (and (natp darg2)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg2)))))))
+  (if (quotep darg2)
+      (if (quotep darg1)
           ;;both are constants:
           ;;we sort constants by numeric value
           ;;or we could just not swap them, at least for operators which have the combine-constants rule..
-          (and (rationalp term1)
-               (rationalp term2)
-               (< (unquote term2) (unquote term1)))
-        ;;TERM2 is a quoted constant but TERM1 isn't, so TERM2 should come first
+          (and (rationalp darg1)
+               (rationalp darg2)
+               (< (unquote darg2) (unquote darg1)))
+        ;;DARG2 is a quoted constant but DARG1 isn't, so DARG2 should come first
         t)
-    (if (quotep term1) ;Otherwise, if TERM1 is a quoted constant, we shouldn't commute TERM2 in front of it
+    (if (quotep darg1) ;Otherwise, if DARG1 is a quoted constant, we shouldn't commute DARG2 in front of it
         nil
       ;; both are nodenums:
-      ;; first look up the expression for TERM2 in the DAG
-      (let ((expr2 (aref1 'dag-array dag-array term2)))
+      ;; first look up the expression for DARG2 in the DAG
+      (let ((expr2 (aref1 'dag-array dag-array darg2)))
         (if (not (and (myquotep quoted-fn)
                       (symbolp (unquote quoted-fn))))
-            (er hard? 'should-commute-axe-argsp "Bad fn argument: ~x0." quoted-fn)
+            (er hard? 'should-commute-axe-argsp "Bad fn argument to should-commute-axe-argsp: ~x0." quoted-fn)
           (let ((fn (unquote quoted-fn)))
             (if (call-of fn expr2)
-                nil ;IF TERM2 is a call to FN, commuting it forward will mess up the associativity, so refrain. (FFIXME check the size too?  otherwise, this will not apply to a bvplus 64 nest when an argument is a bvplus 32, even though associativity would not apply when one size is 32 and the other is 64)
-              ;; If term2 isn't a call to FN (TERM1 shouldn't be one because of associativity), then just compare the nodenums (but first strip off invisible fns)
+                nil ;IF DARG2 is a call to FN, commuting it forward will mess up the associativity, so refrain. (FFIXME check the size too?  otherwise, this will not apply to a bvplus 64 nest when an argument is a bvplus 32, even though associativity would not apply when one size is 32 and the other is 64)
+              ;; If darg2 isn't a call to FN (DARG1 shouldn't be one because of associativity), then just compare the nodenums (but first strip off invisible fns)
               ;; fffixme could putting bigger nodenums first help with sharing? it's what simplify-bitxors does
-              (let* ((expr1 (aref1 'dag-array dag-array term1))
+              (let* ((expr1 (aref1 'dag-array dag-array darg1))
                      (stripped1 (strip-invisible-fns fn expr1))
-                     (term1 (if stripped1 stripped1 term1))
+                     (darg1 (if stripped1 stripped1 darg1))
                      (stripped2 (strip-invisible-fns fn expr2))
-                     (term2 (if stripped2 stripped2 term2)))
-                (< term2 term1)))))))))
+                     (darg2 (if stripped2 stripped2 darg2)))
+                (< darg2 darg1)))))))))
 
-;move?
 ;same as should-commute-axe-argsp except it puts bigger nodenums first (matches what simplify-bitxors does)
 ;ffixme maybe we should always put bigger nodenums first and so always just use this?
-(defund should-commute-axe-args-increasingp (quoted-fn term1 term2 dag-array)
-  (declare (xargs :guard (and (or (myquotep term1)
-                                  (and (natp term1)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term1))))
-                              (or (myquotep term2)
-                                  (and (natp term2)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term2)))))
+(defund should-commute-axe-args-increasingp (quoted-fn darg1 darg2 dag-array)
+  (declare (xargs :guard (and (or (myquotep darg1)
+                                  (and (natp darg1)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg1))))
+                              (or (myquotep darg2)
+                                  (and (natp darg2)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg2)))))
                   ;;:guard-hints (("Goal" :in-theory (enable PSEUDO-DAG-ARRAYP-AUX)))
                   ))
-  (if (quotep term2)
-      (if (quotep term1)
+  (if (quotep darg2)
+      (if (quotep darg1)
           ;;both are constants:
           ;;we sort constants by numeric value
           ;;or we could just not swap them, at least for operators which have the combine-constants rule..
-          (and (rationalp (unquote term1))
-               (rationalp (unquote term2))
-               (< (unquote term2) (unquote term1)))
-        ;;TERM2 is a quoted constant but TERM1 isn't, so TERM2 should come first
+          (and (rationalp (unquote darg1))
+               (rationalp (unquote darg2))
+               (< (unquote darg2) (unquote darg1)))
+        ;;DARG2 is a quoted constant but DARG1 isn't, so DARG2 should come first
         t)
-    (if (quotep term1) ;Otherwise, if TERM1 is a quoted constant, we shouldn't commute TERM2 in front of it
+    (if (quotep darg1) ;Otherwise, if DARG1 is a quoted constant, we shouldn't commute DARG2 in front of it
         nil
       ;; both are nodenums:
-      ;; first look up the expression for TERM2 in the DAG
-      (let ((expr2 (aref1 'dag-array dag-array term2)))
+      ;; first look up the expression for DARG2 in the DAG
+      (let ((expr2 (aref1 'dag-array dag-array darg2)))
         (if (not (and (myquotep quoted-fn)
                       (symbolp (unquote quoted-fn))))
             (er hard? 'should-commute-axe-args-increasingp "Bad fn argument: ~x0." quoted-fn)
           (let ((fn (unquote quoted-fn)))
             (if (call-of fn expr2)
-                nil ;IF TERM2 is a call to FN, commuting it forward will mess up the associativity, so refrain.
-              ;; If term2 isn't a call to FN (TERM1 shouldn't be one because of associativity), then just compare the nodenums (but first strip off invisible fns)
+                nil ;IF DARG2 is a call to FN, commuting it forward will mess up the associativity, so refrain.
+              ;; If darg2 isn't a call to FN (DARG1 shouldn't be one because of associativity), then just compare the nodenums (but first strip off invisible fns)
               ;; fffixme could putting bigger nodenums first help with sharing? it's what simplify-bitxors does
-              (let* ((expr1 (aref1 'dag-array dag-array term1))
+              (let* ((expr1 (aref1 'dag-array dag-array darg1))
                      (stripped1 (strip-invisible-fns fn expr1))
-                     (term1 (if stripped1 stripped1 term1))
+                     (darg1 (if stripped1 stripped1 darg1))
                      (stripped2 (strip-invisible-fns fn expr2))
-                     (term2 (if stripped2 stripped2 term2)))
+                     (darg2 (if stripped2 stripped2 darg2)))
                 ;;bring larger nodenums to the front!
-                (< term1 term2)))))))))
+                (< darg1 darg2)))))))))
 
 ;; ;maybe the measure is the size of the terms at the give nodenums in the dag...
 ;; (mutual-recursion
@@ -457,10 +428,3 @@
               (or (eq 'myif (car expr))
                   ;(eq 'bvif (car expr))
                   )))))
-
-;just call not-syntactic-call-of?
-(defund not-is-a-myif (arg dag-array)
-  (declare (xargs :guard (or (myquotep arg)
-                             (and (natp arg)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 arg))))))
-  (not (is-a-myif arg dag-array)))

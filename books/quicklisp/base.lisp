@@ -33,6 +33,8 @@
 ; cert_param: (uses-quicklisp)
 ; Matt K. mod, 12/16/2021 (see GitHub Issue #1332):
 ; cert_param: (non-lispworks)
+; Matt K. mod, 9/5/2023 (see GitHub Issue #1532)
+; cert_param: (non-cmucl)
 
 (make-event
  (mv-let (err override-dir state)

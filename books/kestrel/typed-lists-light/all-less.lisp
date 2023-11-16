@@ -35,6 +35,11 @@
   :hints (("Goal" :induct (REVAPPEND X Y)
            :in-theory (enable revappend all-<))))
 
+(defthm all-<-of-reverse
+  (equal (all-< (reverse x) bound)
+         (all-< x bound))
+  :hints (("Goal" :cases ((stringp x)))))
+
 (defthm <-of-nth-of-0-when-all-<-cheap
   (implies (and (all-< items x)
                 (consp items))

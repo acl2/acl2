@@ -19,7 +19,7 @@
 
 (defxdoc+ octal-integer-literals
   :parents (integer-literals)
-  :short "Java octal integer literals [JLS:3.10.1]."
+  :short "Java octal integer literals [JLS14:3.10.1]."
   :order-subtopics t
   :default-parent t)
 

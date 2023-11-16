@@ -1,7 +1,7 @@
 ; BV Library: logand
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -86,7 +86,7 @@
               (< j 0)
               (integerp i)
               (integerp j)))
-  :hints (("Goal" :use (:instance <-of-logand-and-0-helper)
+  :hints (("Goal" :use <-of-logand-and-0-helper
            :in-theory (disable <-of-logand-and-0-helper))))
 
 (defthm logand-non-negative-type
@@ -155,12 +155,15 @@
 (defthm logand-associative
   (equal (logand (logand i j) k)
          (logand i (logand j k)))
-  :hints (("Goal" :in-theory (enable logand
-                                     floor-of-2-cases
-                                     mod-sum-cases
-                                     zip
-                                     logand-is-zero-helper
-                                     logand-is-zero-helper-2)
+  :hints (("Goal" :in-theory (e/d (logand
+                                     ;floor-of-2-cases
+                                   mod-sum-cases
+                                     ;zip
+                                   logand-is-zero-helper
+                                   logand-is-zero-helper-2)
+                                  (;; for speed:
+                                   <=-of-logand-same-arg1
+                                   <=-of-logand-same-arg2))
            :induct t
            :expand ((:free (j) (logand i j))
                     (:free (j) (logand k j))))))
@@ -168,7 +171,7 @@
 (defthm logand-commutative-2
   (equal (logand i j k)
          (logand j i k))
-  :hints (("Goal" :use ((:instance logand-associative)
+  :hints (("Goal" :use (logand-associative
                         (:instance logand-associative (i j) (j i)))
            :in-theory (disable logand-associative))))
 
@@ -346,7 +349,7 @@
   (implies (integerp i)
            (equal (logand i (+ -1 (- i)))
                   0))
-  :hints (("Goal" :use (:instance logand-of-lognot-same)
+  :hints (("Goal" :use logand-of-lognot-same
            :in-theory (e/d (lognot)
                            (logand-of-lognot-same)))))
 
@@ -440,7 +443,7 @@
                        (< j 0)
                        (or (< i (- (expt 2 n)))
                            (< j (- (expt 2 n)))))))
-  :hints (("Goal" :use (:instance logand-lower-bound-negative-2)
+  :hints (("Goal" :use logand-lower-bound-negative-2
            :in-theory (disable logand-lower-bound-negative-2))))
 
 (defthm unsigned-byte-p-of-logand
@@ -552,5 +555,50 @@
   (equal (< -1 (logand i j))
          (not (and (< (ifix i) 0)
                    (< (ifix j) 0))))
-  :hints (("Goal" :use (:instance <-of-logand-and-0)
+  :hints (("Goal" :use <-of-logand-and-0
            :in-theory (disable <-of-logand-and-0))))
+
+(local
+ (defun induct-floor-and-sub1 (x n)
+   (if (zp n)
+       (list x n)
+     (induct-floor-and-sub1 (floor x 2) (+ -1 n)))))
+
+(defthm logand-of-minus-of-expt
+  (implies (and (natp n)
+                (integerp x)
+                (< x 0)
+                (<= (- (expt 2 n)) x))
+           (equal (logand (- (expt 2 n)) x)
+                  (- (expt 2 n))))
+  :hints (("Subgoal *1/2" :use (:instance floor-weak-monotone
+                                          (i1 (- (expt 2 n)))
+                                          (i2 x)
+                                          (j 2))
+           :expand (logand x (- (expt 2 n)))
+           :in-theory (e/d (expt-of-+ ;fl
+                            ;mod-=-0
+                            mod-expt-split)
+                           (
+                            floor-unique-equal-version
+                            floor-weak-monotone ;hack-6
+                            )))
+          ("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (induct-floor-and-sub1 x n)
+           :expand (logand x (- (expt 2 n)))
+           :in-theory (e/d (lognot logand ;fl
+                                   expt-of-+
+                                   mod-expt-split)
+                           (;hack-6                     ;ffixme
+                            ;EQUAL-OF-EXPT2-AND-CONSTANT ;fixme
+                            )))))
+
+(defthm logand-of-minus-of-expt-and-lognot
+  (implies (and (natp n)
+                (unsigned-byte-p n x))
+           (equal (logand (- (expt 2 n)) (lognot x))
+                  (- (expt 2 n))))
+  :hints (("Goal" :in-theory (enable lognot logand
+                                          expt-of-+
+                                          ;;INTEGER-TIGHTEN-BOUND ;why?
+                                          ))))

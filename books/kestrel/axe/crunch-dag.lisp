@@ -1,7 +1,7 @@
 ; Crunching a DAG (i.e., dropping irrelevant nodes from a dag-array in place)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,6 +11,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; TODO: Can we deprecate this book?
 
 (include-book "supporting-nodes") ;reduce? but we need tag-supporters-of-nodes
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -135,7 +137,7 @@
                               (all-natp nodenums)
                               (all-< nodenums dag-len))))
   (let* ((max-nodenum (maxelem nodenums))
-         (tag-array (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
+         (tag-array (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
          (translation-array (make-empty-array 'translation-array (+ 1 max-nodenum))))
     (crunch-dag-array-aux 0
                           max-nodenum

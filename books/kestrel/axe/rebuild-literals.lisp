@@ -16,6 +16,7 @@
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/all-less-rules" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system)) ;needed for reasoning about sort

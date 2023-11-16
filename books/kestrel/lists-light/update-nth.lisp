@@ -33,6 +33,12 @@
            (+ 1 (nfix n)))))
 (in-theory (disable len-update-nth))
 
+;; Avoids a case split
+(defthm <-of-len-of-update-nth
+  (implies (natp n)
+           (< n (len (update-nth n val l))))
+  :hints (("Goal" :in-theory (enable update-nth nfix))))
+
 ;; Match what's in STD
 (defthm update-nth-of-update-nth-same
   (equal (update-nth n v1 (update-nth n v2 x))
@@ -190,7 +196,7 @@
                        (equal (nthcdr (+ 1 n) x)
                               (nthcdr (+ 1 n) y)))))
   :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
-           :in-theory (e/d (update-nth) ()))))
+           :in-theory (enable update-nth))))
 
 (defthm update-nth-of-take-of-+-of-1-same
   (implies (and (<= (len lst) n)

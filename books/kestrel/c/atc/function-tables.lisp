@@ -45,6 +45,7 @@
      and is represented by the function,
      when the function is recursive;
      a list of variables affected by the function;
+     a list of formals that represent external objects;
      the name of the locally generated theorem about the function result(s);
      the name of the locally generated theorem that asserts
      that the execution of the function is functionally correct,
@@ -87,6 +88,7 @@
    (in-types type-list)
    (loop? stmt-option)
    (affect symbol-list)
+   (extobjs symbol-list)
    (result-thm symbol)
    (correct-thm symbol)
    (correct-mod-thm symbol)
@@ -107,6 +109,11 @@
   :valp-of-nil nil
   :pred atc-symbol-fninfo-alistp
   ///
+
+  (defruled symbol-alistp-when-atc-symbol-fninfo-alistp
+    (implies (atc-symbol-fninfo-alistp x)
+             (symbol-alistp x))
+    :enable symbol-alistp)
 
   (defrule atc-fn-infop-of-cdr-of-assoc-equal
     (implies (and (atc-symbol-fninfo-alistp x)

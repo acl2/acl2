@@ -1,3 +1,0 @@
-(C::STAR
- (1 1 (:TYPE-PRESCRIPTION C::STAR))
- )

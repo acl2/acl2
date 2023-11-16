@@ -16,7 +16,11 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/std/strings/decimal-fty" :dir :system))
+(local (include-book "kestrel/std/strings/explode-implode-equalities" :dir :system))
+(local (include-book "kestrel/utilities/lists/append-theorems" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -56,7 +60,19 @@
 (define iname ((base stringp) (i natp))
   :returns (name stringp)
   :short "Create an indexed name, from a base and an index."
-  (str::cat base "_" (str::nat-to-dec-string i)))
+  (str::cat base "_" (str::nat-to-dec-string i))
+  ///
+
+  (fty::deffixequiv iname
+    :args ((i natp)))
+
+  (defruled iname-not-equal-to-base
+    (implies (stringp base)
+             (not (equal (iname base i) base)))
+    :enable (string-append-lst
+             string-append
+             str::equal-of-implode-left-to-equal-of-explode-right
+             acl2::equal-of-append-and-left)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,12 +97,38 @@
               (nfix n))
        :hints (("Goal"
                 :induct t
-                :in-theory (enable iname-list-rev nfix fix len))))))
+                :in-theory (enable iname-list-rev nfix fix len))))
+
+     (defret consp-of-iname-list-rev
+       (equal (consp names-rev)
+              (> (nfix n) 0))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))
+
+     (defruled base-not-member-of-iname-list-rev
+       (implies (stringp base)
+                (not (member-equal base (iname-list-rev base n))))
+       :induct t
+       :do-not '(preprocess) ; otherwise it throws away the (stringp base) hyp
+       :enable (iname-list-rev
+                iname-not-equal-to-base))))
   ///
 
   (defret len-of-iname-list
     (equal (len names)
-           (nfix n))))
+           (nfix n)))
+
+  (defret consp-of-iname-list
+    (equal (consp names)
+           (> (nfix n) 0)))
+
+  (in-theory (disable consp-of-iname-list
+                      consp-of-iname-list-rev))
+
+  (defruled base-not-member-of-iname-list
+    (implies (stringp base)
+             (not (member-equal base (iname-list base n))))
+    :use base-not-member-of-iname-list-rev
+    :enable iname-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +289,65 @@
 
 (defrule no-duplicatesp-equal-of-iname-list
   :parents (iname-list)
-  :short "The names returned by @('iname-list') are all distinct,
+  :short "The names returned by @(tsee iname-list) are all distinct,
           because the indices are all distinct."
   (implies (stringp base)
            (no-duplicatesp-equal (iname-list base n))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled iname-injective-on-index
+  :parents (iname)
+  :short "The function @(tsee iname) is injective over the index."
+  (implies (stringp base)
+           (equal (equal (iname base i)
+                         (iname base j))
+                  (equal (nfix i)
+                         (nfix j))))
+  :use (only-if-part if-part)
+
+  :prep-lemmas
+
+  ((defruled only-if-part
+     (implies (stringp base)
+              (implies (equal (iname base i)
+                              (iname base j))
+                       (equal (nfix i)
+                              (nfix j))))
+     :use ((:instance iname-to-num-of-iname (i i))
+           (:instance iname-to-num-of-iname (i j)))
+     :disable iname-to-num-of-iname)
+
+   (defruled if-part
+     (implies (stringp base)
+              (implies (equal (nfix i)
+                              (nfix j))
+                       (equal (iname base i)
+                              (iname base j))))
+     :use (:instance lemma (i (nfix i)) (j (nfix j)))
+     :prep-lemmas
+     ((defruled lemma
+        (implies (and (stringp base)
+                      (equal i j))
+                 (equal (iname base i)
+                        (iname base j))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled member-equal-of-iname-and-iname-list
+  :parents (iname-list)
+  (implies (stringp base)
+           (iff (member-equal (iname base i) (iname-list base n))
+                (< (nfix i) (nfix n))))
+  :enable (iname-list
+           member-equal-of-iname-and-iname-list-rev)
+  :prep-lemmas
+  ((defruled member-equal-of-iname-and-iname-list-rev
+     (implies (stringp base)
+              (iff (member-equal (iname base i) (iname-list-rev base n))
+                   (< (nfix i) (nfix n))))
+     :induct t
+     :enable (iname-list-rev
+              member-equal
+              iname-injective-on-index
+              nfix))))

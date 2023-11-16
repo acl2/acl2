@@ -779,7 +779,7 @@
 ;;            (string-listp (get-superclasses class-name class-table))))
 
 ;; (defthm all-keys-bound-to-class-infosp-when-subset-of-dom
-;;   (implies  (and (class-tablep class-table)
+;;   (implies (and (class-tablep class-table)
 ;;                  (all-bound-in-class-tablep names class-table))
 ;;             (all-keys-bound-to-class-infosp names class-table))
 ;;   :hints (("Goal" :in-theory (enable ALL-KEYS-BOUND-TO-CLASS-INFOSP all-bound-in-class-tablep BOUND-IN-CLASS-TABLEP))))

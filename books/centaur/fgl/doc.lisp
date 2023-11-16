@@ -90,6 +90,14 @@ FGL is glucose.  To use a different SAT solver, see @(see fgl-solving).</p>
   :concl (not (logbitp 4 x)))
  })
  
+<p>In addition to a standalone SAT solver program (monolithic solver), for
+certain FGL features you may also want an incremental solver implementing the
+IPASIR interface; see @(see ipasir::ipasir) for an overview and
+(see ipasir::building-an-ipasir-solver-library) for how to build one.  Then
+you'll need to set the environment variable @('IPASIR_SHARED_LIBRARY') and
+include the book @('centaur/ipasir/ipasir-backend') in order to allow its
+use.</p>
+
 <p>To learn more about FGL, here are some places to get started:</p>
 
 <ul>

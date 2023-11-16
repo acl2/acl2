@@ -134,8 +134,7 @@
   (<= (len (mv-nth 1 (parse-binary-number-from-chars chars)))
       (len chars))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (parse-binary-number-from-chars)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable parse-binary-number-from-chars))))
 
 (defthm true-listp-of-mv-nth-1-of-parse-binary-number-from-chars
   (implies (true-listp chars)

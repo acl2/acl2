@@ -97,7 +97,24 @@
        (stobj-out (nth valnum stobjs-out))
        ((unless stobj-out) (mv nil nil))
        (pos (position stobj-out formals))
-       ((unless pos) (mv nil nil)))
+       ((unless pos)
+        ;; Special case for a nested stobj accessor.  If this function looks
+        ;; like one then recur looking for the prev-stobj binding for the
+        ;; parent stobj of the subterm.  Our criterion for this is if the
+        ;; function has one formal and return value, both are stobjs, and they
+        ;; are not the same.
+        (b* ((one-formal-and-return (and (eql (len stobjs-out) 1)
+                                         (eql (len formals) 1)))
+             ((unless one-formal-and-return)
+              (mv nil nil))
+             (stobjs-in (acl2::stobjs-in function w))
+             (looks-like-nested-accessor (and (car stobjs-in)
+                                              (not (eq (car stobjs-in) stobj-out))))
+             ((unless looks-like-nested-accessor) (mv nil nil))
+             ((mv parent-ok parent-prev-stobj)
+              (find-prev-stobj-binding (car args) state))
+             ((unless parent-ok) (mv nil nil)))
+          (mv t `(,function ,parent-prev-stobj)))))
     (mv t (nth pos args))))
 
 

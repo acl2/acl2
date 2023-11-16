@@ -259,8 +259,8 @@
 
 (defmacro ndx-p (x) `(natp ,x))
 
-(defconst *null-svar* (sv::make-svar :name :null :delay 0 :nonblocking nil))
-(defconst *self-svar* (sv::make-svar :name :self :delay 0 :nonblocking nil))
+(defconst *null-svar* (sv::make-svar :name :null :delay 0))
+(defconst *self-svar* (sv::make-svar :name :self :delay 0))
 (defconst *null-svex* (sv::svex-var *null-svar*))
 (defconst *self-svex* (sv::svex-var *self-svar*))
 

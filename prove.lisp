@@ -2701,10 +2701,13 @@
     (increment-timer 'prove-time state)
     (fms "~@0~|~q1.~|"
          (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
-               (cons #\1 (prettyify-clause
-                          clause
-                          (let*-abstractionp state)
-                          (w state))))
+               (cons #\1 (if (eq (f-get-global 'raw-proof-format state)
+                                 :clause)
+                             clause
+                           (prettyify-clause
+                            clause
+                            (let*-abstractionp state)
+                            (w state)))))
          (proofs-co state)
          state
          (term-evisc-tuple nil state))

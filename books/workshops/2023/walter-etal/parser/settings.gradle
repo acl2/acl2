@@ -1,0 +1,5 @@
+include 'org.neu.acl2.handproof'
+include 'org.neu.acl2.handproof.ide'
+include 'org.neu.acl2.handproof.web'
+include 'org.neu.acl2.handproof.cli'
+include 'org.neu.acl2.handproof.tests'
