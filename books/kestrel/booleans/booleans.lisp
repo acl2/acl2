@@ -217,3 +217,8 @@
   (equal (myif (bool-fix test) x y)
          (myif test x y))
   :hints (("Goal" :in-theory (enable myif))))
+
+(defthm bool-fix-of-myif
+  (equal (bool-fix (myif test tp ep))
+         (myif test (bool-fix tp) (bool-fix ep)))
+  :hints (("Goal" :in-theory (enable myif))))
