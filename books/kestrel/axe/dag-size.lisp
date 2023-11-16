@@ -1,7 +1,7 @@
 ; Computing the size of a DAG (if it was a term)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,16 +21,12 @@
 (include-book "dag-size-array")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 
 (local (in-theory (enable not-<-of-car-when-all-<
                           <=-of-0-when-0-natp
                           acl2-numberp-when-natp
                           integerp-when-natp)))
-
-(local
- (defthm natp-of-if
-   (equal (natp (if test tp ep))
-          (if test (natp tp) (natp ep)))))
 
 (local (in-theory (disable natp)))
 

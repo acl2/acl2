@@ -1,7 +1,7 @@
 ; Stuff that supports the (simple) rewriter.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -132,12 +132,6 @@
            (not (< item 0)))
   :hints
   (("Goal" :in-theory (enable dargp))))
-
-(defthm integerp-of-if
-  (equal (integerp (if test tp ep))
-         (if test
-             (integerp tp)
-           (integerp ep))))
 
 (defthm symbol-listp-of-cons
   (equal (symbol-listp (cons a x))

@@ -27,14 +27,8 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-
-(local
- (defthm integerp-of-if
-  (equal (integerp (if x y z))
-         (if x
-             (integerp y)
-           (integerp z)))))
 
 (local
  (defthm acl2-numberp-when-integerp

@@ -46,6 +46,8 @@
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "kestrel/utilities/print-levels" :dir :system)
+(include-book "kestrel/utilities/if-rules" :dir :system)
+(include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
