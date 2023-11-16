@@ -964,6 +964,16 @@
 
 ;; fixme; add the rest of these condition rules from tester-rules.
 
+(defthm jnb-condition-of-bv-if-1-0-1
+  (equal (jnb-condition (bvif 1 test 0 1))
+         (acl2::bool-fix test))
+  :hints (("Goal" :in-theory (enable jnb-condition))))
+
+(defthm jnb-condition-of-bv-if-1-1-0
+  (equal (jnb-condition (bvif 1 test 1 0))
+         (not test))
+  :hints (("Goal" :in-theory (enable jnb-condition))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;nice
@@ -1214,6 +1224,16 @@
   :hints (("Goal" :in-theory (enable jb-condition
                                      x86isa::sub-cf-spec64
                                      bvlt))))
+
+(defthm jb-condition-of-bv-if-1-0-1
+  (equal (jb-condition (bvif 1 test 0 1))
+         (not test))
+  :hints (("Goal" :in-theory (enable jb-condition))))
+
+(defthm jb-condition-of-bv-if-1-1-0
+  (equal (jb-condition (bvif 1 test 1 0))
+         (acl2::bool-fix test))
+  :hints (("Goal" :in-theory (enable jb-condition))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
