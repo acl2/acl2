@@ -202,7 +202,7 @@
     x86isa::snan
     x86isa::qnan
     x86isa::indef
-
+    x86isa::inf
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -234,6 +234,8 @@
     boolif
     boolor
     booland
+    bool-fix
+    bool-fix$inline
     loghead
     logapp
     logmask
