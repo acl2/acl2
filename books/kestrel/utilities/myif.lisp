@@ -24,8 +24,16 @@
          (myif x y z))
   :hints (("Goal" :in-theory (enable myif))))
 
-;add myif when non nil?
-(defthm myif-of-t
+(defthm myif-of-constant-when-not-nil
+  (implies (and (syntaxp (quotep x))
+                (not (equal x nil)) ; todo: simplify?
+                )
+           (equal (myif x y z)
+                  y))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; disabled since we have myif-of-constant-when-not-nil
+(defthmd myif-of-t
   (equal (myif t thenpart elsepart)
          thenpart)
   :hints (("Goal" :in-theory (enable myif))))
@@ -108,6 +116,7 @@
          (not test))
   :hints (("Goal" :in-theory (enable myif))))
 
+;todo: rename
 (defthm myif-t-nil
   (implies (booleanp test)
            (equal (myif test t nil)
@@ -126,13 +135,6 @@
   (implies (equal nil x) ;can be slow?
            (equal (myif x y z)
                   z))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm myif-of-constant-when-not-nil
-  (implies (and (syntaxp (quotep x))
-                (not (equal x nil)))
-           (equal (myif x y z)
-                  y))
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd equal-of-myif-arg2
