@@ -1,0 +1,83 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD13xx/EWD1313.html
+
+To connect * with ↓, I came up with
+(6)	x↓(y *z)  =  x↓(x↓y * x↓z)	.
+Now the proof of (0) was straightforward: we observe for any x,y,z (satisfying (6) and (0)'s antecedent)
+ 	x↓(y *z)	 
+=	 	{ (6) }	 
+ 	x↓(x↓y * x↓z)	 
+=	 	{ antecedent of (0) }	 
+ 	x↓(1 * x↓z)	 
+=	 	{ (4) with u := x↓z }	 
+ 	x↓(x↓z)	 
+=	 	{ ↓ associative and idempotent }	 
+ 	x↓z   ,	 
+which completes the proof of (0).
+|#
+
+(definec gcf (a b :nat) :nat
+  (if (= 0 b)
+      a
+    (gcf b (mod a b))))
+
+(property  (x y z :nat)
+           :proofs? nil
+           (== (gcf x (* (gcf x y) (gcf x z)))
+               (gcf x (* y z))))
+
+(skip-proofs
+ (property gcf-dist (x y z :nat)
+           (== (gcf x (* (gcf x y) (gcf x z)))
+               (gcf x (* y z)))))
+
+(skip-proofs
+ (property gcf-assoc (x y z :nat)
+           (== (gcf x (gcf y z))
+               (gcf (gcf x y) z))
+           :rule-classes ((:rewrite))))
+
+(property gcf-idempotent (x :nat)
+          (== (gcf x x)
+              x)
+          :rule-classes ((:rewrite)))
+          
+Conjecture 0:
+(=> (= (gcf x y) 1)
+    (= (gcf x (* y z)) (gcf x z)))
+
+Contract Completion:
+(=> (^ (natp x)
+       (natp y)
+       (natp z)
+       (= (gcf x y) 1))
+    (= (gcf x (* y z)) (gcf x z)))
+
+Context:
+C1. (natp x)
+C2. (natp y)
+C3. (natp z)
+C4. (= (gcf x y) 1)
+
+Goal: (= (gcf x (* y z)) (gcf x z))
+
+Proof:
+(gcf x (* y z))
+== { Lemma gcf-dist, C1, C2, C3 }
+(gcf x (* (gcf x y) (gcf x z)))
+== { C4 }
+(gcf x (* 1 (gcf x z)))
+== { Arith }
+(gcf x (gcf x z))
+== { Lemma gcf-assoc ((y x)) }
+(gcf (gcf x x) z)
+== { Lemma gcf-idempotent }
+(gcf x z)
+
+QED
