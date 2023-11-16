@@ -28,17 +28,15 @@
                               (open-input-channel-p channel :object state)
                               (true-listp acc))
                   :stobjs state
-                  :measure (len (cddr (assoc-equal channel (open-input-channels state))) ;;(channel-contents channel state)
-                                )
+                  ;; TODO: Improve read-object to test for atom rather than null, and then simplify this measure.
+                  :measure (let ((contents (cddr (assoc-equal channel (open-input-channels state)))))  ;;(channel-contents channel state)
+                             (if (null contents) 0 (if (atom contents) 1 (+ 1 (len contents)))))
                   :guard-hints (("Goal" :in-theory (enable open-input-channel-p)))))
-  (if (not (mbt (and (open-input-channel-p channel :object state) ; for termination
-                     (state-p state))))
-      (mv nil state)
-    (mv-let (eof maybe-object state)
-      (read-object channel state)
-      (if eof
-          (mv (reverse acc) state)
-        (read-objects-from-channel-aux channel (cons maybe-object acc) state)))))
+  (mv-let (eof maybe-object state)
+    (read-object channel state)
+    (if eof
+        (mv (reverse acc) state)
+      (read-objects-from-channel-aux channel (cons maybe-object acc) state))))
 
 (defthm state-p1-of-mv-nth-1-of-read-objects-from-channel-aux
   (implies (state-p1 state)
