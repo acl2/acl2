@@ -89,37 +89,34 @@
 
 (local (in-theory (disable <-OF-IF-ARG1)))
 
-;move these (and disable them)?
-
-;reorder lhs?
-;use IF in conclusion?
-(defthm equal-of-myif-same
-  (implies (booleanp test)
-           (equal (equal (myif test x y) x)
-                  (or test
-                      (equal y x)))))
+;todo: move these (and disable them)?
 
 ;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
 (defthm equal-of-myif-same-1
   (equal (equal x (myif test x y))
-         (or (bool-fix test) (equal x y)))
+         (if test t (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
 (defthm equal-of-myif-same-2
   (equal (equal x (myif test y x))
+         ;rephrase rhs?
          (or (not test) (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
 
+;; may not be needed if we flip equalities to bring smaller terms first
 (defthm equal-of-myif-same-1-alt
   (equal (equal (myif test x y) x)
-         (or (bool-fix test) (equal x y)))
+         (if test t (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
 
+;; may not be needed if we flip equalities to bring smaller terms first
 (defthm equal-of-myif-same-2-alt
   (equal (equal (myif test y x) x)
+         ;rephrase rhs?
          (or (not test) (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
+
 
 
 ;; surprising that this is needed
@@ -907,13 +904,6 @@
                   (or (<= (+ (- k1) (expt 2 32)) (bvchop 32 x))
                       (bvlt 32 x (- k2 k1)))))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus) (anti-bvplus )))))
-
-(defthm bvuminus-less-than-true
-  (implies (and (syntaxp (quotep k))
-                (<= (expt 2 size) k)
-                (natp size))
-           (< (bvuminus size x) k))
-  :hints (("Goal" :in-theory (e/d (bvuminus) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 (defthm bvlt-of-bvuminus-trim
   (implies (unsigned-byte-p 31 z)

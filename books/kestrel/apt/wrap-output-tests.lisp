@@ -571,7 +571,7 @@
   )
 
 
-;; Test involving normalizaion:  TODO: Get this to work
+;; Test involving normalization:  TODO: Get this to work
 
 ;; (deftest
 ;;   (defstub stub (x) t)

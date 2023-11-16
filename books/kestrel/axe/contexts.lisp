@@ -198,7 +198,7 @@
       (max-nodenum-in-possibly-negated-nodenums-aux items acc))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
-     
+
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
 ;;;
@@ -1081,3 +1081,14 @@
            (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) (len dag) bound))
   :hints (("Goal" :in-theory (enable make-full-context-array-for-dag
                                      ))))
+
+(defthm bounded-context-arrayp-of-make-full-context-array-gen
+  (implies (and (pseudo-dagp dag)
+                (<= (len dag) 2147483646)
+                (<= (len dag) bound)
+                (natp bound)
+                (<= len (len dag))
+                (natp len))
+           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) len bound))
+  :hints (("Goal" :use (:instance bounded-context-arrayp-of-make-full-context-array)
+           :in-theory (disable bounded-context-arrayp-of-make-full-context-array))))

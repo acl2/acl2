@@ -15,12 +15,12 @@
 ;; See also the built-in function fixnum-bound (= 2^29-1), but that seems
 ;; intended for 32-bit Lisps.
 
-;; The size of a fixnum is dependent on the Lisp implementataion.
+;; The size of a fixnum is dependent on the Lisp implementation.
 ;; Evaluating most-positive-fixnum on CCL and SBCL gives 2^60-1 and 2^62-1, respectively.
 ;; We choose the more conservative value here.
 (defconst *max-fixnum* (+ -1 (expt 2 60)))
 
-;; The size of a fixnum is dependent on the Lisp implementataion.
+;; The size of a fixnum is dependent on the Lisp implementation.
 ;; Evaluating most-negative-fixnum on CCL and SBCL gives -(2^60) and -(2^62), respectively.
 ;; We choose the more conservative value here.
 (defconst *min-fixnum* (- (expt 2 60)))
