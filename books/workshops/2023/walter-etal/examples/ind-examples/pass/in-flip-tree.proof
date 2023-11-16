@@ -1,0 +1,298 @@
+(defdata tree (or nil (list tree nat tree)))
+
+;; check if a value is in the tree
+(definec in-tree (tree :tree e :nat) :boolean
+  (cond
+   ((endp tree) nil)
+   ((== e (second tree)) t)
+   (t (or (in-tree (first tree) e)
+          (in-tree (third tree) e)))))
+
+;; swap the left and right branches of each element of the tree
+(definec flip-tree (tree :tree) :tree
+  (if (endp tree)
+      nil
+    (list (flip-tree (third tree)) (second tree) (flip-tree (first tree)))))
+
+;; Here is a property one might want to prove - that in-tree
+;; still holds after a flip-tree.
+(property (tree :tree e :nat)
+  (=> (in-tree tree e)
+      (in-tree (flip-tree tree) e)))
+
+Conjecture in-tree-flip-tree:
+(=> (^ (treep tree)
+       (natp e)
+       (in-tree tree e))
+    (in-tree (flip-tree tree) e))
+
+Proof by: induction on (in-tree tree e)
+
+#|
+Induction proof obligations:
+
+Contract Case 1: (! (^ (treep tree) (natp e))) => phi
+Base Case 1: (^ (treep tree) (natp e) (endp tree))  => phi
+Base Case 2: (^ (treep tree) (natp e) (! (endp tree)) (== e (second tree))) => phi
+
+Induction Case 1:
+(^ (treep tree)
+   (natp e)
+   (! (endp tree))
+   (! (== e (second tree)))
+   (in-tree (first tree) e)
+   phi|((tree (first tree))))
+=> phi
+
+Induction Case 2:
+(^ (treep tree)
+   (natp e)
+   (! (endp tree))
+   (! (== e (second tree)))
+   (! (in-tree (first tree) e))
+   phi|((tree (first tree)))
+   phi|((tree (third tree))))
+ => phi
+
+Why are there two induction cases? Recall that or is really just a macro
+that turns into an if.
+|#
+
+;; Contract case, easy peasy
+Contract Case 1:
+(=> (! (^ (treep tree)
+          (natp e)))
+    (=> (^ (treep tree)
+           (natp e)
+           (in-tree tree e))
+        (in-tree (flip-tree tree) e)))
+
+Exportation:
+(=> (^ (! (^ (treep tree)
+             (natp e)))
+       (treep tree)
+       (natp e)
+       (in-tree tree e))
+    (in-tree (flip-tree tree) e))
+
+Context:
+C1. (! (^ (treep tree)
+          (natp e)))
+C2. (treep tree)
+C3. (natp e)
+C4. (in-tree tree e)
+
+Derived Context:
+D1. nil { C1, C2, C3 }
+
+QED
+
+;; This case is also easy, since (endp tree) and (in-tree tree e) are mutually exclusive
+Base Case 1:
+(=> (^ (treep tree)
+       (natp e)
+       (endp tree))
+    (=> (^ (treep tree)
+           (natp e)
+           (in-tree tree e))
+        (in-tree (flip-tree tree) e)))
+
+Exportation:
+(=> (^ (treep tree)
+       (natp e)
+       (endp tree)
+       (in-tree tree e))
+    (in-tree (flip-tree tree) e))
+
+Context:
+C1. (treep tree)
+C2. (natp e)
+C3. (endp tree)
+C4. (in-tree tree e)
+
+Derived Context:
+D1. nil { C3, C4, def in-tree } 
+
+QED
+
+
+Base Case 2:
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (== e (second tree)))
+    (=> (^ (treep tree)
+           (natp e)
+           (in-tree tree e))
+        (in-tree (flip-tree tree) e)))
+
+Exportation:
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (== e (second tree)) 
+       (in-tree tree e))
+    (in-tree (flip-tree tree) e))
+
+Context:
+C1. (treep tree)
+C2. (natp e)
+C3. (! (endp tree))
+C4. (== e (second tree))
+C5. (in-tree tree e)
+
+Goal:
+(in-tree (flip-tree tree) e)
+
+Proof:
+(in-tree (flip-tree tree) e)
+== { def flip-tree, C3, cons axioms, def treep } ;; you shouldn't need this def treep
+(in-tree (list (flip-tree (third tree))
+               (second tree)
+               (flip-tree (first tree))) e)
+== { def in-tree, C4, cons axioms, def treep } ;; you shouldn't need this def treep
+t
+
+QED
+
+Induction Case 1:
+
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (! (== e (second tree)))
+       (in-tree (first tree) e)
+       (=> (^ (treep (first tree))
+              (natp e)
+              (in-tree (first tree) e))
+           (in-tree (flip-tree (first tree)) e)))
+    (=> (^ (treep tree)
+           (natp e)
+           (in-tree tree e))
+        (in-tree (flip-tree tree) e)))
+
+Exportation:
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (! (== e (second tree)))
+       (in-tree (first tree) e)
+       (=> (^ (treep (first tree))
+              (natp e)
+              (in-tree (first tree) e))
+           (in-tree (flip-tree (first tree)) e))
+       (in-tree tree e))
+    (in-tree (flip-tree tree) e))
+
+Context:
+C1. (treep tree)
+C2. (natp e)
+C3. (! (endp tree))
+C4. (! (== e (second tree)))
+C5. (in-tree (first tree) e)
+C6. (=> (^ (treep (first tree))
+           (natp e)
+           (in-tree (first tree) e))
+        (in-tree (flip-tree (first tree)) e))
+C7. (in-tree tree e)
+
+Derived Context:
+D1. (treep (first tree)) { C1, C3 }
+D2. (in-tree (flip-tree (first tree)) e) { C6, D1, C2, C5, MP }
+
+Goal:
+(in-tree (flip-tree tree) e)
+
+Proof:
+(in-tree (flip-tree tree) e)
+== { def flip-tree, C3, cons axioms, def treep } ;; you shouldn't need this def treep
+(in-tree (list (flip-tree (third tree))
+               (second tree)
+               (flip-tree (first tree))) e)
+== { def in-tree, C3, C4, cons axioms, def treep } ;; you shouldn't need this def treep
+(or (in-tree (flip-tree (third tree)) e)
+    (in-tree (flip-tree (first tree)) e))
+== { D2, def treep } ;; you shouldn't need this def treep
+t
+
+QED
+
+
+Induction Case 2:
+
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (! (== e (second tree)))
+       (! (in-tree (first tree) e))
+       (=> (^ (treep (first tree))
+              (natp e)
+              (in-tree (first tree) e))
+           (in-tree (flip-tree (first tree)) e))
+       (=> (^ (treep (third tree))
+              (natp e)
+              (in-tree (third tree) e))
+           (in-tree (flip-tree (third tree)) e)))
+    (=> (^ (treep tree)
+           (natp e)
+           (in-tree tree e))
+        (in-tree (flip-tree tree) e)))
+
+Exportation:
+(=> (^ (treep tree)
+       (natp e)
+       (! (endp tree))
+       (! (== e (second tree)))
+       (! (in-tree (first tree) e))
+       (=> (^ (treep (first tree))
+              (natp e)
+              (in-tree (first tree) e))
+           (in-tree (flip-tree (first tree)) e))
+       (=> (^ (treep (third tree))
+              (natp e)
+              (in-tree (third tree) e))
+           (in-tree (flip-tree (third tree)) e))
+       (in-tree tree e))
+    (in-tree (flip-tree tree) e))
+
+Context:
+C1. (treep tree)
+C2. (natp e)
+C3. (! (endp tree))
+C4. (! (== e (second tree)))
+C5. (! (in-tree (first tree) e))
+C6. (=> (^ (treep (first tree))
+           (natp e)
+           (in-tree (first tree) e))
+        (in-tree (flip-tree (first tree)) e))
+C7. (=> (^ (treep (third tree))
+           (natp e)
+           (in-tree (third tree) e))
+        (in-tree (flip-tree (third tree)) e))
+C8. (in-tree tree e)
+
+Derived Context:
+D1. (in-tree (third tree) e) { def in-tree, C3, C4, C5, C8, def treep } ;; you shouldn't need this def treep
+D2. (treep (first tree)) { C1, C3 }
+D3. (treep (third tree)) { C1, C3, D2, def treep } ;; you should be able to get this without D2
+D4. (in-tree (flip-tree (third tree)) e) { C7, D3, C2, D1, MP, def treep } ;; you shouldn't need this def treep
+
+Goal: 
+(in-tree (flip-tree tree) e)
+
+Proof:
+(in-tree (flip-tree tree) e)
+== { def flip-tree, C3, cons axioms, def treep } ;; you shouldn't need this def treep
+(in-tree (list (flip-tree (third tree))
+               (second tree)
+               (flip-tree (first tree))) e)
+== { def in-tree, C3, C4, cons axioms, def treep } ;; you shouldn't need this def treep
+(or (in-tree (flip-tree (third tree)) e)
+    (in-tree (flip-tree (first tree)) e))
+== { D4, def treep } ;; you shouldn't need this def treep
+t
+
+QED
+
+QED
+

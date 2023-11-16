@@ -1,0 +1,91 @@
+(definec sum (n :nat) :nat
+  (if (equal n 0)
+      0
+    (+ n (sum (- n 1)))))
+
+Conjecture sums:
+(implies (natp n)
+         (== (sum n) (* (* n (+ n 1)) 1/2)))
+
+
+Context:
+C1. (natp n)
+
+Proof by: Induction on (sum n)
+
+Induction Case 0:
+(implies (not (natp n))
+         (implies (natp n)
+                  (== (sum n) (* (* n (+ n 1)) 1/2))))
+
+Exportation:
+(implies (and (natp n)
+              (not (natp n)))
+         (== (sum n) (* (* n (+ n 1)) 1/2)))
+
+Context:
+C2. (not (natp n))
+
+Derived Context:
+D1. nil { C1, C2, PL }
+
+QED
+
+Induction Case 1:
+(implies (and (natp n)
+              (equal n 0))
+         (== (sum n) (* (* n (+ n 1)) 1/2)))
+
+Context:
+C2. (equal n 0)
+
+Goal: (== (sum n) (/ (* n (+ n 1)) 2))
+
+Proof:
+(sum n)
+== { Def sum, C2 }
+0
+== { Arithmetic, C2 }
+(/ (* n (+ n 1)) 2)
+
+QED
+
+
+Induction Case 2:
+(implies (and (natp n)
+              (not (equal n 0))
+              (implies (natp (+ -1 n))
+                       (== (sum (+ -1 n))
+                           (* (* (+ -1 n) (+ (+ -1 N) 1)) 1/2))))
+         (== (sum n) (* (* n (+ n 1)) 1/2)))
+
+
+Context:
+C2. (not (equal n 0))
+C3. (implies (natp (+ -1 n))
+             (== (sum (+ -1 n)) (/ (* (+ -1 n) n) 2)))
+
+Derived Context:
+D1. (natp (- n 1)) { C1, C2 }
+D2. (== (sum (+ -1 n)) (/ (* (+ -1 n) n) 2)) { C3, D1, MP }
+
+Goal: (== (sum n) (/ (* n (+ n 1)) 2))
+
+Proof:
+(sum n)
+== { Def sum, C2 }
+(+ n (sum (+ -1 n)))
+== { D2 }
+(+ n (/ (* (+ -1 n) n) 2))
+== { Arithmetic }
+(/ (+ (* 2 n) (* n (- n 1))) 2)
+== { Arithmetic }
+(/ (+ (* 2 n) (expt n 2) (- n)) 2)
+== { Arithmetic }
+(/ (+ (expt n 2) n) 2)
+== { Arithmetic }
+(/ (* n (+ n 1)) 2)
+
+QED
+
+QED
