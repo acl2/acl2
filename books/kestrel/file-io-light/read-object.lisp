@@ -40,14 +40,9 @@
 
 ;; The eof flag is non-nil iff the channel contents are empty
 (defthm mv-nth-0-of-read-object-iff
-  (implies (state-p1 state)
-           (iff (mv-nth 0 (read-object channel state))
-                (not (consp (cddr (assoc-equal channel (open-input-channels state)))))))
-  :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
-           :in-theory (e/d (read-object)
-                           (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                            true-listp)))))
+  (iff (mv-nth 0 (read-object channel state))
+       (not (cddr (assoc-equal channel (open-input-channels state)))))
+  :hints (("Goal" :in-theory (e/d (read-object) ()))))
 
 (defthm state-p1-of-mv-nth-2-of-read-object
   (implies (state-p1 state)
