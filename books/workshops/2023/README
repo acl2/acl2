@@ -22,6 +22,8 @@ coglio-mccarthy-smith/
 Ruben Gamboa, Panagiotis Manolios, Eric Smith and Kyle Thompson
 Using Counter-Example Generation and Theory Exploration to Suggest Missing Hypotheses
 
+[books]/kestrel/helpers/drla.lisp
+
 ------------------------------
 
 David Hardin
@@ -65,10 +67,14 @@ ACL2 Proofs of Nonlinear Inequalities with Imandra
 David Russinoff
 A Formalization of Finite Group Theory: Part II
 
+[books]/projects/groups/
+
 ------------------------------
 
 David Russinoff
 A Formalization of Finite Group Theory: Part III
+
+[books]/projects/groups/
 
 ------------------------------
 
@@ -88,5 +94,7 @@ vonhippel-etal/
 
 Andrew T. Walter, Ankit Kumar and Panagiotis Manolios
 Proving Calculational Proofs Correct
+
+walter-etal/
 
 ------------------------------

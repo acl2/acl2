@@ -104,14 +104,8 @@
 ;     Define the loop$ scions.  See the Essay on Loop$ in translate.lisp.
 ;     (This is not done in the model, just the sources.)
 
-; Note: With the exception of the events immediately below (which are needed by
-; the raw Lisp definitions of the *1* function for apply$-lambda), this entire
-; file is processed only in pass 2, fundamentally because apply$-primp and
-; apply$-prim are only defined in pass 2.
-
-; The definitions of apply$-lambda-guard and apply$-guard were here at one
-; time, but have been moved so that they precede the definition of
-; ev-fncall-rec-logical.
+; Note: This entire file is processed only in pass 2, fundamentally because
+; apply$-primp and apply$-prim are only defined in pass 2.
 
 (when-pass-2
 
