@@ -19,6 +19,8 @@
 
 (include-book "channels")
 
+(include-book "iprint-oracle-updates")
+
 ;; Built-in channel functions:
 (include-book "open-channels-p")
 (include-book "open-input-channel-p")

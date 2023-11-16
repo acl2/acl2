@@ -13,39 +13,14 @@
 ;; (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "channels"))
+(local (include-book "iprint-oracle-updates"))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-object))
 
-(local (in-theory (e/d (consp-of-cdr
-                        ;; Matt K. addition for 5/8/2023 change to
-                        ;; read-object to call iprint-oracle-updates:
-                        read-acl2-oracle)
-                       (open-input-channels
-                        member-equal
-                        open-input-channel-p1))))
-
-;move
-(local
-  (defthm open-input-channels-of-iprint-oracle-updates
-    (equal (open-input-channels (iprint-oracle-updates state))
-           (open-input-channels state))
-    :hints (("Goal" :in-theory (e/d (iprint-oracle-updates)
-                                    (;; for speed:
-                                     nfix))))))
-
-;move
-(local
-  (defthm state-p1-of-iprint-oracle-updates
-    (implies (state-p1 state)
-             (state-p1 (iprint-oracle-updates state)))
-    :hints (("Goal" :in-theory (e/d (iprint-oracle-updates)
-                                    (;; for speed:
-                                     array1p
-                                     iprint-last-index*
-                                     nfix))))))
+(local (in-theory (enable consp-of-cdr)))
 
 (local
  (defthmd assoc-equal-when-not-symbolp-and-open-channels-p
@@ -86,6 +61,19 @@
            (state-p (mv-nth 2 (read-object channel state))))
   :hints (("Goal" :in-theory (enable state-p))))
 
+(defthm open-input-channels-of-mv-nth-2-of-read-object
+  (equal (open-input-channels (mv-nth 2 (read-object channel state)))
+         (if (cddr (assoc-equal channel (open-input-channels state)))
+             ;; more data to read:
+             (add-pair channel
+                       (cons (cadr (assoc-equal channel (open-input-channels state))) ;header
+                             (cdddr (assoc-equal channel (open-input-channels state))) ;cdr of values
+                             )
+                       (open-input-channels state))
+                    ;; no more data to read:
+           (open-input-channels state)))
+  :hints (("Goal" :in-theory (enable read-object))))
+
 (defthm open-input-channel-p1-of-mv-nth-2-of-read-object
   (implies (open-input-channel-p1 channel typ state)
            (open-input-channel-p1 channel typ (mv-nth 2 (read-object channel2 state))))
@@ -105,19 +93,6 @@
   (implies (open-input-channel-any-p channel state)
            (open-input-channel-any-p channel (mv-nth 2 (read-object channel2 state))))
   :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
-
-(defthm open-input-channels-of-mv-nth-2-of-read-object
-  (equal (open-input-channels (mv-nth 2 (read-object channel state)))
-         (if (cddr (assoc-equal channel (open-input-channels state)))
-             ;; more data to read:
-             (add-pair channel
-                       (cons (cadr (assoc-equal channel (open-input-channels state))) ;header
-                             (cdddr (assoc-equal channel (open-input-channels state))) ;cdr of values
-                             )
-                       (open-input-channels state))
-                    ;; no more data to read:
-           (open-input-channels state)))
-  :hints (("Goal" :in-theory (enable read-object))))
 
 ;; (defthm <-of-len-of-channel-contents-of-mv-nth-2-of-read-object
 ;;   (implies (consp (channel-contents channel state))
