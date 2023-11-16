@@ -80,128 +80,129 @@
   :gen-linear t
   :gen-type t)
 
-(skip-proofs (define 64-bit-modep (x86)
-               :parents (x86-modes)
-               :short "Check whether we are in 64-bit mode."
-               :long
-               "<p>
-               Given the modeling assumption stated in @(see x86-modes),
-               this predicate discriminates between
-               64-bit mode and the other two modes (collectively, 32-bit mode).
-               Based on Intel manual, Mar'17, Vol. 3A, Sec. 2.2 (near Fig. 2-3),
-               the discrimination is based on the IA32_EFER.LME and CS.L bits:
-               if they are both 1, we are in 64-bit mode,
-               otherwise we are in 32-bit mode
-               (protected mode if IA32_EFER.LME is 0,
-                          compatibility mode if IA32_EFER.LME is 1 and CS.L is 0;
-                          note that when IA32_EFER.LME is 0, CS.L should be 0,
-                          according to Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5).
-               </p>
-               <p>
-               This predicate does not include state invariants such as
-               the constraints imposed by the 64-bit mode consistency checks
-               described in Intel manual, Mar'17, Vol. 3A, Sec. 9.8.5.
-               </p>
-               <p>
-               This predicate is useful as a hypothesis of theorems
-               about either 64-bit or 32-bit mode.
-               </p>
-               <p>
-               Since @('(xr :msr ... x86)') returns a 64-bit value
-               but the IA32_EFER register consists of 12 bits.
-               So we use @(tsee n12) to make @('ia32_eferBits') functions applicable.
-               </p>"
+(define 64-bit-modep (x86)
+  :parents (x86-modes)
+  :short "Check whether we are in 64-bit mode."
+  :long
+  "<p>
+  Given the modeling assumption stated in @(see x86-modes),
+  this predicate discriminates between
+  64-bit mode and the other two modes (collectively, 32-bit mode).
+  Based on Intel manual, Mar'17, Vol. 3A, Sec. 2.2 (near Fig. 2-3),
+  the discrimination is based on the IA32_EFER.LME and CS.L bits:
+  if they are both 1, we are in 64-bit mode,
+  otherwise we are in 32-bit mode
+  (protected mode if IA32_EFER.LME is 0,
+             compatibility mode if IA32_EFER.LME is 1 and CS.L is 0;
+             note that when IA32_EFER.LME is 0, CS.L should be 0,
+             according to Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5).
+  </p>
+  <p>
+  This predicate does not include state invariants such as
+  the constraints imposed by the 64-bit mode consistency checks
+  described in Intel manual, Mar'17, Vol. 3A, Sec. 9.8.5.
+  </p>
+  <p>
+  This predicate is useful as a hypothesis of theorems
+  about either 64-bit or 32-bit mode.
+  </p>
+  <p>
+  Since @('(xr :msr ... x86)') returns a 64-bit value
+  but the IA32_EFER register consists of 12 bits.
+  So we use @(tsee n12) to make @('ia32_eferBits') functions applicable.
+  </p>"
 
-               :no-function t
-               :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) (x86p))))
-               (mbe
-                 :logic
-                 (b* ((ia32_efer (n12 (msri #.*ia32_efer-idx* x86)))
-                      (ia32_efer.lma (ia32_eferBits->lma ia32_efer))
-                      (cs-attr (seg-hidden-attri #.*cs* x86))
-                      (cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
-                     (and (equal ia32_efer.lma 1)
-                          (equal cs.l 1)))
-                 :exec
-                 ;; [Shilpi] During execution, include the following book for efficiency (to
-                 ;; decrease the bytes allocated on the heap because of all the bignum
-                 ;; operations). This is likely most efficient on CCL.
-                 ;; (include-book "std/bitsets/bignum-extract-opt" :dir :system)
-                 ;; Note that this book requires a trust tag.
-                 (b* (((the (unsigned-byte 32) ia32_efer-low-32)
-                       (bitsets::bignum-extract
-                         (msri #.*ia32_efer-idx* x86)
-                         0))
-                      ((the (unsigned-byte 12) ia32_efer)
-                       (mbe :logic (n12 ia32_efer-low-32)
-                            :exec (logand #xFFF (the (unsigned-byte 32) ia32_efer-low-32))))
-                      (ia32_efer.lma (ia32_eferBits->lma ia32_efer))
-                      ((the (unsigned-byte 16) cs-attr)
-                       (seg-hidden-attri #.*cs* x86))
-                      (cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
-                     (and (equal ia32_efer.lma 1)
-                          (equal cs.l 1))))
-               ///
+  :no-function t
+  :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) (x86p))))
+  (mbe
+   :logic
+   (b* ((ia32_efer (n12 (msri #.*ia32_efer-idx* x86)))
+        (ia32_efer.lma (ia32_eferBits->lma ia32_efer))
+        (cs-attr (seg-hidden-attri #.*cs* x86))
+        (cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
+     (and (equal ia32_efer.lma 1)
+          (equal cs.l 1)))
+   :exec
+   ;; [Shilpi] During execution, include the following book for efficiency (to
+   ;; decrease the bytes allocated on the heap because of all the bignum
+   ;; operations). This is likely most efficient on CCL.
+   ;; (include-book "std/bitsets/bignum-extract-opt" :dir :system)
+   ;; Note that this book requires a trust tag.
+   (b* (((the (unsigned-byte 32) ia32_efer-low-32)
+         (bitsets::bignum-extract
+          (msri #.*ia32_efer-idx* x86)
+          0))
+        ((the (unsigned-byte 12) ia32_efer)
+         (mbe :logic (n12 ia32_efer-low-32)
+              :exec (logand #xFFF (the (unsigned-byte 32) ia32_efer-low-32))))
+        (ia32_efer.lma (ia32_eferBits->lma ia32_efer))
+        ((the (unsigned-byte 16) cs-attr)
+         (seg-hidden-attri #.*cs* x86))
+        (cs.l (code-segment-descriptor-attributesBits->l cs-attr)))
+     (and (equal ia32_efer.lma 1)
+          (equal cs.l 1))))
+  ///
 
-               (local (in-theory (e/d () (force (force)))))
+  (local (in-theory (e/d () (force (force)))))
 
-               (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
-                        (implies (and (not (equal fld :msr))
-                                      (not (equal fld :seg-hidden-attr)))
-                                 (equal (64-bit-modep (xw fld index value x86))
-                                        (64-bit-modep x86))))
+  (defrule 64-bit-modep-of-xw ; contributed by Eric Smith
+      (implies (and (not (equal fld :msr))
+                    (not (equal fld :seg-hidden-attr)))
+               (equal (64-bit-modep (xw fld index value x86))
+                      (64-bit-modep x86))))
 
-               ;; (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
-               ;;   (equal (64-bit-modep (!flgi flag val x86))
-               ;;          (64-bit-modep x86)))
+  ;; (defrule 64-bit-modep-of-!flgi ; contributed by Eric Smith
+  ;;   (equal (64-bit-modep (!flgi flag val x86))
+  ;;          (64-bit-modep x86)))
 
-               ;; (defrule 64-bit-modep-of-!flgi-undefined
-               ;;   (equal (64-bit-modep (!flgi-undefined flg x86))
-               ;;          (64-bit-modep x86))
-               ;;   :enable !flgi-undefined)
+  ;; (defrule 64-bit-modep-of-!flgi-undefined
+  ;;   (equal (64-bit-modep (!flgi-undefined flg x86))
+  ;;          (64-bit-modep x86))
+  ;;   :enable !flgi-undefined)
 
-               (defrule 64-bit-modep-of-write-user-rflags
-                        (equal (64-bit-modep (write-user-rflags vector mask x86))
-                               (64-bit-modep x86)))))
+  (defrule 64-bit-modep-of-write-user-rflags
+      (equal (64-bit-modep (write-user-rflags vector mask x86))
+             (64-bit-modep x86))))
 
 ;; ----------------------------------------------------------------------
 
-(skip-proofs (define x86-operation-mode (x86)
-               :short "Returns the current mode of operation of the x86 machine"
-               :long
-               "<p>We only support 64-bit, Compatibility, and 32-bit Protected Modes
-               for now.</p>
-               <p>See @(see x86-modes).</p>"
-               :parents (x86-modes)
-               :returns (mode natp :rule-classes (:type-prescription :rewrite))
-               (cond ((64-bit-modep x86) #.*64-bit-mode*)
-                     ;; TODO: Other modes of operation
-                     (t #.*compatibility-mode*))
+(define x86-operation-mode (x86)
+  :short "Returns the current mode of operation of the x86 machine"
+  :long
+  "<p>We only support 64-bit, Compatibility, and 32-bit Protected Modes
+      for now.</p>
 
-               ///
+   <p>See @(see x86-modes).</p>"
+  :parents (x86-modes)
+  :returns (mode natp :rule-classes (:type-prescription :rewrite))
+  (cond ((64-bit-modep x86) #.*64-bit-mode*)
+        ;; TODO: Other modes of operation
+        (t #.*compatibility-mode*))
 
-               (defret range-of-x86-operation-mode
-                       (and (<= 0 mode)
-                            (< mode #.*num-proc-modes*))
-                       :rule-classes :linear)
+  ///
 
-               (defrule x86-operation-mode-of-xw
-                        (implies (and (not (equal fld :msr))
-                                      (not (equal fld :seg-hidden-attr)))
-                                 (equal (x86-operation-mode (xw fld index value x86))
-                                        (x86-operation-mode x86))))
+  (defret range-of-x86-operation-mode
+      (and (<= 0 mode)
+           (< mode #.*num-proc-modes*))
+    :rule-classes :linear)
 
-               ;; (defrule x86-operation-mode-of-!flgi
-               ;;   (equal (x86-operation-mode (!flgi flag val x86))
-               ;;          (x86-operation-mode x86)))
+  (defrule x86-operation-mode-of-xw
+      (implies (and (not (equal fld :msr))
+                    (not (equal fld :seg-hidden-attr)))
+               (equal (x86-operation-mode (xw fld index value x86))
+                      (x86-operation-mode x86))))
 
-               ;; (defrule x86-operation-mode-of-!flgi-undefined
-               ;;   (equal (x86-operation-mode (!flgi-undefined flg x86))
-               ;;          (x86-operation-mode x86))
-               ;;   :enable !flgi-undefined)
+  ;; (defrule x86-operation-mode-of-!flgi
+  ;;   (equal (x86-operation-mode (!flgi flag val x86))
+  ;;          (x86-operation-mode x86)))
 
-               (defrule x86-operation-mode-of-write-user-rflags
-                        (equal (x86-operation-mode (write-user-rflags vector mask x86))
-                               (x86-operation-mode x86)))))
+  ;; (defrule x86-operation-mode-of-!flgi-undefined
+  ;;   (equal (x86-operation-mode (!flgi-undefined flg x86))
+  ;;          (x86-operation-mode x86))
+  ;;   :enable !flgi-undefined)
+
+  (defrule x86-operation-mode-of-write-user-rflags
+      (equal (x86-operation-mode (write-user-rflags vector mask x86))
+             (x86-operation-mode x86))))
 
 ;; ----------------------------------------------------------------------
