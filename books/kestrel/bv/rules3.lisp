@@ -2296,16 +2296,6 @@
          (myif test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm boolif-of-myif-arg1
-  (equal (boolif test (myif test2 a b) c)
-         (boolif test (boolif test2 a b) c))
-  :hints (("Goal" :in-theory (enable boolif))))
-
-(defthm boolif-of-myif-arg2
-  (equal (boolif test c (myif test2 a b))
-         (boolif test c (boolif test2 a b)))
-  :hints (("Goal" :in-theory (enable boolif))))
-
 ;gen the 0?
 ;gen
 (defthm sbvlt-of-0-when-shorter2
