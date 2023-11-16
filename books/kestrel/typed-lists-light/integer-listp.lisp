@@ -19,6 +19,12 @@
            (integer-listp (cdr x)))
   :hints (("Goal" :in-theory (enable integer-listp))))
 
+(defthm integer-listp-of-cons
+  (equal (integer-listp (cons a x))
+         (and (integerp a)
+              (integer-listp x)))
+  :hints (("Goal" :in-theory (enable integer-listp))))
+
 ;compare to the one in books/std/typed-lists/integer-listp.
 ;that one uses iff?
 (defthm integer-listp-of-take-2

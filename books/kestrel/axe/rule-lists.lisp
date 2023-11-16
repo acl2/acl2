@@ -2173,7 +2173,7 @@
      ;fix-of-len ;is fix enabled in axe-rules though?
      fix-when-acl2-numberp
      acl2-numberp-of-len
-     equal-of-myif-same
+;     equal-of-myif-same
 ;<-becomes-bvlt-alt
      <-becomes-bvlt-axe-both
      equal-when-bvlt
