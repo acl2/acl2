@@ -34,7 +34,7 @@
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
 
 ; Check whether x is 'heavier' than y.  Helps us decide when to reorder terms
-; (e.g., to put 'light terms first).  x and y are either quoteps or nodenums.
+; (e.g., to put 'light' terms first).  x and y are either quoteps or nodenums.
 ;; todo: rename heavier-darg?
 (defund heavier-dag-term (x y)
   (declare (xargs :guard (and (dargp x)
