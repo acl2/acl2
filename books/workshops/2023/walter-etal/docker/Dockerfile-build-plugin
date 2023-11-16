@@ -1,0 +1,16 @@
+FROM debian:stable-slim
+
+# Based on https://github.com/wshito/roswell-base
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+            build-essential procps curl file git sudo openssl ca-certificates openjdk-17-jdk-headless maven \
+    && rm -rf /var/lib/apt/lists/* # remove cached apt files
+ 
+ADD parser /root/parser
+
+RUN cd /root/parser && \
+    mvn clean && \
+    mvn package && \
+    mkdir -p /root/plugin-repo && \
+    cp /root/parser/org.neu.acl2.handproof.repository/target/*.zip /root/plugin-repo/

@@ -1,0 +1,35 @@
+buildscript {
+	repositories {
+		mavenCentral()
+		gradlePluginPortal()
+	}
+	dependencies {
+		classpath 'org.xtext:xtext-gradle-plugin:3.0.2'
+	}
+}
+
+subprojects {
+	ext.xtextVersion = '2.30.0'
+	repositories {
+		mavenCentral()
+	}
+
+	apply plugin: 'java-library'
+	dependencies {
+		api platform("org.eclipse.xtext:xtext-dev-bom:${xtextVersion}")
+	}
+
+	apply plugin: 'org.xtext.xtend'
+	apply from: "${rootDir}/gradle/source-layout.gradle"
+	apply plugin: 'eclipse'
+
+	group = 'org.neu.acl2.handproof'
+	version = file("${rootDir}/version.txt").text.trim() + '-SNAPSHOT'
+
+	sourceCompatibility = '17'
+	targetCompatibility = '17'
+
+	configurations.all {
+		exclude group: 'asm'
+	}
+}

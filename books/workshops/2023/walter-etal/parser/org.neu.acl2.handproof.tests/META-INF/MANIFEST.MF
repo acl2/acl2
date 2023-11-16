@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: org.neu.acl2.handproof.tests
+Bundle-ManifestVersion: 2
+Bundle-Name: org.neu.acl2.handproof.tests
+Bundle-Vendor: My Company
+Bundle-Version: 1.0.3.qualifier
+Bundle-SymbolicName: org.neu.acl2.handproof.tests; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.neu.acl2.handproof,
+ org.eclipse.xtext.testing,
+ org.eclipse.xtext.xbase.testing,
+ org.eclipse.xtext.xbase.lib;bundle-version="2.14.0"
+Import-Package: org.junit.jupiter.api;version="[5.1.0,6.0.0)",
+ org.junit.jupiter.api.extension;version="[5.1.0,6.0.0)"
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Export-Package: org.neu.acl2.handproof.tests;x-internal=true

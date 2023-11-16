@@ -1,0 +1,75 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/ewd10xx/EWD1078.PDF
+
+|#
+
+(defstub f (*) => *)
+
+(skip-proofs
+ (property f-contract (x :rational)
+           (rationalp (f x))))
+
+(defstub up (* *) => *)
+
+(skip-proofs
+ (property up-contract (x y :rational)
+           (rationalp (up x y))))
+
+(skip-proofs
+ (property f-distributes-over-up (x y :rational)
+           (== (f (up x y)) (up (f x) (f y)))))
+
+(skip-proofs
+ (property l5 (x y :rational)
+           (== (<= x y)
+               (= (up x y) y))))
+
+;; Theorem : f is monotonic
+(property (x y :rational)
+          :proofs? nil
+          (=> (<= x y)
+              (<= (f x) (f y))))
+
+Conjecture 0:
+(=> (^ (rationalp x)
+       (rationalp y))
+    (=> (<= x y)
+        (<= (f x) (f y))))
+
+Exportation:
+(=> (^ (rationalp x)
+       (rationalp y)
+       (<= x y))
+    (<= (f x) (f y)))
+
+Context:
+C1. (rationalp x)
+C2. (rationalp y)
+C3. (<= x y)
+
+Derived Context:
+;; We need to prove explicitly, the types of (f x) and (f y)
+D1. (rationalp (f x)) { C1, Lemma f-contract }
+D2. (rationalp (f y)) { C2, Lemma f-contract ((x y)) }
+;; PETE: The identity substitution here should not be needed. Drew, fix 
+D3. (= (up x y) y) { C3, Lemma l5 ((x x))}
+D4. (== (f (up x y)) (f y)) { D3, Obvious }
+
+Goal: (<= (f x) (f y))
+
+Proof:
+(<= (f x) (f y))
+== { D1, D2, Lemma l5 ((x (f x)) (y (f y))) }
+(= (up (f x) (f y)) (f y))
+== { C1, C2, Lemma f-distributes-over-up }
+(= (f (up x y)) (f y))
+== { D4 }
+t
+
+QED
