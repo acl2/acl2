@@ -203,6 +203,16 @@
     x86isa::qnan
     x86isa::indef
     x86isa::inf
+    x86isa::*op-cmpeq*
+    x86isa::*op-cmplt*
+    x86isa::*op-cmple*
+    x86isa::*op-cmpunord*
+    x86isa::*op-cmpneq*
+    x86isa::*op-cmpnlt*
+    x86isa::*op-cmpnle*
+    x86isa::*op-cmpord*
+    x86isa::*op-ucomi*
+    x86isa::*op-comi*
     ))
 
 (defconst *symbols-from-acl2-package*
