@@ -52,7 +52,7 @@
   (implies (syntaxp (quotep y))
            (equal (bitand x y)
                   (bitand y x)))
-  :hints (("Goal" :use (:instance bitand-commutative)
+  :hints (("Goal" :use bitand-commutative
            :in-theory (disable bitand-commutative))))
 
 (defthm bitand-of-0-arg1
@@ -73,7 +73,7 @@
 (defthm bitand-of-1-arg1
   (equal (bitand 1 x)
          (getbit 0 x))
-  :hints (("Goal" :use (:instance bitand-of-1-arg2)
+  :hints (("Goal" :use bitand-of-1-arg2
            :in-theory (disable bitand-of-1-arg2))))
 
 (defthm bitand-same

@@ -2299,3 +2299,12 @@
            (equal (bvuminus size x)
                   (bvuminus size (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Only needed for Axe.  TODO: Add such rules for all bvs?  Or do they already exist?
+(defthmd bvuminus-less-than-true
+  (implies (and (syntaxp (quotep k))
+                (<= (expt 2 size) k)
+                (natp size))
+           (< (bvuminus size x) k)))

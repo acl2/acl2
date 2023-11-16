@@ -69,7 +69,7 @@
                 (force (unsigned-byte-p newsize y)))
            (equal (+ y x)
                   (bvcat (- newsize newsize2) (slice (+ -1 newsize) newsize2 y) newsize2 x)))
-  :hints (("Goal" :use (:instance plus-bvcat-with-0)
+  :hints (("Goal" :use plus-bvcat-with-0
            :in-theory (disable plus-bvcat-with-0))))
 
 ;; These loop (note that <-UNARY-/-POSITIVE-LEFT <-UNARY-/-POSITIVE-RIGHT should probably have syntaxp hyps added).
@@ -172,7 +172,7 @@
                 (equal 1 (bvchop 1 x)))
            (equal (+ y (* 2 y (floor x 2)))
                   (* x y)))
-  :hints (("Goal" :use (:instance split-when-low-bit-1)
+  :hints (("Goal" :use split-when-low-bit-1
            :in-theory (e/d (getbit bvchop floor-of-when-mod-known)
                            (slice-becomes-getbit
                             bvchop-1-becomes-getbit)))))
@@ -183,7 +183,7 @@
                 (EQUAL 0 (BVCHOP 1 X)))
            (equal (* 2 Y (FLOOR X 2))
                   (* x y)))
-  :hints (("Goal" :use (:instance split-when-low-bit-0)
+  :hints (("Goal" :use split-when-low-bit-0
            :in-theory (e/d (floor-of-when-mod-known)
                            (bvchop-1-becomes-getbit)))))
 
@@ -237,7 +237,7 @@
                           (BVCAT (+ -1 N)
                                  (BVMULT (+ -1 N) (SLICE (+ -1 N) 1 X) Y)
                                  1 0))))
-  :HINTS (("Goal" :use (:instance BLAST-BVMULT-INTO-BVPLUS-constant-version-arg2))))
+  :HINTS (("Goal" :use BLAST-BVMULT-INTO-BVPLUS-constant-version-arg2)))
 
 ;might this be bad, if a bvplus is used to separate 2 big xor nests?
 (defthm getbit-0-of-plus
@@ -454,7 +454,7 @@
                 (natp high)
                 (natp low))
            (< (slice high low x) k))
-  :hints (("Goal" :use (:instance slice-bound)
+  :hints (("Goal" :use slice-bound
            :in-theory (disable slice-bound))))
 
 ;gen
@@ -1051,7 +1051,7 @@
                 (natp amt2))
            (equal (bvor size (bvshr size x amt2) (bvshl size x amt))
                   (leftrotate size amt x)))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate)
+  :hints (("Goal" :use bvor-of-bvshl-and-bvshr-becomes-leftrotate
           :in-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate))))
 
 ;; ;; what about non-powers of 2?
@@ -1109,7 +1109,7 @@
                 (natp amt2))
            (equal (bvor 32 (bvshr 32 x amt2) (bvshl 32 x amt))
                   (leftrotate32 amt x)))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate32)
+  :hints (("Goal" :use bvor-of-bvshl-and-bvshr-becomes-leftrotate32
            :in-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32))))
 
 (defthm bvor-of-bvshr-and-bvshl-becomes-leftrotate32-gen
@@ -1121,7 +1121,7 @@
                 (natp amt2))
            (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt))
                   (bvchop size (leftrotate32 amt x))))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen)
+  :hints (("Goal" :use bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen
            :In-theory (disable bvor-of-bvshl-and-bvshr-becomes-leftrotate32-gen))))
 
 ;an idiom for rotating by 16 bits in a 32-bit field:
@@ -1163,7 +1163,7 @@
                 (natp size))
            (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt1))
                   (leftrotate size amt1 x)))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvshr)
+  :hints (("Goal" :use bvor-of-bvshl-and-bvshr
            :in-theory (disable bvor-of-bvshl-and-bvshr))))
 
 
@@ -1178,7 +1178,7 @@
            (equal (bvor size (bvshl 32 x amt1) (bvshr 32 x amt2))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
   :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvshr-alt)
-           :use (:instance bvor-of-bvshl-and-bvshr-alt))))
+           :use bvor-of-bvshl-and-bvshr-alt)))
 
 
 ;;;
@@ -1215,7 +1215,7 @@
                 )
            (equal (bvor size (bvashr 32 x amt2) (bvshl 32 x amt1))
                   (leftrotate size amt1 x)))
-  :hints (("Goal" :use (:instance bvor-of-bvshl-and-bvashr)
+  :hints (("Goal" :use bvor-of-bvshl-and-bvashr
            :in-theory (disable bvor-of-bvshl-and-bvashr))))
 
 (defthm bvor-of-bvshl-and-bvashr-alt
@@ -1239,7 +1239,7 @@
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
   :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvashr-alt)
-           :use (:instance bvor-of-bvshl-and-bvashr-alt))))
+           :use bvor-of-bvshl-and-bvashr-alt)))
 
 
 ;add to more-runes?
@@ -1279,7 +1279,7 @@
   (implies (equal 0 (bvchop 8 x))
            (equal (bvplus 32 (bvchop 8 y) x)
                   (bvcat 24 (slice 31 8 x) 8 y)))
-  :hints (("Goal" :use (:instance bvplus-disjoint-ones-32-24-8-two)
+  :hints (("Goal" :use bvplus-disjoint-ones-32-24-8-two
            :in-theory (disable bvplus-disjoint-ones-32-24-8-two))))
 
 (defthm getbit-0-of-bvplus-tighten
@@ -1307,7 +1307,7 @@
                 (integerp size))
             (equal (bvplus 1 z (bvplus size x y))
                    (bvplus 1 z (bvplus 1 x y))))
-   :hints (("Goal" :use (:instance bvplus-1-of-bvplus-trim-arg1)
+   :hints (("Goal" :use bvplus-1-of-bvplus-trim-arg1
             :in-theory (disable bvplus-1-of-bvplus-trim-arg1
                                 EQUAL-OF-BITXOR-AND-BITXOR-SAME))))
 
@@ -1333,7 +1333,7 @@
                  (integerp size2))
             (equal (bvmult size1 y (bvplus size2 x z))
                    (bvmult size1 y (bvplus size1 x z))))
-   :hints (("Goal" :use (:instance bvmult-of-bvplus-trim-arg1)
+   :hints (("Goal" :use bvmult-of-bvplus-trim-arg1
             :in-theory (disable bvmult-of-bvplus-trim-arg1))))
 
 ;of course, this loops
@@ -1901,7 +1901,7 @@
   :rule-classes nil
 
   :hints (("Goal"
-           :use (:instance logext-of-+-of-bvchop)
+           :use logext-of-+-of-bvchop
            :in-theory (disable
                        logext-of-+-of-bvchop
                        BVCHOP-1-BECOMES-GETBIT
@@ -2475,7 +2475,7 @@
                   (if (equal 0 (getbit n x))
                       (getbit n (bvchop (+ 1 n) (+ y1 y2 x)))
                     (bitnot (getbit n (bvchop (+ 1 n) (+ y1 y2 x)))))))
-  :hints (("Goal" :use (:instance getbit-of-+-bvchop-expand3)
+  :hints (("Goal" :use getbit-of-+-bvchop-expand3
            :in-theory (disable getbit-of-+-bvchop-expand3))))
 
 (defthm unsigned-byte-p-when-zp-cheap
@@ -2563,7 +2563,7 @@
            (equal (unsigned-byte-p size (binary-* k x))
                   (and (natp size)
                        (equal 0 x))))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-*-of-constant-helper)
+  :hints (("Goal" :use unsigned-byte-p-of-*-of-constant-helper
            :in-theory (disable unsigned-byte-p-of-*-of-constant-helper))))
 
 ;where should this go? it needs stuff from bv-syntax.lisp

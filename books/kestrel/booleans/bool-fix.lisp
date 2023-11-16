@@ -1,7 +1,7 @@
 ; A book about bool-fix, which coerces a value to a boolean.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; See also the copyright where bool-fix is defined.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -41,6 +41,7 @@
                   x))
   :hints (("Goal" :in-theory (enable bool-fix))))
 
+;use a congruence?
 (defthm not-of-bool-fix
   (equal (not (bool-fix x))
          (not x))

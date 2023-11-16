@@ -43,7 +43,7 @@
   (equal (bvor size y (bvor size x z))
          (bvor size x (bvor size y z)))
   :hints (("Goal" :in-theory (e/d (bvor-commutative) (bvor-associative))
-           :use ((:instance bvor-associative)
+           :use (bvor-associative
                  (:instance bvor-associative (x y) (y x))))))
 
 (defthmd bvor-commute-constant
@@ -158,7 +158,7 @@
            (equal (unsigned-byte-p size2 (bvor size x y))
                   (natp size2)))
   :hints (("Goal" :in-theory (disable unsigned-byte-p-of-bvor)
-           :use (:instance unsigned-byte-p-of-bvor))))
+           :use unsigned-byte-p-of-bvor)))
 
 ;use trim instead?
 ;drop?
