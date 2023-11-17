@@ -3765,6 +3765,7 @@
             jnp-condition
             jz-condition
             jnz-condition)
+          (float-rules) ; I need booleanp-of-isnan, at least
           (extra-tester-rules)
           (lifter-rules64-new) ; overkill?
           (acl2::base-rules)
