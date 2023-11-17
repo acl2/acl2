@@ -684,7 +684,7 @@
 )
 
 (defun remove-?s (term abbreviations-alist ctx state)
-  (let ((newterm (sublis-expr abbreviations-alist term)))
+  (let ((newterm (sublis-expr-non-quoteps abbreviations-alist term)))
     (er-progn (chk-?s newterm ctx state)
               (value newterm))))
 

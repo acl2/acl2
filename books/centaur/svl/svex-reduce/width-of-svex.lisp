@@ -768,7 +768,8 @@
   (defmacro create-width-of-svex-extn (&key
                                        formula
                                        fn
-                                       prepwork)
+                                       prepwork
+                                       extra-hints)
     `(make-event
       (b* ((arg-len (len (acl2::formals ',fn (w state))))
            (- (or (width-of-svex-extn-formula-p ',formula)
@@ -799,7 +800,8 @@
                                         svl::width-of-svex-extn-formula-eval
                                         svl::4vec-correct-width-p-of-not-natp
                                         <fn>)
-                                       ()))))
+                                       ()))
+                      ,@extra-hints))
 
             (table width-of-svex-extns (svl::make-width-of-svex-extn
                                         :fn '<fn>

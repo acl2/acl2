@@ -200,7 +200,7 @@
     (and (pseudo-termp x)
          (subsetp-equal
           (acl2::all-fnnames x)
-          '(if bitp equal safe-max safe-min nth > < not))
+          '(if + bitp equal safe-max safe-min nth > < not))
          (subsetp-equal
           (acl2::all-vars x)
           '(widths args)))
@@ -273,6 +273,10 @@
                 (b* ((a (width-of-svex-extn-formula-eval a args widths))
                      (b (width-of-svex-extn-formula-eval b args widths)))
                   (safe-min a b)))
+               (('+ a b)
+                (b* ((a (width-of-svex-extn-formula-eval a args widths))
+                     (b (width-of-svex-extn-formula-eval b args widths)))
+                  (and (natp a) (natp b) (+ a b))))
                (('nth a 'widths)
                 (b* ((a (nfix (width-of-svex-extn-formula-eval a args widths))))
                   (nth a widths)))

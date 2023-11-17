@@ -3958,9 +3958,9 @@
              ((unless (easy-termp term (w state)))
               (fgl-interp-error :msg (fgl-msg "First argument to fgl-interp-obj ~
                                              yielded a value that did not ~
-                                             satisfy termp: args ~
-                                             ~x0."
-                                            (list (pseudo-term-fix x)))))
+                                             satisfy termp -- input:~%~x0~%value:~%~x1."
+                                              (list (pseudo-term-fix x))
+                                              term)))
              (interp-st (interp-st-incr-term-index 1 interp-st))
              (interp-st (interp-st-push-minor-frame interp-st))
              (interp-st (interp-st-set-term term interp-st))

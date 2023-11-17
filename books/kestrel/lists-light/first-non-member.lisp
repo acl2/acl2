@@ -23,7 +23,7 @@
 
 (defthm first-non-member-of-append
   (equal (first-non-member (append x y) lst)
-         (if (acl2::subsetp-equal x lst)
+         (if (subsetp-equal x lst)
              (first-non-member y lst)
            (first-non-member x lst)))
   :hints (("Goal" :in-theory (enable subsetp-equal))))

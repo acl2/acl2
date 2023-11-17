@@ -458,7 +458,7 @@ constant.</p>
 @(':toggle') in the original @('defsvtv').</p>
 
 <p>The format for @(':overrides') is similar to that of inputs, but adds two
-additional keyword variables:</p>
+additional optional keywords:</p>
 
 <ul>
 <li>@(':cond'), if specified, gives an override condition value (a variable or
@@ -466,9 +466,18 @@ additional keyword variables:</p>
 signal corresponding to 1-bits of the override condition are overridden and
 take the value of the corresponding bits of the override value (@('setting')
 field).</li>
-<li>@(':output'), if specified, gives an output variable for the same signal.
+<li>@(':output'), if specified, adds an output variable for the same signal.
 This output will be assigned the non-overridden value of the signal.</li>
 </ul>
+
+<p>The methodology for decomposition proofs (see @(see
+svex-decomposition-methodology)) makes use of conditional overrides with
+corresponding output signals.  A convention for these signals is to give the
+same name to the override value and output variables, and name the override
+condition with an \"-ovr\" suffix.  For example:</p>
+@({
+ :overrides ((\"foo\" foo :cond foo-ovr :output foo))
+ })
 
 <p>The @('setting') field can also take one additional form @('(value test)'),
 which is another way of specifying a conditional override (this may not be used

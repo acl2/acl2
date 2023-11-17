@@ -1835,7 +1835,8 @@
          (apply$-warrant-ha-s-chain)
          (apply$-warrant-fa-s-chain)
          (apply$-warrant-full-adder)
-         (apply$-warrant-half-adder)))
+         (apply$-warrant-half-adder)
+         (apply$-warrant-int-vector-adder)))
 
   (make-event
    (b* ((body (meta-extract-formula 'warrants-for-adder-pattern-match state)))
@@ -1852,7 +1853,8 @@
       ha-s-chain
       fa-s-chain
       full-adder
-      half-adder))
+      half-adder
+      int-vector-adder))
 
   (rp::add-rp-rule warrants-for-adder-pattern-match)
   (rp::disable-rules '((:e warrants-for-adder-pattern-match))))
@@ -2084,6 +2086,47 @@
                                             (in-theory (e/d (svl::4vec-correct-width-p
                                                              svl::4vec-concat$))))))
 
+
+(local
+ (encapsulate nil
+   (local
+    (include-book "centaur/bitops/signed-byte-p" :dir :system))
+   ;;bitops::basic-unsigned-byte-p-of-+
+   
+   (defthm width-of-+-lemma-
+     (implies (and (integerp x)
+                   (integerp y)
+                   (natp xsize)
+                   (natp ysize)
+                   (equal (sv::4vec-part-select 0 xsize x) x)
+                   (equal (sv::4vec-part-select 0 ysize y) y))
+              (and (equal (sv::4vec-part-select 0
+                                                (1+ (max xsize ysize))
+                                                (+ x y))
+                          (+ x y))))
+     :hints (("Goal"
+              :in-theory (e/d (sv::4vec-part-select
+                               SV::4VEC-CONCAT)
+                              ()))))))
+
+(local
+ (defthm 4vec-part-select-of-ifix-lemma
+   (implies (and (natp xsize)
+                 (equal (sv::4vec-part-select 0 xsize x) x))
+            (equal (sv::4vec-part-select 0 xsize (ifix x)) (ifix x)))
+   :hints (("Goal"
+            :in-theory (e/d (ifix) ())))))
+
+(svl::create-width-of-svex-extn :fn int-vector-adder
+                                :formula #!SVL(+ '1
+                                                 (safe-max (nth '0 widths)
+                                                           (nth '1 widths)))
+                                :prepwork ((local
+                                            (in-theory (e/d
+                                                        (;;ifix
+                                                         svl::4vec-correct-width-p)
+                                                        (max int-vector-adder))))))
+
 ;; now define integerp-ness
 (svl::create-integerp-of-svex-extn :fn ha-s-chain
                                    :prepwork
@@ -2111,6 +2154,25 @@
                                    ((local
                                      (in-theory (disable
                                                  ha+1-s-chain-to-s-spec)))))
+
+(svl::create-integerp-of-svex-extn :fn int-vector-adder
+                                   :prepwork
+                                   ())
+
+
+(svl::create-integerp-of-svex-extn :fn half-adder
+                                   :prepwork
+                                   ((Local (in-theory (enable fa-s-chain
+                                                              fa-c-chain
+                                                              svl::4vec-concat$
+                                                              SV::4VEC-CONCAT)))))
+
+(svl::create-integerp-of-svex-extn :fn full-adder
+                                   :prepwork
+                                   ((Local (in-theory (enable fa-s-chain
+                                                              fa-c-chain
+                                                              svl::4vec-concat$
+                                                              SV::4VEC-CONCAT)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2160,7 +2222,7 @@
         (if (and (equal (sv::svex-kind x) :call)
                  (member-equal  (sv::Svex-call->fn  x)
                                 '(fa-c-chain fa-s-chain
-                                             full-adder half-adder  ha+1-c-chain ha+1-s-chain
+                                             full-adder half-adder int-vector-adder  ha+1-c-chain ha+1-s-chain
                                              ha-c-chain   ha-s-chain   sv::bitand   sv::bitor
                                              sv::bitxor)))
             (cadr svex)
@@ -2169,7 +2231,7 @@
         (if (and (equal (sv::svex-kind x) :call)
                  (member-equal  (sv::Svex-call->fn  x)
                                 '(fa-c-chain fa-s-chain
-                                             full-adder half-adder  ha+1-c-chain ha+1-s-chain
+                                             full-adder half-adder int-vector-adder ha+1-c-chain ha+1-s-chain
                                              ha-c-chain   ha-s-chain   sv::bitand   sv::bitor
                                              sv::bitxor)))
             x svex))
@@ -2192,6 +2254,7 @@
                 :in-theory (e/d (fa-c-chain
                                  fa-s-chain
                                  full-adder half-adder
+                                 int-vector-adder
                                  ha-c-chain ha-s-chain
                                  ha+1-s-chain ha+1-c-chain
                                  sv::svex-apply$)

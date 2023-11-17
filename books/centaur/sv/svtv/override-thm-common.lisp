@@ -690,6 +690,7 @@
          more-x-override-vars
          input-vars
          more-input-vars
+         exclude-input-vars ;; useful especially when :inputs :all is selected
          input-var-bindings
          more-input-var-bindings
          output-vars
@@ -762,8 +763,9 @@
                                                           (append ovr-controls ovr-signals
                                                                   (alist-keys input-var-bindings))))
                             (all-ins (remove-duplicates-equal all-ins)))
-                         all-ins)
-                     (append input-vars more-input-vars)))
+                         (set-difference-equal all-ins exclude-input-vars))
+                     (set-difference-equal (append input-vars more-input-vars)
+                                           exclude-input-vars)))
        (dupes (acl2::hons-duplicates (append input-vars (alist-keys input-var-bindings)
                                              override-vars (alist-keys override-var-bindings)
                                              spec-override-vars (alist-keys spec-override-var-bindings))))
