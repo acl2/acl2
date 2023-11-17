@@ -922,7 +922,7 @@
                                                   consp-when-subst-candidatep
                                                   consp-of-cdr-when-subst-candidatep
                                                   natp-of-cadr-when-subst-candidatep
-                                                  <=-of-0-when-0-natp
+                                                  <=-of-0-when-natp
                                                   rational-listp-when-nat-listp
                                                   all-rationalp-when-all-natp)
                                                  (natp))))))

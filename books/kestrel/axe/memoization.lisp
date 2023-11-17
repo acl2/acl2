@@ -44,7 +44,7 @@
 (local (in-theory (disable mod natp)))
 
 (local (in-theory (enable integerp-when-natp
-                           <=-of-0-when-0-natp)))
+                           <=-of-0-when-natp)))
 
 ;; Recognize an axe-tree that is a cons
 ;; TODO: Restrict to bounded-axe-trees?

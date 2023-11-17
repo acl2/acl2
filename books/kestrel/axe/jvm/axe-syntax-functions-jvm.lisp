@@ -324,7 +324,7 @@
                          (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                 (not (consp (strip-steps nest dag-array))))
            (<= 0 (strip-steps nest dag-array)))
-  :hints (("Goal" :in-theory (enable <=-of-0-when-0-natp))))
+  :hints (("Goal" :in-theory (enable <=-of-0-when-natp))))
 
 (local
  (defthm not-consp-when-not-consp-of-strip-steps
