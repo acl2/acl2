@@ -52,6 +52,7 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 
@@ -95,13 +96,6 @@
             (equal (natp (+ (- x) y))
                    (<= x y)))
    :hints (("Goal" :in-theory (enable natp)))))
-
-(local
- (defthm integerp-of-if
-   (equal (integerp (if test tp ep))
-          (if test
-              (integerp tp)
-            (integerp ep)))))
 
 ;move
 ; can help when backchaining
