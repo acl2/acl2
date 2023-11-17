@@ -796,7 +796,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Encodes a representable normal rational, giving the 3 fields.
+;; Encodes a floating point datum, giving the 3 fields.
 ;; Returns (mv sign biased-exponent trailing-significand).
 ;; The oracle helps select which NaN to return.
 (defund encode (k p datum oracle)

@@ -22,11 +22,6 @@
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
 ;; Some rules that may be useful in queries
 
-;move
-(defthmd not-of-if
-  (equal (not (if test tp ep))
-         (if test (not tp) (not ep))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *sat* :sat)

@@ -1,7 +1,7 @@
 ; Rules about IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -81,3 +81,8 @@
                   (if test
                       (equal z x)
                     (equal z y)))))
+
+;; Enable, for backchaining?  Will it even fire?
+(defthmd not-of-if
+  (equal (not (if test tp ep))
+         (if test (not tp) (not ep))))
