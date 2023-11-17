@@ -126,3 +126,21 @@
   (implies (nat-listp x)
            (<= 0 (car (last x))))
   :hints (("Goal" :in-theory (enable nat-listp))))
+
+; var names are to match std
+(defthm nat-listp-of-set-difference-equal
+  (implies (nat-listp x)
+           (nat-listp (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal nat-listp))))
+
+(defthm nat-listp-when-not-consp-cheap
+  (implies (not (consp l))
+           (equal (nat-listp l)
+                  (equal nil l)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+(defthmd integer-listp-when-nat-listp
+  (implies (nat-listp l)
+           (integer-listp l))
+  :hints (("Goal" :in-theory (enable integer-listp nat-listp))))
