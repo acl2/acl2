@@ -51,7 +51,7 @@
                         nth
                         nat-listp))))
 
-(local (in-theory (enable integerp-when-natp <=-of-0-when-0-natp)))
+(local (in-theory (enable integerp-when-natp <=-of-0-when-natp)))
 
 (defthm dargp-less-than-of-cadr-of-car-when-bounded-darg-listp-of-strip-cadrs
   (implies (and (bounded-darg-listp (strip-cadrs x) bound)
