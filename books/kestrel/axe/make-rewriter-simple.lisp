@@ -419,6 +419,7 @@
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
        (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+       (local (include-book "kestrel/utilities/if-rules" :dir :system))
        (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
 
        (local (in-theory (disable wf-dagp wf-dagp-expander

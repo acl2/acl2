@@ -801,14 +801,26 @@
     mxcsrbits->daz-of-mv-nth-2-of-sse-cmp
     mxcsrbits->dm-of-mv-nth-2-of-sse-cmp
     mxcsrbits->im-of-mv-nth-2-of-sse-cmp
-    sse-cmp-of-bvchop-arg2-32
-    sse-cmp-of-bvchop-arg3-32
-    sse-cmp-of-bvchop-arg4-32
+    sse-cmp-of-bvchop-arg2
+    sse-cmp-of-bvchop-arg3
+    sse-cmp-of-bvchop-arg4
     unsigned-byte-p-of-mv-nth-1-of-sse-cmp-32
     integerp-of-mv-nth-2-of-sse-cmp
-    mv-nth-1-of-sse-cmp-of-sse-cmp
+    mv-nth-1-of-sse-cmp-of-mv-nth-2-of-sse-cmp
     sse-cmp-of-op-ucomi-same
     x86isa::sse-cmp-base ; when operation and operands are constant
+    unsigned-byte-p-of-mv-nth-1-of-sse-cmp-of-OP-UCOMI
+    ;; todo: some of these may be more general than just float rules:
+    jb-condition-of-bv-if-1-0-1
+    jb-condition-of-bv-if-1-1-0
+    jnb-condition-of-bv-if-1-0-1
+    jnb-condition-of-bv-if-1-1-0
+    acl2::bool-fix-of-myif
+    boolif-of-myif-arg1-true ; drop
+    equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe ;equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
+    equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+    equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+    not-equal-of-7-and-mv-nth-1-of-sse-cmp
     ))
 ;; Try to introduce is-nan as soon as possible:
 (table axe-rule-priorities-table 'is-nan-intro -1)
@@ -1356,6 +1368,7 @@
             X86ISA::!MS$a
 
             acl2::bv-array-read-shorten-axe
+            acl2::integerp-of-if-strong
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -1744,7 +1757,6 @@
     x86isa::mv-nth-0-rb-xw-rip
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
-    integerp-of-if
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
     x86isa::if-x-x-y
 ;    mv-nth-0-of-ea-to-la ; introduces eff-addrs-okp
@@ -3527,7 +3539,6 @@
             equal-of-1-and-sub-zf-spec32
 
             logand-of-1-arg2
-            acl2::integerp-of-if
             acl2::ifix-does-nothing
             of-spec-of-logext-32
             ACL2::LOGXOR-BVCHOP-BVCHOP        ; introduce bvxor

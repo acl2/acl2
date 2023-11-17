@@ -2016,10 +2016,6 @@
                 (not (eff-addrs-okp nbytes eff-addr seg-reg x86))))
   :hints (("Goal" :in-theory (enable ea-to-la segment-max-eff-addr32 segment-base-and-bounds segment-min-eff-addr32))))
 
-(defthm integerp-of-if
-  (equal (integerp (if test tp ep))
-         (if test (integerp tp) (integerp ep))))
-
 ;; I wonder if this fact would let us drop come checks from the model
 (defthm canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
   (implies (and (signed-byte-p 33 k) ;gen?

@@ -142,12 +142,6 @@
 ;;            (consp x))
 ;;   :rule-classes :forward-chaining)
 
-(defthm integerp-of-if
-  (equal (integerp (if test tp ep))
-         (if test
-             (integerp tp)
-           (integerp ep))))
-
 (in-theory (disable (:e nat-to-string))) ;to avoid errors being printed in proofs
 
 ;; ;dup

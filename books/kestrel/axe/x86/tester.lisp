@@ -17,6 +17,8 @@
 (include-book "kestrel/axe/tactic-prover" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
+(include-book "kestrel/utilities/if-rules" :dir :system)
+(include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
