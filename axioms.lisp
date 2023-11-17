@@ -19637,7 +19637,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                            (chk-bad-lisp-object obj))
                        (mv nil obj state-state)))))))
     (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
-      (cond ((cdr entry)
+      (cond ((consp (cdr entry))
              (mv nil
                  (car (cdr entry))
                  (update-open-input-channels
