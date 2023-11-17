@@ -49,10 +49,10 @@
 
 ;;; These establish >=0
 
-(defthmd <=-of-0-when-0-natp
+(defthmd <=-of-0-when-natp
   (implies (natp x)
            (<= 0 x)))
 
 ;; TODO: Uncomment, but that causes problems:
-;; (theory-invariant (incompatible (:rewrite <=-of-0-when-0-natp)
+;; (theory-invariant (incompatible (:rewrite <=-of-0-when-natp)
 ;;                                 (:definition natp)))

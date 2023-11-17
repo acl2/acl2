@@ -20,7 +20,7 @@
 
 (local (in-theory (disable natp)))
 
-(local (in-theory (enable <=-of-0-when-0-natp
+(local (in-theory (enable <=-of-0-when-natp
                           acl2-numberp-when-natp
                           integerp-when-natp)))
 
