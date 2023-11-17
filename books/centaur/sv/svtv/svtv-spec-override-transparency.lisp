@@ -1091,6 +1091,15 @@
                                                           nil namemap)
                                    ref-env))
     :hints(("Goal" :in-theory (enable overridekeys-envs-ok-by-witness))))
+
+  (local (Defthm member-of-svarlist-change-override-rw
+           (implies (syntaxp (not (equal type ''nil)))
+                    (iff (member-equal v (svarlist-change-override x type))
+                         (and (svar-p v)
+                              (svar-override-p v type)
+                              (svarlist-member-nonoverride v x))))
+           :hints(("Goal" :in-theory (enable svarlist-change-override
+                                             equal-of-svar-change-override)))))
   
   (defret <fn>-implies-svar-overridekeys-envs-ok
     :pre-bind ((keys (svex-alist-keys test-alist)))
