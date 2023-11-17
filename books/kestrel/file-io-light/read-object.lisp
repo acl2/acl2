@@ -41,7 +41,7 @@
 ;; The eof flag is non-nil iff the channel contents are empty
 (defthm mv-nth-0-of-read-object-iff
   (iff (mv-nth 0 (read-object channel state))
-       (not (cddr (assoc-equal channel (open-input-channels state)))))
+       (not (consp (cddr (assoc-equal channel (open-input-channels state))))))
   :hints (("Goal" :in-theory (e/d (read-object) ()))))
 
 (defthm state-p1-of-mv-nth-2-of-read-object
