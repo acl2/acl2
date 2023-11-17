@@ -64,7 +64,7 @@
                          (frac-width posp)
                          (operation :type (integer 0 36)))
   :long "<p>This function checks whether operands are NaN and then
-  return the corresponding results. It also handles the
+  returns the corresponding results. It also handles the
   infinities.</p>
 <p>Return values: <tt>(mv flag integer-result invalid)</tt></p>"
   (let ((invalid (or (eq kind1 'snan)
