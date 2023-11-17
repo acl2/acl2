@@ -762,6 +762,11 @@
 (defthm ctri-of-set-rbp (equal (x86isa::ctri i (set-rbp val x86)) (x86isa::ctri i x86)) :hints (("Goal" :in-theory (enable set-rbp))))
 (defthm ctri-of-set-undef (equal (x86isa::ctri i (set-undef val x86)) (x86isa::ctri i x86)) :hints (("Goal" :in-theory (enable set-undef))))
 
+;todo: why is !rflags showing up?
+(defthm ctri-of-!rflags
+  (equal (ctri i (!rflags v x86))
+         (ctri i x86)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm msri-of-set-rip (equal (x86isa::msri i (set-rip rip x86)) (x86isa::msri i x86)) :hints (("Goal" :in-theory (enable set-rip))))

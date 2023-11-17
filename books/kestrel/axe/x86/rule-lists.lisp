@@ -2782,6 +2782,7 @@
     ctri-of-set-rsp
     ctri-of-set-rbp
     ctri-of-set-undef
+    ctri-of-!rflags
 
     rax-of-write
     rbx-of-write
