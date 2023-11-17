@@ -107,3 +107,22 @@
          (and (nat-listp (true-list-fix x))
               (nat-listp y)))
   :hints (("Goal" :in-theory (enable nat-listp revappend))))
+
+(defthm natp-of-car-of-last-when-nat-listp
+  (implies (nat-listp x)
+           (equal (natp (car (last x)))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+;; Or use integerp-when-natp
+(defthmd integerp-of-car-of-last-when-nat-listp
+  (implies (nat-listp x)
+           (equal (integerp (car (last x)))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+;; Or use <=-of-0-when-natp
+(defthmd <=-of-0-and-car-of-last-when-nat-listp
+  (implies (nat-listp x)
+           (<= 0 (car (last x))))
+  :hints (("Goal" :in-theory (enable nat-listp))))
