@@ -174,6 +174,7 @@
             if-of-t
             if-of-nil
             if-same-branches
+            not-of-if
 
             fix-when-acl2-numberp
             acl2-numberp-of-+

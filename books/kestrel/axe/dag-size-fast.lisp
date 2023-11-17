@@ -28,7 +28,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable not-<-of-car-when-all-<
-                          <=-of-0-when-0-natp
+                          <=-of-0-when-natp
                           acl2-numberp-when-natp
                           integerp-when-natp)))
 
