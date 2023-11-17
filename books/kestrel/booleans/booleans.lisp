@@ -217,3 +217,23 @@
   (equal (myif (bool-fix test) x y)
          (myif test x y))
   :hints (("Goal" :in-theory (enable myif))))
+
+(defthm bool-fix-of-myif
+  (equal (bool-fix (myif test tp ep))
+         (myif test (bool-fix tp) (bool-fix ep)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm boolif-of-myif-arg1
+  (equal (boolif (myif test a1 a2) b c)
+         (boolif (boolif test a1 a2) b c))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-of-myif-arg2
+  (equal (boolif test (myif test2 a b) c)
+         (boolif test (boolif test2 a b) c))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-of-myif-arg3
+  (equal (boolif test c (myif test2 a b))
+         (boolif test c (boolif test2 a b)))
+  :hints (("Goal" :in-theory (enable boolif))))

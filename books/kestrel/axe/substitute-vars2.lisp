@@ -21,6 +21,7 @@
 (include-book "../alists-light/lookup-eq-lst")
 (include-book "dag-array-printing2")
 (include-book "merge-less-than-and-remove-dups")
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -132,13 +133,6 @@
            (equal (largest-non-quotep x)
                   -1))
   :hints (("Goal" :in-theory (enable largest-non-quotep all-consp))))
-
-(local
- (defthm integerp-of-if
-   (equal (integerp (if test tp ep))
-          (if test
-              (integerp tp)
-            (integerp ep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
