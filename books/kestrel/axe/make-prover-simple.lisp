@@ -113,6 +113,17 @@
   (implies (natp x)
            (not (< x -1))))
 
+;move
+(defthm nat-listp-when-all-natp
+  (implies (all-natp x)
+           (equal (nat-listp x)
+                  (true-listp x)))
+  :hints (("Goal" :in-theory (enable nat-listp all-natp true-listp))))
+
+;; (defthmd true-listp-when-nat-listp
+;;   (implies (nat-listp x)
+;;            (true-listp x)))
+
 ;; ;also in merge-sort
 ;; (defthmd len-of-cdr-better-for-axe-prover
 ;;   (equal (len (cdr x))
@@ -347,9 +358,12 @@
     (:REWRITE BOUNDED-DARG-LISTP-WHEN-ALL-<)
     (:REWRITE ALL-DARGP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
     (:REWRITE ALL-DARGP-WHEN-BOUNDED-DARG-LISTP)
+    ;; drop some of these all-natp rules?
     (:REWRITE ALL-NATP-OF-CDR)
     (:REWRITE ALL-NATP-WHEN-NAT-LISTP)
     (:REWRITE ALL-NATP-WHEN-NOT-CONSP-CHEAP)
+    (:REWRITE NAT-listp-OF-CDR)
+    (:REWRITE NAT-listP-WHEN-NOT-CONSP-CHEAP)
     (:REWRITE STORED-AXE-RULE-LISTP-OF-CDR)
     (:REWRITE STORED-AXE-RULE-LISTP-OF-LOOKUP-EQUAL-WHEN-RULE-ALISTP)
     (:REWRITE AXE-BIND-FREE-RESULT-OKAYP-REWRITE)
@@ -395,6 +409,7 @@
     (:REWRITE EQUAL-OF-LEN-AND-0)
     (:REWRITE INFO-WORLDP-OF-INCREMENT-HIT-COUNT-IN-INFO-WORLD)
     (:REWRITE INTEGER-LISTP-WHEN-ALL-NATP)
+    (:REWRITE INTEGER-LISTP-WHEN-nat-listp)
     (:REWRITE INTEGERP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:REWRITE LEN-OF-CDR)
     (:REWRITE LEN-OF-CONS)
@@ -979,7 +994,7 @@
                           (:FORWARD-CHAINING NAT-LISTP-FORWARD-TO-INTEGER-LISTP)
                           (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
                           member-equal
-                          all-natp-when-not-consp
+                          ;all-natp-when-not-consp
                           all-<-when-not-consp
                           all-dargp-when-not-consp
                           acl2-count ;yuck
@@ -3834,8 +3849,7 @@
                                   (<= dag-len new-dag-len)
                                   (info-worldp info)
                                   (triesp tries)
-                                  (all-natp literal-nodenums)
-                                  (true-listp literal-nodenums)
+                                  (nat-listp literal-nodenums)
                                   (all-< literal-nodenums new-dag-len)))))
          :hints (("Goal" :do-not '(generalize eliminate-destructors)
                   :induct t
@@ -4065,8 +4079,7 @@
                                   (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                   (implies (< 0 prover-depth)
                                            (<= dag-len new-dag-len))
-                                  (all-natp new-literal-nodenums)
-                                  (true-listp new-literal-nodenums)
+                                  (nat-listp new-literal-nodenums)
                                   (all-< new-literal-nodenums new-dag-len)
                                   (info-worldp new-info)
                                   (triesp new-tries)))))
