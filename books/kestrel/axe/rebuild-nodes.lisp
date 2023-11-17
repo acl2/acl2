@@ -41,29 +41,33 @@
            (equal (natp (+ 1 x))
                   (<= -1 x))))
 
-(defthm <=-of-0-and-car-of-last-when-all-natp
+(local
+ (defthm <=-of-0-and-car-of-last-when-all-natp
   (implies (and (all-natp x)
                 (consp x))
            (<= 0 (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+  :hints (("Goal" :in-theory (enable last)))))
 
-(defthm <-of--1-and-car-of-last-when-all-natp
+(local
+ (defthm <-of--1-and-car-of-last-when-all-natp
   (implies (and (all-natp x)
                 (consp x))
            (< -1 (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+  :hints (("Goal" :in-theory (enable last)))))
 
-(defthm <-of-car-of-last-and--1-when-all-natp
+(local
+ (defthm <-of-car-of-last-and--1-when-all-natp
   (implies (and (all-natp x)
                 (consp x))
-          (not  (< (car (last x)) -1)))
-  :hints (("Goal" :in-theory (enable last))))
+          (not (< (car (last x)) -1)))
+  :hints (("Goal" :in-theory (enable last)))))
 
-(defthm integerp-of-car-of-last-when-all-natp
+(local
+ (defthm integerp-of-car-of-last-when-all-natp
   (implies (and (all-natp x)
                 (consp x))
            (integerp (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+  :hints (("Goal" :in-theory (enable last)))))
 
 (defthm nat-listp-when-all-natp
   (implies (all-natp x)

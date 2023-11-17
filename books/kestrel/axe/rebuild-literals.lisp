@@ -23,12 +23,9 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
-(local
- ;; Disabled by default
- (defthmd acl2-numberp-when-integerp
-   (implies (integerp x)
-            (acl2-numberp x))))
+(local (in-theory (enable acl2-numberp-when-integerp integerp-when-natp)))
 
 ;;;
 ;;; translate-literals
