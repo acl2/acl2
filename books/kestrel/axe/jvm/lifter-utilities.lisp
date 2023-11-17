@@ -504,7 +504,7 @@
   (equal (all-local-var-for-pcp (rev acc))
          (all-local-var-for-pcp acc))
   :hints (("Goal" :in-theory (enable all-local-var-for-pcp rev))))
-(defmergesort merge-local-vars-for-pc merge-sort-local-vars-for-pc <-local-vars-for-pc local-var-for-pcp)
+(defmergesort merge-sort-local-vars-for-pc merge-local-vars-for-pc <-local-vars-for-pc local-var-for-pcp)
 
 ;show the local vars in scope for this PC:
 (defun local-vars-for-pc (pc local-variable-table)

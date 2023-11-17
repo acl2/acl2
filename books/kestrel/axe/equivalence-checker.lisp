@@ -11694,7 +11694,7 @@
   (< (car x) (car y)))
 
 ;merge-car-< and merge-sort-car-< are newly defined in ACl2 5.0? just use them?
-(defmergesort merge-car-<-2 merge-sort-car-<-2 car-< consp-with-rationalp-car)
+(defmergesort merge-sort-car-<-2 merge-car-<-2 car-< consp-with-rationalp-car)
 
 ;recently removed this from the main mutual recursion:
 ;returns (mv erp new-runes unchanged-runes new-fns analyzed-function-table rand state result-array-stobj)

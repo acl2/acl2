@@ -284,8 +284,8 @@
 
 ;; todo: put the merge-sort arg first
 ;; todo: pass in a list-pred (a kind of alist)?
-(defmergesort merge-lexorder-of-cdrs
-  merge-sort-lexorder-of-cdrs
+(defmergesort merge-sort-lexorder-of-cdrs
+  merge-lexorder-of-cdrs
   lexorder-of-cdrs
   consp)
 
