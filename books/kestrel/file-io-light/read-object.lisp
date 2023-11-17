@@ -58,7 +58,7 @@
 
 (defthm open-input-channels-of-mv-nth-2-of-read-object
   (equal (open-input-channels (mv-nth 2 (read-object channel state)))
-         (if (cddr (assoc-equal channel (open-input-channels state)))
+         (if (consp (cddr (assoc-equal channel (open-input-channels state))))
              ;; more data to read:
              (add-pair channel
                        (cons (cadr (assoc-equal channel (open-input-channels state))) ;header
