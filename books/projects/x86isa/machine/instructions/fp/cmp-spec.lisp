@@ -276,7 +276,7 @@
                     (mxcsr     :type (unsigned-byte 32)))
   (b* (((mv flg result mxcsr)
         (sse-cmp operation op1 op2 mxcsr #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*))
-       (result (n32 result)))
+       (result (n64 result)))
     (mv flg result mxcsr))
   ///
   (defthm-unsigned-byte-p n64p-result-dp-sse-cmp
