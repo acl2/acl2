@@ -470,6 +470,7 @@
     )
   (unsigned-byte-p-forced-rules)
   ;; todo: add rules like bvif-of-bvchop-arg3 (make a rule-list for them)
+  ;; (bv-function-of-bvchop-rules) ;; hmmm, maybe we should pass in these rules?
   ))
 
 (ensure-rules-known (prune-dag-helper-rules))
