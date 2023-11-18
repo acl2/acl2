@@ -19,6 +19,8 @@
 
 (include-book "channels")
 
+(include-book "iprint-oracle-updates")
+
 ;; Built-in channel functions:
 (include-book "open-channels-p")
 (include-book "open-input-channel-p")
@@ -52,6 +54,7 @@
 
 ;; Reading from :object channels:
 (include-book "read-object") ; built-in
+(include-book "read-objects-from-channel")
 ;; Writing to :object channels:
 (include-book "print-object-dollar-fn") ; print-object$-fn is built-in
 (include-book "print-object-dollar") ; print-object$ is built-in
