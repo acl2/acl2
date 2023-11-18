@@ -364,6 +364,9 @@
     unsigned-byte-p-of-rightrotate
     unsigned-byte-p-of-rightrotate32
     unsigned-byte-p-of-bv-array-read-gen ;todo name
+    unsigned-byte-p-of-bvshl-gen
+    unsigned-byte-p-of-bvshr-gen
+    unsigned-byte-p-of-bvashr-gen
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
