@@ -12,4 +12,4 @@
 
 (include-book "defmergesort")
 
-(defmergesort merge-string< merge-sort-string< string< stringp)
+(defmergesort merge-sort-string< merge-string< string< stringp)

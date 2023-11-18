@@ -32,7 +32,7 @@
   (< (cdr x) (cdr y)))
 
 ;; For sorting an alist based on < comparison of the values (the cdrs of the pairs in the alist).
-(defmergesort merge-cdr-< merge-sort-cdr-< cdr-< pair-with-rational-cdrp :verify-guards t)
+(defmergesort merge-sort-cdr-< merge-cdr-< cdr-< pair-with-rational-cdrp :verify-guards t)
 
 (defthm alistp-of-merge-cdr-<
   (implies (and (alistp l1)

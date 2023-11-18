@@ -30,51 +30,50 @@
 (local (include-book "kestrel/utilities/if-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local
- (defthm acl2-numberp-when-integerp
-   (implies (integerp x)
-            (acl2-numberp x))))
+;; (local
+;;  (defthm acl2-numberp-when-integerp
+;;    (implies (integerp x)
+;;             (acl2-numberp x))))
 
-;dup
-(defthmd natp-of-+-of-1-alt
-  (implies (integerp x)
-           (equal (natp (+ 1 x))
-                  (<= -1 x))))
+;; ;dup
+;; (defthmd natp-of-+-of-1-alt
+;;   (implies (integerp x)
+;;            (equal (natp (+ 1 x))
+;;                   (<= -1 x))))
+;
 
-(defthm <=-of-0-and-car-of-last-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-           (<= 0 (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+;; (local
+;;  (defthm <=-of-0-and-car-of-last-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (<= 0 (car (last x))))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm <-of--1-and-car-of-last-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-           (< -1 (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+;; (local
+;;  (defthm <-of--1-and-car-of-last-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (< -1 (car (last x))))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm <-of-car-of-last-and--1-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-          (not  (< (car (last x)) -1)))
-  :hints (("Goal" :in-theory (enable last))))
+;; (local
+;;  (defthm <-of-car-of-last-and--1-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;           (not (< (car (last x)) -1)))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm integerp-of-car-of-last-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-           (integerp (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+;; (local
+;;  (defthm integerp-of-car-of-last-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (integerp (car (last x))))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm nat-listp-when-all-natp
-  (implies (all-natp x)
-           (equal (nat-listp x)
-                  (true-listp x)))
-  :hints (("Goal" :in-theory (enable nat-listp all-natp))))
-
-(defthmd dargp-of-car-when-all-natp
-  (implies (all-natp x)
-           (equal (dargp (car x))
-                  (consp x))))
+;; (defthmd dargp-of-car-when-all-natp
+;;   (implies (all-natp x)
+;;            (equal (dargp (car x))
+;;                   (consp x))))
 
 (defthm all-<=-all-of-get-unexamined-nodenum-args
   (implies (and (all-<=-all (keep-atoms args) worklist)
@@ -163,7 +162,7 @@
   (if (or (endp worklist)
           ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))
-                    (mbt (all-natp worklist))
+                    (mbt (nat-listp worklist))
                     (mbt (all-< worklist (alen1 'worklist-array worklist-array))))))
       (mv (erp-nil) translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (let ((nodenum (first worklist)))
@@ -229,11 +228,10 @@
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        (aset1 'worklist-array worklist-array nodenum :examined))))))))))))
 
-(verify-guards rebuild-nodes-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-< dargp-of-car-when-all-natp
-                                                                                      all-<=-when-all-<)
+(verify-guards rebuild-nodes-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-<
+                                                                  all-<=-when-all-<)
                                                                  (dargp
-                                                                  dargp-less-than
-                                                                  SORTEDP-<=)))))
+                                                                  dargp-less-than)))))
 
 (def-dag-builder-theorems
   (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array)

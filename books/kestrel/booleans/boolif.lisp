@@ -133,3 +133,11 @@
          (boolif test x (boolif test y1 y2))))
 
 (theory-invariant (incompatible (:rewrite boolif-of-if-arg3) (:defintion boolif)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; could restrict to v1 and v2 being constants
+(defthm boolif-of-equal-and-nil-and-equal-diff
+  (implies (not (equal v1 v2))
+           (equal (boolif (equal v1 x) nil (equal v2 x))
+                  (equal v2 x))))
