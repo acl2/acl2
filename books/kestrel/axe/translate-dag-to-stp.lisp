@@ -109,10 +109,10 @@
 ;;            (integerp (maxelem x)))
 ;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
 
-(defthmd integer-listp-when-nat-listp
-  (implies (nat-listp x)
-           (integer-listp x))
-  :hints (("Goal" :in-theory (enable integer-listp))))
+;; (defthmd integer-listp-when-nat-listp
+;;   (implies (nat-listp x)
+;;            (integer-listp x))
+;;   :hints (("Goal" :in-theory (enable integer-listp))))
 
 (defthm nat-listp-forward-to-all-integerp
   (implies (nat-listp x)

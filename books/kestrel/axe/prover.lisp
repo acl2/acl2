@@ -85,7 +85,7 @@
                            all-dargp-when-not-consp
                            )))
 
-(local (in-theory (enable natp-of-+-of-1-alt)))
+;(local (in-theory (enable natp-of-+-of-1-alt)))
 
 ;(in-theory (disable bag::count-of-cons)) ;why is this getting introduced?
 

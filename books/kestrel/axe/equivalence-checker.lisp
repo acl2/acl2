@@ -7772,8 +7772,7 @@
 (defthm sweep-info-arrayp-of-tag-probably-equal-node-set
   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
                 (nat-listp smaller-nodes-from-this-set)
-                (true-listp node-set)
-                (all-natp node-set)
+                (nat-listp node-set)
                 (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
            (sweep-info-arrayp 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array)))
   :hints (("Goal" :in-theory (enable tag-probably-equal-node-set))))
@@ -7781,8 +7780,7 @@
 (defthm alen1-arrayp-of-tag-probably-equal-node-set
   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
                 (nat-listp smaller-nodes-from-this-set)
-                (true-listp node-set)
-                (all-natp node-set)
+                (nat-listp node-set)
                 (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
            (equal (alen1 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array))
                   (alen1 'sweep-info-array sweep-info-array)))
