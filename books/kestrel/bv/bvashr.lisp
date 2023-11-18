@@ -88,6 +88,13 @@
          (natp size))
   :hints (("Goal" :in-theory (enable bvashr bvshr))))
 
+(defthm unsigned-byte-p-of-bvashr-gen
+  (implies (and (<= size size2)
+                (integerp size2)
+                (natp size))
+           (unsigned-byte-p size2 (bvashr size x amt)))
+  :hints (("Goal" :in-theory (enable bvashr bvshr))))
+
 (defthm bvashr-of-bvchop
   (implies (and (natp width)
                 (natp shift-amount))
