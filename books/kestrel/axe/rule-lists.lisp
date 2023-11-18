@@ -115,6 +115,7 @@
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
     boolif-of-not-same-arg3-alt
+    boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
     ;; Rules about equal:
     equal-of-t-when-booleanp-arg1
     equal-of-t-when-booleanp-arg2))
