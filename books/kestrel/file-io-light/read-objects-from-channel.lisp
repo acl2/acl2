@@ -23,14 +23,14 @@
                            state-p)))
 
 ;; Returns (mv objects state).
+;; Similar to collect-objects in books/misc/file-io.lisp.
 (defund read-objects-from-channel-aux (channel acc state)
   (declare (xargs :guard (and (symbolp channel)
                               (open-input-channel-p channel :object state)
                               (true-listp acc))
                   :stobjs state
-                  ;; TODO: Improve read-object to test for atom rather than null, and then simplify this measure.
                   :measure (let ((contents (cddr (assoc-equal channel (open-input-channels state)))))  ;;(channel-contents channel state)
-                             (if (null contents) 0 (if (atom contents) 1 (+ 1 (len contents)))))
+                             (len contents))
                   :guard-hints (("Goal" :in-theory (enable open-input-channel-p)))))
   (mv-let (eof maybe-object state)
     (read-object channel state)
