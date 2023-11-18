@@ -17,6 +17,12 @@
 (include-book "prove-with-stp")
 (include-book "rewriter-basic")
 (include-book "dag-size-fast")
+(include-book "rule-lists")
+(include-book "bv-rules-axe") ; for bvchop-identity-axe
+(include-book "kestrel/bv/rules" :dir :system) ; todo: reduce, for the unsigned-byte-p-forced rules
+(include-book "kestrel/bv/sbvrem" :dir :system)
+(include-book "kestrel/bv/sbvdiv" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system) ; for rules mentioned below
 (include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove (since this book knows about boolif)
@@ -184,6 +190,8 @@
 (thm (implies (not test) (equal (myif test x y) (id y))))
 (thm (implies test (equal (boolif test x y) (bool-fix$inline x))))
 (thm (implies (not test) (equal (boolif test x y) (bool-fix$inline y))))
+(thm (implies test (equal (bvif size test x y) (bvchop size x))))
+(thm (implies (not test) (equal (bvif size test x y) (bvchop size y))))
 
 ;; Returns (mv erp dag state).
 (defund prune-dag-approximately-aux (dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
@@ -222,7 +230,7 @@
           (case fn
             ;; quoted constant (nothing to do):
             (quote (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))
-            ((if myif)
+            ((if myif) ; (if/myif test then-branch else-branch)
              (b* (((when (not (consp (cdr (cdr (dargs expr))))))
                    (mv :bad-if-arity nil state))
                   ;; Get the context for this IF/MYIF node (note that its test node may appear in other contexts too):
@@ -252,7 +260,7 @@
                             ;; Could not resolve the test:
                             expr))))
                (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
-            ((boolif)
+            ((boolif) ; (boolif test then-branch else-branch)
              (b* (((when (not (consp (cdr (cdr (dargs expr))))))
                    (mv :bad-boolif-arity nil state))
                   ;; Get the context for this BOOLIF node (note that its test node may appear in other contexts too):
@@ -283,7 +291,37 @@
                             ;; Could not resolve the test:
                             expr))))
                (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
-            ;; todo: add support for bvif?
+            ((bvif) ; (bvif size test then-branch else-branch)
+             (b* (((when (not (consp (cdddr (dargs expr)))))
+                   (mv :bad-bvif-arity nil state))
+                  ;; Get the context for this BVIF node (note that its test node may appear in other contexts too):
+                  (context (aref1 'context-array context-array nodenum))
+                  ((when (eq (false-context) context))
+                   (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
+                   (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(bvchop ,(darg1 expr) ,(darg3 expr)) dag-acc) state))
+                  ;; Try to resolve the BVIF test:
+                  ((mv erp result state)
+                   ;; TODO: What if the test is among the context assumptions?
+                   ;; TODO: Should we use any rewriting here?
+                   (try-to-resolve-node-with-stp (darg2 expr) ; the test of the BVIF
+                                                 context      ; the assumptions
+                                                 dag-array dag-len dag-parent-array
+                                                 "PRUNE" ; todo: improve?
+                                                 print
+                                                 max-conflicts
+                                                 state))
+                  ((when erp) (mv erp nil state))
+                  ;; Even if we can resolve the test, we have to keep the
+                  ;; chopping.  This also ensures the node is still legal
+                  ;; (not a naked nodenum) and preserves the node numbering
+                  ;; (calls to bvchop will later be removed by rewriting):
+                  (expr (if (eq result :true)
+                            `(bvchop ,(darg1 expr) ,(darg3 expr)) ; the BVIF is equal to the bvchop of its then-branch
+                          (if (eq result :false)
+                              `(bvchop ,(darg1 expr) ,(darg4 expr)) ; the BVIF is equal to the bvchop of its else-branch
+                            ;; Could not resolve the test:
+                            expr))))
+               (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
             (t
              (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
 
@@ -401,6 +439,7 @@
 
 (defund prune-dag-helper-rules ()
   (declare (xargs :guard t))
+  (append
   '(id
     bool-fix-when-booleanp ; todo: add more booleanp rules, or even pass them in?
     bool-fix-of-bool-fix
@@ -427,7 +466,11 @@
     myif-nil-t
     myif-t-nil
     ;; todo: more rules?
-    ))
+    bvchop-identity-axe
+    )
+  (unsigned-byte-p-forced-rules)
+  ;; todo: add rules like bvif-of-bvchop-arg3 (make a rule-list for them)
+  ))
 
 (ensure-rules-known (prune-dag-helper-rules))
 
