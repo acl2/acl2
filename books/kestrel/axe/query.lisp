@@ -20,14 +20,13 @@
 
 (include-book "tactic-prover")
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
-;; Some rules that may be useful in queries
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;; We define these constants to ensure we never mistype the corresponding
+;; keywords.
 (defconst *sat* :sat)
 (defconst *unsat* :unsat)
 
-;; Try to find values of the variables in TERM that make TERM true.  TERM will
+;; Tries to find values of the variables in TERM that make TERM true.  TERM will
 ;; often be a conjunction.  TERM need not already be translated.
 ;; TODO: Should this do any kind of redundancy checking?
 ;; Returns (mv result state) where result is *sat*, *unsat*, *unknown*, or *error*.
@@ -44,7 +43,7 @@
                               ;; print
                               )
                   :stobjs state
-                  :mode :program ;because this calls translate-term (TODO: Separate that out)
+                  :mode :program ;because this calls translate-term (TODO: Separate that out) and also apply-proof-tactics-to-problem
                   ))
   (b* ((term (translate-term term 'query-fn (w state)))
        (term `(not ,term)) ;we attempt to prove the negation of the term
@@ -60,7 +59,7 @@
        (call-stp-when-pruning t)
        (max-conflicts (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)) ; a number of conflicts, or nil for no max
        ;;(rule-alist (make-rule-alist rules (w state))) ;todo; don't need both of these..
-;(assumptions (translate-terms assumptions 'prove-with-tactics-fn (w state))) ;throws an error on bad input
+       ;;(assumptions (translate-terms assumptions 'prove-with-tactics-fn (w state))) ;throws an error on bad input
        ;; ((mv dag assumptions2)
        ;;  ;; TODO: Or do we want to leave the assumptions so they can get rewritten?
        ;;  (dag-or-term-to-dag-and-assumptions dag-or-term (w state)))

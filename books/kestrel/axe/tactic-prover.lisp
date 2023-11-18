@@ -805,7 +805,7 @@
 ;todo: redo this to first convert to a dag, then extract hyps and conc from the dag (may blow up but unlikely in practice?)
 ; TODO: Consider if
 (defun dag-or-term-to-dag-and-assumptions (item type wrld)
-  (declare (xargs :mode :program ;why?
+  (declare (xargs :mode :program ; because this calls translate-term
                   :guard (member-eq type '(:boolean :bit))))
   (if (eq nil item) ;we interpret nil as a term (not an empty dag)
       (if (eq type :boolean)

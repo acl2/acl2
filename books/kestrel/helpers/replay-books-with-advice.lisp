@@ -24,8 +24,8 @@
                               (cons-with-string-carp x2))))
   (string< (car x1) (car x2)))
 
-(defmergesort merge-string<-of-cadr
-  merge-sort-string<-of-cadr
+(defmergesort merge-sort-string<-of-cadr
+  merge-string<-of-cadr
   string<-cars
   cons-with-string-carp
   :extra-theorems nil)
