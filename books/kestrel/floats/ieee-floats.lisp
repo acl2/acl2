@@ -17,7 +17,7 @@
 ;; Reference: IEEE Std 754-2019: IEEE Standard for Floating-Point Arithmetic
 
 (include-book "kestrel/arithmetic-light/log2" :dir :system)
-(Local (include-book "ieee-floats-helpers"))
+(local (include-book "ieee-floats-helpers"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

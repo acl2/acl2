@@ -112,7 +112,7 @@
 ;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
 
 ;; (thm
-;;  (Implies (and (CANONICAL-ADDRESS-p rip)
+;;  (implies (and (CANONICAL-ADDRESS-p rip)
 ;;                (natp len)
 ;;                (natp k)
 ;;                (< k len)
@@ -1003,7 +1003,7 @@
 ;;                       (ACL2::REPEATBIT (+ (- LOW) SIZE) 1))
 
 ;; (thm
-;;  (Implies (and (< n size)
+;;  (implies (and (< n size)
 ;;                (natp size)
 ;;                (natp n))
 ;;           (equal (acl2::bvplus size -1 (expt 2 n))
@@ -1019,7 +1019,7 @@
 ;; ;a bunch of 0's followed by a bunch of 1's
 ;; instead, just drop the (expt 2 size)
 ;; (defthm bvplus-of-expt-and-all-ones
-;;  (Implies (and (< n size)
+;;  (implies (and (< n size)
 ;;                (natp size)
 ;;                (natp n))
 ;;           (equal (acl2::bvplus size (expt 2 n) (+ -1 (expt 2 size)))

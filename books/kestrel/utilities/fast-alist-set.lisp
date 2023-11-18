@@ -502,7 +502,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (fast-alist-fork-redef) (STRIP-CARS CLEAR-KEYS-SIMPLE alistp)))))
 
 (defthm cdr-of-last-of-hons-acons
-  (Implies (true-listp alist) ; gen?
+  (implies (true-listp alist) ; gen?
            (equal (cdr (last (hons-acons key val alist)))
                   (cdr (last alist))))
   :hints (("Goal" :in-theory (enable hons-acons))))
