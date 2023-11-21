@@ -581,6 +581,7 @@
                                  monitor
                                  call-stp
                                  t ; check-fnsp
+                                 print
                                  state)
           (mv nil result-dag state)))
        ((when erp) (mv erp nil state))

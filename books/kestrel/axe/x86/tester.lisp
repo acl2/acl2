@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
@@ -49,13 +50,14 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable get-real-time))))
 
-;; Returns (mv time-difference state).  Rounds up to the next second.
+;; Returns (mv time-difference state) where time-difference is in seconds and
+;; may not be an integer.
 (defun real-time-since (start-real-time state)
   (declare (xargs :guard (rationalp start-real-time)
                   :stobjs state))
   (mv-let (now state)
     (get-real-time state)
-    (mv (ceiling (- now start-real-time) 1)
+    (mv (- now start-real-time)
         state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,15 +250,26 @@
          (let* ((result (first val)) ; either :pass or :fail
                 (expected-result (second val)) ; :pass or :fail or :any
                 (elapsed (third val))
+                (elapsed (if (and (rationalp elapsed)
+                                  (<= 0 elapsed))
+                             elapsed
+                           (prog2$ (er hard? 'print-test-summary-aux "Bad elapsed time: ~x0." elapsed)
+                                   0)))
                 (result-string (if (eq :pass result) "pass" "fail"))
                 (numspaces (nfix (- 40 (len (coerce name 'list)))))
                 )
            (if (equal result expected-result)
-               (cw "Test ~s0:~_1 OK (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
+               (progn$ (cw "Test ~s0:~_1 OK (~s2)   " name numspaces result-string)
+                       (acl2::print-to-hundredths elapsed)
+                       (cw "s.~%"))
              (if (eq :any expected-result)
                  ;; In this case, we don't know whether the test is supposed to pass:
-                 (cw "Test ~s0:~_1 ?? (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
-               (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3). ~c4s~%" name numspaces result-string (if (eq :pass expected-result) "pass" "fail") (cons elapsed 4)))))))
+                 (progn$ (cw "Test ~s0:~_1 ?? (~s2)   " name numspaces result-string)
+                         (acl2::print-to-hundredths elapsed)
+                         (cw "s.~%"))
+               (progn$ (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3).  " name numspaces result-string (if (eq :pass expected-result) "pass" "fail"))
+                       (acl2::print-to-hundredths elapsed)
+                       (cw "s~%")))))))
      (print-test-summary-aux (rest result-alist)))))
 
 (defund print-test-summary (result-alist executable-form)
@@ -628,7 +641,9 @@
                             remove-rules remove-lift-rules remove-proof-rules
                             print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
-       (- (cw "Time: ~x0s.~%" elapsed))
+       (- (cw "Time: ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
        (result-ok (if (eq :any expected-result)
                       t
                     (if (eq :pass expected-result)
@@ -862,7 +877,9 @@
        ((mv overall-time state) (real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
        (- (print-test-summary result-alist executable-form))
-       (- (cw "TOTAL TIME: ~x0s (~x1 tests).~%" overall-time (len function-name-strings))))
+       (- (cw "TOTAL TIME: ")
+          (acl2::print-to-hundredths overall-time)
+          (cw "s (~x0 tests).~%"  (len function-name-strings))))
     (if (any-result-unexpectedp result-alist)
         (prog2$ (er hard? 'test-functions-fn "Unexpected result (see above).")
                 (mv t nil state))
