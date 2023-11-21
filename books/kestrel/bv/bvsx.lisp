@@ -239,3 +239,11 @@
            (equal (equal 0 (bvsx size old-size x))
                   (equal 0 (bvchop old-size x))))
   :hints (("Goal" :in-theory (enable bvsx getbit-when-equal-of-constant-and-bvchop))))
+
+;gen
+(defthm bvcat-of-if-becomes-bvsx-64-64
+  (equal (bvcat 64 (if (equal 1 (getbit 63 x)) 18446744073709551615 0) 64 x)
+         (bvsx 128 64 x))
+  :hints (("Goal" :in-theory (enable
+                              bvsx ;todo
+                              ))))
