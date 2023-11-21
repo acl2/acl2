@@ -38,12 +38,20 @@
                   (bvchop width x)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-;; TODO: gen
 (defthm unsigned-byte-p-of-bvshr
   (implies (and (natp amt)
                 (<= amt size)
                 (integerp size))
            (unsigned-byte-p size (bvshr size x amt)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
+(defthm unsigned-byte-p-of-bvshr-gen
+  (implies (and (<= size size2)
+                (<= amt size)
+                (natp amt)
+                (integerp size2)
+                (integerp size))
+           (unsigned-byte-p size2 (bvshr size x amt)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
 (defthm bvchop-of-bvshr-same

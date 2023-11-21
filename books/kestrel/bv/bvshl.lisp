@@ -13,6 +13,7 @@
 
 (include-book "bvcat-def")
 (local (include-book "bvcat"))
+(local (include-book "unsigned-byte-p"))
 
 ;often we will let this open to bvcat
 ;we expect (<= shift-amount width)
@@ -64,6 +65,26 @@
                 (<= amt size)
                 (natp size))
            (unsigned-byte-p size (bvshl size x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+(defthm unsigned-byte-p-of-bvshl-gen
+  (implies (and (<= size size2)
+                (<= amt size)
+                (natp amt)
+                (integerp size2)
+                (natp size))
+           (unsigned-byte-p size2 (bvshl size x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+;also consider n > size (easy)
+(defthm unsigned-byte-p-of-bvshl-other
+  (implies (and ;(< n size)
+                (<= amt size)
+                (natp amt)
+                (unsigned-byte-p (- n amt) x)
+                (natp n)
+                (natp size))
+           (unsigned-byte-p n (bvshl size x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
 
 ; a version that puts a bvchop around x to help us simplify stuff
