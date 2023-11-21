@@ -47,7 +47,7 @@ software/md5-20210630-git/md5.asd
 software/mmap-20231021-git/mmap-test.asd
 software/mmap-20231021-git/mmap.asd
 software/nibbles-20231021-git/nibbles.asd
-software/osicat-20231021-git/osicat.asd
+software/osicat-20220220-git/osicat.asd
 software/pathname-utils-20231021-git/pathname-utils-test.asd
 software/pathname-utils-20231021-git/pathname-utils.asd
 software/proc-parse-20190813-git/proc-parse-test.asd
