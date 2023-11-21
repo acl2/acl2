@@ -163,7 +163,7 @@
         (mv nil dag state))
        ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune
        ;;todo: size also computed above
-       (- (cw "(Pruning branches in DAG (~x0 nodes, ~x1 unique)~%" (dag-or-quotep-size-fast dag) (len dag)))
+       (- (cw "(Pruning DAG precisely (~x0 nodes, ~x1 unique)~%" (dag-or-quotep-size-fast dag) (len dag)))
        (- (and (print-level-at-least-tp print)
                (progn$ (cw "(DAG:~%")
                        (print-list dag)
