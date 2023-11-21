@@ -217,7 +217,7 @@
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
-         ((mv erp dag-or-quotep state) (maybe-prune-dag-approximately prune-branches-approximately dag state)
+         ((mv erp dag-or-quotep state) (maybe-prune-dag-approximately prune-branches-approximately dag print state)
           )
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
@@ -231,7 +231,7 @@
                                                                   nil ; todo?
                                                                   nil
                                                                   t ; call-stp
-                                                                  nil
+                                                                  print
                                                                   state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
@@ -507,6 +507,7 @@
                                                  monitored-rules
                                                  call-stp
                                                  t ; check-fnsp
+                                                 print
                                                  state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
