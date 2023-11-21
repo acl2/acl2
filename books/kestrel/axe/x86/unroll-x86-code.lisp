@@ -182,6 +182,7 @@
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
                                            nil ; assumptions
                                            rules
+                                           :none ; todo: pass a rule-alist here?
                                            nil ; interpreted-fns
                                            rules-to-monitor
                                            t ;call-stp
