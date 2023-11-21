@@ -78,6 +78,14 @@
             x86isa::sal/shl-spec-32
             x86isa::sal/shl-spec-64
 
+            ;; unsigned multiply
+            x86isa::mul-spec$inline ;; dispatches based on size
+            x86isa::mul-spec-8
+            x86isa::mul-spec-16
+            x86isa::mul-spec-32
+            x86isa::mul-spec-64
+
+            ;; signed multiply
             x86isa::imul-spec$inline ;; dispatches based on size
             x86isa::imul-spec-8
             x86isa::imul-spec-16

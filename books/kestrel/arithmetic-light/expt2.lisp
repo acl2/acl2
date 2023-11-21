@@ -312,3 +312,16 @@
            (equal (< (+ (expt 2 (+ -1 i)) x) (expt 2 i))
                   (< x (expt 2 (+ -1 i)))))
   :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;gen
+(defthm <-of-2-and-expt2
+  (implies (integerp i)
+           (equal (< 2 (expt 2 i))
+                  (< 1 i))))
+
+;could be expensive?
+(defthm <=-of-2-and-expt2-linear
+  (implies (and (< 0 i)
+                (integerp i))
+           (<= 2 (expt 2 i)))
+  :rule-classes :linear)

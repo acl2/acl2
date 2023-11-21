@@ -24,7 +24,7 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp dag-or-quotep state).
-(defund prune-dag-precisely-with-rule-alist (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp state)
+(defund prune-dag-precisely-with-rule-alist (dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (rule-alistp rule-alist)
@@ -32,7 +32,8 @@
                               (symbol-listp monitored-rules)
                               (or (booleanp call-stp)
                                   (natp call-stp))
-                              (booleanp check-fnsp))
+                              (booleanp check-fnsp)
+                              (print-levelp print))
                   :stobjs state))
   (let (;; Refrain from pruning if there are no functions that cause pruning attempts:
         (prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t)))
@@ -41,7 +42,7 @@
       (b* ( ;; TODO: Consider first doing a pruning as a DAG, using only approximate contexts (or would that not do anything that rewriting doesn't already do?)
            (term (dag-to-term dag)) ; can explode!
            ((mv erp changep term state)
-            (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)) ; todo: call something here that returns a dag, not a term!
+            (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)) ; todo: call something here that returns a dag, not a term!
            ((when erp) (mv erp nil state))
            ((mv erp dag)
             (if changep
@@ -53,8 +54,8 @@
         (mv (erp-nil) dag state)))))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely-with-rule-alist
-  (implies (and (not (mv-nth 0 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp state)));; no error
-                (not (myquotep (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp state))))
+  (implies (and (not (mv-nth 0 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state)));; no error
+                (not (myquotep (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
                 (pseudo-dagp dag)
                 (pseudo-term-listp assumptions)
                 (rule-alistp rule-alist)
@@ -62,7 +63,7 @@
                 (symbol-listp monitored-rules)
                 (or (booleanp call-stp)
                     (natp call-stp)))
-           (pseudo-dagp (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp state))))
+           (pseudo-dagp (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely-with-rule-alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -71,7 +72,7 @@
 ;; term size. Returns (mv erp dag-or-quotep state).
 ;; TODO: This makes the rule-alist each time it is called.
 ;; TODO: Consider first pruning with approximate contexts.
-(defund prune-dag-precisely (dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp state)
+(defund prune-dag-precisely (dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules)
@@ -80,17 +81,18 @@
                               (or (booleanp call-stp)
                                   (natp call-stp))
                               (booleanp check-fnsp)
+                              (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* (((mv erp rule-alist) (make-rule-alist rules (w state))) ; todo: avoid this if the dag-fns-include-any check will fail
        ((when erp) (mv erp nil state)))
     (prune-dag-precisely-with-rule-alist dag assumptions rule-alist
                                          (make-interpreted-function-alist interpreted-fns (w state))
-                                         monitored-rules call-stp check-fnsp state)))
+                                         monitored-rules call-stp check-fnsp print state)))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely
-  (implies (and (not (mv-nth 0 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp state))) ;; no error
-                (not (myquotep (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp state))))
+  (implies (and (not (mv-nth 0 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state))) ;; no error
+                (not (myquotep (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state))))
                 (pseudo-dagp dag)
                 (pseudo-term-listp assumptions)
                 (symbol-listp rules)
@@ -99,7 +101,7 @@
                 (or (booleanp call-stp)
                     (natp call-stp))
                 (ilks-plist-worldp (w state)))
-           (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp state))))
+           (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -147,6 +149,7 @@
        ((mv erp result-dag-or-quotep state)
         (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp
                              nil ; we already know there are prunable ops
+                             print
                              state))
        ((when erp) (mv erp nil state))
        ((when (quotep result-dag-or-quotep))
