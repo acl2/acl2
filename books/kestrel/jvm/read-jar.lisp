@@ -15,6 +15,7 @@
 (include-book "kestrel/jvm/events-for-class" :dir :system)
 (include-book "kestrel/jvm/class-file-parser" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/strings-light/string-ends-withp" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/zip/unzip" :dir :system)
