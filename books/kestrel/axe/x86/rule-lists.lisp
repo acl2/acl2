@@ -587,6 +587,9 @@
     acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
     acl2::bvplus-recollapse ;rename
+
+    ;; this is needed to handle a divide:
+    acl2::bvcat-of-if-becomes-bvsx-64-64
     )))
 
 ;not used?
