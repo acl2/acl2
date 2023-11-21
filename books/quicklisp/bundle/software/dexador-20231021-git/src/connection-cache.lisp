@@ -27,7 +27,7 @@
 
 ;; An LRU-POOL can have multiple entries for the same key
 (defstruct lru-pool
-  (lock #+thread-support (bt2:make-lock :name "connection pool lock")
+  (lock #+thread-support (bt:make-lock "connection pool lock")
         #-thread-support nil)
   (hash-table nil :type (or null hash-table)) ;; hash table entries are lists of elements
   (head nil :type (or null lru-pool-elt)) ;; most recently used is here and it's a doubly-linked-list
@@ -128,7 +128,7 @@
 
 (defmacro with-lock (lock &body body)
   (declare (ignorable lock))
-  #+thread-support `(bt2:with-lock-held (,lock)
+  #+thread-support `(bt:with-lock-held (,lock)
                       ,@body)
   #-thread-support `(progn ,@body))
 
