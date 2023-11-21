@@ -6009,6 +6009,7 @@
                                              (jvm-simplification-rules)
                                              (g :extra-rules options))
                                      (g :remove-rules options))
+                                    :none ; todo: pass a rule-alist here?
                                     nil ; interpreted-fns
                                     (g :monitor options)
                                     (g :call-stp options)
@@ -6537,6 +6538,7 @@
                                             (jvm-simplification-rules)
                                             (g :extra-rules options))
                                     (g :remove-rules options))
+                                   :none ; todo: pass a rule-alist here?
                                    nil ; interpreted-fns
                                    (g :monitor options)
                                    (g :call-stp options)
