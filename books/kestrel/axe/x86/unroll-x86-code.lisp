@@ -121,11 +121,11 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
-                              (symbol-listp rules)
+                              (acl2::rule-alistp rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules-to-monitor)
                               (booleanp use-internal-contextsp)
@@ -149,7 +149,7 @@
          ((mv erp dag-or-quote state)
           (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
                           :exhaustivep t
-                          :rules rules ; todo: don't make the rule-alist each time
+                          :rule-alist rule-alist
                           :assumptions assumptions
                           :monitor rules-to-monitor
                           :use-internal-contextsp use-internal-contextsp
@@ -181,8 +181,8 @@
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
                                            nil ; assumptions
-                                           rules
-                                           :none ; todo: pass a rule-alist here?
+                                           :none
+                                           rule-alist
                                            nil ; interpreted-fns
                                            rules-to-monitor
                                            t ;call-stp
@@ -227,7 +227,7 @@
                         state))))
               (repeatedly-run (- steps-left steps-for-this-iteration)
                               step-increment
-                              dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
+                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
                               total-steps
                               state))))))))
 
@@ -384,8 +384,11 @@
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
        ;; Do the symbolic execution:
+       ((mv erp rule-alist)
+        (acl2::make-rule-alist rules (w state)))
+       ((when erp) (mv erp nil nil nil state))
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
        (- (if (quotep result-dag-or-quotep)
               (cw "(Unrolling/lifting produced the constant ~x0.)~%" result-dag-or-quotep)
