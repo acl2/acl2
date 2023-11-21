@@ -250,7 +250,7 @@
   (b* (((mv flg result mxcsr)
 	(sse-max/min operation op1 op2 mxcsr
 		     #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*))
-       (result (n32 result))
+       (result (n64 result))
        (mxcsr (mbe :logic (n32 mxcsr)
 		   :exec  mxcsr)))
     (mv flg result mxcsr))

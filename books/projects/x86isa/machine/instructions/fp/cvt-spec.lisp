@@ -530,7 +530,7 @@
         (sse-cvt-int-to-fp op mxcsr
                            #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*))
 
-       (result (n32 result)))
+       (result (n64 result)))
     (mv flg result mxcsr))
   ///
 
