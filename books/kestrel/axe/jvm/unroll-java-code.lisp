@@ -228,6 +228,7 @@
                                                                   dag
                                                                   assumptions
                                                                   nil ; todo: use some rules?
+                                                                  :none ; todo: pass a rule-alist here?
                                                                   nil ; todo?
                                                                   nil
                                                                   t ; call-stp

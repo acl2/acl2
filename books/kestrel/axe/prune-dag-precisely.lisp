@@ -72,10 +72,17 @@
 ;; term size. Returns (mv erp dag-or-quotep state).
 ;; TODO: This makes the rule-alist each time it is called.
 ;; TODO: Consider first pruning with approximate contexts.
-(defund prune-dag-precisely (dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state)
+(defund prune-dag-precisely (dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp check-fnsp print state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
-                              (symbol-listp rules)
+                              (or (symbol-listp rules)
+                                  (eq :none rules))
+                              (or (rule-alistp rule-alist)
+                                  (eq :none rule-alist))
+                              ;; At most one of the rules and rule-alist are not :none:
+                              (<= (+ (if (eq :none rules) 0 1)
+                                     (if (eq :none rule-alist) 0 1))
+                                  1)
                               (symbol-listp interpreted-fns)
                               (symbol-listp monitored-rules)
                               (or (booleanp call-stp)
@@ -83,25 +90,34 @@
                               (booleanp check-fnsp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
+                  :guard-debug t
                   :stobjs state))
-  (b* (((mv erp rule-alist) (make-rule-alist rules (w state))) ; todo: avoid this if the dag-fns-include-any check will fail
+  (b* (((mv erp rule-alist)
+        (if (not (eq :none rule-alist))
+            (mv (erp-nil) rule-alist)
+          (if (not (eq :none rules))
+              (make-rule-alist rules (w state)) ; todo: avoid this if the dag-fns-include-any check will fail
+            (mv (erp-nil) nil))))
        ((when erp) (mv erp nil state)))
     (prune-dag-precisely-with-rule-alist dag assumptions rule-alist
                                          (make-interpreted-function-alist interpreted-fns (w state))
                                          monitored-rules call-stp check-fnsp print state)))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-precisely
-  (implies (and (not (mv-nth 0 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state))) ;; no error
-                (not (myquotep (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state))))
+  (implies (and (not (mv-nth 0 (prune-dag-precisely dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp check-fnsp print state))) ;; no error
+                (not (myquotep (mv-nth 1 (prune-dag-precisely dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp check-fnsp print state))))
                 (pseudo-dagp dag)
                 (pseudo-term-listp assumptions)
-                (symbol-listp rules)
+                (or (symbol-listp rules)
+                    (eq :none rules))
+                (or (rule-alistp rule-alist)
+                    (eq :none rule-alist))
                 (symbol-listp interpreted-fns)
                 (symbol-listp monitored-rules)
                 (or (booleanp call-stp)
                     (natp call-stp))
                 (ilks-plist-worldp (w state)))
-           (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp check-fnsp print state))))
+           (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -110,7 +126,7 @@
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
 ;; TODO: This can make the rule-alist each time it is called.
 (defund maybe-prune-dag-precisely (prune-branches ; t, nil, or a limit on the size
-                                   dag assumptions rules interpreted-fns monitored-rules call-stp
+                                   dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp
                                    print
                                    state)
   (declare (xargs :guard (and (or (booleanp prune-branches)
@@ -118,7 +134,14 @@
                               (pseudo-dagp dag)
                               (< (len dag) 2147483647) ;todo?
                               (pseudo-term-listp assumptions)
-                              (symbol-listp rules)
+                              (or (symbol-listp rules)
+                                  (eq :none rules))
+                              (or (rule-alistp rule-alist)
+                                  (eq :none rule-alist))
+                              ;; At most one of the rules and rule-alist are not :none:
+                              (<= (+ (if (eq :none rules) 0 1)
+                                     (if (eq :none rule-alist) 0 1))
+                                  1)
                               (symbol-listp interpreted-fns)
                               (symbol-listp monitored-rules)
                               (or (booleanp call-stp)
@@ -147,7 +170,7 @@
                        (cw ")~%")
                        (cw "(Assumptions: ~X01)~%" assumptions nil))))
        ((mv erp result-dag-or-quotep state)
-        (prune-dag-precisely dag assumptions rules interpreted-fns monitored-rules call-stp
+        (prune-dag-precisely dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp
                              nil ; we already know there are prunable ops
                              print
                              state))
@@ -164,15 +187,18 @@
     (mv nil result-dag-or-quotep state)))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
-  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))) ;; no error
-                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))))
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))) ;; no error
+                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))))
                 (pseudo-dagp dag)
                 (pseudo-term-listp assumptions)
-                (symbol-listp rules)
+                (or (symbol-listp rules)
+                    (eq :none rules))
+                (or (rule-alistp rule-alist)
+                    (eq :none rule-alist))
                 (symbol-listp interpreted-fns)
                 (symbol-listp monitored-rules)
                 (or (booleanp call-stp)
                     (natp call-stp))
                 (ilks-plist-worldp (w state)))
-           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules interpreted-fns monitored-rules call-stp print state))))
+           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
