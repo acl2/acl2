@@ -577,6 +577,7 @@
                                   (union-eq (unroll-java-code2-rules)
                                             extra-rules)
                                   remove-rules)
+                                 :none ; todo: pass a rule-alist here?
                                  nil ; interpreted-fns
                                  monitor
                                  call-stp
