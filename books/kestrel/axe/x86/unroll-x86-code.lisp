@@ -119,9 +119,8 @@
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
-;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
-;; erp result-dag-or-quotep state).
-;; TODO: Handle returning a quotep?
+;; reduced to 0, or a loop or an unsupported instruction is detected.
+;; Returns (mv erp result-dag-or-quotep state).
 (defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
@@ -161,12 +160,11 @@
                           :memoizep memoizep
                           :check-inputs nil))
          ((when erp) (mv erp nil state))
-         ((when (quotep dag-or-quote))
-          (mv (erp-nil) dag-or-quote state))
+         ((when (quotep dag-or-quote)) (mv (erp-nil) dag-or-quote state))
          ;; (- (and print (progn$ (cw "(DAG after stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         (dag dag-or-quote)
+         (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely:
          ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t print state))
          ((when erp) (mv erp nil state))
@@ -176,7 +174,7 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
-         ((mv erp dag state)
+         ((mv erp dag-or-quotep state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
@@ -190,10 +188,12 @@
                                            print
                                            state))
          ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep) ; it wasn't a quotep
          ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
+         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
@@ -382,7 +382,6 @@
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
-
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
