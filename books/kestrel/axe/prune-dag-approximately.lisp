@@ -486,6 +486,7 @@
                                  ;; monitored-rules
                                  ;;call-stp
                                  check-fnsp ; whether to check for prunable functions
+                                 print
                                  state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) 2147483646)
@@ -496,6 +497,7 @@
                               ;; (or (booleanp call-stp)
                               ;;     (natp call-stp))
                               (booleanp check-fnsp)
+                              (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))
                   :stobjs state))
@@ -510,7 +512,7 @@
        (dag-parent-array (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array))
        ((mv erp dag state)
         (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array
-                                     t         ;todo print
+                                     print
                                      60000     ;todo max-conflicts
                                      nil       ; dag-acc
                                      state))
@@ -541,11 +543,12 @@
     (mv (erp-nil) dag-or-quotep state)))
 
 ;; Returns (mv erp dag-or-quotep state).
-(defund maybe-prune-dag-approximately (prune-branches dag state)
+(defund maybe-prune-dag-approximately (prune-branches dag print state)
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
                               (<= (len dag) 2147483646)
+                              (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* (((when (not prune-branches))
@@ -563,4 +566,5 @@
     ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune:
     (prune-dag-approximately dag
                              nil ; we already know there are prunable ops
+                             print
                              state)))
