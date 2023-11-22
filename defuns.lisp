@@ -8959,9 +8959,12 @@
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
 ; farther below.
 
-         `(multiple-value-list?
-           (ec-call (do$ ,@(logic-code-to-runnable-code-lst (fargs term)
-                                                            wrld)))))
+         (let ((call
+                `(ec-call (do$ ,@(logic-code-to-runnable-code-lst (fargs term)
+                                                                  wrld)))))
+           (if (cdr (do$-stobjs-out (fargs term)))
+               `(values-list ,call)
+             call)))
         ((eq (ffn-symb term) 'mv-list)
 
 ; Since term is a fully translated term, we know it is of the form (mv-list 'k
