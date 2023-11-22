@@ -1307,6 +1307,8 @@
      (b* ((max1 (max-val-of-int-vector-adder arg1)))
        (and*-exec (natp size) (natp max1)
                   (ash max1 (- size)))))
+    ;; (('sv::xdet arg1)
+    ;;  (max-val-of-int-vector-adder arg1))
     (&
      (b* (((when (natp x)) x)
           (width (svl::width-of-svex x)))
@@ -1413,6 +1415,19 @@
   ;;                               bitops::ihsext-recursive-redefs)
   ;;                              ())))))
 
+  (defret fc-rule-of-<fn>
+    (implies res
+             (and (natp res)
+                  (integerp res)
+                  (rationalp res)))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :do-not-induct t
+             :use ((:instance MAYBE-NATP-OF-MAX-VAL-OF-INT-VECTOR-ADDER))
+             :in-theory (e/d (maybe-natp)
+                             (MAX-VAL-OF-INT-VECTOR-ADDER
+                              MAYBE-NATP-OF-MAX-VAL-OF-INT-VECTOR-ADDER))))
+    :fn MAX-VAL-OF-INT-VECTOR-ADDER)
   
 
   (defret <fn>-is-correct
@@ -1503,7 +1518,10 @@
                             ('sv::partsel start size term)
                             (and (natp size)
                                  (natp start)
-                                 (case-match term (('int-vector-adder & &) t)))))
+                                 (case-match term (('int-vector-adder & &) t))))
+
+   (create-case-match-macro xdet-pattern
+                            ('sv::xdet arg1)))
 
   (define remove-partsels-around-plus ((x sv::Svex-p)
                                        &key
@@ -1536,6 +1554,11 @@
                                          (and*-exec (svl::integerp-of-svex arg1)
                                                     (svl::integerp-of-svex arg2))))
               (hons 'int-vector-adder x.args))
+             ((and*-exec (xdet-pattern-p x)
+                         (xdet-pattern-body x
+                                            (svl::integerp-of-svex arg1)))
+              (xdet-pattern-body x arg1)
+              )
              (t x)))))
 
   (define remove-partsels-around-plus-lst  ((lst sv::Svexlist-p)
@@ -1615,8 +1638,7 @@
 
   (verify-guards remove-partsels-around-plus-fn
     :hints (("Goal"
-             :in-theory (e/d (partsel-of-int-vector-adder-p
-                              +-pattern-p)
+             :in-theory (e/d ()
                              ()))))
 
   (memoize 'remove-partsels-around-plus
@@ -1703,15 +1725,18 @@
                       (:free (args) (sv::svex-apply$ 'int-vector-adder args))
                       (:free (args) (sv::svex-call '+ args))
                       (:free (args) (sv::svex-call 'sv::partsel args))
+                      (:free (args) (sv::svex-call 'sv::xdet args))
                       (:free (args) (sv::svex-apply '+ args))
                       (:free (args) (sv::svex-apply 'sv::rsh args))
                       (:free (args) (sv::svex-apply 'sv::partsel args))
+                      (:free (args) (sv::svex-apply 'sv::xdet args))
                       ;; (:free (x y) (sv::svex-kind (cons x y)))
                       )
              :in-theory (e/d (SV::SVEX-CALL->FN
                               SV::SVEX-CALL->args
                               SV::4VECLIST-NTH-SAFE
                               +-pattern-p
+                              XDET-PATTERN-P
                               partsel-of-int-vector-adder-p)
                              (ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP
                               ACL2::SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP

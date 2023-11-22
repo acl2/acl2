@@ -43,7 +43,6 @@
 (rp::def-rp-rule 4vec-p-of-int-vector-adder-lst
   (sv::4vec-p (int-vector-adder-lst x)))
 
-
 ;;:i-am-here
 (local
  (create-regular-eval-lemma rp 2 find-adders-in-svex-formula-checks))
@@ -206,11 +205,11 @@
        ;;(- (cwe "Input term: ~p0 ~%" term))
        )
     (mv `(int-vector-adder-lst ;;(list . ,terms)
-                               ,(trans-list terms)
-                               )
+          ,(trans-list terms)
+          )
         `(nil ;;(list . ,dont-rws)
-              ,(trans-list dont-rws)
-              )))
+          ,(trans-list dont-rws)
+          )))
   ///
 
   (local
@@ -340,7 +339,7 @@
 
           ((Unless shiftable) (mv term nil))
 
-          ;;(- (cw "int-vector-adder-lst in int-vector-adder-lst-meta generated ~p0 nodes~%" (cons-count 
+          ;;(- (cw "int-vector-adder-lst in int-vector-adder-lst-meta generated ~p0 nodes~%" (cons-count
           )
        (mv `(svl::4vec-concat$
              '1
@@ -377,7 +376,6 @@
   (defthm was-full-adder-thm
     (was-full-adder (full-adder x y z)))
 
-  
   (defun was-half-adder (x)
     (declare (ignorable x))
     t)
@@ -386,7 +384,7 @@
     (was-half-adder (half-adder x y))))
 
 (progn
-  ;; Rw rules to open 
+  ;; Rw rules to open
   (def-rp-rule int-vector-adder-lst-w/carry-no-lst
     (implies (integerp carry)
              (equal (int-vector-adder-lst-w/carry nil carry)
@@ -427,43 +425,83 @@
   (rp-attach-sc int-vector-adder-lst-opener-3-bitp
                 was-full-adder-thm)
 
+  (def-rp-rule int-vector-adder-lst-opener-4-bitp
+    (implies (and (bitp x1) (bitp x2) (bitp x3) (bitp x4))
+             (equal (int-vector-adder-lst (list x1 x2 x3 x4))
+                    (b* ((res (full-adder x1 x2 x3)))
+                      (2vec-adder res x4 0 3))
+                    ))
+    :rw-direction :both
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
+
+  (def-rp-rule int-vector-adder-lst-opener-5-bitp
+    (implies (and (bitp x1) (bitp x2) (bitp x3) (bitp x4) (bitp x5))
+             (equal (int-vector-adder-lst (list x1 x2 x3 x4 x5))
+                    (b* ((res1 (full-adder x1 x2 x3)))
+                      (2vec-adder res1 x4 x5 3))
+                    ))
+    :rw-direction :both
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
+
+  (def-rp-rule int-vector-adder-lst-opener-6-bitp
+    (implies (and (bitp x1) (bitp x2) (bitp x3) (bitp x4) (bitp x5) (bitp x6))
+             (equal (int-vector-adder-lst (list x1 x2 x3 x4 x5 x6))
+                    (b* ((res1 (full-adder x1 x2 x3))
+                         (res2 (full-adder x4 x5 x6)))
+                      (2vec-adder res1 res2 0 3))
+                    ))
+    :rw-direction :both
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
+
+  (def-rp-rule int-vector-adder-lst-opener-7-bitp
+    (implies (and (bitp x1) (bitp x2) (bitp x3) (bitp x4) (bitp x5) (bitp x6) (bitp x7))
+             (equal (int-vector-adder-lst (list x1 x2 x3 x4 x5 x6 x7))
+                    (b* ((res1 (full-adder x1 x2 x3))
+                         (res2 (full-adder x4 x5 x6)))
+                      (2vec-adder res1 res2 x7 3))
+                    ))
+    :rw-direction :both
+    :hints (("Goal"
+             :in-theory (e/d (bitp) ()))))
 
 
   (def-rp-rule int-vector-adder-lst-half-1
     (implies (and (bitp x)
-		  (bitp y))
-	     (equal (svl::bits (+ x y) start size)
-		    (svl::bits (half-adder x y)
-			       start size)))
-  
+                  (bitp y))
+             (equal (svl::bits (+ x y) start size)
+                    (svl::bits (half-adder x y)
+                               start size)))
+
     :hints (("Goal"
-	     :in-theory (e/d (bitp) ()))))
+             :in-theory (e/d (bitp) ()))))
   (rp-attach-sc int-vector-adder-lst-half-1
                 was-half-adder-thm)
 
   (def-rp-rule int-vector-adder-lst-half-2
     (implies (and (bitp x)
-		  (bitp y))
-	     (equal (sv::4vec-rsh size (+ x y))
-		    (sv::4vec-rsh size (half-adder x y))))
-  
+                  (bitp y))
+             (equal (sv::4vec-rsh size (+ x y))
+                    (sv::4vec-rsh size (half-adder x y))))
+
     :hints (("Goal"
-	     :in-theory (e/d (bitp) ()))))
+             :in-theory (e/d (bitp) ()))))
   (rp-attach-sc int-vector-adder-lst-half-2
                 was-half-adder-thm)
-  
+
   (def-rp-rule int-vector-adder-lst-half-3
     (implies (and (bitp x)
-		  (bitp y))
-	     (equal (SV::4VEC-XDET (+ x y))
-		    (SV::4VEC-XDET (half-adder x y))))
-  
+                  (bitp y))
+             (equal (SV::4VEC-XDET (+ x y))
+                    (SV::4VEC-XDET (half-adder x y))))
+
     :hints (("Goal"
-	     :in-theory (e/d (bitp) ()))))
+             :in-theory (e/d (bitp) ()))))
 
   (rp-attach-sc int-vector-adder-lst-half-3
                 was-half-adder-thm)
-  
 
   (def-rp-rule int-vector-adder-lst-carry-opener
     (and (equal (int-vector-adder-lst-w/carry lst carry)
@@ -474,10 +512,9 @@
              :in-theory (e/d (int-vector-adder-lst-w/carry
                               int-vector-adder) ())))))
 
-
 ;; !!!!! When  deciding   to  prove  the   below,  make  sure  to   change  the
 ;; !!!!! collect-int-vector-adder-meta function to return a list object instead
-;; !!!!! of a cons object. 
+;; !!!!! of a cons object.
 
 ;; #!RP
 ;; (skip-proofs

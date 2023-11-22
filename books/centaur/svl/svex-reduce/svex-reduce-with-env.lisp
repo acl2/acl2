@@ -207,13 +207,7 @@
          y)
         (t nil)))
 
-(defmacro if*-exec (x y z)
-  `(mbe :logic (if* ,x ,y ,z)
-        :exec (if ,x ,y ,z)))
 
-(defmacro and*-exec (&rest x)
-  `(mbe :logic (and* ,@x)
-        :exec (and ,@x)))
 
 
 (local
@@ -771,6 +765,12 @@
                              (cw "The test case (~p0) for bit? is 4vec-p ~
 but did not resolve the branch ~%" first))))
                  (svex-reduce-w/-env-apply fn (hons-list first second third))))
+
+              ((and*-exec (equal fn 'sv::xdet)
+                          (equal-len args 1)
+                          (integerp-of-svex (first args)))
+               (svex-reduce-w/-env-masked (first args) start size))
+              
               (t
                (b* ((args-evaluated (svex-reduce-w/-env-lst args))
                     (new-svex (svex-reduce-w/-env-apply fn
@@ -2292,6 +2292,7 @@ SVEX-CALL->FN)
                          (:free (x) (sv::svex-apply 'partsel x))
                          (:free (x) (sv::svex-apply 'concat x))
                          (:free (args) (sv::svex-apply 'sv::unfloat args))
+                         (:free (args) (sv::svex-apply 'sv::xdet args))
                          (:free (args) (sv::svex-apply 'sv::signx args))
                          (:free (args) (sv::svex-apply 'sv::zerox args))
                          (:free (args) (sv::svex-apply 'sv::rsh args))
