@@ -119,14 +119,13 @@
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
-;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
-;; erp result-dag-or-quotep state).
-;; TODO: Handle returning a quotep?
-(defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
+;; reduced to 0, or a loop or an unsupported instruction is detected.
+;; Returns (mv erp result-dag-or-quotep state).
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
-                              (symbol-listp rules)
+                              (acl2::rule-alistp rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules-to-monitor)
                               (booleanp use-internal-contextsp)
@@ -150,7 +149,7 @@
          ((mv erp dag-or-quote state)
           (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
                           :exhaustivep t
-                          :rules rules ; todo: don't make the rule-alist each time
+                          :rule-alist rule-alist
                           :assumptions assumptions
                           :monitor rules-to-monitor
                           :use-internal-contextsp use-internal-contextsp
@@ -161,14 +160,13 @@
                           :memoizep memoizep
                           :check-inputs nil))
          ((when erp) (mv erp nil state))
-         ((when (quotep dag-or-quote))
-          (mv (erp-nil) dag-or-quote state))
+         ((when (quotep dag-or-quote)) (mv (erp-nil) dag-or-quote state))
          ;; (- (and print (progn$ (cw "(DAG after stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         (dag dag-or-quote)
+         (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t state))
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t print state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
@@ -176,24 +174,27 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
-         ((mv erp dag state)
+         ((mv erp dag-or-quotep state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
                                            nil ; assumptions
-                                           rules
+                                           :none
+                                           rule-alist
                                            nil ; interpreted-fns
                                            rules-to-monitor
                                            t ;call-stp
                                            print
                                            state))
          ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep) ; it wasn't a quotep
          ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
+         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
           (prog2$ (cw "Note: The run has completed.~%")
@@ -226,7 +227,7 @@
                         state))))
               (repeatedly-run (- steps-left steps-for-this-iteration)
                               step-increment
-                              dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
+                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
                               total-steps
                               state))))))))
 
@@ -382,10 +383,12 @@
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
-
        ;; Do the symbolic execution:
+       ((mv erp rule-alist)
+        (acl2::make-rule-alist rules (w state)))
+       ((when erp) (mv erp nil nil nil state))
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
        (- (if (quotep result-dag-or-quotep)
               (cw "(Unrolling/lifting produced the constant ~x0.)~%" result-dag-or-quotep)

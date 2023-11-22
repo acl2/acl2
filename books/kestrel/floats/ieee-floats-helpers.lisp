@@ -24,12 +24,11 @@
   (equal (- (* -1 x))
          (fix x)))
 
+;can loop with the definition?
 (defthm *-of-2-and-expt-of-+-of--1
   (implies (integerp i)
            (equal (* 2 (expt 2 (+ -1 i)))
                   (expt 2 i))))
-
-
 
 ;rename
 (defun expt-induct (r i k)
@@ -263,8 +262,7 @@
               i))
   :rule-classes :linear
   :hints (("Goal" :induct (expt-induct 2 i x)
-           :in-theory (enable log2 expt)))
-  )
+           :in-theory (enable log2 expt))))
 
 (defthm log2-of-+-of--of-*-of-2-and-expt-of-+-of-1
   (implies (and (<= 0 k)
@@ -297,8 +295,7 @@
                   (- i 1)))
   :hints (("Goal" :induct (expt-induct 2 i x)
            :expand (log2 (+ (- x) (expt 2 i)))
-           :in-theory (enable log2 expt-of-+)))
-  )
+           :in-theory (enable log2 expt-of-+))))
 
 (defthm log2-of-+-of-expt2-and-small
   (implies (and (< j i)
@@ -344,15 +341,3 @@
                 (rationalp y1)
                 (rationalp y2))
            (<= (* x1 y1) (* x2 y2))))
-
-(defthm <-of-2-and-expt2
-  (implies (integerp i)
-           (equal (< 2 (expt 2 i))
-                  (< 1 i))))
-
-;could be expensive?
-(defthm <=-of-2-and-expt2-linear
-  (implies (and (< 0 i)
-                (integerp i))
-           (<= 2 (expt 2 i)))
-  :rule-classes :linear)

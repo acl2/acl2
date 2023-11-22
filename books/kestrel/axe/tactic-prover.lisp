@@ -295,8 +295,9 @@
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 (defun apply-tactic-prune (problem print call-stp-when-pruning state)
   (declare (xargs :guard (and (proof-problemp problem)
+                              (print-levelp print)
                               (booleanp call-stp-when-pruning))
-                  :stobjs (state)
+                  :stobjs state
                   :guard-hints (("Goal" :in-theory (disable pseudo-dag-or-quotep quotep)))))
   (b* ((dag (first problem))
        ((when (quotep dag))
@@ -320,6 +321,7 @@
                     nil                ;no interpreted-fns (todo)
                     nil                ;no point in monitoring anything
                     call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                    print
                     state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
        ((mv erp new-dag)
@@ -344,9 +346,9 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
-                              ;; print
+                              (print-levelp print)
                               (booleanp call-stp-when-pruning))
-                  :stobjs (state)))
+                  :stobjs state))
   (b* ((dag (first problem))
        ((when (quotep dag))
         (if (unquote dag)
@@ -365,6 +367,7 @@
         (prune-term term assumptions rule-alist interpreted-function-alist
                     monitor
                     call-stp-when-pruning
+                    print
                     state))
        ((when erp) (mv *error* nil state))
        ((mv erp new-dag)
@@ -678,6 +681,7 @@
                               (booleanp call-stp-when-pruning)
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
+                              (print-levelp print)
                               (booleanp normalize-xors))))
   (if (eq :rewrite tactic)
       (apply-tactic-rewrite problem rule-alist interpreted-function-alist monitor normalize-xors print state)
@@ -716,6 +720,7 @@
                                (booleanp call-stp-when-pruning)
                                (booleanp counterexamplep)
                                (booleanp print-cex-as-signedp)
+                               (print-levelp print)
                                (booleanp normalize-xors))))
    ;; TODO: What if the DAG is a constant?
    (if (endp tactics)
@@ -770,6 +775,7 @@
                                (booleanp call-stp-when-pruning)
                                (booleanp counterexamplep)
                                (booleanp print-cex-as-signedp)
+                               (print-levelp print)
                                (booleanp normalize-xors))))
    (if (endp problems)
        (prog2$ (cw "Finished proving all problems.~%")

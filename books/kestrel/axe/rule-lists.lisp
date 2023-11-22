@@ -365,6 +365,9 @@
     unsigned-byte-p-of-rightrotate
     unsigned-byte-p-of-rightrotate32
     unsigned-byte-p-of-bv-array-read-gen ;todo name
+    unsigned-byte-p-of-bvshl-gen
+    unsigned-byte-p-of-bvshr-gen
+    unsigned-byte-p-of-bvashr-gen
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
@@ -469,6 +472,48 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     ))
 
+;; TODO: Consider also the analogous rules about getbit?
+(defun bv-function-of-bvchop-rules ()
+  (declare (xargs :guard t))
+  '(;; TODO: add all other rules like this!:
+    bvnot-of-bvchop
+    bvand-of-bvchop-1 ; rename
+    bvand-of-bvchop-2 ; rename
+    bvor-of-bvchop-arg2 ;newly added: are other similar rules missing?
+    bvor-of-bvchop-arg3
+    bvxor-of-bvchop-1 ; rename
+    bvxor-of-bvchop-2 ; rename
+    bvplus-of-bvchop-arg2 ;gen?
+    bvplus-of-bvchop-arg3 ;gen?
+    bvminus-of-bvchop-arg2
+    bvminus-of-bvchop-arg3
+    bvuminus-of-bvchop-arg2
+    bvif-of-bvchop-arg3 ;mon feb 28 12:18:59 2011
+    bvif-of-bvchop-arg4 ;mon feb 28 12:19:01 2011
+    bitand-of-bvchop-arg1
+    bitand-of-bvchop-arg2
+    bitor-of-bvchop-arg1
+    bitor-of-bvchop-arg2
+    bitxor-of-bvchop-arg1
+    bitxor-of-bvchop-arg2
+    bvcat-of-bvchop-high
+    bvcat-of-bvchop-low
+    bvshl-of-bvchop  ;gen?
+    bvshr-of-bvchop  ;gen?
+    bvashr-of-bvchop ;gen?
+    leftrotate32-of-bvchop-arg2
+    leftrotate32-of-bvchop-5            ;new ;gen!
+    sbvlt-of-bvchop-arg2
+    sbvlt-of-bvchop-arg3
+    bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017 ; todo: other rule
+    bvchop-of-bvchop
+    getbit-of-bvchop
+    slice-of-bvchop-low-gen
+    slice-of-bvchop-too-high
+    ;;todo: bvcat rules
+    ))
+
+
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))
@@ -477,6 +522,7 @@
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
+   (bv-function-of-bvchop-rules)
    '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
@@ -505,7 +551,7 @@
      ;; getbit-of-leftrotate32-high
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
-     leftrotate32-of-bvchop-arg2
+
      ;; rightrotate32-trim-amt-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
      ;;opening rotates (by constant amounts) in sha1 caused problems with trimming the same term to lots of different sizes
@@ -513,7 +559,6 @@
      ;; leftrotate-open-when-constant-shift-amount
      ;; rightrotate-open-when-constant-shift-amount ;bozo just go to leftrotate
      bvchop-of-leftrotate32-does-nothing ;drop since we have bvchop-identity-axe?
-     leftrotate32-of-bvchop-5            ;new ;gen!
      leftrotate32-of-leftrotate32
      leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it)
      ;;leftrotate-becomes-leftrotate64
@@ -525,8 +570,6 @@
      equal-of-constant-when-sbvlt ; rename
      equal-constant-when-not-sbvlt ; rename
      not-sbvlt-same
-     sbvlt-of-bvchop-arg2
-     sbvlt-of-bvchop-arg3
      sbvlt-transitive-1-a ;these are new
      sbvlt-transitive-2-a
      sbvlt-transitive-1-b
@@ -705,32 +748,6 @@
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
-     ;; TODO: add all other rules like this!:
-     bvif-of-bvchop-arg3 ;mon feb 28 12:18:59 2011
-     bvif-of-bvchop-arg4 ;mon feb 28 12:19:01 2011
-     bvand-of-bvchop-1
-     bvand-of-bvchop-2
-     bvor-of-bvchop-arg2 ;newly added: are other similar rules missing?
-     bvor-of-bvchop-arg3
-     bvxor-of-bvchop-1
-     bvxor-of-bvchop-2
-     bitand-of-bvchop-arg1
-     bitand-of-bvchop-arg2
-     bitor-of-bvchop-arg1
-     bitor-of-bvchop-arg2
-     bitxor-of-bvchop-arg1
-     bitxor-of-bvchop-arg2
-     bvplus-of-bvchop-arg2 ;gen?
-     bvplus-of-bvchop-arg3 ;gen?
-     bvminus-of-bvchop-arg2
-     bvminus-of-bvchop-arg3
-     bvnot-of-bvchop
-     bvuminus-of-bvchop-arg2
-     bvcat-of-bvchop-high
-     bvcat-of-bvchop-low
-     bvshl-of-bvchop ;gen?
-     bvshr-of-bvchop ;gen?
-     bvashr-of-bvchop ;gen?
      ;; TODO: More like this:
      bvcat-of-getbit-arg2
      bvcat-of-getbit-arg4
@@ -794,7 +811,6 @@
 ;BVCHOP-OF-BVOR-does-nothing ;see bvchop-identity-axe
 ;            bvchop-of-getbit ;see bvchop-identity-axe
 
-     bvchop-of-bvchop
      bvchop-of-bvcat-cases
      bvchop-of-0-arg1
      bvchop-1-becomes-getbit
@@ -842,7 +858,6 @@
      ;; bvsx base cases?
      ;; introduce-bvsx-25-7 ;fixme yuck
 
-     bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
@@ -913,7 +928,7 @@
      getbit-of-bitor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitand-all-cases ;covered by the too-high and identity rules if n is a constant
      ;; getbit-of-bvchop-too-high ; covered by getbit-too-high-is-0-bind-free-axe
-     getbit-of-bvchop
+
 
      slice-out-of-order ;trying the real version
      slice-too-high-is-0-bind-free-axe
@@ -921,7 +936,6 @@
      slice-becomes-getbit
      slice-becomes-bvchop
      slice-of-slice-gen-better
-     slice-of-bvchop-low-gen
 ;            slice-of-bvcat-hack-gen-better-case-1 ;trying the real versions
 ;           slice-of-bvcat-hack-gen-better-case-2
 ;          slice-of-bvcat-hack-gen-better-case-3
