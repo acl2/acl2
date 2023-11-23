@@ -548,7 +548,7 @@
          ((mv erp acc)
           (if (or (eq target-paths :all)
                   (member-equal filename target-paths))
-              (b* ((- (and verbosep (cw "Exracting ~s0.~%" filename))) ; todo: option to suppress this and other printing
+              (b* ((- (and verbosep (cw "Extracting ~s0.~%" filename))) ; todo: option to suppress this and other printing
                    (compressed-size (lookup-eq :compressed-size header))
                    (- (and verbosep (cw "  Size: ~x0.~%" compressed-size)))
                    (compression-method (lookup-eq :compression-method header))
