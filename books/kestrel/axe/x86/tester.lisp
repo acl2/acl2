@@ -272,18 +272,11 @@
                        (cw "s~%")))))))
      (print-test-summary-aux (rest result-alist)))))
 
-(defund print-test-summary (result-alist executable-form)
-  (declare (xargs :guard (alistp result-alist)))
+(defund print-test-summary (result-alist executable-path)
+  (declare (xargs :guard (and (alistp result-alist)
+                              (stringp executable-path))))
   (progn$ (cw"~%========================================~%")
-          (if (or (symbolp executable-form)
-                  (stringp executable-form))
-              (let ((executable-name (if (stringp executable-form)
-                                         executable-form
-                                       (if (acl2::starts-and-ends-with-starsp executable-form)
-                                           (acl2::strip-stars-from-name executable-form)
-                                         executable-form))))
-                (cw "SUMMARY OF RESULTS for ~x0:~%" executable-name))
-            (cw "SUMMARY OF RESULTS:~%"))
+          (cw "SUMMARY OF RESULTS for ~x0:~%" executable-path)
           (print-test-summary-aux result-alist)
           (cw"========================================~%")))
 
@@ -760,13 +753,11 @@
                              (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
 
-
 ;; Returns (mv erp event state) an event (a progn containing an event for each test).
 ;; TODO: Return an error if any test is not as expected, but not until the end.
-(defun test-functions-fn (executable
+(defun test-functions-fn (executable ; a path to an executable
                           include-fns ; a list of strings (names of functions), or :all
                           exclude-fns ; a list of strings (names of functions)
-                          executable-form ; used to get the executable name for the summary
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
@@ -774,7 +765,7 @@
                           tactics max-conflicts stack-slots position-independent
                           expected-failures
                           state)
-  (declare (xargs :guard (and ;; executable is a string or parsed executable (todo: disallow the latter?)
+  (declare (xargs :guard (and (stringp executable)
                           (or (string-listp include-fns)
                               (eq :all include-fns))
                           (string-listp exclude-fns)
@@ -803,11 +794,11 @@
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
+       ;; Parse the executable (TODO: Can we parse less than the whole thing?):
        ((mv erp parsed-executable state)
-        (if (stringp executable)
-            (acl2::parse-executable executable state)
-          (mv nil executable state)))
+        (acl2::parse-executable executable state))
        ((when erp) (mv erp nil state))
+       ;; Analyze the executable:
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
@@ -876,7 +867,7 @@
                                state))
        ((mv overall-time state) (real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
-       (- (print-test-summary result-alist executable-form))
+       (- (print-test-summary result-alist executable))
        (- (cw "TOTAL TIME: ")
           (acl2::print-to-hundredths overall-time)
           (cw "s (~x0 tests).~%"  (len function-name-strings))))
@@ -890,7 +881,7 @@
 ;; Test a list of functions:
 ;; deprecate this?
 (defmacro test-functions (function-name-strings ; or can be :all
-                          executable ; a string or a parsed executable
+                          executable ; a string
                           &key
                           (extra-rules 'nil)
                           (extra-lift-rules 'nil)
@@ -910,10 +901,9 @@
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                           )
-  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated (often a constant like *foo.o* ?  now usually a string?)
+  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
-                                              ',executable  ; unevaluated
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated
@@ -933,7 +923,7 @@
 ;; Tests all the functions in the file.
 ;; Use :include to test only a given set of functions.
 ;; Use :exclude to test all but a given set of functions.
-(defmacro test-file (executable ; a string or a parsed executable
+(defmacro test-file (executable ; a string
                      &key
                      (include ':all) ; names of functions (strings) to test, or can be :all
                      (exclude 'nil) ; names of functions (strings) to exclude from testing
@@ -955,10 +945,9 @@
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                      )
-  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated (often a constant like *foo.o*)
+  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?
                                               ',exclude ; todo: evaluate?
-                                              ',executable  ; unevaluated
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated
