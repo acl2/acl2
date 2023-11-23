@@ -10,6 +10,8 @@
 
 (in-package "ACL2") ; todo: change to HELP package
 
+;; NOTE: See eval-models for a similar but newer tool.
+
 (include-book "replay-book-with-advice")
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/utilities/shuffle-list2" :dir :system)
