@@ -1491,9 +1491,10 @@
      x86isa::fix-of-xr-rgf-4)
    (acl2::lookup-rules)))
 
+;move?
 (defun myif-rules ()
   (append '(acl2::myif-same-branches ;add to lifter-rules?
-            acl2::myif-t-nil
+            acl2::myif-of-t-and-nil-when-booleanp
             acl2::myif-nil-t
             ;; acl2::boolif-of-nil-and-t ;redundant?
             )

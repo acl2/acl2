@@ -129,7 +129,7 @@
     myif-of-nil
     myif-of-constant-when-not-nil
     myif-nil-t
-    myif-t-nil
+    myif-of-t-and-nil-when-booleanp
     ;; todo: more rules?
     bvchop-identity-axe
     )

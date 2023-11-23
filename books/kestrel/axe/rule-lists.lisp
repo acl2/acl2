@@ -166,7 +166,7 @@
             myif-of-t
             myif-of-constant-when-not-nil
             myif-nil-t
-            myif-t-nil
+            myif-of-t-and-nil-when-booleanp
             myif-same-branches
             myif-same-test
             myif-same-test2

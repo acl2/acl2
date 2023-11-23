@@ -32,6 +32,13 @@
                     (bool-fix y))))
   :hints (("Goal" :in-theory (enable boolif))))
 
+;; Does not introduce bool-fix, unlike boolif-of-t-and-nil.
+(defthmd boolif-of-t-and-nil-when-booleanp
+  (implies (booleanp x)
+           (equal (boolif x t nil)
+                  x))
+  :hints (("Goal" :in-theory (enable boolif))))
+
 (defthm boolif-of-t-and-nil
   (equal (boolif x t nil)
          (bool-fix x))
