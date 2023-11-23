@@ -608,8 +608,8 @@
 
 ;; These are about if but are not 'if lifting' rules.
 (defun if-rules ()
-  '(x86isa::if-x-nil-t
-    x86isa::if-of-not
+  '(acl2::if-nil-t
+    acl2::if-of-not
     x86isa::if-of-if-same-arg2
     x86isa::if-of-if-arg3-same
     ))
@@ -1770,7 +1770,7 @@
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
-    x86isa::if-x-x-y
+    acl2::if-x-x-y-when-booleanp
 ;    mv-nth-0-of-ea-to-la ; introduces eff-addrs-okp
 
     eff-addr-okp-of-set-flag
@@ -3494,7 +3494,7 @@
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
             ;;xr-of-!rflags-irrel
-            X86ISA::IF-X-X-Y
+            acl2::IF-X-X-Y-when-booleanp
             ;; ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP
             ACL2::EQUAL-OF-IF-ARG1-WHEN-QUOTEP
             ACL2::EQUAL-OF-IF-ARG2-WHEN-QUOTEP

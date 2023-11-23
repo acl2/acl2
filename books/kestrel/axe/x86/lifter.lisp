@@ -64,6 +64,7 @@
 (include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
+(include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
@@ -323,14 +324,14 @@
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt
      acl2::bool-fix-when-booleanp
-     x86isa::if-t-nil
+     acl2::if-t-nil
      x86isa::mv-nth-of-if
      x86isa::canonical-address-p-of-if
      x86isa::+-of-if-arg1
      x86isa::+-of-if-arg2
      acl2::bvchop-numeric-bound
      x86isa::xw-of-rip-and-if
-     x86isa::if-x-x-y
+     acl2::if-x-x-y-when-booleanp
      x86p-of-write ;move
      read-of-write-same ;move
      get-flag-of-write
