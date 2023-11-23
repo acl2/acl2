@@ -6032,6 +6032,22 @@
                                           <-of-bvplus-becomes-bvlt-arg2
                                           BVLT-OF-PLUS-ARG1
                                           )))))
+
+(defthm bvlt-when-not-bvlt-one-less
+  (implies (and (syntaxp (quotep const))
+                (not (bvlt size x free))
+                (syntaxp (quotep free))
+                (equal free (+ -1 const))
+                (unsigned-byte-p size free)
+                (unsigned-byte-p size const)
+;                (posp const) ; ?
+                (integerp size))
+           (equal (bvlt size x const)
+                  (equal free (bvchop size x))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (<-of-bvplus-becomes-bvlt-arg1
+                                          <-of-bvplus-becomes-bvlt-arg2
+                                          BVLT-OF-PLUS-ARG1
+                                          )))))
 ;use polarities?
 (defthm bvlt-unique
   (implies (and (bvlt size x free)
