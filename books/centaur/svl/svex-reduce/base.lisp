@@ -26,6 +26,8 @@
 
 (in-package "SVL")
 
+(include-book "projects/rp-rewriter/top" :dir :system)
+(include-book "../fnc-defs")
 (include-book "centaur/sv/svex/eval" :dir :system)
 (include-book "centaur/sv/svex/eval-dollar" :dir :system)
 (include-book "tools/templates" :dir :system)
@@ -412,3 +414,14 @@
    )
   :layout :tree
   )
+
+
+
+(with-output
+    :off :all
+    :gag-mode nil
+    (rp::def-formula-checks
+      svex-reduce-formula-checks
+      (acl2::logbit$inline
+       bits
+       integerp)))
