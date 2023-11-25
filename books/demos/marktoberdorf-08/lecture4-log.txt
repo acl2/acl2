@@ -647,8 +647,7 @@ M1 >>>(DEFTHM |G-INV-arity-1-DEF|
          ("Subgoal 2" :USE |G-INV-arity-1-fch|))
         :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
@@ -1056,8 +1055,7 @@ But simplification reduces this to T, using the :definitions
 |G-INV-arity-1-defpun-base|, |G-INV-arity-1-defpun-fn| and 
 |G-INV-arity-1-defpun-test| and primitive type reasoning.
 
-[Note:  A hint was supplied for our processing of the goal below. 
-Thanks!]
+[Note:  A hint was supplied for the goal below.  Thanks!]
 
 Subgoal 2
 (IMPLIES
@@ -1215,8 +1213,7 @@ target.  Because the new rule will be tried first, it may nonetheless
 find application.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from |G-INV-arity-1-DEF| via instantiation.
@@ -1897,8 +1894,7 @@ M1 >>>(DEFTHM G-INV-RUN
         :RULE-CLASSES NIL
         :HINTS (("Goal" :IN-THEORY (E/D (RUN) (G-INV-DEF)))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1995,8 +1991,7 @@ M1 >>>(DEFTHM PARTIAL-CORRECTNESS-OF-PROGRAM-G
                                         (SCHED SCHED))))
         :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from G-INV-RUN via instantiation.  We
@@ -2104,8 +2099,7 @@ rewritten.  This is generally a severe restriction on the applicability
 of a :REWRITE rule.  See :DOC free-variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be obtained from PARTIAL-CORRECTNESS-OF-PROGRAM-G.
@@ -2661,8 +2655,7 @@ M1 >>>(DEFTHM |H-INV-arity-1-DEF|
          ("Subgoal 2" :USE |H-INV-arity-1-fch|))
         :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from ACL2::GENERIC-TAIL-RECURSIVE-DEFPUN-F
@@ -3277,8 +3270,7 @@ But simplification reduces this to T, using the :definitions
 |H-INV-arity-1-defpun-base|, |H-INV-arity-1-defpun-fn| and 
 |H-INV-arity-1-defpun-test| and primitive type reasoning.
 
-[Note:  A hint was supplied for our processing of the goal below. 
-Thanks!]
+[Note:  A hint was supplied for the goal below.  Thanks!]
 
 Subgoal 2
 (IMPLIES
@@ -3439,8 +3431,7 @@ target.  Because the new rule will be tried first, it may nonetheless
 find application.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from |H-INV-arity-1-DEF| via instantiation.
@@ -4241,8 +4232,7 @@ M1 >>>(DEFTHM H-INV-RUN
         :RULE-CLASSES NIL
         :HINTS (("Goal" :IN-THEORY (E/D (RUN) (H-INV-DEF)))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -4337,8 +4327,7 @@ M1 >>>(DEFTHM PARTIAL-CORRECTNESS-OF-PROGRAM-H
                                         (SCHED SCHED))))
         :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from H-INV-RUN via instantiation.  We
@@ -4487,8 +4476,7 @@ being proved and hence the search for the required hypotheses will
 likely fail.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from PARTIAL-CORRECTNESS-OF-PROGRAM-H
