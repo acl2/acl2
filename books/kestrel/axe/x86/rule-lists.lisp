@@ -1499,8 +1499,8 @@
             ;; acl2::boolif-of-nil-and-t ;redundant?
             )
           (acl2::boolean-rules)
-          ;; '(acl2::boolif-x-x-y
-          ;; acl2::boolif-x-y-x
+          ;; '(acl2::boolif-x-x-y-becomes-boolor
+          ;; acl2::boolif-x-y-x-becomes-booland
           ;; acl2::boolif-same-branches
           ;; acl2::boolif-when-quotep-arg1
           ;; acl2::boolif-when-quotep-arg2
@@ -3691,7 +3691,7 @@
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
-            ;; ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
             ;bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
@@ -3762,7 +3762,7 @@
             ACL2::SIGNED-BYTE-P-OF-BVIF
             ACL2::LOGEXT-IDENTITY
             ACL2::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-ONE-LESS
-            ;ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG
             boolor-becomes-boolif
             ;bvlt-hack-1-gen

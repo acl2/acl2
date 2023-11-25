@@ -132,8 +132,8 @@
      ;; todo: think about these: sometimes we prefer boolif:
      boolif-when-quotep-arg2 ; introduces boolor, or booland of not
      boolif-when-quotep-arg3 ; introduces boolor of not, or booland
-     boolif-x-x-y ; introduces boolor
-     boolif-x-y-x ; introduces booland
+     boolif-x-x-y-becomes-boolor ; introduces boolor
+     boolif-x-y-x-becomes-booland ; introduces booland
 
      ;; Rules about iff (or should we open iff)?
      ;; todo: move these to boolean-rules-safe
