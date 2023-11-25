@@ -644,8 +644,12 @@
           ;; todo: do local incompat checking without include-books (or making them local) here?
           (improve-events-aux events initial-included-books print state)))
 
-;move
-(defund maybe-add-book-extension (book)
+
+;; Elaborates a book path that may not end in .lisp (e.g., when supplied by a
+;; human).  If it already ends in .lisp, do nothing.  Otherwise, add .lisp.
+;; (In the rare care that a file ends in .lisp.lisp, the whole path has to be
+;; given.)
+(defund maybe-add-dot-lisp-extension (book)
   (declare (xargs :guard (stringp book)))
   (if (string-ends-withp book ".lisp") ; tolerate existing .lisp extension
       book
@@ -661,7 +665,7 @@
                                   (stringp dir)))
                   :mode :program ; todo
                   :stobjs state))
-  (let* ((file-name (maybe-add-book-extension bookname))
+  (let* ((file-name (maybe-add-dot-lisp-extension bookname))
          (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
     (mv-let (existsp state)
       (file-write-date$ full-book-path state)
