@@ -590,7 +590,8 @@
 
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
-    )))
+    acl2::bvlt-of-bvplus-1-cancel
+    acl2::bvlt-of-bvplus-1-cancel-alt)))
 
 ;not used?
 (defun canonical-address-rules ()
