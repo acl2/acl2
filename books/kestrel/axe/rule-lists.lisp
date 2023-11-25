@@ -53,7 +53,7 @@
             booleanp-of-boolif
             booleanp-of-boolor
             booleanp-of-booland
-            booleanp-of-bool-fix ;new
+            booleanp-of-bool-fix-rewrite ;new
             booleanp-of-consp ;move to list rules? ;i guess we are opening atom and endp
             booleanp-of-<
             booleanp-of-unsigned-byte-p
