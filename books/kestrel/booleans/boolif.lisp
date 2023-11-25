@@ -21,7 +21,8 @@
       t
     nil))
 
-(defthm booleanp-of-boolif
+;; Only needed for Axe?
+(defthmd booleanp-of-boolif
   (booleanp (boolif x y z)))
 
 (defthm boolif-when-quotep-arg1
