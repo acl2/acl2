@@ -38,6 +38,7 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/utilities/extend-pathname-dollar" :dir :system)
+(include-book "kestrel/utilities/maybe-add-dot-lisp-extension" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
@@ -645,15 +646,6 @@
           (improve-events-aux events initial-included-books print state)))
 
 
-;; Elaborates a book path that may not end in .lisp (e.g., when supplied by a
-;; human).  If it already ends in .lisp, do nothing.  Otherwise, add .lisp.
-;; (In the rare care that a file ends in .lisp.lisp, the whole path has to be
-;; given.)
-(defund maybe-add-dot-lisp-extension (book)
-  (declare (xargs :guard (stringp book)))
-  (if (string-ends-withp book ".lisp") ; tolerate existing .lisp extension
-      book
-    (concatenate 'string book ".lisp")))
 
 ;; Returns (mv erp forms full-book-path state).
 ;move
