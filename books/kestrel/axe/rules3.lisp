@@ -3774,44 +3774,6 @@
 ;;                                            <-of-bvplus-becomes-bvlt-arg1
 ;;                                            <-of-bvplus-becomes-bvlt-arg2)))))
 
-
-;gen the 1
-(defthm bvlt-of-bvplus-1-cancel
-  (implies (and (posp size)  ;why?
-                (integerp x) ;why?
-                )
-           (equal (bvlt size (bvplus size 1 x) x)
-                  (equal (bvchop size x) (+ -1 (expt 2 size)))))
-  :hints (("Goal" :in-theory (e/d (bvlt
-                                   bvchop-of-sum-cases
-                                   bvplus
-                                   )
-                                  (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
-
-                                               bvlt-of-plus-arg1
-                                               bvlt-of-plus-arg2
-                                               <-of-bvmult-hack ;bozo
-                                               <-of-bvplus-becomes-bvlt-arg1
-                                               <-of-bvplus-becomes-bvlt-arg2)))))
-
-(defthm bvlt-of-bvplus-1-cancel-alt
-  (implies (and (posp size)  ;why?
-                (integerp x) ;why?
-                )
-           (equal (bvlt size x (bvplus size 1 x))
-                  (not (equal (bvchop size x) (+ -1 (expt 2 size))))))
-  :hints (("Goal" :in-theory (e/d (bvlt
-                                   bvchop-of-sum-cases
-                                   bvplus
-                                   )
-                                  (anti-bvplus GETBIT-OF-+ plus-becomes-bvplus
-
-                                               bvlt-of-plus-arg1
-                                               bvlt-of-plus-arg2
-                                               <-of-bvmult-hack ;bozo
-                                               <-of-bvplus-becomes-bvlt-arg1
-                                               <-of-bvplus-becomes-bvlt-arg2)))))
-
 (in-theory (disable BVPLUS-3221225472-HACK))
 
 ;subsumes the one for 0
@@ -11197,7 +11159,8 @@
   (implies (unsigned-byte-p 31 x)
            (equal (BVPLUS '32 x (BVUMINUS '32 (BVMULT '31 '4 (SLICE '30 '2 x))))
                   (bvchop 2 x)))
-  :hints (("Goal" :in-theory (enable BVMULT-OF-4-GEN))))
+  :hints (("Goal" :in-theory (e/d (BVMULT-OF-4-GEN) (bvlt-of-slice-29-30-2 ;looped
+                                                     )))))
 
 ;gen
 (defthm equal-of-slice-and-slice-of-bvplus-of-1
