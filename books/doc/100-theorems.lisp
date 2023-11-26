@@ -36,6 +36,7 @@
 (include-book "projects/numbers/triangular" :dir :system)
 (include-book "projects/numbers/triples" :dir :system)
 (include-book "projects/numbers/z2q" :dir :system)
+(include-book "projects/schroder-bernstein/schroder-bernstein" :dir :system)
 (include-book "workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac" :dir :system)
 ;; (include-book "workshops/2018/kwan-greenstreet/cauchy-schwarz" :dir :system) ; needs ACL2r
 ;; (include-book "workshops/2020/kwan-peng-greenstreet/abstract-cs" :dir :system) ; needs ACL2r
@@ -219,7 +220,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
      ;; "<h3 id=\"24\">24. <u>The Undecidability of the Continuum Hypothesis</u></h3>"
-     ;; "<h3 id=\"25\">25. Schroeder-Bernstein Theorem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"25\">25. Schroeder-Bernstein Theorem</h3>"
+
+     "@(def sb::injectivity-of-sb)"
+     "@(def sb::surjectivity-of-sb)"
+
+     "<p>By Grant Jurgensen, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/schroder-bernstein/schroder-bernstein.lisp\">books/projects/schroder-bernstein/schroder-bernstein.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"26\">26. Leibniz's Series for Pi</h3>"
      ;; "<h3 id=\"27\">27. Sum of the Angles of a Triangle</h3>"
      ;; "<h3 id=\"28\">28. Pascal's Hexagon Theorem</h3>"
