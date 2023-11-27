@@ -10,19 +10,26 @@
 
 (in-package "ACL2")
 
-(include-book "parse-elf-file") ; overkill?  brings in get-elf-section-header
+(include-book "parse-elf-file") ; overkill?  brings in get-elf-section-header.  really that book should include this one?
 ;(include-book "kestrel/utilities/defopeners" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 
-(defun get-elf-section-bytes (section-name parsed-elf)
+(defund get-elf-section-bytes (section-name parsed-elf)
+  (declare (xargs :guard (and (stringp section-name)
+                              (parsed-elfp parsed-elf))
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
   (lookup-equal-safe section-name (lookup-eq-safe :sections parsed-elf)))
 
 ;; Get the code from the .text section:
 (defun get-elf-code (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
   (get-elf-section-bytes ".text" parsed-elf))
 
 (defun get-elf-section-address (section-name parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)
+                  :verify-guards nil ; todo
+                  ))
   (lookup-eq-safe :addr (get-elf-section-header section-name (lookup-eq-safe :section-header-table parsed-elf))))
 
 (defun get-elf-code-address (parsed-elf)

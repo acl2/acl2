@@ -414,3 +414,9 @@
        (result (acons :sections sections result))
        )
     (reverse result)))
+
+;; TODO: Add more to this
+(defund parsed-elfp (parsed-elf)
+  (declare (xargs :guard t))
+  (and (symbol-alistp parsed-elf)
+       (alistp (lookup-eq-safe :sections parsed-elf))))
