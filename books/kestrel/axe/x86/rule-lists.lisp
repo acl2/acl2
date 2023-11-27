@@ -204,7 +204,13 @@
     read-of-write-same
     read-of-write-disjoint
     read-of-write-disjoint2
-    program-at-of-write))
+    program-at-of-write
+    ;; todo: uncomment these but first organize rules:
+    ;;write-of-write-same
+    ;;write-of-write-of-write-same
+    ;;write-of-write-of-write-of-write-same
+    ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
+    ))
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
