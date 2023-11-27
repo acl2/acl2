@@ -475,7 +475,7 @@ reinstall Xming if you already have it installed.
   :long
   "
 <ol>
-  <li>Open up an unprivileged PowerShell or Command Prompt instance (e.g. by searching for PowerShell in the start menu and clicking on the PowerShell search result) and run @('wsl -d acl2s -e /bin/bash --noprofile -c \"/home/linuxbrew/.linuxbrew/bin/brew update && /home/linuxbrew/.linuxbrew/bin/brew upgrade acl2s\"').</li>
+  <li>Open up an unprivileged PowerShell or Command Prompt instance (e.g. by searching for PowerShell in the start menu and clicking on the PowerShell search result) and run @('wsl -d acl2s -e /bin/bash --noprofile -c \"/home/linuxbrew/.linuxbrew/bin/brew update && /home/linuxbrew/.linuxbrew/bin/brew upgrade acl2s\"'). If this fails with an error message like \"There is no distribution with the supplied name\", try running that command in a privileged PowerShell or Command Prompt (e.g. by searching for PowerShell in the start menu, right clicking the appropriate search result, and selecting <b>Run as administrator</b>).</li>
   <li>After this command completes and returns you to the normal PowerShell/Command Prompt prompt, you can then close the PowerShell or Command Prompt window that you opened up.</li>
   <li>Follow the @(see acl2s-updating-macos-or-linux) instructions, starting from Step 2.</li>
 </ol>
