@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(in-theory (disable read-run-time))
+
 (defthm rationalp-of-mv-nth-0-of-read-run-time
   (rationalp (mv-nth 0 (read-run-time state)))
   :rule-classes :type-prescription

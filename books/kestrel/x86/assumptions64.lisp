@@ -16,7 +16,7 @@
 (include-book "parsers/parsed-executable-tools")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defun bytes-loaded-at-address-64 (bytes addr x86)
+(defund bytes-loaded-at-address-64 (bytes addr x86)
   (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 bytes)
                               (true-listp bytes)
                               (consp bytes))

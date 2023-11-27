@@ -1,7 +1,7 @@
 ; Tools for processing parsed executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,9 @@
 
 (in-package "ACL2")
 
+(include-book "elf-tools")
 (include-book "mach-o-tools")
 (include-book "pe-tools")
-(include-book "parse-elf-file") ; todo, separate out the tools?
 
 (defund parsed-executable-type (parsed-executable)
   (let ((magic (lookup-eq :magic parsed-executable)))
