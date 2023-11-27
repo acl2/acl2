@@ -177,7 +177,7 @@ occurring.
 <ul>
   <li>at least 5GB of free hard drive space</li>
   <li>at least 4GB of RAM</li>
-  <li>macOS Big Sur (11), Monterey (12) or Ventura (13) on a Mac with an Intel processor, or macOS Ventura (13) on a Mac with an M1/M2 processor</li>
+  <li>macOS Monterey (12), Ventura (13), or Sonoma (14)  on a Mac with an Intel processor, or macOS Ventura (13) or Sonoma (14) on a Mac with an M1/M2 processor</li>
 </ul>
 <p>Installation should take less than an hour, though installation time
   will depend on your computer's specs and on the speed of your internet
@@ -200,8 +200,8 @@ occurring.
         \"Apple\", you have an M1/M2 processor in your Mac. Otherwise, if
         the text includes \"Intel\", you have an x86 Mac.</li>
       <li>In the \"About This Mac\" window, double check that you are
-        running one of \"macOS Big Sur\", \"macOS
-        Monterey\", or \"macOS Ventura\". If you are using a different version
+        running one of \"macOS Monterey\", \"macOS Ventura\", or \"macOS
+        Sonoma\". If you are using a different version
         of macOS, you may need to build the ACL2s package from scratch on your
         machine, which will take some time.</li></ol></li>
   <li>Install Homebrew<ol>
