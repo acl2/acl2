@@ -170,17 +170,17 @@
                               (booleanp position-independentp)
                               (natp stack-slots-needed))
                   :stobjs x86
-                  :verify-guards nil ;todo
+                  :verify-guards nil ;todo: first verify guards of elf helper functions
                   ))
   (if (elf-section-presentp section-name parsed-elf)
       (let* ((section-bytes (acl2::get-elf-section-bytes section-name parsed-elf))
              (section-address (acl2::get-elf-section-address section-name parsed-elf))
-             (text-section-address (acl2::get-elf-code-address parsed-elf))
-             ;; todo: can this be negative?:
-             (section-offset-from-text (- section-address text-section-address))
              (section-start (if position-independentp
                                 ;; position-independent, so assume the section is loaded at some offset wrt the text section:
-                                (+ text-offset section-offset-from-text)
+                                (let* ((text-section-address (acl2::get-elf-code-address parsed-elf))
+                                       ;; todo: can this be negative?:
+                                       (section-offset-from-text (- section-address text-section-address)))
+                                  (+ text-offset section-offset-from-text))
                               ;; not position-independent, so use the numeric address (may be necessary):
                               section-address)))
         (and (bytes-loaded-at-address-64 section-bytes section-start x86)
