@@ -1,6 +1,6 @@
 ; A proof of the A.3.3.3 gadget
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,7 @@
 (include-book "kestrel/crypto/r1cs/gadgets/xor-rules" :dir :system)
 (include-book "kestrel/axe/r1cs/axe-rules-r1cs" :dir :system)
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 (local (include-book "proof-support"))
 
 ;; Read in the r1cs:
@@ -101,10 +102,6 @@
                                   (p p))
            :in-theory (disable PFIELD::EQUAL-OF-MUL-AND-MUL-SAME))))
 
-(defthm booleanp-of-if
-  (equal (booleanp (if test x y))
-         (if test (booleanp x) (booleanp y))))
-
 ;; somewhat fragile
 (defthm helper
   (implies (and (fep x p)
@@ -146,7 +143,7 @@
                  equal-of-mul-and-add-of-mul-cancel
                  PFIELD::FEP-OF-INV
                  ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP
-                 booleanp-of-if
+                 acl2::booleanp-of-if-strong
                  ACL2::BOOLEANP-OF-EQUAL
                  ACL2::IF-SAME-BRANCHES
                  ACL2::IF-BECOMES-BOOLIF

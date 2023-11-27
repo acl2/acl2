@@ -53,7 +53,7 @@
             booleanp-of-boolif
             booleanp-of-boolor
             booleanp-of-booland
-            booleanp-of-bool-fix ;new
+            booleanp-of-bool-fix-rewrite ;new
             booleanp-of-consp ;move to list rules? ;i guess we are opening atom and endp
             booleanp-of-<
             booleanp-of-unsigned-byte-p
@@ -132,8 +132,8 @@
      ;; todo: think about these: sometimes we prefer boolif:
      boolif-when-quotep-arg2 ; introduces boolor, or booland of not
      boolif-when-quotep-arg3 ; introduces boolor of not, or booland
-     boolif-x-x-y ; introduces boolor
-     boolif-x-y-x ; introduces booland
+     boolif-x-x-y-becomes-boolor ; introduces boolor
+     boolif-x-y-x-becomes-booland ; introduces booland
 
      ;; Rules about iff (or should we open iff)?
      ;; todo: move these to boolean-rules-safe
@@ -166,7 +166,7 @@
             myif-of-t
             myif-of-constant-when-not-nil
             myif-nil-t
-            myif-t-nil
+            myif-of-t-and-nil-when-booleanp
             myif-same-branches
             myif-same-test
             myif-same-test2

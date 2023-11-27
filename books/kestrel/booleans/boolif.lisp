@@ -21,7 +21,8 @@
       t
     nil))
 
-(defthm booleanp-of-boolif
+;; Only needed for Axe?
+(defthmd booleanp-of-boolif
   (booleanp (boolif x y z)))
 
 (defthm boolif-when-quotep-arg1
@@ -30,6 +31,13 @@
                   (if test
                       (bool-fix x)
                     (bool-fix y))))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+;; Does not introduce bool-fix, unlike boolif-of-t-and-nil.
+(defthmd boolif-of-t-and-nil-when-booleanp
+  (implies (booleanp x)
+           (equal (boolif x t nil)
+                  x))
   :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm boolif-of-t-and-nil

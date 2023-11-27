@@ -864,3 +864,18 @@
          (and (equal 0 (getbit 0 x))
               (equal 1 (getbit 0 y))))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen the 1
+(defthm bvlt-of-bvplus-1-cancel
+  (implies (posp size)
+           (equal (bvlt size (bvplus size 1 x) x)
+                  (equal (bvchop size x) (+ -1 (expt 2 size)))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
+
+(defthm bvlt-of-bvplus-1-cancel-alt
+  (implies (posp size)
+           (equal (bvlt size x (bvplus size 1 x))
+                  (not (equal (bvchop size x) (+ -1 (expt 2 size))))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))

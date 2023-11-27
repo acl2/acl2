@@ -596,7 +596,8 @@
 
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
-    )))
+    acl2::bvlt-of-bvplus-1-cancel
+    acl2::bvlt-of-bvplus-1-cancel-alt)))
 
 ;not used?
 (defun canonical-address-rules ()
@@ -1497,15 +1498,16 @@
      x86isa::fix-of-xr-rgf-4)
    (acl2::lookup-rules)))
 
+;move?
 (defun myif-rules ()
   (append '(acl2::myif-same-branches ;add to lifter-rules?
-            acl2::myif-t-nil
+            acl2::myif-of-t-and-nil-when-booleanp
             acl2::myif-nil-t
             ;; acl2::boolif-of-nil-and-t ;redundant?
             )
           (acl2::boolean-rules)
-          ;; '(acl2::boolif-x-x-y
-          ;; acl2::boolif-x-y-x
+          ;; '(acl2::boolif-x-x-y-becomes-boolor
+          ;; acl2::boolif-x-y-x-becomes-booland
           ;; acl2::boolif-same-branches
           ;; acl2::boolif-when-quotep-arg1
           ;; acl2::boolif-when-quotep-arg2
@@ -3696,7 +3698,7 @@
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
-            ;; ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
             ;bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
@@ -3767,7 +3769,7 @@
             ACL2::SIGNED-BYTE-P-OF-BVIF
             ACL2::LOGEXT-IDENTITY
             ACL2::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-ONE-LESS
-            ;ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG
             boolor-becomes-boolif
             ;bvlt-hack-1-gen
