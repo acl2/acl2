@@ -95,7 +95,7 @@
 ;todo: add .lisp if needed to book-string
 ;todo: support :dir arg
 ;todo: widen margins
-(defun repair-fn (book-string state)
+(defun repair-book-fn (book-string state)
   (declare (xargs :mode :program
                   :stobjs state))
   ;; Call LD on the book while saving event-data:
@@ -122,8 +122,8 @@
 ;; @event-data.lsp file saved by a previous successful certification (see :doc
 ;; saving-event-data).  Currently it only prints advice for fixing the first
 ;; failure in the book.
-(defmacro repair (book-string)
-  `(make-event (repair-fn ,book-string state)))
+(defmacro repair-book (book-string)
+  `(make-event (repair-book-fn ,book-string state)))
 
 ;; Example:
-;; (repair "expt.lisp")
+;; (repair-book "expt.lisp")
