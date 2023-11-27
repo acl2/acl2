@@ -12,8 +12,14 @@
 
 (include-book "parse-elf-file") ; overkill?  brings in get-elf-section-header.  really that book should include this one?
 ;(include-book "kestrel/utilities/defopeners" :dir :system)
-;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
+
+(defund elf-section-presentp (section-name parsed-elf)
+  (declare (xargs :guard (and (stringp section-name)
+                              (parsed-elfp parsed-elf))
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
+  (if (assoc-equal section-name (lookup-eq :sections parsed-elf)) t nil))
 
 (defund get-elf-section-bytes (section-name parsed-elf)
   (declare (xargs :guard (and (stringp section-name)

@@ -122,8 +122,7 @@
 (acl2::def-constant-opener mach-o-section-presentp)
 (acl2::def-constant-opener alistp)
 
-(defun elf-section-presentp (section-name parsed-elf)
-  (if (assoc-equal section-name (lookup-eq :sections parsed-elf)) t nil))
+
 
 ;; ;todo: not really an assumption generator
 ;; todo: redo this like elf64-section-loadedp.
@@ -201,7 +200,7 @@
   (if (endp section-names)
       nil
     (let* ((section-name (first section-names)))
-      (if (elf-section-presentp section-name parsed-elf)
+      (if (acl2::elf-section-presentp section-name parsed-elf)
           (prog2$ (cw "(~s0 section detected.)~%" section-name)
                   ;; todo: do better?
                   (cons `(elf64-section-loadedp ;; ',section-name
@@ -496,7 +495,7 @@
                     acl2::get-elf-section-address
                     acl2::get-elf-section-bytes
                     elf64-section-loadedp
-                    elf-section-presentp
+                    acl2::elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp))
           step-limit
