@@ -17,7 +17,8 @@
 (include-book "prove-with-stp")
 (include-book "rewriter-basic")
 (include-book "dag-size-fast")
-(include-book "rule-lists")
+(include-book "basic-rules")
+(include-book "rule-lists") ; for unsigned-byte-p-forced-rules
 (include-book "bv-rules-axe") ; for bvchop-identity-axe
 (include-book "kestrel/bv/rules" :dir :system) ; todo: reduce, for the unsigned-byte-p-forced rules
 (include-book "kestrel/bv/sbvrem" :dir :system)
@@ -119,7 +120,7 @@
     boolor-of-bool-fix-arg2
     booland-of-bool-fix-arg1
     booland-of-bool-fix-arg2
-    booleanp-of-bool-fix
+    booleanp-of-bool-fix-rewrite
     if-same-branches
     if-when-non-nil-constant
     if-of-nil
@@ -129,7 +130,7 @@
     myif-of-nil
     myif-of-constant-when-not-nil
     myif-nil-t
-    myif-t-nil
+    myif-of-t-and-nil-when-booleanp
     ;; todo: more rules?
     bvchop-identity-axe
     )

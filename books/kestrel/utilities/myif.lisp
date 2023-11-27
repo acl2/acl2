@@ -111,17 +111,23 @@
                   (myif test1 a c)))
   :hints (("Goal" :in-theory (enable myif))))
 
+;rename
 (defthm myif-nil-t
   (equal (myif test nil t)
          (not test))
   :hints (("Goal" :in-theory (enable myif))))
 
-;todo: rename
-(defthm myif-t-nil
+(defthm myif-of-t-and-nil-when-booleanp
   (implies (booleanp test)
            (equal (myif test t nil)
                   test))
   :hints (("Goal" :in-theory (enable myif))))
+
+;; todo: where should this go?
+;; (defthm myif-of-t-and-nil
+;;   (equal (myif test t nil)
+;;          (bool-fix test))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;used for inside-out rewriting
 (defthm myif-when-not-nil
