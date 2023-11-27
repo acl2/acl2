@@ -19,6 +19,16 @@ please select the appropriate topic below:
 <li>@(see acl2s-installation-macos)</li>
 <li>@(see acl2s-installation-linux)</li>
 </ul>
+
+<p>
+For instructions on how to update an existing ACL2s installation,
+please select the appropriate topic below:
+</p>
+
+<ul>
+<li>@(see acl2s-updating-windows)</li>
+<li>@(see acl2s-updating-macos-or-linux)</li>
+</ul>
 ")
 
 (defxdoc acl2s-installation-windows
@@ -457,4 +467,30 @@ reinstall Xming if you already have it installed.
   </li>
 </ul>
 
+")
+
+(defxdoc acl2s-updating-windows
+  :parents (acl2s-installation)
+  :short "Update instructions for ACL2s on Windows"
+  :long
+  "
+<ol>
+  <li>Open up an unprivileged PowerShell or Command Prompt instance (e.g. by searching for PowerShell in the start menu and clicking on the PowerShell search result) and run @('wsl -d acl2s -e /bin/bash --noprofile -c \"/home/linuxbrew/.linuxbrew/bin/brew update && /home/linuxbrew/.linuxbrew/bin/brew upgrade acl2s\"').</li>
+  <li>After this command completes and returns you to the normal PowerShell/Command Prompt prompt, you can then close the PowerShell or Command Prompt window that you opened up.</li>
+  <li>Follow the @(see acl2s-updating-macos-or-linux) instructions, starting from Step 2.</li>
+</ol>
+")
+
+(defxdoc acl2s-updating-macos-or-linux
+  :parents (acl2s-installation)
+  :short "Update instructions for ACL2s on macOS or Linux"
+  :long
+  "
+<ol>
+  <li>Inside of a terminal: run @('brew update && brew upgrade acl2s')</li>
+  <li>Inside of Eclipse: go to <b>Help</b> | <b>Check for Updates</b>. This will take some time to download some information about updates before showing a list of available updates. After some time, a window should pop up that looks like the following:<br/><img src=\"res/acl2s/updating/available-updates.png\"/></li>
+  <li>Click on <b>Next</b> and then <b>Finish</b></li>
+  <li>After some time, a window may pop up asking if you want to trust unsigned content. Check the checkbox to the left of <b>Unsigned</b> in that window and then click <b>Trust Selected</b> as shown below. <img src=\"res/acl2s/updating/trust.png\"/></li>
+  <li>Eventually the installation will complete and Eclipse will tell you that it must be restarted for the updates to take effect. Agree to restart Eclipse (after saving any files that you might be working on).</li>
+</ol>
 ")
