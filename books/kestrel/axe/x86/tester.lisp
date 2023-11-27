@@ -58,65 +58,11 @@
 
 ;; TODO: Parens in output may not be balanced?
 
-;; TODO: move this stuff to mach-o-tools.lisp:
-
-;; Returns the section, or nil if the section doesn't exist.
-;; Returns the segment, or nil if the segment doesn't exist
-(defund maybe-get-mach-o-segment-from-load-commands (segment-name load-commands)
-  (if (endp load-commands)
-      nil
-    (let* ((load-command (first load-commands))
-           (cmd (acl2::lookup-eq-safe :cmd load-command)))
-      (if (not (or (eq cmd :LC_SEGMENT)
-                   (eq cmd :LC_SEGMENT_64)))
-          (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))
-        (let ((this-name (acl2::lookup-eq-safe :SEGNAME load-command)))
-          (if (equal segment-name this-name)
-              load-command
-            (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))))))))
-
-(acl2::def-constant-opener maybe-get-mach-o-segment-from-load-commands)
-
-;; Returns the segment, or nil if the segment doesn't exist.
-(defund maybe-get-mach-o-segment (segment-name parsed-mach-o)
-  (declare (xargs :guard (and (stringp segment-name)
-                              ;; parsed-mach-o
-                              )
-                  :verify-guards nil))
-  (maybe-get-mach-o-segment-from-load-commands segment-name (acl2::lookup-eq-safe :cmds parsed-mach-o)))
-
-(acl2::def-constant-opener maybe-get-mach-o-segment)
-
-(defund maybe-get-mach-o-section (name sections)
-  (declare (xargs :guard (and (stringp name)
-                              (alistp sections))))
-  (if (endp sections)
-      nil
-    (let* ((section (first sections)))
-      (if (not (alistp section))
-          (er hard? 'maybe-get-mach-o-section "Ill-formed section: ~x0." section)
-        (if (equal name (acl2::lookup-eq-safe :sectname section))
-            section
-          (maybe-get-mach-o-section name (rest sections)))))))
-
-(acl2::def-constant-opener maybe-get-mach-o-section)
-
-(defun mach-o-section-presentp (segment-name section-name parsed-mach-o)
-  (declare (xargs :guard (and (stringp segment-name)
-                              (stringp section-name)
-                              ;; parsed-mach-o
-                              )
-                  :verify-guards nil))
-  (let ((seg (maybe-get-mach-o-segment segment-name parsed-mach-o)))
-    (and seg
-         (if (maybe-get-mach-o-section section-name (acl2::lookup-eq-safe :sections seg))
-             t
-           nil))))
-
-(acl2::def-constant-opener mach-o-section-presentp)
-(acl2::def-constant-opener alistp)
-
-
+(acl2::def-constant-opener acl2::maybe-get-mach-o-segment-from-load-commands)
+(acl2::def-constant-opener acl2::maybe-get-mach-o-segment)
+(acl2::def-constant-opener acl2::maybe-get-mach-o-section)
+(acl2::def-constant-opener acl2::mach-o-section-presentp)
+(acl2::def-constant-opener alistp) ; why?
 
 ;; ;todo: not really an assumption generator
 ;; todo: redo this like elf64-section-loadedp.
@@ -130,7 +76,7 @@
                   :stobjs x86
                   :verify-guards nil ;todo
                   ))
-  (if (mach-o-section-presentp segment-name section-name parsed-mach-o)
+  (if (acl2::mach-o-section-presentp segment-name section-name parsed-mach-o)
       (let* ((segment (acl2::get-mach-o-segment segment-name (acl2::lookup-eq-safe :cmds parsed-mach-o)))
              (section (acl2::get-mach-o-section section-name (acl2::lookup-eq-safe :SECTIONS segment)))
              (section-bytes (acl2::lookup-eq-safe :contents section))
@@ -218,9 +164,9 @@
                               )
                   :verify-guards nil))
   (if (eq :mach-o-64 executable-type)
-      (b* ((- (and (mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
-           (- (and (mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
-           (- (and (mach-o-section-presentp "__DATA_CONST" "__got" parsed-executable) (cw "(__DATA_CONST,__got section detected.)~%"))))
+      (b* ((- (and (acl2::mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
+           (- (and (acl2::mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
+           (- (and (acl2::mach-o-section-presentp "__DATA_CONST" "__got" parsed-executable) (cw "(__DATA_CONST,__got section detected.)~%"))))
         `((section-assumptions-mach-o-64 "__TEXT" "__const" ',parsed-executable text-offset ',stack-slots x86)
           (section-assumptions-mach-o-64 "__DATA" "__data" ',parsed-executable text-offset ',stack-slots x86)
           (section-assumptions-mach-o-64 "__DATA_CONST" "__got" ',parsed-executable text-offset ',stack-slots x86)
@@ -475,10 +421,10 @@
           ;; extra-assumption-rules:
           (append (lifter-rules64-new)
                   '(section-assumptions-mach-o-64
-                    mach-o-section-presentp-constant-opener
-                    maybe-get-mach-o-segment-constant-opener
-                    maybe-get-mach-o-segment-from-load-commands-constant-opener
-                    maybe-get-mach-o-section-constant-opener
+                    acl2::mach-o-section-presentp-constant-opener
+                    acl2::maybe-get-mach-o-segment-constant-opener
+                    acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener
+                    acl2::maybe-get-mach-o-section-constant-opener
                     acl2::alistp-constant-opener
                     ;;acl2::const-assumptions-mach-o-64
                     ;;acl2::data-assumptions-mach-o-64
