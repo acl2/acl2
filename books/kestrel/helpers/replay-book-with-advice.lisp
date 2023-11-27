@@ -14,6 +14,8 @@
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
 
+;; NOTE: See eval-models for a similar but newer tool.
+
 ;; TODO: Try advice on defthms inside encapsulates (and perhaps other forms).
 ;; TODO: Consider excluding advice that uses a different version of the same library (e.g., rtl/rel9).
 ;; TODO: Instead of removing all :hints, just remove one hint-setting or rune (in enable or disable or e/d).  Use the acl2data files since they include info on how to break theorems?
@@ -199,7 +201,7 @@
 ;; Reads and then submits all the events in FILENAME, trying advice for the theorems.
 ;; Returns (mv erp counts state), where counts is (list yes-count no-count maybe-count trivial-count error-count).
 ;; Since this returns an error triple, it can be wrapped in revert-world.
-(defun replay-book-with-advice-fn-aux (filename ; the book, with .lisp extension, we should have already checked that it exists
+(defun replay-book-with-advice-fn-aux (filename ; the book, with .lisp extension
                                        theorems-to-try
                                        num-recs-per-model
                                        improve-recsp
@@ -217,7 +219,11 @@
                               (natp timeout))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  (b* ( ;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
+  (b* (((mv book-existsp state) (file-existsp filename state))
+       ((when (not book-existsp))
+        (er hard? 'replay-book-with-advice-fn-aux "The book ~x0 does not exist." filename)
+        (mv :book-does-not-exist nil state))
+       ;; We must avoid including the current book (or an other book that includes it) when trying to find advice:
        (current-book-absolute-path (canonical-pathname filename nil state))
        ((when (member-equal current-book-absolute-path
                             (all-included-books (w state))))
@@ -289,11 +295,7 @@
                                   (help::model-namesp models)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  (b* (((mv book-existsp state) (file-existsp filename state))
-       ((when (not book-existsp))
-        (er hard? 'replay-book-with-advice-fn "The book ~x0 does not exist." filename)
-        (mv :book-does-not-exist nil state))
-       ;; Elaborate options:
+  (b* (;; Elaborate options:
        (model-info-alist (help::make-model-info-alist models (w state)))
        ((mv erp
             & ; counts
@@ -306,7 +308,7 @@
 ;; TODO: Add timing info.
 ;; This has no effect on the world, because all the work is done in make-event
 ;; expansion and such changes do not persist.
-(defmacro replay-book-with-advice (filename ; the book, with .lisp extension
+(defmacro replay-book-with-advice (filename ; the book, with .lisp extension (todo: add if needed)
                                    &key
                                    (theorems-to-try ':all) ; gets evaluated
                                    (n '10) ; num-recs-per-model
