@@ -15,6 +15,8 @@
 ;(include-book "system/pseudo-good-worldp" :dir :system) ;for pseudo-runep; reduce?
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
+(include-book "kestrel/utilities/submit-events" :dir :system) ; reduce?
+(include-book "kestrel/utilities/ld-history" :dir :system)
 
 ;dup in books/system/pseudo-good-worldp
 (defun pseudo-runep (rune)
@@ -91,24 +93,35 @@
                   (print-info-on-new-runes (rest new-runes) info-type state)))))))
 
 ;todo: add .lisp if needed to book-string
+;todo: support :dir arg
+;todo: widen margins
 (defun repair-fn (book-string state)
   (declare (xargs :mode :program
                   :stobjs state))
-  ;; todo: first call LD inside saving-event-data
-  (mv-let (erp old-and-new-runes state)
-    (runes-diff-fn book-string nil nil nil 'runes-diff
-                   state)
-    (declare (ignore erp))
-    (let ((old-runes (second (assoc-eq :old old-and-new-runes)))
-          (new-runes (second (assoc-eq :new old-and-new-runes))))
-      (progn$ (cw "~%~%Best repair suggestions:~%") ; todo: figure out which event failed and print its name here?
-              (print-info-on-old-runes old-runes :major state)
-              (print-info-on-new-runes new-runes :major state)
-              (cw "~%Other observations:~%")
-              (print-info-on-old-runes old-runes :minor state)
-              (print-info-on-new-runes new-runes :minor state)
-              (mv nil '(value-triple :invisible) state)))))
+  ;; Call LD on the book while saving event-data:
+  (let* ((state (submit-event-quiet `(saving-event-data (ld ,book-string)) state)) ; todo: make this even quieter
+         (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state)))
+    (prog2$
+      (cw "~%~%Failure seems to be in ~x0.~%" most-recent-failed-theorem)
+      ;; Compute the runes diffs for the failed event:
+      (mv-let (erp old-and-new-runes state)
+        (runes-diff-fn book-string nil nil nil 'runes-diff
+                       state)
+        (declare (ignore erp))
+        (let ((old-runes (second (assoc-eq :old old-and-new-runes)))
+              (new-runes (second (assoc-eq :new old-and-new-runes))))
+          (progn$ (cw "~%~%BEST REPAIR SUGGESTIONS:~%") ; todo: figure out which event failed and print its name here?
+                  (print-info-on-old-runes old-runes :major state)
+                  (print-info-on-new-runes new-runes :major state)
+                  (cw "~%Other observations:~%") ; todo: make this shorter, so it doesn't distract from the best suggestions above
+                  (print-info-on-old-runes old-runes :minor state)
+                  (print-info-on-new-runes new-runes :minor state)
+                  (mv nil '(value-triple :invisible) state)))))))
 
+;; This attempts to repair the given book using information in an
+;; @event-data.lsp file saved by a previous successful certification (see :doc
+;; saving-event-data).  Currently it only prints advice for fixing the first
+;; failure in the book.
 (defmacro repair (book-string)
   `(make-event (repair-fn ,book-string state)))
 
