@@ -172,40 +172,40 @@
                   :stobjs x86
                   :verify-guards nil ;todo: first verify guards of elf helper functions
                   ))
-  (if (elf-section-presentp section-name parsed-elf)
-      (let* ((section-bytes (acl2::get-elf-section-bytes section-name parsed-elf))
-             (section-address (acl2::get-elf-section-address section-name parsed-elf))
-             (section-start (if position-independentp
-                                ;; position-independent, so assume the section is loaded at some offset wrt the text section:
-                                (let* ((text-section-address (acl2::get-elf-code-address parsed-elf))
-                                       ;; todo: can this be negative?:
-                                       (section-offset-from-text (- section-address text-section-address)))
-                                  (+ text-offset section-offset-from-text))
-                              ;; not position-independent, so use the numeric address (may be necessary):
-                              section-address)))
-        (and (bytes-loaded-at-address-64 section-bytes section-start x86)
-             ;; (canonical-address-p$inline const-section-start)
-             ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
-             ;; The constant data is disjoint from the part of the stack that is written:
-             (separate :r (len section-bytes) section-start
-                       ;; Only a single stack slot is written
-                       ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))))
-    ;; no assumptions if section not present:
-    t))
+  (let* ((section-bytes (acl2::get-elf-section-bytes section-name parsed-elf))
+         (section-address (acl2::get-elf-section-address section-name parsed-elf))
+         (section-start (if position-independentp
+                            ;; position-independent, so assume the section is loaded at some offset wrt the text section:
+                            (let* ((text-section-address (acl2::get-elf-code-address parsed-elf))
+                                   ;; todo: can this be negative?:
+                                   (section-offset-from-text (- section-address text-section-address)))
+                              (+ text-offset section-offset-from-text))
+                          ;; not position-independent, so use the numeric address (may be necessary):
+                          section-address)))
+    (and (bytes-loaded-at-address-64 section-bytes section-start x86)
+         ;; (canonical-address-p$inline const-section-start)
+         ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
+         ;; The constant data is disjoint from the part of the stack that is written:
+         (separate :r (len section-bytes) section-start
+                   ;; Only a single stack slot is written
+                   ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
+                   :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))))
 
-(defund make-register-replacement-assumptions (param-names register-names)
-  (declare (xargs :guard (and (symbol-listp param-names)
-                              (symbol-listp register-names))))
-  (if (or (endp param-names)
-          (endp register-names) ; additional params will be on the stack
-          )
+;; Returns a list of terms
+(defund assumptions-for-elf64-sections (section-names position-independentp stack-slots parsed-elf)
+  ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
+  ;;                             (alistp parsed-elf) ; strengthen
+  ;;                             )))
+  (if (endp section-names)
       nil
-    (let ((register-name (first register-names))
-          (param-name (first param-names)))
-      (cons `(equal (,register-name x86) ,param-name)
-            (make-register-replacement-assumptions (rest param-names) (rest register-names))))))
+    (let* ((section-name (first section-names)))
+      (if (elf-section-presentp section-name parsed-elf)
+          (prog2$ (cw "(~s0 section detected.)~%" section-name)
+                  (cons `(section-assumptions-elf-64 ',section-name ',parsed-elf text-offset ',position-independentp ',stack-slots x86) ; todo: do better?
+                        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots parsed-elf)))
+        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots parsed-elf)))))
 
+;; Returns a list of terms.
 (defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable)
   (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
                               (booleanp position-independentp)
@@ -226,12 +226,24 @@
           ;;        `((acl2::data-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
           ))
     (if (eq :elf-64 executable-type) ; todo: handle elf32
-        (b* ((- (and (elf-section-presentp ".data" parsed-executable) (cw "(.data section detected.)~%")))
-             ;; todo: handle more sections!
-             )
-          `((section-assumptions-elf-64 ".data" ',parsed-executable text-offset ,position-independentp
-                                        ',stack-slots x86)))
-      nil)))
+        (assumptions-for-elf64-sections '(".data" ".rodata") position-independentp stack-slots parsed-executable) ;; todo: handle more sections!
+      (if (eq :elf-32 executable-type)
+          (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
+        nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund make-register-replacement-assumptions (param-names register-names)
+  (declare (xargs :guard (and (symbol-listp param-names)
+                              (symbol-listp register-names))))
+  (if (or (endp param-names)
+          (endp register-names) ; additional params will be on the stack
+          )
+      nil
+    (let ((register-name (first register-names))
+          (param-name (first param-names)))
+      (cons `(equal (,register-name x86) ,param-name)
+            (make-register-replacement-assumptions (rest param-names) (rest register-names))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
