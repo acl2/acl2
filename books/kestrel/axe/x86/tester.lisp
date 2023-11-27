@@ -30,19 +30,13 @@
 (include-book "rule-lists")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/utilities/read-run-time" :dir :system))
 
 (acl2::ensure-rules-known (extra-tester-rules))
 (acl2::ensure-rules-known (extra-tester-lifting-rules))
 (acl2::ensure-rules-known (tester-proof-rules))
 
-(local (in-theory (disable read-run-time
-                           get-real-time)))
-
-;move
-(defthm rationalp-of-mv-nth-0-of-read-run-time
-  (rationalp (mv-nth 0 (read-run-time state)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable read-run-time))))
+(local (in-theory (disable get-real-time)))
 
 ;move
 (defthm rationalp-of-mv-nth-0-of-get-real-time
