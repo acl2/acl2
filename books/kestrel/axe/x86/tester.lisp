@@ -518,7 +518,7 @@
                                                remove-proof-rules
                                                ;; these can introduce boolor: todo: remove from tester-proof-rules?
                                                ;; todo: why is boolor bad?
-                                               '(acl2::boolif-x-x-y ;drop?
+                                               '(acl2::boolif-x-x-y-becomes-boolor ;drop?
                                                  acl2::boolif-when-quotep-arg2
                                                  acl2::boolif-when-quotep-arg3
                                                  acl2::bvchop-of-bvshr

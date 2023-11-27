@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/if" :dir :system)
+(include-book "kestrel/booleans/bool-fix-def" :dir :system)
 
 ;; TODO: Rephrase some of these
 
@@ -178,3 +179,10 @@
 ;; Can help when opening up reverse
 (defthmd not-stringp-of-cons
   (not (stringp (cons x y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The name is to avoid a conflict with a (probably unnecessary)
+;; :type-prescrpiption rule in centaur/fty/basetypes.lisp.
+(defthmd booleanp-of-bool-fix-rewrite
+  (booleanp (bool-fix x)))
