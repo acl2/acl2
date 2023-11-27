@@ -26,3 +26,6 @@
 (include-book "replay-books-with-advice")
 (include-book "eval-models")
 (include-book "linter")
+
+;; Intentionally omitting test books from this top.lisp file:
+;; (include-book "replay-book-tests")
