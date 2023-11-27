@@ -126,6 +126,7 @@
   (if (assoc-equal section-name (lookup-eq :sections parsed-elf)) t nil))
 
 ;; ;todo: not really an assumption generator
+;; todo: redo this like elf64-section-loadedp.
 (defun section-assumptions-mach-o-64 (segment-name section-name parsed-mach-o
                                       text-offset stack-slots-needed x86)
   (declare (xargs :guard (and (stringp segment-name)
@@ -156,28 +157,26 @@
     ;; no assumptions if section not present:
     t))
 
-;; ;todo: not really an assumption generator
-;; TODO: Can ELF sections be loaded at different addresss?
-(defun section-assumptions-elf-64 (section-name
-                                   parsed-elf
-                                   text-offset
-                                   position-independentp ; whether to assume position independence
-                                   stack-slots-needed
-                                   x86)
-  (declare (xargs :guard (and (stringp section-name)
-                              ;; parsed-elf
+;; TODO: Can ELF sections be relocated?
+(defun elf64-section-loadedp (section-bytes
+                              section-address
+                              text-offset
+                              position-independentp ; whether to assume position independence, todo: is this ever true?
+                              stack-slots-needed
+                              text-section-address
+                              x86)
+  (declare (xargs :guard (and (acl2::unsigned-byte-listp 8 section-bytes)
+                              (consp section-bytes)
+                              (natp section-address)
                               (natp text-offset)
                               (booleanp position-independentp)
-                              (natp stack-slots-needed))
-                  :stobjs x86
-                  :verify-guards nil ;todo: first verify guards of elf helper functions
-                  ))
-  (let* ((section-bytes (acl2::get-elf-section-bytes section-name parsed-elf))
-         (section-address (acl2::get-elf-section-address section-name parsed-elf))
-         (section-start (if position-independentp
-                            ;; position-independent, so assume the section is loaded at some offset wrt the text section:
-                            (let* ((text-section-address (acl2::get-elf-code-address parsed-elf))
-                                   ;; todo: can this be negative?:
+                              (natp stack-slots-needed)
+                              (natp text-section-address))
+                  :stobjs x86))
+  (let* ((section-start (if position-independentp
+                            ;; position-independent, so assume the section is loaded at the appropriate offset wrt TEXT-OFFSET, which is where we assume the text section starts.
+                            ;; todo: can this be negative?:
+                            (let* (;; todo: can this be negative?:
                                    (section-offset-from-text (- section-address text-section-address)))
                               (+ text-offset section-offset-from-text))
                           ;; not position-independent, so use the numeric address (may be necessary):
@@ -185,14 +184,17 @@
     (and (bytes-loaded-at-address-64 section-bytes section-start x86)
          ;; (canonical-address-p$inline const-section-start)
          ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
-         ;; The constant data is disjoint from the part of the stack that is written:
-         (separate :r (len section-bytes) section-start
-                   ;; Only a single stack slot is written
-                   ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                   :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))))
+         ;; The section is disjoint from the part of the stack that we expect to be written:
+         (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
+             (separate :r (len section-bytes) section-start
+                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
+                                                      (rgfi *rsp* x86) ; rephrase?
+                                                      ))
+           t))))
 
-;; Returns a list of terms
-(defund assumptions-for-elf64-sections (section-names position-independentp stack-slots parsed-elf)
+;; Returns a list of terms over the variables X86 and (perhaps TEXT-OFFSET).
+;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
+(defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf)
   ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
   ;;                             (alistp parsed-elf) ; strengthen
   ;;                             )))
@@ -201,11 +203,20 @@
     (let* ((section-name (first section-names)))
       (if (elf-section-presentp section-name parsed-elf)
           (prog2$ (cw "(~s0 section detected.)~%" section-name)
-                  (cons `(section-assumptions-elf-64 ',section-name ',parsed-elf text-offset ',position-independentp ',stack-slots x86) ; todo: do better?
-                        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots parsed-elf)))
-        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots parsed-elf)))))
+                  ;; todo: do better?
+                  (cons `(elf64-section-loadedp ;; ',section-name
+                                                ',(acl2::get-elf-section-bytes section-name parsed-elf)
+                                                ',(acl2::get-elf-section-address section-name parsed-elf)
+                                                text-offset
+                                                ',position-independentp
+                                                ',stack-slots
+                                                ',text-section-address
+                                                x86)
+                        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf)))
+        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf)))))
 
 ;; Returns a list of terms.
+;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
 (defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable)
   (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
                               (booleanp position-independentp)
@@ -226,7 +237,8 @@
           ;;        `((acl2::data-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
           ))
     (if (eq :elf-64 executable-type) ; todo: handle elf32
-        (assumptions-for-elf64-sections '(".data" ".rodata") position-independentp stack-slots parsed-executable) ;; todo: handle more sections!
+        ;; todo: handle more sections here:
+        (assumptions-for-elf64-sections '(".data" ".rodata") position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable)
       (if (eq :elf-32 executable-type)
           (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
         nil))))
@@ -398,6 +410,7 @@
                       (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ;
+                      ;; todo: build this into def-unrolled:
                       ,@register-assumptions
                       ;; todo: build this into def-unrolled:
                       ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
@@ -482,7 +495,7 @@
                     ;;acl2::get-mach-o-data-constant-opener
                     acl2::get-elf-section-address
                     acl2::get-elf-section-bytes
-                    section-assumptions-elf-64
+                    elf64-section-loadedp
                     elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp))
