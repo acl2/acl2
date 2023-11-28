@@ -31,6 +31,7 @@
 (include-book "design-fsm")
 (include-book "../svex/fixpoint-override")
 (include-book "../svex/compose-theory-fixpoint")
+(include-book "../svex/compose-theory-ovmonotonicity")
 (include-book "../svex/compose-theory-monotonicity")
 (include-book "svtv-stobj-export")
 ;; (include-book "svtv-stobj-pipeline-monotonicity")
@@ -45,6 +46,7 @@
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
+(local (include-book "clause-processors/find-subterms" :dir :system))
 (local (in-theory (disable signed-byte-p)))
 (local (std::add-default-post-define-hook :fix))
 (local (defthm signed-byte-p-of-loghead
@@ -401,103 +403,103 @@
 
 
 
-(defsection svex-partial-monotonic-implies-monotonic-on-vars
-  (local (defthm svex-env-extract-when-agree-except-non-intersecting
-           (implies (and (svex-envs-agree-except vars x y)
-                         (not (intersectp-equal (svarlist-fix params)
-                                                (svarlist-fix vars))))
-                    (equal (svex-env-extract params x)
-                           (svex-env-extract params y)))
-           :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix
-                                             svex-envs-agree-except-implies)))))
+;; (defsection svex-partial-monotonic-implies-monotonic-on-vars
+;;   (local (defthm svex-env-extract-when-agree-except-non-intersecting
+;;            (implies (and (svex-envs-agree-except vars x y)
+;;                          (not (intersectp-equal (svarlist-fix params)
+;;                                                 (svarlist-fix vars))))
+;;                     (equal (svex-env-extract params x)
+;;                            (svex-env-extract params y)))
+;;            :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix
+;;                                              svex-envs-agree-except-implies)))))
 
-  (defthm svex-partial-monotonic-implies-monotonic-on-vars
-    (implies (and (svex-partial-monotonic params x)
-                  (not (intersectp-equal (svarlist-fix params) (svarlist-fix vars))))
-             (svex-monotonic-on-vars vars x))
-    :hints (("goal" :expand ((svex-monotonic-on-vars vars x))
-             :use ((:instance eval-when-svex-partial-monotonic
-                    (param-keys params)
-                    (env1 (mv-nth 0 (svex-monotonic-on-vars-witness vars x)))
-                    (env2 (mv-nth 1 (svex-monotonic-on-vars-witness vars x)))))
-             :in-theory (disable eval-when-svex-partial-monotonic))))
+;;   (defthm svex-partial-monotonic-implies-monotonic-on-vars
+;;     (implies (and (svex-partial-monotonic params x)
+;;                   (not (intersectp-equal (svarlist-fix params) (svarlist-fix vars))))
+;;              (svex-monotonic-on-vars vars x))
+;;     :hints (("goal" :expand ((svex-monotonic-on-vars vars x))
+;;              :use ((:instance eval-when-svex-partial-monotonic
+;;                     (param-keys params)
+;;                     (env1 (mv-nth 0 (svex-monotonic-on-vars-witness vars x)))
+;;                     (env2 (mv-nth 1 (svex-monotonic-on-vars-witness vars x)))))
+;;              :in-theory (disable eval-when-svex-partial-monotonic))))
 
-  (defthm svexlist-partial-monotonic-implies-monotonic-on-vars
-    (implies (and (svexlist-partial-monotonic params x)
-                  (not (intersectp-equal (svarlist-fix params) (svarlist-fix vars))))
-             (svexlist-monotonic-on-vars vars x))
-    :hints (("goal" :expand ((svexlist-monotonic-on-vars vars x))
-             :use ((:instance eval-when-svexlist-partial-monotonic
-                    (param-keys params)
-                    (env1 (mv-nth 0 (svexlist-monotonic-on-vars-witness vars x)))
-                    (env2 (mv-nth 1 (svexlist-monotonic-on-vars-witness vars x)))))
-             :in-theory (disable eval-when-svexlist-partial-monotonic))))
+;;   (defthm svexlist-partial-monotonic-implies-monotonic-on-vars
+;;     (implies (and (svexlist-partial-monotonic params x)
+;;                   (not (intersectp-equal (svarlist-fix params) (svarlist-fix vars))))
+;;              (svexlist-monotonic-on-vars vars x))
+;;     :hints (("goal" :expand ((svexlist-monotonic-on-vars vars x))
+;;              :use ((:instance eval-when-svexlist-partial-monotonic
+;;                     (param-keys params)
+;;                     (env1 (mv-nth 0 (svexlist-monotonic-on-vars-witness vars x)))
+;;                     (env2 (mv-nth 1 (svexlist-monotonic-on-vars-witness vars x)))))
+;;              :in-theory (disable eval-when-svexlist-partial-monotonic))))
 
-  (defthm svex-alist-partial-monotonic-implies-monotonic-on-vars
-    (implies (and (svex-alist-partial-monotonic params x)
-                  (not (intersectp-equal (svarlist-fix params) (svarlist-fix vars))))
-             (svex-alist-monotonic-on-vars vars x))
-    :hints (("goal" :expand ((svex-alist-monotonic-on-vars vars x))
-             :use ((:instance eval-when-svex-alist-partial-monotonic
-                    (param-keys params)
-                    (env1 (mv-nth 0 (svex-alist-monotonic-on-vars-witness vars x)))
-                    (env2 (mv-nth 1 (svex-alist-monotonic-on-vars-witness vars x)))))
-             :in-theory (disable eval-when-svex-alist-partial-monotonic))))
+;;   (defthm svex-alist-partial-monotonic-implies-monotonic-on-vars
+;;     (implies (and (svex-alist-partial-monotonic params x)
+;;                   (not (intersectp-equal (svarlist-fix params) (svarlist-fix vars))))
+;;              (svex-alist-monotonic-on-vars vars x))
+;;     :hints (("goal" :expand ((svex-alist-monotonic-on-vars vars x))
+;;              :use ((:instance eval-when-svex-alist-partial-monotonic
+;;                     (param-keys params)
+;;                     (env1 (mv-nth 0 (svex-alist-monotonic-on-vars-witness vars x)))
+;;                     (env2 (mv-nth 1 (svex-alist-monotonic-on-vars-witness vars x)))))
+;;              :in-theory (disable eval-when-svex-alist-partial-monotonic))))
 
-  (local
-   (defthm subset-diff-agree-except-lemma
-     (implies (and (equal (svex-env-extract params env1)
-                          (svex-env-extract params env2))
-                   (subsetp (set-difference-equal (svarlist-fix vars2)
-                                                  (svarlist-fix params))
-                            (svarlist-fix vars)))
-              (svex-envs-agree-except vars (svex-env-extract vars2 env1) (svex-env-extract vars2 env2)))
-     :hints(("Goal" :in-theory (e/d (svex-envs-agree-except-by-witness))
-             :restrict ((svex-env-lookup-of-svex-env-extract ((vars vars2))))
-             :use ((:instance svex-env-lookup-of-svex-env-extract
-                    (v (svex-envs-agree-except-witness vars (svex-env-extract vars2 env1) (svex-env-extract vars2 env2)))
-                    (vars params)
-                    (env env1))
-                   (:instance svex-env-lookup-of-svex-env-extract
-                    (v (svex-envs-agree-except-witness vars (svex-env-extract vars2 env1) (svex-env-extract vars2 env2)))
-                    (vars params)
-                    (env env2)))
-             :do-not-induct t))))
+;;   (local
+;;    (defthm subset-diff-agree-except-lemma
+;;      (implies (and (equal (svex-env-extract params env1)
+;;                           (svex-env-extract params env2))
+;;                    (subsetp (set-difference-equal (svarlist-fix vars2)
+;;                                                   (svarlist-fix params))
+;;                             (svarlist-fix vars)))
+;;               (svex-envs-agree-except vars (svex-env-extract vars2 env1) (svex-env-extract vars2 env2)))
+;;      :hints(("Goal" :in-theory (e/d (svex-envs-agree-except-by-witness))
+;;              :restrict ((svex-env-lookup-of-svex-env-extract ((vars vars2))))
+;;              :use ((:instance svex-env-lookup-of-svex-env-extract
+;;                     (v (svex-envs-agree-except-witness vars (svex-env-extract vars2 env1) (svex-env-extract vars2 env2)))
+;;                     (vars params)
+;;                     (env env1))
+;;                    (:instance svex-env-lookup-of-svex-env-extract
+;;                     (v (svex-envs-agree-except-witness vars (svex-env-extract vars2 env1) (svex-env-extract vars2 env2)))
+;;                     (vars params)
+;;                     (env env2)))
+;;              :do-not-induct t))))
 
-  (defthm svex-monotonic-on-vars-implies-partial-monotonic
-    (implies (and (svex-monotonic-on-vars vars x)
-                  (subsetp (set-difference-equal (svex-vars x)
-                                                 (svarlist-fix params))
-                           (svarlist-fix vars)))
-             (svex-partial-monotonic params x))
-    :hints (("goal" :expand ((:with svex-partial-monotonic-by-eval (svex-partial-monotonic params x)))
-             :use ((:instance svex-monotonic-on-vars-necc
-                    (env1 (svex-env-extract (svex-vars x) (mv-nth 0 (svex-partial-monotonic-eval-witness params x))))
-                    (env2 (svex-env-extract (svex-vars x) (mv-nth 1 (svex-partial-monotonic-eval-witness params x)))))))))
+;;   (defthm svex-monotonic-on-vars-implies-partial-monotonic
+;;     (implies (and (svex-monotonic-on-vars vars x)
+;;                   (subsetp (set-difference-equal (svex-vars x)
+;;                                                  (svarlist-fix params))
+;;                            (svarlist-fix vars)))
+;;              (svex-partial-monotonic params x))
+;;     :hints (("goal" :expand ((:with svex-partial-monotonic-by-eval (svex-partial-monotonic params x)))
+;;              :use ((:instance svex-monotonic-on-vars-necc
+;;                     (env1 (svex-env-extract (svex-vars x) (mv-nth 0 (svex-partial-monotonic-eval-witness params x))))
+;;                     (env2 (svex-env-extract (svex-vars x) (mv-nth 1 (svex-partial-monotonic-eval-witness params x)))))))))
 
-  (defthm svexlist-monotonic-on-vars-implies-partial-monotonic
-    (implies (and (svexlist-monotonic-on-vars vars x)
-                  (subsetp (set-difference-equal (svexlist-vars x)
-                                                 (svarlist-fix params))
-                           (svarlist-fix vars)))
-             (svexlist-partial-monotonic params x))
-    :hints (("goal" :expand ((:with svexlist-partial-monotonic-by-eval (svexlist-partial-monotonic params x)))
-             :use ((:instance svexlist-monotonic-on-vars-necc
-                    (env1 (svex-env-extract (svexlist-vars x) (mv-nth 0 (svexlist-partial-monotonic-eval-witness params x))))
-                    (env2 (svex-env-extract (svexlist-vars x) (mv-nth 1 (svexlist-partial-monotonic-eval-witness params x)))))))))
+;;   (defthm svexlist-monotonic-on-vars-implies-partial-monotonic
+;;     (implies (and (svexlist-monotonic-on-vars vars x)
+;;                   (subsetp (set-difference-equal (svexlist-vars x)
+;;                                                  (svarlist-fix params))
+;;                            (svarlist-fix vars)))
+;;              (svexlist-partial-monotonic params x))
+;;     :hints (("goal" :expand ((:with svexlist-partial-monotonic-by-eval (svexlist-partial-monotonic params x)))
+;;              :use ((:instance svexlist-monotonic-on-vars-necc
+;;                     (env1 (svex-env-extract (svexlist-vars x) (mv-nth 0 (svexlist-partial-monotonic-eval-witness params x))))
+;;                     (env2 (svex-env-extract (svexlist-vars x) (mv-nth 1 (svexlist-partial-monotonic-eval-witness params x)))))))))
 
-  (local (in-theory (enable svexlist-vars-of-svex-alist-vals)))
+;;   (local (in-theory (enable svexlist-vars-of-svex-alist-vals)))
   
-  (defthm svex-alist-monotonic-on-vars-implies-partial-monotonic
-    (implies (and (svex-alist-monotonic-on-vars vars x)
-                  (subsetp (set-difference-equal (svex-alist-vars x)
-                                                 (svarlist-fix params))
-                           (svarlist-fix vars)))
-             (svex-alist-partial-monotonic params x))
-    :hints (("goal" :expand ((:with svex-alist-partial-monotonic-by-eval (svex-alist-partial-monotonic params x)))
-             :use ((:instance svex-alist-monotonic-on-vars-necc
-                    (env1 (svex-env-extract (svex-alist-vars x) (mv-nth 0 (svex-alist-partial-monotonic-eval-witness params x))))
-                    (env2 (svex-env-extract (svex-alist-vars x) (mv-nth 1 (svex-alist-partial-monotonic-eval-witness params x))))))))))
+;;   (defthm svex-alist-monotonic-on-vars-implies-partial-monotonic
+;;     (implies (and (svex-alist-monotonic-on-vars vars x)
+;;                   (subsetp (set-difference-equal (svex-alist-vars x)
+;;                                                  (svarlist-fix params))
+;;                            (svarlist-fix vars)))
+;;              (svex-alist-partial-monotonic params x))
+;;     :hints (("goal" :expand ((:with svex-alist-partial-monotonic-by-eval (svex-alist-partial-monotonic params x)))
+;;              :use ((:instance svex-alist-monotonic-on-vars-necc
+;;                     (env1 (svex-env-extract (svex-alist-vars x) (mv-nth 0 (svex-alist-partial-monotonic-eval-witness params x))))
+;;                     (env2 (svex-env-extract (svex-alist-vars x) (mv-nth 1 (svex-alist-partial-monotonic-eval-witness params x))))))))))
 
 
 
@@ -721,6 +723,14 @@
          (implies (not (member-equal (svar-fix v) (svex-alist-keys x)))
                   (not (svex-lookup v x)))))
 
+(local (defthm svarlist-nonoverride-p-when-svarlist-override-p
+           (implies (and (Svarlist-override-p x type)
+                         (not (svar-overridetype-equiv type type2)))
+                    (svarlist-nonoverride-p x type2))
+           :hints(("Goal" :in-theory (enable svarlist-nonoverride-p
+                                             svarlist-override-p
+                                             svar-override-p-when-other)))))
+
 (encapsulate nil
 
   (local (in-theory (enable svar-override-p-when-equal-change-override
@@ -733,31 +743,31 @@
   
 
   
-  (defthm svex-alist-partial-monotonic-of-svarlist-to-override-alist
-    (svex-alist-partial-monotonic (svarlist-change-override x :test)
-                                  (svarlist-to-override-alist x))
-    :hints(("Goal" :in-theory (enable svex-alist-partial-monotonic-by-eval
+  (defthm svex-alist-ovmonotonic-of-svarlist-to-override-alist
+    (svex-alist-ovmonotonic (svarlist-to-override-alist x))
+    :hints(("Goal" :in-theory (enable svex-alist-ovmonotonic
                                       svex-apply
-                                      svex-eval))
+                                      svex-eval)
+            :expand ((svex-alist-ovmonotonic (svarlist-to-override-alist x))))
            (and stable-under-simplificationp
-                (b* ((envs '(svex-alist-partial-monotonic-eval-witness (svarlist-change-override x :test)
-                                                                       (svarlist-to-override-alist x)))
-                     (ev1 `(svex-alist-eval (svarlist-to-override-alist x) (mv-nth 0 ,envs)))
-                     (ev2 `(svex-alist-eval (svarlist-to-override-alist x) (mv-nth 1 ,envs)))
-                     (key `(svex-env-<<=-witness ,ev1 ,ev2))
-                     (testvar `(svar-change-override ,key :test)))
-                  `(:expand ((svex-env-<<= ,ev1 ,ev2))
-                    :use ((:instance svex-env-lookup-of-svex-env-extract
-                           (v ,testvar)
-                           (vars (svarlist-change-override x :test))
-                           (env (mv-nth 0 ,envs)))
-                          (:instance svex-env-lookup-of-svex-env-extract
-                           (v ,testvar)
-                           (vars (svarlist-change-override x :test))
-                           (env (mv-nth 1 ,envs))))
-                    :in-theory (e/d (svex-apply
-                                     svex-eval)
-                                    (svex-env-lookup-of-svex-env-extract)))))))
+                 (let ((call (acl2::find-call-lst 'svex-alist-ovmonotonic-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
+                                                                                     ((mv-nth '1 ,call) . env2)))))))
+           (and stable-under-simplificationp
+                `(:expand (,(car (last clause)))))
+                
+           (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-env-<<=-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badkey)))))))
+           (and stable-under-simplificationp
+                '(:use ((:instance svex-env-ov<<=-necc
+                         (x env1) (y env2) (v (svar-change-override badkey :test)))
+                        (:instance svex-env-ov<<=-necc
+                         (x env1) (y env2) (v (svar-change-override badkey :val)))
+                        (:instance svex-env-ov<<=-necc
+                         (x env1) (y env2) (v (svar-change-override badkey nil))))))))
 
   (local (defthm member-svar-change-override-when-svar-override-p
            (implies (and (svarlist-override-p keys type2)
@@ -777,6 +787,20 @@
                                           (member-svex-alist-keys))))))
 
   
+  (defthm svex-alist-<<=-of-svex-alist-compose-when-ovmonotonic
+    (implies (and (svex-alist-ovmonotonic x)
+                  (svex-alist-<<= a b)
+                  (set-equiv (svex-alist-keys a) (svex-alist-keys b))
+                  (svarlist-override-p (svex-alist-keys a) nil))
+             (svex-alist-<<= (svex-alist-compose x a)
+                             (svex-alist-compose x b)))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-alist-<<=-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . env)))
+                          :in-theory (enable svex-alist-ovmonotonic-necc)))))))
   
   (defthm svex-alist-<<=-of-compose-svarlist-to-override-alist
     (implies (and (svarlist-override-p (svex-alist-keys a) nil)
@@ -784,21 +808,26 @@
                   (svex-alist-<<= a b))
              (svex-alist-<<= (svex-alist-compose (svarlist-to-override-alist x) a)
                              (svex-alist-compose (svarlist-to-override-alist x) b)))
-    :hints(("Goal" :use ((:instance svex-alist-<<=-of-svex-alist-compose-when-partial-monotonic
-                          (x (svarlist-to-override-alist x))
-                          (y (svarlist-to-override-alist x))
-                          (params (svarlist-change-override x :test))))
-            :in-theory (disable svex-alist-<<=-of-svex-alist-compose-when-partial-monotonic)))))
+    :hints(("Goal" :use ((:instance svex-alist-<<=-of-svex-alist-compose-when-ovmonotonic
+                          (x (svarlist-to-override-alist x))))
+            :in-theory (disable svex-alist-<<=-of-svex-alist-compose-when-ovmonotonic)))))
 
 
-(defthm svex-alist-compose-preserves-partial-monotonic-when-params-not-composed
-  (implies (and (svex-alist-partial-monotonic params x)
-                (svex-alist-partial-monotonic params y)
-                (not (intersectp-equal (svarlist-fix params) (svex-alist-keys y))))
-           (svex-alist-partial-monotonic params (svex-alist-compose x y)))
-  :hints ((b* ((lit '(svex-alist-partial-monotonic params (svex-alist-compose x y)))
-               (?envs `(svex-aelist-partial-monotonic-eval-witness . ,(cdr lit))))
-            `(:expand ((:with svex-alist-partial-monotonic-by-eval ,lit))))))
+
+
+(defthm svex-alist-compose-preserves-ovmonotonic
+  (implies (and (svex-alist-ovmonotonic x)
+                (svex-alist-ovmonotonic y)
+                (svarlist-override-p (svex-alist-keys y) nil))
+           (svex-alist-ovmonotonic (svex-alist-compose x y)))
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))
+          (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-alist-ovmonotonic-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
+                                                                                     ((mv-nth '1 ,call) . env2)))
+                          :in-theory (enable svex-alist-ovmonotonic-necc)))))))
 
 
 
@@ -994,6 +1023,44 @@
              (not (member-equal v (svex-alist-vars (svex-alist-compose x (svarlist-to-override-alist keys))))))
     :hints(("Goal" :in-theory (enable svex-alist-vars svex-alist-compose)))))
 
+
+(defthm svex-env-<<=-of-reduce-nonoverride-when-ov<<=
+  (implies (and (svex-env-ov<<= x y)
+                (svarlist-override-p vars nil))
+           (svex-env-<<= (svex-env-reduce vars x) (svex-env-reduce vars y)))
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))
+          (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-env-<<=-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . key)))))))
+          (and stable-under-simplificationp
+               '(:use ((:instance svex-env-ov<<=-necc
+                        (v key)))
+                 :in-theory (enable MEMBER-WHEN-NOT-SVAR-OVERRIDE-P
+                                    svar-override-p-when-other)))))
+
+
+
+(defthm svex-alist-ovmonotonic-when-monotonic
+  (implies (and (svarlist-override-p (svex-alist-vars x) nil)
+                (svex-alist-monotonic-p x))
+           (svex-alist-ovmonotonic x))
+  :hints ((and stable-under-simplificationp
+               `(:expand (,(car (last clause)))))
+          (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-alist-ovmonotonic-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
+                                                                                     ((mv-nth '1 ,call) . env2)))))))
+          (and stable-under-simplificationp
+               '(:use ((:instance svex-alist-monotonic-p-necc
+                        (env1 (svex-env-reduce (svex-alist-vars x) env1))
+                        (env2 (svex-env-reduce (svex-alist-vars x) env2))))
+                 :in-theory (e/d (svexlist-vars-of-svex-alist-vals)
+                                 (svex-alist-monotonic-p-necc))))))
+
+
 (define flatnorm-add-overrides ((x flatnorm-res-p)
                                 (overridekeys svarlist-p))
   :returns (new-x flatnorm-res-p)
@@ -1018,15 +1085,15 @@
                (equal (svex-alist-width new-x.assigns)
                       (svex-alist-width x.assigns)))))
 
-  (defret svex-alist-partial-monotonic-of-<fn>
+  (defret svex-alist-ovmonotonic-of-<fn>
     (b* (((flatnorm-res x))
          ((flatnorm-res new-x)))
       (and (implies
-            (svex-alist-monotonic-p x.assigns)
-            (svex-alist-partial-monotonic (svarlist-change-override overridekeys :test) new-x.assigns))
+            (svex-alist-ovmonotonic x.assigns)
+            (svex-alist-ovmonotonic new-x.assigns))
            (implies
-            (svex-alist-monotonic-p x.delays)
-            (svex-alist-partial-monotonic (svarlist-change-override overridekeys :test) new-x.delays)))))
+            (svex-alist-ovmonotonic x.delays)
+            (svex-alist-ovmonotonic new-x.delays)))))
 
   (defret svex-alist-vars-of-<fn>-assigns
     (b* (((flatnorm-res x))
@@ -1523,22 +1590,22 @@
                                              MEMBER-SVARLIST-CHANGE-OVERRIDE-WHEN-NOT-SVAR-OVERRIDE-P
                                              svar-override-p-when-other)))))
   
-  (defthm phase-fsm-composition-partial-monotonic-values
+  (defthm phase-fsm-composition-ovmonotonic-values
     (b* (((flatnorm-res x))
          ((base-fsm approx-fsm))
-         (overridekeys
-           (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config))))
+         ;; (overridekeys
+         ;;   (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
+         )
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil))
-               (svex-alist-partial-monotonic
-                (svarlist-change-override overridekeys :test)
+               (svex-alist-ovmonotonic
                 approx-fsm.values)))
     :hints(("Goal" :in-theory (e/d (phase-fsm-composition-p
                                     svtv-flatnorm-apply-overrides
                                     svar-override-triplelist->override-alist-of-svarlist-to-override-triples
-                                    svex-alist-partial-monotonic-when-netevalcomp-p)
+                                    svex-alist-ovmonotonic-when-netevalcomp-p)
                                    (svar-override-triplelist->override-alist-monotonic-on-vars))
             :use ((:instance svar-override-triplelist->override-alist-monotonic-on-vars
                    (x (b* (((flatnorm-res x)))
@@ -1548,28 +1615,28 @@
 
 
   
-  (defthm phase-fsm-composition-partial-monotonic-nextstate
+  (defthm phase-fsm-composition-ovmonotonic-nextstate
     (b* (((flatnorm-res x))
          ((base-fsm approx-fsm))
-         (overridekeys
-           (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config))))
+         ;; (overridekeys
+         ;;   (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
+         )
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svex-alist-monotonic-p x.delays)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
                     (svarlist-override-p (svex-alist-vars x.delays) nil))
-               (svex-alist-partial-monotonic
-                (svarlist-change-override overridekeys :test)
+               (svex-alist-ovmonotonic
                 approx-fsm.nextstate)))
     :hints(("Goal" :in-theory (e/d (phase-fsm-composition-p
                                     svtv-flatnorm-apply-overrides
                                     svar-override-triplelist->override-alist-of-svarlist-to-override-triples
-                                    svex-alist-partial-monotonic-when-netevalcomp-p)
-                                   (phase-fsm-composition-partial-monotonic-values))
-            :use phase-fsm-composition-partial-monotonic-values)))
+                                    svex-alist-ovmonotonic-when-netevalcomp-p)
+                                   (phase-fsm-composition-ovmonotonic-values))
+            :use phase-fsm-composition-ovmonotonic-values)))
 
-  (defthm phase-fsm-composition-partial-monotonic
+  (defthm phase-fsm-composition-ovmonotonic
     (b* (((flatnorm-res x))
          ((base-fsm approx-fsm))
          (overridekeys
@@ -1580,10 +1647,10 @@
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
                     (svarlist-override-p (svex-alist-vars x.delays) nil))
-               (base-fsm-partial-monotonic
+               (base-fsm-ovmonotonic
                 (svarlist-change-override overridekeys :test)
                 approx-fsm)))
-    :hints(("Goal" :in-theory (enable base-fsm-partial-monotonic))))
+    :hints(("Goal" :in-theory (enable base-fsm-ovmonotonic))))
 
     (defthm flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition
       (b* (((flatnorm-res x))
@@ -1596,7 +1663,7 @@
                                         svtv-flatnorm-apply-overrides
                                         ))))
 
-    (defthm flatnorm->ideal-fsm-with-overrides-partial-monotonic
+    (defthm flatnorm->ideal-fsm-with-overrides-ovmonotonic
       (b* (((flatnorm-res x))
            (overridekeys (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
            (override-flatnorm (flatnorm-add-overrides x overridekeys))
@@ -1606,7 +1673,7 @@
                       (svarlist-override-p (svex-alist-vars x.assigns) nil)
                       (svarlist-override-p (svex-alist-keys x.assigns) nil)
                       (svarlist-override-p (svex-alist-vars x.delays) nil))
-                 (base-fsm-partial-monotonic (svarlist-change-override overridekeys :test) override-fsm)))
+                 (base-fsm-ovmonotonic (svarlist-change-override overridekeys :test) override-fsm)))
       :hints (("goal" :in-theory (disable flatnorm->ideal-fsm))))
 
     (defret alist-keys-of-<fn>
@@ -1668,16 +1735,16 @@
       (and (svex-alist-monotonic-p flatnorm.assigns)
            (svex-alist-monotonic-p flatnorm.delays)))))
 
-(defthm phase-fsm-composition-partial-monotonic-of-design->flatnorm
+(defthm phase-fsm-composition-ovmonotonic-of-design->flatnorm
   (b* (((flatnorm-res flat) (design->flatnorm x))
        (overridekeys (svtv-assigns-override-vars flat.assigns (phase-fsm-config->override-config config))))
     (implies (and (phase-fsm-composition-p approx-fsm flat config)
                   (modalist-addr-p (design->modalist x))
                   (design-flatten-okp x))
-             (base-fsm-partial-monotonic
+             (base-fsm-ovmonotonic
               (svarlist-change-override overridekeys :test)
               approx-fsm)))
-  :hints(("Goal" :in-theory (enable base-fsm-partial-monotonic))))
+  :hints(("Goal" :in-theory (enable base-fsm-ovmonotonic))))
 
 
 (define design->ideal-fsm ((x design-p)

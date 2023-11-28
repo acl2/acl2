@@ -1423,45 +1423,6 @@ time."
   
 
 
-(define 4vec-1mask-equiv-badbit ((a 4vec-p) (b 4vec-p))
-  :returns (badbit natp :rule-classes :type-prescription)
-  (bitops::trailing-0-count (logxor (4vec-1mask a) (4vec-1mask b)))
-  ///
-  (defthmd 4vec-1mask-equiv-implies-bit-index
-    (implies (4vec-1mask-equiv x y)
-             (equal (equal (4vec-1mask (4vec-bit-index n y))
-                           (4vec-1mask (4vec-bit-index n x)))
-                    t))
-    :hints(("Goal" :in-theory (enable 4vec-1mask-equiv 4vec-bit-index 4vec-1mask))
-           (bitops::logbitp-reasoning)))
-
-  (local (defthmd logbitp-of-trailing-0-count
-           (equal (logbitp (bitops::trailing-0-count x) x)
-                  (not (zip x)))
-           :hints(("Goal" :in-theory (enable bitops::trailing-0-count-properties)))))
-  
-  (defretd 4vec-1mask-equiv-when-badbit
-    (implies (equal (4vec-1mask (4vec-bit-index badbit a))
-                    (4vec-1mask (4vec-bit-index badbit b)))
-             (4vec-1mask-equiv a b))
-    :hints(("Goal" :in-theory (enable 4vec-bit-index 4vec-1mask-equiv
-                                      4vec-1mask-equiv-implies-bit-index
-                                      4vec-1mask bool->bit)
-            :use ((:instance logbitp-of-trailing-0-count
-                   (x (logxor (4vec-1mask a) (4vec-1mask b))))))))
-
-  (local (defcong 4vec-1mask-equiv 4vec-1mask-equiv (4vec-bit-index n x) 2
-           :hints(("Goal" :in-theory (enable 4vec-bit-index 4vec-1mask-equiv 4vec-1mask))
-                  (bitops::logbitp-reasoning))))
-  
-  (defretd 4vec-1mask-equiv-by-badbit
-    (implies (acl2::rewriting-positive-literal `(4vec-1mask-equiv ,a ,b))
-             (equal (4vec-1mask-equiv a b)
-                    (equal (4vec-1mask (4vec-bit-index badbit a))
-                           (4vec-1mask (4vec-bit-index badbit b)))))
-    :hints(("Goal" :in-theory (e/d (4vec-1mask-equiv-when-badbit
-                                    4vec-1mask-equiv-implies-bit-index)
-                                   (<fn>))))))
 
 (define 4vec-override-mux-agrees-badbit ((impl-test 4vec-p)
                                       (impl-val 4vec-p)

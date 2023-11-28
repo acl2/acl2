@@ -640,6 +640,47 @@
                   :in-theory (e/d (svexlist-vars-of-svex-alist-vals)
                                   (svex-alist-monotonic-p-necc))))))
 
+(define 4vec-1mask-equiv-badbit ((a 4vec-p) (b 4vec-p))
+  :returns (badbit natp :rule-classes :type-prescription)
+  (bitops::trailing-0-count (logxor (4vec-1mask a) (4vec-1mask b)))
+  ///
+  (defthmd 4vec-1mask-equiv-implies-bit-index
+    (implies (4vec-1mask-equiv x y)
+             (equal (equal (4vec-1mask (4vec-bit-index n y))
+                           (4vec-1mask (4vec-bit-index n x)))
+                    t))
+    :hints(("Goal" :in-theory (enable 4vec-1mask-equiv 4vec-bit-index 4vec-1mask))
+           (bitops::logbitp-reasoning)))
+
+  (local (defthmd logbitp-of-trailing-0-count
+           (equal (logbitp (bitops::trailing-0-count x) x)
+                  (not (zip x)))
+           :hints(("Goal" :in-theory (enable bitops::trailing-0-count-properties)))))
+  
+  (defretd 4vec-1mask-equiv-when-badbit
+    (implies (equal (4vec-1mask (4vec-bit-index badbit a))
+                    (4vec-1mask (4vec-bit-index badbit b)))
+             (4vec-1mask-equiv a b))
+    :hints(("Goal" :in-theory (enable 4vec-bit-index 4vec-1mask-equiv
+                                      4vec-1mask-equiv-implies-bit-index
+                                      4vec-1mask bool->bit)
+            :use ((:instance logbitp-of-trailing-0-count
+                   (x (logxor (4vec-1mask a) (4vec-1mask b))))))))
+
+  (local (defcong 4vec-1mask-equiv 4vec-1mask-equiv (4vec-bit-index n x) 2
+           :hints(("Goal" :in-theory (enable 4vec-bit-index 4vec-1mask-equiv 4vec-1mask))
+                  (bitops::logbitp-reasoning))))
+  
+  (defretd 4vec-1mask-equiv-by-badbit
+    (implies (acl2::rewriting-positive-literal `(4vec-1mask-equiv ,a ,b))
+             (equal (4vec-1mask-equiv a b)
+                    (equal (4vec-1mask (4vec-bit-index badbit a))
+                           (4vec-1mask (4vec-bit-index badbit b)))))
+    :hints(("Goal" :in-theory (e/d (4vec-1mask-equiv-when-badbit
+                                    4vec-1mask-equiv-implies-bit-index)
+                                   (<fn>))))))
+
+
 (defsection svtv-override-triplemap-syntax-check
   
   (local (std::set-define-current-function svtv-override-triplemap-syntax-check))
@@ -871,6 +912,60 @@
                          (:instance svtv-override-triplemap-key-check-when-svtv-override-triplemap-syntax-check
                           (key (lhbit-var->name (svtv-name-lhs-map-var/idx-find (svar-change-override v nil) badbit namemap))))))))))
 
+  (local
+   (defret <fn>-implies-4vec-1mask-equiv-tests
+     :pre-bind ((keys (svex-alist-keys test-alist)))
+     (implies (and ok
+                   (svtv-override-triplemap-envs-ok triplemap pipe-env spec-env
+                                                    (svtv-probealist-extract
+                                                     probes
+                                                     (svtv-name-lhs-map-eval-list namemap ref-envs)))
+                   ;; (svex-env-<<= (svex-env-extract (svex-alist-vars in-alist) pipe-env) spec-env)
+                   (no-duplicatesp-equal (alist-keys (svtv-name-lhs-map-fix namemap)))
+                   ;; (svarlist-override-p params :test)
+                   ;; (svtv-override-triplemap-overridekeys-ok triplemap namemap overridekeys)
+                   ;; (subsetp-equal (lhs-vars (cdr (hons-assoc-equal testvar 
+                   ;; (svex-alist-monotonic-p in-alist)
+                   ;; (svex-alist-monotonic-p test-alist)
+                   ;; (svex-alist-monotonic-p val-alist)
+                   ;;  (svar-p v)
+                   (not (member-equal (svar-change-override v nil)
+                                      (svarlist-change-override overridekeys nil)))
+                   (svar-override-p v :test)
+                   (svar-p v)
+                   )
+              (4vec-1mask-equiv
+               (lhs-eval-zero (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env))
+               (lhs-eval-zero (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env))))
+     :hints(("Goal" :in-theory (enable 4vec-1mask-equiv-by-badbit) :do-not-induct t)
+            (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst '4vec-1mask-equiv-badbit clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badbit)))))))
+           
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d  (lhbit-eval-x
+                                     lhbit-eval-zero
+                                     svtv-override-triplemap-key-check-implies-lookup-in-triplemap
+                                     4vec-override-mux-<<=-implies-bit-index
+                                     member-alist-keys-when-hons-assoc-equal
+                                     svtv-override-triplemap-key-check-implies-lookup-in-triplemap-rw
+                                     svtv-override-triple-envs-ok
+                                     4vec-override-mux-ok
+                                     svtv-override-triplemap-key-check
+                                     equal-of-4vec-bit-index-when-<<=)
+                                    (acl2::hons-assoc-equal-iff-member-alist-keys
+                                     svtv-override-triplemap-key-check-when-svtv-override-triplemap-syntax-check
+                                     svtv-override-triplemap-key-check-when-member-and-svtv-override-triplemap-syntax-check
+                                     svtv-override-triple-envs-ok-of-lookup-when-svtv-override-triplemap-envs-ok))
+                   :use ((:instance svtv-override-triple-envs-ok-of-lookup-when-svtv-override-triplemap-envs-ok
+                          (spec-run (svtv-probealist-extract
+                                     probes
+                                     (svtv-name-lhs-map-eval-list namemap ref-envs)))
+                          (key (lhbit-var->name (svtv-name-lhs-map-var/idx-find v badbit namemap))))
+                         (:instance svtv-override-triplemap-key-check-when-svtv-override-triplemap-syntax-check
+                          (key (lhbit-var->name (svtv-name-lhs-map-var/idx-find v badbit namemap))))))))))
+
 
 
   ;; Want to know that if a variable is not among the overridekeys, then it
@@ -1056,11 +1151,11 @@
            (implies (and (SVEX-ENV-<<= (SVEX-ENV-EXTRACT (SVEX-ALIST-VARS in-alist)
                                                          PIPE-ENV)
                                        SPEC-ENV)
-                         (SVARLIST-OVERRIDE-P PARAMS :TEST)
+                         ;;(SVARLIST-OVERRIDE-P PARAMS :TEST)
                          (SVARLIST-OVERRIDE-P (SVTV-NAME-LHS-MAP-VARS NAMEMAP)
                                               NIL)
                          (SVEX-ALIST-monotonic-p in-alist))
-                    (svar-overridekeys-envs-ok v params overridekeys
+                    (svar-overridekeys-envs-ok v overridekeys
                                                (svtv-fsm-phase-inputs (svex-alist-eval in-alist pipe-env)
                                                                       nil
                                                                       nil namemap)
@@ -1078,11 +1173,10 @@
     (implies (and (SVEX-ENV-<<= (SVEX-ENV-EXTRACT (SVEX-ALIST-VARS in-alist)
                                                   PIPE-ENV)
                                 SPEC-ENV)
-                  (SVARLIST-OVERRIDE-P PARAMS :TEST)
                   (SVARLIST-OVERRIDE-P (SVTV-NAME-LHS-MAP-VARS NAMEMAP)
                                        NIL)
                   (SVEX-ALIST-monotonic-p in-alist))
-             (overridekeys-envs-ok params overridekeys
+             (overridekeys-envs-ok overridekeys
                                    (svtv-fsm-phase-inputs (svex-alist-eval in-alist pipe-env)
                                                           nil
                                                           nil namemap)
@@ -1112,13 +1206,12 @@
                   (equal (svex-alist-keys test-alist) (svex-alist-keys val-alist))
                   (no-duplicatesp-equal (svex-alist-keys test-alist))
                   (no-duplicatesp-equal (alist-keys (svtv-override-triplemap-fix triplemap)))
-                  (svarlist-override-p params :test)
                   (svtv-override-triplemap-overridekeys-ok triplemap namemap overridekeys)
                   (svarlist-override-p (svtv-name-lhs-map-vars namemap) nil)
                   (subsetp-equal (svtv-override-triplemap-refvar-keys triplemap)
                                  (svex-alist-keys test-alist))
                   (svex-alist-monotonic-p in-alist))
-             (svar-overridekeys-envs-ok v params overridekeys
+             (svar-overridekeys-envs-ok v overridekeys
                                    (svtv-fsm-phase-inputs (svex-alist-eval in-alist pipe-env)
                                                           (svex-alist-eval val-alist pipe-env)
                                                           (svex-alist-eval test-alist pipe-env)
@@ -1146,13 +1239,12 @@
                   (equal (svex-alist-keys test-alist) (svex-alist-keys val-alist))
                   (no-duplicatesp-equal (svex-alist-keys test-alist))
                   (no-duplicatesp-equal (alist-keys (svtv-override-triplemap-fix triplemap)))
-                  (svarlist-override-p params :test)
                   (svtv-override-triplemap-overridekeys-ok triplemap namemap overridekeys)
                   (svarlist-override-p (svtv-name-lhs-map-vars namemap) nil)
                   (subsetp-equal (svtv-override-triplemap-refvar-keys triplemap)
                                  (svex-alist-keys test-alist))
                   (svex-alist-monotonic-p in-alist))
-             (overridekeys-envs-ok params overridekeys
+             (overridekeys-envs-ok overridekeys
                                    (svtv-fsm-phase-inputs (svex-alist-eval in-alist pipe-env)
                                                           (svex-alist-eval val-alist pipe-env)
                                                           (svex-alist-eval test-alist pipe-env)
