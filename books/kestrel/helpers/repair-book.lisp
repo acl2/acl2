@@ -209,7 +209,7 @@
        ((mv erp & state) (set-cbd-fn dir state))
        ((when erp) (mv erp nil state))
        ;; Start repairing
-       (- (cw "~%~%(REPAIRING ~s0~%~%" book-path))
+       (- (cw "~%~%(REPAIRING ~s0~%" book-path))
        ;; Load the .port file (may be help resolve #. constants [and packages?] in read-objects-from-book):
        (state (load-port-file-if-exists (remove-lisp-suffix book-path t) state))
        ;; Read all the forms in the book:
