@@ -2728,3 +2728,149 @@
 ;move
 (acl2::def-constant-opener acl2::unpackbv)
 (acl2::def-constant-opener reverse)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write-of-write-byte-included
+  (implies (and ;; ad2 is in the interval [ad1,ad1+n):
+            (< (bvminus 48 ad2 ad1) n)
+            (integerp ad1)
+            (integerp ad2)
+            (natp n))
+           (equal (write n ad1 val (write-byte ad2 byte x86))
+                  (write n ad1 val x86)))
+  :hints (("Goal" :induct t
+           :in-theory (enable write
+                              acl2::bvchop-of-sum-cases
+                              bvminus))))
+
+(defthm write-of-write-byte-not-included
+  (implies (and ;; ad2 is NOT in the interval [ad1,ad1+n):
+            (not (< (bvminus 48 ad2 ad1) n))
+            (integerp ad1)
+            (integerp ad2)
+            (natp n))
+           (equal (write n ad1 val (write-byte ad2 byte x86))
+                  (write-byte ad2 byte (write n ad1 val x86))))
+  :hints (("Goal" :induct t
+           :in-theory (enable write
+                              acl2::bvchop-of-sum-cases
+                              bvminus))))
+
+;; both cases
+(defthm write-of-write-byte
+  (implies (and (integerp ad1)
+                (integerp ad2)
+                (natp n))
+           (equal (write n ad1 val (write-byte ad2 byte x86))
+                  (if (< (bvminus 48 ad2 ad1) n)
+                      ;; ad2 is in the interval [ad,ad+n).
+                      (write n ad1 val x86)
+                    (write-byte ad2 byte (write n ad1 val x86))))))
+
+;todo: gen
+(defthm write-of-write-of-write-same
+  (implies (and (integerp addr)
+                (integerp addr2)
+                (natp n)
+                (natp n2)
+                (unsigned-byte-p 48 n) ; drop? but first change the write-of-write-same
+                )
+           (equal (write n addr val3 (write n2 addr2 val2 (write n addr val1 x86)))
+                  (write n addr val3 (write n2 addr2 val2 x86))))
+  :hints (("Goal" :expand (write n2 addr2 val2 (write n addr val1 x86))
+           :in-theory (enable write)
+           :do-not '(generalize eliminate-destructors)
+           :induct (write n2 addr2 val2 x86))))
+
+;todo: gen
+(defthm write-of-write-of-write-of-write-same
+  (implies (and (integerp addr)
+                (integerp addr2)
+                (integerp addr3)
+                (natp n)
+                (natp n2)
+                (natp n3)
+                (unsigned-byte-p 48 n) ; drop? but first change the write-of-write-same
+                )
+           (equal (write n addr val4 (write n3 addr3 val3 (write n2 addr2 val2 (write n addr val1 x86))))
+                  (write n addr val4 (write n3 addr3 val3 (write n2 addr2 val2 x86)))))
+  :hints (("Goal" :use ((:instance write-of-write-of-write-same
+                                   (val3 val4)
+                                   (n2 n3)
+                                   (addr2 addr3)
+                                   (val2 val3)
+                                   (val1 val4)
+                                   (x86 (write n2 addr2 val2 (write n addr val1 x86))))
+                        (:instance write-of-write-of-write-same
+                                   (val3 val4)
+                                   (n2 n3)
+                                   (addr2 addr3)
+                                   (val2 val3)
+                                   (val1 val4)
+                                   (x86 (write n2 addr2 val2 x86)))
+                        (:instance write-of-write-of-write-same
+                                   (val3 val4)))
+           :in-theory (disable write-of-write-of-write-same write))))
+
+;; ;; write of write, with 3 intervening writes
+;; ;todo: gen
+;; (defthm write-of-write-of-write-of-write-of-write-same
+;;   (implies (and (integerp addr)
+;;                 (integerp addr2)
+;;                 (integerp addr3)
+;;                 (integerp addr4)
+;;                 (natp n)
+;;                 (natp n2)
+;;                 (natp n3)
+;;                 (natp n4)
+;;                 (unsigned-byte-p 48 n) ; drop? but first change the write-of-write-same
+;;                 )
+;;            (equal (write n addr val5 (write n4 addr4 val4 (write n3 addr3 val3 (write n2 addr2 val2 (write n addr val1 x86)))))
+;;                   (write n addr val5 (write n4 addr4 val4 (write n3 addr3 val3 (write n2 addr2 val2 x86))))))
+;;   :hints (("Goal" :use ((:instance write-of-write-of-write-same
+;;                                    (val3 val4)
+;;                                    (n2 n3)
+;;                                    (addr2 addr3)
+;;                                    (val2 val3)
+;;                                    (val1 val4)
+;;                                    (x86 (write n2 addr2 val2 (write n addr val1 x86))))
+;;                         (:instance write-of-write-of-write-same
+;;                                    (val3 val4)
+;;                                    (n2 n3)
+;;                                    (addr2 addr3)
+;;                                    (val2 val3)
+;;                                    (val1 val4)
+;;                                    (x86 (write n2 addr2 val2 x86)))
+;;                         (:instance write-of-write-of-write-same
+;;                                    (val3 val4)))
+;;            :in-theory (disable write-of-write-of-write-same write))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: gen the 1?
+(defthm read-of-write-included-1
+  (implies (and (bvlt 48 (bvminus 48 addr1 addr2) n)
+                (integerp addr1)
+                (integerp addr2)
+                (unsigned-byte-p 48 n))
+           (equal (read 1 addr1 (write n addr2 val x86))
+                  (slice (+ 7 (* 8 (bvminus 48 addr1 addr2)))
+                         (* 8 (bvminus 48 addr1 addr2))
+                         val)))
+  :hints (("Goal" :induct (write n addr2 val x86)
+           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases))))
+
+;; todo: gen the 1?
+(defthm read-of-write-1-both
+  (implies (and (integerp addr1)
+                (integerp addr2)
+                (natp n)
+                (unsigned-byte-p 48 n))
+           (equal (read 1 addr1 (write n addr2 val x86))
+                  (if (bvlt 48 (bvminus 48 addr1 addr2) n)
+                      (slice (+ 7 (* 8 (bvminus 48 addr1 addr2)))
+                             (* 8 (bvminus 48 addr1 addr2))
+                             val)
+                    (read 1 addr1 x86))))
+  :hints (("Goal" :in-theory (disable read write))))
