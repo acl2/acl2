@@ -14,6 +14,7 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "replay-book-helpers")
+(include-book "find-failed-books")
 ;(include-book "system/pseudo-good-worldp" :dir :system) ;for pseudo-runep; reduce?
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
@@ -21,6 +22,9 @@
 (include-book "kestrel/utilities/ld-history" :dir :system)
 (include-book "kestrel/utilities/maybe-add-dot-lisp-extension" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
+(include-book "kestrel/utilities/split-path" :dir :system)
+(include-book "kestrel/utilities/extend-pathname-dollar" :dir :system)
+(include-book "kestrel/utilities/widen-margins" :dir :system)
 
 ;dup in books/system/pseudo-good-worldp
 (defun pseudo-runep (rune)
@@ -134,9 +138,9 @@
          )
       (if erp
           ;; this event failed!
-          (b* ((- (cw "Failed Event: ~x0~%" event)) ; print better
+          (b* ((- (cw "(Failed Event: ~x0~%" (cadr event))) ; print better?
                ((when (not (and (consp event) (member-eq (car event) '(defthm defthmd))))) ; todo
-                (cw "Error: Can only repair defthms.~%")
+                (cw "Error: Can only repair defthms.~%") ; todo: keep going!
                 (mv t state))
                (event-data-form (first event-data-forms))
                (name (cadr event)) ;todo gen
@@ -156,7 +160,8 @@
                           (print-info-on-new-runes new-only-runes :major state)
                           (cw "~%Other observations:~%") ; todo: make this shorter, so it doesn't distract from the best suggestions above
                           (print-info-on-old-runes old-only-runes :minor state)
-                          (print-info-on-new-runes new-only-runes :minor state)))
+                          (print-info-on-new-runes new-only-runes :minor state)
+                          (cw ")~%")))
                (event-data-forms (consume-event-data-forms (list name) event-data-forms)))
             (repair-events-with-event-data (rest events) event-data-forms state))
         (b* ((names-with-event-data (strip-cars (true-list-fix new-event-data-fal)))
@@ -177,6 +182,10 @@
        ((when (not book-existsp))
         (er hard? 'repair-book-fn "The book ~x0 does not exist." book-path)
         (mv :book-does-not-exist nil state))
+       ;; We set the CBD so that the book is replayed in its own directory:
+       ((mv dir &) (split-path book-path))
+       ((mv erp & state) (set-cbd-fn dir state))
+       ((when erp) (mv erp nil state))
        ;; Start repairing
        (- (cw "~%~%*** REPAIRING ~s0 ***~%~%" book-path))
        ;; Load the .port file (may be help resolve #. constants [and packages?] in read-objects-from-book):
@@ -226,3 +235,33 @@
 
 ;; Example:
 ;; (repair-book "expt.lisp")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun repair-books-fn-aux (book-paths state)
+  (declare (xargs :guard (and (string-listp book-paths))
+                  :mode :program
+                  :stobjs state))
+  (if (endp book-paths)
+      (mv nil '(value-triple :invisible) state)
+    (b* ((book-path (first book-paths))
+         ((mv erp & state) (repair-book-fn book-path state))
+         ((when erp) (mv erp nil state)))
+      (repair-books-fn-aux (rest book-paths) state))))
+
+(defun repair-books-fn (state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (b* ((cbd (cbd-fn state))
+       (- (cw "Looking for books to repair under ~s0." cbd))
+       (failed-books (find-failed-books))
+       (failed-books (extend-pathnames$ cbd failed-books state))
+       (- (cw "Will attempt to repair the following ~x0 books: ~X12~%" (len failed-books) failed-books nil))
+       (state (widen-margins state))
+       ((mv erp res state) (repair-books-fn-aux failed-books state))
+       (state (unwiden-margins state))
+       )
+    (mv erp res state)))
+
+(defmacro repair-books ()
+  `(make-event-quiet (repair-books-fn state)))
