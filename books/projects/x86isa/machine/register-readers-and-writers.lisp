@@ -172,137 +172,137 @@ are used to write natural numbers into the GPRs.</p>"
 
   (local (xdoc::set-default-parents GPRs-Reads-and-Writes))
 
-  (skip-proofs (define rr08
-                 ((reg :type (unsigned-byte 4))
-                  (rex :type (unsigned-byte 8))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :guard (reg-indexp reg rex)
-                 :short "Read from byte general-purpose registers"
-                 :long "<p><i>Source: Intel Manuals, Vol. 1, Section
-                 3.4.1.1 (General-Purpose Registers in 64-bit Mode)</i></p>
+  (define rr08
+    ((reg :type (unsigned-byte 4))
+     (rex :type (unsigned-byte 8))
+     (x86))
+    :inline t
+    :no-function t
+    :guard (reg-indexp reg rex)
+    :short "Read from byte general-purpose registers"
+    :long "<p><i>Source: Intel Manuals, Vol. 1, Section
+    3.4.1.1 (General-Purpose Registers in 64-bit Mode)</i></p>
 
-                 <blockquote>In 64-bit mode, there are limitations on accessing byte
-                 registers. An instruction cannot reference legacy high-bytes (for example: AH,
-                                                                                   BH, CH, DH) and one of the new byte registers at the same time (for example:
-                                                                                   the low byte of the RAX register). However, instructions may reference legacy
-                 low-bytes (for example: AL, BL, CL or DL) and new byte registers at the same
-                 time (for example: the low byte of the R8 register, or R8L). The architecture
-                 enforces this limitation by changing high-byte references (AH, BH, CH, DH) to
-                 low byte references (BPL, SPL, DIL, SIL: the low 8 bits for RBP, RSP, RDI and
-                                           RSI) for instructions using a REX prefix.</blockquote>
+    <blockquote>In 64-bit mode, there are limitations on accessing byte
+    registers. An instruction cannot reference legacy high-bytes (for example: AH,
+                                                                      BH, CH, DH) and one of the new byte registers at the same time (for example:
+                                                                      the low byte of the RAX register). However, instructions may reference legacy
+    low-bytes (for example: AL, BL, CL or DL) and new byte registers at the same
+    time (for example: the low byte of the R8 register, or R8L). The architecture
+    enforces this limitation by changing high-byte references (AH, BH, CH, DH) to
+    low byte references (BPL, SPL, DIL, SIL: the low 8 bits for RBP, RSP, RDI and
+                              RSI) for instructions using a REX prefix.</blockquote>
 
-                 <p>In other words, without the REX prefix, indices 0-7 refer to byte registers
-                 AL, CL, DL, BL, AH, CH, DH, and BH, whereas with the REX prefix, indices 0-15
-                 refer to AL, CL, DL, BL, SPL, BPL, SIL, DIL, R8L, R9L, R10L, R11L, R12L, R13L,
-                 R14L, R15L. This applies to 64-bit mode.</p>
+    <p>In other words, without the REX prefix, indices 0-7 refer to byte registers
+    AL, CL, DL, BL, AH, CH, DH, and BH, whereas with the REX prefix, indices 0-15
+    refer to AL, CL, DL, BL, SPL, BPL, SIL, DIL, R8L, R9L, R10L, R11L, R12L, R13L,
+    R14L, R15L. This applies to 64-bit mode.</p>
 
-                 <p>In 32-bit mode, this function is called with 0 as REX.</p>"
+    <p>In 32-bit mode, this function is called with 0 as REX.</p>"
 
-                 (b* ((reg (mbe :logic (nfix reg) :exec reg)))
-                     (cond ((or (not (eql rex 0))
-                                (< reg 4))
-                            (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-                              (n08 qword)))
-                           (t ;; no rex and reg is at least 4 -- then read from AH, etc.
-                             (let ((qword
-                                     (the (signed-byte 64) (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
-                               (mbe :logic (part-select qword :low 8 :width 8)
-                                    :exec (n08 (ash qword -8)))))))
+    (b* ((reg (mbe :logic (nfix reg) :exec reg)))
+        (cond ((or (not (eql rex 0))
+                   (< reg 4))
+               (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+                 (n08 qword)))
+              (t ;; no rex and reg is at least 4 -- then read from AH, etc.
+                (let ((qword
+                        (the (signed-byte 64) (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
+                  (mbe :logic (part-select qword :low 8 :width 8)
+                       :exec (n08 (ash qword -8)))))))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n08p-rr08
-                                         :hyp t
-                                         :bound 8
-                                         :concl (rr08 reg rex x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n08p-rr08
+                            :hyp t
+                            :bound 8
+                            :concl (rr08 reg rex x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define wr08
-                 ((reg  :type (unsigned-byte 4))
-                  (rex  :type (unsigned-byte 8))
-                  (byte :type (unsigned-byte 8))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :guard (reg-indexp reg rex)
-                 :guard-hints (("Goal" :in-theory (e/d (
-                                                        loghead-to-logand
-                                                        bitops::logsquash)
-                                                       (bitops::logand-with-negated-bitmask
-                                                         bitops::logand-with-bitmask
-                                                         unsigned-byte-p))))
-                 :short "Writing to byte general-purpose registers"
-                 :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
-                 p. 3-17, which says the following about 64-bit mode:</p>
+  (define wr08
+    ((reg  :type (unsigned-byte 4))
+     (rex  :type (unsigned-byte 8))
+     (byte :type (unsigned-byte 8))
+     (x86))
+    :inline t
+    :no-function t
+    :guard (reg-indexp reg rex)
+    :guard-hints (("Goal" :in-theory (e/d (
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
+    :short "Writing to byte general-purpose registers"
+    :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
+    p. 3-17, which says the following about 64-bit mode:</p>
 
-                 <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
-                 The upper 56 or 48 bits (respectively) of the destination general-purpose
-                 register are not modified by the operation.</em></p>
+    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
+    The upper 56 or 48 bits (respectively) of the destination general-purpose
+    register are not modified by the operation.</em></p>
 
-                 <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
-                 &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
+    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
+    &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
 
-                 <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
-                 the following quote from the same page as above:</p>
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
+    the following quote from the same page as above:</p>
 
-                 <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
-                 undefined in 32-bit modes, the upper 32 bits of any general-purpose
-                 register are not preserved when switching from 64-bit mode to a 32-bit
-                 mode (to protected mode or compatibility mode). Software must not depend on
-                 these bits to maintain a value after a 64-bit to 32-bit mode
-                 switch.</em></p>
+    <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose
+    register are not preserved when switching from 64-bit mode to a 32-bit
+    mode (to protected mode or compatibility mode). Software must not depend on
+    these bits to maintain a value after a 64-bit to 32-bit mode
+    switch.</em></p>
 
-                 <p>In 32-bit mode, this function is called with 0 as REX.  Since in 32-bit
-                 mode the high 32 bits of general-purpose registers are not accessible, it
-                 is fine for this function to leave those bits unchanged, as opposed to, for
-                 example, setting them to undefined values as done by the semantic functions
-                 of certain instructions for certain flags. The switching from 32-bit mode
-                 to 64-bit mode (when modeled) will set the high 32 bits of general-purpose
-                 registers to undefined values.</p>"
+    <p>In 32-bit mode, this function is called with 0 as REX.  Since in 32-bit
+    mode the high 32 bits of general-purpose registers are not accessible, it
+    is fine for this function to leave those bits unchanged, as opposed to, for
+    example, setting them to undefined values as done by the semantic functions
+    of certain instructions for certain flags. The switching from 32-bit mode
+    to 64-bit mode (when modeled) will set the high 32 bits of general-purpose
+    registers to undefined values.</p>"
 
-                 (b* ((reg (mbe :logic (nfix reg) :exec reg)))
-                     (cond ((or (not (eql rex 0))
-                                (< reg 4))
-                            (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-                              (!rgfi reg
-                                     (n64-to-i64
-                                       (mbe :logic
-                                            (part-install
-                                              byte
-                                              (part-select qword :low 0 :width 64)
-                                              :low 0 :width 8)
-                                            :exec
-                                            (the (unsigned-byte 64)
-                                                 (logior (the (unsigned-byte 64)
-                                                              (logand #xffffffffffffff00 qword))
-                                                         byte))))
-                                     x86)))
-                           (t ;; no rex and reg is at least 4 -- then write to AH, etc.
-                             (let* ((index (the (unsigned-byte 4)
-                                                (- (the (unsigned-byte 4) reg) 4)))
-                                    (qword (the (signed-byte 64) (rgfi index x86))))
-                               (!rgfi index
-                                      (n64-to-i64
-                                        (mbe :logic
-                                             (part-install
-                                               byte
-                                               (part-select qword :low 0 :width 64)
-                                               :low 8 :width 8)
-                                             :exec
-                                             (the (unsigned-byte 64)
-                                                  (logior (the (unsigned-byte 64)
-                                                               (logand #xffffffffffff00ff qword))
-                                                          (the (unsigned-byte 16) (ash byte 8))))))
-                                      x86)))))
+    (b* ((reg (mbe :logic (nfix reg) :exec reg)))
+        (cond ((or (not (eql rex 0))
+                   (< reg 4))
+               (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+                 (!rgfi reg
+                        (n64-to-i64
+                          (mbe :logic
+                               (part-install
+                                 byte
+                                 (part-select qword :low 0 :width 64)
+                                 :low 0 :width 8)
+                               :exec
+                               (the (unsigned-byte 64)
+                                    (logior (the (unsigned-byte 64)
+                                                 (logand #xffffffffffffff00 qword))
+                                            byte))))
+                        x86)))
+              (t ;; no rex and reg is at least 4 -- then write to AH, etc.
+                (let* ((index (the (unsigned-byte 4)
+                                   (- (the (unsigned-byte 4) reg) 4)))
+                       (qword (the (signed-byte 64) (rgfi index x86))))
+                  (!rgfi index
+                         (n64-to-i64
+                           (mbe :logic
+                                (part-install
+                                  byte
+                                  (part-select qword :low 0 :width 64)
+                                  :low 8 :width 8)
+                                :exec
+                                (the (unsigned-byte 64)
+                                     (logior (the (unsigned-byte 64)
+                                                  (logand #xffffffffffff00ff qword))
+                                             (the (unsigned-byte 16) (ash byte 8))))))
+                         x86)))))
 
-                 ///
+    ///
 
-                 (defthm x86p-wr08
-                         (implies (x86p x86)
-                                  (x86p (wr08 reg rex byte x86))))))
+    (defthm x86p-wr08
+            (implies (x86p x86)
+                     (x86p (wr08 reg rex byte x86)))))
 
   (encapsulate
     ()
@@ -335,85 +335,85 @@ are used to write natural numbers into the GPRs.</p>"
              :in-theory (e/d (n64-to-i64 rr08 wr08)
                              (force (force))))))
 
-  (skip-proofs (define rr16
-                 ((reg :type (unsigned-byte 4))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :short "Read from word general-purpose registers"
+  (define rr16
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :no-function t
+    :short "Read from word general-purpose registers"
 
-                 (n16 (the (signed-byte 64) (rgfi reg x86)))
+    (n16 (the (signed-byte 64) (rgfi reg x86)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n16p-rr16
-                                         :hyp t
-                                         :bound 16
-                                         :concl (rr16 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n16p-rr16
+                            :hyp t
+                            :bound 16
+                            :concl (rr16 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define wr16
-                 ((reg  :type (unsigned-byte 4))
-                  (val  :type (unsigned-byte 16))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :guard-hints (("Goal" :in-theory (e/d (
-                                                        loghead-to-logand
-                                                        bitops::logsquash)
-                                                       (bitops::logand-with-negated-bitmask
-                                                         bitops::logand-with-bitmask
-                                                         unsigned-byte-p))))
-                 :short "Write to word general-purpose registers"
-                 :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
-                 p. 3-17, which says the following about 64-bit mode:</p>
+  (define wr16
+    ((reg  :type (unsigned-byte 4))
+     (val  :type (unsigned-byte 16))
+     (x86))
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
+    :short "Write to word general-purpose registers"
+    :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
+    p. 3-17, which says the following about 64-bit mode:</p>
 
-                 <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
-                 The upper 56 or 48 bits (respectively) of the destination general-purpose
-                 register are not modified by the operation.</em></p>
+    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
+    The upper 56 or 48 bits (respectively) of the destination general-purpose
+    register are not modified by the operation.</em></p>
 
-                 <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
-                 &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
+    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
+    &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
 
-                 <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
-                 the following quote from the same page as above:</p>
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
+    the following quote from the same page as above:</p>
 
-                 <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
-                 undefined in 32-bit modes, the upper 32 bits of any general-purpose
-                 register are not preserved when switching from 64-bit mode to a 32-bit
-                 mode (to protected mode or compatibility mode). Software must not depend on
-                 these bits to maintain a value after a 64-bit to 32-bit mode
-                 switch.</em></p>
+    <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose
+    register are not preserved when switching from 64-bit mode to a 32-bit
+    mode (to protected mode or compatibility mode). Software must not depend on
+    these bits to maintain a value after a 64-bit to 32-bit mode
+    switch.</em></p>
 
-                 <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
-                 32-bit mode the high 32 bits of general-purpose registers are not
-                 accessible, it is fine for this function to leave those bits unchanged, as
-                 opposed to, for example, setting them to undefined values as done by the
-                 semantic functions of certain instructions for certain flags. The switching
-                 from 32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
-                 general-purpose registers to undefined values.</p>"
+    <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
+    32-bit mode the high 32 bits of general-purpose registers are not
+    accessible, it is fine for this function to leave those bits unchanged, as
+    opposed to, for example, setting them to undefined values as done by the
+    semantic functions of certain instructions for certain flags. The switching
+    from 32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
+    general-purpose registers to undefined values.</p>"
 
-                 (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-                   (!rgfi reg
-                          (n64-to-i64
-                            (mbe :logic
-                                 (part-install
-                                   val
-                                   (part-select qword :low 0 :width 64)
-                                   :low 0 :width 16)
-                                 :exec
-                                 (the (unsigned-byte 64)
-                                      (logior (the (unsigned-byte 64)
-                                                   (logand qword #xffffffffffff0000))
-                                              val))))
-                          x86))
+    (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+      (!rgfi reg
+             (n64-to-i64
+               (mbe :logic
+                    (part-install
+                      val
+                      (part-select qword :low 0 :width 64)
+                      :low 0 :width 16)
+                    :exec
+                    (the (unsigned-byte 64)
+                         (logior (the (unsigned-byte 64)
+                                      (logand qword #xffffffffffff0000))
+                                 val))))
+             x86))
 
-                 ///
+    ///
 
-                 (defthm x86p-wr16
-                         (implies (x86p x86)
-                                  (x86p (wr16 reg val x86))))))
+    (defthm x86p-wr16
+            (implies (x86p x86)
+                     (x86p (wr16 reg val x86)))))
 
   (defthm rr16-wr16-same
     (equal (rr16 reg (wr16 reg val x86))
@@ -431,73 +431,73 @@ are used to write natural numbers into the GPRs.</p>"
              :in-theory (e/d (n64-to-i64 rr16 wr16)
                              (force (force))))))
 
-  (skip-proofs (define rr32
-                 ((reg :type (unsigned-byte 4))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :short "Read from doubleword general-purpose registers"
+  (define rr32
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :no-function t
+    :short "Read from doubleword general-purpose registers"
 
-                 (n32 (the (signed-byte 64) (rgfi reg x86)))
+    (n32 (the (signed-byte 64) (rgfi reg x86)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n32p-rr32
-                                         :hyp t
-                                         :bound 32
-                                         :concl (rr32 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n32p-rr32
+                            :hyp t
+                            :bound 32
+                            :concl (rr32 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define wr32
-                 ((reg  :type (unsigned-byte  4))
-                  (val  :type (unsigned-byte 32))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :guard-hints (("Goal" :in-theory (e/d (
-                                                        loghead-to-logand
-                                                        bitops::logsquash)
-                                                       (bitops::logand-with-negated-bitmask
-                                                         bitops::logand-with-bitmask
-                                                         unsigned-byte-p))))
+  (define wr32
+    ((reg  :type (unsigned-byte  4))
+     (val  :type (unsigned-byte 32))
+     (x86))
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
 
-                 :short "Write to doubleword general-purpose registers"
-                 :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
-                 p. 3-17, which says the following about 64-bit mode:</p>
+    :short "Write to doubleword general-purpose registers"
+    :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
+    p. 3-17, which says the following about 64-bit mode:</p>
 
-                 <p><em>32-bit operands generate a 32-bit result, zero-extended to a
-                 64-bit result in the destination general-purpose
-                 register.</em></p>
+    <p><em>32-bit operands generate a 32-bit result, zero-extended to a
+    64-bit result in the destination general-purpose
+    register.</em></p>
 
-                 <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
-                 `No Extension of 8-Bit and 16-Bit Results'.</p>
+    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
+    `No Extension of 8-Bit and 16-Bit Results'.</p>
 
-                 <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
-                 following quote from the same page as above:</p>
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
+    following quote from the same page as above:</p>
 
-                 <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
-                 undefined in 32-bit modes, the upper 32 bits of any general-purpose
-                 register are not preserved when switching from 64-bit mode to a 32-bit
-                 mode (to protected mode or compatibility mode). Software must not depend on
-                 these bits to maintain a value after a 64-bit to 32-bit mode
-                 switch.</em></p>
+    <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose
+    register are not preserved when switching from 64-bit mode to a 32-bit
+    mode (to protected mode or compatibility mode). Software must not depend on
+    these bits to maintain a value after a 64-bit to 32-bit mode
+    switch.</em></p>
 
-                 <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
-                 32-bit mode the high 32 bits of general-purpose registers are not
-                 accessible, it is fine for this function to set those bits to 0, as opposed
-                 to, for example, setting them to undefined values as done by the semantic
-                 functions of certain instructions for certain flags. The switching from
-                 32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
-                 general-purpose registers to undefined values.</p>"
+    <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
+    32-bit mode the high 32 bits of general-purpose registers are not
+    accessible, it is fine for this function to set those bits to 0, as opposed
+    to, for example, setting them to undefined values as done by the semantic
+    functions of certain instructions for certain flags. The switching from
+    32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
+    general-purpose registers to undefined values.</p>"
 
-                 (!rgfi reg (mbe :logic (n32 val) :exec val) x86)
+    (!rgfi reg (mbe :logic (n32 val) :exec val) x86)
 
-                 ///
+    ///
 
-                 (defthm x86p-wr32
-                         (implies (x86p x86)
-                                  (x86p (wr32 reg val x86))))))
+    (defthm x86p-wr32
+            (implies (x86p x86)
+                     (x86p (wr32 reg val x86)))))
 
   (defthm rr32-wr32-same
     (equal (rr32 reg (wr32 reg val x86))
@@ -515,46 +515,46 @@ are used to write natural numbers into the GPRs.</p>"
              :in-theory (e/d (n64-to-i64 rr32 wr32)
                              ()))))
 
-  (skip-proofs (define rr64
-                 ((reg :type (unsigned-byte 4))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :short "Read from quadword general-purpose registers"
-                 :long "<p>This function is used only in 64-bit mode.</p>"
+  (define rr64
+    ((reg :type (unsigned-byte 4))
+     (x86))
+    :inline t
+    :no-function t
+    :short "Read from quadword general-purpose registers"
+    :long "<p>This function is used only in 64-bit mode.</p>"
 
-                 (n64 (the (signed-byte 64) (rgfi reg x86)))
+    (n64 (the (signed-byte 64) (rgfi reg x86)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n64p-rr64
-                                         :hyp t
-                                         :bound 64
-                                         :concl (rr64 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n64p-rr64
+                            :hyp t
+                            :bound 64
+                            :concl (rr64 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define wr64
-                 ((reg  :type (unsigned-byte  4))
-                  (val  :type (unsigned-byte 64))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :guard-hints (("Goal" :in-theory (e/d (
-                                                        loghead-to-logand
-                                                        bitops::logsquash)
-                                                       (bitops::logand-with-negated-bitmask
-                                                         bitops::logand-with-bitmask
-                                                         unsigned-byte-p))))
-                 (b* ((x86 (!rgfi reg (n64-to-i64 val) x86)))
-                     x86)
-                 :short "Write to quadword general-purpose registers"
-                 :long "<p>This function is used only in 64-bit mode.</p>"
+  (define wr64
+    ((reg  :type (unsigned-byte  4))
+     (val  :type (unsigned-byte 64))
+     (x86))
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (
+                                           loghead-to-logand
+                                           bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
+    (b* ((x86 (!rgfi reg (n64-to-i64 val) x86)))
+        x86)
+    :short "Write to quadword general-purpose registers"
+    :long "<p>This function is used only in 64-bit mode.</p>"
 
-                 ///
-                 (defthm x86p-wr64
-                         (implies (x86p x86)
-                                  (x86p (wr64 reg val x86))))))
+    ///
+    (defthm x86p-wr64
+            (implies (x86p x86)
+                     (x86p (wr64 reg val x86)))))
 
   (defthm rr64-wr64-same
     (equal (rr64 reg (wr64 reg val x86))
@@ -686,64 +686,64 @@ pointer, or opcode registers\).</em></p>"
 
   (local (xdoc::set-default-parents MMX-Registers-Reads-and-Writes))
 
-  (skip-proofs (define mmx
-                 ((i :type (integer 0 7))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 (let ((reg80 (the (unsigned-byte 80) (fp-datai i x86))))
-                   (mbe :logic (part-select reg80 :low 0 :width 64)
-                        :exec  (logand #.*2^64-1* reg80)))
+  (define mmx
+    ((i :type (integer 0 7))
+     (x86))
+    :inline t
+    :no-function t
+    (let ((reg80 (the (unsigned-byte 80) (fp-datai i x86))))
+      (mbe :logic (part-select reg80 :low 0 :width 64)
+           :exec  (logand #.*2^64-1* reg80)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n64p-mmx
-                                         :hyp t
-                                         :bound 64
-                                         :concl (mmx i x86)
-                                         :gen-type t
-                                         :gen-linear t)))
+    (defthm-unsigned-byte-p n64p-mmx
+                            :hyp t
+                            :bound 64
+                            :concl (mmx i x86)
+                            :gen-type t
+                            :gen-linear t))
 
-  (skip-proofs (define !mmx
-                 ((i :type (integer      0 7))
-                  (v :type (unsigned-byte 64))
-                  (x86))
-                 :inline t
-                 :no-function t
-                 :guard-hints (("Goal" :in-theory (e/d ()
-                                                       (unsigned-byte-p))))
+  (define !mmx
+    ((i :type (integer      0 7))
+     (v :type (unsigned-byte 64))
+     (x86))
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d ()
+                                          (unsigned-byte-p))))
 
-                 (let ((val80 (mbe :logic (part-install #xFFFF v :low 64 :high 79)
-                                   :exec (the (unsigned-byte 80)
-                                              (logior #uxFFFF_00000000_00000000 v)))))
-                   (!fp-datai i val80 x86))
+    (let ((val80 (mbe :logic (part-install #xFFFF v :low 64 :high 79)
+                      :exec (the (unsigned-byte 80)
+                                 (logior #uxFFFF_00000000_00000000 v)))))
+      (!fp-datai i val80 x86))
 
-                 ///
+    ///
 
-                 (defthm x86p-!mmx
-                         (implies (x86p x86)
-                                  (x86p (!mmx i v x86)))
-                         :hints (("Goal" :in-theory (e/d () (force (force))))))))
+    (defthm x86p-!mmx
+            (implies (x86p x86)
+                     (x86p (!mmx i v x86)))
+            :hints (("Goal" :in-theory (e/d () (force (force)))))))
 
-  (skip-proofs (define mmx-instruction-updates (x86)
-                 :inline t
-                 :no-function t
-                 :guard-hints (("Goal" :in-theory (e/d ()
-                                                       ())))
-                 :short "We set the FPU tag and TOS field to 00B \(valid\) and 000B
-                 respectively.  This function accounts for the effects of all MMX
-                 instructions except EMMS."
+  (define mmx-instruction-updates (x86)
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d ()
+                                          ())))
+    :short "We set the FPU tag and TOS field to 00B \(valid\) and 000B
+    respectively.  This function accounts for the effects of all MMX
+    instructions except EMMS."
 
-                 (b* ((x86 (!fp-tag 0 x86))
-                      (fp-status (fp-status x86))
-                      (x86 (!fp-status (!fp-statusBits->top 0 fp-status) x86)))
-                     x86)
+    (b* ((x86 (!fp-tag 0 x86))
+         (fp-status (fp-status x86))
+         (x86 (!fp-status (!fp-statusBits->top 0 fp-status) x86)))
+        x86)
 
-                 ///
+    ///
 
-                 (defthm x86p-mmx-instruction-updates
-                         (implies (x86p x86)
-                                  (x86p (mmx-instruction-updates x86)))))))
+    (defthm x86p-mmx-instruction-updates
+            (implies (x86p x86)
+                     (x86p (mmx-instruction-updates x86))))))
 
 ;; ----------------------------------------------------------------------
 
@@ -798,92 +798,92 @@ pointer, or opcode registers\).</em></p>"
 
   (local (xdoc::set-default-parents ZMMs-Reads-and-Writes))
 
-  (skip-proofs (define rz32
-                 ((reg :type (unsigned-byte 5))
-                  (x86))
-                 :inline t
-                 :no-function t
+  (define rz32
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+    :no-function t
 
-                 (n32 (the (unsigned-byte 512) (zmmi reg x86)))
+    (n32 (the (unsigned-byte 512) (zmmi reg x86)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n32p-rz32
-                                         :hyp t
-                                         :bound 32
-                                         :concl (rz32 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n32p-rz32
+                            :hyp t
+                            :bound 32
+                            :concl (rz32 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define rz64
-                 ((reg :type (unsigned-byte 5))
-                  (x86))
-                 :inline t
-                 :no-function t
+  (define rz64
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+    :no-function t
 
-                 (n64 (the (unsigned-byte 512) (zmmi reg x86)))
+    (n64 (the (unsigned-byte 512) (zmmi reg x86)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n64p-rz64
-                                         :hyp t
-                                         :bound 64
-                                         :concl (rz64 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n64p-rz64
+                            :hyp t
+                            :bound 64
+                            :concl (rz64 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define rz128
-                 ((reg :type (unsigned-byte 5))
-                  (x86))
-                 :inline t
-                 :no-function t
+  (define rz128
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+    :no-function t
 
-                 (n128 (the (unsigned-byte 512) (zmmi reg x86)))
+    (n128 (the (unsigned-byte 512) (zmmi reg x86)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n128p-rz128
-                                         :hyp t
-                                         :bound 128
-                                         :concl (rz128 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n128p-rz128
+                            :hyp t
+                            :bound 128
+                            :concl (rz128 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define rz256
-                 ((reg :type (unsigned-byte 5))
-                  (x86))
-                 :inline t
-                 :no-function t
+  (define rz256
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+    :no-function t
 
-                 (n256 (the (unsigned-byte 512) (zmmi reg x86)))
+    (n256 (the (unsigned-byte 512) (zmmi reg x86)))
 
-                 ///
+    ///
 
-                 (defthm-unsigned-byte-p n256p-rz256
-                                         :hyp t
-                                         :bound 256
-                                         :concl (rz256 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n256p-rz256
+                            :hyp t
+                            :bound 256
+                            :concl (rz256 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
-  (skip-proofs (define rz512
-                 ((reg :type (unsigned-byte 5))
-                  (x86))
-                 :inline t
-                 :no-function t
+  (define rz512
+    ((reg :type (unsigned-byte 5))
+     (x86))
+    :inline t
+    :no-function t
 
-                 (n512 (the (unsigned-byte 512) (zmmi reg x86)))
+    (n512 (the (unsigned-byte 512) (zmmi reg x86)))
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d () (force (force)))))
+    (local (in-theory (e/d () (force (force)))))
 
-                 (defthm-unsigned-byte-p n512p-rz512
-                                         :hyp t
-                                         :bound 512
-                                         :concl (rz512 reg x86)
-                                         :gen-linear t
-                                         :gen-type t)))
+    (defthm-unsigned-byte-p n512p-rz512
+                            :hyp t
+                            :bound 512
+                            :concl (rz512 reg x86)
+                            :gen-linear t
+                            :gen-type t))
 
   (define vector-access-type-p (x)
     :returns (ok? booleanp :rule-classes :type-prescription)
@@ -893,46 +893,46 @@ pointer, or opcode registers\).</em></p>"
         (equal x #.*ymm-access*)
         (equal x #.*zmm-access*)))
 
-  (skip-proofs (define wz32
-                 ((reg  :type (unsigned-byte  5))
-                  (val  :type (unsigned-byte 32))
-                  (x86)
-                  &key
-                  ((regtype vector-access-type-p) '*zmm-access*))
-                 :short "Write @('val') to low 32 bits of a ZMM register"
-                 :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
-                 128)`) bits are preserved if @('regtype') is @('*xmm-access*');
-  for @('*vex-xmm-access*'), these bits are zeroed out.  For
-  @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
-  out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
-  :inline t
-  :no-function t
-  :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
-                                          bitops::logsquash)
-                                        (bitops::logand-with-negated-bitmask
-                                          bitops::logand-with-bitmask
-                                          unsigned-byte-p))))
+  (define wz32
+    ((reg  :type (unsigned-byte  5))
+     (val  :type (unsigned-byte 32))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+    :short "Write @('val') to low 32 bits of a ZMM register"
+    :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
+    128)`) bits are preserved if @('regtype') is @('*xmm-access*');
+    for @('*vex-xmm-access*'), these bits are zeroed out.  For
+    @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
+    out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                            bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
 
-  (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
-       (regtype (the (unsigned-byte 3) regtype))
-       (data (case regtype
-               (#.*vex-xmm-access*
-                (loghead 128 data))
-               (#.*ymm-access*
-                (loghead 256 data))
-               (otherwise
-                 ;; Preserve upper bits.
-                 data)))
-       (val  (n32 (the (unsigned-byte 32) val))))
-      (!zmmi reg (part-install val data :low 0 :width 32) x86))
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*vex-xmm-access*
+                  (loghead 128 data))
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                   ;; Preserve upper bits.
+                   data)))
+         (val  (n32 (the (unsigned-byte 32) val))))
+        (!zmmi reg (part-install val data :low 0 :width 32) x86))
 
-  ///
+    ///
 
-  (local (in-theory (e/d () (force (force)))))
+    (local (in-theory (e/d () (force (force)))))
 
-  (defthm x86p-wz32
-          (implies (x86p x86)
-                   (x86p (wz32 reg val x86 :regtype access))))))
+    (defthm x86p-wz32
+            (implies (x86p x86)
+                     (x86p (wz32 reg val x86 :regtype access)))))
 
   (defthm rz32-wz32-same
     (equal (rz32 reg (wz32 reg val x86 :regtype access))
@@ -950,45 +950,45 @@ pointer, or opcode registers\).</em></p>"
              :in-theory (e/d (rz32 wz32)
                              (force (force))))))
 
-  (skip-proofs (define wz64
-                 ((reg  :type (unsigned-byte  5))
-                  (val  :type (unsigned-byte 64))
-                  (x86)
-                  &key
-                  ((regtype vector-access-type-p) '*zmm-access*))
-                 :short "Write @('val') to low 64 bits of a ZMM register"
-                 :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
-                 128)`) bits are preserved if @('regtype') is @('*xmm-access*');
-  for @('*vex-xmm-access*'), these bits are zeroed out.  For
-  @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
-  out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
-  :inline t
-  :no-function t
-  :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
-                                          bitops::logsquash)
-                                        (bitops::logand-with-negated-bitmask
-                                          bitops::logand-with-bitmask
-                                          unsigned-byte-p))))
-  (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
-       (regtype (the (unsigned-byte 3) regtype))
-       (data (case regtype
-               (#.*vex-xmm-access*
-                (loghead 128 data))
-               (#.*ymm-access*
-                (loghead 256 data))
-               (otherwise
-                 ;; Preserve upper bits.
-                 data)))
-       (val  (the (unsigned-byte 64) (n64 val))))
-      (!zmmi reg (part-install val data :low 0 :width 64) x86))
+  (define wz64
+    ((reg  :type (unsigned-byte  5))
+     (val  :type (unsigned-byte 64))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+    :short "Write @('val') to low 64 bits of a ZMM register"
+    :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
+    128)`) bits are preserved if @('regtype') is @('*xmm-access*');
+    for @('*vex-xmm-access*'), these bits are zeroed out.  For
+    @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
+    out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                            bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*vex-xmm-access*
+                  (loghead 128 data))
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                   ;; Preserve upper bits.
+                   data)))
+         (val  (the (unsigned-byte 64) (n64 val))))
+        (!zmmi reg (part-install val data :low 0 :width 64) x86))
 
-  ///
+    ///
 
-  (local (in-theory (e/d () (force (force)))))
+    (local (in-theory (e/d () (force (force)))))
 
-  (defthm x86p-wz64
-          (implies (x86p x86)
-                   (x86p (wz64 reg val x86 :regtype access))))))
+    (defthm x86p-wz64
+            (implies (x86p x86)
+                     (x86p (wz64 reg val x86 :regtype access)))))
 
   (defthm rz64-wz64-same
     (equal (rz64 reg (wz64 reg val x86 :regtype access))
@@ -1006,46 +1006,46 @@ pointer, or opcode registers\).</em></p>"
              :in-theory (e/d (rz64 wz64)
                              (force (force))))))
 
-  (skip-proofs (define wz128
-                 ((reg  :type (unsigned-byte 5))
-                  (val  :type (unsigned-byte 128))
-                  (x86)
-                  &key
-                  ((regtype vector-access-type-p) '*zmm-access*))
-                 :short "Write @('val') to low 128 bits of a ZMM register"
-                 :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
-                 128)`) bits are preserved if @('regtype') is @('*xmm-access*');
-  for @('*vex-xmm-access*'), these bits are zeroed out.  For
-  @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
-  out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
-  :inline t
-  :no-function t
-  :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
-                                          bitops::logsquash)
-                                        (bitops::logand-with-negated-bitmask
-                                          bitops::logand-with-bitmask
-                                          unsigned-byte-p))))
+  (define wz128
+    ((reg  :type (unsigned-byte 5))
+     (val  :type (unsigned-byte 128))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
+    :short "Write @('val') to low 128 bits of a ZMM register"
+    :long "<p><i>Upper bits</i>: For XMM registers, upper @(`(- 512
+    128)`) bits are preserved if @('regtype') is @('*xmm-access*');
+    for @('*vex-xmm-access*'), these bits are zeroed out.  For
+    @('*ymm-access*'), upper @(`(- 512 256)`) bits are zeroed
+    out. For @('*zmm-access*'), no upper bits are zeroed out.</p>"
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                            bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
 
-  (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
-       (regtype (the (unsigned-byte 3) regtype))
-       (data (case regtype
-               (#.*vex-xmm-access*
-                (loghead 128 data))
-               (#.*ymm-access*
-                (loghead 256 data))
-               (otherwise
-                 ;; Preserve upper bits.
-                 data)))
-       (val (the (unsigned-byte 128) (n128 val))))
-      (!zmmi reg (part-install val data :low 0 :width 128) x86))
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*vex-xmm-access*
+                  (loghead 128 data))
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                   ;; Preserve upper bits.
+                   data)))
+         (val (the (unsigned-byte 128) (n128 val))))
+        (!zmmi reg (part-install val data :low 0 :width 128) x86))
 
-  ///
+    ///
 
-  (local (in-theory (e/d () (force (force)))))
+    (local (in-theory (e/d () (force (force)))))
 
-  (defthm x86p-wz128
-          (implies (x86p x86)
-                   (x86p (wz128 reg val x86 :regtype access))))))
+    (defthm x86p-wz128
+            (implies (x86p x86)
+                     (x86p (wz128 reg val x86 :regtype access)))))
 
   (defthm rz128-wz128-same
     (equal (rz128 reg (wz128 reg val x86 :regtype access))
@@ -1063,43 +1063,43 @@ pointer, or opcode registers\).</em></p>"
              :in-theory (e/d (rz128 wz128)
                              (force (force))))))
 
-  (skip-proofs (define wz256
-                 ((reg  :type (unsigned-byte 5))
-                  (val  :type (unsigned-byte 256))
-                  (x86)
-                  &key
-                  ((regtype vector-access-type-p) '*zmm-access*))
+  (define wz256
+    ((reg  :type (unsigned-byte 5))
+     (val  :type (unsigned-byte 256))
+     (x86)
+     &key
+     ((regtype vector-access-type-p) '*zmm-access*))
 
-                 :short "Write @('val') to low 256 bits of a ZMM register."
-                 :long "<p><i>Upper bits</i>: For @('*ymm-access*'), upper @(`(-
-                 512 256)`) bits are zeroed out. For @('*zmm-access*'), no upper
-  bits are zeroed out.</p>"
-  :inline t
-  :no-function t
-  :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
-                                          bitops::logsquash)
-                                        (bitops::logand-with-negated-bitmask
-                                          bitops::logand-with-bitmask
-                                          unsigned-byte-p))))
+    :short "Write @('val') to low 256 bits of a ZMM register."
+    :long "<p><i>Upper bits</i>: For @('*ymm-access*'), upper @(`(-
+    512 256)`) bits are zeroed out. For @('*zmm-access*'), no upper
+    bits are zeroed out.</p>"
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                            bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
 
-  (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
-       (regtype (the (unsigned-byte 3) regtype))
-       (data (case regtype
-               (#.*ymm-access*
-                (loghead 256 data))
-               (otherwise
-                 ;; Preserve upper bits.
-                 data)))
-       (val (the (unsigned-byte 256) (n256 val))))
-      (!zmmi reg (part-install val data :low 0 :width 256) x86))
+    (b* ((data (the (unsigned-byte 512) (zmmi reg x86)))
+         (regtype (the (unsigned-byte 3) regtype))
+         (data (case regtype
+                 (#.*ymm-access*
+                  (loghead 256 data))
+                 (otherwise
+                   ;; Preserve upper bits.
+                   data)))
+         (val (the (unsigned-byte 256) (n256 val))))
+        (!zmmi reg (part-install val data :low 0 :width 256) x86))
 
-  ///
+    ///
 
-  (local (in-theory (e/d () (force (force)))))
+    (local (in-theory (e/d () (force (force)))))
 
-  (defthm x86p-wz256
-          (implies (x86p x86)
-                   (x86p (wz256 reg val x86 :regtype access))))))
+    (defthm x86p-wz256
+            (implies (x86p x86)
+                     (x86p (wz256 reg val x86 :regtype access)))))
 
   (defthm rz256-wz256-same
     (equal (rz256 reg (wz256 reg val x86 :regtype access))
@@ -1117,29 +1117,29 @@ pointer, or opcode registers\).</em></p>"
              :in-theory (e/d (rz256 wz256)
                              (force (force))))))
 
-  (skip-proofs (define wz512
-                 ((reg  :type (unsigned-byte 5))
-                  (val  :type (unsigned-byte 512))
-                  (x86))
-                 :short "Write @('val') to 512 bits of a ZMM register."
-                 :inline t
-                 :no-function t
-                 :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
-                                                         bitops::logsquash)
-                                                       (bitops::logand-with-negated-bitmask
-                                                         bitops::logand-with-bitmask
-                                                         unsigned-byte-p))))
+  (define wz512
+    ((reg  :type (unsigned-byte 5))
+     (val  :type (unsigned-byte 512))
+     (x86))
+    :short "Write @('val') to 512 bits of a ZMM register."
+    :inline t
+    :no-function t
+    :guard-hints (("Goal" :in-theory (e/d (loghead-to-logand
+                                            bitops::logsquash)
+                                          (bitops::logand-with-negated-bitmask
+                                            bitops::logand-with-bitmask
+                                            unsigned-byte-p))))
 
-                 (let ((val (the (unsigned-byte 512) (n512 val))))
-                   (!zmmi reg val x86))
+    (let ((val (the (unsigned-byte 512) (n512 val))))
+      (!zmmi reg val x86))
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d () (force (force)))))
+    (local (in-theory (e/d () (force (force)))))
 
-                 (defthm x86p-wz512
-                         (implies (x86p x86)
-                                  (x86p (wz512 reg val x86))))))
+    (defthm x86p-wz512
+            (implies (x86p x86)
+                     (x86p (wz512 reg val x86)))))
 
   (defthm rz512-wz512-same
     (equal (rz512 reg (wz512 reg val x86))
@@ -1210,19 +1210,20 @@ pointer, or opcode registers\).</em></p>"
 
             (local (xdoc::set-default-parents CTR-Reads-and-Writes))
 
-            (skip-proofs
-              (define !ctri-write ((ctr-index :type (integer 0 #.*control-register-names-len*))
-                                   (val :type (unsigned-byte 64))
-                                   x86)
+            (define !ctri-write ((ctr-index natp)
+                                 (val n64p)
+                                 x86)
 
-                :returns (x86 x86p :hyp (x86p x86))
+              :returns (x86 x86p :hyp (x86p x86))
+              :guard (< ctr-index #.*control-register-names-len*)
 
-                (b* ((val-write (case ctr-index
-                                  (*CR0* (loghead 32 val))
-                                  ;; All but the low 21 bits of CR4 are reserved
-                                  (*CR4* (logapp 21 val (ctri *CR4* x86)))
-                                  (otherwise val))))
-                    (!ctri ctr-index val-write x86)))))
+              (b* ((val-write (case ctr-index
+                                (*CR0* (loghead 32 val))
+                                ;; All but the low 21 bits of CR4 are reserved
+                                (*CR4* (logapp 21 val (ctri *CR4* x86)))
+                                (otherwise val)))
+                   (x86 (!ctri ctr-index val-write x86)))
+                  x86)))
 
 (defsection MSR-Reads-and-Writes
             :parents (register-readers-and-writers)
@@ -1261,25 +1262,23 @@ pointer, or opcode registers\).</em></p>"
                 ;; Should not be possible due to the guard
                 (t -1)))
 
-            (skip-proofs
-              (define msra ((msr-addr :type (unsigned-byte 32))
-                            x86)
+            (define msra ((msr-addr valid-msr-addr-p)
+                          x86)
 
-                :returns (x86 x86p :hyp (x86p x86))
+              :returns (msr-val n64p)
 
-                (b* ((msr-index (msr-addr-to-index msr-addr)))
-                    (msri msr-index x86))))
+              (b* ((msr-index (msr-addr-to-index msr-addr)))
+                  (msri msr-index x86)))
 
-            (skip-proofs
-              (define !msra ((msr-addr :type (unsigned-byte 32))
-                             (val :type (unsigned-byte 64))
-                             x86)
+            (define !msra ((msr-addr valid-msr-addr-p)
+                           (val :type (unsigned-byte 64))
+                           x86)
 
-                :returns (x86 x86p :hyp (x86p x86))
+              :returns (x86 x86p :hyp (x86p x86))
 
-                (b* ((msr-index (msr-addr-to-index msr-addr)))
-                    (!msri msr-index val x86)))))
-              
+              (b* ((msr-index (msr-addr-to-index msr-addr)))
+                  (!msri msr-index val x86))))
+
 
 (defsection XMMs-Reads-and-Writes
 
@@ -1491,59 +1490,59 @@ values.</p>"
     (natp (create-undef x))
     :rule-classes (:rewrite :type-prescription)))
 
-(skip-proofs (define unsafe-!undef (v x86)
+(define unsafe-!undef (v x86)
 
-               :long " <p>Note that @('unsafe-!undef') is enabled, not untouchable,
-               and non-executable.  It can be used in proof attempts but not during
-               execution.</p>
+  :long " <p>Note that @('unsafe-!undef') is enabled, not untouchable,
+  and non-executable.  It can be used in proof attempts but not during
+  execution.</p>
 
-               <p>@('unsafe-!undef') should be used judiciously because updating the
-               @('undef') field with a value it held previously might contaminate
-               our 'pool of undefined values', i.e., @(see undef-read) might then
-               produce a call of @('create-undef') that collides with a previous
-               call of @('create-undef'), which would make the result of an
-               equality test between them equal instead of indeterminate.</p>
+  <p>@('unsafe-!undef') should be used judiciously because updating the
+  @('undef') field with a value it held previously might contaminate
+  our 'pool of undefined values', i.e., @(see undef-read) might then
+  produce a call of @('create-undef') that collides with a previous
+  call of @('create-undef'), which would make the result of an
+  equality test between them equal instead of indeterminate.</p>
 
-               <p>An example of an acceptable use of @('unsafe-!undef') is to
-               specify the @('undef') field in a final x86 state during a proof
-               attempt.</p>"
+  <p>An example of an acceptable use of @('unsafe-!undef') is to
+  specify the @('undef') field in a final x86 state during a proof
+  attempt.</p>"
 
-               :non-executable t
-               :enabled t
-               :returns (x86 x86p :hyp (x86p x86))
-               :parents (undef-read)
-               (!undef v x86)))
+  :non-executable t
+  :enabled t
+  :returns (x86 x86p :hyp (x86p x86))
+  :parents (undef-read)
+  (!undef v x86))
 
-(skip-proofs (define undef-read-logic (x86)
-               :enabled t
-               :returns (mv (unknown natp :rule-classes :type-prescription)
-                            (x86     x86p :hyp (x86p x86)))
-               :parents (undef-read)
+(define undef-read-logic (x86)
+  :enabled t
+  :returns (mv (unknown natp :rule-classes :type-prescription)
+               (x86     x86p :hyp (x86p x86)))
+  :parents (undef-read)
 
-               (b* ((undef-seed (nfix (undef x86)))
-                    (new-unknown (create-undef undef-seed))
-                    (x86 (!undef (1+ undef-seed) x86)))
-                   (mv new-unknown x86))))
+  (b* ((undef-seed (nfix (undef x86)))
+       (new-unknown (create-undef undef-seed))
+       (x86 (!undef (1+ undef-seed) x86)))
+      (mv new-unknown x86)))
 
-(skip-proofs (define undef-read (x86)
-               ;; TO-DO@Shilpi: I'll need to add more args to this function if I
-               ;; need the corresponding raw Lisp function to have more info.
-               :inline nil
-               :enabled t
-               :returns (mv (unknown natp :rule-classes :type-prescription)
-                            (x86     x86p :hyp (x86p x86)))
-               :parents (characterizing-undefined-behavior)
+(define undef-read (x86)
+  ;; TO-DO@Shilpi: I'll need to add more args to this function if I
+  ;; need the corresponding raw Lisp function to have more info.
+  :inline nil
+  :enabled t
+  :returns (mv (unknown natp :rule-classes :type-prescription)
+               (x86     x86p :hyp (x86p x86)))
+  :parents (characterizing-undefined-behavior)
 
-               :short "Get a unique unknown to be used when reasoning about
-               undefined values in the processor"
-               :long "<p>See @(see characterizing-undefined-behavior) for more
-               details.</p>
+  :short "Get a unique unknown to be used when reasoning about
+  undefined values in the processor"
+  :long "<p>See @(see characterizing-undefined-behavior) for more
+  details.</p>
 
-               <p>The accessor and updater functions of the @('undef') field are
-               untouchable so that the only way to create a new seed for unknowns
-               is via this function.</p>"
+  <p>The accessor and updater functions of the @('undef') field are
+  untouchable so that the only way to create a new seed for unknowns
+  is via this function.</p>"
 
-               (undef-read-logic x86)))
+  (undef-read-logic x86))
 
 ;; We make the following two functions untouchable so that they cannot
 ;; be used on their own outside function undef-read-logic.
@@ -1681,128 +1680,128 @@ values.</p>"
                 (er hard '!flgi "~%!FLGI-UNDEFINED: illegal flg keyword: ~x0.~%" ,flg))))))
        (!rflags new-rflags ,x86)))
 
-  (skip-proofs (define write-user-rflags
-                 ((user-flags-vector :type (unsigned-byte 32))
-                  (undefined-mask    :type (unsigned-byte 32))
-                  x86)
+  (define write-user-rflags
+    ((user-flags-vector :type (unsigned-byte 32))
+     (undefined-mask    :type (unsigned-byte 32))
+     x86)
 
-                 :inline t
-                 :no-function t
+    :inline t
+    :no-function t
 
-                 :short "Writing user rflags \(CF, PF, AF, ZF, SF, and OF\),
-                 including undefined ones, to the x86 state"
+    :short "Writing user rflags \(CF, PF, AF, ZF, SF, and OF\),
+    including undefined ones, to the x86 state"
 
-                 :long "<p>We set the undefined flags, which are indicated by
-                 @('mask'), to the value returned by @(see undef-read).</p>"
+    :long "<p>We set the undefined flags, which are indicated by
+    @('mask'), to the value returned by @(see undef-read).</p>"
 
-                 :guard-hints (("Goal" :in-theory (e/d (rflagsBits->cf
-                                                         rflagsBits->pf
-                                                         rflagsBits->af
-                                                         rflagsBits->zf
-                                                         rflagsBits->sf
-                                                         rflagsBits->of
-                                                         rflagsbits-fix)
-                                                       (unsigned-byte-p
-                                                         not
-                                                         (tau-system)))))
-                 :prepwork ((local (in-theory (e/d ()
-                                                   (bitops::logand-with-negated-bitmask
-                                                     fty::unsigned-byte-p-1-when-bitp)))))
+    :guard-hints (("Goal" :in-theory (e/d (rflagsBits->cf
+                                            rflagsBits->pf
+                                            rflagsBits->af
+                                            rflagsBits->zf
+                                            rflagsBits->sf
+                                            rflagsBits->of
+                                            rflagsbits-fix)
+                                          (unsigned-byte-p
+                                            not
+                                            (tau-system)))))
+    :prepwork ((local (in-theory (e/d ()
+                                      (bitops::logand-with-negated-bitmask
+                                        fty::unsigned-byte-p-1-when-bitp)))))
 
-                 :returns (x86 x86p :hyp (x86p x86))
+    :returns (x86 x86p :hyp (x86p x86))
 
-                 (b* ((user-flags-vector
-                        (mbe :logic (n32 user-flags-vector) :exec user-flags-vector))
-                      (undefined-mask
-                        (mbe :logic (n32 undefined-mask) :exec undefined-mask))
-                      ((the (unsigned-byte 32) input-rflags)
-                       (mbe :logic (n32 (rflags x86)) :exec (rflags x86))))
+    (b* ((user-flags-vector
+           (mbe :logic (n32 user-flags-vector) :exec user-flags-vector))
+         (undefined-mask
+           (mbe :logic (n32 undefined-mask) :exec undefined-mask))
+         ((the (unsigned-byte 32) input-rflags)
+          (mbe :logic (n32 (rflags x86)) :exec (rflags x86))))
 
-                     (mbe
-                       :logic
-                       (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
-                                   (!flgi-undefined :cf x86)
-                                   (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))
-                            (x86 (if (equal (rflagsBits->pf undefined-mask) 1)
-                                   (!flgi-undefined :pf x86)
-                                   (!flgi :pf (rflagsBits->pf user-flags-vector) x86)))
-                            (x86 (if (equal (rflagsBits->af undefined-mask) 1)
-                                   (!flgi-undefined :af x86)
-                                   (!flgi :af (rflagsBits->af user-flags-vector) x86)))
-                            (x86 (if (equal (rflagsBits->zf undefined-mask) 1)
-                                   (!flgi-undefined :zf x86)
-                                   (!flgi :zf (rflagsBits->zf user-flags-vector) x86)))
-                            (x86 (if (equal (rflagsBits->sf undefined-mask) 1)
-                                   (!flgi-undefined :sf x86)
-                                   (!flgi :sf (rflagsBits->sf user-flags-vector) x86)))
-                            (x86 (if (equal (rflagsBits->of undefined-mask) 1)
-                                   (!flgi-undefined :of x86)
-                                   (!flgi :of (rflagsBits->of user-flags-vector) x86))))
-                           x86)
-                       :exec
-                       (if (eql undefined-mask 0)
-                         (b* ((x86 (!flgi :cf (rflagsBits->cf user-flags-vector) x86))
-                              (x86 (!flgi :pf (rflagsBits->pf user-flags-vector) x86))
-                              (x86 (!flgi :af (rflagsBits->af user-flags-vector) x86))
-                              (x86 (!flgi :zf (rflagsBits->zf user-flags-vector) x86))
-                              (x86 (!flgi :sf (rflagsBits->sf user-flags-vector) x86))
-                              (x86 (!flgi :of (rflagsBits->of user-flags-vector) x86)))
-                             x86)
-                         (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
-                                     (!flgi-undefined :cf x86)
-                                     (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))
-                              (x86 (if (equal (rflagsBits->pf undefined-mask) 1)
-                                     (!flgi-undefined :pf x86)
-                                     (!flgi :pf (rflagsBits->pf user-flags-vector) x86)))
-                              (x86 (if (equal (rflagsBits->af undefined-mask) 1)
-                                     (!flgi-undefined :af x86)
-                                     (!flgi :af (rflagsBits->af user-flags-vector) x86)))
-                              (x86 (if (equal (rflagsBits->zf undefined-mask) 1)
-                                     (!flgi-undefined :zf x86)
-                                     (!flgi :zf (rflagsBits->zf user-flags-vector) x86)))
-                              (x86 (if (equal (rflagsBits->sf undefined-mask) 1)
-                                     (!flgi-undefined :sf x86)
-                                     (!flgi :sf (rflagsBits->sf user-flags-vector) x86)))
-                              (x86 (if (equal (rflagsBits->of undefined-mask) 1)
-                                     (!flgi-undefined :of x86)
-                                     (!flgi :of (rflagsBits->of user-flags-vector) x86))))
-                             x86))))
+        (mbe
+          :logic
+          (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
+                      (!flgi-undefined :cf x86)
+                      (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))
+               (x86 (if (equal (rflagsBits->pf undefined-mask) 1)
+                      (!flgi-undefined :pf x86)
+                      (!flgi :pf (rflagsBits->pf user-flags-vector) x86)))
+               (x86 (if (equal (rflagsBits->af undefined-mask) 1)
+                      (!flgi-undefined :af x86)
+                      (!flgi :af (rflagsBits->af user-flags-vector) x86)))
+               (x86 (if (equal (rflagsBits->zf undefined-mask) 1)
+                      (!flgi-undefined :zf x86)
+                      (!flgi :zf (rflagsBits->zf user-flags-vector) x86)))
+               (x86 (if (equal (rflagsBits->sf undefined-mask) 1)
+                      (!flgi-undefined :sf x86)
+                      (!flgi :sf (rflagsBits->sf user-flags-vector) x86)))
+               (x86 (if (equal (rflagsBits->of undefined-mask) 1)
+                      (!flgi-undefined :of x86)
+                      (!flgi :of (rflagsBits->of user-flags-vector) x86))))
+              x86)
+          :exec
+          (if (eql undefined-mask 0)
+            (b* ((x86 (!flgi :cf (rflagsBits->cf user-flags-vector) x86))
+                 (x86 (!flgi :pf (rflagsBits->pf user-flags-vector) x86))
+                 (x86 (!flgi :af (rflagsBits->af user-flags-vector) x86))
+                 (x86 (!flgi :zf (rflagsBits->zf user-flags-vector) x86))
+                 (x86 (!flgi :sf (rflagsBits->sf user-flags-vector) x86))
+                 (x86 (!flgi :of (rflagsBits->of user-flags-vector) x86)))
+                x86)
+            (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
+                        (!flgi-undefined :cf x86)
+                        (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))
+                 (x86 (if (equal (rflagsBits->pf undefined-mask) 1)
+                        (!flgi-undefined :pf x86)
+                        (!flgi :pf (rflagsBits->pf user-flags-vector) x86)))
+                 (x86 (if (equal (rflagsBits->af undefined-mask) 1)
+                        (!flgi-undefined :af x86)
+                        (!flgi :af (rflagsBits->af user-flags-vector) x86)))
+                 (x86 (if (equal (rflagsBits->zf undefined-mask) 1)
+                        (!flgi-undefined :zf x86)
+                        (!flgi :zf (rflagsBits->zf user-flags-vector) x86)))
+                 (x86 (if (equal (rflagsBits->sf undefined-mask) 1)
+                        (!flgi-undefined :sf x86)
+                        (!flgi :sf (rflagsBits->sf user-flags-vector) x86)))
+                 (x86 (if (equal (rflagsBits->of undefined-mask) 1)
+                        (!flgi-undefined :of x86)
+                        (!flgi :of (rflagsBits->of user-flags-vector) x86))))
+                x86))))
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d (undef-read) ())))
+    (local (in-theory (e/d (undef-read) ())))
 
-                 (defthm xr-write-user-rflags
-                         (implies (and (not (equal fld :rflags))
-                                       (not (equal fld :undef)))
-                                  (equal (xr fld index (write-user-rflags flags mask x86))
-                                         (xr fld index x86)))
-                         :hints (("Goal" :in-theory (e/d* () (force (force))))))
+    (defthm xr-write-user-rflags
+            (implies (and (not (equal fld :rflags))
+                          (not (equal fld :undef)))
+                     (equal (xr fld index (write-user-rflags flags mask x86))
+                            (xr fld index x86)))
+            :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-                 (defthm xr-write-user-rflags-no-mask
-                         ;; Do we need this?
-                         (implies (not (equal fld :rflags))
-                                  (equal (xr fld index (write-user-rflags flags 0 x86))
-                                         (xr fld index x86)))
-                         :hints (("Goal" :in-theory (e/d* () (force (force))))))
+    (defthm xr-write-user-rflags-no-mask
+            ;; Do we need this?
+            (implies (not (equal fld :rflags))
+                     (equal (xr fld index (write-user-rflags flags 0 x86))
+                            (xr fld index x86)))
+            :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-                 (defthm rflags-and-write-user-rflags-no-mask
-                         (equal (write-user-rflags user-flags-vector 0 x86)
-                                (b* ((x86 (!flgi :cf (rflagsBits->cf user-flags-vector) x86))
-                                     (x86 (!flgi :pf (rflagsBits->pf user-flags-vector) x86))
-                                     (x86 (!flgi :af (rflagsBits->af user-flags-vector) x86))
-                                     (x86 (!flgi :zf (rflagsBits->zf user-flags-vector) x86))
-                                     (x86 (!flgi :sf (rflagsBits->sf user-flags-vector) x86))
-                                     (x86 (!flgi :of (rflagsBits->of user-flags-vector) x86)))
-                                    x86))
-                         :hints (("Goal" :in-theory (e/d* (rflagsBits->cf
-                                                            rflagsBits->pf
-                                                            rflagsBits->af
-                                                            rflagsBits->zf
-                                                            rflagsBits->sf
-                                                            rflagsBits->of
-                                                            rflagsbits-fix)
-                                                          (force (force)))))))))
+    (defthm rflags-and-write-user-rflags-no-mask
+            (equal (write-user-rflags user-flags-vector 0 x86)
+                   (b* ((x86 (!flgi :cf (rflagsBits->cf user-flags-vector) x86))
+                        (x86 (!flgi :pf (rflagsBits->pf user-flags-vector) x86))
+                        (x86 (!flgi :af (rflagsBits->af user-flags-vector) x86))
+                        (x86 (!flgi :zf (rflagsBits->zf user-flags-vector) x86))
+                        (x86 (!flgi :sf (rflagsBits->sf user-flags-vector) x86))
+                        (x86 (!flgi :of (rflagsBits->of user-flags-vector) x86)))
+                       x86))
+            :hints (("Goal" :in-theory (e/d* (rflagsBits->cf
+                                               rflagsBits->pf
+                                               rflagsBits->af
+                                               rflagsBits->zf
+                                               rflagsBits->sf
+                                               rflagsBits->of
+                                               rflagsbits-fix)
+                                             (force (force))))))))
 
 
 ;; ----------------------------------------------------------------------

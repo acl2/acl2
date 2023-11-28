@@ -1559,7 +1559,7 @@
               (<= n n0))
 
   (b* ((diff (the (unsigned-byte 59) (- n0 n)))
-       ;; (- (if (equal (mod diff 10000000) 0)
+       ;; (- (if (equal (mod diff 100000000) 0)
        ;;      (save-x86 "x86-state" x86)
        ;;      nil))
        )

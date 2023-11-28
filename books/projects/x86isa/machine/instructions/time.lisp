@@ -7,22 +7,26 @@
 ;; INSTRUCTION: RDTSC
 ;; ======================================================================
 
-(skip-proofs (def-inst x86-rdtsc
+(def-inst x86-rdtsc
 
-  ;; Op/En: ZO
-  ;; 0F 31
+          ;; Op/En: ZO
+          ;; 0F 31
 
-  :parents (one-byte-opcodes)
+          :parents (one-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+          :guard-hints (("Goal" :in-theory (e/d () ())))
 
-  :returns (x86 x86p :hyp (x86p x86))
+          :returns (x86 x86p :hyp (x86p x86))
 
-  :body
+          :prepwork
+          ((local (defthm integerp-natp (implies (natp x)
+                                                 (integerp x)))))
+
+          :body
 
 
-  ;; Loads the time stamp counter into EDX:EAX
-  (b* ((time-stamp-counter (time-stamp-counter x86))
-       (x86 (wr32 *eax* (logand (1- (ash 1 32)) time-stamp-counter) x86))
-       (x86 (wr32 *edx* (logand (1- (ash 1 32)) (ash time-stamp-counter -32)) x86)))
-      (write-*ip proc-mode temp-rip x86))))
+          ;; Loads the time stamp counter into EDX:EAX
+          (b* ((time-stamp-counter (time-stamp-counter x86))
+               (x86 (wr32 *eax* (loghead 32 time-stamp-counter) x86))
+               (x86 (wr32 *edx* (loghead 32 (logtail 32 time-stamp-counter)) x86)))
+              (write-*ip proc-mode temp-rip x86)))

@@ -548,12 +548,37 @@
     (:doc "</li>")
 
     (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping lists of virtual page number, a boolean for whether we're in supervisor mode, and access type to either the physical page number (if such an entry with the given access type is allowed) or (cons :pagefault <error code>) if the access does not have a valid mapping.<br/>")
-    (tlb   :type t
+    (tlb   :type (satisfies tlbp)
            :initially :tlb
            :fix x)
     (:doc "</li>")
 
     (:doc "</ul>")))
+
+(define tlbp (tlb)
+  :enabled t
+  :guard t
+  (b* (((unless (consp tlb)) (equal tlb :tlb))
+       ((list* el tail) tlb)
+       ((unless (consp el)) nil)
+       ((cons key val) el)
+       ((unless (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 3) key)) nil)
+       ((unless (unsigned-byte-p (- #.*physical-address-size* 12) val)) nil))
+      (tlbp tail))
+  ///
+  (defthm integerp-cdr-hons-assoc-equal-tlb
+          (implies (tlbp tlb)
+                   (b* ((result (hons-assoc-equal key tlb)))
+                       (implies result
+                                (integerp (cdr result)))))
+          :hints (("Goal" :in-theory (enable (hons-assoc-equal)))))
+
+  (defthm unsigned-byte-p-40-cdr-hons-assoc-equal-tlb
+          (implies (tlbp tlb)
+                   (b* ((result (hons-assoc-equal key tlb)))
+                       (implies result
+                                (unsigned-byte-p (- #.*physical-address-size* 12) (cdr result)))))
+          :hints (("Goal" :in-theory (enable (hons-assoc-equal))))))
 
 (defun xdoc-x86-state (xs) ;; xs: *x86isa-state*
   (if (atom xs)

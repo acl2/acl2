@@ -15,7 +15,7 @@
 
 		       :parents (two-byte-opcodes)
 
-		       :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+		       :guard-hints (("Goal" :in-theory (e/d () ())))
 
 		       :returns (x86 x86p :hyp (x86p x86))
 

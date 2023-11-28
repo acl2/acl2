@@ -4,7 +4,7 @@
 
 (let* ((socket (ccl::make-socket :connect :passive ;; Listen
                                  :local-host "localhost"
-                                 :local-port 6444))
+                                 :local-port 7444))
        (stream (ccl::accept-connection socket)))
   (setf *console-stream* stream))
 

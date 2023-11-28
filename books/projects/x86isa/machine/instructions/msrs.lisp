@@ -11,45 +11,41 @@
 ;; INSTRUCTION: RDMSR
 ;; ======================================================================
 
-;; TODO Should I be checking to make sure we're in priviledged mode?
+(def-inst x86-rdmsr
 
-(skip-proofs 
-  (def-inst x86-rdmsr
+          ;; Op/En: ZO
+          ;; 0F 32
 
-            ;; Op/En: ZO
-            ;; 0F 32
+          :parents (two-byte-opcodes)
 
-            :parents (two-byte-opcodes)
+          :returns (x86 x86p :hyp (x86p x86))
 
-            :returns (x86 x86p :hyp (x86p x86))
+          :body
 
-            :body
+          (b* ((msr-addr (rr32 *ecx* x86))
+               ((when (not (valid-msr-addr-p msr-addr))) (!!fault-fresh :gp 0 :invalid-msr msr-addr))
+               (msr-val (msra msr-addr x86))
+               (x86 (wr32 *eax* (loghead 32 msr-val) x86))
+               (x86 (wr32 *edx* (ash msr-val -32) x86))
+               (x86 (write-*ip proc-mode temp-rip x86)))
+              x86))
 
-            (b* ((msr-addr (rr32 *ecx* x86))
-                 ((when (not (valid-msr-addr-p msr-addr))) (!!fault-fresh :gp 0 :invalid-msr msr-addr))
-                 (msr-val (msra msr-addr x86))
-                 (x86 (wr32 *eax* (loghead 32 msr-val) x86))
-                 (x86 (wr32 *edx* (ash msr-val -32) x86))
-                 (x86 (write-*ip proc-mode temp-rip x86)))
-                x86)))
+(def-inst x86-wrmsr
 
-(skip-proofs 
-  (def-inst x86-wrmsr
+          ;; Op/En: ZO
+          ;; 0F 30
 
-            ;; Op/En: ZO
-            ;; 0F 30
+          :parents (two-byte-opcodes)
 
-            :parents (two-byte-opcodes)
+          :returns (x86 x86p :hyp (x86p x86))
 
-            :returns (x86 x86p :hyp (x86p x86))
+          :body
 
-            :body
-
-            (b* ((msr-addr (rr32 *ecx* x86))
-                 ((when (not (valid-msr-addr-p msr-addr))) (!!fault-fresh :gp 0 :invalid-msr msr-addr))
-                 (lower (rr32 *eax* x86))
-                 (upper (rr32 *edx* x86))
-                 (msr-val (logapp 32 lower upper))
-                 (x86 (!msra msr-addr msr-val x86))
-                 (x86 (write-*ip proc-mode temp-rip x86)))
-                x86)))
+          (b* ((msr-addr (rr32 *ecx* x86))
+               ((when (not (valid-msr-addr-p msr-addr))) (!!fault-fresh :gp 0 :invalid-msr msr-addr))
+               (lower (rr32 *eax* x86))
+               (upper (rr32 *edx* x86))
+               (msr-val (logapp 32 lower upper))
+               (x86 (!msra msr-addr msr-val x86))
+               (x86 (write-*ip proc-mode temp-rip x86)))
+              x86))
