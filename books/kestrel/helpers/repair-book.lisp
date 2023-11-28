@@ -10,7 +10,14 @@
 
 (in-package "ACL2")
 
-;; STATUS: Minimal working prototype
+;; STATUS: Working prototype
+
+;; TODO: Add support for repairs that involve failures to translate
+;; terms/hints/etc. possibly due to missing names.
+
+;; TODO: Integrate the advice tool.
+
+;; TODO: Add support for determining what changed (e.g., by doing a git diff).
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "replay-book-helpers")
