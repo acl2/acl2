@@ -3540,7 +3540,10 @@
         (first sorted-successful-recs)
         state)))
 
-;; Tries the theorem with the supplied hints.  If that doesn't prove the theorem, this requests and tries advice.
+;; Tries the theorem with the supplied hints.  If that doesn't prove the
+;; theorem, this requests and tries advice.  Other integration mechanisms seem
+;; possible, e.g., trying advice via a clause-processor, perhaps one that is
+;; invoked by a computed hint that checks stable-under-simplificationp.
 ;; Returns (mv erp successp best-rec state).
 (defun best-rec-for-theorem (theorem-name
                              theorem-body

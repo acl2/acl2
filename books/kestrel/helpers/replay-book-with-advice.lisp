@@ -13,6 +13,7 @@
 (include-book "replay-book-helpers")
 (include-book "advice")
 (include-book "kestrel/utilities/split-path" :dir :system)
+(include-book "kestrel/utilities/maybe-add-dot-lisp-extension" :dir :system)
 
 ;; NOTE: See eval-models for a similar but newer tool.
 
@@ -274,9 +275,10 @@
         (list yes-count no-count maybe-count trivial-count error-count)
         state)))
 
-;; Reads and then submits all the events in FILENAME, trying advice for defthms that appear at the top level.
-;; Returns (mv erp event state).
-(defun replay-book-with-advice-fn (filename ; the book, with .lisp extension
+;; Reads and then submits all the events in the book indicated by BOOK-PATH,
+;; trying advice for defthms that appear at the top level.  Returns (mv erp
+;; event state).
+(defun replay-book-with-advice-fn (book-path ; path to the book (with or without the .lisp extension)
                                    theorems-to-try ; can be :all
                                    num-recs-per-model
                                    improve-recsp
@@ -284,7 +286,7 @@
                                    timeout
                                    models ; can be :all
                                    state)
-  (declare (xargs :guard (and (stringp filename)
+  (declare (xargs :guard (and (stringp book-path)
                               (or (eq :all theorems-to-try)
                                   (symbol-listp theorems-to-try))
                               (natp num-recs-per-model)
@@ -296,19 +298,22 @@
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (b* (;; Elaborate options:
+       (book-path (maybe-add-dot-lisp-extension book-path))
        (model-info-alist (help::make-model-info-alist models (w state)))
        ((mv erp
             & ; counts
             state)
-        (replay-book-with-advice-fn-aux filename theorems-to-try num-recs-per-model improve-recsp print model-info-alist timeout state))
+        (replay-book-with-advice-fn-aux book-path theorems-to-try num-recs-per-model improve-recsp print model-info-alist timeout state))
        ((when erp) (mv erp nil state)))
     ;; No error:
     (mv nil '(value-triple :replay-succeeded) state)))
 
+;; Currently, when trying advice for a theorem, this deletes all the hints.
 ;; TODO: Add timing info.
 ;; This has no effect on the world, because all the work is done in make-event
 ;; expansion and such changes do not persist.
-(defmacro replay-book-with-advice (filename ; the book, with .lisp extension (todo: add if needed)
+;; Example: (replay-book-with-advice "../lists-light/append")
+(defmacro replay-book-with-advice (book-path ; path to the book (with or without the .lisp extension)
                                    &key
                                    (theorems-to-try ':all) ; gets evaluated
                                    (n '10) ; num-recs-per-model
@@ -317,4 +322,4 @@
                                    (timeout '40) ; for both connection timeout and read timeout
                                    (models ':all)
                                    )
-  `(make-event-quiet (replay-book-with-advice-fn ,filename ,theorems-to-try ,n ,improve-recsp ,print ,timeout ,models state)))
+  `(make-event-quiet (replay-book-with-advice-fn ,book-path ,theorems-to-try ,n ,improve-recsp ,print ,timeout ,models state)))
