@@ -123,7 +123,7 @@
       (if (consp event-data-forms)
           (prog2$ (cw "Warning: Extra event-data forms: ~x0." event-data-forms)
                   (mv :extra-event-forms state))
-        (progn$ (cw "Done repairing book.") ; todo: print warning if no failure found
+        (progn$ (cw "Done repairing book.~%") ; todo: print warning if no failure found
                 (mv nil state)))
     (b* ((event (first events))
          ;; Clear event-data:
