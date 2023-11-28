@@ -294,7 +294,7 @@
 (fgl::disable-execution svtv-spec-run)
 (fgl::remove-fgl-rewrite svtv-spec-run-fn)
 
-
+(local (in-theory (disable acl2::hons-union)))
 
 (define svtv-override-triplemaplist-overridekeys ((triplemaps svtv-override-triplemaplist-p)
                                                   (namemap svtv-name-lhs-map-p))

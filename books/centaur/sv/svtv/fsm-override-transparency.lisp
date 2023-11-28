@@ -452,7 +452,7 @@
                                   (spec-env (append pre spec-env))))
                     :in-theory (disable svex-alist-eval-when-overridekeys-envs-agree*)))))
                                   
-    (defthm fsm-eval-when-overridekeys-envlists-agree*
+  (defthm fsm-eval-when-overridekeys-envlists-agree*
     (b* ((impl-outs (base-fsm-eval impl-envs initst x))
          (spec-outs (base-fsm-eval spec-envs initst x)))
       (implies (and (base-fsm-overridekey-transparent-p x overridekeys)

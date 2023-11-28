@@ -36,7 +36,7 @@
 (local (include-book "svtv-spec-override-transparency"))
 (local (include-book "svtv-stobj-pipeline-monotonicity"))
 (local (include-book "std/lists/sets" :dir :system))
-
+(local (include-book "../svex/compose-theory-ovmonotonicity"))
 
 (std::defredundant :names (svtv-spec-stimulus-equiv
                            svtv-spec-stimulus-equiv-is-an-equivalence
@@ -157,6 +157,165 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup))
                (base-fsm-partial-monotonic (svarlist-change-override override-mux-keys :test) x.phase-fsm)))
     :hints(("Goal" :in-theory (enable base-fsm-partial-monotonic))))
+
+  ;; (defrefinement svex-alist-keys-equiv svex-alist-eval-equiv
+
+
+  (local (defthmd svex-env-extract-nonoverride-when-ovsimilar
+           (implies (and (svex-envs-ovsimilar env1 env2)
+                         (svarlist-override-p vars nil))
+                    (equal (svex-env-extract vars env1)
+                           (svex-env-extract vars env2)))
+           :hints(("Goal" :in-theory (enable svex-env-extract
+                                             svarlist-override-p)
+                   :induct t)
+                  (and stable-under-simplificationp
+                       '(:use ((:instance svex-envs-ovsimilar-necc
+                                (v (car vars))
+                                (x env1) (y env2)))
+                         :in-theory (e/d (svar-override-p-when-other)
+                                         (svex-envs-ovsimilar-necc)))))))
+  
+  (local (defthmd svex-alist-eval-when-no-override-vars-and-envs-ovsimilar
+           (implies (and (svarlist-override-p (svex-alist-vars x) nil)
+                         (svex-envs-ovsimilar env1 env2))
+                    (equal (equal (svex-alist-eval x env1)
+                                  (svex-alist-eval x env2))
+                           t))
+           :hints (("Goal" :use ((:instance svex-alist-eval-of-reduce-var-supserset
+                                  (vars (svex-alist-vars x))
+                                  (env env1))
+                                 (:instance svex-alist-eval-of-reduce-var-supserset
+                                  (vars (svex-alist-vars x))
+                                  (env env2))
+                                 (:instance svex-env-extract-nonoverride-when-ovsimilar
+                                  (vars (svex-alist-vars x))))
+                    :in-theory (e/d (SVEXLIST-VARS-OF-SVEX-ALIST-VALS)
+                                    (svex-alist-eval-of-reduce-var-supserset
+                                     svex-alist-eval-of-extract-var-supserset))))))
+
+  (local (defthmd similar-when-equal
+           (implies (equal x y)
+                    (svex-envs-similar x y))))
+  
+  (local (Defthm svex-alist-ovcongruent-when-vars-nonoverride-p
+           (implies (svarlist-override-p (svex-alist-vars x) nil)
+                    (svex-alist-ovcongruent x))
+           :hints(("Goal" :in-theory (enable similar-when-equal
+                                             svex-alist-ovcongruent
+                                             svex-alist-eval-when-no-override-vars-and-envs-ovsimilar)))))
+
+  (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+
+  (local (defthm 4vec-bit?!-lemma
+           (implies (equal (4vec-bit?! x y 0) (4vec-bit?! x z 0))
+                    (equal (equal (4vec-bit?! x y a) (4vec-bit?! x z a))
+                           t))
+           :hints (("goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                   (bitops::logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable b-ite))))))
+                        
+  
+  (local (defthm eval-bit?!-when-ovsimilar
+           (implies (svex-envs-ovsimilar x y)
+                    (b* ((test (svar-change-override v :test))
+                         (val (svar-change-override v :val))
+                         (non (svar-change-override v nil)))
+                      (equal (equal (4vec-bit?! (svex-env-lookup test x)
+                                                (svex-env-lookup val x)
+                                                (svex-env-lookup non x))
+                                    (4vec-bit?! (svex-env-lookup test y)
+                                                (svex-env-lookup val y)
+                                                (svex-env-lookup non y)))
+                             t)))
+           :hints (("Goal" :use ((:instance svex-envs-ovsimilar-necc (v (svar-change-override v :test)))
+                                 (:instance svex-envs-ovsimilar-necc (v (svar-change-override v :val)))
+                                 (:instance svex-envs-ovsimilar-necc (v (svar-change-override v nil))))))))
+           
+  
+  (local (defthm eval-svarlist-to-override-alist-when-ovsimilar
+           (implies (svex-envs-ovsimilar env1 env2)
+                    (b* ((a (svarlist-to-override-alist x)))
+                      (equal (svex-envs-similar
+                              (svex-alist-eval a env1)
+                              (svex-alist-eval a env2))
+                             t)))
+           :hints(("Goal" :in-theory (enable svex-envs-similar
+                                             svex-apply
+                                             svex-lookup-of-svarlist-to-override-alist)
+                   :expand ((:free (v env) (svex-eval (svex-var v) env)))
+                   ))))
+  
+  (local (defthm svex-alist-ovcongruent-of-svarlist-to-override-alist
+           (svex-alist-ovcongruent (svarlist-to-override-alist x))
+           :hints(("Goal" :in-theory (enable svex-alist-ovcongruent)))))
+
+  (local (defthm svarlist-nonoverride-p-when-override-p-nil
+           (implies (svarlist-override-p x nil)
+                    (and (svarlist-nonoverride-p x :test)
+                         (svarlist-nonoverride-p x :val)))
+           :hints(("Goal" :in-theory (enable svarlist-override-p
+                                             svarlist-nonoverride-p
+                                             svar-override-p-when-other)))))
+
+  (local (defthm svex-envs-equivalent-of-append
+           (implies (And (svex-envs-equivalent x1 x2)
+                         (svex-envs-equivalent y1 y2))
+                    (equal (svex-envs-equivalent (append x1 y1) (append x2 y2)) t))
+           :hints(("goal" :do-not-induct t)
+                  (and stable-under-simplificationp
+                       `(:expand (,(car (last clause))))))))
+  
+  (local (defthm svex-alist-ovcongruent-of-append
+           (implies (and (svex-alist-ovcongruent x)
+                         (svex-alist-ovcongruent y))
+                    (svex-alist-ovcongruent (append x y)))
+           :hints(("goal" :do-not-induct t
+                   :in-theory (enable svex-alist-ovcongruent-necc))
+                  (and stable-under-simplificationp
+                       `(:expand (,(car (last clause))))))))
+
+  (local (include-book "tools/trivial-ancestors-check" :dir :system))
+  (local (acl2::use-trivial-ancestors-check))
+  
+  (local (defthm base-fsm-ovcongruent-when-phase-fsm-composition-p
+           (b* (((flatnorm-res flat)))
+             (implies (and (phase-fsm-composition-p x flat config)
+                           (svarlist-override-p (svex-alist-vars flat.assigns) nil)
+                           (svarlist-override-p (svex-alist-keys flat.assigns) nil)
+                           (svarlist-override-p (svex-alist-vars flat.delays) nil)
+                           (svarlist-override-p (svex-alist-keys flat.delays) nil))
+                      (base-fsm-ovcongruent x)))
+           :hints(("Goal" :in-theory (e/d (base-fsm-ovcongruent
+                                             phase-fsm-composition-p
+                                             svtv-flatnorm-apply-overrides))))))
+
+  
+
+  (local (defthm svarlist-addr-p-of-flatnorm-res->assigns-vars
+           (B* (((svtv-data-obj x)))
+             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                           x.flatten-validp
+                           x.flatnorm-validp)
+                      (svarlist-addr-p (svex-alist-vars (flatnorm-res->assigns x.flatnorm)))))
+           :hints(("Goal" :use flatnorm-of-svtv-data-obj
+                   :in-theory (disable flatnorm-of-svtv-data-obj)))))
+  
+  
+  (defthm base-fsm-ovcongruent-of-svtv-data-obj->phase-fsm
+    (b* (((svtv-data-obj x)))
+      (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                    x.flatten-validp
+                    x.flatnorm-validp
+                    x.phase-fsm-validp)
+               (base-fsm-ovcongruent x.phase-fsm)))
+    :hints(("Goal" :in-theory (e/d (;; base-fsm-ovcongruent
+                                    ;; phase-fsm-composition-p
+                                    PHASE-FSM-COMPOSITION-P-IMPLIES-VALUES-KEYS)
+                                   (phase-fsm-validp-of-svtv-data-obj))
+            :use ((:INSTANCE PHASE-FSM-VALIDP-OF-SVTV-DATA-OBJ)))))
 
   ;; (local (defthm base-fsm-overridekey-transparent-p-of-svtv-data-obj->phase-fsm
   ;;          (b* (((svtv-data-obj x))
@@ -301,14 +460,6 @@
            :hints(("Goal" :use ((:instance svex-alist-partial-monotonic-of-flatnorm-add-overrides
                                  (x (design->flatnorm (svtv-data-obj->design x)))))
                    :in-theory (disable svex-alist-partial-monotonic-of-flatnorm-add-overrides)))))
-
-  ;; (local (defthm svarlist-addr-p-of-flatnorm-res->assigns-vars
-  ;;          (B* (((svtv-data-obj x)))
-  ;;            (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-  ;;                          x.flatten-validp
-  ;;                          x.flatnorm-validp)
-  ;;                     (svarlist-addr-p (svex-alist-vars (flatnorm-res->assigns x.flatnorm)))))
-  ;;          :hints(("Goal" :in-theory (enable flatnorm-of-svtv-data-obj)))))
 
      
   ;; (local (defthm svex-alist-width-of-c

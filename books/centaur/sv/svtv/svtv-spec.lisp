@@ -551,4 +551,14 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
                          (cycle-outs (base-fsm-eval cycle-envs-full initst-full (svtv-spec->cycle-fsm x))))
                       (svtv-spec-cycle-outs->pipe-out x cycle-outs))))
     :hints(("Goal" :in-theory (enable svtv-spec-run
-                                      svtv-spec-pipe-env->phase-envs-in-terms-of-cycle-envs svtv-spec-phase-outs->pipe-out-in-terms-of-cycle-outs)))))
+                                      svtv-spec-pipe-env->phase-envs-in-terms-of-cycle-envs svtv-spec-phase-outs->pipe-out-in-terms-of-cycle-outs))))
+
+  (defthm nextstate-keys-of-svtv-spec->cycle-fsm
+    (equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->cycle-fsm x)))
+           (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x))))))
+
+
+
+
+
+
