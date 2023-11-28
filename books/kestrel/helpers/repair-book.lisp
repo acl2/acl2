@@ -116,6 +116,44 @@
           (er hard? 'consume-event-data-forms "Bad event-data forms (expected one for ~x0): ~x1." name event-data-forms)
         (consume-event-data-forms (rest names) (rest event-data-forms))))))
 
+;; Returns the remaining event-data-forms.
+(defun repair-event-with-event-data (event new-event-data-fal event-data-forms state)
+  (declare (xargs :stobjs state
+                  :mode :program))
+  (b* (((when (not (and (consp event) (member-eq (car event) '(defthm defthmd))))) ; todo: generalize
+        (cw "Warning: Can only repair defthms.  Ignoring ~x0~%" event)
+        ;; Consume any event-data-forms that came from this event:
+        (let ((names-with-event-data (strip-cars (true-list-fix new-event-data-fal))))
+          (consume-event-data-forms names-with-event-data event-data-forms)))
+       ((when (not (consp event-data-forms)))
+        (cw "Error: No more event data.") ; todo: throw an error? ;todo: can still attempt some repairs (e.g., using advice)
+        nil)
+       (event-data-form (first event-data-forms))  ; we assume they are in sync and also that this is not a compound event (todo)
+       ;; It's a defthm (of some kind):
+       (name (cadr event)) ;todo gen
+       (- (cw "~%(Failed Event: ~x0~%" name)) ; print better?
+       ((when (not (and (eq name (car event-data-form)))))
+        (cw "Error: No event data for ~x0." name) ; todo: throw an error?
+        nil ; todo: do better: try to skip some forms while looking for name?
+        )
+       (this-event-data (car (cdr (hons-get name new-event-data-fal))))
+       (old-event-data (cdr event-data-form))
+       ;; (- (cw "New event data: ~x0.~%" this-event-data))
+       ;; (- (cw "Old event data: ~x0.~%" old-event-data))
+       (new-runes (get-event-data-1 'rules this-event-data))
+       (old-runes (get-event-data-1 'rules old-event-data))
+       (new-only-runes (set-difference-equal new-runes old-runes))
+       (old-only-runes (set-difference-equal old-runes new-runes))
+       (- (progn$ (cw "~%BEST REPAIR SUGGESTIONS:~%~%") ; todo: figure out which event failed and print its name here?
+                  (print-info-on-old-runes old-only-runes :major state)
+                  (print-info-on-new-runes new-only-runes :major state)
+                  (cw "~%Other observations:~%") ; todo: make this shorter, so it doesn't distract from the best suggestions above
+                  (print-info-on-old-runes old-only-runes :minor state)
+                  (print-info-on-new-runes new-only-runes :minor state)
+                  (cw ")~%"))))
+    ;; Since it was a defthm, we can consume a single event-data-form (or do what we do above for consistency?):
+    (consume-event-data-forms (list name) event-data-forms)))
+
 ;; TODO: If event-data gets out of sync, look for any event data for the given name (perhaps count occurrences of each name as we go?)
 ;; Returns (mv erp state).
 (defun repair-events-with-event-data (events event-data-forms state)
@@ -127,7 +165,7 @@
       (if (consp event-data-forms)
           (prog2$ (cw "Warning: Extra event-data forms: ~x0." event-data-forms)
                   (mv :extra-event-forms state))
-        (progn$ (cw "Done repairing book.~%") ; todo: print warning if no failure found
+        (progn$ nil ; todo: print warning if no failure found
                 (mv nil state)))
     (b* ((event (first events))
          ;; Clear event-data:
@@ -137,33 +175,10 @@
          (new-event-data-fal (f-get-global 'event-data-fal state)) ; a fast alist whose final cdr is event-data-fal
          )
       (if erp
-          ;; this event failed!
-          (b* ((- (cw "(Failed Event: ~x0~%" (cadr event))) ; print better?
-               ((when (not (and (consp event) (member-eq (car event) '(defthm defthmd))))) ; todo
-                (cw "Error: Can only repair defthms.~%") ; todo: keep going!
-                (mv t state))
-               (event-data-form (first event-data-forms))
-               (name (cadr event)) ;todo gen
-               ((when (not (and (consp event-data-forms) (eq name (car event-data-form)))))
-                (cw "Error: No event data for ~x0." name)
-                (mv t state))
-               (this-event-data (car (cdr (hons-get name new-event-data-fal))))
-               (old-event-data (cdr event-data-form))
-               ;; (- (cw "New event data: ~x0.~%" this-event-data))
-               ;; (- (cw "Old event data: ~x0.~%" old-event-data))
-               (new-runes (get-event-data-1 'rules this-event-data))
-               (old-runes (get-event-data-1 'rules old-event-data))
-               (new-only-runes (set-difference-equal new-runes old-runes))
-               (old-only-runes (set-difference-equal old-runes new-runes))
-               (- (progn$ (cw "~%~%BEST REPAIR SUGGESTIONS:~%~%") ; todo: figure out which event failed and print its name here?
-                          (print-info-on-old-runes old-only-runes :major state)
-                          (print-info-on-new-runes new-only-runes :major state)
-                          (cw "~%Other observations:~%") ; todo: make this shorter, so it doesn't distract from the best suggestions above
-                          (print-info-on-old-runes old-only-runes :minor state)
-                          (print-info-on-new-runes new-only-runes :minor state)
-                          (cw ")~%")))
-               (event-data-forms (consume-event-data-forms (list name) event-data-forms)))
+          ;; this event failed, so attempt a repair:
+          (let ((event-data-forms (repair-event-with-event-data event new-event-data-fal event-data-forms state)))
             (repair-events-with-event-data (rest events) event-data-forms state))
+        ;; this event succeeded, so continue:
         (b* ((names-with-event-data (strip-cars (true-list-fix new-event-data-fal)))
              (event-data-forms (consume-event-data-forms names-with-event-data event-data-forms)))
           (repair-events-with-event-data (rest events) event-data-forms state))))))
@@ -187,7 +202,7 @@
        ((mv erp & state) (set-cbd-fn dir state))
        ((when erp) (mv erp nil state))
        ;; Start repairing
-       (- (cw "~%~%*** REPAIRING ~s0 ***~%~%" book-path))
+       (- (cw "~%~%(REPAIRING ~s0~%~%" book-path))
        ;; Load the .port file (may be help resolve #. constants [and packages?] in read-objects-from-book):
        (state (load-port-file-if-exists (remove-lisp-suffix book-path t) state))
        ;; Read all the forms in the book:
@@ -203,6 +218,8 @@
        ;; Walk through the book events and that file in sync
        ((mv erp state) (repair-events-with-event-data events event-data-forms state))
        ((when erp) (mv erp nil state))
+       (- (cw "Done repairing ~s0)~%" book-path))
+
        ;; ;; todo: this still print stuff:
        ;; (state (submit-event-quiet `(saving-event-data (ld ,book-path)) state)) ; todo: make this even quieter
        ;; (most-recent-failed-theorem (acl2::most-recent-failed-command acl2::*theorem-event-types* state))
@@ -253,7 +270,7 @@
   (declare (xargs :mode :program
                   :stobjs state))
   (b* ((cbd (cbd-fn state))
-       (- (cw "Looking for books to repair under ~s0." cbd))
+       (- (cw "~%Looking for books to repair under ~s0.~%" cbd))
        (failed-books (find-failed-books))
        (failed-books (extend-pathnames$ cbd failed-books state))
        (- (cw "Will attempt to repair the following ~x0 books: ~X12~%" (len failed-books) failed-books nil))
