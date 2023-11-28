@@ -140,11 +140,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-ensure-formals-not-lost ((bind-affect symbol-listp)
-                                     (fn-affect symbol-listp)
-                                     (fn-typed-formals atc-symbol-varinfo-alistp)
-                                     (fn symbolp)
-                                     (wrld plist-worldp))
+(define atc-ensure-formals-not-lost
+  ((bind-affect symbol-listp)
+   (fn-affect symbol-listp)
+   (fn-typed-formals atc-symbol-varinfo-alistp)
+   (fn symbolp)
+   (wrld plist-worldp))
   :returns erp
   :short "Ensure that no affected formals are lost."
   :long
@@ -410,10 +411,10 @@
      which applies the associated recognizer
      to the corresponding term's result.")
    (xdoc::p
-    "For any array value returned by the term,
+    "For each array value returned by the term,
      we also return, as part of the formula,
-     assertions saying that the length of each array
-     is the same as the corresponding variables.
+     an assertion saying that the length of the array
+     is the same as the corresponding variable.
      Since a C array type is described by both the element type and the size,
      it makes sense that assertions about the length
      accompany assertions involving the recognizers
@@ -688,10 +689,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This does not include the term, which is passed as a separate input.")
-   (xdoc::p
-    "The @('loop-flag') component is
-     the loop flag @('L') described in the user documentation."))
+    "This does not include the term, which is passed as a separate input."))
   ((context atc-contextp
             "Described in @(see atc-implementation).
              It is the context just before this statement,
