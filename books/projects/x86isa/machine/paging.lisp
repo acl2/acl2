@@ -2674,11 +2674,6 @@
                                    x862))))
 )
 
-  (defthm ia32e-la-to-pa-preserves-ia32e-la-to-pa
-          (equal (ia32e-la-to-pa lin-addr r-w-x
-                                 (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86)))
-                 (ia32e-la-to-pa lin-addr r-w-x x86)))
-
   ;; TODO Clearly this no longer holds due to the tlb
   ;; (defthm mv-nth-2-ia32e-la-to-pa-system-level-non-marking-view
   ;;         (implies (and (not (marking-view x86))

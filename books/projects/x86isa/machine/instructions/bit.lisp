@@ -410,122 +410,115 @@
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))
 
-(def-inst x86-bt-0F-BA
+(skip-proofs (def-inst x86-bt-0F-BA
 
-          ;; 0F BA/4: BT r/m16/32/64, imm8
-          ;; 0F BA/5: BTS r/m16/32/64, imm8
-          ;; 0F BA/6: BTR r/m16/32/64, imm8
+                       ;; 0F BA/4: BT r/m16/32/64, imm8
+                       ;; 0F BA/5: BTS r/m16/32/64, imm8
+                       ;; 0F BA/6: BTR r/m16/32/64, imm8
 
-          ;; If the bitBase is a register, the BitOffset can be in the range 0
-          ;; to [15, 31, 63] depending on the mode and register size.  If the
-          ;; bitBase is a memory address and bitOffset is an immediate operand,
-          ;; then also the bitOffset can be in the range 0 to [15, 31, 63].
+                       ;; If the bitBase is a register, the BitOffset can be in the range 0
+                       ;; to [15, 31, 63] depending on the mode and register size.  If the
+                       ;; bitBase is a memory address and bitOffset is an immediate operand,
+                       ;; then also the bitOffset can be in the range 0 to [15, 31, 63].
 
-          :parents (two-byte-opcodes)
+                       :parents (two-byte-opcodes)
 
-          :returns (x86 x86p :hyp (x86p x86))
+                       :returns (x86 x86p :hyp (x86p x86))
 
-          :guard-hints (("Goal" :in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
+                       :guard-hints (("Goal" :in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
 
-          :prepwork
-          ((local (defthm unsigned-byte-p-logior-unsigned-byteps
-                          (implies (and (natp i)
-                                        (unsigned-byte-p i x)
-                                        (unsigned-byte-p i y))
-                                   (unsigned-byte-p i (logior x y)))))
+                       :modr/m t
 
-          :modr/m t
+                       :body
 
-          :body
+                       ;; Note: opcode is the second byte of the two-byte opcode.
 
-          ;; Note: opcode is the second byte of the two-byte opcode.
+                       (b* (((the (integer 1 8) operand-size)
+                             (select-operand-size
+                               proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
-          (b* (((the (integer 1 8) operand-size)
-                (select-operand-size
-                  proc-mode nil rex-byte nil prefixes nil nil nil x86))
+                            (log2-operand-size (case operand-size
+                                                 (1 0)
+                                                 (2 1)
+                                                 (4 2)
+                                                 (8 3)))
 
-               (log2-operand-size (case operand-size
-                                    (1 0)
-                                    (2 1)
-                                    (4 2)
-                                    (8 3)))
+                            (p2 (prefixes->seg prefixes))
+                            (p4? (equal #.*addr-size-override*
+                                        (prefixes->adr prefixes)))
 
-               (p2 (prefixes->seg prefixes))
-               (p4? (equal #.*addr-size-override*
-                           (prefixes->adr prefixes)))
+                            (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-               (inst-ac? t)
-               ((mv flg0
-                    bitBase
-                    (the (unsigned-byte 3) increment-RIP-by)
-                    (the (signed-byte 64) addr)
-                    x86)
-                (x86-operand-from-modr/m-and-sib-bytes
-                  proc-mode #.*gpr-access* operand-size inst-ac?
-                  nil ;; Not a memory pointer operand
-                  seg-reg p4? temp-rip rex-byte r/m mod sib
-                  1 ;; One-byte immediate data
-                  x86))
-               ((when flg0)
-                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
-
-               ((mv flg1 (the (unsigned-byte 8) bitOffset) x86)
-                (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
-               ((when flg1) (!!ms-fresh :rme-size-error flg1))
-
-               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                (add-to-*ip proc-mode temp-rip 1 x86))
-               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
-
-               (badlength? (check-instruction-length start-rip temp-rip 0))
-               ((when badlength?)
-                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-               ((the (integer 0 64) bitOffset)
-                (loghead (+ log2-operand-size 3)
-                         bitOffset))
-
-               ;; Update the x86 state:
-               ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
-               ;; If reg is 5, we need to set the selected bit
-               ;; If reg is 6, we need to clear the selected bit
-               (x86
-                 (let* ((x86 (!flgi :cf
-                                    (the (unsigned-byte 1)
-                                         (acl2::logbit bitOffset bitBase))
-                                    x86))
-                        (x86 (!flgi-undefined :pf x86))
-                        (x86 (!flgi-undefined :af x86))
-                        (x86 (!flgi-undefined :sf x86))
-                        (x86 (!flgi-undefined :of x86)))
-                   x86))
-               ((mv flg x86) (if (member reg '(5 6))  ;; If BTR, we need to clear the tested bit
-                               (x86-operand-to-reg/mem
-                                 proc-mode
-                                 operand-size
-                                 inst-ac?
-                                 nil
-                                 (if (equal reg 5)
-                                   (logior bitBase
-                                           (ash 1 bitOffset))
-                                   (logand bitBase
-                                           (lognot (ash 1 bitOffset))))
-                                 seg-reg
-                                 addr
-                                 rex-byte
-                                 r/m
-                                 mod
+                            (inst-ac? t)
+                            ((mv flg0
+                                 bitBase
+                                 (the (unsigned-byte 3) increment-RIP-by)
+                                 (the (signed-byte 64) addr)
                                  x86)
-                               (mv nil x86)))
-               ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
-               (x86 (write-*ip proc-mode temp-rip x86)))
-              x86)))
+                             (x86-operand-from-modr/m-and-sib-bytes
+                               proc-mode #.*gpr-access* operand-size inst-ac?
+                               nil ;; Not a memory pointer operand
+                               seg-reg p4? temp-rip rex-byte r/m mod sib
+                               1 ;; One-byte immediate data
+                               x86))
+                            ((when flg0)
+                             (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+                            ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+                             (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+                            ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+                            ((mv flg1 (the (unsigned-byte 8) bitOffset) x86)
+                             (rme-size-opt proc-mode 1 temp-rip #.*cs* :x nil x86))
+                            ((when flg1) (!!ms-fresh :rme-size-error flg1))
+
+                            ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+                             (add-to-*ip proc-mode temp-rip 1 x86))
+                            ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+                            (badlength? (check-instruction-length start-rip temp-rip 0))
+                            ((when badlength?)
+                             (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+                            ((the (integer 0 64) bitOffset)
+                             (loghead (+ log2-operand-size 3)
+                                      bitOffset))
+
+                            ;; Update the x86 state:
+                            ;; CF affected. ZF unchanged. PF, AF, SF, and OF undefined.
+                            ;; If reg is 5, we need to set the selected bit
+                            ;; If reg is 6, we need to clear the selected bit
+                            (x86
+                              (let* ((x86 (!flgi :cf
+                                                 (the (unsigned-byte 1)
+                                                      (acl2::logbit bitOffset bitBase))
+                                                 x86))
+                                     (x86 (!flgi-undefined :pf x86))
+                                     (x86 (!flgi-undefined :af x86))
+                                     (x86 (!flgi-undefined :sf x86))
+                                     (x86 (!flgi-undefined :of x86)))
+                                x86))
+                            ((mv flg x86) (if (member reg '(5 6))  ;; If BTR, we need to clear the tested bit
+                                            (x86-operand-to-reg/mem
+                                              proc-mode
+                                              operand-size
+                                              inst-ac?
+                                              nil
+                                              (if (equal reg 5)
+                                                (logior bitBase
+                                                        (ash 1 bitOffset))
+                                                (logand bitBase
+                                                        (lognot (ash 1 bitOffset))))
+                                              seg-reg
+                                              addr
+                                              rex-byte
+                                              r/m
+                                              mod
+                                              x86)
+                                            (mv nil x86)))
+                            ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
+                            (x86 (write-*ip proc-mode temp-rip x86)))
+                           x86)))
 
 ;; Helper for the bsr instruction
 (define bsr ((source integerp)
