@@ -54,6 +54,7 @@
 ;; TODO: Actually try the suggestions, and provide new hints for the event.
 ;; TODO: Try the advice tool!
 ;; todo: look at other things about the proof, not just the runes...
+;; todo: instead of printing here, accumulate a list of notes to print if no repair works
 (defun recs-for-old-rune (rune counter state)
   (declare (xargs :guard (natp counter)
                   :verify-guards nil ; todo
