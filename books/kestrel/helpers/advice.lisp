@@ -3252,7 +3252,7 @@
                             (acons model recs acc)
                             state))))
 
-;; Returns (mv erp state)
+;; Returns state.
 (defun startup-models (model-info-alist
                        num-recs-per-model
                        disallowed-rec-types
@@ -3277,39 +3277,45 @@
            (irrelevant translated-theorem-body) ; todo!
            )
   (if (endp model-info-alist)
-      (mv nil state) ; no error
-    (b* ((entry (first model-info-alist))
-         (model (car entry))
-         (model-info (cdr entry))
-         (print-timep (acl2::print-level-at-least-tp print))
-         ;; Record the start time (if we will need it):
-         ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         ;; Dispatch to the model:
-         (ml-modelp (not (member-eq model
-                               ;; TODO: Avoiding listing all these here:
-                                    '(:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
-                                      :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
-                                      :history :induct :cases))))
-         ((mv erp
-              & ; recs (should be nil)
-              state)
-          (if (not ml-modelp)
-              (mv nil nil state) ; no need to start the model
-            ;; It's a ML model on a server, so start it:
-            (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state)))
-         ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         (- (and erp (cw "Error using ~x0.~%" model))) ; but continue
-         (- (if (and print-timep ml-modelp)
-                (let* ((time-diff (- done-time start-time))
-                       (time-diff (if (< time-diff 0)
-                                      (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
-                                              0)
-                                    time-diff)))
-                  (progn$ (cw "Started model in ")
-                          (acl2::print-to-hundredths time-diff)
-                          (cw "s~%") ; s = seconds
-                          ))
-              nil)))
+      state
+    (let ((state
+            (b* ((entry (first model-info-alist))
+                 (model (car entry))
+                 (ml-modelp (not (member-eq model
+                                            ;; TODO: Avoiding listing all these here:
+                                            '(:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
+                                              :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
+                                              :history :induct :cases))))
+                 ((when (not ml-modelp))
+                  state ; no need to start the model
+                  )
+                 ;; It's an ML model on a server, so start it:
+                 (model-info (cdr entry))
+                 (print-timep (acl2::print-level-at-least-tp print))
+                 ;; Record the start time (if we will need it):
+                 ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+                 ;; Dispatch to the model to start it:
+                 ((mv erp
+                      & ; recs (should be nil)
+                      state)
+                  (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state))
+                 ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+                 ((when erp)
+                  (cw "Error using ~x0.~%" model)
+                  state ; but continue...
+                  )
+                 (- (if (and print-timep ml-modelp)
+                        (let* ((time-diff (- done-time start-time))
+                               (time-diff (if (< time-diff 0)
+                                              (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                                      0)
+                                            time-diff)))
+                          (progn$ (cw "Started model in ")
+                                  (acl2::print-to-hundredths time-diff)
+                                  (cw "s~%") ; s = seconds
+                                  ))
+                      nil)))
+              state)))
       (startup-models (rest model-info-alist)
                       num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top translated-theorem-body broken-theorem
                       timeout debug print
@@ -3482,13 +3488,12 @@
               (len checkpoint-clauses-non-top) (if (= 1 (len checkpoint-clauses-non-top)) "checkpoint" "checkpoints")))
        ((mv models-start-time state) (acl2::get-real-time state))
        ;; Maybe start the models working:
-       ((mv erp state)
+       (state
         (if start-and-return
             (prog2$ (cw "Starting the models:~%")
                     (startup-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
                                     translated-theorem-body broken-theorem timeout debug print state))
-          (mv nil state)))
-       ((when erp) (mv erp nil nil state))
+          state))
 
        ;; Go back and get the recs from the models (TODO: Could reduce waiting even more by trying some recs first):
        ;; WARNING: Keep args in sync between startup-models and get-recs-from-models (except startup-models has no acc)!
