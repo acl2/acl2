@@ -3341,6 +3341,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv erp checkpoint-clauses-top checkpoint-clauses-non-top).
+(defun checkpoints-for-failed-proof (theorem-name translated-theorem-body state)
+  (declare (xargs :guard (and (symbolp theorem-name)
+                              (pseudo-termp translated-theorem-body))
+                  :mode :program ; because of clausify-term
+                  :stobjs state))
+  (b* (;; First the top-level checkpoints:
+       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
+                                                          state))
+       ((when (eq :unavailable raw-checkpoint-clauses-top))
+        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
+        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
+        (mv :no-checkpoints nil nil))
+       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
+       ;; TODO: Or use :otf-flg to get the real checkpoints?
+       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
+                                   (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
+                                           (clausify-term translated-theorem-body (w state)))
+                                 raw-checkpoint-clauses-top))
+       ((when (null checkpoint-clauses-top))
+        ;; A step-limit may fire before checkpoints can be generated:
+        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
+        (mv :no-checkpoints nil nil))
+       ;; Now the non-top checkpoints, of which there may be none:
+       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
+                                                          state))
+       ;; todo: any special values to handle here?
+       )
+    (mv nil ; no error
+        checkpoint-clauses-top checkpoint-clauses-non-top)))
+
 ;; Attempts to prove the given theorem using the given hints.  If the proof
 ;; worked, returns a recommendation that includes the hints that worked.
 ;; Otherwise, unless there is an error, returns the checkpoints from the failed
@@ -3383,28 +3414,9 @@
             nil ; checkpoints, meaningless
             nil ; checkpoints, meaningless
             state))
-       ;; The proof failed, so get the checkpoints:
-       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
-                                                          state))
-       ((when (eq :unavailable raw-checkpoint-clauses-top))
-        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
-        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
-        (mv :no-checkpoints nil nil nil nil state))
-       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
-       ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
-                               (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
-                                       (clausify-term translated-theorem-body (w state)))
-                             raw-checkpoint-clauses-top))
-       ((when (null checkpoint-clauses-top))
-        ;; A step-limit may fire before checkpoints can be generated:
-        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
-        (mv :no-checkpoints nil nil nil nil state))
-       ;; Now the non-top checkpoints, of which there may be none:
-       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
-                                                          state))
-       ;; todo: any special values to handle here?
-       )
+       ((mv erp checkpoint-clauses-top checkpoint-clauses-non-top)
+        (checkpoints-for-failed-proof theorem-name translated-theorem-body state))
+       ((when erp) (mv erp nil nil nil nil state)))
     (mv nil ; no error
         nil ; didn't prove
         nil ; meaningless
