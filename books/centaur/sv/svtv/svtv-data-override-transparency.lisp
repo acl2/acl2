@@ -37,6 +37,7 @@
 (local (include-book "svtv-stobj-pipeline-monotonicity"))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "../svex/compose-theory-ovmonotonicity"))
+(local (include-book "clause-processors/find-subterms" :dir :system))
 
 (std::defredundant :names (svtv-spec-stimulus-equiv
                            svtv-spec-stimulus-equiv-is-an-equivalence
@@ -119,14 +120,13 @@
          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
          (impl-run (svtv-spec-run spec pipe-env))
          (overridekeys (svtv-assigns-override-vars x.flatnorm.assigns
-                                                   (phase-fsm-config->override-config x.phase-fsm-setup)))
-         (params (svarlist-change-override overridekeys :test)))
+                                                   (phase-fsm-config->override-config x.phase-fsm-setup))))
       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                     x.flatten-validp
                     x.flatnorm-validp
                     (flatnorm-setup->monotonify x.flatnorm-setup)
 
-                    (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
+                    (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
 
                     
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
@@ -143,20 +143,33 @@
                    (x (svtv-data-obj->design x))
                    (config (svtv-data-obj->phase-fsm-setup x)))))))
 
+  
 
+  (local (defthm svarlist-addr-p-of-flatnorm-res->assigns-vars
+           (B* (((svtv-data-obj x)))
+             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+                           x.flatten-validp
+                           x.flatnorm-validp)
+                      (svarlist-addr-p (svex-alist-vars (flatnorm-res->assigns x.flatnorm)))))
+           :hints(("Goal" :use flatnorm-of-svtv-data-obj
+                   :in-theory (disable flatnorm-of-svtv-data-obj)))))
 
-  (defthm base-fsm-partial-monotonic-of-svtv-data-obj->phase-fsm
-    (b* (((svtv-data-obj x))
-         ((flatnorm-res x.flatnorm))
-         (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
-                                                        (phase-fsm-config->override-config x.phase-fsm-setup))))
+  (defthm base-fsm-ovmonotonic-of-svtv-data-obj->phase-fsm
+    (b* (((svtv-data-obj x)))
       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                     x.flatten-validp
                     x.flatnorm-validp
                     x.phase-fsm-validp
                     (flatnorm-setup->monotonify x.flatnorm-setup))
-               (base-fsm-partial-monotonic (svarlist-change-override override-mux-keys :test) x.phase-fsm)))
-    :hints(("Goal" :in-theory (enable base-fsm-partial-monotonic))))
+               (base-fsm-ovmonotonic x.phase-fsm)))
+    ;; :hints(("Goal" :in-theory (e/d (;; base-fsm-ovcongruent
+    ;;                                 ;; phase-fsm-composition-p
+    ;;                                 PHASE-FSM-COMPOSITION-P-IMPLIES-VALUES-KEYS)
+    ;;                                (phase-fsm-validp-of-svtv-data-obj))
+    ;;         :use ((:INSTANCE PHASE-FSM-VALIDP-OF-SVTV-DATA-OBJ))))
+    :hints(("Goal" :in-theory (e/d ()
+                                   (phase-fsm-validp-of-svtv-data-obj))
+            :use phase-fsm-validp-of-svtv-data-obj)))
 
   ;; (defrefinement svex-alist-keys-equiv svex-alist-eval-equiv
 
@@ -293,15 +306,6 @@
                                              svtv-flatnorm-apply-overrides))))))
 
   
-
-  (local (defthm svarlist-addr-p-of-flatnorm-res->assigns-vars
-           (B* (((svtv-data-obj x)))
-             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                           x.flatten-validp
-                           x.flatnorm-validp)
-                      (svarlist-addr-p (svex-alist-vars (flatnorm-res->assigns x.flatnorm)))))
-           :hints(("Goal" :use flatnorm-of-svtv-data-obj
-                   :in-theory (disable flatnorm-of-svtv-data-obj)))))
   
   
   (defthm base-fsm-ovcongruent-of-svtv-data-obj->phase-fsm
@@ -336,12 +340,11 @@
   (defthm override-transparency-of-svtv-data-obj->spec-with-smart-check
     (b* (((svtv-spec spec) (svtv-data-obj->spec x))
          ((svtv-data-obj x))
-         ((flatnorm-res x.flatnorm))
+         ;; ((flatnorm-res x.flatnorm))
          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
          (impl-run (svtv-spec-run spec pipe-env))
-         (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
-                                                        (phase-fsm-config->override-config x.phase-fsm-setup)))
-         (params (svarlist-change-override override-mux-keys :test))
+         ;; (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
+         ;;                                                (phase-fsm-config->override-config x.phase-fsm-setup)))
          ;; ((base-fsm spec.fsm))
          ;; (overridetriples (svar->svex-override-triplelist
          ;;                   (svarlist-to-override-triples overridekeys)
@@ -353,7 +356,7 @@
                     x.phase-fsm-validp
                     (flatnorm-setup->monotonify x.flatnorm-setup)
 
-                    (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
+                    (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
                     (base-fsm-override-smart-check spec.fsm overridekeys)
 
                     ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.values) overridetriples))
@@ -429,37 +432,69 @@
   ;;                                   (svex-alist-compose (svarlist-to-override-alist overridekeys) x2)))
   ;;          :hints(("Goal" :in-theory (enable svex-alist-<<=)))))
 
-  
-  (local (defthm svex-alist-monotonic-on-vars-of-flatnorm-res
-           (B* (((svtv-data-obj x))
-                ((flatnorm-res x.flatnorm)))
-             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                           x.flatten-validp
-                           x.flatnorm-validp
-                           (flatnorm-setup->monotonify x.flatnorm-setup)
-                           (svarlist-override-p keys nil))
-                      (svex-alist-monotonic-on-vars keys (flatnorm-res->assigns
-                                                          (flatnorm-add-overrides
-                                                           x.flatnorm overridekeys)))))
-           :hints(("Goal" :use ((:instance svex-alist-partial-monotonic-of-flatnorm-add-overrides
-                                 (x (svtv-data-obj->flatnorm x))))
-                   :in-theory (disable svex-alist-partial-monotonic-of-flatnorm-add-overrides)))))
+  (local (defthm svar-override-p-when-member-special
+           (implies (and (member-equal (svar-fix key) (svarlist-fix vars))
+                         (svarlist-override-p vars nil)
+                         (not (svar-overridetype-equiv type nil)))
+                    (not (svar-override-p key type)))
+           :hints(("Goal" :in-theory (enable svarlist-override-p
+                                             svar-override-p-when-other)))))
 
-  (local (defthm svex-alist-monotonic-on-vars-of-flatnorm-add-overrides-design->flatnorm
-           (B* (((svtv-data-obj x))
-                ;; ((flatnorm-res x.flatnorm))
-                )
-             (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
-                           x.flatten-validp
-                           x.flatnorm-validp
-                           (flatnorm-setup->monotonify x.flatnorm-setup)
-                           (svarlist-override-p keys nil))
-                      (svex-alist-monotonic-on-vars keys (flatnorm-res->assigns
-                                                          (flatnorm-add-overrides
-                                                           (design->flatnorm x.design) overridekeys)))))
-           :hints(("Goal" :use ((:instance svex-alist-partial-monotonic-of-flatnorm-add-overrides
-                                 (x (design->flatnorm (svtv-data-obj->design x)))))
-                   :in-theory (disable svex-alist-partial-monotonic-of-flatnorm-add-overrides)))))
+  (local (defthm svex-env-ov<<=-when-agree-except
+           (implies (and (svex-env-<<= x y)
+                         (svex-envs-agree-except vars x y)
+                         (svarlist-override-p vars nil))
+                    (svex-env-ov<<= x y))
+           :hints (("goal" :expand ((:with svex-env-ov<<=-by-witness (svex-env-ov<<= x y))))
+                   (and stable-under-simplificationp
+                        (let ((call (acl2::find-call-lst 'svex-env-ov<<=-witness clause)))
+                          (and call
+                               `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . key)))))))
+                   (and stable-under-simplificationp
+                        '(:use ((:instance svex-envs-agree-except-implies
+                                 (var key))))))))
+
+  (defthm svex-alist-monotonic-on-vars-when-ovmonotonic
+    (implies (and (svex-alist-ovmonotonic x)
+                  (svarlist-override-p vars nil))
+             (svex-alist-monotonic-on-vars vars x))
+    :hints (("goal" :expand (svex-alist-monotonic-on-vars vars x)
+             :in-theory (enable svex-alist-ovmonotonic-necc))
+            (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-alist-ovmonotonic-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
+                                                                                     ((mv-nth '1 ,call) . env2))))))))) 
+  ;; (local (defthm svex-alist-monotonic-on-vars-of-flatnorm-res
+  ;;          (B* (((svtv-data-obj x))
+  ;;               ((flatnorm-res x.flatnorm)))
+  ;;            (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+  ;;                          x.flatten-validp
+  ;;                          x.flatnorm-validp
+  ;;                          (flatnorm-setup->monotonify x.flatnorm-setup)
+  ;;                          (svarlist-override-p keys nil))
+  ;;                     (svex-alist-monotonic-on-vars keys (flatnorm-res->assigns
+  ;;                                                         (flatnorm-add-overrides
+  ;;                                                          x.flatnorm overridekeys)))))
+  ;;          :hints(("Goal" :use ((:instance svex-alist-partial-monotonic-of-flatnorm-add-overrides
+  ;;                                (x (svtv-data-obj->flatnorm x))))
+  ;;                  :in-theory (disable svex-alist-partial-monotonic-of-flatnorm-add-overrides)))))
+
+  ;; (local (defthm svex-alist-monotonic-on-vars-of-flatnorm-add-overrides-design->flatnorm
+  ;;          (B* (((svtv-data-obj x))
+  ;;               ;; ((flatnorm-res x.flatnorm))
+  ;;               )
+  ;;            (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
+  ;;                          x.flatten-validp
+  ;;                          x.flatnorm-validp
+  ;;                          (flatnorm-setup->monotonify x.flatnorm-setup)
+  ;;                          (svarlist-override-p keys nil))
+  ;;                     (svex-alist-monotonic-on-vars keys (flatnorm-res->assigns
+  ;;                                                         (flatnorm-add-overrides
+  ;;                                                          (design->flatnorm x.design) overridekeys)))))
+  ;;          :hints(("Goal" :use ((:instance svex-alist-partial-monotonic-of-flatnorm-add-overrides
+  ;;                                (x (design->flatnorm (svtv-data-obj->design x)))))
+  ;;                  :in-theory (disable svex-alist-partial-monotonic-of-flatnorm-add-overrides)))))
 
      
   ;; (local (defthm svex-alist-width-of-c
@@ -528,6 +563,8 @@
            :hints ((and stable-under-simplificationp
                         `(:expand (,(car (last clause))))))))
   
+
+
   
   (local (defthm base-fsm-<<=-ideal-of-svtv-data-obj->phase-fsm
            (B* (((svtv-data-obj x)))
@@ -578,15 +615,14 @@
           (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
           (impl-run (svtv-spec-run abs pipe-env))
           (overridekeys (svtv-assigns-override-vars x.flatnorm.assigns
-                                                    (phase-fsm-config->override-config x.phase-fsm-setup)))
-          (params (svarlist-change-override overridekeys :test)))
+                                                    (phase-fsm-config->override-config x.phase-fsm-setup))))
        (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                      x.flatten-validp
                      x.flatnorm-validp
                      x.phase-fsm-validp
                      (flatnorm-setup->monotonify x.flatnorm-setup)
 
-                     (svtv-spec-override-syntax-checks spec overridekeys params triplemaps)
+                     (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
 
                     
                      (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
@@ -617,15 +653,14 @@
           (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
           (impl-run (svtv-spec-run abs pipe-env))
           (overridekeys (svtv-assigns-override-vars x.flatnorm.assigns
-                                                    (phase-fsm-config->override-config x.phase-fsm-setup)))
-          (params (svarlist-change-override overridekeys :test)))
+                                                    (phase-fsm-config->override-config x.phase-fsm-setup))))
        (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                      x.flatten-validp
                      x.flatnorm-validp
                      x.phase-fsm-validp
                      (flatnorm-setup->monotonify x.flatnorm-setup)
 
-                     (svtv-spec-override-syntax-checks abs overridekeys params triplemaps)
+                     (svtv-spec-override-syntax-checks abs overridekeys triplemaps)
 
                     
                      (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)

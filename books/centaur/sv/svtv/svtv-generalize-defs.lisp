@@ -94,7 +94,6 @@
 
 (define svtv-spec-override-syntax-checks ((spec svtv-spec-p)
                                           (overridekeys svarlist-p)
-                                          (params svarlist-p)
                                           (triplemaps svtv-override-triplemaplist-p))
   :returns (ok)
   (b* (((svtv-spec spec))
@@ -111,7 +110,6 @@
          (equal (svex-alist-keys-list test-alists) (svex-alist-keys-list val-alists))
          (no-duplicatesp-each (svex-alist-keys-list test-alists))
          (no-duplicatesp-each (alistlist-keys (svtv-override-triplemaplist-fix triplemaps)))
-         (svarlist-override-p params :test)
          (svtv-override-triplemaplist-overridekeys-ok triplemaps namemap overridekeys)
          (svarlist-override-p (svtv-name-lhs-map-vars namemap) nil)
          (svtv-override-triplemaplist-refvar-keys-subsetp triplemaps test-alists)

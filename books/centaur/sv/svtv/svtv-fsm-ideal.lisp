@@ -769,6 +769,50 @@
                         (:instance svex-env-ov<<=-necc
                          (x env1) (y env2) (v (svar-change-override badkey nil))))))))
 
+  (local (defthm 4vec-bit?!-lemma
+           (implies (equal (4vec-bit?! x y 0) (4vec-bit?! x z 0))
+                    (equal (equal (4vec-bit?! x y a) (4vec-bit?! x z a))
+                           t))
+           :hints (("goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
+                   (bitops::logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable b-ite))))))
+                        
+  
+  (local (defthm eval-bit?!-when-ovsimilar
+           (implies (svex-envs-ovsimilar x y)
+                    (b* ((test (svar-change-override v :test))
+                         (val (svar-change-override v :val))
+                         (non (svar-change-override v nil)))
+                      (equal (equal (4vec-bit?! (svex-env-lookup test x)
+                                                (svex-env-lookup val x)
+                                                (svex-env-lookup non x))
+                                    (4vec-bit?! (svex-env-lookup test y)
+                                                (svex-env-lookup val y)
+                                                (svex-env-lookup non y)))
+                             t)))
+           :hints (("Goal" :use ((:instance svex-envs-ovsimilar-necc (v (svar-change-override v :test)))
+                                 (:instance svex-envs-ovsimilar-necc (v (svar-change-override v :val)))
+                                 (:instance svex-envs-ovsimilar-necc (v (svar-change-override v nil))))))))
+  
+  (local (defthm eval-svarlist-to-override-alist-when-ovsimilar
+           (implies (svex-envs-ovsimilar env1 env2)
+                    (b* ((a (svarlist-to-override-alist x)))
+                      (equal (svex-envs-similar
+                              (svex-alist-eval a env1)
+                              (svex-alist-eval a env2))
+                             t)))
+           :hints(("Goal" :in-theory (e/d (svex-envs-similar
+                                             svex-apply
+                                             svex-lookup-of-svarlist-to-override-alist)
+                                          (SVAR-OVERRIDE-P-WHEN-MEMBER-CHANGE-OVERRIDE))
+                   :expand ((:free (v env) (svex-eval (svex-var v) env)))
+                   ))))
+  
+  (defthm svex-alist-ovcongruent-of-svarlist-to-override-alist
+    (svex-alist-ovcongruent (svarlist-to-override-alist x))
+    :hints(("Goal" :in-theory (enable svex-alist-ovcongruent))))
+
   (local (defthm member-svar-change-override-when-svar-override-p
            (implies (and (svarlist-override-p keys type2)
                          (not (svar-overridetype-equiv type1 type2)))
@@ -1061,6 +1105,13 @@
                                  (svex-alist-monotonic-p-necc))))))
 
 
+(local (defthm svarlist-nonoverride-p-of-change-override
+         (equal (svarlist-nonoverride-p (svarlist-change-override x type1) type2)
+                (or (atom x)
+                    (not (svar-overridetype-equiv type1 type2))))
+         :hints(("Goal" :in-theory (enable svarlist-change-override
+                                           svarlist-nonoverride-p)))))
+
 (define flatnorm-add-overrides ((x flatnorm-res-p)
                                 (overridekeys svarlist-p))
   :returns (new-x flatnorm-res-p)
@@ -1094,6 +1145,16 @@
            (implies
             (svex-alist-ovmonotonic x.delays)
             (svex-alist-ovmonotonic new-x.delays)))))
+
+  (defret svex-alist-ovcongruent-of-<fn>
+    (b* (((flatnorm-res x))
+         ((flatnorm-res new-x)))
+      (and (implies
+            (svex-alist-ovcongruent x.assigns)
+            (svex-alist-ovcongruent new-x.assigns))
+           (implies
+            (svex-alist-ovcongruent x.delays)
+            (svex-alist-ovcongruent new-x.delays)))))
 
   (defret svex-alist-vars-of-<fn>-assigns
     (b* (((flatnorm-res x))
@@ -1592,10 +1653,7 @@
   
   (defthm phase-fsm-composition-ovmonotonic-values
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm))
-         ;; (overridekeys
-         ;;   (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
-         )
+         ((base-fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
@@ -1605,7 +1663,7 @@
     :hints(("Goal" :in-theory (e/d (phase-fsm-composition-p
                                     svtv-flatnorm-apply-overrides
                                     svar-override-triplelist->override-alist-of-svarlist-to-override-triples
-                                    svex-alist-ovmonotonic-when-netevalcomp-p)
+                                    ovmonotonic-when-netevalcomp-p)
                                    (svar-override-triplelist->override-alist-monotonic-on-vars))
             :use ((:instance svar-override-triplelist->override-alist-monotonic-on-vars
                    (x (b* (((flatnorm-res x)))
@@ -1613,44 +1671,183 @@
                          (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))))
                    (vars (svex-alist-keys (flatnorm-res->assigns x))))))))
 
+  (local (defthm svarlist-nonoverride-p-when-svarlist-override-p-nil
+           (implies (and (svarlist-override-p x nil)
+                         (not (svar-overridetype-equiv type nil)))
+                    (svarlist-nonoverride-p x type))))
 
+  (local (defthm svar-override-p-when-member-special
+           (implies (and (member-equal (svar-fix key) (svarlist-fix vars))
+                         (svarlist-override-p vars nil)
+                         (not (svar-overridetype-equiv type nil)))
+                    (not (svar-override-p key type)))
+           :hints(("Goal" :in-theory (enable svarlist-override-p
+                                             svar-override-p-when-other)))))
+  
+  (local (defthm svex-envs-similar-of-extract-nonoverride-when-ovsimilar
+           (implies (and (svex-envs-ovsimilar env1 env2)
+                         (svarlist-override-p vars nil))
+                    (equal (svex-envs-similar (svex-env-extract vars env1) (svex-env-extract vars env2))
+                           t))
+           :hints(("Goal" :in-theory (enable svex-envs-similar
+                                             svar-override-p-when-other))
+                  (and stable-under-simplificationp
+                       (let ((call (acl2::find-call-lst 'svex-envs-similar-witness clause)))
+                         (and call
+                              `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . key)))))))
+                  (and stable-under-simplificationp
+                       '(:use ((:instance svex-envs-ovsimilar-necc
+                                (x env1) (y env2) (v key))))))))
+  
+  (local (defthm svex-alist-ovcongruent-p-when-alist-vars-nonoverride
+           (implies (svarlist-override-p (svex-alist-vars x) nil)
+                    (svex-alist-ovcongruent x))
+           :hints(("Goal" :in-theory (e/d (svex-alist-ovcongruent
+                                           SVEX-ALIST-EVAL-EQUIVALENT-WHEN-EXTRACT-VARS-SIMILAR)
+                                          (SVEX-ENVS-EQUIVALENT-WHEN-SIMILAR-AND-ALIST-KEYS-EQUIV)))
+                  (and stable-under-simplificationp
+                       (let ((call (acl2::find-call-lst 'svex-alist-ovcongruent-witness clause)))
+                         (and call
+                              `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
+                                                                                           ((mv-nth '1 ,call) . env2))))))))))
+  
+  (defthm phase-fsm-composition-ovcongruent-values
+    (b* (((flatnorm-res x))
+         ((base-fsm approx-fsm)))
+      (implies (and (phase-fsm-composition-p approx-fsm x config)
+                    (svarlist-override-p (svex-alist-vars x.assigns) nil)
+                    (svarlist-override-p (svex-alist-keys x.assigns) nil))
+               (svex-alist-ovcongruent
+                approx-fsm.values)))
+    :hints(("Goal" :in-theory (e/d (phase-fsm-composition-p
+                                    svtv-flatnorm-apply-overrides
+                                    svar-override-triplelist->override-alist-of-svarlist-to-override-triples
+                                    ovcongruent-when-netevalcomp-p)
+                                   (svar-override-triplelist->override-alist-monotonic-on-vars))
+            ;; :use ((:instance svar-override-triplelist->override-alist-monotonic-on-vars
+            ;;        (x (b* (((flatnorm-res x)))
+            ;;             (svarlist-to-override-triples
+            ;;              (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))))
+            ;;        (vars (svex-alist-keys (flatnorm-res->assigns x)))))
+            )))
+    
+  
+  (defthm svex-alist-ovmonotonic-of-append
+    (implies (and (svex-alist-ovmonotonic x)
+                  (svex-alist-ovmonotonic y))
+             (svex-alist-ovmonotonic (append x y)))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable svex-alist-ovmonotonic-necc))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-alist-ovmonotonic-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
+                                                                                     ((mv-nth '1 ,call) . env2)))))))))
+
+  (local (defthmd svex-alist-compose-preserves-ovmonotonic-free
+           (implies (and (svex-alist-eval-equiv! z (svex-alist-compose x y))
+                         (svex-alist-ovmonotonic x)
+                         (svex-alist-ovmonotonic y)
+                         (svarlist-override-p (svex-alist-keys y) nil))
+                    (svex-alist-ovmonotonic z))))
   
   (defthm phase-fsm-composition-ovmonotonic-nextstate
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm))
-         ;; (overridekeys
-         ;;   (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
-         )
+         ((base-fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svex-alist-monotonic-p x.delays)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
-                    (svarlist-override-p (svex-alist-vars x.delays) nil))
+                    (svarlist-override-p (svex-alist-vars x.delays) nil)
+                    (svarlist-override-p (svex-alist-keys x.delays) nil))
                (svex-alist-ovmonotonic
                 approx-fsm.nextstate)))
     :hints(("Goal" :in-theory (e/d (phase-fsm-composition-p
                                     svtv-flatnorm-apply-overrides
                                     svar-override-triplelist->override-alist-of-svarlist-to-override-triples
-                                    svex-alist-ovmonotonic-when-netevalcomp-p)
+                                    ovmonotonic-when-netevalcomp-p
+                                    svex-alist-compose-preserves-ovmonotonic-free)
                                    (phase-fsm-composition-ovmonotonic-values))
             :use phase-fsm-composition-ovmonotonic-values)))
 
+  (defthm svex-envs-similar-of-append
+    (implies (and (svex-envs-similar x1 x2)
+                  (svex-envs-similar y1 y2)
+                  (set-equiv (alist-keys (svex-env-fix x1))
+                             (alist-keys (svex-env-fix x2))))
+             (equal (svex-envs-similar (append x1 y1)
+                                       (append x2 y2))
+                    t))
+    :hints (("goal" :do-not-induct t
+             :in-theory (e/d (svex-env-boundp-iff-member-alist-keys)
+                             (acl2::alist-keys-member-hons-assoc-equal)))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))))
+
+  (local (defthmd svex-envs-similar-when-equivalent
+           (implies (svex-envs-equivalent x y)
+                    (equal (svex-envs-similar x y) t))))
+  
+  (defthm svex-alist-ovcongruent-of-append
+    (implies (and (svex-alist-ovcongruent x)
+                  (svex-alist-ovcongruent y))
+             (svex-alist-ovcongruent (append x y)))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable svex-alist-ovcongruent-necc
+                                svex-envs-similar-when-equivalent))
+            (and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 (let ((call (acl2::find-call-lst 'svex-alist-ovcongruent-witness clause)))
+                   (and call
+                        `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
+                                                                                     ((mv-nth '1 ,call) . env2)))))))))
+
+  
+  
+  (defthm phase-fsm-composition-ovcongruent-nextstate
+    (b* (((flatnorm-res x))
+         ((base-fsm approx-fsm)))
+      (implies (and (phase-fsm-composition-p approx-fsm x config)
+                    (svarlist-override-p (svex-alist-vars x.assigns) nil)
+                    (svarlist-override-p (svex-alist-keys x.assigns) nil)
+                    (svarlist-override-p (svex-alist-vars x.delays) nil)
+                    (svarlist-override-p (svex-alist-keys x.delays) nil))
+               (svex-alist-ovcongruent
+                approx-fsm.nextstate)))
+    :hints(("Goal" :in-theory (e/d (phase-fsm-composition-p
+                                    svtv-flatnorm-apply-overrides
+                                    svar-override-triplelist->override-alist-of-svarlist-to-override-triples)
+                                   (phase-fsm-composition-ovcongruent-values
+                                    ovcongruent-when-netevalcomp-p))
+            :use phase-fsm-composition-ovcongruent-values)))
+
   (defthm phase-fsm-composition-ovmonotonic
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm))
-         (overridekeys
-           (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config))))
+         ((base-fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svex-alist-monotonic-p x.delays)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
-                    (svarlist-override-p (svex-alist-vars x.delays) nil))
-               (base-fsm-ovmonotonic
-                (svarlist-change-override overridekeys :test)
-                approx-fsm)))
+                    (svarlist-override-p (svex-alist-vars x.delays) nil)
+                    (svarlist-override-p (svex-alist-keys x.delays) nil))
+               (base-fsm-ovmonotonic approx-fsm)))
     :hints(("Goal" :in-theory (enable base-fsm-ovmonotonic))))
+
+  (defthm phase-fsm-composition-ovcongruent
+    (b* (((flatnorm-res x))
+         ((base-fsm approx-fsm)))
+      (implies (and (phase-fsm-composition-p approx-fsm x config)
+                    (svarlist-override-p (svex-alist-vars x.assigns) nil)
+                    (svarlist-override-p (svex-alist-keys x.assigns) nil)
+                    (svarlist-override-p (svex-alist-vars x.delays) nil)
+                    (svarlist-override-p (svex-alist-keys x.delays) nil))
+               (base-fsm-ovcongruent approx-fsm)))
+    :hints(("Goal" :in-theory (enable base-fsm-ovcongruent))))
 
     (defthm flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition
       (b* (((flatnorm-res x))
@@ -1672,16 +1869,32 @@
                       (svex-alist-monotonic-p x.delays)
                       (svarlist-override-p (svex-alist-vars x.assigns) nil)
                       (svarlist-override-p (svex-alist-keys x.assigns) nil)
-                      (svarlist-override-p (svex-alist-vars x.delays) nil))
-                 (base-fsm-ovmonotonic (svarlist-change-override overridekeys :test) override-fsm)))
-      :hints (("goal" :in-theory (disable flatnorm->ideal-fsm))))
+                      (svarlist-override-p (svex-alist-vars x.delays) nil)
+                      (svarlist-override-p (svex-alist-keys x.delays) nil))
+                 (base-fsm-ovmonotonic override-fsm)))
+      :hints (("goal" :in-theory (disable flatnorm->ideal-fsm
+                                          flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)
+               :use flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)))
+
+    (defthm flatnorm->ideal-fsm-with-overrides-ovcongruent
+      (b* (((flatnorm-res x))
+           (overridekeys (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
+           (override-flatnorm (flatnorm-add-overrides x overridekeys))
+           (override-fsm (flatnorm->ideal-fsm override-flatnorm)))
+        (implies (and (svarlist-override-p (svex-alist-vars x.assigns) nil)
+                      (svarlist-override-p (svex-alist-keys x.assigns) nil)
+                      (svarlist-override-p (svex-alist-vars x.delays) nil)
+                      (svarlist-override-p (svex-alist-keys x.delays) nil))
+                 (base-fsm-ovcongruent override-fsm)))
+      :hints (("goal" :in-theory (disable flatnorm->ideal-fsm
+                                          flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)
+               :use flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)))
 
     (defret alist-keys-of-<fn>
     (b* (((base-fsm fsm))
          ((flatnorm-res x)))
       (and (equal (svex-alist-keys fsm.values) (svex-alist-keys x.assigns))
-           (equal (svex-alist-keys fsm.nextstate) (svex-alist-keys x.delays)))))
-)
+           (equal (svex-alist-keys fsm.nextstate) (svex-alist-keys x.delays))))))
 
 
 
@@ -1736,15 +1949,22 @@
            (svex-alist-monotonic-p flatnorm.delays)))))
 
 (defthm phase-fsm-composition-ovmonotonic-of-design->flatnorm
-  (b* (((flatnorm-res flat) (design->flatnorm x))
-       (overridekeys (svtv-assigns-override-vars flat.assigns (phase-fsm-config->override-config config))))
+  (b* (((flatnorm-res flat) (design->flatnorm x)))
     (implies (and (phase-fsm-composition-p approx-fsm flat config)
                   (modalist-addr-p (design->modalist x))
                   (design-flatten-okp x))
              (base-fsm-ovmonotonic
-              (svarlist-change-override overridekeys :test)
               approx-fsm)))
   :hints(("Goal" :in-theory (enable base-fsm-ovmonotonic))))
+
+(defthm phase-fsm-composition-ovcongruent-of-design->flatnorm
+  (b* (((flatnorm-res flat) (design->flatnorm x)))
+    (implies (and (phase-fsm-composition-p approx-fsm flat config)
+                  (modalist-addr-p (design->modalist x))
+                  (design-flatten-okp x))
+             (base-fsm-ovcongruent
+              approx-fsm)))
+  :hints(("Goal" :in-theory (enable base-fsm-ovcongruent))))
 
 
 (define design->ideal-fsm ((x design-p)
@@ -1778,24 +1998,25 @@
   (defret <fn>-is-phase-fsm-composition
     (phase-fsm-composition-p ideal-fsm (design->flatnorm x) config))
 
-  (defret <fn>-partial-monotonic
-    (b* (((flatnorm-res flat) (design->flatnorm x))
-         (overridekeys (svtv-assigns-override-vars flat.assigns (phase-fsm-config->override-config config))))
+  (defret <fn>-ovmonotonic
+    (b* (((flatnorm-res flat) (design->flatnorm x)))
       (implies (and (modalist-addr-p (design->modalist x))
                     (design-flatten-okp x))
-               (base-fsm-partial-monotonic (svarlist-change-override overridekeys :test) ideal-fsm))))
+               (base-fsm-ovmonotonic ideal-fsm))))
 
-  (defret <fn>-partial-monotonic-rw
-    (b* (((flatnorm-res flat) (design->flatnorm x))
-         (overridekeys (svtv-assigns-override-vars flat.assigns (phase-fsm-config->override-config config))))
+  (defret <fn>-ovcongruent
+    (b* (((flatnorm-res flat) (design->flatnorm x)))
       (implies (and (modalist-addr-p (design->modalist x))
-                    (design-flatten-okp x)
-                    (double-rewrite (set-equiv keys overridekeys)))
-               (base-fsm-partial-monotonic (svarlist-change-override keys :test) ideal-fsm))))
+                    (design-flatten-okp x))
+               (base-fsm-ovcongruent ideal-fsm))))
   
   (defret alist-keys-of-<fn>
     (b* (((base-fsm ideal-fsm))
          ((flatnorm-res flat) (design->flatnorm x)))
       (and (equal (svex-alist-keys ideal-fsm.values) (svex-alist-keys flat.assigns))
            (equal (svex-alist-keys ideal-fsm.nextstate) (svex-alist-keys flat.delays))))))
+
+
+
+
 

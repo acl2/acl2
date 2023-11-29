@@ -559,17 +559,16 @@
                                        SVTV-RUN-OF-<NAME>-IS-EVAL-<DATA>-PIPELINE)
                                       (:REWRITE SVTV-SPEC-RUN-OF-SVTV-DATA-OBJ->SPEC)))))
 
-        (defthm <specname>-fsm-partial-monotonic
-          (b* ((x (svtv-spec->fsm (<specname>)))
-               (params (<specname>-fsm-override-test-vars)))
-            (base-fsm-partial-monotonic params x))
+        (defthm <specname>-fsm-ovmonotonic
+          (b* ((x (svtv-spec->fsm (<specname>))))
+            (base-fsm-ovmonotonic x))
           :hints(("Goal" :in-theory '((:DEFINITION <SPECNAME>)
                                       (:DEFINITION <SPECNAME>-FSM-OVERRIDE-TEST-VARS)
-                                      (:REWRITE BASE-FSM-PARTIAL-MONOTONIC-OF-SVTV-DATA-OBJ->PHASE-FSM)
+                                      (:REWRITE BASE-FSM-OVMONOTONIC-OF-SVTV-DATA-OBJ->PHASE-FSM)
                                       (:REWRITE <DATA>-CORRECT)
                                       (:REWRITE <DATA>-FACTS)
                                       (:REWRITE SVTV-SPEC->FSM-OF-SVTV-DATA-OBJ->SPEC)
-                                      (:TYPE-PRESCRIPTION BASE-FSM-PARTIAL-MONOTONIC)))))
+                                      (:TYPE-PRESCRIPTION BASE-FSM-OVMONOTONIC)))))
         
         (defthm <specname>-facts
           (b* (((svtv-spec x) (<specname>)))
@@ -646,12 +645,10 @@
                     (override-vars (svtv-assigns-override-vars
                                     (flatnorm-res->assigns x.flatnorm)
                                     (phase-fsm-config->override-config x.phase-fsm-setup)))
-                    (override-keys override-vars)
-                    (params (svarlist-change-override override-vars :test)))
+                    (override-keys override-vars))
                  (svtv-spec-override-syntax-checks
                   (svtv-data-obj->spec x)
                   override-keys
-                  params
                   (<name>-triplemaplist)))
                :hints(("Goal" :in-theory '((<data>)
                                            (svtv-data-obj->spec)
@@ -669,12 +666,10 @@
                     (override-vars (svtv-assigns-override-vars
                                     (flatnorm-res->assigns x.flatnorm)
                                     (phase-fsm-config->override-config x.phase-fsm-setup)))
-                    (override-keys override-vars)
-                    (params (svarlist-change-override override-vars :test)))
+                    (override-keys override-vars))
                  (svtv-spec-override-syntax-checks
                   (svtv-data-obj->ideal-spec x)
                   override-keys
-                  params
                   (<name>-triplemaplist)))
                :hints (("goal" :use <data>-override-syntax-check
                         :in-theory '(svtv-spec-stimulus-equiv-implies-equal-svtv-spec-override-syntax-checks-1
@@ -686,15 +681,10 @@
      (:@ :triplecheck
       (local (defthm <data>-generalize-override-syntax-check
                (b* (((svtv-data-obj x) (<data>))
-                    (override-vars (svtv-assigns-override-vars
-                                    (flatnorm-res->assigns x.flatnorm)
-                                    (phase-fsm-config->override-config x.phase-fsm-setup)))
-                    (override-keys (<name>-overridekeys))
-                    (params (svarlist-change-override override-vars :test)))
+                    (override-keys (<name>-overridekeys)))
                  (svtv-spec-override-syntax-checks
                   (svtv-data-obj->spec x)
                   override-keys
-                  params
                   (<name>-triplemaplist)))
                :hints(("Goal" :in-theory '((<data>)
                                            (<name>-overridekeys)
@@ -712,12 +702,10 @@
               :svtv-spec)
       (local (defthm <specname>-override-syntax-check
                (b* (((svtv-data-obj x) (<data>))
-                    (override-keys (<name>-overridekeys))
-                    (params (<specname>-fsm-override-test-vars)))
+                    (override-keys (<name>-overridekeys)))
                  (svtv-spec-override-syntax-checks
                   (<specname>)
                   override-keys
-                  params
                   (<name>-triplemaplist)))
                :hints(("Goal" :in-theory '(<specname>
                                            <specname>-fsm-override-test-vars
@@ -1337,13 +1325,13 @@
 
 
 ;; The following functions say:
-;; - Every triplemap test evaluated in env matches its evaluation in spec.
+;; - Every triplemap test evaluated in env matches (1mask-equiv) its evaluation in spec.
 ;; - Every triplemap value evaluated in env is >>= its evaluation in spec.
 (define svtv-override-triple-envs-match ((triple svtv-override-triple-p)
                                          (env svex-env-p)
                                          (spec svex-env-p))
   (b* (((svtv-override-triple triple)))
-    (and (equal (svex-eval triple.test env) (svex-eval triple.test spec))
+    (and (4vec-1mask-equiv (svex-eval triple.test env) (svex-eval triple.test spec))
          (4vec-<<= (svex-eval triple.val spec) (svex-eval triple.val env)))))
 
 (define svtv-override-triplemap-envs-match ((triplemap svtv-override-triplemap-p)
@@ -1363,10 +1351,10 @@
                   (svar-p key)
                   (hons-assoc-equal key triplemap))
              (b* ((triple (cdr (hons-assoc-equal key (svtv-override-triplemap-fix triplemap)))))
-               (and (equal (svex-eval (svtv-override-triple->test triple) env)
+               (and (4vec-1mask-equiv (svex-eval (svtv-override-triple->test triple) env)
                            (svex-eval (svtv-override-triple->test triple) spec))
-                    (4vec-<<= (svex-eval (svtv-override-triple->test triple) spec)
-                              (svex-eval (svtv-override-triple->test triple) env)))))
+                    (4vec-<<= (svex-eval (svtv-override-triple->val triple) spec)
+                              (svex-eval (svtv-override-triple->val triple) env)))))
     :hints(("Goal" :in-theory (enable svtv-override-triplemap-fix
                                       svtv-override-triple-envs-match))))
 
@@ -2176,10 +2164,10 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
                     (and (b* (((svtv-override-triple first)))
                            (and (svex-case first.test
                                   :quote t
-                                  :var (equal (svex-env-lookup first.test.name env)
-                                              (svex-env-lookup first.test.name spec))
-                                  :otherwise (equal (svex-eval first.test env)
-                                                    (svex-eval first.test spec)))
+                                  :var (4vec-1mask-equiv (svex-env-lookup first.test.name env)
+                                                         (svex-env-lookup first.test.name spec))
+                                  :otherwise (4vec-1mask-equiv (svex-eval first.test env)
+                                                               (svex-eval first.test spec)))
                                 (svex-case first.val
                                   :quote t
                                   :var (4vec-<<= (svex-env-lookup first.val.name spec)

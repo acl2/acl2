@@ -25,7 +25,7 @@
 
 (in-package "SV")
 
-(include-book "svtv-spec-override-transparency")
+(include-book "svtv-generalize")
 (include-book "../svex/override-transparency-and-ovmonotonicity")
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -1422,61 +1422,62 @@ time."
     
   
 
+(local (local (include-book "svtv-spec-override-transparency")))
 
+(local
+ (define 4vec-override-mux-agrees-badbit ((impl-test 4vec-p)
+                                          (impl-val 4vec-p)
+                                          (spec-test 4vec-p)
+                                          (spec-val 4vec-p)
+                                          (spec-ref 4vec-p))
+   :returns (badbit natp :rule-classes :type-prescription)
+   (b* ((spec-mux (4vec-bit?! spec-test spec-val spec-ref)))
+     (4vec-equiv-badbit (4vec-bit?! impl-test impl-val spec-mux)
+                        spec-mux))
+   ///
+   (local (Defthm 4vec-bit-index-of-4vec-bit?!
+            (equal (4vec-bit-index n (4vec-bit?! test then else))
+                   (if (eql (4vec-bit-index n test) 1)
+                       (4vec-bit-index n then)
+                     (4vec-bit-index n else)))
+            :hints(("Goal" :in-theory (enable 4vec-bit-index
+                                              4vec-bit?! 4vec-bitmux 4vec-1mask b-ite)))))
 
-(define 4vec-override-mux-agrees-badbit ((impl-test 4vec-p)
-                                      (impl-val 4vec-p)
-                                      (spec-test 4vec-p)
-                                      (spec-val 4vec-p)
-                                      (spec-ref 4vec-p))
-  :returns (badbit natp :rule-classes :type-prescription)
-  (b* ((spec-mux (4vec-bit?! spec-test spec-val spec-ref)))
-    (4vec-equiv-badbit (4vec-bit?! impl-test impl-val spec-mux)
-                       spec-mux))
-  ///
-  (local (Defthm 4vec-bit-index-of-4vec-bit?!
-           (equal (4vec-bit-index n (4vec-bit?! test then else))
-                  (if (eql (4vec-bit-index n test) 1)
-                      (4vec-bit-index n then)
-                    (4vec-bit-index n else)))
-           :hints(("Goal" :in-theory (enable 4vec-bit-index
-                                             4vec-bit?! 4vec-bitmux 4vec-1mask b-ite)))))
+   (defthmd 4vec-override-mux-agrees-implies-bit-index
+     (implies (and (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref)
+                   (equal 1 (4vec-bit-index n impl-test)))
+              (equal (4vec-bit-index n impl-val)
+                     (if (eql (4vec-bit-index n spec-test) 1)
+                         (4vec-bit-index n spec-val)
+                       (4vec-bit-index n spec-ref))))
+     :hints(("Goal" :in-theory (e/d (4vec-override-mux-agrees))
+             :use ((:instance (:theorem (implies (equal x y)
+                                                 (equal (4vec-bit-index n x)
+                                                        (4vec-bit-index n y))))
+                    (x (4vec-bit?! impl-test impl-val (4vec-bit?! spec-test spec-val spec-ref)))
+                    (y (4vec-bit?! spec-test spec-val spec-ref)))))))
 
-  (defthmd 4vec-override-mux-agrees-implies-bit-index
-    (implies (and (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref)
-                  (equal 1 (4vec-bit-index n impl-test)))
-             (equal (4vec-bit-index n impl-val)
-                    (if (eql (4vec-bit-index n spec-test) 1)
-                        (4vec-bit-index n spec-val)
-                      (4vec-bit-index n spec-ref))))
-    :hints(("Goal" :in-theory (e/d (4vec-override-mux-agrees))
-            :use ((:instance (:theorem (implies (equal x y)
-                                                (equal (4vec-bit-index n x)
-                                                       (4vec-bit-index n y))))
-                   (x (4vec-bit?! impl-test impl-val (4vec-bit?! spec-test spec-val spec-ref)))
-                   (y (4vec-bit?! spec-test spec-val spec-ref)))))))
+   (defretd 4vec-override-mux-agrees-when-badbit
+     (implies (or (not (equal 1 (4vec-bit-index badbit impl-test)))
+                  (equal (4vec-bit-index badbit impl-val)
+                         (if (eql (4vec-bit-index badbit spec-test) 1)
+                             (4vec-bit-index badbit spec-val)
+                           (4vec-bit-index badbit spec-ref))))
+              (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref))
+     :hints(("Goal" :in-theory (enable 4vec-override-mux-agrees
+                                       4vec-equiv-when-badbit))))
 
-  (defretd 4vec-override-mux-agrees-when-badbit
-    (implies (or (not (equal 1 (4vec-bit-index badbit impl-test)))
-                 (equal (4vec-bit-index badbit impl-val)
-                        (if (eql (4vec-bit-index badbit spec-test) 1)
-                            (4vec-bit-index badbit spec-val)
-                          (4vec-bit-index badbit spec-ref))))
-             (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref))
-    :hints(("Goal" :in-theory (enable 4vec-override-mux-agrees
-                                      4vec-equiv-when-badbit))))
-
-  (defretd 4vec-override-mux-agrees-by-badbit
-    (implies (acl2::rewriting-positive-literal `(4vec-override-mux-agrees ,impl-test ,impl-val ,spec-test ,spec-val ,spec-ref))
-             (equal (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref)
-                    (or (not (equal 1 (4vec-bit-index badbit impl-test)))
-                        (equal (4vec-bit-index badbit impl-val)
-                               (if (eql (4vec-bit-index badbit spec-test) 1)
-                                   (4vec-bit-index badbit spec-val)
-                                 (4vec-bit-index badbit spec-ref))))))
-    :hints(("Goal" :in-theory (e/d (4vec-override-mux-agrees-when-badbit
-                                    4vec-override-mux-agrees-implies-bit-index)
-                                   (<fn>))))))
+   (defretd 4vec-override-mux-agrees-by-badbit
+     (implies (acl2::rewriting-positive-literal `(4vec-override-mux-agrees ,impl-test ,impl-val ,spec-test ,spec-val ,spec-ref))
+              (equal (4vec-override-mux-agrees impl-test impl-val spec-test spec-val spec-ref)
+                     (or (not (equal 1 (4vec-bit-index badbit impl-test)))
+                         (equal (4vec-bit-index badbit impl-val)
+                                (if (eql (4vec-bit-index badbit spec-test) 1)
+                                    (4vec-bit-index badbit spec-val)
+                                  (4vec-bit-index badbit spec-ref))))))
+     :hints(("Goal" :in-theory (e/d (4vec-override-mux-agrees-when-badbit
+                                     4vec-override-mux-agrees-implies-bit-index)
+                                    (<fn>)))))))
 
 
 (define svtv-spec-fsm-constraints-for-alist ((x svar/4vec-alist-p)
@@ -1604,7 +1605,7 @@ time."
            :hints(("Goal" :in-theory (enable fal-extract svtv-name-lhs-map-vars)
                    :induct (len keys)))))
 
-  (local (defthm svar-override-p-when-member
+  (local (defthm svar-override-p-when-member-2
            (implies (and (member-equal (svar-fix v) x)
                          (svarlist-override-p x type))
                     (svar-override-p v type))
@@ -3511,7 +3512,9 @@ time."
     (implies (subsetp-equal (svtv-override-triplemap-relevant-vars triplemap spec) (svarlist-fix vars))
              (equal (svtv-override-triplemap-envs-match triplemap (svex-env-reduce vars env) spec)
                     (svtv-override-triplemap-envs-match triplemap env spec)))
-    :hints(("Goal" :in-theory (enable svtv-override-triplemap-envs-match)))))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemap-envs-match))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
 
 
 (define svtv-override-triplemaplist-relevant-vars ((triplemaps svtv-override-triplemaplist-p)
