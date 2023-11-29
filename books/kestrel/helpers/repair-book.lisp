@@ -19,6 +19,8 @@
 
 ;; TODO: Add support for determining what changed (e.g., by doing a git diff).
 
+;; TODO: Handle cert.pl output that is directed to another dir
+
 (include-book "std/util/bstar" :dir :system)
 (include-book "replay-book-helpers")
 (include-book "find-failed-books")
@@ -262,15 +264,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv erp state).
 (defun repair-books-fn-aux (book-paths state)
   (declare (xargs :guard (and (string-listp book-paths))
                   :mode :program
                   :stobjs state))
   (if (endp book-paths)
-      (mv nil '(value-triple :invisible) state)
+      (mv nil state)
     (b* ((book-path (first book-paths))
          ((mv erp & state) (repair-book-fn book-path state))
-         ((when erp) (mv erp nil state)))
+         ((when erp) (mv erp state)))
       (repair-books-fn-aux (rest book-paths) state))))
 
 (defun repair-books-fn (state)
@@ -280,12 +283,14 @@
        (- (cw "~%Looking for books to repair under ~s0.~%" cbd))
        (failed-books (find-failed-books))
        (failed-books (extend-pathnames$ cbd failed-books state))
+       ((when (not (consp failed-books)))
+        (cw "WARNING: Cannot find any books to repair (based on .cert.out files).")
+        (mv t nil state))
        (- (cw "Will attempt to repair the following ~x0 books: ~X12~%" (len failed-books) failed-books nil))
        (state (widen-margins state))
-       ((mv erp res state) (repair-books-fn-aux failed-books state))
-       (state (unwiden-margins state))
-       )
-    (mv erp res state)))
+       ((mv erp state) (repair-books-fn-aux failed-books state))
+       (state (unwiden-margins state)))
+    (mv erp '(value-triple :invisible) state)))
 
 (defmacro repair-books ()
   `(make-event-quiet (repair-books-fn state)))
