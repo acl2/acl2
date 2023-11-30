@@ -43,6 +43,7 @@
 (include-book "centaur/fgl/config" :dir :system)
 (include-book "override-thm-common")
 ;; (local (include-book "svtv-idealize-proof"))
+(local (include-book "svtv-to-fsm"))
 (local (include-book "svtv-spec-override-transparency"))
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -50,6 +51,9 @@
 (local (include-book "centaur/bitops/equal-by-logbitp" :Dir :System))
 
 (local (std::add-default-post-define-hook :fix))
+
+(std::defredundant :names (base-fsm-overridekey-transparent-p-of-base-fsm-to-cycle
+                           base-fsm-ovcongruent-p-of-base-fsm-to-cycle))
 
 
 (defthm 4vec-override-mux-<<=-of-same-test/val
@@ -1004,7 +1008,62 @@
                      '(:in-theory '((<data>)
                                     (svtv-data-obj->cycle-phases)
                                     (svtv-cyclephaselist-has-outputs-captured)))))
-        :fn <specname>))
+        :fn <specname>)
+
+      (defthm nextstate-keys-non-override-of-<specname>
+        (svarlist-override-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm (<specname>)))) nil)
+        :hints(("Goal" :in-theory '((<specname>)
+                                    (svtv-spec->fsm)
+                                    (base-fsm->nextstate)
+                                    (svex-alist-keys)
+                                    (svarlist-override-p)))))
+
+      (defthm base-fsm-overridekey-transparent-p-of-<specname>-cycle
+        (base-fsm-overridekey-transparent-p
+         (svtv-spec->cycle-fsm (<specname>))
+         (<name>-overridekeys))
+        :hints(("Goal" :in-theory '(svtv-spec->cycle-fsm
+                                    base-fsm-overridekey-transparent-p-of-base-fsm-to-cycle
+                                    <specname>-base-fsm-override-transparent-p
+                                    <specname>-facts
+                                    nextstate-keys-non-override-of-<specname>))))
+
+      (defthm base-fsm-ovcongruent-of-<specname>
+        (base-fsm-ovcongruent (svtv-spec->fsm (<specname>)))
+        :hints(("Goal" :in-theory '(<specname>
+                                    base-fsm-ovcongruent-of-svtv-data-obj->phase-fsm
+                                    <data>-correct
+                                    <data>-facts
+                                    svtv-spec->fsm-of-svtv-data-obj->spec))))
+
+      (defthm base-fsm-ovcongruent-of-<specname>-cycle
+        (base-fsm-ovcongruent (svtv-spec->cycle-fsm (<specname>)))
+        :hints(("Goal" :in-theory '(svtv-spec->cycle-fsm
+                                    base-fsm-ovcongruent-of-<specname>
+                                    base-fsm-ovcongruent-p-of-base-fsm-to-cycle
+                                    <specname>-facts
+                                    nextstate-keys-non-override-of-<specname>))))
+                              
+  
+      (defthm svtv-spec-fsm-syntax-check-of-<specname>
+        (svtv-spec-fsm-syntax-check (<specname>))
+        :hints(("Goal" :in-theory '((<specname>)
+                                    (svtv-spec-fsm-syntax-check)))))
+
+
+
+      (defthm svex-alist-all-xes-of-<specname>-initst
+        (svex-alist-all-xes-p (svtv-spec->initst-alist (<specname>)))
+        :hints(("Goal" :in-theory '((svex-alist-all-xes-p)
+                                    (svtv-spec->initst-alist)
+                                    (<specname>)))))
+
+      (defthm svarlist-nonoverride-test-of-<specname>-cyclephaselist-keys
+        (svarlist-nonoverride-p (svtv-cyclephaselist-keys (svtv-spec->cycle-phases (<specname>))) :test)
+        :hints(("Goal" :in-theory '((<specname>)
+                                    (svtv-spec->cycle-phases)
+                                    (svtv-cyclephaselist-keys)
+                                    (svarlist-nonoverride-p))))))
 
      
      (:@ :ideal
@@ -1322,89 +1381,6 @@
 ;;; a substitution which should contain all the constant bindings and bind all
 ;;; other variables to themselves, so that (svex-alist-eval subst env) ~= env.
 
-
-
-;; The following functions say:
-;; - Every triplemap test evaluated in env matches (1mask-equiv) its evaluation in spec.
-;; - Every triplemap value evaluated in env is >>= its evaluation in spec.
-(define svtv-override-triple-envs-match ((triple svtv-override-triple-p)
-                                         (env svex-env-p)
-                                         (spec svex-env-p))
-  (b* (((svtv-override-triple triple)))
-    (and (4vec-1mask-equiv (svex-eval triple.test env) (svex-eval triple.test spec))
-         (4vec-<<= (svex-eval triple.val spec) (svex-eval triple.val env)))))
-
-(define svtv-override-triplemap-envs-match ((triplemap svtv-override-triplemap-p)
-                                            (env svex-env-p)
-                                            (spec svex-env-p))
-  :returns (ok)
-  (if (atom triplemap)
-      t
-    (if (mbt (and (consp (car triplemap))
-                  (svar-p (caar triplemap))))
-        (and (svtv-override-triple-envs-match (cdar triplemap) env spec)
-             (svtv-override-triplemap-envs-match (cdr triplemap) env spec))
-      (svtv-override-triplemap-envs-match (cdr triplemap) env spec)))
-  ///
-  (defret <fn>-implies
-    (implies (and ok
-                  (svar-p key)
-                  (hons-assoc-equal key triplemap))
-             (b* ((triple (cdr (hons-assoc-equal key (svtv-override-triplemap-fix triplemap)))))
-               (and (4vec-1mask-equiv (svex-eval (svtv-override-triple->test triple) env)
-                           (svex-eval (svtv-override-triple->test triple) spec))
-                    (4vec-<<= (svex-eval (svtv-override-triple->val triple) spec)
-                              (svex-eval (svtv-override-triple->val triple) env)))))
-    :hints(("Goal" :in-theory (enable svtv-override-triplemap-fix
-                                      svtv-override-triple-envs-match))))
-
-  (local (in-theory (enable svtv-override-triplemap-fix))))
-
-(define svtv-override-triplemaplist-envs-match ((triplemaps svtv-override-triplemaplist-p)
-                                                (env svex-env-p)
-                                                (spec svex-env-p))
-  :parents (def-svtv-generalized-thm)
-  :short "Checks that the given environment @('env') has values matching
-@('spec') for the override test and value variables of the given triplemaplist
-@('triplemaps')."
-  :long "<p>An occurrence of this function is used by @(see
-def-svtv-generalized-thm) as a hypothesis of the generalized theorems it
-proves, serving to assume that the environment used in the SVTV run of the
-theorem overrides exactly the signals it's supposed to, i.e. matching
-@('spec').</p>
-
-<p>This function returns true iff for every @(see svtv-override-triple) in
-@('triplemaps'), the evaluation of the @('test') field on @('env') equals its
-evaluation on @('spec'), and the evaluation of the @('val') field on @('spec')
-is @(see 4vec-<<=) its evaluation on @('env'). In the current framework each
-@('test') and @('val') expression is always either a constant or variable.  For
-constants, the conditions are automatically true, and for variables the
-bindings in @('env') and @('spec') must be compared.</p>
-
-<p>When instantiating a generalized SVTV theorem (as produced by @(see
-def-svtv-generalized-thm) to prove something about an SVTV run on a more
-particular environment,  there are a couple of helpful rewriting strategies.</p>
-
-<ul>
-
-<li>@('svtv-override-triplemaplist-envs-match-simplify') applies when @('env')
-is a term containing a list of pairs with constant keys and (as is usually the
-case) @('spec') is a constant.  It simplifies the call of
-@('svtv-override-triplemaplist-envs-match') to a call of
- @('svtv-override-triplelist-envs-match') on a smaller set of triples, only the ones
-that couldn't be resolved by just examining the syntax of the @('env') and
-@('spec') terms.  Then, @('svtv-override-triplelist-envs-match') has rules to
-open up and solve the requirements for the remaining triples.</li>
-
-<li>@('svtv-override-triplemaplist-envs-match-remove-irrelevant-pair-top') can
-simplify @('env') terms containing irrelevant pairs, i.e. those that aren't
-test or value variables of the triplemaps.</li>
-
-</ul>"
-  (if (atom triplemaps)
-      t
-    (and (svtv-override-triplemap-envs-match (car triplemaps) env spec)
-         (svtv-override-triplemaplist-envs-match (cdr triplemaps) env spec))))
 
 
 

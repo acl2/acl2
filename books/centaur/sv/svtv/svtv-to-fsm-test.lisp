@@ -83,51 +83,6 @@
   :concl (and (<= sum-out 11)
               (<= sum1-out 10)))
 
-(defthm cyclephaselist-has-outputs-captured-of-counter-invar-spec
-  (svtv-cyclephaselist-has-outputs-captured (svtv-spec->cycle-phases (counter-invar-spec)))
-  :hints (("goal" :in-theory '((svtv-cyclephaselist-has-outputs-captured)
-                               (svtv-spec->cycle-phases)
-                               (counter-invar-spec)))))
-
-(defthm nextstate-keys-non-override-of-counter-invar-spec
-  (svarlist-override-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm (counter-invar-spec)))) nil)
-  :hints(("Goal" :in-theory (enable (counter-invar-spec)
-                                    (svtv-spec->fsm)
-                                    (base-fsm->nextstate)
-                                    (svex-alist-keys)
-                                    (svarlist-override-p)))))
-
-(defthm base-fsm-overridekey-transparent-p-of-counter-invar-spec-cycle
-  (base-fsm-overridekey-transparent-p
-   (svtv-spec->cycle-fsm (counter-invar-spec))
-   (counter-invar-run-overridekeys))
-  :hints(("Goal" :in-theory (enable svtv-spec->cycle-fsm))))
-
-(defthm base-fsm-ovcongruent-of-counter-invar-spec
-  (base-fsm-ovcongruent (svtv-spec->fsm (counter-invar-spec)))
-  :hints(("Goal" :in-theory (enable counter-invar-spec
-                                    svtv-spec->fsm-of-svtv-data-obj->spec))))
-
-(defthm base-fsm-ovcongruent-of-counter-invar-spec-cycle
-  (base-fsm-ovcongruent (svtv-spec->cycle-fsm (counter-invar-spec)))
-  :hints(("Goal" :in-theory (enable svtv-spec->cycle-fsm))))
-  
-(defthm svtv-spec-fsm-syntax-check-of-counter-invar-spec
-  (svtv-spec-fsm-syntax-check (counter-invar-spec))
-  :hints(("Goal" :in-theory (enable (counter-invar-spec) (svtv-spec-fsm-syntax-check)))))
-
-
-
-(defthm svex-alist-all-xes-of-counter-invar-spec-initst
-  (svex-alist-all-xes-p (svtv-spec->initst-alist (counter-invar-spec)))
-  :hints(("Goal" :in-theory '((svex-alist-all-xes-p)
-                              (svtv-spec->initst-alist)
-                              (counter-invar-spec)))))
-
-(defthm svarlist-nonoverride-test-of-svtv-cyclephaselist-keys
-  (svarlist-nonoverride-p (svtv-cyclephaselist-keys (svtv-spec->cycle-phases (counter-invar-spec))) :test)
-  :hints(("Goal" :in-theory (enable (counter-invar-spec)))))
-
 
 
 
@@ -152,7 +107,7 @@
                   (<= sum1 10)
                   (equal (len envs) 2))
              (and (<= sum-out 11)
-                  ;; (<= sum1-out 10)
+                  (<= sum1-out 10)
                   )))
   :hints (("goal" :use ((:instance fsm-eval-when-overridekeys-envlists-agree*
                          (x (svtv-spec->cycle-fsm (counter-invar-spec)))
@@ -180,14 +135,75 @@
                                     (svex-envlist-remove-override
                                      (svex-envlist-remove-override envs :test) :val)
                                     (svtv-spec->cycle-phases (counter-invar-spec))))))
-                                                            
-           :in-theory (e/d (svtv-spec-run-in-terms-of-cycle-fsm
-                            CONSTRAINTS-EVAL-OF-SVTV-SPEC-FSM-CONSTRAINTS-IMPLIES
-                            svex-envlists-ovtests-ok-when-variable-free)
-                           (fsm-eval-when-overridekeys-envlists-agree*
-                            counter-invar-svtv-thm
-                            LOOKUP-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL
-                            unsigned-byte-p))
+
+           ;; :in-theory (e/d (svtv-spec-run-in-terms-of-cycle-fsm
+           ;;                  CONSTRAINTS-EVAL-OF-SVTV-SPEC-FSM-CONSTRAINTS-IMPLIES
+           ;;                  svex-envlists-ovtests-ok-when-variable-free)
+           ;;                 (fsm-eval-when-overridekeys-envlists-agree*
+           ;;                  counter-invar-svtv-thm
+           ;;                  LOOKUP-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL
+           ;;                  unsigned-byte-p))
+           :in-theory '((:CONGRUENCE SET-EQUIV-IMPLIES-EQUAL-SVARLIST-NONOVERRIDE-P-1)
+                        (:CONGRUENCE SVEX-ENVLISTS-EQUIVALENT-IMPLIES-EQUAL-SVTV-SPEC-CYCLE-OUTS->PIPE-OUT-2)
+                        (:CONGRUENCE SVEX-ENVLISTS-OVTESTSIMILAR-IMPLIES-IFF-SVEX-ENVLISTS-OVTESTS-OK-1)
+                        (:CONGRUENCE SVEX-ENVLISTS-OVTESTSIMILAR-IMPLIES-IFF-SVEX-ENVLISTS-OVTESTS-OK-2)
+                        (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-BASE-FSM-EVAL-2)
+                        (:DEFINITION DOUBLE-REWRITE)
+                        (:DEFINITION NOT)
+                        (:DEFINITION SYNP)
+                        (:EQUIVALENCE SVEX-ENVLISTS-OVTESTEQUIV-IS-AN-EQUIVALENCE)
+                        (:EQUIVALENCE SVEX-ENVLISTS-OVTESTSIMILAR-IS-AN-EQUIVALENCE)
+                        (:EXECUTABLE-COUNTERPART FAL-EXTRACT)
+                        (:EXECUTABLE-COUNTERPART FORCE-EXECUTE)
+                        (:EXECUTABLE-COUNTERPART LHPROBE-MAP-EVAL)
+                        (:EXECUTABLE-COUNTERPART LHPROBE-MAP-VARS)
+                        (:EXECUTABLE-COUNTERPART MAKE-FAST-ALIST)
+                        (:EXECUTABLE-COUNTERPART MAKE-FAST-ALISTS)
+                        (:EXECUTABLE-COUNTERPART NOT)
+                        (:EXECUTABLE-COUNTERPART SVAR-OVERRIDETYPE-EQUIV$INLINE)
+                        (:EXECUTABLE-COUNTERPART SVARLIST-FIX$INLINE)
+                        (:EXECUTABLE-COUNTERPART SVARLIST-NONOVERRIDE-P)
+                        (:EXECUTABLE-COUNTERPART SVARLIST-OVERRIDE-P)
+                        (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-EVAL)
+                        (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-NONCALL-P)
+                        (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-VARS)
+                        (:EXECUTABLE-COUNTERPART SVEX-ENVLIST-1MASK)
+                        (:EXECUTABLE-COUNTERPART SVTV-OVERRIDE-TRIPLELIST-ENVS-MATCH)
+                        (:EXECUTABLE-COUNTERPART SVTV-OVERRIDE-TRIPLEMAPLIST-RELEVANT-VARS)
+                        (:META FORCE-EXECUTE-FORCE-EXECUTE)
+                        (:META SVTV-OVERRIDE-SUBST-MATCHES-ENV-META)
+                        (:META SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH-CHECKS-WHEN-VARIABLE-FREE)
+                        (:REWRITE ALISTLIST-EVAL-OF-TEST-ALISTS-UNDER-BINDINGS)
+                        (:REWRITE BASE-FSM-OVCONGRUENT-OF-COUNTER-INVAR-SPEC-CYCLE)
+                        (:REWRITE BASE-FSM-OVERRIDEKEY-TRANSPARENT-P-OF-COUNTER-INVAR-SPEC-CYCLE)
+                        (:REWRITE ACL2::COMMUTATIVITY-OF-APPEND-UNDER-SET-EQUIV)
+                        (:REWRITE CONSTRAINTS-EVAL-OF-SVTV-SPEC-FSM-CONSTRAINTS-IMPLIES)
+                        (:REWRITE COUNTER-INVAR-SPEC-FACTS)
+                        (:REWRITE CYCLE-OUTPUTS-CAPTURED-OF-COUNTER-INVAR-SPEC)
+                        (:REWRITE FAL-EXTRACT-CONST-OF-SVTV-SPEC-FSM-BINDINGS)
+                        (:REWRITE LHPROBE-MAP-OVERRIDEMUX-EVAL-WHEN-ONLY-TEST-VARS)
+                        (:REWRITE NEXTSTATE-KEYS-NON-OVERRIDE-OF-COUNTER-INVAR-SPEC)
+                        (:REWRITE NEXTSTATE-KEYS-OF-SVTV-SPEC->CYCLE-FSM)
+                        (:REWRITE AIGNET::SIMPCODE-P-WHEN-UNSIGNED-BYTE-P)
+                        (:REWRITE SVARLIST-NONOVERRIDE-P-OF-APPEND)
+                        (:REWRITE SVARLIST-NONOVERRIDE-P-OF-SVARLIST-REMOVE-OVERRIDE)
+                        (:REWRITE SVARLIST-NONOVERRIDE-TEST-OF-counter-invar-spec-CYCLEPHASELIST-KEYS)
+                        (:REWRITE SVEX-ALIST-ALL-XES-OF-COUNTER-INVAR-SPEC-INITST)
+                        (:REWRITE SVEX-ENV-REDUCE-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL)
+                        (:REWRITE SVEX-ENV-X-OVERRIDE-WHEN-SVEX-ALIST-ALL-XES-P)
+                        (:REWRITE SVEX-ENVLIST-ALL-KEYS-OF-REMOVE-OVERRIDE)
+                        (:REWRITE SVEX-ENVLIST-ALL-KEYS-OF-SVTV-CYCLE-RUN-FSM-INPUTS)
+                        (:REWRITE SVEX-ENVLISTS-OVTESTS-OK-WHEN-VARIABLE-FREE)
+                        (:REWRITE SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH-RELEVANT-VARS)
+                        (:REWRITE SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH-SIMPLIFY)
+                        (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-OF-COUNTER-INVAR-SPEC)
+                        (:REWRITE SVTV-SPEC-PIPE-ENV->CYCLE-ENVS-UNDER-SVEX-ENVLISTS-OVTESTSIMILAR)
+                        (:REWRITE SVTV-SPEC-RUN-IN-TERMS-OF-CYCLE-FSM)
+                        (:REWRITE AIGNET::UNSIGNED-BYTE-P-WHEN-SIMPCODE-P)
+                        (:REWRITE-QUOTED-CONSTANT SVEX-ENVLIST-1MASK-UNDER-SVEX-ENVLISTS-1MASK-EQUIV)
+                        (:TYPE-PRESCRIPTION LHPROBE-CONSTRAINTLIST-OVERRIDEMUX-EVAL)
+                        (:TYPE-PRESCRIPTION OVERRIDEKEYS-ENVLISTS-AGREE*)
+                        (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P))
            :do-not-induct t))
   :otf-flg t)
 

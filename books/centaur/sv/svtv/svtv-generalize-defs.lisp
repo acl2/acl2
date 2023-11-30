@@ -119,3 +119,145 @@
          (svarlist-override-p (Svtv-cyclephaselist-keys spec.cycle-phases) nil)
          (svex-alist-check-monotonic spec.initst-alist)
          (svarlist-override-p (svex-alist-keys spec.fsm.nextstate) nil))))
+
+
+
+
+
+
+;;; For each decomposition proof, we'll have a fixed set of signals overridden
+;;; on both the spec and impl side.  On the spec side, this set of signals will
+;;; likely be constant over several theorems that we want to compose together;
+;;; this will be specified by svtv-override-triples-envs-match.  On the impl
+;;; side, we'll have a more explicit env, not just a free variable with hyps
+;;; but an alist constructed with cons/append/etc. We'll extract from this term
+;;; a substitution which should contain all the constant bindings and bind all
+;;; other variables to themselves, so that (svex-alist-eval subst env) ~= env.
+
+
+;; The following functions say:
+;; - Every triplemap test evaluated in env matches (1mask-equiv) its evaluation in spec.
+;; - Every triplemap value evaluated in env is >>= its evaluation in spec.
+(define svtv-override-triple-envs-match ((triple svtv-override-triple-p)
+                                         (env svex-env-p)
+                                         (spec svex-env-p))
+  (b* (((svtv-override-triple triple)))
+    (and (4vec-1mask-equiv (svex-eval triple.test env) (svex-eval triple.test spec))
+         (4vec-<<= (svex-eval triple.val spec) (svex-eval triple.val env)))))
+
+(define svtv-override-triplemap-envs-match ((triplemap svtv-override-triplemap-p)
+                                            (env svex-env-p)
+                                            (spec svex-env-p))
+  :returns (ok)
+  (if (atom triplemap)
+      t
+    (if (mbt (and (consp (car triplemap))
+                  (svar-p (caar triplemap))))
+        (and (svtv-override-triple-envs-match (cdar triplemap) env spec)
+             (svtv-override-triplemap-envs-match (cdr triplemap) env spec))
+      (svtv-override-triplemap-envs-match (cdr triplemap) env spec)))
+  ///
+  (defret <fn>-implies
+    (implies (and ok
+                  (svar-p key)
+                  (hons-assoc-equal key triplemap))
+             (b* ((triple (cdr (hons-assoc-equal key (svtv-override-triplemap-fix triplemap)))))
+               (and (4vec-1mask-equiv (svex-eval (svtv-override-triple->test triple) env)
+                           (svex-eval (svtv-override-triple->test triple) spec))
+                    (4vec-<<= (svex-eval (svtv-override-triple->val triple) spec)
+                              (svex-eval (svtv-override-triple->val triple) env)))))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemap-fix
+                                      svtv-override-triple-envs-match))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
+
+(define svtv-override-triplemaplist-envs-match ((triplemaps svtv-override-triplemaplist-p)
+                                                (env svex-env-p)
+                                                (spec svex-env-p))
+  :parents (def-svtv-generalized-thm)
+  :short "Checks that the given environment @('env') has values matching
+@('spec') for the override test and value variables of the given triplemaplist
+@('triplemaps')."
+  :long "<p>An occurrence of this function is used by @(see
+def-svtv-generalized-thm) as a hypothesis of the generalized theorems it
+proves, serving to assume that the environment used in the SVTV run of the
+theorem overrides exactly the signals it's supposed to, i.e. matching
+@('spec').</p>
+
+<p>This function returns true iff for every @(see svtv-override-triple) in
+@('triplemaps'), the evaluation of the @('test') field on @('env') equals its
+evaluation on @('spec'), and the evaluation of the @('val') field on @('spec')
+is @(see 4vec-<<=) its evaluation on @('env'). In the current framework each
+@('test') and @('val') expression is always either a constant or variable.  For
+constants, the conditions are automatically true, and for variables the
+bindings in @('env') and @('spec') must be compared.</p>
+
+<p>When instantiating a generalized SVTV theorem (as produced by @(see
+def-svtv-generalized-thm) to prove something about an SVTV run on a more
+particular environment,  there are a couple of helpful rewriting strategies.</p>
+
+<ul>
+
+<li>@('svtv-override-triplemaplist-envs-match-simplify') applies when @('env')
+is a term containing a list of pairs with constant keys and (as is usually the
+case) @('spec') is a constant.  It simplifies the call of
+@('svtv-override-triplemaplist-envs-match') to a call of
+ @('svtv-override-triplelist-envs-match') on a smaller set of triples, only the ones
+that couldn't be resolved by just examining the syntax of the @('env') and
+@('spec') terms.  Then, @('svtv-override-triplelist-envs-match') has rules to
+open up and solve the requirements for the remaining triples.</li>
+
+<li>@('svtv-override-triplemaplist-envs-match-remove-irrelevant-pair-top') can
+simplify @('env') terms containing irrelevant pairs, i.e. those that aren't
+test or value variables of the triplemaps.</li>
+
+</ul>"
+  (if (atom triplemaps)
+      t
+    (and (svtv-override-triplemap-envs-match (car triplemaps) env spec)
+         (svtv-override-triplemaplist-envs-match (cdr triplemaps) env spec))))
+
+(define svex-alist-noncall-p ((x svex-alist-p))
+  (if (atom x)
+      t
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (and (not (svex-case (cdar x) :call))
+             (svex-alist-noncall-p (cdr x)))
+      (svex-alist-noncall-p (cdr x))))
+  ///
+  (local (in-theory (enable svex-alist-fix))))
+
+
+(define svex-alistlist-noncall-p ((x svex-alistlist-p))
+  (if (atom x)
+      t
+    (and (svex-alist-noncall-p (car x))
+         (svex-alistlist-noncall-p (cdr x)))))
+
+
+(define svtv-spec-fsm-syntax-check ((x svtv-spec-p))
+  (b* (((svtv-spec x))
+       (len (len (svtv-probealist-outvars x.probes)))
+       (x.in-alists (take len x.in-alists))
+       (x.override-val-alists (take len x.override-val-alists))
+       (x.override-test-alists (take len x.override-test-alists)))
+    (and (svex-alistlist-noncall-p x.in-alists)
+         (svex-alistlist-noncall-p x.override-val-alists)
+         (svex-alistlist-noncall-p x.override-test-alists)
+         (no-duplicatesp-each (svex-alist-keys-list x.in-alists))
+         (no-duplicatesp-each (svex-alist-keys-list x.override-val-alists))
+         (equal (svex-alist-keys-list x.override-val-alists)
+                (svex-alist-keys-list x.override-test-alists))
+         (svarlist-override-p (svtv-name-lhs-map-vars x.namemap) nil))))
+
+
+(define svex-alist-all-xes-p ((x svex-alist-p))
+  (if (atom x)
+      t
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (and (svex-equiv (cdar x) (svex-x))
+             (svex-alist-all-xes-p (cdr x)))
+      (svex-alist-all-xes-p (cdr x))))
+  ///
+  (local (in-theory (enable svex-alist-fix))))
+

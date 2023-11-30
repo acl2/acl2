@@ -25,8 +25,11 @@
 
 (in-package "SV")
 
-(include-book "svtv-generalize")
 (include-book "../svex/override-transparency-and-ovmonotonicity")
+(include-book "svtv-generalize-defs")
+(include-book "override-envlist-defs")
+(include-book "fsm-override-transparency")
+(local (include-book "svtv-spec-override-transparency"))
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
@@ -425,15 +428,6 @@ In particular this requires
            (svex-alist-p x))
   :hints(("Goal" :in-theory (enable svar/4vec-alist-p svex-alist-p))))
 
-(define svex-alist-noncall-p ((x svex-alist-p))
-  (if (atom x)
-      t
-    (if (mbt (and (consp (car x)) (svar-p (caar x))))
-        (and (not (svex-case (cdar x) :call))
-             (svex-alist-noncall-p (cdr x)))
-      (svex-alist-noncall-p (cdr x))))
-  ///
-  (local (in-theory (enable svex-alist-fix))))
 
 (defthm svar/4vec-alist-p-when-svex-alist-p
   (implies (and (svex-alist-noncall-p x)
@@ -493,11 +487,6 @@ In particular this requires
            (svex-alistlist-p x))
   :hints(("Goal" :in-theory (enable svar/4vec-alistlist-p svex-alistlist-p))))
 
-(define svex-alistlist-noncall-p ((x svex-alistlist-p))
-  (if (atom x)
-      t
-    (and (svex-alist-noncall-p (car x))
-         (svex-alistlist-noncall-p (cdr x)))))
 
 (defthm svar/4vec-alistlist-p-when-svex-alistlist-p
   (implies (and (svex-alistlist-noncall-p x)
@@ -875,20 +864,6 @@ time."
      (svtv-spec-fsm-bindings-for-alist (car x) stage namemap overridetype bindings-acc))))
 
 
-(define svtv-spec-fsm-syntax-check ((x svtv-spec-p))
-  (b* (((svtv-spec x))
-       (len (len (svtv-probealist-outvars x.probes)))
-       (x.in-alists (take len x.in-alists))
-       (x.override-val-alists (take len x.override-val-alists))
-       (x.override-test-alists (take len x.override-test-alists)))
-    (and (svex-alistlist-noncall-p x.in-alists)
-         (svex-alistlist-noncall-p x.override-val-alists)
-         (svex-alistlist-noncall-p x.override-test-alists)
-         (no-duplicatesp-each (svex-alist-keys-list x.in-alists))
-         (no-duplicatesp-each (svex-alist-keys-list x.override-val-alists))
-         (equal (svex-alist-keys-list x.override-val-alists)
-                (svex-alist-keys-list x.override-test-alists))
-         (svarlist-override-p (svtv-name-lhs-map-vars x.namemap) nil))))
 
 (define svtv-spec-fsm-bindings ((x svtv-spec-p))
   :returns (bindings lhprobe-map-p)
@@ -3093,6 +3068,10 @@ time."
 
 
 
+(local (defthm car-hons-assoc-equal
+         (equal (car (hons-assoc-equal k x))
+                (and (hons-assoc-equal k x) k))))
+
 (defsection svtv-spec-pipe-env->cycle-envs-under-svex-envlists-ovtestsimilar
  (defcong svex-envs-ovtestsimilar svex-envs-ovtestsimilar (append x y) 2
     :hints (("goal" :do-not-induct t)
@@ -3186,10 +3165,6 @@ time."
     :hints(("Goal" :in-theory (enable svtv-spec-pipe-env->cycle-envs
                                       svtv-spec->override-test-alists*
                                       take-of-svex-alistlist-eval))))
-
-  (local (defthm car-hons-assoc-equal
-           (equal (car (hons-assoc-equal k x))
-                  (and (hons-assoc-equal k x) k))))
   
   (local (defthm lhprobe-map-overridemux-eval-of-fal-extract
            (implies (svarlist-p vars)
@@ -3515,14 +3490,10 @@ time."
   :hints((and stable-under-simplificationp
               `(:expand (,(car (last clause)))))))
 
-(define svex-alist-all-xes-p ((x svex-alist-p))
-  (if (atom x)
-      t
-    (if (mbt (and (consp (car x)) (svar-p (caar x))))
-        (and (svex-equiv (cdar x) (svex-x))
-             (svex-alist-all-xes-p (cdr x)))
-      (svex-alist-all-xes-p (cdr x))))
-  ///
+(defsection svex-alist-all-xes-p
+  (local (std::set-define-current-function svex-alist-all-xes-p))
+  (local (in-theory (enable svex-alist-all-xes-p)))
+  
   (defthmd lookup-when-svex-alist-all-xes-p
     (implies (and (svex-alist-all-xes-p x)
                   (svex-lookup k x))
@@ -3552,7 +3523,6 @@ time."
             :do-not-induct t)))
 
   (local (in-theory (enable svex-alist-fix))))
-
 
 (defcong svex-envlists-equivalent equal (svtv-spec-cycle-outs->pipe-out x outs) 2
   :hints(("Goal" :in-theory (enable svtv-spec-cycle-outs->pipe-out))))
@@ -3713,6 +3683,8 @@ time."
           :induct (svarlist-fix vars)
           :expand ((:free (a b) (fal-extract (cons a b) bindings))
                    (:free (a b ev) (svex-env-reduce (cons a b) ev))
+                   (:free (ev) (svex-env-reduce vars ev))
+                   (fal-extract nil bindings)
                    (:free (a b) (lhprobe-map-overridemux-eval (cons a b) envs outs))
                    (lhprobe-map-overridemux-eval nil envs outs)))))
 
@@ -3795,3 +3767,7 @@ time."
 
 
 
+;; needed from svtv-generalize:
+;; svtv-override-triple-envs-match
+;; svtv-override-triplemap-envs-match
+;; svtv-override-triplemaplist-envs-match
