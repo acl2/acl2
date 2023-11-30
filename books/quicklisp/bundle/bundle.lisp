@@ -5,6 +5,15 @@
   (unless (find-package '#:asdf)
     (error "ASDF could not be required")))
 
+; Prevent the bundle form from reloading.
+; See acl2/acl2 issue 1508 for details.
+(defvar *already-loaded-bundle?* nil)
+
+(if *already-loaded-bundle?*
+    t
+  (prog1
+
+;; The original form, before the once-only wrapper.
 (let ((indicator '#:ql-bundle-v1)
       (searcher-name '#:ql-bundle-searcher)
       (base (make-pathname :name nil :type nil
@@ -159,3 +168,5 @@
         (setf (symbol-function searcher-name) #'search-function)
         (push searcher-name asdf:*system-definition-search-functions*)))
     t))
+
+    (setq *already-loaded-bundle?* t)))
