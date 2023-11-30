@@ -277,7 +277,9 @@
   (declare (xargs :mode :program
                   :stobjs state))
   ;; Call LD on the book while saving event-data:
-  (b* (;; Add .lisp extension:
+  (b* (;; Remove the .cert extension if present:
+       (book-path (strip-suffix-from-string ".cert" book-path))
+       ;; Add .lisp extension:
        (book-path (maybe-add-dot-lisp-extension book-path))
        ;; Check that the book exists:
        ((mv book-existsp state) (file-existsp book-path state))
