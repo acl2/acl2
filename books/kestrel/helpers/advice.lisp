@@ -3252,7 +3252,7 @@
                             (acons model recs acc)
                             state))))
 
-;; Returns (mv erp state)
+;; Returns state.
 (defun startup-models (model-info-alist
                        num-recs-per-model
                        disallowed-rec-types
@@ -3277,39 +3277,45 @@
            (irrelevant translated-theorem-body) ; todo!
            )
   (if (endp model-info-alist)
-      (mv nil state) ; no error
-    (b* ((entry (first model-info-alist))
-         (model (car entry))
-         (model-info (cdr entry))
-         (print-timep (acl2::print-level-at-least-tp print))
-         ;; Record the start time (if we will need it):
-         ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         ;; Dispatch to the model:
-         (ml-modelp (not (member-eq model
-                               ;; TODO: Avoiding listing all these here:
-                                    '(:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
-                                      :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
-                                      :history :induct :cases))))
-         ((mv erp
-              & ; recs (should be nil)
-              state)
-          (if (not ml-modelp)
-              (mv nil nil state) ; no need to start the model
-            ;; It's a ML model on a server, so start it:
-            (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state)))
-         ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
-         (- (and erp (cw "Error using ~x0.~%" model))) ; but continue
-         (- (if (and print-timep ml-modelp)
-                (let* ((time-diff (- done-time start-time))
-                       (time-diff (if (< time-diff 0)
-                                      (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
-                                              0)
-                                    time-diff)))
-                  (progn$ (cw "Started model in ")
-                          (acl2::print-to-hundredths time-diff)
-                          (cw "s~%") ; s = seconds
-                          ))
-              nil)))
+      state
+    (let ((state
+            (b* ((entry (first model-info-alist))
+                 (model (car entry))
+                 (ml-modelp (not (member-eq model
+                                            ;; TODO: Avoiding listing all these here:
+                                            '(:enable-fns-body :enable-fns-top-cps :enable-fns-non-top-cps
+                                              :enable-rules-body :enable-rules-top-cps :enable-rules-non-top-cps
+                                              :history :induct :cases))))
+                 ((when (not ml-modelp))
+                  state ; no need to start the model
+                  )
+                 ;; It's an ML model on a server, so start it:
+                 (model-info (cdr entry))
+                 (print-timep (acl2::print-level-at-least-tp print))
+                 ;; Record the start time (if we will need it):
+                 ((mv start-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+                 ;; Dispatch to the model to start it:
+                 ((mv erp
+                      & ; recs (should be nil)
+                      state)
+                  (get-recs-from-ml-model model num-recs-per-model disallowed-rec-types checkpoint-clauses-top broken-theorem model-info timeout debug print :start state))
+                 ((mv done-time state) (if print-timep (acl2::get-real-time state) (mv 0 state)))
+                 ((when erp)
+                  (cw "Error using ~x0.~%" model)
+                  state ; but continue...
+                  )
+                 (- (if (and print-timep ml-modelp)
+                        (let* ((time-diff (- done-time start-time))
+                               (time-diff (if (< time-diff 0)
+                                              (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                                      0)
+                                            time-diff)))
+                          (progn$ (cw "Started model in ")
+                                  (acl2::print-to-hundredths time-diff)
+                                  (cw "s~%") ; s = seconds
+                                  ))
+                      nil)))
+              state)))
       (startup-models (rest model-info-alist)
                       num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top translated-theorem-body broken-theorem
                       timeout debug print
@@ -3340,6 +3346,37 @@
 (acl2::defmergesort merge-sort-recs-by-quality merge-recs-by-quality better-recp successful-recommendationp :extra-theorems nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp checkpoint-clauses-top checkpoint-clauses-non-top).
+(defun checkpoints-for-failed-proof (theorem-name translated-theorem-body state)
+  (declare (xargs :guard (and (symbolp theorem-name)
+                              (pseudo-termp translated-theorem-body))
+                  :mode :program ; because of clausify-term
+                  :stobjs state))
+  (b* (;; First the top-level checkpoints:
+       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
+                                                          state))
+       ((when (eq :unavailable raw-checkpoint-clauses-top))
+        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
+        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
+        (mv :no-checkpoints nil nil))
+       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
+       ;; TODO: Or use :otf-flg to get the real checkpoints?
+       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
+                                   (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
+                                           (clausify-term translated-theorem-body (w state)))
+                                 raw-checkpoint-clauses-top))
+       ((when (null checkpoint-clauses-top))
+        ;; A step-limit may fire before checkpoints can be generated:
+        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
+        (mv :no-checkpoints nil nil))
+       ;; Now the non-top checkpoints, of which there may be none:
+       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
+                                                          state))
+       ;; todo: any special values to handle here?
+       )
+    (mv nil ; no error
+        checkpoint-clauses-top checkpoint-clauses-non-top)))
 
 ;; Attempts to prove the given theorem using the given hints.  If the proof
 ;; worked, returns a recommendation that includes the hints that worked.
@@ -3383,28 +3420,9 @@
             nil ; checkpoints, meaningless
             nil ; checkpoints, meaningless
             state))
-       ;; The proof failed, so get the checkpoints:
-       (raw-checkpoint-clauses-top (acl2::checkpoint-list t ; top-level checkpoints
-                                                          state))
-       ((when (eq :unavailable raw-checkpoint-clauses-top))
-        ;; Can this happen?  :doc Checkpoint-list indicates that :unavailable means the proof succeeded.
-        (cw "WARNING: Unavailable checkpoints after failed proof of ~x0.~%" theorem-name)
-        (mv :no-checkpoints nil nil nil nil state))
-       ;; Deal with unfortunate case when acl2 decides to backtrack and try induction:
-       ;; TODO: Or use :otf-flg to get the real checkpoints?
-       (checkpoint-clauses-top (if (equal raw-checkpoint-clauses-top '((acl2::<goal>)))
-                               (prog2$ (cw "Note: Replacing bogus checkpoints.~%") ; todo: eventually remove this?
-                                       (clausify-term translated-theorem-body (w state)))
-                             raw-checkpoint-clauses-top))
-       ((when (null checkpoint-clauses-top))
-        ;; A step-limit may fire before checkpoints can be generated:
-        (cw "WARNING: No checkpoints after failed proof of ~x0 (perhaps a limit fired).~%" theorem-name)
-        (mv :no-checkpoints nil nil nil nil state))
-       ;; Now the non-top checkpoints, of which there may be none:
-       (checkpoint-clauses-non-top (acl2::checkpoint-list nil ; non-top-level checkpoints
-                                                          state))
-       ;; todo: any special values to handle here?
-       )
+       ((mv erp checkpoint-clauses-top checkpoint-clauses-non-top)
+        (checkpoints-for-failed-proof theorem-name translated-theorem-body state))
+       ((when erp) (mv erp nil nil nil nil state)))
     (mv nil ; no error
         nil ; didn't prove
         nil ; meaningless
@@ -3470,13 +3488,12 @@
               (len checkpoint-clauses-non-top) (if (= 1 (len checkpoint-clauses-non-top)) "checkpoint" "checkpoints")))
        ((mv models-start-time state) (acl2::get-real-time state))
        ;; Maybe start the models working:
-       ((mv erp state)
+       (state
         (if start-and-return
             (prog2$ (cw "Starting the models:~%")
                     (startup-models model-info-alist num-recs-per-model disallowed-rec-types checkpoint-clauses-top checkpoint-clauses-non-top
                                     translated-theorem-body broken-theorem timeout debug print state))
-          (mv nil state)))
-       ((when erp) (mv erp nil nil state))
+          state))
 
        ;; Go back and get the recs from the models (TODO: Could reduce waiting even more by trying some recs first):
        ;; WARNING: Keep args in sync between startup-models and get-recs-from-models (except startup-models has no acc)!
