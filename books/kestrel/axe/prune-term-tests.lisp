@@ -19,7 +19,7 @@
 (defun prune-term-test-wrapper (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
   (declare (xargs :stobjs state :verify-guards nil))
   (mv-let (erp changep result state)
-    (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp state)
+    (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp t state)
     (declare (ignore changep))
     (mv erp result state)))
 

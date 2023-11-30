@@ -1022,9 +1022,9 @@
   (cond
    ((and (raw-mode-p state)
          (bad-lisp-objectp x))
-    (format t "[Note:  Printing non-ACL2 result.]")
-    (terpri)
     (let ((str (get-output-stream-from-channel channel)))
+      (format str "[Note:  Printing non-ACL2 result.]")
+      (terpri str)
       (cond ((and (cdr stobjs-out)
                   (true-listp x)
                   (true-listp raw-x)

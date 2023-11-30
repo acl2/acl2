@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
@@ -29,101 +30,34 @@
 (include-book "rule-lists")
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
 (acl2::ensure-rules-known (extra-tester-rules))
 (acl2::ensure-rules-known (extra-tester-lifting-rules))
 (acl2::ensure-rules-known (tester-proof-rules))
 
-(local (in-theory (disable read-run-time
-                           get-real-time)))
-
-;move
-(defthm rationalp-of-mv-nth-0-of-read-run-time
-  (rationalp (mv-nth 0 (read-run-time state)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable read-run-time))))
-
-;move
-(defthm rationalp-of-mv-nth-0-of-get-real-time
-  (rationalp (mv-nth 0 (get-real-time state)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable get-real-time))))
-
-;; Returns (mv time-difference state).  Rounds up to the next second.
+;; Returns (mv time-difference state) where time-difference is in seconds and
+;; may not be an integer.
 (defun real-time-since (start-real-time state)
   (declare (xargs :guard (rationalp start-real-time)
                   :stobjs state))
   (mv-let (now state)
     (get-real-time state)
-    (mv (ceiling (- now start-real-time) 1)
+    (mv (- now start-real-time)
         state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Parens in output may not be balanced?
 
-;; TODO: move this stuff to mach-o-tools.lisp:
-
-;; Returns the section, or nil if the section doesn't exist.
-;; Returns the segment, or nil if the segment doesn't exist
-(defund maybe-get-mach-o-segment-from-load-commands (segment-name load-commands)
-  (if (endp load-commands)
-      nil
-    (let* ((load-command (first load-commands))
-           (cmd (acl2::lookup-eq-safe :cmd load-command)))
-      (if (not (or (eq cmd :LC_SEGMENT)
-                   (eq cmd :LC_SEGMENT_64)))
-          (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))
-        (let ((this-name (acl2::lookup-eq-safe :SEGNAME load-command)))
-          (if (equal segment-name this-name)
-              load-command
-            (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))))))))
-
-(acl2::def-constant-opener maybe-get-mach-o-segment-from-load-commands)
-
-;; Returns the segment, or nil if the segment doesn't exist.
-(defund maybe-get-mach-o-segment (segment-name parsed-mach-o)
-  (declare (xargs :guard (and (stringp segment-name)
-                              ;; parsed-mach-o
-                              )
-                  :verify-guards nil))
-  (maybe-get-mach-o-segment-from-load-commands segment-name (acl2::lookup-eq-safe :cmds parsed-mach-o)))
-
-(acl2::def-constant-opener maybe-get-mach-o-segment)
-
-(defund maybe-get-mach-o-section (name sections)
-  (declare (xargs :guard (and (stringp name)
-                              (alistp sections))))
-  (if (endp sections)
-      nil
-    (let* ((section (first sections)))
-      (if (not (alistp section))
-          (er hard? 'maybe-get-mach-o-section "Ill-formed section: ~x0." section)
-        (if (equal name (acl2::lookup-eq-safe :sectname section))
-            section
-          (maybe-get-mach-o-section name (rest sections)))))))
-
-(acl2::def-constant-opener maybe-get-mach-o-section)
-
-(defun mach-o-section-presentp (segment-name section-name parsed-mach-o)
-  (declare (xargs :guard (and (stringp segment-name)
-                              (stringp section-name)
-                              ;; parsed-mach-o
-                              )
-                  :verify-guards nil))
-  (let ((seg (maybe-get-mach-o-segment segment-name parsed-mach-o)))
-    (and seg
-         (if (maybe-get-mach-o-section section-name (acl2::lookup-eq-safe :sections seg))
-             t
-           nil))))
-
-(acl2::def-constant-opener mach-o-section-presentp)
-(acl2::def-constant-opener alistp)
-
-(defun elf-section-presentp (section-name parsed-elf)
-  (if (assoc-equal section-name (lookup-eq :sections parsed-elf)) t nil))
+(acl2::def-constant-opener acl2::maybe-get-mach-o-segment-from-load-commands)
+(acl2::def-constant-opener acl2::maybe-get-mach-o-segment)
+(acl2::def-constant-opener acl2::maybe-get-mach-o-section)
+(acl2::def-constant-opener acl2::mach-o-section-presentp)
+(acl2::def-constant-opener alistp) ; why?
 
 ;; ;todo: not really an assumption generator
+;; todo: redo this like elf64-section-loadedp.
 (defun section-assumptions-mach-o-64 (segment-name section-name parsed-mach-o
                                       text-offset stack-slots-needed x86)
   (declare (xargs :guard (and (stringp segment-name)
@@ -134,7 +68,7 @@
                   :stobjs x86
                   :verify-guards nil ;todo
                   ))
-  (if (mach-o-section-presentp segment-name section-name parsed-mach-o)
+  (if (acl2::mach-o-section-presentp segment-name section-name parsed-mach-o)
       (let* ((segment (acl2::get-mach-o-segment segment-name (acl2::lookup-eq-safe :cmds parsed-mach-o)))
              (section (acl2::get-mach-o-section section-name (acl2::lookup-eq-safe :SECTIONS segment)))
              (section-bytes (acl2::lookup-eq-safe :contents section))
@@ -154,43 +88,93 @@
     ;; no assumptions if section not present:
     t))
 
-;; ;todo: not really an assumption generator
-;; TODO: Can ELF sections be loaded at different addresss?
-(defun section-assumptions-elf-64 (section-name
-                                   parsed-elf
-                                   text-offset
-                                   position-independentp ; whether to assume position independence
-                                   stack-slots-needed
-                                   x86)
-  (declare (xargs :guard (and (stringp section-name)
-                              ;; parsed-elf
+;; TODO: Can ELF sections be relocated?
+(defun elf64-section-loadedp (section-bytes
+                              section-address
+                              text-offset
+                              position-independentp ; whether to assume position independence, todo: is this ever true?
+                              stack-slots-needed
+                              text-section-address
+                              x86)
+  (declare (xargs :guard (and (acl2::unsigned-byte-listp 8 section-bytes)
+                              (consp section-bytes)
+                              (natp section-address)
                               (natp text-offset)
                               (booleanp position-independentp)
-                              (natp stack-slots-needed))
-                  :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
-  (if (elf-section-presentp section-name parsed-elf)
-      (let* ((section-bytes (acl2::get-elf-section-bytes section-name parsed-elf))
-             (section-address (acl2::get-elf-section-address section-name parsed-elf))
-             (text-section-address (acl2::get-elf-code-address parsed-elf))
-             ;; todo: can this be negative?:
-             (section-offset-from-text (- section-address text-section-address))
-             (section-start (if position-independentp
-                                ;; position-independent, so assume the section is loaded at some offset wrt the text section:
-                                (+ text-offset section-offset-from-text)
-                              ;; not position-independent, so use the numeric address (may be necessary):
-                              section-address)))
-        (and (bytes-loaded-at-address-64 section-bytes section-start x86)
-             ;; (canonical-address-p$inline const-section-start)
-             ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
-             ;; The constant data is disjoint from the part of the stack that is written:
+                              (natp stack-slots-needed)
+                              (natp text-section-address))
+                  :stobjs x86))
+  (let* ((section-start (if position-independentp
+                            ;; position-independent, so assume the section is loaded at the appropriate offset wrt TEXT-OFFSET, which is where we assume the text section starts.
+                            ;; todo: can this be negative?:
+                            (let* (;; todo: can this be negative?:
+                                   (section-offset-from-text (- section-address text-section-address)))
+                              (+ text-offset section-offset-from-text))
+                          ;; not position-independent, so use the numeric address (may be necessary):
+                          section-address)))
+    (and (bytes-loaded-at-address-64 section-bytes section-start x86)
+         ;; (canonical-address-p$inline const-section-start)
+         ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
+         ;; The section is disjoint from the part of the stack that we expect to be written:
+         (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
              (separate :r (len section-bytes) section-start
-                       ;; Only a single stack slot is written
-                       ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))))
-    ;; no assumptions if section not present:
-    t))
+                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
+                                                      (rgfi *rsp* x86) ; rephrase?
+                                                      ))
+           t))))
+
+;; Returns a list of terms over the variables X86 and (perhaps TEXT-OFFSET).
+;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
+(defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf)
+  ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
+  ;;                             (alistp parsed-elf) ; strengthen
+  ;;                             )))
+  (if (endp section-names)
+      nil
+    (let* ((section-name (first section-names)))
+      (if (acl2::elf-section-presentp section-name parsed-elf)
+          (prog2$ (cw "(~s0 section detected.)~%" section-name)
+                  ;; todo: do better?
+                  (cons `(elf64-section-loadedp ;; ',section-name
+                                                ',(acl2::get-elf-section-bytes section-name parsed-elf)
+                                                ',(acl2::get-elf-section-address section-name parsed-elf)
+                                                text-offset
+                                                ',position-independentp
+                                                ',stack-slots
+                                                ',text-section-address
+                                                x86)
+                        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf)))
+        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf)))))
+
+;; Returns a list of terms.
+;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
+(defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable)
+  (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
+                              (booleanp position-independentp)
+                              (natp stack-slots)
+                              ;; parsed-executable
+                              )
+                  :verify-guards nil))
+  (if (eq :mach-o-64 executable-type)
+      (b* ((- (and (acl2::mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
+           (- (and (acl2::mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
+           (- (and (acl2::mach-o-section-presentp "__DATA_CONST" "__got" parsed-executable) (cw "(__DATA_CONST,__got section detected.)~%"))))
+        `((section-assumptions-mach-o-64 "__TEXT" "__const" ',parsed-executable text-offset ',stack-slots x86)
+          (section-assumptions-mach-o-64 "__DATA" "__data" ',parsed-executable text-offset ',stack-slots x86)
+          (section-assumptions-mach-o-64 "__DATA_CONST" "__got" ',parsed-executable text-offset ',stack-slots x86)
+          ;; ,@(and const-section-presentp ; suppress when there is no __const section
+          ;;        `((acl2::const-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
+          ;; ,@(and data-section-presentp ; suppress when there is no __data section
+          ;;        `((acl2::data-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
+          ))
+    (if (eq :elf-64 executable-type) ; todo: handle elf32
+        ;; todo: handle more sections here:
+        (assumptions-for-elf64-sections '(".data" ".rodata") position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable)
+      (if (eq :elf-32 executable-type)
+          (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
+        nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund make-register-replacement-assumptions (param-names register-names)
   (declare (xargs :guard (and (symbol-listp param-names)
@@ -203,33 +187,6 @@
           (param-name (first param-names)))
       (cons `(equal (,register-name x86) ,param-name)
             (make-register-replacement-assumptions (rest param-names) (rest register-names))))))
-
-(defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable)
-  (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
-                              (booleanp position-independentp)
-                              (natp stack-slots)
-                              ;; parsed-executable
-                              )
-                  :verify-guards nil))
-  (if (eq :mach-o-64 executable-type)
-      (b* ((- (and (mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
-           (- (and (mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
-           (- (and (mach-o-section-presentp "__DATA_CONST" "__got" parsed-executable) (cw "(__DATA_CONST,__got section detected.)~%"))))
-        `((section-assumptions-mach-o-64 "__TEXT" "__const" ',parsed-executable text-offset ',stack-slots x86)
-          (section-assumptions-mach-o-64 "__DATA" "__data" ',parsed-executable text-offset ',stack-slots x86)
-          (section-assumptions-mach-o-64 "__DATA_CONST" "__got" ',parsed-executable text-offset ',stack-slots x86)
-          ;; ,@(and const-section-presentp ; suppress when there is no __const section
-          ;;        `((acl2::const-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
-          ;; ,@(and data-section-presentp ; suppress when there is no __data section
-          ;;        `((acl2::data-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
-          ))
-    (if (eq :elf-64 executable-type) ; todo: handle elf32
-        (b* ((- (and (elf-section-presentp ".data" parsed-executable) (cw "(.data section detected.)~%")))
-             ;; todo: handle more sections!
-             )
-          `((section-assumptions-elf-64 ".data" ',parsed-executable text-offset ,position-independentp
-                                        ',stack-slots x86)))
-      nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,29 +205,33 @@
          (let* ((result (first val)) ; either :pass or :fail
                 (expected-result (second val)) ; :pass or :fail or :any
                 (elapsed (third val))
+                (elapsed (if (and (rationalp elapsed)
+                                  (<= 0 elapsed))
+                             elapsed
+                           (prog2$ (er hard? 'print-test-summary-aux "Bad elapsed time: ~x0." elapsed)
+                                   0)))
                 (result-string (if (eq :pass result) "pass" "fail"))
                 (numspaces (nfix (- 40 (len (coerce name 'list)))))
                 )
            (if (equal result expected-result)
-               (cw "Test ~s0:~_1 OK (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
+               (progn$ (cw "Test ~s0:~_1 OK (~s2)   " name numspaces result-string)
+                       (acl2::print-to-hundredths elapsed)
+                       (cw "s.~%"))
              (if (eq :any expected-result)
                  ;; In this case, we don't know whether the test is supposed to pass:
-                 (cw "Test ~s0:~_1 ?? (~s2) ~c3s.~%" name numspaces result-string (cons elapsed 4))
-               (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3). ~c4s~%" name numspaces result-string (if (eq :pass expected-result) "pass" "fail") (cons elapsed 4)))))))
+                 (progn$ (cw "Test ~s0:~_1 ?? (~s2)   " name numspaces result-string)
+                         (acl2::print-to-hundredths elapsed)
+                         (cw "s.~%"))
+               (progn$ (cw "Test ~s0:~_1 ERROR (~s2, but we expected ~s3).  " name numspaces result-string (if (eq :pass expected-result) "pass" "fail"))
+                       (acl2::print-to-hundredths elapsed)
+                       (cw "s~%")))))))
      (print-test-summary-aux (rest result-alist)))))
 
-(defund print-test-summary (result-alist executable-form)
-  (declare (xargs :guard (alistp result-alist)))
+(defund print-test-summary (result-alist executable-path)
+  (declare (xargs :guard (and (alistp result-alist)
+                              (stringp executable-path))))
   (progn$ (cw"~%========================================~%")
-          (if (or (symbolp executable-form)
-                  (stringp executable-form))
-              (let ((executable-name (if (stringp executable-form)
-                                         executable-form
-                                       (if (acl2::starts-and-ends-with-starsp executable-form)
-                                           (acl2::strip-stars-from-name executable-form)
-                                         executable-form))))
-                (cw "SUMMARY OF RESULTS for ~x0:~%" executable-name))
-            (cw "SUMMARY OF RESULTS:~%"))
+          (cw "SUMMARY OF RESULTS for ~x0:~%" executable-path)
           (print-test-summary-aux result-alist)
           (cw"========================================~%")))
 
@@ -380,6 +341,7 @@
                       (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ;
+                      ;; todo: build this into def-unrolled:
                       ,@register-assumptions
                       ;; todo: build this into def-unrolled:
                       ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
@@ -451,10 +413,10 @@
           ;; extra-assumption-rules:
           (append (lifter-rules64-new)
                   '(section-assumptions-mach-o-64
-                    mach-o-section-presentp-constant-opener
-                    maybe-get-mach-o-segment-constant-opener
-                    maybe-get-mach-o-segment-from-load-commands-constant-opener
-                    maybe-get-mach-o-section-constant-opener
+                    acl2::mach-o-section-presentp-constant-opener
+                    acl2::maybe-get-mach-o-segment-constant-opener
+                    acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener
+                    acl2::maybe-get-mach-o-section-constant-opener
                     acl2::alistp-constant-opener
                     ;;acl2::const-assumptions-mach-o-64
                     ;;acl2::data-assumptions-mach-o-64
@@ -464,8 +426,8 @@
                     ;;acl2::get-mach-o-data-constant-opener
                     acl2::get-elf-section-address
                     acl2::get-elf-section-bytes
-                    section-assumptions-elf-64
-                    elf-section-presentp
+                    elf64-section-loadedp
+                    acl2::elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp))
           step-limit
@@ -512,7 +474,7 @@
                                                remove-proof-rules
                                                ;; these can introduce boolor: todo: remove from tester-proof-rules?
                                                ;; todo: why is boolor bad?
-                                               '(acl2::boolif-x-x-y ;drop?
+                                               '(acl2::boolif-x-x-y-becomes-boolor ;drop?
                                                  acl2::boolif-when-quotep-arg2
                                                  acl2::boolif-when-quotep-arg3
                                                  acl2::bvchop-of-bvshr
@@ -628,7 +590,9 @@
                             remove-rules remove-lift-rules remove-proof-rules
                             print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
-       (- (cw "Time: ~x0s.~%" elapsed))
+       (- (cw "Time: ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
        (result-ok (if (eq :any expected-result)
                       t
                     (if (eq :pass expected-result)
@@ -745,13 +709,11 @@
                              (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
 
-
 ;; Returns (mv erp event state) an event (a progn containing an event for each test).
 ;; TODO: Return an error if any test is not as expected, but not until the end.
-(defun test-functions-fn (executable
+(defun test-functions-fn (executable ; a path to an executable
                           include-fns ; a list of strings (names of functions), or :all
                           exclude-fns ; a list of strings (names of functions)
-                          executable-form ; used to get the executable name for the summary
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
@@ -759,7 +721,7 @@
                           tactics max-conflicts stack-slots position-independent
                           expected-failures
                           state)
-  (declare (xargs :guard (and ;; executable is a string or parsed executable (todo: disallow the latter?)
+  (declare (xargs :guard (and (stringp executable)
                           (or (string-listp include-fns)
                               (eq :all include-fns))
                           (string-listp exclude-fns)
@@ -788,11 +750,11 @@
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
+       ;; Parse the executable (TODO: Can we parse less than the whole thing?):
        ((mv erp parsed-executable state)
-        (if (stringp executable)
-            (acl2::parse-executable executable state)
-          (mv nil executable state)))
+        (acl2::parse-executable executable state))
        ((when erp) (mv erp nil state))
+       ;; Analyze the executable:
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
@@ -861,8 +823,10 @@
                                state))
        ((mv overall-time state) (real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
-       (- (print-test-summary result-alist executable-form))
-       (- (cw "TOTAL TIME: ~x0s (~x1 tests).~%" overall-time (len function-name-strings))))
+       (- (print-test-summary result-alist executable))
+       (- (cw "TOTAL TIME: ")
+          (acl2::print-to-hundredths overall-time)
+          (cw "s (~x0 tests).~%"  (len function-name-strings))))
     (if (any-result-unexpectedp result-alist)
         (prog2$ (er hard? 'test-functions-fn "Unexpected result (see above).")
                 (mv t nil state))
@@ -873,7 +837,7 @@
 ;; Test a list of functions:
 ;; deprecate this?
 (defmacro test-functions (function-name-strings ; or can be :all
-                          executable ; a string or a parsed executable
+                          executable ; a string
                           &key
                           (extra-rules 'nil)
                           (extra-lift-rules 'nil)
@@ -893,10 +857,9 @@
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                           )
-  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated (often a constant like *foo.o* ?  now usually a string?)
+  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
-                                              ',executable  ; unevaluated
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated
@@ -916,7 +879,7 @@
 ;; Tests all the functions in the file.
 ;; Use :include to test only a given set of functions.
 ;; Use :exclude to test all but a given set of functions.
-(defmacro test-file (executable ; a string or a parsed executable
+(defmacro test-file (executable ; a string
                      &key
                      (include ':all) ; names of functions (strings) to test, or can be :all
                      (exclude 'nil) ; names of functions (strings) to exclude from testing
@@ -938,10 +901,9 @@
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
                      )
-  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated (often a constant like *foo.o*)
+  `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?
                                               ',exclude ; todo: evaluate?
-                                              ',executable  ; unevaluated
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated

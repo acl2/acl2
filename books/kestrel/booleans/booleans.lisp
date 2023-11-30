@@ -40,12 +40,12 @@
                     (booland test x))))
   :hints (("Goal" :in-theory (enable booland boolif))))
 
-(defthm boolif-x-x-y
+(defthm boolif-x-x-y-becomes-boolor
   (equal (boolif x x y)
          (boolor x y))
   :hints (("Goal" :in-theory (enable boolor boolif))))
 
-(defthm boolif-x-y-x
+(defthm boolif-x-y-x-becomes-booland
   (equal (boolif x y x)
          (booland x y))
   :hints (("Goal" :in-theory (enable booland boolif))))

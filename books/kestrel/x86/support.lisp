@@ -1166,15 +1166,6 @@
                       (equal k3 k1)
                     (equal k3 k2)))))
 
-;drop?  looped
-(defthmd if-x-nil-t
-  (equal (if x nil t)
-         (not x)))
-
-(defthm if-of-not
-  (equal (if (not test) tp ep)
-         (if test ep tp)))
-
 (defthm if-of-if-same-arg2
   (equal (if test (if test tp ep) ep2)
          (if test tp ep2)))
@@ -1942,14 +1933,9 @@
            (xw ':rip '0 pc2 x86))))
 
 ;move
-(defthm if-t-nil
+(defthm acl2::if-t-nil
   (equal (if x t nil)
          (acl2::bool-fix x)))
-
-(defthm if-x-x-y
-  (implies (booleanp x)
-           (equal (if x x y)
-                  (if x t y))))
 
 (defthm xr-of-myif
   (equal (xr fld index (acl2::myif test then else))

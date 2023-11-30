@@ -4526,7 +4526,7 @@
            (t
             (io?-prove@par
              (goal-already-printed-p)
-             (fms "[Note:  A hint was supplied for our processing of the goal ~
+             (fms "[Note:  A hint was supplied for the goal ~
                    ~#0~[above~/below~/above, provided by a :backtrack hint ~
                    superseding ~@1~].  Thanks!]~%"
                   (list

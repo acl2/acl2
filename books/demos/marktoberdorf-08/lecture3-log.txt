@@ -243,8 +243,7 @@ M1 >>(THM (EQUAL (RUN (APPEND A B) S)
                  (RUN B (RUN A S)))
           :HINTS (("Goal" :IN-THEORY (DISABLE RUN-APPEND))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 

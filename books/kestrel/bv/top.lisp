@@ -180,6 +180,8 @@
 (include-book "validation-stp")
 (include-book "validation-smt-lib")
 
+(include-book "rtl")
+
 ;; (include-book "tests") ; not including this one because it just contains tests
 
 (include-book "doc")

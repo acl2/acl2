@@ -78,6 +78,14 @@
             x86isa::sal/shl-spec-32
             x86isa::sal/shl-spec-64
 
+            ;; unsigned multiply
+            x86isa::mul-spec$inline ;; dispatches based on size
+            x86isa::mul-spec-8
+            x86isa::mul-spec-16
+            x86isa::mul-spec-32
+            x86isa::mul-spec-64
+
+            ;; signed multiply
             x86isa::imul-spec$inline ;; dispatches based on size
             x86isa::imul-spec-8
             x86isa::imul-spec-16
@@ -196,7 +204,13 @@
     read-of-write-same
     read-of-write-disjoint
     read-of-write-disjoint2
-    program-at-of-write))
+    program-at-of-write
+    ;; todo: uncomment these but first organize rules:
+    ;;write-of-write-same
+    ;;write-of-write-of-write-same
+    ;;write-of-write-of-write-of-write-same
+    ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
+    ))
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
@@ -579,7 +593,11 @@
     acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
     acl2::bvplus-recollapse ;rename
-    )))
+
+    ;; this is needed to handle a divide:
+    acl2::bvcat-of-if-becomes-bvsx-64-64
+    acl2::bvlt-of-bvplus-1-cancel
+    acl2::bvlt-of-bvplus-1-cancel-alt)))
 
 ;not used?
 (defun canonical-address-rules ()
@@ -596,8 +614,8 @@
 
 ;; These are about if but are not 'if lifting' rules.
 (defun if-rules ()
-  '(x86isa::if-x-nil-t
-    x86isa::if-of-not
+  '(acl2::if-nil-t
+    acl2::if-of-not
     x86isa::if-of-if-same-arg2
     x86isa::if-of-if-arg3-same
     ))
@@ -1480,15 +1498,16 @@
      x86isa::fix-of-xr-rgf-4)
    (acl2::lookup-rules)))
 
+;move?
 (defun myif-rules ()
   (append '(acl2::myif-same-branches ;add to lifter-rules?
-            acl2::myif-t-nil
+            acl2::myif-of-t-and-nil-when-booleanp
             acl2::myif-nil-t
             ;; acl2::boolif-of-nil-and-t ;redundant?
             )
           (acl2::boolean-rules)
-          ;; '(acl2::boolif-x-x-y
-          ;; acl2::boolif-x-y-x
+          ;; '(acl2::boolif-x-x-y-becomes-boolor
+          ;; acl2::boolif-x-y-x-becomes-booland
           ;; acl2::boolif-same-branches
           ;; acl2::boolif-when-quotep-arg1
           ;; acl2::boolif-when-quotep-arg2
@@ -1758,7 +1777,7 @@
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
-    x86isa::if-x-x-y
+    acl2::if-x-x-y-when-booleanp
 ;    mv-nth-0-of-ea-to-la ; introduces eff-addrs-okp
 
     eff-addr-okp-of-set-flag
@@ -2782,6 +2801,7 @@
     ctri-of-set-rsp
     ctri-of-set-rbp
     ctri-of-set-undef
+    ctri-of-!rflags
 
     rax-of-write
     rbx-of-write
@@ -3481,7 +3501,7 @@
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
             ;;xr-of-!rflags-irrel
-            X86ISA::IF-X-X-Y
+            acl2::IF-X-X-Y-when-booleanp
             ;; ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP
             ACL2::EQUAL-OF-IF-ARG1-WHEN-QUOTEP
             ACL2::EQUAL-OF-IF-ARG2-WHEN-QUOTEP
@@ -3678,7 +3698,7 @@
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
-            ;; ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
             ;bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
@@ -3749,7 +3769,7 @@
             ACL2::SIGNED-BYTE-P-OF-BVIF
             ACL2::LOGEXT-IDENTITY
             ACL2::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-ONE-LESS
-            ;ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG
             boolor-becomes-boolif
             ;bvlt-hack-1-gen

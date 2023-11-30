@@ -162,3 +162,50 @@
 
 (defun mach-o-cpu-type (parsed-mach-o)
   (lookup-eq-safe :cputype (lookup-eq-safe :header parsed-mach-o)))
+
+;; Returns the segment, or nil if the segment doesn't exist
+(defund maybe-get-mach-o-segment-from-load-commands (segment-name load-commands)
+  (if (endp load-commands)
+      nil
+    (let* ((load-command (first load-commands))
+           (cmd (acl2::lookup-eq-safe :cmd load-command)))
+      (if (not (or (eq cmd :LC_SEGMENT)
+                   (eq cmd :LC_SEGMENT_64)))
+          (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))
+        (let ((this-name (acl2::lookup-eq-safe :SEGNAME load-command)))
+          (if (equal segment-name this-name)
+              load-command
+            (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))))))))
+
+;; Returns the segment, or nil if the segment doesn't exist.
+(defund maybe-get-mach-o-segment (segment-name parsed-mach-o)
+  (declare (xargs :guard (and (stringp segment-name)
+                              ;; parsed-mach-o
+                              )
+                  :verify-guards nil))
+  (maybe-get-mach-o-segment-from-load-commands segment-name (acl2::lookup-eq-safe :cmds parsed-mach-o)))
+
+;; Returns the section, or nil if the section doesn't exist.
+(defund maybe-get-mach-o-section (name sections)
+  (declare (xargs :guard (and (stringp name)
+                              (alistp sections))))
+  (if (endp sections)
+      nil
+    (let* ((section (first sections)))
+      (if (not (alistp section))
+          (er hard? 'maybe-get-mach-o-section "Ill-formed section: ~x0." section)
+        (if (equal name (acl2::lookup-eq-safe :sectname section))
+            section
+          (maybe-get-mach-o-section name (rest sections)))))))
+
+(defun mach-o-section-presentp (segment-name section-name parsed-mach-o)
+  (declare (xargs :guard (and (stringp segment-name)
+                              (stringp section-name)
+                              ;; parsed-mach-o
+                              )
+                  :verify-guards nil))
+  (let ((seg (maybe-get-mach-o-segment segment-name parsed-mach-o)))
+    (and seg
+         (if (maybe-get-mach-o-section section-name (acl2::lookup-eq-safe :sections seg))
+             t
+           nil))))

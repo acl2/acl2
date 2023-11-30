@@ -1,4 +1,4 @@
-; Mote symbolic execution machinery
+; More symbolic execution machinery
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute

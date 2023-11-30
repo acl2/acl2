@@ -33059,7 +33059,7 @@
               (list (cons #\0 iter)
                     (cons #\1 (car form))
                     (cons #\2 (car (last form))))
-              *standard-co* state nil)))
+              (standard-co state) state nil)))
      (value (cons t (car (last form))))))
    (t
     (let* ((make-event-case (and make-event-p
@@ -33096,7 +33096,7 @@
                   (list (cons #\0 iter)
                         (cons #\1 (if macrop 0 (if make-event-case 1 2)))
                         (cons #\2 next))
-                  *standard-co* state nil)))
+                  (standard-co state) state nil)))
          (value (cons (or make-event-case macrop) next))))))))
 
 (defun trans*-fn-iter (iter bound transp quiet make-event-p names-fal
