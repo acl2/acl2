@@ -235,6 +235,18 @@ test or value variables of the triplemaps.</li>
          (svex-alistlist-noncall-p (cdr x)))))
 
 
+
+(define svtv-probealist-vars ((x svtv-probealist-p))
+  :returns (vars svarlist-p)
+  (if (atom x)
+      nil
+    (if (mbt (consp (car x)))
+        (cons (svtv-probe->signal (cdar x))
+              (svtv-probealist-vars (cdr x)))
+      (svtv-probealist-vars (cdr x))))
+  ///
+  (local (in-theory (enable svtv-probealist-fix))))
+
 (define svtv-spec-fsm-syntax-check ((x svtv-spec-p))
   (b* (((svtv-spec x))
        (len (len (svtv-probealist-outvars x.probes)))
@@ -248,7 +260,8 @@ test or value variables of the triplemaps.</li>
          (no-duplicatesp-each (svex-alist-keys-list x.override-val-alists))
          (equal (svex-alist-keys-list x.override-val-alists)
                 (svex-alist-keys-list x.override-test-alists))
-         (svarlist-override-p (svtv-name-lhs-map-vars x.namemap) nil))))
+         (svarlist-override-p (svtv-name-lhs-map-vars x.namemap) nil)
+         (acl2::hons-subset (svtv-probealist-vars x.probes) (alist-keys x.namemap)))))
 
 
 (define svex-alist-all-xes-p ((x svex-alist-p))

@@ -33,9 +33,12 @@
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "std/lists/take" :dir :system))
+(local (include-book "std/lists/nthcdr" :dir :system))
+(local (include-book "std/lists/nth" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
+(local (include-book "centaur/misc/hons-sets" :dir :system))
 
 (local (include-book "clause-processors/find-subterms" :dir :system))
 
@@ -531,11 +534,20 @@ In particular this requires
 
 
 (defprod lhprobe
-  :short "Product type pairing an LHS (some list of FSM signal segments) and a
-stage number, signifying the concatenated value of those segments at that
-time."
+  :short "Product type bundling an LHS (some list of FSM signal segments), a
+time step, and a Boolean indicating signedness, signifying the concatenated
+value of those segments at that time."
+  :long "<p>These are used for mapping FSM signals to SVTV variables. The
+signedness is relevant because of peculiarities of SVTV theorems.  In SVTV
+runs, only a lower segment of the bits of any given variable are relevant, but
+theorems about SVTV runs tend to specify the signedness of the variable.  E.g.,
+many input variables are assumed unsigned-byte-p of some size, and
+override-test variables are usually assumed to be -1 or 0.  Thus we need to map
+the relevant portions of the FSM variables sometimes to unsigned and sometimes
+to signed values.</p>"
   ((lhs lhs-p)
-   (stage natp :rule-classes :type-prescription))
+   (stage natp :rule-classes :type-prescription)
+   (signedp booleanp :rule-classes :type-prescription))
   :layout :fulltree)
 
 
@@ -594,6 +606,20 @@ time."
               (svex-envlists-agree vars2 x y)))))
 
 
+;; (define lhprobe-eval-ext ((x lhprobe-p)
+;;                       (envs svex-envlist-p))
+;;   :parents (lhprobe)
+;;   :short "Evaluator for an @(see lhprobe) with respect to an envlist giving the values of signals over time."
+;;   :returns (val 4vec-p)
+;;   (b* (((lhprobe x))
+;;        (env (nth x.stage envs)))
+;;     (lhs-eval-ext x.lhs env)))
+
+(local (defthm nth-of-svex-envlist-fix-no-split
+         (equal (nth n (svex-envlist-fix x))
+                (svex-env-fix (nth n x)))
+         :hints(("Goal" :in-theory (enable svex-envlist-fix)))))
+
 (define lhprobe-eval ((x lhprobe-p)
                       (envs svex-envlist-p))
   :parents (lhprobe)
@@ -601,7 +627,14 @@ time."
   :returns (val 4vec-p)
   (b* (((lhprobe x))
        (env (nth x.stage envs)))
-    (lhs-eval-ext x.lhs env)))
+    (if x.signedp
+        (lhs-eval-ext x.lhs env)
+      (lhs-eval-zero x.lhs env)))
+  ///
+  (defthm lhprobe-eval-of-take
+    (implies (< (lhprobe->stage x) (nfix n))
+             (equal (lhprobe-eval x (take n envs))
+                    (lhprobe-eval x envs)))))
 
 
 
@@ -631,6 +664,14 @@ time."
     :hints(("Goal" :in-theory (enable lhs-eval-ext
                                       lhatom-vars
                                       lhatom-eval-zero))))
+
+  (defthm lhs-eval-zero-of-svex-env-extract
+    (implies (subsetp-equal (lhs-vars x) (Svarlist-fix vars))
+             (equal (lhs-eval-zero x (svex-env-extract vars env))
+                    (lhs-eval-zero x env)))
+    :hints(("Goal" :in-theory (enable lhs-eval-zero
+                                      lhatom-vars
+                                      lhatom-eval-zero))))
   
   (defthm lhprobe-eval-of-svex-envlist-extract-vars
     (implies (subsetp-equal (lhprobe-vars x) (Svarlist-fix vars))
@@ -648,6 +689,10 @@ time."
                 '(:use ((:instance lhs-eval-ext-when-envs-agree
                          (x (lhprobe->lhs x))
                          (env1 (nth (lhprobe->stage x) envs1))
+                         (env2 (nth (lhprobe->stage x) envs2)))
+                        (:instance lhs-eval-zero-when-envs-agree
+                         (x (lhprobe->lhs x))
+                         (env1 (nth (lhprobe->stage x) envs1))
                          (env2 (nth (lhprobe->stage x) envs2)))))))))
 
 
@@ -660,7 +705,6 @@ time."
 
 (fty::defmap lhprobe-map :key-type svar :val-type lhprobe :true-listp t
   :short "Mapping from variables to lhprobes, identifying SVTV variables with signals at a time")
-
 
 (define lhprobe-map-eval ((x lhprobe-map-p)
                           (envs svex-envlist-p))
@@ -817,69 +861,6 @@ time."
     :lhprobe (lhprobe-change-override x type)))
 
 
-(define svtv-spec-fsm-bindings-for-lhprobe ((lhprobe lhprobe-p)
-                                            (binding svar/4vec-p)
-                                            (bindings-acc lhprobe-map-p))
-  :returns (bindings lhprobe-map-p)
-  (svar/4vec-case binding
-    :4vec (lhprobe-map-fix bindings-acc)
-    :svar
-    ;; svtv variable, add a binding unless there is one already
-    (b* ((binding-look (hons-get (svar-fix binding) (lhprobe-map-fix bindings-acc)))
-         ((unless binding-look)
-          (hons-acons (svar-fix binding) (lhprobe-fix lhprobe)
-                      (lhprobe-map-fix bindings-acc))))
-      (lhprobe-map-fix bindings-acc))))
-
-(define svtv-spec-fsm-bindings-for-alist ((x svar/4vec-alist-p)
-                                             (stage natp)
-                                             (namemap svtv-name-lhs-map-p)
-                                             (overridetype svar-overridetype-p)
-                                             (bindings-acc lhprobe-map-p))
-  :returns (bindings lhprobe-map-p)
-  (b* (((when (atom x)) (lhprobe-map-fix bindings-acc))
-       ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
-        (svtv-spec-fsm-bindings-for-alist (cdr x) stage namemap overridetype bindings-acc))
-       ((cons var val) (car x))
-       (look (hons-get var (svtv-name-lhs-map-fix namemap)))
-       ((unless look)
-        (svtv-spec-fsm-bindings-for-alist (cdr x) stage namemap overridetype bindings-acc))
-       (lhs (cdr look))
-       (lhprobe (make-lhprobe :lhs (lhs-change-override lhs overridetype) :stage stage))
-       (bindings-acc (svtv-spec-fsm-bindings-for-lhprobe lhprobe val bindings-acc)))
-    (svtv-spec-fsm-bindings-for-alist (cdr x) stage namemap overridetype bindings-acc))
-  ///
-  (local (in-theory (enable svar/4vec-alist-fix))))
-
-(define svtv-spec-fsm-bindings-for-alists ((x svar/4vec-alistlist-p)
-                                           (stage natp)
-                                           (namemap svtv-name-lhs-map-p)
-                                           (overridetype svar-overridetype-p)
-                                           (bindings-acc lhprobe-map-p))
-  :returns (bindings lhprobe-map-p)
-  (if (atom x)
-      (lhprobe-map-fix bindings-acc)
-    (svtv-spec-fsm-bindings-for-alists
-     (cdr x) (1+ (lnfix stage)) namemap overridetype
-     (svtv-spec-fsm-bindings-for-alist (car x) stage namemap overridetype bindings-acc))))
-
-
-
-(define svtv-spec-fsm-bindings ((x svtv-spec-p))
-  :returns (bindings lhprobe-map-p)
-  :guard (svtv-spec-fsm-syntax-check x)
-  :guard-hints (("goal" :in-theory (enable svtv-spec-fsm-syntax-check)))
-  (b* (((svtv-spec x))
-       (len (len (svtv-probealist-outvars (svtv-spec->probes x))))
-       ((acl2::with-fast x.namemap))
-       (bindings (svtv-spec-fsm-bindings-for-alists (take len x.in-alists) 0 x.namemap nil nil))
-       (bindings (svtv-spec-fsm-bindings-for-alists (take len x.override-val-alists) 0 x.namemap :val bindings)))
-    (svtv-spec-fsm-bindings-for-alists (take len x.override-test-alists) 0 x.namemap :test bindings)))
-       
-
-
-
-
 
 
 
@@ -923,7 +904,33 @@ time."
                                    (svex-env-fastlookup (svar-change-override x.name nil) out))
                      (svex-env-fastlookup x.name env)))))
 
-(define lhs-overridemux-eval ((x lhs-p)
+
+(local (defthm 4vec-bit?!-of-4vec-concat
+         (equal (4vec-bit?! (4vec-concat n test1 test2)
+                            (4vec-concat n then1 then2)
+                            (4vec-concat n else1 else2))
+                (4vec-concat n (4vec-bit?! test1 then1 else1)
+                             (4vec-bit?! test2 then2 else2)))
+         :hints (("goal" :in-theory (enable 4vec-concat 4vec-bit?! 4vec-bitmux 4vec-1mask))
+                 (bitops::logbitp-reasoning))))
+
+(local (defthm 4vec-bit?!-of-4vec-rsh
+         (equal (4vec-bit?! (4vec-rsh n test)
+                            (4vec-rsh n then)
+                            (4vec-rsh n else))
+                (4vec-rsh n (4vec-bit?! test then else)))
+         :hints (("goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask))
+                 (bitops::logbitp-reasoning))))
+
+(local (defthm 4vec-bit?!-of-4vec-sign-ext
+         (equal (4vec-bit?! (4vec-sign-ext n test)
+                            (4vec-sign-ext n then)
+                            (4vec-sign-ext n else))
+                (4vec-sign-ext n (4vec-bit?! test then else)))
+         :hints (("goal" :in-theory (enable 4vec-sign-ext 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask))
+                 (bitops::logbitp-reasoning))))
+
+(define lhs-overridemux-eval-ext ((x lhs-p)
                               (env svex-env-p)
                               (out svex-env-p))
   :returns (val 4vec-p)
@@ -934,36 +941,13 @@ time."
                        (lhatom-overridemux-eval (lhrange->atom (car x)) env out))
       (4vec-concat (2vec (lhrange->w (car x)))
                    (lhatom-overridemux-eval (lhrange->atom (car x)) env out)
-                   (lhs-overridemux-eval (cdr x) env out))))
+                   (lhs-overridemux-eval-ext (cdr x) env out))))
   ///
-  (local (defthm 4vec-bit?!-of-4vec-concat
-           (equal (4vec-bit?! (4vec-concat n test1 test2)
-                              (4vec-concat n then1 then2)
-                              (4vec-concat n else1 else2))
-                  (4vec-concat n (4vec-bit?! test1 then1 else1)
-                               (4vec-bit?! test2 then2 else2)))
-           :hints (("goal" :in-theory (enable 4vec-concat 4vec-bit?! 4vec-bitmux 4vec-1mask))
-                   (bitops::logbitp-reasoning))))
 
-  (local (defthm 4vec-bit?!-of-4vec-rsh
-           (equal (4vec-bit?! (4vec-rsh n test)
-                              (4vec-rsh n then)
-                              (4vec-rsh n else))
-                  (4vec-rsh n (4vec-bit?! test then else)))
-           :hints (("goal" :in-theory (enable 4vec-rsh 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask))
-                   (bitops::logbitp-reasoning))))
 
-  (local (defthm 4vec-bit?!-of-4vec-sign-ext
-           (equal (4vec-bit?! (4vec-sign-ext n test)
-                              (4vec-sign-ext n then)
-                              (4vec-sign-ext n else))
-                  (4vec-sign-ext n (4vec-bit?! test then else)))
-           :hints (("goal" :in-theory (enable 4vec-sign-ext 4vec-shift-core 4vec-bit?! 4vec-bitmux 4vec-1mask))
-                   (bitops::logbitp-reasoning))))
-
-  (defthm lhs-overridemux-eval-when-overridetype
+  (defthm lhs-overridemux-eval-ext-when-overridetype
     (implies (svarlist-override-p (lhs-vars x) type)
-             (equal (lhs-overridemux-eval x env out)
+             (equal (lhs-overridemux-eval-ext x env out)
                     (if (svar-overridetype-equiv type :val)
                         (4vec-bit?! (lhs-eval-ext (lhs-change-override x :test) env)
                                     (lhs-eval-ext x env)
@@ -979,7 +963,7 @@ time."
                                    (svar-overridetype-equiv))))
     :otf-flg t)
   
-  (defthm lhs-overridemux-eval-split-on-var-overridetype
+  (defthm lhs-overridemux-eval-ext-split-on-var-overridetype
     (implies (and (syntaxp (quotep x))
                   (equal vars (lhs-vars x))
                   (bind-free (and (quotep vars)
@@ -993,7 +977,7 @@ time."
                                       '((type . 'nil)))))
                              (type))
                   (svarlist-override-p vars type))
-             (equal (lhs-overridemux-eval x env out)
+             (equal (lhs-overridemux-eval-ext x env out)
                     (if (svar-overridetype-equiv type :val)
                         (4vec-bit?! (lhs-eval-ext (lhs-change-override x :test) env)
                                     (lhs-eval-ext x env)
@@ -1010,14 +994,86 @@ time."
            (lhs-change-override x type2))
     :hints(("Goal" :in-theory (enable lhs-change-override lhatom-change-override))))
   
-  (defthm lhs-overridemux-eval-of-lhs-change-override
-    (equal (lhs-overridemux-eval (lhs-change-override x type) env out)
+  (defthm lhs-overridemux-eval-ext-of-lhs-change-override
+    (equal (lhs-overridemux-eval-ext (lhs-change-override x type) env out)
            (if (svar-overridetype-equiv type :val)
                (4vec-bit?! (lhs-eval-ext (lhs-change-override x :test) env)
                            (lhs-eval-ext (lhs-change-override x type) env)
                            (lhs-eval-ext (lhs-change-override x nil) out))
              (lhs-eval-ext (lhs-change-override x type) env)))
-    :hints (("goal" :use ((:instance lhs-overridemux-eval-split-on-var-overridetype
+    :hints (("goal" :use ((:instance lhs-overridemux-eval-ext-split-on-var-overridetype
+                           (vars (lhs-vars (lhs-change-override x type)))
+                           (x (lhs-change-override x type))))))))
+
+(define lhs-overridemux-eval-zero ((x lhs-p)
+                              (env svex-env-p)
+                              (out svex-env-p))
+  :returns (val 4vec-p)
+  (if (atom x)
+      0
+    (4vec-concat (2vec (lhrange->w (car x)))
+                 (lhatom-overridemux-eval (lhrange->atom (car x)) env out)
+                 (lhs-overridemux-eval-zero (cdr x) env out)))
+  ///
+
+
+  (defthm lhs-overridemux-eval-zero-when-overridetype
+    (implies (svarlist-override-p (lhs-vars x) type)
+             (equal (lhs-overridemux-eval-zero x env out)
+                    (if (svar-overridetype-equiv type :val)
+                        (4vec-bit?! (lhs-eval-zero (lhs-change-override x :test) env)
+                                    (lhs-eval-zero x env)
+                                    (lhs-eval-zero (lhs-change-override x nil) out))
+                      (lhs-eval-zero x env))))
+    :hints(("Goal" :in-theory (e/d (lhs-eval-zero lhatom-overridemux-eval
+                                      lhs-vars lhatom-vars
+                                      lhs-change-override
+                                      lhatom-change-override
+                                      svarlist-override-p
+                                      lhatom-eval-zero
+                                      svar-override-p-when-other)
+                                   (svar-overridetype-equiv))))
+    :otf-flg t)
+  
+  (defthm lhs-overridemux-eval-zero-split-on-var-overridetype
+    (implies (and (syntaxp (quotep x))
+                  (equal vars (lhs-vars x))
+                  (bind-free (and (quotep vars)
+                                  (let ((vars (unquote vars)))
+                                    (if (consp vars)
+                                        (let ((var (car vars)))
+                                          (and (svar-override-okp var)
+                                               `((type . ',(cond ((svar-override-p var :test) :test)
+                                                                 ((svar-override-p var :val) :val)
+                                                                 (t nil))))))
+                                      '((type . 'nil)))))
+                             (type))
+                  (svarlist-override-p vars type))
+             (equal (lhs-overridemux-eval-zero x env out)
+                    (if (svar-overridetype-equiv type :val)
+                        (4vec-bit?! (lhs-eval-zero (lhs-change-override x :test) env)
+                                    (lhs-eval-zero x env)
+                                    (lhs-eval-zero (lhs-change-override x nil) out))
+                      (lhs-eval-zero x env)))))
+
+  (defthm lhs-vars-of-lhs-change-override
+    (equal (lhs-vars (lhs-change-override x type))
+           (svarlist-change-override (lhs-vars x) type))
+    :hints(("Goal" :in-theory (enable svarlist-change-override lhs-change-override lhatom-change-override lhs-vars lhatom-vars))))
+
+  (defthm lhs-change-override-of-lhs-change-override
+    (equal (lhs-change-override (lhs-change-override x type1) type2)
+           (lhs-change-override x type2))
+    :hints(("Goal" :in-theory (enable lhs-change-override lhatom-change-override))))
+  
+  (defthm lhs-overridemux-eval-zero-of-lhs-change-override
+    (equal (lhs-overridemux-eval-zero (lhs-change-override x type) env out)
+           (if (svar-overridetype-equiv type :val)
+               (4vec-bit?! (lhs-eval-zero (lhs-change-override x :test) env)
+                           (lhs-eval-zero (lhs-change-override x type) env)
+                           (lhs-eval-zero (lhs-change-override x nil) out))
+             (lhs-eval-zero (lhs-change-override x type) env)))
+    :hints (("goal" :use ((:instance lhs-overridemux-eval-zero-split-on-var-overridetype
                            (vars (lhs-vars (lhs-change-override x type)))
                            (x (lhs-change-override x type))))))))
 
@@ -1029,7 +1085,9 @@ time."
   (b* (((lhprobe x))
        (env (nth x.stage envs))
        (out (nth x.stage outs)))
-    (lhs-overridemux-eval x.lhs env out))
+    (if x.signedp
+        (lhs-overridemux-eval-ext x.lhs env out)
+      (lhs-overridemux-eval-zero x.lhs env out)))
   ///
 
   (defthm lhprobe-overridemux-eval-when-overridetype
@@ -1040,7 +1098,12 @@ time."
                                     (lhprobe-eval x env)
                                     (lhprobe-eval (lhprobe-change-override x nil) out))
                       (lhprobe-eval x env))))
-    :hints(("Goal" :use ((:instance lhs-overridemux-eval-split-on-var-overridetype
+    :hints(("Goal" :use ((:instance lhs-overridemux-eval-zero-split-on-var-overridetype
+                          (x (lhprobe->lhs x))
+                          (vars (lhs-vars (lhprobe->lhs x)))
+                          (env (nth (lhprobe->stage x) env))
+                          (out (nth (lhprobe->stage x) out)))
+                         (:instance lhs-overridemux-eval-ext-split-on-var-overridetype
                           (x (lhprobe->lhs x))
                           (vars (lhs-vars (lhprobe->lhs x)))
                           (env (nth (lhprobe->stage x) env))
@@ -1178,6 +1241,239 @@ time."
     :hints(("Goal" :in-theory (enable lhprobe-overridemux-eval-when-overridetype
                                       lhprobe-map-vars
                                       lhprobe-map-eval)))))
+
+
+
+(define lhprobe-map-max-stage ((x lhprobe-map-p))
+  :returns (stage integerp :rule-classes :type-prescription)
+  (if (atom x)
+      -1
+    (if (mbt (and (consp (car x)) (svar-p (caar x))))
+        (max (lhprobe->stage (cdar x))
+             (lhprobe-map-max-stage (cdr x)))
+      (lhprobe-map-max-stage (cdr x))))
+  ///
+  (local (in-theory (disable nth take acl2::take-of-len-free acl2::take-when-atom acl2::take-of-too-many)))
+
+  (defthm lhprobe-map-overridemux-eval-of-take-envs
+    (implies (< (lhprobe-map-max-stage x) (nfix n))
+             (equal (lhprobe-map-overridemux-eval x (take n envs) outs)
+                    (lhprobe-map-overridemux-eval x envs outs)))
+    :hints(("Goal" :in-theory (enable lhprobe-map-overridemux-eval
+                                      lhprobe-overridemux-eval
+                                      lhprobe/4vec-overridemux-eval))))
+  (defthm lhprobe-map-overridemux-eval-of-take-outs
+    (implies (< (lhprobe-map-max-stage x) (nfix n))
+             (equal (lhprobe-map-overridemux-eval x envs (take n outs))
+                    (lhprobe-map-overridemux-eval x envs outs)))
+    :hints(("Goal" :in-theory (enable lhprobe-map-overridemux-eval
+                                      lhprobe-overridemux-eval
+                                      lhprobe/4vec-overridemux-eval))))
+
+  (defthm lhprobe-map-eval-of-take-outs
+    (implies (< (lhprobe-map-max-stage x) (nfix n))
+             (equal (lhprobe-map-eval x (take n envs))
+                    (lhprobe-map-eval x envs)))
+    :hints(("Goal" :in-theory (enable lhprobe-map-eval
+                                      lhprobe-eval
+                                      lhprobe/4vec-eval))))
+
+  (defthm lhprobe->stage-of-lookup-bound
+    (implies (hons-assoc-equal v (lhprobe-map-fix x))
+             (<= (lhprobe->stage (cdr (hons-assoc-equal v x)))
+                 (lhprobe-map-max-stage x)))
+    :rule-classes :linear)
+
+  (defthm lhprobe-map-max-stage-lower-bound
+    (<= -1 (lhprobe-map-max-stage x))
+    :rule-classes :linear)
+  
+  (local (in-theory (enable lhprobe-map-fix))))
+
+(define lhprobe-constraint-max-stage ((x lhprobe-constraint-p))
+  :returns (stage natp :rule-classes :type-prescription)
+  (b* (((lhprobe-constraint x)))
+    (if (lhprobe/4vec-case x.val :lhprobe)
+        (max (lhprobe->stage (lhprobe/4vec-fix x.val)) (lhprobe->stage x.lhprobe))
+      (lhprobe->stage x.lhprobe)))
+  ///
+  (local (in-theory (disable nth take acl2::take-of-len-free acl2::take-when-atom acl2::take-of-too-many)))
+
+  (defthm lhprobe-constraint-overridemux-eval-of-take-envs
+    (implies (< (lhprobe-constraint-max-stage x) (nfix n))
+             (equal (lhprobe-constraint-overridemux-eval x (take n envs) outs)
+                    (lhprobe-constraint-overridemux-eval x envs outs)))
+    :hints(("Goal" :in-theory (enable lhprobe-constraint-overridemux-eval
+                                      lhprobe-overridemux-eval
+                                      lhprobe/4vec-overridemux-eval))))
+  (defthm lhprobe-constraint-overridemux-eval-of-take-outs
+    (implies (< (lhprobe-constraint-max-stage x) (nfix n))
+             (equal (lhprobe-constraint-overridemux-eval x envs (take n outs))
+                    (lhprobe-constraint-overridemux-eval x envs outs)))
+    :hints(("Goal" :in-theory (enable lhprobe-constraint-overridemux-eval
+                                      lhprobe-overridemux-eval
+                                      lhprobe/4vec-overridemux-eval))))
+
+  (defthm lhprobe-constraint-eval-of-take-outs
+    (implies (< (lhprobe-constraint-max-stage x) (nfix n))
+             (equal (lhprobe-constraint-eval x (take n envs))
+                    (lhprobe-constraint-eval x envs)))
+    :hints(("Goal" :in-theory (enable lhprobe-constraint-eval
+                                      lhprobe-eval
+                                      lhprobe/4vec-eval)))))
+
+
+(define lhprobe-constraintlist-max-stage ((x lhprobe-constraintlist-p))
+  :returns (stage integerp :rule-classes :type-prescription)
+  (if (atom x)
+      -1
+    (max (lhprobe-constraint-max-stage (car x))
+         (lhprobe-constraintlist-max-stage (cdr x))))
+  ///
+  (local (in-theory (disable nth take acl2::take-of-len-free acl2::take-when-atom acl2::take-of-too-many)))
+  
+  (defthm lhprobe-constraintlist-overridemux-eval-of-take-envs
+    (implies (< (lhprobe-constraintlist-max-stage x) (nfix n))
+             (equal (lhprobe-constraintlist-overridemux-eval x (take n envs) outs)
+                    (lhprobe-constraintlist-overridemux-eval x envs outs)))
+    :hints(("Goal" :in-theory (enable lhprobe-constraintlist-overridemux-eval))))
+  
+  (defthm lhprobe-constraintlist-overridemux-eval-of-take-outs
+    (implies (< (lhprobe-constraintlist-max-stage x) (nfix n))
+             (equal (lhprobe-constraintlist-overridemux-eval x envs (take n outs))
+                    (lhprobe-constraintlist-overridemux-eval x envs outs)))
+    :hints(("Goal" :in-theory (enable lhprobe-constraintlist-overridemux-eval))))
+
+  (defthm lhprobe-constraintlist-eval-of-take-outs
+    (implies (< (lhprobe-constraintlist-max-stage x) (nfix n))
+             (equal (lhprobe-constraintlist-eval x (take n envs))
+                    (lhprobe-constraintlist-eval x envs)))
+    :hints(("Goal" :in-theory (enable lhprobe-constraintlist-eval))))
+
+  (defthm lhprobe-constraintlist-max-stage-lower-bound
+    (<= -1 (lhprobe-constraintlist-max-stage x))
+    :rule-classes :linear)
+  
+  (defthm lhprobe-constraintlist-max-stage-of-append
+    (Equal (lhprobe-constraintlist-max-stage (append x y))
+           (max (lhprobe-constraintlist-max-stage x)
+                (lhprobe-constraintlist-max-stage y)))))
+
+
+
+(define svtv-spec-fsm-bindings-for-lhprobe ((lhprobe lhprobe-p)
+                                            (binding svar/4vec-p)
+                                            (bindings-acc lhprobe-map-p))
+  :returns (bindings lhprobe-map-p)
+  (svar/4vec-case binding
+    :4vec (lhprobe-map-fix bindings-acc)
+    :svar
+    ;; svtv variable, add a binding unless there is one already
+    (b* ((binding-look (hons-get (svar-fix binding) (lhprobe-map-fix bindings-acc)))
+         ((unless binding-look)
+          (hons-acons (svar-fix binding) (lhprobe-fix lhprobe)
+                      (lhprobe-map-fix bindings-acc))))
+      (lhprobe-map-fix bindings-acc)))
+  ///
+  (defret lhprobe-map-max-stage-of-<fn>
+    (implies (and (<= (lhprobe->stage lhprobe) bound)
+                  (<= (lhprobe-map-max-stage bindings-acc) bound))
+             (<= (lhprobe-map-max-stage bindings) bound))
+    :hints(("Goal" :in-theory (enable lhprobe-map-max-stage)))))
+
+
+(define lhprobe-signedness-for-alist ((overridetype svar-overridetype-p)
+                                      (val svar/4vec-p)
+                                      ;; add config object?
+                                      )
+  ;; FIXME -- By default, it seems like it should mostly work to consider
+  ;; override-test variables signed and input/override-val variables unsigned.
+  ;; By convention, SVTV theorems usually set tests to -1 or 0 and assume other
+  ;; variables unsigned-byte-p of their widths.  Here we also detect whether an
+  ;; SVTV sets a signal to a non-zero-extended constant.  However, there's
+  ;; nothing forbidding an SVTV theorem from assuming some variables to be
+  ;; signed values.  In this case we might need to tweak the formula for
+  ;; determining signedness, and possibly add a configuration option for it.
+  (or (eq (svar-overridetype-fix overridetype) :test)
+      (and (svar/4vec-case val :4vec)
+           (or (< (4vec->upper val) 0)
+               (< (4vec->lower val) 0)))))
+
+(define svtv-spec-fsm-bindings-for-alist ((x svar/4vec-alist-p)
+                                             (stage natp)
+                                             (namemap svtv-name-lhs-map-p)
+                                             (overridetype svar-overridetype-p)
+                                             (bindings-acc lhprobe-map-p))
+  :returns (bindings lhprobe-map-p)
+  (b* (((when (atom x)) (lhprobe-map-fix bindings-acc))
+       ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
+        (svtv-spec-fsm-bindings-for-alist (cdr x) stage namemap overridetype bindings-acc))
+       ((cons var val) (car x))
+       (look (hons-get var (svtv-name-lhs-map-fix namemap)))
+       ((unless look)
+        (svtv-spec-fsm-bindings-for-alist (cdr x) stage namemap overridetype bindings-acc))
+       (lhs (cdr look))
+       (lhprobe (make-lhprobe :lhs (lhs-change-override lhs overridetype) :stage stage
+                              :signedp (lhprobe-signedness-for-alist overridetype val)))
+       (bindings-acc (svtv-spec-fsm-bindings-for-lhprobe lhprobe val bindings-acc)))
+    (svtv-spec-fsm-bindings-for-alist (cdr x) stage namemap overridetype bindings-acc))
+  ///
+  (local (in-theory (enable svar/4vec-alist-fix)))
+
+  (defret lhprobe-map-max-stage-of-<fn>
+    (implies (and (<= (nfix stage) bound)
+                  (<= (lhprobe-map-max-stage bindings-acc) bound))
+             (<= (lhprobe-map-max-stage bindings) bound))))
+
+(define svtv-spec-fsm-bindings-for-alists ((x svar/4vec-alistlist-p)
+                                           (stage natp)
+                                           (namemap svtv-name-lhs-map-p)
+                                           (overridetype svar-overridetype-p)
+                                           (bindings-acc lhprobe-map-p))
+  :returns (bindings lhprobe-map-p)
+  (if (atom x)
+      (lhprobe-map-fix bindings-acc)
+    (svtv-spec-fsm-bindings-for-alists
+     (cdr x) (1+ (lnfix stage)) namemap overridetype
+     (svtv-spec-fsm-bindings-for-alist (car x) stage namemap overridetype bindings-acc)))
+  ///
+  ;; (defret lhprobe-map-max-stage-of-<fn>
+  ;;   (<= (lhprobe-map-max-stage bindings) (max (+ (len x) (nfix stage))
+  ;;                                             (lhprobe-map-max-stage bindings-acc)))
+  ;;   :hints (("Goal" :induct t)
+  ;;           (and stable-under-simplificationp
+  ;;                '(:use ((:instance lhprobe-map-max-stage-of-svtv-spec-fsm-bindings-for-alist
+  ;;                         (x (car x))))
+  ;;                  :in-theory (disable lhprobe-map-max-stage-of-svtv-spec-fsm-bindings-for-alist))))
+  ;;   :rule-classes :linear)
+
+  (defret lhprobe-map-max-stage-of-<fn>
+    (implies (and (<= (+ -1 (len x) (nfix stage)) bound)
+                  (<= (lhprobe-map-max-stage bindings-acc) bound))
+             (<= (lhprobe-map-max-stage bindings) bound))))
+
+
+
+(define svtv-spec-fsm-bindings ((x svtv-spec-p))
+  :returns (bindings lhprobe-map-p)
+  :guard (svtv-spec-fsm-syntax-check x)
+  :guard-hints (("goal" :in-theory (enable svtv-spec-fsm-syntax-check)))
+  (b* (((svtv-spec x))
+       (len (len (svtv-probealist-outvars (svtv-spec->probes x))))
+       ((acl2::with-fast x.namemap))
+       (bindings (svtv-spec-fsm-bindings-for-alists (take len x.in-alists) 0 x.namemap nil nil))
+       (bindings (svtv-spec-fsm-bindings-for-alists (take len x.override-val-alists) 0 x.namemap :val bindings)))
+    (svtv-spec-fsm-bindings-for-alists (take len x.override-test-alists) 0 x.namemap :test bindings))
+  ///
+  (defret lhprobe-map-max-stage-of-<fn>
+    (<= (lhprobe-map-max-stage bindings) (1- (len (svtv-probealist-outvars (svtv-spec->probes x)))))
+    :rule-classes ((:linear :trigger-terms ((lhprobe-map-max-stage (svtv-spec-fsm-bindings x)))))))
+       
+
+
+
+
+
     
 
 
@@ -1238,7 +1534,14 @@ time."
                                       lhprobe-constraint-overridemux-eval
                                       svar/4vec-eval
                                       lhprobe/4vec-overridemux-eval
-                                      lhprobe/4vec-eval)))))
+                                      lhprobe/4vec-eval))))
+
+  (defret lhprobe-constraintlist-max-stage-of-<fn>
+    (implies (and (<= (lhprobe->stage lhprobe) bound)
+                  (<= (lhprobe-map-max-stage bindings) bound))
+             (<= (lhprobe-constraintlist-max-stage constraints) bound))
+    :hints(("Goal" :in-theory (enable lhprobe-constraintlist-max-stage
+                                      lhprobe-constraint-max-stage)))))
 
 
 ;; (define svex-envs-ovtestsimilar ((x svex-env-p) (y svex-env-p))
@@ -1487,36 +1790,36 @@ time."
                                     (<fn>)))))))
 
 
-(define svtv-name-lhs-map-eval-ext ((x svtv-name-lhs-map-p)
-                                    (env svex-env-p))
-  :returns (res svex-env-p)
-  (b* (((when (atom x)) nil)
-       ((unless (mbt (and (consp (car x))
-                          (svar-p (caar x)))))
-        (svtv-name-lhs-map-eval-ext (cdr x) env)))
-    (cons (Cons (caar x) (lhs-eval-ext (cdar x) env))
-          (svtv-name-lhs-map-eval-ext (cdr x) env)))
-  ///
-  (defret svex-env-boundp-of-<fn>
-    (iff (svex-env-boundp k res)
-         (hons-assoc-equal (svar-fix k) (svtv-name-lhs-map-fix x)))
-    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
-                                      svex-env-boundp-of-cons-split))))
-  (defret svex-env-lookup-of-<fn>
-    (equal (svex-env-lookup k res)
-           (let ((pair (hons-assoc-equal (svar-fix k) (svtv-name-lhs-map-fix x))))
-             (if pair (lhs-eval-ext (cdr pair) env) (4vec-x))))
-    :hints(("Goal" :in-theory (enable svex-env-lookup-of-cons-split
-                                      svtv-name-lhs-map-fix))))
+;; (define svtv-name-lhs-map-eval-ext ((x svtv-name-lhs-map-p)
+;;                                     (env svex-env-p))
+;;   :returns (res svex-env-p)
+;;   (b* (((when (atom x)) nil)
+;;        ((unless (mbt (and (consp (car x))
+;;                           (svar-p (caar x)))))
+;;         (svtv-name-lhs-map-eval-ext (cdr x) env)))
+;;     (cons (Cons (caar x) (lhs-eval-ext (cdar x) env))
+;;           (svtv-name-lhs-map-eval-ext (cdr x) env)))
+;;   ///
+;;   (defret svex-env-boundp-of-<fn>
+;;     (iff (svex-env-boundp k res)
+;;          (hons-assoc-equal (svar-fix k) (svtv-name-lhs-map-fix x)))
+;;     :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
+;;                                       svex-env-boundp-of-cons-split))))
+;;   (defret svex-env-lookup-of-<fn>
+;;     (equal (svex-env-lookup k res)
+;;            (let ((pair (hons-assoc-equal (svar-fix k) (svtv-name-lhs-map-fix x))))
+;;              (if pair (lhs-eval-ext (cdr pair) env) (4vec-x))))
+;;     :hints(("Goal" :in-theory (enable svex-env-lookup-of-cons-split
+;;                                       svtv-name-lhs-map-fix))))
 
-  (defthm alist-keys-of-svtv-name-lhs-map-eval-ext
-           (equal (alist-keys (svtv-name-lhs-map-eval-ext x env))
-                  (alist-keys (svtv-name-lhs-map-fix x)))
-           :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
-                                             svtv-name-lhs-map-eval-ext
-                                             alist-keys))))
+;;   (defthm alist-keys-of-svtv-name-lhs-map-eval-ext
+;;            (equal (alist-keys (svtv-name-lhs-map-eval-ext x env))
+;;                   (alist-keys (svtv-name-lhs-map-fix x)))
+;;            :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
+;;                                              svtv-name-lhs-map-eval-ext
+;;                                              alist-keys))))
   
-  (local (in-theory (enable svtv-name-lhs-map-fix))))
+;;   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 
 
@@ -1587,7 +1890,10 @@ time."
        ((unless look)
         (svtv-spec-fsm-constraints-for-alist (cdr x) stage namemap overridetype bindings))
        (lhs (cdr look))
-       (lhprobe (make-lhprobe :lhs (lhs-change-override lhs overridetype) :stage stage)))
+       ;; FIXME -- See the comment about signedness in svtv-spec-fsm-bindings-for-alist.
+       ;; 
+       (lhprobe (make-lhprobe :lhs (lhs-change-override lhs overridetype) :stage stage
+                              :signedp (lhprobe-signedness-for-alist overridetype val))))
     (append       
      (svtv-spec-fsm-constraints-for-lhprobe lhprobe val bindings)
      (svtv-spec-fsm-constraints-for-alist (cdr x) stage namemap overridetype bindings)))
@@ -1596,78 +1902,88 @@ time."
   (local (include-book "std/lists/sets" :dir :system))
   (local (include-book "std/alists/fal-extract" :dir :system))
 
-  (defretd constraints-eval-of-<fn>
-    (implies (and (lhprobe-constraintlist-eval constraints envs)
-                  ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
-                  ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
-                  (member-equal v (alist-keys (svtv-name-lhs-map-fix namemap)))
-                  )
-             (equal (svar/4vec-eval (cdr (hons-assoc-equal v (svar/4vec-alist-fix x)))
-                                    (lhprobe-map-eval bindings envs))
-                    (svex-env-lookup v
-                                     (svtv-name-lhs-map-eval-ext
-                                      (svtv-name-lhs-map-vals-change-override
-                                       (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
-                                                          (svtv-name-lhs-map-fix namemap))
-                                       overridetype)
-                                      (nth stage envs)))))
-    :hints(("Goal" :in-theory (e/d (svtv-name-lhs-map-eval
-                                    fal-extract
-                                    alist-keys
-                                    svar/4vec-alist-fix
-                                    svar/4vec-alist-eval
-                                    svtv-name-lhs-map-vals-change-override
-                                    lhprobe-eval)
-                                   ((:d <fn>)))
-            :induct <call> :do-not-induct t
-            :expand ((lhprobe-constraintlist-eval nil envs)
-                     <call>))))
+  ;; (defretd constraints-eval-of-<fn>
+  ;;   (implies (and (lhprobe-constraintlist-eval constraints envs)
+  ;;                 ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
+  ;;                 ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
+  ;;                 (member-equal v (alist-keys (svtv-name-lhs-map-fix namemap)))
+  ;;                 )
+  ;;            (equal (svar/4vec-eval (cdr (hons-assoc-equal v (svar/4vec-alist-fix x)))
+  ;;                                   (lhprobe-map-eval bindings envs))
+  ;;                   (svex-env-lookup v
+  ;;                                    (svtv-name-lhs-map-eval-ext
+  ;;                                     (svtv-name-lhs-map-vals-change-override
+  ;;                                      (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
+  ;;                                                         (svtv-name-lhs-map-fix namemap))
+  ;;                                      overridetype)
+  ;;                                     (nth stage envs)))))
+  ;;   :hints(("Goal" :in-theory (e/d (svtv-name-lhs-map-eval
+  ;;                                   fal-extract
+  ;;                                   alist-keys
+  ;;                                   svar/4vec-alist-fix
+  ;;                                   svar/4vec-alist-eval
+  ;;                                   svtv-name-lhs-map-vals-change-override
+  ;;                                   lhprobe-eval)
+  ;;                                  ((:d <fn>)))
+  ;;           :induct <call> :do-not-induct t
+  ;;           :expand ((lhprobe-constraintlist-eval nil envs)
+  ;;                    <call>))))
 
   (local (defthm hons-assoc-equal-of-svtv-name-lhs-map-vals-change-override-under-iff
            (iff (hons-assoc-equal v (svtv-name-lhs-map-vals-change-override x type))
                 (hons-assoc-equal v (svtv-name-lhs-map-fix x)))
            :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
                                              svtv-name-lhs-map-vals-change-override)))))
+
+  ;; (equal (lhprobe-constraintlist-overridemux-eval constraints envs outs)
+  ;;            (equal (lhprobe-overridemux-eval lhprobe envs outs)
+  ;;                   (svar/4vec-eval binding (lhprobe-map-overridemux-eval bindings envs outs))))
   
   (defretd constraints-overridemux-eval-of-<fn>
     (implies (and (lhprobe-constraintlist-overridemux-eval constraints envs outs)
                   ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
                   ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
                   (member-equal v (alist-keys (svtv-name-lhs-map-fix namemap)))
+                  (hons-assoc-equal v (svar/4vec-alist-fix x))
                   )
              (equal (svar/4vec-eval (cdr (hons-assoc-equal v (svar/4vec-alist-fix x)))
                                     (lhprobe-map-overridemux-eval bindings envs outs))
-                    (if (svar-overridetype-equiv overridetype :val)
-                        (4vec-bit?!
-                         (svex-env-lookup v
-                                          (svtv-name-lhs-map-eval-ext
-                                           (svtv-name-lhs-map-vals-change-override
-                                            (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
-                                                               (svtv-name-lhs-map-fix namemap))
-                                            :test)
-                                           (nth stage envs)))
-                         (svex-env-lookup v
-                                          (svtv-name-lhs-map-eval-ext
-                                           (svtv-name-lhs-map-vals-change-override
-                                            (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
-                                                               (svtv-name-lhs-map-fix namemap))
-                                            :val)
-                                           (nth stage envs)))
-                         (svex-env-lookup v
-                                          (svtv-name-lhs-map-eval-ext
-                                           (svtv-name-lhs-map-vals-change-override
-                                            (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
-                                                               (svtv-name-lhs-map-fix namemap))
-                                            nil)
-                                           (nth stage outs))))
-                      (svex-env-lookup v
-                                       (svtv-name-lhs-map-eval-ext
-                                        (svtv-name-lhs-map-vals-change-override
-                                         (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
-                                                            (svtv-name-lhs-map-fix namemap))
-                                         overridetype)
-                                        (nth stage envs))))))
-    :hints(("Goal" :in-theory (e/d (svtv-name-lhs-map-eval-ext
+                    (lhprobe-overridemux-eval (make-lhprobe :lhs (lhs-change-override (cdr (hons-assoc-equal v (svtv-name-lhs-map-fix namemap))) overridetype)
+                                                            :stage stage
+                                                            :signedp (lhprobe-signedness-for-alist overridetype (cdr (hons-assoc-equal v (svar/4vec-alist-fix x)))))
+                                              envs outs))
+                    ;; (if (svar-overridetype-equiv overridetype :val)
+                    ;;     (4vec-bit?!
+                    ;;      (svex-env-lookup v
+                    ;;                       (svtv-name-lhs-map-eval-ext
+                    ;;                        (svtv-name-lhs-map-vals-change-override
+                    ;;                         (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
+                    ;;                                            (svtv-name-lhs-map-fix namemap))
+                    ;;                         :test)
+                    ;;                        (nth stage envs)))
+                    ;;      (svex-env-lookup v
+                    ;;                       (svtv-name-lhs-map-eval-ext
+                    ;;                        (svtv-name-lhs-map-vals-change-override
+                    ;;                         (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
+                    ;;                                            (svtv-name-lhs-map-fix namemap))
+                    ;;                         :val)
+                    ;;                        (nth stage envs)))
+                    ;;      (svex-env-lookup v
+                    ;;                       (svtv-name-lhs-map-eval-ext
+                    ;;                        (svtv-name-lhs-map-vals-change-override
+                    ;;                         (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
+                    ;;                                            (svtv-name-lhs-map-fix namemap))
+                    ;;                         nil)
+                    ;;                        (nth stage outs))))
+                    ;;   (svex-env-lookup v
+                    ;;                    (svtv-name-lhs-map-eval-ext
+                    ;;                     (svtv-name-lhs-map-vals-change-override
+                    ;;                      (acl2::fal-extract (alist-keys (svar/4vec-alist-fix x))
+                    ;;                                         (svtv-name-lhs-map-fix namemap))
+                    ;;                      overridetype)
+                    ;;                     (nth stage envs))))
+                    )
+    :hints(("Goal" :in-theory (e/d (;; svtv-name-lhs-map-eval-ext
                                     fal-extract
                                     alist-keys
                                     svar/4vec-alist-fix
@@ -1680,7 +1996,7 @@ time."
                                     fal-extract))
             :induct <call> :do-not-induct t
             :expand ((lhprobe-constraintlist-overridemux-eval nil envs outs)
-                     (:free (lhs) (lhprobe-overridemux-eval (lhprobe lhs stage) envs outs))
+                     (:free (lhs signedp) (lhprobe-overridemux-eval (lhprobe lhs stage signedp) envs outs))
                      (:free (overridetype) <call>)))))
 
   
@@ -1878,47 +2194,47 @@ time."
      :fn svtv-name-lhs-map-var/idx-find))
   
   
-  (defretd constraints-eval-of-<fn>-implies
-    (implies (and (lhprobe-constraintlist-eval constraints envs)
-                  ;; x maps namemap names to consts/svtv vars
-                  ;; namemap maps namemap names to fsm lhses
-                  ;; envs each map fsm vars to values
-                  ;; bindings maps svtv vars to fsm lhprobes
+  ;; (defretd constraints-eval-of-<fn>-implies
+  ;;   (implies (and (lhprobe-constraintlist-eval constraints envs)
+  ;;                 ;; x maps namemap names to consts/svtv vars
+  ;;                 ;; namemap maps namemap names to fsm lhses
+  ;;                 ;; envs each map fsm vars to values
+  ;;                 ;; bindings maps svtv vars to fsm lhprobes
                   
-                  ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
-                  ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
-                  (no-duplicatesp-equal (alist-keys (svar/4vec-alist-fix x)))
-                  (svarlist-override-p (svtv-name-lhs-map-vars namemap) nil)
-                  (not (equal (svar-overridetype-fix overridetype) :test)))
-             (svex-env-<<=
-              (svtv-fsm-namemap-env  ;; fsm vars (overridetype) to values
-               (svar/4vec-alist-eval ;; namemap names to values
-                x
-                (lhprobe-map-eval bindings envs)) ;; svtv vars to values
-               namemap overridetype)
-              (nth stage envs)))
-    :hints (("goal" :in-theory (e/d (svtv-fsm-namemap-env
-                                     svtv-fsm-env-inversemap
-                                     constraints-eval-of-<fn>
-                                     svex-env-<<=
-                                     ACL2::HONS-ASSOC-EQUAL-IFF-MEMBER-ALIST-KEYS
-                                     4vec-<<=-by-badbit
-                                     LHBIT-EVAL-X
-                                     lhbit-eval-zero)
-                                    (<fn>
-                                     acl2::alist-keys-member-hons-assoc-equal
-                                     eval-svtv-name-lhs-map-inverse-of-lookup-gen
-                                     HONS-ASSOC-EQUAL-OF-SVAR/4VEC-ALIST-FIX
-                                     HONS-ASSOC-EQUAL-OF-SVTV-NAME-LHS-MAP-FIX))
-             :do-not-induct t)
-            (and stable-under-simplificationp
-                 (let ((call (acl2::find-call-lst 'svex-env-<<=-witness clause)))
-                   (and call
-                        `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badkey)))))))
-            (and stable-under-simplificationp
-                 (let ((call (acl2::find-call-lst '4vec-<<=-badbit clause)))
-                   (and call
-                        `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badbit)))))))))
+  ;;                 ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
+  ;;                 ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
+  ;;                 (no-duplicatesp-equal (alist-keys (svar/4vec-alist-fix x)))
+  ;;                 (svarlist-override-p (svtv-name-lhs-map-vars namemap) nil)
+  ;;                 (not (equal (svar-overridetype-fix overridetype) :test)))
+  ;;            (svex-env-<<=
+  ;;             (svtv-fsm-namemap-env  ;; fsm vars (overridetype) to values
+  ;;              (svar/4vec-alist-eval ;; namemap names to values
+  ;;               x
+  ;;               (lhprobe-map-eval bindings envs)) ;; svtv vars to values
+  ;;              namemap overridetype)
+  ;;             (nth stage envs)))
+  ;;   :hints (("goal" :in-theory (e/d (svtv-fsm-namemap-env
+  ;;                                    svtv-fsm-env-inversemap
+  ;;                                    constraints-eval-of-<fn>
+  ;;                                    svex-env-<<=
+  ;;                                    ACL2::HONS-ASSOC-EQUAL-IFF-MEMBER-ALIST-KEYS
+  ;;                                    4vec-<<=-by-badbit
+  ;;                                    LHBIT-EVAL-X
+  ;;                                    lhbit-eval-zero)
+  ;;                                   (<fn>
+  ;;                                    acl2::alist-keys-member-hons-assoc-equal
+  ;;                                    eval-svtv-name-lhs-map-inverse-of-lookup-gen
+  ;;                                    HONS-ASSOC-EQUAL-OF-SVAR/4VEC-ALIST-FIX
+  ;;                                    HONS-ASSOC-EQUAL-OF-SVTV-NAME-LHS-MAP-FIX))
+  ;;            :do-not-induct t)
+  ;;           (and stable-under-simplificationp
+  ;;                (let ((call (acl2::find-call-lst 'svex-env-<<=-witness clause)))
+  ;;                  (and call
+  ;;                       `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badkey)))))))
+  ;;           (and stable-under-simplificationp
+  ;;                (let ((call (acl2::find-call-lst '4vec-<<=-badbit clause)))
+  ;;                  (and call
+  ;;                       `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badbit)))))))))
 
   (local (Defthm member-of-svarlist-change-override-rw
            (implies (syntaxp (not (equal type ''nil)))
@@ -2080,7 +2396,6 @@ time."
                                   (a 0)
                                   (b (4vec-bit?! x y z))))
                     :in-theory (disable 4vec-bit-index-of-4vec-bit?!)))))
-                           
   
   
   (defthmd constraints-overridemux-eval-of-svtv-spec-fsm-constraints-for-alist-implies
@@ -2137,9 +2452,11 @@ time."
                                     4vec-override-mux-agrees-by-badbit
                                     lhbit-eval-x
                                     lhbit-eval-zero
+                                    lhprobe-overridemux-eval
                                     constraints-overridemux-eval-of-svtv-spec-fsm-constraints-for-alist
                                     acl2::hons-assoc-equal-iff-member-alist-keys
                                     if-of-hons-assoc-equal-member-alist-keys
+                                    hons-assoc-equal-when-not-member-alist-keys
                                     4vec-1mask-of-4vec-bit-index
                                     member-when-not-svar-override-p
                                     svar-override-p-when-other)
@@ -2147,7 +2464,8 @@ time."
                                     eval-svtv-name-lhs-map-inverse-of-lookup-gen
                                     acl2::alist-keys-member-hons-assoc-equal
                                     hons-assoc-equal-of-svar/4vec-alist-fix
-                                    hons-assoc-equal-of-svtv-name-lhs-map-fix))))
+                                    hons-assoc-equal-of-svtv-name-lhs-map-fix))
+                   :do-not-induct t))
             (and stable-under-simplificationp
                  (let ((call (or
                               (acl2::find-call-lst '4vec-<<=-badbit clause)
@@ -2157,9 +2475,17 @@ time."
                               (acl2::find-call-lst '4vec-override-mux-agrees-badbit clause))))
                    (and call
                         `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badbit)))))))
-            )
-    :otf-flg t)
-    
+            ))
+
+  
+
+  (defret lhprobe-constraintlist-max-stage-of-<fn>
+    (implies (and (<= (nfix stage) bound)
+                  (<= (lhprobe-map-max-stage bindings) bound))
+             (<= (lhprobe-constraintlist-max-stage constraints) bound))
+    :hints(("Goal" :in-theory (enable lhprobe-constraintlist-max-stage
+                                      lhprobe-constraint-max-stage))))
+  
   (local (in-theory (enable svar/4vec-alist-fix))))
 
 
@@ -2282,7 +2608,16 @@ time."
                       (overridekeys-envlists-agree* overridekeys (cons a b) envs outs))
                      (:free (envs a b) (svex-envlists-ovtestsubsetp envs (cons a b))))
             :induct (ind in-alists val-alists test-alists stage)
-            :do-not-induct t))))
+            :do-not-induct t)))
+
+  
+
+  (defret lhprobe-constraintlist-max-stage-of-<fn>
+    (implies (and (<= (+ -1 (len x) (nfix stage)) bound)
+                  (<= (lhprobe-map-max-stage bindings) bound))
+             (<= (lhprobe-constraintlist-max-stage constraints) bound))
+    :hints(("Goal" :in-theory (enable lhprobe-constraintlist-max-stage
+                                      lhprobe-constraint-max-stage)))))
 
 
 (local (defthmd svtv-fsm-to-base-fsm-inputs-norm-override-vals-length
@@ -2317,7 +2652,8 @@ time."
   :guard-hints (("goal" :in-theory (enable svtv-spec-fsm-syntax-check)))
   (b* (((svtv-spec x))
        (bindings (svtv-spec-fsm-bindings x))
-       (len (len (svtv-probealist-outvars (svtv-spec->probes x)))))
+       (len (len (svtv-probealist-outvars (svtv-spec->probes x))))
+       ((acl2::with-fast x.namemap bindings)))
     (append (svtv-spec-fsm-constraints-for-alists (take len x.in-alists) 0 x.namemap nil bindings)
             (svtv-spec-fsm-constraints-for-alists (take len x.override-val-alists) 0 x.namemap :val bindings)))
   ///
@@ -2349,7 +2685,12 @@ time."
                    (test-alists (take (len (svtv-probealist-outvars (svtv-spec->probes x))) (svtv-spec->override-test-alists x)))
                    (bindings (svtv-spec-fsm-bindings x))
                    (namemap (svtv-spec->namemap x))
-                   (stage 0)))))))
+                   (stage 0))))))
+
+  (defret lhprobe-constraintlist-max-stage-of-<fn>
+    (<= (lhprobe-constraintlist-max-stage constraints) (1- (len (svtv-probealist-outvars (Svtv-spec->probes x)))))
+    :rule-classes ((:linear :trigger-terms ((lhprobe-constraintlist-max-stage
+                                             (svtv-spec-fsm-constraints x)))))))
 
 
 (local
@@ -3040,6 +3381,20 @@ time."
               '(:use ((:instance lhatom-eval-zero-when-override-test-vars-and-ovtestsimilar
                        (x (lhrange->atom (car x)))))))))
 
+
+(defthmd lhs-eval-zero-when-override-test-vars-and-ovtestsimilar
+  (implies (and (svarlist-override-p (lhs-vars x) :test)
+                (svex-envs-ovtestsimilar env1 env2))
+           (equal (4vec-1mask-equiv (lhs-eval-zero x env1)
+                                    (lhs-eval-zero x env2))
+                  t))
+  :hints(("Goal" :in-theory (enable lhs-vars)
+          :induct (lhs-vars x)
+          :expand ((:free (env) (lhs-eval-zero x env))))
+         (and stable-under-simplificationp
+              '(:use ((:instance lhatom-eval-zero-when-override-test-vars-and-ovtestsimilar
+                       (x (lhrange->atom (car x)))))))))
+
 (defthm svex-envs-ovtestsimilar-nth-when-svex-envlists-ovtestsimilar
     (implies (svex-envlists-ovtestsimilar x y)
              (equal (svex-envs-ovtestsimilar (nth n x) (nth n y)) t))
@@ -3053,7 +3408,8 @@ time."
                   t))
   :hints(("Goal" :in-theory (enable lhprobe-eval
                                     lhprobe-vars
-                                    lhs-eval-ext-when-override-test-vars-and-ovtestsimilar))))
+                                    lhs-eval-ext-when-override-test-vars-and-ovtestsimilar
+                                    lhs-eval-zero-when-override-test-vars-and-ovtestsimilar))))
 
 (defthmd lhprobe-map-eval-when-override-test-vars-and-ovtestsimilar
   (implies (and (svarlist-override-p (lhprobe-map-vars x) :test)
@@ -3723,6 +4079,19 @@ time."
               '(:use ((:instance lhatom-eval-zero-svex-envlists-ovtestequiv-congruence-when-only-test-vars
                        (lhatom (lhrange->atom (car lhs)))))))))
 
+(defthm lhs-eval-zero-svex-envlists-ovtestequiv-congruence-when-only-test-vars
+  (implies (and (svarlist-override-p (lhs-vars lhs) :test)
+                (svex-envs-ovtestequiv env1 env2))
+           (equal (equal (lhs-eval-zero lhs env1)
+                         (lhs-eval-zero lhs env2))
+                  t))
+  :hints(("Goal" :in-theory (enable lhs-vars)
+          :induct (lhs-vars lhs)
+          :expand ((:free (env) (lhs-eval-zero lhs env))))
+         (and stable-under-simplificationp
+              '(:use ((:instance lhatom-eval-zero-svex-envlists-ovtestequiv-congruence-when-only-test-vars
+                       (lhatom (lhrange->atom (car lhs)))))))))
+
 (defthm svex-envs-ovtestequiv-nth-when-svex-envlists-ovtestequiv
   (implies (svex-envlists-ovtestequiv envs1 envs2)
            (equal (svex-envs-ovtestequiv (nth n envs1) (nth n envs2)) t))
@@ -3771,3 +4140,287 @@ time."
 ;; svtv-override-triple-envs-match
 ;; svtv-override-triplemap-envs-match
 ;; svtv-override-triplemaplist-envs-match
+
+
+
+
+(define svtv-probe-to-lhprobe ((x svtv-probe-p)
+                               (namemap svtv-name-lhs-map-p))
+  :returns (lhprobe lhprobe-p)
+  (b* (((svtv-probe x)))
+    ;; This is used on the output side, and SVTV outputs are always unsigned (the LHSes are evaluated with lhs-eval-zero).
+    (make-lhprobe :stage x.time :lhs (cdr (hons-get x.signal (svtv-name-lhs-map-fix namemap)))))
+  ///
+  (defret lhprobe-eval-of-<fn>
+    (b* (((svtv-probe x)))
+      (implies (hons-assoc-equal x.signal (svtv-name-lhs-map-fix namemap))
+               (equal (lhprobe-eval lhprobe envs)
+                      (svex-env-lookup x.signal (svtv-name-lhs-map-eval namemap (nth x.time envs))))))
+    :hints(("Goal" :in-theory (enable lhprobe-eval)))))
+
+
+
+(defsection svtv-probealist-vars
+  (local (std::set-define-current-function svtv-probealist-vars))
+  (local (in-theory (enable svtv-probealist-vars)))
+
+  (defthm svtv-probe->signal-of-lookup-member-svtv-probealist-vars
+    (implies (hons-assoc-equal v x)
+             (member-equal (svtv-probe->signal (cdr (hons-assoc-equal v x)))
+                           (svtv-probealist-vars x))))
+
+  (defthmd svtv-probe->signal-of-lookup-member-svtv-probealist-vars-rw
+    (implies (and (hons-assoc-equal v x)
+                  (subsetp-equal (svtv-probealist-vars x) keys))
+             (member-equal (svtv-probe->signal (cdr (hons-assoc-equal v x))) keys))
+    :hints (("goal" :use svtv-probe->signal-of-lookup-member-svtv-probealist-vars
+             :in-theory (disable svtv-probe->signal-of-lookup-member-svtv-probealist-vars
+                                 svtv-probealist-vars)))))
+
+
+(define svtv-probealist-to-lhprobe-map ((x svtv-probealist-p)
+                                        (namemap svtv-name-lhs-map-p))
+  :returns (map lhprobe-map-p)
+  (if (atom x)
+      nil
+    (if (mbt (consp (car x)))
+        (cons (cons (svar-fix (caar x)) (svtv-probe-to-lhprobe (cdar x) namemap))
+              (svtv-probealist-to-lhprobe-map (cdr x) namemap))
+      (svtv-probealist-to-lhprobe-map (cdr x) namemap)))
+  ///
+
+  (defret lhprobe-map-eval-of-<fn>
+    (implies (and (subsetp-equal (svtv-probealist-vars x) (alist-keys (svtv-name-lhs-map-fix namemap)))
+                  (<= (len (svtv-probealist-outvars x)) (len envs)))
+             (equal (lhprobe-map-eval map envs)
+                    (svtv-probealist-extract x (svtv-name-lhs-map-eval-list namemap envs))))
+    :hints(("Goal" :in-theory (enable svtv-probealist-extract
+                                      lhprobe-map-eval
+                                      svtv-probealist-vars
+                                      svtv-probealist-outvars))))
+
+  (defret lookup-of-<fn>
+    (equal (hons-assoc-equal key map)
+           (and (svar-p key)
+                (b* ((pair (hons-assoc-equal key (svtv-probealist-fix x))))
+                  (and pair
+                       (cons key (svtv-probe-to-lhprobe (cdr pair) namemap))))))
+    :hints(("Goal" :in-theory (enable svtv-probealist-fix))))
+
+
+  (defthm svtv-probe->time-of-lookup-bounded-by-outvars-len
+    (implies (hons-assoc-equal v probes)
+             (< (svtv-probe->time (cdr (hons-assoc-equal v probes)))
+                 (len (Svtv-probealist-outvars probes))))
+    :hints(("Goal" :in-theory (enable svtv-probealist-outvars)))
+    :rule-classes :linear)
+
+  (defthmd lookup-in-svtv-spec-cycle-outs->pipe-out
+    (b* (((svtv-spec x)))
+      (implies (and (subsetp-equal (svtv-probealist-vars x.probes) (alist-keys x.namemap))
+                    (<= (len (svtv-probealist-outvars x.probes)) (len envs)))
+               (equal (svex-env-lookup v (svtv-spec-cycle-outs->pipe-out x envs))
+                      (let ((pair (hons-assoc-equal (svar-fix v) (svtv-probealist-to-lhprobe-map x.probes x.namemap))))
+                        (if pair
+                            (lhprobe-eval (cdr pair) envs)
+                          (4vec-x))))))
+    :hints(("Goal" :in-theory (e/d (svtv-spec-cycle-outs->pipe-out
+                                    acl2::hons-assoc-equal-iff-member-alist-keys
+                                    svtv-probe->signal-of-lookup-member-svtv-probealist-vars-rw)
+                                   (acl2::alist-keys-member-hons-assoc-equal)))))
+
+  (local (defthm len-of-svtv-probealist-out-vars-when-atom-fix
+           (implies (not (consp (svtv-probealist-fix x)))
+                    (equal (Svtv-probealist-outvars x) nil))
+           :hints(("Goal" :in-theory (enable svtv-probealist-outvars
+                                             svtv-probealist-fix)))))
+  
+  (defret lhprobe-map-max-stage-of-<fn>
+    (equal (lhprobe-map-max-stage map)
+           (+ -1 (len (svtv-probealist-outvars x))))
+    :hints(("Goal" :in-theory (enable lhprobe-map-max-stage
+                                      svtv-probealist-outvars
+                                      svtv-probealist-fix
+                                      svtv-probe-to-lhprobe))))
+  
+  (local (in-theory (enable svtv-probealist-fix))))
+
+
+
+
+
+
+
+(defthm base-fsm-eval-of-take
+  (implies (<= (nfix n) (len envs))
+           (equal (base-fsm-eval (take n envs) initst fsm)
+                  (take n (base-fsm-eval envs initst fsm))))
+  :hints(("Goal" :in-theory (e/d (base-fsm-eval take)
+                                 (acl2::take-of-too-many
+                                  acl2::take-when-atom)))))
+
+(defthm svtv-spec-fsm-syntax-check-implies-probe-vars-subset-of-namemap
+  (implies (svtv-spec-fsm-syntax-check x)
+           (subsetp-equal (svtv-probealist-vars (svtv-spec->probes x))
+                          (alist-keys (svtv-spec->namemap x))))
+  :hints(("Goal" :in-theory (e/d (svtv-spec-fsm-syntax-check)
+                                 (acl2::hons-subset)))))
+
+
+(defthm svex-unroll-state-is-base-fsm-final-state
+  (equal (svex-unroll-state nextstates envs initst)
+         (base-fsm-final-state envs initst nextstates))
+  :hints(("Goal" :in-theory (enable base-fsm-step base-fsm-step-env base-fsm-final-state svex-unroll-state)
+          :induct (svex-unroll-state nextstates envs initst)
+          :expand ((base-fsm-final-state envs initst nextstates)))))
+
+(defthmd base-fsm-eval-of-base-fsm-final-state
+  (equal (base-fsm-eval envs2
+                        (base-fsm-final-state envs1 initst (base-fsm->nextstate fsm))
+                        fsm)
+         (nthcdr (len envs1) (base-fsm-eval (append envs1 envs2) initst fsm)))
+  :hints (("goal" :induct (base-fsm-final-state envs1 initst (base-fsm->nextstate fsm))
+           :in-theory (enable (:i base-fsm-final-state))
+           :expand ((base-fsm-final-state envs1 initst (base-fsm->nextstate fsm))
+                    (:free (a b) (base-fsm-eval (cons a b) initst fsm))))))
+
+
+
+
+
+
+
+
+(defthmd hons-assoc-equal-of-svtv-spec-fsm-bindings
+  (implies (and (syntaxp (quotep k))
+                (equal svtv-spec (force-execute spec))
+                (syntaxp (quotep svtv-spec)))
+           (equal (hons-assoc-equal k (svtv-spec-fsm-bindings spec))
+                  (hons-assoc-equal k (svtv-spec-fsm-bindings svtv-spec))))
+  :hints(("Goal" :in-theory (enable force-execute))))
+                         
+                         
+
+(defthm lhs-eval-zero-nth-under-ovtestequiv
+  (implies (and (syntaxp (Quotep lhs))
+                (svarlist-override-p (lhs-vars lhs) :test)
+                (svex-envlists-ovtestequiv envs-val (double-rewrite envs))
+                (syntaxp (and (not (equal envs envs-val))
+                              (quotep envs-val))))
+           (equal (lhs-eval-zero lhs (nth n envs))
+                  (lhs-eval-zero lhs (make-fast-alist (nth n envs-val))))))
+
+
+(local (defthm 4vec-bit?!-of-4vec-concat-free
+         (implies (And (2vec-p n)
+                       (natp (2vec->val n)))
+                  (equal (4vec-bit?! test
+                                     (4vec-concat n then1 then2)
+                                     (4vec-concat n else1 else2))
+                         (4vec-concat n (4vec-bit?! test then1 else1)
+                                      (4vec-bit?! (4vec-rsh n test) then2 else2))))
+         :hints (("goal" :in-theory (enable 4vec-concat 4vec-bit?! 4vec-bitmux 4vec-1mask
+                                            4vec-rsh 4vec-shift-core))
+                 (bitops::logbitp-reasoning))))
+
+(defsection 4vec-bit?!-mask-of-lhs-eval-zero
+  (local (in-theory (disable (tau-system))))
+  (local (defun ind (lhs mask)
+           (if (atom lhs)
+               mask
+             (ind (cdr lhs) (4vec-rsh (2vec (lhrange->w (car lhs))) mask)))))
+
+  (local (in-theory (disable logmask)))
+
+  (local (defthm loghead-of-logtail-equal-mask
+           (implies (case-split (equal (loghead (+ (nfix n) (nfix m)) x) (logmask (+ (nfix n) (nfix m)))))
+                    (equal (equal (loghead n (logtail m x)) (logmask n))
+                           t))
+           :hints ((bitops::logbitp-reasoning))))
+
+  (local (defthm loghead-of-logtail-not-equal-mask
+           (implies (and (natp n) (natp m)
+                         (case-split (not (equal (loghead n x) (logmask n)))))
+                    (equal (equal (loghead (+ n m) x) (logmask (+ n m)))
+                           nil))
+           :hints ((bitops::logbitp-reasoning))))
+
+  (local (defthm 4vec-concat-of-4vec-bit?!-when-mask
+           (implies (and (2vec-p mask)
+                         (2vec-p w)
+                         (natp (2vec->val w))
+                         (case-split 
+                           (equal (loghead (2vec->val w) (2vec->val mask))
+                                  (logmask (2vec->val w)))))
+                    (equal (4vec-concat w (4vec-bit?! mask a b) c)
+                           (4vec-concat w a c)))
+           :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-1mask 4vec-bitmux 4vec-concat))
+                  (bitops::logbitp-reasoning))))
+
+
+  (local (defthm 4vec-bit?!-mask-when-zero-ext
+           (implies (and (2vec-p mask)
+                         (equal (loghead n (2vec->val mask))
+                                (logmask n))
+                         (equal (4vec-rsh (2vec (nfix n)) lhs1) 0)
+                         (equal (4vec-rsh (2vec (nfix n)) lhs2) 0))
+                    (equal (4vec-bit?! mask lhs1 lhs2) (4vec-fix lhs1)))
+           :hints (("goal" :in-theory (enable 4vec-bit?! 4vec-1mask 4vec-bitmux 4vec-rsh 4vec-shift-core))
+                   (bitops::logbitp-reasoning :prune-examples nil))))
+
+  (local (defthm 4vec-rsh-width-of-lhs-eval-zero
+           (equal (4vec-rsh (2vec (lhs-width lhs)) (lhs-eval-zero lhs env))
+                  0)
+           :hints(("Goal" :in-theory (enable lhs-eval-zero lhs-width)))))
+  
+  (defthm 4vec-bit?!-mask-of-lhs-eval-zero
+    (implies (and (syntaxp (and (quotep mask)
+                                (quotep lhs)))
+                  (2vec-p mask)
+                  (equal w (lhs-width lhs))
+                  (equal (loghead w (2vec->val mask))
+                         (logmask w))
+                  (equal (lhs-width lhs2) w))
+             (equal (4vec-bit?! mask (lhs-eval-zero lhs env) (lhs-eval-zero lhs2 env2))
+                    (lhs-eval-zero lhs env)))
+    :hints (("goal" :use ((:instance 4vec-bit?!-mask-when-zero-ext
+                           (n (lhs-width lhs))
+                           (lhs1 (lhs-eval-zero lhs env))
+                           (lhs2 (lhs-eval-zero lhs2 env2))))
+             :in-theory (disable 4vec-bit?!-mask-when-zero-ext))))
+
+  (defthm 4vec-bit?!-of-0
+    (equal (4vec-bit?! 0 x y)
+           (4vec-fix y))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))))
+
+  (defthm 4vec-bit?!-of-neg1
+    (equal (4vec-bit?! -1 x y)
+           (4vec-fix x))
+    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux)))))
+
+
+(defthm append-take-take-nthcdr
+  (equal (append (take n x) (take m (nthcdr n x)))
+         (take (+ (nfix n) (nfix m)) x))
+  :hints(("Goal" :induct (nthcdr n x)
+          :in-theory (enable take nthcdr))))
+
+(encapsulate nil
+  (local (defun ind (n m x)
+           (if (or (zp n) (zp m))
+               (list m x)
+             (ind (1- n) (1- m) (cdr x)))))
+  (defthmd nthcdr-of-take
+    (equal (nthcdr n (take m x))
+           (take (nfix (- (nfix m) (nfix n))) (nthcdr n x)))
+    :hints (("goal" :induct (ind n m x)
+             :expand ((take m x)
+                      (:free (x) (nthcdr n x)))))))
+
+
+(encapsulate nil
+  (local (include-book "std/lists/nth" :dir :system))
+  (std::defredundant :names (acl2::nth-of-nthcdr
+                             acl2::nth-of-take)))
+

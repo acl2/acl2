@@ -1319,7 +1319,21 @@
                                 svex-env-p-of-svex-env-reduce
                                 svex-env-reduce-when-svex-env-non-x-p-and-<<=
                                 svex-env-reduce-when-not-consp
-                                ))))))))
+                                ))))))
+
+     (:@ (and :svtv-spec :fsm)
+      (define <specname>-fsm-bindings ()
+        :returns (bindings lhprobe-map-p)
+        (svtv-spec-fsm-bindings (<specname>)))
+
+      (define <specname>-output-map
+        :returns (map lhprobe-map-p)
+        (b* (((svtv-spec x) (<specname>)))
+          (svtv-probealist-to-lhprobe-map x.probes x.namemap)))
+
+      
+
+      )))
 
 
 (defun def-svtv-refinement-fn (svtv-name
