@@ -12,6 +12,26 @@
 
 ;; STATUS: Working prototype
 
+;; SETUP:
+;;
+;; 1. To enable repairs based on information saved during successful proofs,
+;; turn on saving of event data during certification by setting the value of
+;; the ACL2_WRITE_EVENT_DATA environment variable to "t".
+;;
+;; Example: export ACL2_WRITE_EVENT_DATA=t
+;;
+;; To maximize the benefit of this change, recertify all books after setting
+;; ACL2_WRITE_EVENT_DATA.
+;;
+;; 2. To cause repairs to be attempted automatically whenever cert.pl fails to
+;; certify a book, set the ON_FAILURE_CMD environment variable to the location
+;; of the repair-book-from-cert-pl.sh script in this books/kestrel/helpers/
+;; directory.
+;;
+;; Example: export ON_FAILURE_CMD=~/acl2/books/kestrel/helpers/repair-book-from-cert-pl.sh
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: Add support for repairs that involve failures to translate
 ;; terms/hints/etc. possibly due to missing names.
 
@@ -19,7 +39,7 @@
 
 ;; TODO: Add support for determining what changed (e.g., by doing a git diff).
 
-;; TODO: Handle cert.pl output that is directed to another dir
+;; TODO: When searching for all failed books, handle cert.pl output that is directed to another dir.
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "replay-book-helpers")
@@ -46,10 +66,17 @@
            (natp (cddr rune)))))
 (verify-guards pseudo-runep)
 
+;; todo: what is :fake-rune-for-cert-data?
 (defun fake-rule-classp (rule-class)
   (declare (xargs :guard (keywordp rule-class)))
   (member-eq rule-class (strip-cars *fake-rune-alist*)))
 
+(defconst *high-confidence* 20)
+(defconst *medium-confidence* 10)
+(defconst *low-confidence* 5)
+(defconst *very-low-confidence* 3)
+
+;; Makes recommendations for a rune that fired only in the old proof.
 ;; TODO: Figure out which exact event failed (what if not at top level)?
 ;; TODO: Actually try the suggestions, and provide new hints for the event.
 ;; TODO: Try the advice tool!
@@ -65,27 +92,30 @@
           (name (second rune)) ; todo: consider corollaries (what if they have changed?)
           )
       (if (fake-rule-classp rule-class)
-          nil
-        (if (or (eq rule-class :definition)
-                (eq rule-class :executable-counterpart)
-                (eq rule-class :type-prescription))
-            (if (not (function-symbolp name (w state)))
-                (prog2$ (cw "Note: Function ~x0 is no longer present!~%" name) ; todo: go find it?  but it's a function...
+          nil ; not much to do here, I guess (e.g., if linear was used before but not now, what can we do?)
+        (if (eq rule-class :induction)
+            ;; An :induction rule was used in the old proof but not in the new proof.  The rule is very likely needed in the new proof.
+            (if (not (or (function-symbolp name (w state)) ; todo think about this
+                         (defthm-or-defaxiom-symbolp name (w state))))
+                (prog2$ (cw "Note: Induction rule ~x0 is no longer present (was used for induction in old proof)!~%" name) ; todo: go find it
                         nil)
               (if (not (enabled-runep rune (ens state) (w state))) ;; todo: of course, a hint might enable the rune!  check for that
-                  (let ((confidence-percent (case rule-class (:definition 10) (:executable-counter-part 5) (:type-prescription 5))))
-                    (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name ; todo: would like to use rune, here and elsewhere
-                                          confidence-percent nil)))
-                (prog2$ (cw "(Rune ~x0 did not fire.)~%" name)
-                        nil)))
-          (if (eq rule-class :induction)
-              (if (not (function-symbolp name (w state)))
-                  (prog2$ (cw "Note: Function ~x0 is no longer present (was used for induction in old proof)!~%" name) ; todo: go find it
+                  ;; todo: see if some other :induction was chosen instead
+                  (prog2$ (cw "(Rune ~x0 did not fire.)~%" rune)
+                          nil)
+                ;; todo: maybe even put in and :induct hint?
+                (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name *high-confidence* nil))))
+          (if (eq rule-class :definition)
+              (if (not (or (function-symbolp name (w state)) ; todo think about this
+                           (defthm-or-defaxiom-symbolp name (w state))))
+                  (prog2$ (cw "Note: Function or rule ~x0 is no longer present!~%" name)
                           nil)
                 (if (not (enabled-runep rune (ens state) (w state))) ;; todo: of course, a hint might enable the rune!  check for that
-                    (prog2$ (cw "(Rune ~x0 did not fire.)~%" rune)
-                            nil)
-                  (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name 20 nil))))
+                    (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name ; todo: would like to use rune, here and elsewhere
+                                          *medium-confidence* nil))
+                  ;; present and enabled but did not fire:
+                  (prog2$ (cw "(Rune ~x0 did not fire.)~%" name)
+                          nil)))
             (if (or (eq rule-class :rewrite)
                     (eq rule-class :linear)) ; todo: what else?!
                 (if (not (defthm-or-defaxiom-symbolp name (w state))) ; todo: what about corollaries?
@@ -95,8 +125,30 @@
                   (if (enabled-runep rune (ens state) (w state)) ;; todo: of course, a hint might enable the rune!  check for that
                       (prog2$ (cw "(Rune ~x0 did not fire.)~%" rune)
                               nil)
-                    (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name 10 nil))))
-              nil)))))))
+                    (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name *medium-confidence* nil))))
+              (if (eq rule-class :executable-counterpart)
+                  (if (not (or (function-symbolp name (w state)) ; todo think about this
+                               (defthm-or-defaxiom-symbolp name (w state))))
+                      (prog2$ (cw "Note: Function or rule ~x0 is no longer present!~%" name)
+                              nil)
+                    (if (not (enabled-runep rune (ens state) (w state))) ;; todo: of course, a hint might enable the rune!  check for that
+                        (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name ; todo: would like to use rune, here and elsewhere
+                                              *low-confidence* nil))
+                      ;; present and enabled but did not fire:
+                      (prog2$ (cw "(Rune ~x0 did not fire.)~%" name)
+                              nil)))
+                (if (eq rule-class :type-prescription)
+                    (if (not (or (function-symbolp name (w state)) ; todo think about this
+                                 (defthm-or-defaxiom-symbolp name (w state)))) ;todo: think about this
+                        (prog2$ (cw "Note: Rule ~x0 is no longer present!~%" rune)
+                                nil)
+                      (if (not (enabled-runep rune (ens state) (w state))) ;; todo: of course, a hint might enable the rune!  check for that
+                          (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-enable-hint name ; todo: would like to use rune, here and elsewhere
+                                                *low-confidence* nil))
+                        ;; present and enabled but did not fire:
+                        (prog2$ (cw "(Rune ~x0 did not fire.)~%" name)
+                                nil)))
+                  nil)))))))))
 
 ;; Returns (mv recs counter).
 (defun recs-for-old-runes (old-runes counter acc state)
@@ -119,11 +171,11 @@
           )
       (if (or (eq rule-class :rewrite)
               (eq rule-class :linear)) ; todo: what else?!
-          (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-disable-hint name 5 nil))
+          (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-disable-hint name *low-confidence* nil))
         (if (eq :definition rule-class)
-            (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-disable-hint name 10 nil))
+            (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-disable-hint name *medium-confidence* nil))
           (if (eq :type-prescription rule-class)
-              (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-disable-hint name 3 nil))
+              (list (help::make-rec (concatenate 'string "repair" (acl2::nat-to-string counter)) :add-disable-hint name *very-low-confidence* nil))
             ;todo: more rule-classes
             nil))))))
 
@@ -339,11 +391,14 @@
 (defmacro repair-book (book-path)
   `(make-event-quiet (repair-book-fn ,book-path state)))
 
-;; Example:
+;; Examples:
 ;; (repair-book "expt.lisp")
+;; (repair-book "expt")      ; equivalent to the above
+;; (repair-book "expt.cert") ; equivalent to the above
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Tries to repairs each of the books indicated by the BOOK-PATHS.
 ;; Returns (mv erp state).
 (defun repair-books-fn-aux (book-paths state)
   (declare (xargs :guard (and (string-listp book-paths))
@@ -372,5 +427,9 @@
        (state (unwiden-margins state)))
     (mv erp '(value-triple :invisible) state)))
 
+;; Attempts to repair all failed books in the current directory and its subdirectories.
 (defmacro repair-books ()
   `(make-event-quiet (repair-books-fn state)))
+
+;; Example (after CDing into the directory of interest):
+;; (repair-books)

@@ -12,10 +12,7 @@
 
 set -e # Exit on first error
 
-# NOTE: To arrange for cert.pl to call this script when a book fails to build,
-# Set the ON_FAILURE_CMD environment variable to this script's location.
-# Example:
-#   export ON_FAILURE_CMD=~/acl2/books/kestrel/helpers/repair-book-from-cert-pl.sh
+# NOTE: See the SETUP instructions in repair-book.lisp.
 
 # cert.pl sets the CERT_GOALFILE and PWD environment variables according to the failed book,
 # and we use them here to determine which book to repair:
