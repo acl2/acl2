@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>CL+SSL</title>
+    <link rel="stylesheet" type="text/css" href="index.css"/>
+  </head>
+  <body>
+    <h1>CL+SSL</h1>
+
+    <p>
+      The homepage is migrated to the README.md at the Git repository: <a href="https://github.com/cl-plus-ssl/cl-plus-ssl">https://github.com/cl-plus-ssl/cl-plus-ssl</a>. The API docs are migrated to docstrings in the source code and comments in the package.lisp.
+    </p>
+
+    <p>
+      The only piece of information not migrated is this old chart from early days
+      of cl+ssl, comparing it with alternative solutions.
+    </p>
+    <p>
+      Should it be moved to the History section of the README?
+      (We con't know if the information is still accurate
+      or the other solution have evolved since then).
+    </p>
+
+    <table border="1" cellpadding="2" cellspacing="0">
+      <thead>
+        <tr>
+          <th></th>
+          <th><b>FFI</b></th>
+          <th><b>Streams</b></th>
+          <th><b>Lisp-BIO</b></th>
+        </tr>
+      </thead>
+      <tr>
+        <td>CL+SSL</td>
+        <td>CFFI</td>
+        <td>gray<sup>1</sup>, buffering output</td>
+        <td>yes</td>
+      </tr>
+      <tr>
+        <td>CL-SSL</td>
+        <td>UFFI</td>
+        <td>gray, buffering I/O [<em>part of ACL-COMPAT</em>]</td>
+        <td>no</td>
+      </tr>
+      <tr>
+        <td>SSL-CMUCL</td>
+        <td>CMUCL/ALIEN</td>
+        <td>CMUCL, non-buffering</td>
+        <td>no</td>
+      </tr>
+    </table>
+    <p>
+      <sup>1</sup>&nbsp;Character I/O and external formats in CL+SSL
+      are provided
+      using <a href="http://weitz.de/flexi-streams/">flexi-streams</a>.
+    </p>
+
+
+  </body>
+</html>
