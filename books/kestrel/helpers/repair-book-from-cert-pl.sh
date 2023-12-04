@@ -28,4 +28,4 @@ fi
 
 export ACL2_CUSTOMIZATION=NONE # Just in case
 
-(echo '(include-book "kestrel/helpers/repair-book" :dir :system) (repair-book "'${BOOK_CERT}'")' | ${ACL2})
+(echo '(with-output :off :all (include-book "kestrel/helpers/repair-book" :dir :system)) (repair-book "'${BOOK_CERT}'")' | ${ACL2})
