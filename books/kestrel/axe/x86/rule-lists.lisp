@@ -31,10 +31,14 @@
 
 ;            x86isa::jcc/cmovcc/setcc-spec ;case dispatch ;;disabling this to produce better results
 
-            x86isa::gpr-or-spec-1$inline
-            x86isa::gpr-or-spec-2$inline
-            x86isa::gpr-or-spec-4$inline
-            x86isa::gpr-or-spec-8$inline
+            ;x86isa::gpr-or-spec-1$inline
+            ;x86isa::gpr-or-spec-2$inline
+            ;x86isa::gpr-or-spec-4$inline
+            ;x86isa::gpr-or-spec-8$inline
+            x86isa::GPR-OR-SPEC-1-redef
+            x86isa::GPR-OR-SPEC-2-redef
+            x86isa::GPR-OR-SPEC-4-redef
+            x86isa::GPR-OR-SPEC-8-redef
 
             x86isa::gpr-and-spec-1$inline
             x86isa::gpr-and-spec-2$inline
@@ -61,10 +65,15 @@
             x86isa::gpr-xor-spec-8$inline
 
             x86isa::shr-spec$inline ;; dispatches based on size
-            x86isa::shr-spec-8
-            x86isa::shr-spec-16
-            x86isa::shr-spec-32
-            x86isa::shr-spec-64
+            ;; x86isa::shr-spec-8
+            ;; x86isa::shr-spec-16
+            ;; x86isa::shr-spec-32
+            ;; x86isa::shr-spec-64
+            x86isa::shr-spec-8-redef
+            x86isa::shr-spec-16-redef
+            x86isa::shr-spec-32-redef
+            x86isa::shr-spec-64-redef
+            acl2::bvshr-rewrite-for-constant-shift-amount ; puts in slice, since we don't translate bvshr to stp
 
             x86isa::rol-spec$inline ;; dispatches based on size
             x86isa::rol-spec-8
@@ -73,10 +82,15 @@
             x86isa::rol-spec-64
 
             x86isa::sal/shl-spec$inline ;; dispatches based on size
-            x86isa::sal/shl-spec-8
-            x86isa::sal/shl-spec-16
-            x86isa::sal/shl-spec-32
-            x86isa::sal/shl-spec-64
+            ;; x86isa::sal/shl-spec-8
+            ;; x86isa::sal/shl-spec-16
+            ;; x86isa::sal/shl-spec-32
+            ;; x86isa::sal/shl-spec-64
+            x86isa::sal/shl-spec-8-redef
+            x86isa::sal/shl-spec-16-redef
+            x86isa::sal/shl-spec-32-redef
+            x86isa::sal/shl-spec-64-redef
+            ;; ACL2::BVSHL-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT ; todo: consider this since we don't translate bvshl to stp
 
             ;; unsigned multiply
             x86isa::mul-spec$inline ;; dispatches based on size
@@ -100,8 +114,12 @@
             x86isa::idiv-spec-64-trim-arg1-axe-all
 
             x86isa::sar-spec$inline
-            x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
-            x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
+            ;x86isa::sar-spec-32-nice
+            ;x86isa::sar-spec-64-nice
+            x86isa::sar-spec-8-redef
+            x86isa::sar-spec-16-redef
+            x86isa::sar-spec-32-redef
+            x86isa::sar-spec-64-redef
 
             ;; These recharacterize divide in terms of bvops:
             x86isa::mv-nth-0-of-div-spec-8
@@ -3357,7 +3375,7 @@
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed
             acl2::fix-when-acl2-numberp
-            acl2-numberp-of--
+            acl2::acl2-numberp-of--
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;RFLAGSBITS->AF-of-myif
@@ -3549,10 +3567,6 @@
             ;x86isa::if-of-sub-zf-spec32-arg2
             ACL2::BFIX-WHEN-BITP
             ;;stuff related to flags changes:
-            x86isa::GPR-SUB-SPEC-1-alt-def
-            x86isa::GPR-SUB-SPEC-2-alt-def
-            x86isa::GPR-SUB-SPEC-4-alt-def
-            x86isa::GPR-SUB-SPEC-8-alt-def
 
             bvchop-of-sub-zf-spec32
             equal-of-sub-zf-spec32-and-1

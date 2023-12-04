@@ -62,6 +62,9 @@
 (defthm acl2-numberp-of-+
   (acl2-numberp (+ x y)))
 
+(defthmd acl2-numberp-of--
+  (acl2-numberp (- x)))
+
 (defthm booleanp-of-iff
   (booleanp (iff x y)))
 

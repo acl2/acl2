@@ -131,9 +131,6 @@
   (implies (integerp x)
            (rationalp x)))
 
-(defthmd acl2-numberp-of--
-  (acl2-numberp (- x)))
-
 (defthm x86isa::canonical-address-p-between-special5
   (implies (and (canonical-address-p text-offset)
                 (canonical-address-p (+ k2 text-offset))

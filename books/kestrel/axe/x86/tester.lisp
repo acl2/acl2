@@ -363,49 +363,12 @@
           t                   ; use-internal-contextsp
           prune
           ;; extra-rules:
-          (append '(x86isa::SAL/SHL-SPEC-8-redef
-                    x86isa::SAL/SHL-SPEC-16-redef
-                    x86isa::SAL/SHL-SPEC-32-redef
-                    x86isa::SAL/SHL-SPEC-64-redef
-                    x86isa::SHR-SPEC-8-redef
-                    x86isa::SHR-SPEC-16-redef
-                    x86isa::SHR-SPEC-32-redef
-                    x86isa::SHR-SPEC-64-redef
-                    x86isa::SAR-SPEC-8-redef
-                    x86isa::SAR-SPEC-16-redef
-                    x86isa::SAR-SPEC-32-redef
-                    x86isa::SAR-SPEC-64-redef
-                    x86isa::GPR-OR-SPEC-1-redef
-                    x86isa::GPR-OR-SPEC-2-redef
-                    x86isa::GPR-OR-SPEC-4-redef
-                    x86isa::GPR-OR-SPEC-8-redef
-                    ) ; push back to def-unrolled
-                  extra-rules
+          (append extra-rules
                   extra-lift-rules
                   (extra-tester-lifting-rules))
           ;; remove-rules:
           (append
-           '(;; x86isa::gpr-sub-spec-1
-             ;; x86isa::gpr-sub-spec-2
-             ;; x86isa::gpr-sub-spec-4
-             ;; x86isa::gpr-sub-spec-8
-             x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             x86isa::GPR-OR-SPEC-1$inline
-             x86isa::GPR-OR-SPEC-2$inline
-             x86isa::GPR-OR-SPEC-4$inline
-             x86isa::GPR-OR-SPEC-8$inline
-             x86isa::SAL/SHL-SPEC-8
-             x86isa::SAL/SHL-SPEC-16
-             x86isa::SAL/SHL-SPEC-32
-             x86isa::SAL/SHL-SPEC-64
-             x86isa::SHR-SPEC-8
-             x86isa::SHR-SPEC-16
-             x86isa::SHR-SPEC-32
-             x86isa::SHR-SPEC-64
-             ;;x86isa::SAR-SPEC-8 ; why are these not present?
-             ;;x86isa::SAR-SPEC-16
-             ;;x86isa::SAR-SPEC-32
-             ;;x86isa::SAR-SPEC-64
+           '(x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
              acl2::bvchop-of-bvshr
              acl2::bvchop-of-bvashr)
            remove-rules
