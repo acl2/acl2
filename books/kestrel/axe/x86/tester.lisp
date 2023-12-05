@@ -20,8 +20,8 @@
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
-(include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
+(include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
@@ -36,14 +36,16 @@
 (acl2::ensure-rules-known (extra-tester-lifting-rules))
 (acl2::ensure-rules-known (tester-proof-rules))
 
-;; Returns (mv time-difference state) where time-difference is in seconds and
-;; may not be an integer.
-(defun real-time-since (start-real-time state)
-  (declare (xargs :guard (rationalp start-real-time)
+;; Returns (mv time-difference state) where time-difference is the difference
+;; between now and PAST-TIME, which should be in the past.  Often, PAST-TIME
+;; will be the result of a prior call to get-real-time.  PAST-TIME and the
+;; returned time-difference are rational numbers of seconds.
+(defund real-time-since (past-time state)
+  (declare (xargs :guard (rationalp past-time)
                   :stobjs state))
   (mv-let (now state)
     (get-real-time state)
-    (mv (- now start-real-time)
+    (mv (- now past-time)
         state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -247,18 +249,6 @@
                               (equal result expected-result))))
           (or (not expectedp)
               (any-result-unexpectedp (rest result-alist))))))))
-
-;; Filter the STRINGS, keeping only those that start with PREFIX
-(defun acl2::strings-starting-with (prefix strings)
-  (declare (xargs :guard (and (string-listp strings)
-                              (stringp prefix))))
-  (if (endp strings)
-      nil
-    (let ((string (first strings)))
-      (if (acl2::string-starts-withp string prefix)
-          (cons string
-                (acl2::strings-starting-with prefix (rest strings)))
-        (acl2::strings-starting-with prefix (rest strings))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
