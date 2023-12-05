@@ -20,6 +20,7 @@
 (include-book "basic-rules")
 (include-book "rule-lists") ; for unsigned-byte-p-forced-rules
 (include-book "bv-rules-axe") ; for bvchop-identity-axe
+(include-book "kestrel/booleans/booleans" :dir :system) ; for MYIF-OF-BOOL-FIX-ARG1
 (include-book "kestrel/bv/rules" :dir :system) ; todo: reduce, for the unsigned-byte-p-forced rules
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)

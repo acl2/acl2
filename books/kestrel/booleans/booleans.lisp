@@ -109,27 +109,6 @@
          (bool-fix x))
   :hints (("Goal" :in-theory (enable boolor))))
 
-;others like this? 3 conjuncts?
-(defthm booland-of-not-same
-  (equal (booland x (not x))
-         nil))
-
-;not needed if we commute arguments to booland (ignoring not)
-(defthm booland-of-not-same-alt
-  (equal (booland (not x) x)
-         nil))
-
-;rename?
-(defthm booland-of-not-and-booland-same
-  (equal (booland x (booland (not x) y))
-         nil))
-
-;rename?
-;not needed if we commute arguments to booland (ignoring not)
-(defthm booland-of-not-and-booland-same-alt
-  (equal (booland (not x) (booland x y))
-         nil))
-
 (defthm boolor-of-booland-not-boolor
   (equal (boolor (booland (not x) y) (boolor x z))
          (boolor y (boolor x z)))

@@ -13,6 +13,8 @@
 (include-book "prover-basic") ; todo: test separately?
 (include-book "prover-basic-clause-processor")
 (include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "kestrel/booleans/boolif" :dir :system)
+(include-book "kestrel/booleans/booleans" :dir :system) ;for boolif-when-quotep-arg3
 
 ;; TODO: Add more tests
 

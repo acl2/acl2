@@ -20,6 +20,8 @@
 (include-book "unguarded-defuns")
 (include-book "make-evaluator-simple")
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
