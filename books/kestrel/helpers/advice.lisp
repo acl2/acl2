@@ -676,28 +676,30 @@
       (cw "~s0" english-rec))))
 
 ;; Always returns nil.
-(defun show-successful-recommendations-aux (recs)
-  (declare (xargs :guard (successful-recommendation-listp recs)
+(defun show-successful-recommendations-aux (recs print-namesp)
+  (declare (xargs :guard (and (successful-recommendation-listp recs)
+                              (booleanp print-namesp))
                   :mode :program))
   (if (endp recs)
       nil
     (let* ((rec (first recs))
            (name (successful-recommendation-name rec)))
       (progn$ (show-successful-recommendation rec)
-              (cw " (~S0)~%" name)
+              (and print-namesp (cw " (~S0)~%" name))
               ;; todo: drop the sources:
               ;; (and (< 1 (len sources))
               ;;      (cw "~x0" sources))
               ;;(cw ": ")
-              (show-successful-recommendations-aux (rest recs))))))
+              (show-successful-recommendations-aux (rest recs) print-namesp)))))
 
 ;; Returns state (because of the change to the margins).
-(defun show-successful-recommendations (recs state)
-  (declare (xargs :guard (successful-recommendation-listp recs)
+(defun show-successful-recommendations (recs print-namesp state)
+  (declare (xargs :guard (and (successful-recommendation-listp recs)
+                              (booleanp print-namesp))
                   :mode :program
                   :stobjs state))
   (let ((state (acl2::widen-margins state)))
-    (progn$ (show-successful-recommendations-aux recs)
+    (progn$ (show-successful-recommendations-aux recs print-namesp)
             (cw "~%")
             (let ((state (acl2::unwiden-margins state)))
               state))))
@@ -3547,7 +3549,7 @@
                                   (cw "~%PROOF FOUND (~x0 successful recommendations):~%" num-successful-recs)
                                 (cw "~%PROOF FOUND (1 successful recommendation):~%"))
                               (progn$ ;; (cw "~%SUCCESSFUL RECOMMENDATIONS:~%")
-                               (let ((state (show-successful-recommendations sorted-successful-recs state))) ; why does this return state?
+                               (let ((state (show-successful-recommendations sorted-successful-recs t state))) ; why does this return state?
                                  state)))
                     state)
                 (prog2$ (and print (cw "~%NO PROOF FOUND~%~%"))
