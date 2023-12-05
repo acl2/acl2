@@ -10,11 +10,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
-(local (include-book "kestrel/lists-light/revappend" :dir :system))
-(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
-(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
-(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "reverse-list"))
+(local (include-book "revappend"))
+(local (include-book "intersection-equal"))
+(local (include-book "no-duplicatesp-equal"))
+(local (include-book "member-equal"))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (in-theory (disable evens odds))
