@@ -19,6 +19,7 @@
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
+(include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
@@ -35,18 +36,6 @@
 (acl2::ensure-rules-known (extra-tester-rules))
 (acl2::ensure-rules-known (extra-tester-lifting-rules))
 (acl2::ensure-rules-known (tester-proof-rules))
-
-;; Returns (mv time-difference state) where time-difference is the difference
-;; between now and PAST-TIME, which should be in the past.  Often, PAST-TIME
-;; will be the result of a prior call to get-real-time.  PAST-TIME and the
-;; returned time-difference are rational numbers of seconds.
-(defund real-time-since (past-time state)
-  (declare (xargs :guard (rationalp past-time)
-                  :stobjs state))
-  (mv-let (now state)
-    (get-real-time state)
-    (mv (- now past-time)
-        state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,7 +376,7 @@
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
         (mv-let (elapsed state)
-          (real-time-since start-real-time state)
+          (acl2::real-time-since start-real-time state)
           (if (equal result-dag-or-quotep ''1)
               (progn$ (cw "Test ~x0 passed (lifting returned the constant dag ~x1).)~%" function-name-string result-dag-or-quotep)
                       (mv (erp-nil)
@@ -411,7 +400,7 @@
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
         (cw "Test ~x0 failed: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
-          (real-time-since start-real-time state)
+          (acl2::real-time-since start-real-time state)
           (mv (erp-nil) nil elapsed state)))
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
@@ -455,7 +444,7 @@
                                    state
                                    ;;rand
                                    ))
-       ((mv elapsed state) (real-time-since start-real-time state)))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state)))
     (if (eq result acl2::*error*)
         (mv :error-in-tactic-proof nil nil state)
       (if (eq result acl2::*valid*)
@@ -768,7 +757,7 @@
                                expected-failures
                                nil ; empty result-alist
                                state))
-       ((mv overall-time state) (real-time-since overall-start-real-time state))
+       ((mv overall-time state) (acl2::real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
        (- (print-test-summary result-alist executable))
        (- (cw "TOTAL TIME: ")
