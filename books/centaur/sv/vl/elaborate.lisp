@@ -103,7 +103,9 @@ to svex, the elaboration algorithm walks over the expression and collects the
 information it needs to successfully resolve it to an svex expression: the
 types, svex translations, and port lists of functions that the expression
 calls, and types and values of parameters referenced in the expression.  This
-information is stored in the elabindex before translating the expression.</p>")
+information is stored in the elabindex before translating the expression.</p>
+
+")
 
 ;; [Jared] Old notes about svexconfs -- do we describe this well for elabscopes
 ;; now?  Also BOZO need to check that the above description of elabindex is OK.
@@ -312,6 +314,19 @@ information is stored in the elabindex before translating the expression.</p>")
               'fty::deffixequiv-mutual
               '((big-mutrec-default-hint 'fty::fnname id nil world))))
 
+(define vl-maybe-exprlist-args-to-4vec-consts ((x vl-maybe-exprlist-p))
+  :returns (consts sv::maybe-4veclist-p)
+  (if (atom x)
+      nil
+    (cons (b* ((x1 (car x)))
+            (and x1
+                 (vl-expr-case x1
+                   :vl-literal (b* (((mv err val) (vl-value-to-4vec x1.val)))
+                                 (and (not err) val))
+                   :otherwise nil)))
+          (vl-maybe-exprlist-args-to-4vec-consts (cdr x)))))
+
+
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all
                  ;; :measure-debug t
@@ -334,6 +349,7 @@ information is stored in the elabindex before translating the expression.</p>")
   
 
   (define vl-function-compile-and-bind ((fnname vl-scopeexpr-p)
+                                        (constargs sv::maybe-4veclist-p)
                                         elabindex
                                         &key
                                         ((reclimit natp) 'reclimit)
@@ -376,11 +392,41 @@ information is stored in the elabindex before translating the expression.</p>")
          ;; BOZO probably should traverse using the decl.elabpath instead but not yet implemented
          ;; ((vl-fundecl decl) step.item)
          (elabindex (vl-elabindex-traverse step.ss (rev step.elabpath)))
-         ((wmv ok warnings ?new-decl elabindex)
+         ;; (- (cw "before vl-fundecl-elaborate, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
+         ((wmv ok warnings new-decl elabindex)
+          ;; Elaborate the function body.  This used to compile the function but now doesn't anymore.
           (vl-fundecl-elaborate decl elabindex :reclimit (1- reclimit)))
-         (elabindex (vl-elabindex-undo))
+         ;; (- (cw "after vl-fundecl-elaborate, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
          ((unless ok)
-          (mv nil warnings elabindex)))
+          (b* ((elabindex (vl-elabindex-undo)))
+            (mv nil warnings elabindex)))
+         ;; Go into the function's scope.  Compile the function using the passed constants.
+         (elabindex (vl-elabindex-push (vl-fundecl->blockscope new-decl)))
+         ;; (- (cw "after push decl scope, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
+         (elabindex (vl-elabindex-sync-scopes))
+         ;; (- (cw "after sync (vl-elabindex->scopes), current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
+         ((wmv ok warnings svex constraints :ctx new-decl)
+          (vl-fundecl-to-svex new-decl constargs (vl-elabindex->ss elabindex)
+                              (vl-elabindex->scopes elabindex)
+                              config))
+         (elabindex (vl-elabindex-undo)) ;; leave the function's scope
+         ;; (- (cw "after leave decl scope, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
+         (elabindex (if ok
+                        (vl-elabindex-update-item-info
+                         (vl-fundecl->name new-decl)
+                         (change-vl-fundecl new-decl
+                                            :function-map
+                                            (cons (cons (sv::maybe-4veclist-fix constargs)
+                                                        (make-vl-function-specialization
+                                                         :function svex
+                                                         :constraints constraints))
+                                                  (vl-fundecl->function-map new-decl))))
+                      elabindex))
+         ;; (- (cw "after update-item-info, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
+         (elabindex (vl-elabindex-undo)) ;; leave the scope in which the function is declared
+         ((unless ok)
+          (mv nil warnings elabindex))
+         )
       (mv t warnings elabindex))
     ///
     (in-theory (disable vl-function-compile-and-bind)))
@@ -898,12 +944,15 @@ information is stored in the elabindex before translating the expression.</p>")
                          :args (list x))
                   x elabindex))
              ((wmv ok1 warnings new-plainargs elabindex)
+              ;; We used to only try to resolve arguments to constants for system calls.
+              ;; Now we try to do this everywhere, because 
               ;; Heuristic decision: Resolve arguments to constants iff this is
               ;; a system call.  That way we get the dimension resolved for
               ;; things like $size.
-              (if x.systemp
+              ;; (if x.systemp
                   (vl-maybe-indexlist-resolve-constants x.plainargs elabindex :reclimit reclimit)
-                (vl-maybe-exprlist-elaborate x.plainargs elabindex :reclimit reclimit)))
+                  ;; (vl-maybe-exprlist-elaborate x.plainargs elabindex :reclimit reclimit)))
+                  )
              ((wmv ok2 warnings new-namedargs elabindex)
               (vl-call-namedargs-elaborate x.namedargs elabindex :reclimit reclimit))
              ((wmv ok3 warnings new-typearg elabindex)
@@ -918,8 +967,9 @@ information is stored in the elabindex before translating the expression.</p>")
                                     :namedargs new-namedargs
                                     :name new-fnname))
              ((when x.systemp) (mv (and* ok1 ok2 ok3) warnings new-x elabindex))
+             (constargs (vl-maybe-exprlist-args-to-4vec-consts new-plainargs))
              ((wmv ok5 warnings elabindex)
-              (vl-function-compile-and-bind new-fnname elabindex :reclimit reclimit)))
+              (vl-function-compile-and-bind new-fnname constargs elabindex :reclimit reclimit)))
           (mv (and* ok1 ok2 ok3 ok4 ok5) warnings new-x elabindex))
 
         :vl-cast
@@ -1410,17 +1460,17 @@ information is stored in the elabindex before translating the expression.</p>")
           (b* ((elabindex (vl-elabindex-undo)))
             (mv nil warnings decl elabindex)))
 
-         ;; Pop the old function off and push the new function on to get the return type
-         (elabindex (vl-elabindex-sync-scopes))         
-         ((wmv warnings svex constraints :ctx x)
-          (vl-fundecl-to-svex decl
-                              (vl-elabindex->ss elabindex)
-                              (vl-elabindex->scopes elabindex)
-                              config))
-         (new-x (change-vl-fundecl decl :function svex :constraints constraints))
+         ;; ;; Pop the old function off and push the new function on to get the return type
+         ;; (elabindex (vl-elabindex-sync-scopes))         
+         ;; ((wmv ok warnings svex constraints :ctx x)
+         ;;  (vl-fundecl-to-svex decl
+         ;;                      (vl-elabindex->ss elabindex)
+         ;;                      (vl-elabindex->scopes elabindex)
+         ;;                      config))
+         ;; (new-x (change-vl-fundecl decl :function svex :constraints constraints))
          (elabindex (vl-elabindex-undo))  ;; leave the function body scope
-         (elabindex (vl-elabindex-update-item-info name new-x)))
-      (mv ok warnings new-x elabindex))
+         (elabindex (vl-elabindex-update-item-info name decl)))
+      (mv ok warnings decl elabindex))
     ///
     (in-theory (disable vl-fundecl-elaborate))))
 

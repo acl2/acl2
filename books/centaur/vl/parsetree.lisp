@@ -3465,6 +3465,20 @@ flops, and to set up other simulation events.  A simple example would be:</p>
     :hints(("Goal" :induct (len x)))))
 
 
+
+(fty::deflist sv::maybe-4veclist :elt-type sv::maybe-4vec-p :true-listp t :elementp-of-nil t)
+(fty::defprod vl-function-specialization
+  ((function sv::svex-p
+             "Expression giving the return value of the function")
+   (constraints sv::constraintlist-p
+                "Constraints that must hold of the function inputs, or the result
+                 may be undefined; computed during elaboration"))
+  :layout :list)
+(fty::defmap vl-function-specialization-map
+  :key-type sv::maybe-4veclist
+  :val-type vl-function-specialization
+  :true-listp t)
+
 (defprod vl-fundecl
   :short "Representation of a single Verilog function."
   :tag :vl-fundecl
@@ -3502,13 +3516,15 @@ flops, and to set up other simulation events.  A simple example would be:</p>
                 have restrictions and can't be used in expressions like normal
                 functions.")
 
-   (function   sv::maybe-svex-p
-               "The svex expression for the value of the function, if it has been
-                computed, which happens during elaboration")
-
-   (constraints sv::constraintlist-p
-                "Constraints that must hold of the function inputs, or the result
-                 may be undefined; computed during elaboration")
+   (function-map vl-function-specialization-map-p
+                 "This field gives the SVEX compilation(s) of the
+                  function. More specifically, each key in this alist is a list
+                  of maybe-4vecs corresponding to the function arguments.  The
+                  non-nil elements denote constant arguments with the given
+                  values.  The value corresponding to each key is pair
+                  containing an svex representing the function assuming those
+                  constant values of the arguments, and a corresponding list of
+                  constraints.")
 
    (lifetime   vl-lifetime-p
                "Indicates whether an explicit @('automatic') or @('static')
