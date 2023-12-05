@@ -1,7 +1,7 @@
 ; A book about booland (boolean-valued conjunction)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -146,3 +146,13 @@
 (defthm booland-of-not-and-booland-same-alt
   (equal (booland (not x) (booland x y))
          nil))
+
+(defthm booland-of-bool-fix-arg1
+  (equal (booland (bool-fix x) y)
+         (booland x y))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-of-bool-fix-arg2
+  (equal (booland x (bool-fix y))
+         (booland x y))
+  :hints (("Goal" :in-theory (enable booland))))

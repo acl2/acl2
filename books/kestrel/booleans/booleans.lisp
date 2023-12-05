@@ -119,16 +119,6 @@
          (boolif test x (not y)))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(defthm booland-of-bool-fix-arg1
-  (equal (booland (bool-fix x) y)
-         (booland x y))
-  :hints (("Goal" :in-theory (enable booland))))
-
-(defthm booland-of-bool-fix-arg2
-  (equal (booland x (bool-fix y))
-         (booland x y))
-  :hints (("Goal" :in-theory (enable booland))))
-
 (defthm boolif-of-not-same-arg3
   (equal (boolif x y (not x))
          (boolor y (not x)))
@@ -167,17 +157,6 @@
 (defthmd implies-opener
   (equal (implies p q)
          (boolor (not p) q)))
-
-
-(defthm boolor-of-bool-fix-arg1
-  (equal (boolor (bool-fix x) y)
-         (boolor x y))
-  :hints (("Goal" :in-theory (enable boolor))))
-
-(defthm boolor-of-bool-fix-arg2
-  (equal (boolor x (bool-fix y))
-         (boolor x y))
-  :hints (("Goal" :in-theory (enable boolor))))
 
 (defthmd myif-becomes-boolif
   (implies (and (booleanp b)
