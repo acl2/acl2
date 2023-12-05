@@ -50,10 +50,6 @@
 
 ;; TODO: Parens in output may not be balanced?
 
-(acl2::def-constant-opener acl2::maybe-get-mach-o-segment-from-load-commands)
-(acl2::def-constant-opener acl2::maybe-get-mach-o-segment)
-(acl2::def-constant-opener acl2::maybe-get-mach-o-section)
-(acl2::def-constant-opener acl2::mach-o-section-presentp)
 (acl2::def-constant-opener alistp) ; why?
 
 ;; ;todo: not really an assumption generator
@@ -387,8 +383,6 @@
                     ;;acl2::get-mach-o-constants-constant-opener
                     ;;acl2::get-mach-o-data-address-constant-opener
                     ;;acl2::get-mach-o-data-constant-opener
-                    acl2::get-elf-section-address
-                    acl2::get-elf-section-bytes
                     elf64-section-loadedp
                     acl2::elf-section-presentp
                     fix-of-rsp
