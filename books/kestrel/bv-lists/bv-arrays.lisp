@@ -760,7 +760,7 @@
                test
                (bv-array-read element-size (bvchop size2 len1) index data)
                (bv-array-read element-size (bvchop size2 len2) index data)))
-  :hints (("Goal" :in-theory (enable boolif bvif))))
+  :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm bv-array-write-of-bv-array-read
   (implies (and (natp len)

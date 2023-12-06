@@ -34,7 +34,6 @@
 (include-book "bvmult")
 (include-book "bvmod")
 (include-book "bvuminus")
-;(include-book "kestrel/booleans/booleans" :dir :system) ;why included here? maybe to get bool-to-bit...
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
 (include-book "bv-syntax")
 (include-book "leftrotate")
@@ -50,6 +49,9 @@
 (include-book "bvshl")
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
+(include-book "kestrel/booleans/boolxor" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "bitxnor")
 (include-book "slice2")
 (include-book "sbvlt-rules")

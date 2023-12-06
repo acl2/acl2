@@ -24,6 +24,8 @@
 (include-book "bv-list-rules-axe")
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
+(include-book "kestrel/booleans/not" :dir :system)
+(include-book "kestrel/booleans/booleans" :dir :system) ; for equal-of-t-when-booleanp-arg1
 (include-book "kestrel/arithmetic-light/less-than" :dir :system) ;for not-<-same
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
