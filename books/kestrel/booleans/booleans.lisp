@@ -109,27 +109,6 @@
          (bool-fix x))
   :hints (("Goal" :in-theory (enable boolor))))
 
-;others like this? 3 conjuncts?
-(defthm booland-of-not-same
-  (equal (booland x (not x))
-         nil))
-
-;not needed if we commute arguments to booland (ignoring not)
-(defthm booland-of-not-same-alt
-  (equal (booland (not x) x)
-         nil))
-
-;rename?
-(defthm booland-of-not-and-booland-same
-  (equal (booland x (booland (not x) y))
-         nil))
-
-;rename?
-;not needed if we commute arguments to booland (ignoring not)
-(defthm booland-of-not-and-booland-same-alt
-  (equal (booland (not x) (booland x y))
-         nil))
-
 (defthm boolor-of-booland-not-boolor
   (equal (boolor (booland (not x) y) (boolor x z))
          (boolor y (boolor x z)))
@@ -139,16 +118,6 @@
   (equal (boolif test x (not (boolor test y)))
          (boolif test x (not y)))
   :hints (("Goal" :in-theory (enable boolif))))
-
-(defthm booland-of-bool-fix-arg1
-  (equal (booland (bool-fix x) y)
-         (booland x y))
-  :hints (("Goal" :in-theory (enable booland))))
-
-(defthm booland-of-bool-fix-arg2
-  (equal (booland x (bool-fix y))
-         (booland x y))
-  :hints (("Goal" :in-theory (enable booland))))
 
 (defthm boolif-of-not-same-arg3
   (equal (boolif x y (not x))
@@ -188,17 +157,6 @@
 (defthmd implies-opener
   (equal (implies p q)
          (boolor (not p) q)))
-
-
-(defthm boolor-of-bool-fix-arg1
-  (equal (boolor (bool-fix x) y)
-         (boolor x y))
-  :hints (("Goal" :in-theory (enable boolor))))
-
-(defthm boolor-of-bool-fix-arg2
-  (equal (boolor x (bool-fix y))
-         (boolor x y))
-  :hints (("Goal" :in-theory (enable boolor))))
 
 (defthmd myif-becomes-boolif
   (implies (and (booleanp b)

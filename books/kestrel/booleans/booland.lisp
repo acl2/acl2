@@ -1,7 +1,7 @@
 ; A book about booland (boolean-valued conjunction)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -123,3 +123,36 @@
 ;; These help justify some things that Axe does:
 (defcong iff equal (booland x y) 1 :hints (("Goal" :in-theory (enable booland))))
 (defcong iff equal (booland x y) 2 :hints (("Goal" :in-theory (enable booland))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;others like this? 3 conjuncts?
+(defthm booland-of-not-same
+  (equal (booland x (not x))
+         nil))
+
+;not needed if we commute arguments to booland (ignoring not)
+(defthm booland-of-not-same-alt
+  (equal (booland (not x) x)
+         nil))
+
+;rename?
+(defthm booland-of-not-and-booland-same
+  (equal (booland x (booland (not x) y))
+         nil))
+
+;rename?
+;not needed if we commute arguments to booland (ignoring not)
+(defthm booland-of-not-and-booland-same-alt
+  (equal (booland (not x) (booland x y))
+         nil))
+
+(defthm booland-of-bool-fix-arg1
+  (equal (booland (bool-fix x) y)
+         (booland x y))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-of-bool-fix-arg2
+  (equal (booland x (bool-fix y))
+         (booland x y))
+  :hints (("Goal" :in-theory (enable booland))))

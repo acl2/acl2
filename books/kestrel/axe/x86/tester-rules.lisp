@@ -217,7 +217,7 @@
                 (posp k))
            (equal (acl2::boolif (bvlt 16 x k) t else)
                   (acl2::boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
-  :hints (("Goal" :in-theory (enable acl2::boolor
+  :hints (("Goal" :in-theory (enable acl2::boolor boolif
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
                                      ))))
@@ -871,7 +871,8 @@
 ;; since we can get better context info from boolif than from boolor?
 (defthmd boolor-becomes-boolif
   (equal (acl2::boolor x y)
-         (acl2::boolif x t y)))
+         (acl2::boolif x t y))
+  :hints (("Goal" :in-theory (enable boolif))))
 
 (theory-invariant (incompatible (:rewrite ACL2::BOOLIF-WHEN-QUOTEP-ARG2) (:rewrite boolor-becomes-boolif)))
 
@@ -1001,10 +1002,12 @@
 
 ;todo: why is !rflags remaining in some examples like test_popcount_32_one_bit?
 
+;move
 (defthm boolif-same-arg1-arg2
   (implies (syntaxp (not (quotep x))) ; avoids loop when x='t, this hyp is supported by Axe
            (equal (acl2::boolif x x y)
-                  (acl2::boolif x t y))))
+                  (acl2::boolif x t y)))
+  :hints (("Goal" :in-theory (enable boolif))))
 
 ;; (thm
 ;;  (implies (and (PROGRAM-AT (BINARY-+ '304 TEXT-OFFSET) '(0 0 0 0 1 0 0 0 2 0 0 0 3 0 0 0) X86)

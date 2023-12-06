@@ -13361,7 +13361,7 @@
                       (bvif size test y (bv-array-read size (len data) n data))
                     (bvif size test y 0))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   boolor)
+                                   boolor boolif)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ NTH-BECOMES-BV-ARRAY-READ2)))))
 
 (defthm bvif-of-nth-arg3
@@ -13372,7 +13372,7 @@
                       (bvif size test (bv-array-read size (len data) n data) y)
                     (bvif size test 0 y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   boolor)
+                                   boolor boolif)
                                   (BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    ;NTH-BECOMES-BV-ARRAY-READ2
                                    ;NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
@@ -14147,7 +14147,8 @@
   (implies (and (syntaxp (and (quotep k)
                               (not (quotep x)))))
            (equal (bvif size (equal k (bvchop size x)) x y)
-                  (bvif size (equal k (bvchop size x)) k y))))
+                  (bvif size (equal k (bvchop size x)) k y)))
+  :hints (("Goal" :in-theory (enable boolif))))
 
 ;gen
 (defthm bvlt-of-constant-and-slice

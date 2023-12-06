@@ -41,6 +41,7 @@
 (include-book "dag-array-printing")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
+(include-book "kestrel/booleans/boolxor" :dir :system) ;since this book knows about boolxor
 (include-book "dag-size-sparse")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
