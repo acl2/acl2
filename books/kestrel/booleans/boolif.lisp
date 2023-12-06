@@ -56,8 +56,9 @@
   :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm boolif-x-y-x
-  (equal (boolif x y x)
-         (boolif x y nil))
+  (implies (syntaxp (not (quotep x))) ; prevent loops
+           (equal (boolif x y x)
+                  (boolif x y nil)))
   :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm boolif-of-not
