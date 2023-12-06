@@ -521,112 +521,84 @@
                            x86)))
 
 ;; Helper for the bsr instruction
-(define bsr ((source integerp)
-             (n (and (integerp n)
-                     (<= 1 n))))
-  :guard (not (equal (loghead n source) 0))
-  :returns (bsr-result natp :hyp (and (integerp source)
-                                      (not (equal (loghead n source) 0))
-                                      (integerp n)
-                                      (<= 1 n))
-                       :hints (("Goal" :in-theory (enable natp))))
+(skip-proofs (defun bsr (source n)
+              (declare (xargs :verify-guards t))
+              (b* ((source>>1 (ash source -1))
+                   ((when (equal source>>1 0)) n))
+                  (bsr source>>1 (1+ n)))))
 
-  :hints (("Goal" :in-theory (enable natp)))
-  :guard-debug t
+(skip-proofs
+  (def-inst x86-bsr
+            ;; 0F BD/r: BSR r16. r/m16
+            ;; 0F BD/r: BSR r32. r/m32
+            ;; 0F BD/r: BSR r64. r/m64
 
-  (if (mbt (and (integerp source)
-                (not (equal (loghead n source) 0))
-                (integerp n)
-                (<= 1 n)))
-    (b* (((when (equal (loghead (1- n) source) 0)) (1- n)))
-        (bsr source (1- n)))
-    nil)
-  ///
-  (defthm bsr-bound
-          (implies (and (integerp source)
-                        (not (equal (loghead n source) 0))
-                        (integerp n)
-                        (<= 1 n))
-                   (< (bsr source n)
-                      n))))
+            ;; Note some odd behavior: According to Intel's manual,
+            ;; if the source operand is 0, the destination operand is undefined.
+            ;; AMD on the other hand states that it will be unchanged. I use the
+            ;; latter behavior. See also the comment at the end of BSF.
 
+            :parents (two-byte-opcodes)
 
-(skip-proofs (def-inst x86-bsr
-                       ;; 0F BD/r: BSR r16. r/m16
-                       ;; 0F BD/r: BSR r32. r/m32
-                       ;; 0F BD/r: BSR r64. r/m64
+            :returns (x86 x86p :hyp (x86p x86))
 
-                       ;; Note some odd behavior: According to Intel's manual,
-                       ;; if the source operand is 0, the destination operand is undefined.
-                       ;; AMD on the other hand states that it will be unchanged. I use the
-                       ;; latter behavior. See also the comment at the end of BSF.
+            :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08)))
 
-                       :parents (two-byte-opcodes)
+            :modr/m t
 
-                       :returns (x86 x86p :hyp (x86p x86))
+            :body
 
-                       :modr/m t
+            ;; Note: opcode is the second byte of the two-byte opcode.
 
-                       :guard-hints (("Goal" :in-theory (e/d (natp) (unsigned-byte-p))))
+            (b* (((the (integer 1 8) operand-size)
+                  (select-operand-size
+                    proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
-                       :prepwork
-                       ((local (defthm integerp-natp
-                                       (implies (natp x)
-                                                (integerp x)))))
+                 (p2 (prefixes->seg prefixes))
+                 (p4? (equal #.*addr-size-override*
+                             (prefixes->adr prefixes)))
 
-                       :body
+                 (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-                       ;; Note: opcode is the second byte of the two-byte opcode.
+                 (inst-ac? t)
+                 ((mv flg0
+                      source
+                      (the (unsigned-byte 3) increment-RIP-by)
+                      (the (signed-byte 64) addr)
+                      x86)
+                  (x86-operand-from-modr/m-and-sib-bytes
+                    proc-mode #.*gpr-access* operand-size inst-ac?
+                    nil ;; Not a memory pointer operand
+                    seg-reg p4? temp-rip rex-byte r/m mod sib
+                    0 ;; No immediate data
+                    x86))
+                 ((when flg0)
+                  (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-                       (b* (((the (integer 1 8) operand-size)
-                             (select-operand-size
-                               proc-mode nil rex-byte nil prefixes nil nil nil x86))
+                 ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+                  (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+                 ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
-                            (p2 (prefixes->seg prefixes))
-                            (p4? (equal #.*addr-size-override*
-                                        (prefixes->adr prefixes)))
+                 (badlength? (check-instruction-length start-rip temp-rip 0))
+                 ((when badlength?)
+                  (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-                            (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-
-                            (inst-ac? t)
-                            ((mv flg0
-                                 source
-                                 (the (unsigned-byte 3) increment-RIP-by)
-                                 (the (signed-byte 64) addr)
-                                 x86)
-                             (x86-operand-from-modr/m-and-sib-bytes
-                               proc-mode #.*gpr-access* operand-size inst-ac?
-                               nil ;; Not a memory pointer operand
-                               seg-reg p4? temp-rip rex-byte r/m mod sib
-                               0 ;; No immediate data
-                               x86))
-                            ((when flg0)
-                             (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
-
-                            ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-                             (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-                            ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
-
-                            (badlength? (check-instruction-length start-rip temp-rip 0))
-                            ((when badlength?)
-                             (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
-                            ;; Update the x86 state:
-                            ;; ZF affected. CF, PF, AF, SF, and OF undefined.
-                            (x86 (if (equal source 0)
-                                   x86
-                                   (!rgfi-size operand-size (reg-index reg rex-byte *r*)
-                                               (bsr source 64) rex-byte x86)))
-                            (x86
-                              (let* ((x86 (!flgi :zf (if (equal source 0) 1 0) x86))
-                                     (x86 (!flgi-undefined :cf x86))
-                                     (x86 (!flgi-undefined :pf x86))
-                                     (x86 (!flgi-undefined :af x86))
-                                     (x86 (!flgi-undefined :sf x86))
-                                     (x86 (!flgi-undefined :of x86)))
-                                x86))
-                            (x86 (write-*ip proc-mode temp-rip x86)))
-                           x86)))
+                 ;; Update the x86 state:
+                 ;; ZF affected. CF, PF, AF, SF, and OF undefined.
+                 (x86 (if (equal source 0)
+                        x86
+                        (!rgfi-size operand-size (reg-index reg rex-byte *r*)
+                                    (bsr source 0) rex-byte x86)))
+                 (x86
+                   (let* ((x86 (!flgi :zf (if (equal source 0) 1 0) x86))
+                          (x86 (!flgi-undefined :cf x86))
+                          (x86 (!flgi-undefined :pf x86))
+                          (x86 (!flgi-undefined :af x86))
+                          (x86 (!flgi-undefined :sf x86))
+                          (x86 (!flgi-undefined :of x86)))
+                     x86))
+                 (x86 (write-*ip proc-mode temp-rip x86)))
+                x86)))
 
 ;; Helper for the tzcnt instruction
 (define tzcnt ((bits natp)
