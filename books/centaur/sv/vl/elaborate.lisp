@@ -164,7 +164,8 @@ information is stored in the elabindex before translating the expression.</p>
               (vl-assign vl-assign-elaborate-aux)
               (vl-modinst vl-modinst-elaborate-aux)
               (vl-always vl-always-elaborate-aux)
-              (vl-atts   :skip))
+              (vl-atts   :skip)
+              (vl-call-namedargs :skip))
     :type-fns ((vl-class :skip) ;; don't bother with classes inside anything else for now
                (vl-classlist :skip)
                (vl-datatype vl-datatype-elaborate-fn)
@@ -177,7 +178,8 @@ information is stored in the elabindex before translating the expression.</p>
                (vl-assign vl-assign-elaborate-fn)
                (vl-modinst vl-modinst-elaborate-fn)
                (vl-always vl-always-elaborate-fn)
-               (vl-atts   vl-atts-elaborate-fn))
+               (vl-atts   vl-atts-elaborate-fn)
+               (vl-call-namedargs vl-call-namedargs-elaborate-fn))
     :prod-fns ((vl-hidindex  (indices vl-indexlist-resolve-constants-fn))
                (vl-range     (msb vl-index-resolve-if-constant-fn)
                              (lsb vl-index-resolve-if-constant-fn))
@@ -197,7 +199,9 @@ information is stored in the elabindex before translating the expression.</p>
                (vl-gencase (default :skip))
                (vl-genblock (elems :skip))
                (vl-genarray (blocks :skip))
-               (vl-gencaselist (:val :skip)))
+               (vl-gencaselist (:val :skip))
+               (vl-fundecl (body :skip)
+                           (function-map :skip)))
     :field-fns ((atts :skip)
                 (mods :skip)
                 (interfaces :skip)
@@ -314,18 +318,60 @@ information is stored in the elabindex before translating the expression.</p>
               'fty::deffixequiv-mutual
               '((big-mutrec-default-hint 'fty::fnname id nil world))))
 
-(define vl-maybe-exprlist-args-to-4vec-consts ((x vl-maybe-exprlist-p))
+(define vl-exprlist-args-to-4vec-consts ((x vl-exprlist-p))
   :returns (consts sv::maybe-4veclist-p)
   (if (atom x)
       nil
     (cons (b* ((x1 (car x)))
-            (and x1
-                 (vl-expr-case x1
-                   :vl-literal (b* (((mv err val) (vl-value-to-4vec x1.val)))
-                                 (and (not err) val))
-                   :otherwise nil)))
-          (vl-maybe-exprlist-args-to-4vec-consts (cdr x)))))
+            (vl-expr-case x1
+              :vl-literal (b* (((mv err val) (vl-value-to-4vec x1.val)))
+                            (and (not err) val))
+              :otherwise nil))
+          (vl-exprlist-args-to-4vec-consts (cdr x)))))
 
+
+(define vl-fundecl-paramdecls-for-const-args ((x vl-portdecllist-p)
+                                              (constargs sv::maybe-4veclist-p))
+  :returns (params vl-paramdecllist-p)
+  (b* (((when (atom x)) nil)
+       ((unless (consp constargs)) nil)
+       ((unless (car constargs))
+        (vl-fundecl-paramdecls-for-const-args (cdr x) (cdr constargs)))
+       ((vl-portdecl x1) (car x)))
+    (cons (make-vl-paramdecl :name x1.name
+                             :type (make-vl-explicitvalueparam
+                                    :type x1.type
+                                    :default
+                                    (make-vl-literal
+                                     :val (vl-4vec-to-value
+                                           (car constargs)
+                                           ;; Properly speaking we should set
+                                           ;; this width to the width of the
+                                           ;; datatype.  But it will get
+                                           ;; extended when this gets
+                                           ;; elaborated.
+                                           (+ 1 (max (integer-length (sv::4vec->upper (car constargs)))
+                                                     (integer-length (sv::4vec->lower (car constargs)))))))
+                                    :final-value (car constargs))
+                             :loc *vl-fakeloc*
+                             :localp t)
+          (vl-fundecl-paramdecls-for-const-args (cdr x) (cdr constargs)))))
+
+(define vl-fundecl-body-with-const-args ((x vl-fundecl-p)
+                                         (constargs sv::maybe-4veclist-p))
+  :returns (body vl-stmt-p)
+  (b* (((vl-fundecl x))
+       (paramdecls (vl-fundecl-paramdecls-for-const-args
+                    x.portdecls constargs)))
+    (make-vl-blockstmt :blocktype :vl-beginend
+                       :stmts (list x.body)
+                       :paramdecls paramdecls)))
+       
+
+(local (defthm len-cdr-when-consp
+         (implies (consp x)
+                  (< (len (cdr x)) (len x)))
+         :rule-classes :linear))
 
 (fty::defvisitor-multi vl-elaborate
   :defines-args (:ruler-extenders :all
@@ -349,7 +395,10 @@ information is stored in the elabindex before translating the expression.</p>
   
 
   (define vl-function-compile-and-bind ((fnname vl-scopeexpr-p)
-                                        (constargs sv::maybe-4veclist-p)
+                                        ;; args are already elaborated,
+                                        ;; and maybe resolved to constants
+                                        (plainargs vl-maybe-exprlist-p)
+                                        (namedargs vl-call-namedargs-p)
                                         elabindex
                                         &key
                                         ((reclimit natp) 'reclimit)
@@ -400,34 +449,70 @@ information is stored in the elabindex before translating the expression.</p>
          ((unless ok)
           (b* ((elabindex (vl-elabindex-undo)))
             (mv nil warnings elabindex)))
+         ((mv err ordered-args)
+          (vl-funcall-args-to-ordered (vl-fundecl->portdecls new-decl)
+                                      plainargs namedargs))
+         ((when err)
+          ;; this will be warned about elsewhere
+          (b* ((elabindex (vl-elabindex-undo)))
+            (mv nil warnings elabindex)))
+         (constargs (vl-exprlist-args-to-4vec-consts ordered-args))
+         ;; Have we already compiled for these constargs? Find out if so
+         (fnmap (vl-fundecl->function-map new-decl))
+         (match (vl-function-map-find-matching fnmap constargs))
+         ((when match)
+          ;; Don't bother recompiling, just use the existing match
+          (b* ((elabindex (vl-elabindex-undo)))
+            (mv t warnings elabindex)))
          ;; Go into the function's scope.  Compile the function using the passed constants.
          (elabindex (vl-elabindex-push (vl-fundecl->blockscope new-decl)))
-         ;; (- (cw "after push decl scope, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
-         (elabindex (vl-elabindex-sync-scopes))
+
+         ;; Fix up, elaborate, and compile the function body.
+         (body-with-consts (vl-fundecl-body-with-const-args new-decl constargs))
+         ((wmv ok warnings new-body elabindex)
+          (vl-stmt-elaborate body-with-consts elabindex :reclimit (1- reclimit)))
+         ((unless ok)
+          (b* ((elabindex (vl-elabindex-undo)) ;; pop blockscope
+               (elabindex (vl-elabindex-update-item-info
+                           (vl-fundecl->name new-decl)
+                           (change-vl-fundecl new-decl
+                                              :function-map
+                                              (cons (cons (sv::maybe-4veclist-fix constargs)
+                                                          (make-vl-function-specialization
+                                                           :successp nil
+                                                           :body new-body
+                                                           :constraints nil
+                                                           :function (sv::svex-x)))
+                                                    (vl-fundecl->function-map new-decl)))))
+               (elabindex (vl-elabindex-undo))) ;; leave scope in which function is declared
+            (mv nil warnings elabindex)))
+
          ;; (- (cw "after sync (vl-elabindex->scopes), current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
          ((wmv ok warnings svex constraints :ctx new-decl)
-          (vl-fundecl-to-svex new-decl constargs (vl-elabindex->ss elabindex)
+          (vl-fundecl-to-svex (change-vl-fundecl new-decl :body new-body)
+                              ;; constargs -- we don't need constargs since
+                              ;; we're injecting the constants into parameters
+                              ;; in vl-fundecl-body-with-consts
+                              (vl-elabindex->ss elabindex)
                               (vl-elabindex->scopes elabindex)
                               config))
          (elabindex (vl-elabindex-undo)) ;; leave the function's scope
          ;; (- (cw "after leave decl scope, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
-         (elabindex (if ok
-                        (vl-elabindex-update-item-info
-                         (vl-fundecl->name new-decl)
-                         (change-vl-fundecl new-decl
-                                            :function-map
-                                            (cons (cons (sv::maybe-4veclist-fix constargs)
-                                                        (make-vl-function-specialization
-                                                         :function svex
-                                                         :constraints constraints))
-                                                  (vl-fundecl->function-map new-decl))))
-                      elabindex))
+         (elabindex (vl-elabindex-update-item-info
+                     (vl-fundecl->name new-decl)
+                     (change-vl-fundecl new-decl
+                                        :function-map
+                                        (cons (cons (sv::maybe-4veclist-fix constargs)
+                                                    (make-vl-function-specialization
+                                                     :function svex
+                                                     :constraints constraints
+                                                     :body new-body
+                                                     :successp ok))
+                                              (vl-fundecl->function-map new-decl)))))
          ;; (- (cw "after update-item-info, current scope: ~x0 fnmap: ~x1~%" (caar (vl-elabindex->scopes)) (vl-elabscopes-check-fnmap (vl-elabindex->scopes))))
          (elabindex (vl-elabindex-undo)) ;; leave the scope in which the function is declared
-         ((unless ok)
-          (mv nil warnings elabindex))
          )
-      (mv t warnings elabindex))
+      (mv ok warnings elabindex))
     ///
     (in-theory (disable vl-function-compile-and-bind)))
 
@@ -967,9 +1052,8 @@ information is stored in the elabindex before translating the expression.</p>
                                     :namedargs new-namedargs
                                     :name new-fnname))
              ((when x.systemp) (mv (and* ok1 ok2 ok3) warnings new-x elabindex))
-             (constargs (vl-maybe-exprlist-args-to-4vec-consts new-plainargs))
              ((wmv ok5 warnings elabindex)
-              (vl-function-compile-and-bind new-fnname constargs elabindex :reclimit reclimit)))
+              (vl-function-compile-and-bind new-fnname new-plainargs new-namedargs elabindex :reclimit reclimit)))
           (mv (and* ok1 ok2 ok3 ok4 ok5) warnings new-x elabindex))
 
         :vl-cast
@@ -988,6 +1072,33 @@ information is stored in the elabindex before translating the expression.</p>
     ///
     (in-theory (disable vl-expr-elaborate)))
 
+  (define vl-call-namedargs-elaborate ((x vl-call-namedargs-p)
+                                       elabindex
+                                       &key
+                                       ((reclimit natp) 'reclimit)
+                                       ((config vl-simpconfig-p) 'config))
+    :returns (mv (ok)
+                 (warnings vl-warninglist-p)
+                 (new-x vl-call-namedargs-p)
+                 new-elabindex)
+    :measure (acl2::nat-list-measure
+              (list reclimit 1 (vl-call-namedargs-count x) 12))
+    (b* ((x (vl-call-namedargs-fix x))
+         ((when (atom x)) (mv t nil nil elabindex))
+         ((mv ok2 warnings rest elabindex)
+          (vl-call-namedargs-elaborate (cdr x) elabindex))
+         ((unless (cdar x))
+          (mv ok2 warnings (cons-with-hint (car x) rest x) elabindex))
+         ((wmv ok1 ?constantp warnings val ?svex elabindex)
+          (vl-expr-maybe-resolve-to-constant (cdar x) elabindex)))
+      (mv (and ok1 ok2)
+          warnings
+          (cons-with-hint (cons-with-hint (caar x) val x)
+                          rest x)
+          elabindex)))
+         
+
+  
   (define vl-indexlist-resolve-constants ((x vl-exprlist-p)
                                           elabindex
                                           &key

@@ -700,7 +700,8 @@ because... (BOZO)</p>
     "$fwrite" "$fwriteb" "$fwriteo" "$fwriteh"
     "$monitoroff" "$monitoron"
     "$dumpoff" "$dumpon" "$dumpvars"
-    "$fsdbDumpoff" "$fsdbDumpon" "$fsdbDumpvars" "$fsdbDumpvarsByFile"))
+    "$fsdbDumpoff" "$fsdbDumpon" "$fsdbDumpvars" "$fsdbDumpvarsByFile"
+    "$error"))
 
 (fty::defprod svstmt-config
   ((nonblockingp booleanp)
@@ -1411,39 +1412,47 @@ because... (BOZO)</p>
 ;;                             acl2::default-cdr))))
 
 
-(define vl-function-const-args->svstmts ((ports vl-portdecllist-p)
-                                         (consts sv::maybe-4veclist-p)
-                                         (ss vl-scopestack-p)
-                                         (scopes vl-elabscopes-p))
-  :returns (mv (ok)
-               (vttree (and (vttree-p vttree)
-                            (sv::svarlist-addr-p (sv::constraintlist-vars (vttree->constraints vttree)))))
-               (res (and (sv::svstmtlist-p res)
-                         (sv::svarlist-addr-p
-                          (sv::svstmtlist-vars res)))))
-  (b* (((when (atom ports)) (mv t nil nil))
-       ((when (not (car consts)))
-        (vl-function-const-args->svstmts (cdr ports) (cdr consts) ss scopes))
-       ((vl-portdecl port1) (car ports))
-       ((mv ok vttree rest)
-        (vl-function-const-args->svstmts (cdr ports) (cdr consts) ss scopes))
-       ((unless ok)
-        (mv nil vttree nil))
-       (lhs (vl-idexpr port1.name))
-       ((vmv ok vttree writes ?shift)
-        (vl-procedural-assign->svstmts lhs (sv::svex-quote (car consts)) t ;; blockingp
-                                       ss scopes)))
-    (mv ok vttree (cons (sv::make-svstmt-assign :writes writes :blockingp t)
-                        rest)))
-  ///
-  (local (in-theory (enable sv::maybe-4veclist-fix
-                            default-cdr))))
+
+
+;; Note: Original implementation of function specialization used this code to
+;; add assignments for each constant input port.  Now instead, before
+;; elaboration of the VL function body, we wrap it in a block that adds them as
+;; constant parameters, so that function calls inside the body can also have
+;; these constants resolved.
+
+;; (define vl-function-const-args->svstmts ((ports vl-portdecllist-p)
+;;                                          (consts sv::maybe-4veclist-p)
+;;                                          (ss vl-scopestack-p)
+;;                                          (scopes vl-elabscopes-p))
+;;   :returns (mv (ok)
+;;                (vttree (and (vttree-p vttree)
+;;                             (sv::svarlist-addr-p (sv::constraintlist-vars (vttree->constraints vttree)))))
+;;                (res (and (sv::svstmtlist-p res)
+;;                          (sv::svarlist-addr-p
+;;                           (sv::svstmtlist-vars res)))))
+;;   (b* (((when (atom ports)) (mv t nil nil))
+;;        ((when (not (car consts)))
+;;         (vl-function-const-args->svstmts (cdr ports) (cdr consts) ss scopes))
+;;        ((vl-portdecl port1) (car ports))
+;;        ((mv ok vttree rest)
+;;         (vl-function-const-args->svstmts (cdr ports) (cdr consts) ss scopes))
+;;        ((unless ok)
+;;         (mv nil vttree nil))
+;;        (lhs (vl-idexpr port1.name))
+;;        ((vmv ok vttree writes ?shift)
+;;         (vl-procedural-assign->svstmts lhs (sv::svex-quote (car consts)) t ;; blockingp
+;;                                        ss scopes)))
+;;     (mv ok vttree (cons (sv::make-svstmt-assign :writes writes :blockingp t)
+;;                         rest)))
+;;   ///
+;;   (local (in-theory (enable sv::maybe-4veclist-fix
+;;                             default-cdr))))
        
        
                  
 
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
-                             (consts sv::maybe-4veclist-p)
+                             ;; (consts sv::maybe-4veclist-p)
                              (ss vl-scopestack-p)
                              (scopes vl-elabscopes-p
                                      "Scope info for inside the function decl")
@@ -1477,15 +1486,15 @@ because... (BOZO)</p>
                                                     (vl-idexpr x.name)))
        ((unless ok) (mv nil warnings (svex-x) nil))
 
-       ((vwmv ok vttree const-svstmts)
-        (vl-function-const-args->svstmts x.portdecls consts ss scopes))
-       ((unless ok)
-        (mv nil warnings (svex-x) nil))
+       ;; ((vwmv ok vttree const-svstmts)
+       ;;  (vl-function-const-args->svstmts x.portdecls consts ss scopes))
+       ;; ((unless ok)
+       ;;  (mv nil warnings (svex-x) nil))
        
        (svstmts (append-without-guard var-constraints
                                       (list (sv::make-svstmt-scope :locals localvars
                                                                    :body (append-without-guard
-                                                                          const-svstmts
+                                                                          ;; const-svstmts
                                                                           varstmts
                                                                           svstmts)))))
        ((wmv ok warnings svstate constraints blk-masks nonblk-masks)

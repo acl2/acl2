@@ -3470,11 +3470,15 @@ flops, and to set up other simulation events.  A simple example would be:</p>
 (fty::defprod vl-function-specialization
   ((function sv::svex-p
              "Expression giving the return value of the function")
+   (body vl-stmt-p
+         "Elaborated body")
    (constraints sv::constraintlist-p
                 "Constraints that must hold of the function inputs, or the result
-                 may be undefined; computed during elaboration"))
+                 may be undefined; computed during elaboration")
+   (successp "Was the body elaboration and compilation successful"))
   :layout :list)
-(fty::defmap vl-function-specialization-map
+
+(fty::defalist vl-function-specialization-map
   :key-type sv::maybe-4veclist
   :val-type vl-function-specialization
   :true-listp t)
