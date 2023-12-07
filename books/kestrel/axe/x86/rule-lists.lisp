@@ -3437,7 +3437,7 @@
             READ-OF-WRITE-BOTH-SIZE-1
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
-            <-of-+-and-+-arg3-and-arg1
+            acl2::<-of-+-cancel-3-1
             equal-of-bvshl-and-constant
             bvchop-of-bvshl-same
             acl2::equal-of-myif-arg1-safe

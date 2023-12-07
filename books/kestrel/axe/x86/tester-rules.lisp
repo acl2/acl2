@@ -1055,11 +1055,10 @@
                        (+ k2 (rsp x86)))))
   :hints (("Goal" :in-theory (enable separate))))
 
-;rename?
 ;used by the tester
-(defthm <-of-+-and-+-arg3-and-arg1
-  (equal (< (+ x (+ y z)) z)
-         (< (+ x y) 0)))
+(defthm acl2::<-of-+-cancel-3-1
+  (equal (< (+ y (+ z x)) x)
+         (< (+ y z) 0)))
 
 (defthm bvminus-of-+-of-1-same
   (implies (integerp x)
