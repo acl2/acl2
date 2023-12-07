@@ -131,39 +131,6 @@
   (implies (integerp x)
            (rationalp x)))
 
-(defthm x86isa::canonical-address-p-between-special5
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset))
-                (<= (+ k x) k2)
-                (natp k)
-                (natp x)
-                (natp k2))
-           ;; ex (BINARY-+ '192 (BINARY-+ TEXT-OFFSET (ASH (BVCHOP '32 (RDI X86)) '2)))
-           (canonical-address-p (+ k text-offset x))))
-
-(DEFTHM X86ISA::CANONICAL-ADDRESS-P-BETWEEN-SPECIAL5-alt
-  (IMPLIES (AND (CANONICAL-ADDRESS-P TEXT-OFFSET)
-                (CANONICAL-ADDRESS-P (+ K2 TEXT-OFFSET))
-                (<= (+ K X) K2)
-                (NATP K)
-                (NATP X)
-                (NATP K2))
-           (CANONICAL-ADDRESS-P (+ K X TEXT-OFFSET))))
-
-(defthm x86isa::canonical-address-p-between-special6
-  (implies (and (canonical-address-p (+ k1 base))
-                (syntaxp (quotep k1))
-                (canonical-address-p (+ k2 base))
-                (syntaxp (quotep k2))
-                (< k1 k2) ; break symmetry
-                (<= k1 (+ x1 x2))
-                (<= (+ x1 x2) k2)
-                (integerp k1)
-                (integerp x1)
-                (integerp x2)
-                (integerp k2))
-           (canonical-address-p (+ x1 x2 base))))
-
 ;gen!
 (defthm acl2::bvsx-when-bvlt
   (implies (BVLT '32 x '4)
@@ -563,69 +530,8 @@
   (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
          (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
 
-(defthm sse-daz-of-nil
-  (equal (X86ISA::SSE-DAZ kind exp frac nil)
-         (mv kind exp frac))
-  :hints (("Goal" :in-theory (enable X86ISA::SSE-DAZ))))
-
-(defthm X86ISA::MXCSRBITS->IM-of-if
-  (equal (X86ISA::MXCSRBITS->IM (if test x86 x86_2))
-         (if test (X86ISA::MXCSRBITS->IM x86) (X86ISA::MXCSRBITS->IM x86_2))))
-
-(defthm X86ISA::MXCSRBITS->DM-of-if
-  (equal (X86ISA::MXCSRBITS->DM (if test x86 x86_2))
-         (if test (X86ISA::MXCSRBITS->DM x86) (X86ISA::MXCSRBITS->DM x86_2))))
-
-(defthm X86ISA::MXCSRBITS->DAZ-of-if
-  (equal (X86ISA::MXCSRBITS->DAZ (if test x86 x86_2))
-         (if test (X86ISA::MXCSRBITS->DAZ x86) (X86ISA::MXCSRBITS->DAZ x86_2))))
-
-;todo: more like this, or look at how this is proved
-(defthm MXCSRBITS->IM-of-!MXCSRBITS->IE
-  (equal (X86ISA::MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->IM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->IM-of-!MXCSRBITS->DE
-  (equal (X86ISA::MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->IM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DM-of-!MXCSRBITS->DE
-  (equal (X86ISA::MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DM-of-!MXCSRBITS->IE
-  (equal (X86ISA::MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DAZ-of-!MXCSRBITS->IE
-  (equal (X86ISA::MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DAZ$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DAZ-of-!MXCSRBITS->DE
-  (equal (X86ISA::MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DAZ$INLINE mxcsr)))
-
 (defthm integerp-of-xr-mxcsr
   (INTEGERP (XR :MXCSR NIL X86)))
-
-(defthm integerp-of-!MXCSRBITS->IE
-  (integerp (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
-
-(defthm unsigned-byte-p-32-of-!MXCSRBITS->IE
-  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
-
-(defthm unsigned-byte-p-32-of-!MXCSRBITS->DE
-  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
-
-(defthm integerp-of-!MXCSRBITS->DE
-  (integerp (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
-
-
-(acl2::def-constant-opener X86ISA::FP-DECODE)
-(acl2::def-constant-opener X86ISA::FP-TO-RAT)
-(acl2::def-constant-opener rtl::bias)
-(acl2::def-constant-opener rtl::expw)
-(acl2::def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
 
 ;; should not be needed
 (defthm xr-of-!rflags-irrel
@@ -641,21 +547,7 @@
   (equal (X86ISA::!RFLAGS v (if test x86_1 x86_2))
          (if test (X86ISA::!RFLAGS v x86_1) (X86ISA::!RFLAGS v x86_2))))
 
-
-
-(defthm <-of-fp-to-rat
-  (implies (and (natp frac)
-                (natp exp)
-                (not (equal 0 exp))
-                (natp frac-width)
-                (equal 8 exp-width) ; todo: gen
-                )
-           (equal (< (X86ISA::FP-TO-RAT SIGN EXP frac BIAS EXP-WIDTH FRAC-WIDTH) 0)
-                  (and (not (equal 0 sign))
-                       (if (equal 0 exp)
-                           (not (equal 0 FRAC))
-                         (<= exp (x86isa::fp-max-finite-exp exp-width))))))
-  :hints (("Goal" :in-theory (enable X86ISA::FP-TO-RAT))))
+(acl2::def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
 
 ;; (thm
 ;;  (IMPLIES (AND (< J 0)
@@ -1357,32 +1249,6 @@
                                   (acl2::logand-of-bvchop-becomes-bvand-alt ;loop
                                    acl2::logand-of-bvchop-becomes-bvand ;loop
                                    )))))
-
-;;todo: or use a trim-like scheme for stuff like this
-(defthm bvand-of-lognot-arg2
-  (equal (bvand size (lognot x) y)
-         (bvand size (bvnot size x) y))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm bvand-of-lognot-arg3
-  (equal (bvand size x (lognot y))
-         (bvand size x (bvnot size y)))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm bvxor-of-lognot-arg2
-  (equal (bvxor size (lognot x) y)
-         (bvxor size (bvnot size x) y))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm bvxor-of-lognot-arg3
-  (equal (bvxor size x (lognot y))
-         (bvxor size x (bvnot size y)))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm acl2::bvchop-of-lognot
-  (equal (bvchop size (lognot x))
-         (bvnot size x))
-  :hints (("Goal" :in-theory (enable bvnot))))
 
 (def-constant-opener x86isa::!prefixes->seg$inline)
 

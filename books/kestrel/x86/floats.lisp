@@ -20,13 +20,18 @@
 (include-book "projects/x86isa/machine/instructions/fp/cmp-spec" :dir :system)
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
-(local (include-book "kestrel/bv/logapp" :dir :system)) ; for ACL2::LOGHEAD-BECOMES-BVCHOP
-(local (include-book "kestrel/bv/logtail" :dir :system))
-(local (include-book "kestrel/bv/slice" :dir :system))
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 ;(include-book "kestrel/x86/read-and-write" :dir :system)
 ;(include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
+(local (include-book "kestrel/bv/logapp" :dir :system)) ; for ACL2::LOGHEAD-BECOMES-BVCHOP
+(local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/bv/logior" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 (in-theory (disable acl2::loghead))
 
@@ -367,3 +372,77 @@
                 (equal (x86isa::mxcsrbits->daz$inline mxcsr) 0))
            (not (equal 7 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* y x mxcsr exp-width frac-width)))))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special is-nan))))
+
+(defthm sse-daz-of-nil
+  (equal (X86ISA::SSE-DAZ kind exp frac nil)
+         (mv kind exp frac))
+  :hints (("Goal" :in-theory (enable X86ISA::SSE-DAZ))))
+
+(defthm X86ISA::MXCSRBITS->IM-of-if
+  (equal (X86ISA::MXCSRBITS->IM (if test x86 x86_2))
+         (if test (X86ISA::MXCSRBITS->IM x86) (X86ISA::MXCSRBITS->IM x86_2))))
+
+(defthm X86ISA::MXCSRBITS->DM-of-if
+  (equal (X86ISA::MXCSRBITS->DM (if test x86 x86_2))
+         (if test (X86ISA::MXCSRBITS->DM x86) (X86ISA::MXCSRBITS->DM x86_2))))
+
+(defthm X86ISA::MXCSRBITS->DAZ-of-if
+  (equal (X86ISA::MXCSRBITS->DAZ (if test x86 x86_2))
+         (if test (X86ISA::MXCSRBITS->DAZ x86) (X86ISA::MXCSRBITS->DAZ x86_2))))
+
+;todo: more like this, or look at how this is proved
+(defthm MXCSRBITS->IM-of-!MXCSRBITS->IE
+  (equal (X86ISA::MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
+         (X86ISA::MXCSRBITS->IM$INLINE mxcsr)))
+
+(defthm MXCSRBITS->IM-of-!MXCSRBITS->DE
+  (equal (X86ISA::MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
+         (X86ISA::MXCSRBITS->IM$INLINE mxcsr)))
+
+(defthm MXCSRBITS->DM-of-!MXCSRBITS->DE
+  (equal (X86ISA::MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
+         (X86ISA::MXCSRBITS->DM$INLINE mxcsr)))
+
+(defthm MXCSRBITS->DM-of-!MXCSRBITS->IE
+  (equal (X86ISA::MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
+         (X86ISA::MXCSRBITS->DM$INLINE mxcsr)))
+
+(defthm MXCSRBITS->DAZ-of-!MXCSRBITS->IE
+  (equal (X86ISA::MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
+         (X86ISA::MXCSRBITS->DAZ$INLINE mxcsr)))
+
+(defthm MXCSRBITS->DAZ-of-!MXCSRBITS->DE
+  (equal (X86ISA::MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
+         (X86ISA::MXCSRBITS->DAZ$INLINE mxcsr)))
+
+(defthm integerp-of-!MXCSRBITS->IE
+  (integerp (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
+
+(defthm unsigned-byte-p-32-of-!MXCSRBITS->IE
+  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
+
+(defthm unsigned-byte-p-32-of-!MXCSRBITS->DE
+  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
+
+(defthm integerp-of-!MXCSRBITS->DE
+  (integerp (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
+
+(acl2::def-constant-opener X86ISA::FP-DECODE)
+(acl2::def-constant-opener X86ISA::FP-TO-RAT)
+(acl2::def-constant-opener rtl::bias)
+(acl2::def-constant-opener rtl::expw)
+
+;rename
+(defthm <-of-fp-to-rat
+  (implies (and (natp frac)
+                (natp exp)
+                (not (equal 0 exp))
+                (natp frac-width)
+                (equal 8 exp-width) ; todo: gen
+                )
+           (equal (< (x86isa::fp-to-rat sign exp frac bias exp-width frac-width) 0)
+                  (and (not (equal 0 sign))
+                       (if (equal 0 exp)
+                           (not (equal 0 frac))
+                         (<= exp (x86isa::fp-max-finite-exp exp-width))))))
+  :hints (("Goal" :in-theory (enable x86isa::fp-to-rat))))

@@ -340,12 +340,6 @@
                   (BVCHOP width X)))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthm bvand-of-lognot-arg3
-  (implies (natp width)
-           (equal (bvand width x (lognot y))
-                  (bvand width x (bvnot width y))))
-  :hints (("Goal" :in-theory (enable bvand bvnot))))
-
 ;can loop
 (defthmd bvuminus-of-1-arg2
   (implies (natp width)

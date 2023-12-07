@@ -506,6 +506,41 @@
                 (integerp offset))
            (canonical-address-p (+ offset x))))
 
+(defthm canonical-address-p-between-special5
+  (implies (and (canonical-address-p text-offset)
+                (canonical-address-p (+ k2 text-offset))
+                (<= (+ k x) k2)
+                (natp k)
+                (natp x)
+                (natp k2))
+           ;; ex (BINARY-+ '192 (BINARY-+ TEXT-OFFSET (ASH (BVCHOP '32 (RDI X86)) '2)))
+           (canonical-address-p (+ k text-offset x))))
+
+(DEFTHM CANONICAL-ADDRESS-P-BETWEEN-SPECIAL5-alt
+  (IMPLIES (AND (CANONICAL-ADDRESS-P TEXT-OFFSET)
+                (CANONICAL-ADDRESS-P (+ K2 TEXT-OFFSET))
+                (<= (+ K X) K2)
+                (NATP K)
+                (NATP X)
+                (NATP K2))
+           (CANONICAL-ADDRESS-P (+ K X TEXT-OFFSET))))
+
+(defthm canonical-address-p-between-special6
+  (implies (and (canonical-address-p (+ k1 base))
+                (syntaxp (quotep k1))
+                (canonical-address-p (+ k2 base))
+                (syntaxp (quotep k2))
+                (< k1 k2) ; break symmetry
+                (<= k1 (+ x1 x2))
+                (<= (+ x1 x2) k2)
+                (integerp k1)
+                (integerp x1)
+                (integerp x2)
+                (integerp k2))
+           (canonical-address-p (+ x1 x2 base))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm integerp-of-xr-of-rsp
   (implies (x86p x86)
            (integerp (xr :rgf *rsp* x86))))
