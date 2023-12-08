@@ -1322,14 +1322,112 @@
                                 ))))))
 
      (:@ (and :svtv-spec :fsm)
-      (define <specname>-fsm-bindings ()
-        :returns (bindings lhprobe-map-p)
+      (:@ :define-fsm
+       (define <fsmname> ()
+         :guard-hints (("goal" :in-theory '(acl2::hons-dups-p-no-duplicatesp
+                                            no-duplicate-state-keys-of-<specname>
+                                            svtv-spec-p-of-<specname>)))
+         :returns (cycle base-fsm-p
+                         :hints (("goal" :in-theory '(base-fsm-p-of-svtv-spec->cycle-fsm
+                                                      <fsmname>))))
+         (svtv-spec->cycle-fsm (<specname>))
+         ///
+         (in-theory (disable (<fsmname>)))
+         
+         (defthm cycle-fsm-of-<specname>
+           (equal (svtv-spec->cycle-fsm (<specname>))
+                  (<fsmname>))
+           :hints(("Goal" :in-theory (disable (<specname>)))))
+
+         (defthm base-fsm-overridekey-transparent-p-of-<fsmname>
+           (base-fsm-overridekey-transparent-p
+            (<fsmname>)
+            (<name>-overridekeys))
+           :hints(("Goal" :in-theory '(base-fsm-overridekey-transparent-p-of-<specname>-cycle
+                                       <fsmname>))))
+
+         (defthm base-fsm-ovcongruent-of-<fsmname>
+           (base-fsm-ovcongruent (<fsmname>))
+           :hints(("Goal" :in-theory '(base-fsm-ovcongruent-of-<specname>-cycle
+                                       <fsmname>))))
+
+         (defthm no-duplicate-state-keys-of-<fsmname>
+           (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (<fsmname>))))
+           :hints (("goal" :in-theory '(NEXTSTATE-KEYS-OF-SVTV-SPEC->CYCLE-FSM
+                                        <fsmname>
+                                        no-duplicate-state-keys-of-<specname>))))
+
+         (defthm nextstate-keys-non-override-of-<fsmname>
+           (svarlist-override-p (svex-alist-keys (base-fsm->nextstate (<fsmname>))) nil)
+           :hints(("Goal" :in-theory '(nextstate-keys-non-override-of-<specname>
+                                       nextstate-keys-of-svtv-spec->cycle-fsm
+                                       <fsmname>))))))
+
+      (:@ (not :define-fsm)
+       (defthm cycle-fsm-of-<specname>
+         (equal (svtv-spec->cycle-fsm (<specname>))
+                (<fsmname>))
+         :hints(("Goal" :in-theory (e/d (svtv-spec->cycle-fsm
+                                         fsmname)
+                                        (<specname>))))))
+      
+      (define <name>-fsm-bindings ()
+        :returns (bindings lhprobe-map-p
+                           :hints (("goal" :in-theory '(lhprobe-map-p-of-svtv-spec-fsm-bindings
+                                                        <name>-fsm-bindings))))
+        :guard-hints (("goal" :in-theory '(svtv-spec-fsm-syntax-check-of-<specname>
+                                           svtv-spec-p-of-<specname>)))
         (svtv-spec-fsm-bindings (<specname>)))
 
-      (define <specname>-output-map
-        :returns (map lhprobe-map-p)
-        (b* (((svtv-spec x) (<specname>)))
-          (svtv-probealist-to-lhprobe-map x.probes x.namemap)))
+      (define <name>-fsm-constraints ()
+        :returns (constrants lhprobe-constraintlist-p
+                             :hints (("goal" :in-theory '(lhprobe-constraintlist-p-of-svtv-spec-fsm-constraints
+                                                          <name>-fsm-constraints))))
+        (svtv-spec-fsm-constraints (<specname>))
+        ///
+        (make-event
+         `(defthm max-stage-of-<name>-fsm-constraints
+            (equal (lhprobe-constraintlist-max-stage (<name>-fsm-constraints))
+                   ,(lhprobe-constraintlist-max-stage (<name>-fsm-constraints)))
+            :hints(("Goal" :in-theory '((<name>-fsm-constraints)
+                                        (lhprobe-constraintlist-max-stage)))))))
+
+      (defthm outvars-len-of-<specname>
+        (equal (len (svtv-probealist-outvars (svtv-spec->probes (<specname>)))) 2)
+        :hints(("Goal" :in-theory '((<specname>)
+                                    (svtv-spec->probes)
+                                    (svtv-probealist-outvars)
+                                    (len)))))
+
+      (define <name>-fsm-output-map ()
+        :returns (map lhprobe-map-p
+                      :hints (("goal" :in-theory '(lhprobe-map-p-of-svtv-probealist-to-lhprobe-map
+                                                   <name>-fsm-output-map))))
+        :guard-hints (("goal" :in-theory '(svtv-probealist-p-of-svtv-spec->probes
+                                           svtv-name-lhs-map-p-of-svtv-spec->namemap
+                                           svtv-spec-p-of-<specname>)))
+        (b* (((svtv-spec x) (<specname>))
+             ((acl2::with-fast x.namemap)))
+          (svtv-probealist-to-lhprobe-map x.probes x.namemap))
+        ///
+        (defthm svtv-spec-cycle-outs->pipe-out-of-<specname>
+          (implies (and (hons-get (svar-fix var) (<name>-fsm-output-map))
+                        (<= 2 (len outs)))
+                   (equal (svex-env-lookup var (svtv-spec-cycle-outs->pipe-out (<specname>) outs))
+                          (lhprobe-eval (cdr (hons-assoc-equal (svar-fix var) (<name>-fsm-output-map))) outs)))
+          :hints(("Goal" :in-theory '((:DEFINITION <NAME>-FSM-OUTPUT-MAP)
+                                      (:DEFINITION HONS-GET)
+                                      (:REWRITE CDR-CONS)
+                                      (:REWRITE LOOKUP-IN-SVTV-SPEC-CYCLE-OUTS->PIPE-OUT)
+                                      (:REWRITE LOOKUP-OF-SVTV-PROBEALIST-TO-LHPROBE-MAP)
+                                      (:REWRITE MAYBE-SVAR-P-P-WHEN-SVAR-P)
+                                      (:REWRITE OUTVARS-LEN-OF-<SPECNAME>)
+                                      (:REWRITE SVAR-P-OF-SVAR-FIX)
+                                      (:REWRITE SVAR-P-WHEN-MAYBE-SVAR-P-P)
+                                      (:REWRITE SVTV-PROBEALIST-FIX-WHEN-SVTV-PROBEALIST-P)
+                                      (:REWRITE SVTV-PROBEALIST-P-OF-SVTV-SPEC->PROBES)
+                                      (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-IMPLIES-PROBE-VARS-SUBSET-OF-NAMEMAP)
+                                      (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-OF-<SPECNAME>))))))
 
       
 
@@ -1338,15 +1436,18 @@
 
 (defun def-svtv-refinement-fn (svtv-name
                                data-name
+                               fsm-name
                                ideal
                                fgl-semantic-check
                                omit-default-aignet-transforms
                                svtv-spec
                                inclusive-overridekeys
+                               define-fsm
                                pkg-sym)
   (declare (xargs :mode :program))
   (acl2::template-subst *svtv-generalize-template*
                         :str-alist `(("<NAME>" . ,(symbol-name svtv-name))
+                                     ("<FSMNAME>" . ,(symbol-name fsm-name))
                                      ("<DATA>" . ,(symbol-name data-name))
                                      ("<IDEAL-NAME>" . ,(symbol-name ideal))
                                      ("<SPECNAME>" . ,(if (and svtv-spec
@@ -1356,6 +1457,8 @@
                         :features (append (if ideal
                                               '(:ideal)
                                             '(:triplecheck))
+                                          (and fsm-name '(:fsm))
+                                          (and define-fsm '(:define-fsm))
                                           (and fgl-semantic-check
                                                '(:fgl-semantic-check))
                                           (and svtv-spec '(:svtv-spec))
@@ -1366,14 +1469,17 @@
                         :pkg-sym (or pkg-sym ideal svtv-name)))
 
 (defmacro def-svtv-refinement (svtv-name data-name
-                                         &key ideal fgl-semantic-check
+                                         &key
+                                         fsm-name
+                                         define-fsm
+                                         ideal fgl-semantic-check
                                          omit-default-aignet-transforms
                                          svtv-spec
                                          inclusive-overridekeys pkg-sym)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal ',fgl-semantic-check
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',fsm-name ',ideal ',fgl-semantic-check
       ',omit-default-aignet-transforms
-      ',svtv-spec ',inclusive-overridekeys ',pkg-sym)))
+      ',svtv-spec ',inclusive-overridekeys ',define-fsm ',pkg-sym)))
 
 
 

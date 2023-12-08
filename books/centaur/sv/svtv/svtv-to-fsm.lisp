@@ -29,6 +29,7 @@
 (include-book "svtv-generalize-defs")
 (include-book "override-envlist-defs")
 (include-book "fsm-override-transparency")
+(include-book "override-thm-common")
 (local (include-book "svtv-spec-override-transparency"))
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -39,6 +40,7 @@
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/misc/hons-sets" :dir :system))
+(local (include-book "std/util/defredundant" :dir :system))
 
 (local (include-book "clause-processors/find-subterms" :dir :system))
 
@@ -2492,10 +2494,20 @@ to signed values.</p>"
 (define svtv-fsm-namemap-envlist ((envs svex-envlist-p)
                                   (map svtv-name-lhs-map-p)
                                   (overridetype svar-overridetype-p))
+  :returns (stage-envs svex-envlist-p)
   (if (atom envs)
       nil
     (cons (svtv-fsm-namemap-env (car envs) map overridetype)
           (svtv-fsm-namemap-envlist (cdr envs) map overridetype))))
+
+(define svtv-fsm-namemap-alistlist ((alists svex-alistlist-p)
+                                    (map svtv-name-lhs-map-p)
+                                    (overridetype svar-overridetype-p))
+  :returns (stage-alists svex-alistlist-p)
+  (if (atom alists)
+      nil
+    (cons (svtv-fsm-namemap-alist-subst (car alists) map overridetype)
+          (svtv-fsm-namemap-alistlist (cdr alists) map overridetype))))
 
 
 
@@ -4002,6 +4014,68 @@ to signed values.</p>"
     :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-match)))))
 
 
+(define svtv-override-triple-test-only-p ((triple svtv-override-triple-p)
+                                          (spec svex-env-p))
+  (b* (((svtv-override-triple triple)))
+    (svex-case triple.test
+      :call nil
+      :otherwise (equal (svex-eval triple.val spec) (4vec-x))))
+  ///
+  (defthm svtv-override-triple-test-only-p-correct
+    (implies (and (svtv-override-triple-test-only-p triple spec)
+                  (svex-envs-1mask-equiv env1 env2))
+             (equal (equal (svtv-override-triple-envs-match triple env1 spec)
+                           (svtv-override-triple-envs-match triple env2 spec))
+                    t))
+    :hints(("Goal" :in-theory (enable svtv-override-triple-envs-match)
+            :expand ((:free (env) (svex-eval (svtv-override-triple->test triple) env)))))))
+
+(define svtv-override-triplemap-test-only-p ((triplemap svtv-override-triplemap-p)
+                                               (spec svex-env-p))
+  (if (atom triplemap)
+      t
+    (and (or (not (mbt (and (Consp (car triplemap))
+                            (svar-p (caar triplemap)))))
+             (svtv-override-triple-test-only-p (cdar triplemap) spec))
+         (svtv-override-triplemap-test-only-p (cdr triplemap) spec)))
+  ///
+  (defthm svtv-override-triplemap-test-only-p-correct
+    (implies (and (svtv-override-triplemap-test-only-p triplemap spec)
+                  (svex-envs-1mask-equiv env1 env2))
+             (equal (equal (svtv-override-triplemap-envs-match triplemap env1 spec)
+                           (svtv-override-triplemap-envs-match triplemap env2 spec))
+                    t))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemap-envs-match)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:use ((:instance svtv-override-triple-test-only-p-correct
+                         (triple (cdar triplemap))))
+                  :in-theory (disable svtv-override-triple-test-only-p-correct)))))
+
+  (local (in-theory (enable svtv-override-triplemap-fix))))
+
+
+(define svtv-override-triplemaplist-test-only-p ((triplemaps svtv-override-triplemaplist-p)
+                                                   (spec svex-env-p))
+  (if (atom triplemaps)
+      t
+    (and (svtv-override-triplemap-test-only-p (car triplemaps) spec)
+         (svtv-override-triplemaplist-test-only-p (cdr triplemaps) spec)))
+  ///
+  (defthm svtv-override-triplemaplist-test-only-p-correct
+    (implies (and (svtv-override-triplemaplist-test-only-p triplemaps spec)
+                  (svex-envs-1mask-equiv env1 env2))
+             (equal (equal (svtv-override-triplemaplist-envs-match triplemaps env1 spec)
+                           (svtv-override-triplemaplist-envs-match triplemaps env2 spec))
+                    t))
+    :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-match)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:use ((:instance svtv-override-triplemap-test-only-p-correct
+                         (triplemap (car triplemaps))))
+                  :in-theory (disable svtv-override-triplemap-test-only-p-correct))))))
+
+
 ;; (SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH
 ;;  (COUNTER-INVAR-RUN-TRIPLEMAPLIST)
 ;;  (LHPROBE-MAP-OVERRIDEMUX-EVAL
@@ -4010,7 +4084,6 @@ to signed values.</p>"
 ;;   (BASE-FSM-EVAL ENVS INITST
 ;;                  (SVTV-SPEC->CYCLE-FSM (COUNTER-INVAR-SPEC))))
 ;;  '((SUM1-OVR . -1)))
-
 
 
 (defthm svtv-override-triplemaplist-envs-match-relevant-vars
@@ -4030,6 +4103,33 @@ to signed values.</p>"
                   (force-execute
                    (svtv-override-triplemaplist-envs-match triplemaps (make-fast-alist env-trim) spec-fast))))
   :hints(("Goal" :in-theory (enable force-execute))))
+
+
+(defthm svtv-override-triplemaplist-envs-match-relevant-vars-test-only
+  (implies (and (syntaxp (and (quotep spec)
+                              (not (quotep env))))
+                (equal triplemaps-eval (force-execute triplemaps))
+                (syntaxp (quotep triplemaps-eval))
+                (equal spec-fast (make-fast-alist spec))
+                (svtv-override-triplemaplist-test-only-p triplemaps-eval spec-fast)
+                (equal relevant-vars (svtv-override-triplemaplist-relevant-vars triplemaps-eval spec-fast))
+                (syntaxp (quotep relevant-vars))
+                ;; need some rules here!
+                (equal env-trim1 (svex-env-reduce relevant-vars env))
+                (svex-envs-1mask-equiv env-trim (double-rewrite env-trim1))
+                (syntaxp (progn$ ;; (cw "relevant-vars: ~x0~%" relevant-vars)
+                                 ;; (cw "env-trim1: ~x0~%" env-trim1)
+                                 ;; (cw "env-trim: ~x0~%" env-trim)
+                                 (quotep env-trim))))
+           (equal (svtv-override-triplemaplist-envs-match triplemaps env spec)
+                  (force-execute
+                   (svtv-override-triplemaplist-envs-match triplemaps (make-fast-alist env-trim) spec-fast))))
+  :hints(("Goal" :in-theory (e/d (force-execute) (svtv-override-triplemaplist-test-only-p-correct))
+          :use ((:instance svtv-override-triplemaplist-test-only-p-correct
+                 (env1 env-trim)
+                 (env2 (svex-env-reduce
+                        (svtv-override-triplemaplist-relevant-vars triplemaps spec)
+                        env)))))))
 
 
 (defthm svex-env-reduce-of-lhprobe-map-overridemux-eval
@@ -4066,6 +4166,19 @@ to signed values.</p>"
                  (k (lhatom-var->name lhatom))
                  (x env1) (y env2))))))
 
+(defthmd lhatom-eval-zero-svex-envlists-ovtestsimilar-congruence-when-only-test-vars
+  (implies (and (svarlist-override-p (lhatom-vars lhatom) :test)
+                (svex-envs-ovtestsimilar env1 env2))
+           (equal (4vec-1mask-equiv (lhatom-eval-zero lhatom env1)
+                                    (lhatom-eval-zero lhatom env2))
+                  t))
+  :hints(("Goal" :in-theory (enable lhatom-eval-zero
+                                    lhatom-vars
+                                    svarlist-override-p)
+          :use ((:instance svex-envs-ovtestsimilar-necc
+                 (k (lhatom-var->name lhatom))
+                 (x env1) (y env2))))))
+
 (defthm lhs-eval-ext-svex-envlists-ovtestequiv-congruence-when-only-test-vars
   (implies (and (svarlist-override-p (lhs-vars lhs) :test)
                 (svex-envs-ovtestequiv env1 env2))
@@ -4079,6 +4192,19 @@ to signed values.</p>"
               '(:use ((:instance lhatom-eval-zero-svex-envlists-ovtestequiv-congruence-when-only-test-vars
                        (lhatom (lhrange->atom (car lhs)))))))))
 
+(defthm lhs-eval-ext-svex-envlists-ovtestsimilar-congruence-when-only-test-vars
+  (implies (and (svarlist-override-p (lhs-vars lhs) :test)
+                (svex-envs-ovtestsimilar env1 env2))
+           (equal (4vec-1mask-equiv (lhs-eval-ext lhs env1)
+                                    (lhs-eval-ext lhs env2))
+                  t))
+  :hints(("Goal" :in-theory (enable lhs-vars)
+          :induct (lhs-vars lhs)
+          :expand ((:free (env) (lhs-eval-ext lhs env))))
+         (and stable-under-simplificationp
+              '(:use ((:instance lhatom-eval-zero-svex-envlists-ovtestsimilar-congruence-when-only-test-vars
+                       (lhatom (lhrange->atom (car lhs)))))))))
+
 (defthm lhs-eval-zero-svex-envlists-ovtestequiv-congruence-when-only-test-vars
   (implies (and (svarlist-override-p (lhs-vars lhs) :test)
                 (svex-envs-ovtestequiv env1 env2))
@@ -4090,6 +4216,20 @@ to signed values.</p>"
           :expand ((:free (env) (lhs-eval-zero lhs env))))
          (and stable-under-simplificationp
               '(:use ((:instance lhatom-eval-zero-svex-envlists-ovtestequiv-congruence-when-only-test-vars
+                       (lhatom (lhrange->atom (car lhs)))))))))
+
+
+(defthm lhs-eval-zero-svex-envlists-ovtestsimilar-congruence-when-only-test-vars
+  (implies (and (svarlist-override-p (lhs-vars lhs) :test)
+                (svex-envs-ovtestsimilar env1 env2))
+           (equal (4vec-1mask-equiv (lhs-eval-zero lhs env1)
+                                    (lhs-eval-zero lhs env2))
+                  t))
+  :hints(("Goal" :in-theory (enable lhs-vars)
+          :induct (lhs-vars lhs)
+          :expand ((:free (env) (lhs-eval-zero lhs env))))
+         (and stable-under-simplificationp
+              '(:use ((:instance lhatom-eval-zero-svex-envlists-ovtestsimilar-congruence-when-only-test-vars
                        (lhatom (lhrange->atom (car lhs)))))))))
 
 (defthm svex-envs-ovtestequiv-nth-when-svex-envlists-ovtestequiv
@@ -4116,6 +4256,36 @@ to signed values.</p>"
                                     lhprobe-map-vars))))
 
 
+(defthm lhprobe-eval-svex-envlists-ovtestsimilar-congruence-when-only-test-vars
+  (implies (and (svarlist-override-p (lhprobe-vars lhprobe) :test)
+                (svex-envlists-ovtestsimilar envs1 envs2))
+           (equal (4vec-1mask-equiv (lhprobe-eval lhprobe envs1)
+                                    (lhprobe-eval lhprobe envs2))
+                  t))
+  :hints(("Goal" :in-theory (enable lhprobe-eval
+                                    lhprobe-vars))))
+
+
+;; (defthm svex-envs-1mask-equiv-of-cons
+;;   (implies (and (svex-envs-1mask-equiv rest1 rest2)
+;;                 (4vec-1mask-equiv val1 val2))
+;;            (equal (svex-envs-1mask-equiv (cons (cons var val1) rest1)
+;;                                          (cons (cons var val2) rest2))
+;;                   t))
+;;   :hints ((and stable-under-simplificationp
+;;                `(:expand (,(car (last clause)))
+;;                  :in-theory (enable svex-env-lookup-of-cons-split)))))
+
+(defthm lhprobe-map-eval-svex-envlists-ovtestsimilar-congruence-when-only-test-vars
+  (implies (and (svarlist-override-p (lhprobe-map-vars lhmap) :test)
+                (svex-envlists-ovtestsimilar envs1 envs2))
+           (equal (svex-envs-1mask-equiv (lhprobe-map-eval lhmap envs1)
+                                         (lhprobe-map-eval lhmap envs2))
+                  t))
+  :hints(("Goal" :in-theory (enable lhprobe-map-eval
+                                    lhprobe-map-vars))))
+
+
 
 (defthm lhprobe-map-overridemux-eval-when-only-test-vars
   (implies (and (syntaxp (quotep lhmap))
@@ -4125,14 +4295,32 @@ to signed values.</p>"
                 (svex-envlists-ovtestequiv equiv-envs (double-rewrite envs))
                 (syntaxp (and (not (equal equiv-envs envs))
                               (quotep equiv-envs)
-                              (prog2$ (cw "equiv-envs: ~x0~%" equiv-envs)
+                              (progn$ ;; (cw "equiv-envs: ~x0~%" equiv-envs)
                                       t)))
                 (equal ans (lhprobe-map-eval lhmap (make-fast-alists equiv-envs)))
                 (syntaxp (and (quotep ans)
-                              (prog2$ (cw "ans: ~x0~%" ans)
+                              (progn$ ;; (cw "ans: ~x0~%" ans)
                                       t))))
            (equal (lhprobe-map-overridemux-eval lhmap envs outs)
                   ans)))
+
+
+(defthm lhprobe-map-overridemux-eval-when-only-test-vars-under-svex-env-1mask-equiv
+  (implies (and (syntaxp (quotep lhmap))
+                (equal vars (lhprobe-map-vars lhmap))
+                (syntaxp (quotep vars))
+                (svarlist-override-p vars :test)
+                (svex-envlists-ovtestsimilar equiv-envs (double-rewrite envs))
+                (syntaxp (and (not (equal equiv-envs envs))
+                              (quotep equiv-envs)
+                              (progn$ ;; (cw "equiv-envs: ~x0~%" equiv-envs)
+                                      t)))
+                (equal ans (lhprobe-map-eval lhmap (make-fast-alists equiv-envs)))
+                (syntaxp (and (quotep ans)
+                              (progn$ ;; (cw "ans: ~x0~%" ans)
+                                      t))))
+           (svex-envs-1mask-equiv (lhprobe-map-overridemux-eval lhmap envs outs)
+                                  ans)))
 
 
 
@@ -4311,6 +4499,16 @@ to signed values.</p>"
                   (lhs-eval-zero lhs (make-fast-alist (nth n envs-val))))))
 
 
+(defthm lhs-eval-zero-nth-under-ovtestsimilar
+  (implies (and (syntaxp (Quotep lhs))
+                (svarlist-override-p (lhs-vars lhs) :test)
+                (svex-envlists-ovtestsimilar envs-val (double-rewrite envs))
+                (syntaxp (and (not (equal envs envs-val))
+                              (quotep envs-val))))
+           (4vec-1mask-equiv (lhs-eval-zero lhs (nth n envs))
+                             (lhs-eval-zero lhs (make-fast-alist (nth n envs-val))))))
+
+
 (local (defthm 4vec-bit?!-of-4vec-concat-free
          (implies (And (2vec-p n)
                        (natp (2vec->val n)))
@@ -4419,8 +4617,584 @@ to signed values.</p>"
                       (:free (x) (nthcdr n x)))))))
 
 
-(encapsulate nil
-  (local (include-book "std/lists/nth" :dir :system))
-  (std::defredundant :names (acl2::nth-of-nthcdr
-                             acl2::nth-of-take)))
+(local (include-book "std/lists/nth" :dir :system))
+(std::defredundant :names (acl2::nth-of-nthcdr
+                           acl2::nth-of-take))
 
+
+
+
+
+(std::def-primitive-aggregate svtv-to-fsm-thm
+  (thmname
+   svtv-spec-thmname
+   fsmname
+   svtv
+   svtv-spec
+   triples-name
+                               
+   input-vars
+   override-vars
+   spec-override-vars
+   output-vars
+
+   outmap
+   bindings
+   triple-val-alist
+   run-length
+   
+   hyp
+   concl
+   rule-classes
+   
+   base-cycle-var
+   primary-output-var
+   pkg-sym))
+
+
+(defconst *svtv-to-fsm-first-thm-template*
+  '(defthm <thmname>-fixed-envlist
+     (b* ((fsm (<fsmname>))
+          (outs (base-fsm-eval envs initst fsm))
+          <bindings>)
+       (implies (and (lhprobe-constraintlist-overridemux-eval
+                      (<svtvname>-fsm-constraints) envs outs)
+                     (svex-envlists-ovtestsimilar envs <override-test-envs>)
+                     <hyp>
+                     (equal (len envs) <run-length>))
+                <concl>))
+     :hints (("goal" :use ((:instance fsm-eval-when-overridekeys-envlists-agree*
+                            (x (<fsmname>))
+                            (impl-envs (b* ((fsm (<fsmname>))
+                                            (outs (base-fsm-eval envs initst fsm))
+                                            (svtv-env (lhprobe-map-overridemux-eval (<svtvname>-fsm-bindings) envs outs))
+                                            (fsm-envs (svtv-spec-pipe-env->cycle-envs (<specname>) svtv-env)))
+                                         (svex-envlist-x-override
+                                          fsm-envs
+                                          (svex-envlist-remove-override
+                                           (svex-envlist-remove-override envs :test) :val))))
+                            (spec-envs envs)
+                            (initst initst)
+                            (overridekeys (<svtvname>-overridekeys))))
+;;            :in-theory (e/d (svtv-spec-run-in-terms-of-cycle-fsm
+;;                             CONSTRAINTS-EVAL-OF-SVTV-SPEC-FSM-CONSTRAINTS-IMPLIES
+;;                             svex-envlists-ovtests-ok-when-variable-free)
+;;                            (fsm-eval-when-overridekeys-envlists-agree*
+;;                             <svtv-spec-thmname>
+;;                             LOOKUP-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL
+;;                             unsigned-byte-p
+;;                             acl2::fal-extract-of-cons))
+              :in-theory
+              '(;; LHS-EVAL-ZERO-SVEX-ENV-EQUIV-CONGRUENCE-ON-ENV
+                 ;;                            SVEX-ENVLISTS-SIMILAR-IMPLIES-EQUAL-BASE-FSM-EVAL-1
+                ;; SVEX-ENVLISTS-EQUIVALENT-REFINES-SVEX-ENVLISTS-SIMILAR
+                <svtvname>-fsm-constraints
+                <svtvname>-fsm-bindings
+                <svtvname>-fsm-output-map
+                cycle-fsm-of-<specname>
+                no-duplicate-state-keys-of-<fsmname>
+                nextstate-keys-non-override-of-<fsmname>
+                
+                 (:congruence SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-LHS-EVAL-ZERO-2)
+                 (:congruence 4VEC-1MASK-EQUIV-IMPLIES-EQUAL-4VEC-BIT?!-1)
+                 (:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+                 (:CONGRUENCE SET-EQUIV-IMPLIES-EQUAL-SVARLIST-NONOVERRIDE-P-1)
+                 (:CONGRUENCE
+                  SVEX-ENVLISTS-OVTESTSIMILAR-IMPLIES-IFF-SVEX-ENVLISTS-OVTESTS-OK-1)
+                 (:CONGRUENCE
+                  SVEX-ENVLISTS-OVTESTSIMILAR-IMPLIES-IFF-SVEX-ENVLISTS-OVTESTS-OK-2)
+                 (:CONGRUENCE SVEX-ENVLISTS-SIMILAR-IMPLIES-SVEX-ENVS-SIMILAR-NTH-2)
+                 (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-BASE-FSM-EVAL-2)
+                 (:DEFINITION DOUBLE-REWRITE)
+                 (:DEFINITION HONS-GET)
+                 (:DEFINITION LHPROBE-EVAL)
+                 (:DEFINITION MAX)
+                 (:DEFINITION NOT)
+                 (:DEFINITION SYNP)
+                 ; (:EQUIVALENCE SVEX-ENVLISTS-OVTESTEQUIV-IS-AN-EQUIVALENCE)
+                 (:EQUIVALENCE SVEX-ENVLISTS-OVTESTSIMILAR-IS-AN-EQUIVALENCE)
+                 (:EQUIVALENCE SVEX-ENVS-1MASK-EQUIV-IS-AN-EQUIVALENCE)
+                 (:EXECUTABLE-COUNTERPART 2VEC->VAL$INLINE)
+                 (:EXECUTABLE-COUNTERPART 2VEC-P$INLINE)
+                 (:EXECUTABLE-COUNTERPART CDR)
+                 (:EXECUTABLE-COUNTERPART <svtvname>-fsm-output-map)
+                 (:EXECUTABLE-COUNTERPART EQUAL)
+                 (:EXECUTABLE-COUNTERPART FAL-EXTRACT)
+                 (:EXECUTABLE-COUNTERPART FORCE-EXECUTE)
+                 (:EXECUTABLE-COUNTERPART HONS-ASSOC-EQUAL)
+                 (:EXECUTABLE-COUNTERPART LHPROBE->LHS$INLINE)
+                 (:EXECUTABLE-COUNTERPART LHPROBE->SIGNEDP$INLINE)
+                 (:EXECUTABLE-COUNTERPART LHPROBE->STAGE$INLINE)
+                 (:EXECUTABLE-COUNTERPART LHPROBE-CHANGE-OVERRIDE)
+                 (:EXECUTABLE-COUNTERPART LHPROBE-MAP-EVAL)
+                 (:EXECUTABLE-COUNTERPART LHPROBE-MAP-VARS)
+                 (:EXECUTABLE-COUNTERPART LHPROBE-VARS)
+                 (:EXECUTABLE-COUNTERPART LHS-EVAL-ZERO)
+                 (:EXECUTABLE-COUNTERPART LHS-VARS)
+                 (:EXECUTABLE-COUNTERPART LHS-WIDTH)
+                 (:EXECUTABLE-COUNTERPART ACL2::LOGHEAD$INLINE)
+                 (:EXECUTABLE-COUNTERPART ACL2::LOGMASK$INLINE)
+                 (:EXECUTABLE-COUNTERPART MAKE-FAST-ALIST)
+                 (:EXECUTABLE-COUNTERPART MAKE-FAST-ALISTS)
+                 (:EXECUTABLE-COUNTERPART NTH)
+                 (:EXECUTABLE-COUNTERPART SVAR-FIX$INLINE)
+                 (:EXECUTABLE-COUNTERPART SVAR-OVERRIDETYPE-EQUIV$INLINE)
+                 (:EXECUTABLE-COUNTERPART SVARLIST-FIX$INLINE)
+                 (:EXECUTABLE-COUNTERPART SVARLIST-NONOVERRIDE-P)
+                 (:EXECUTABLE-COUNTERPART SVARLIST-OVERRIDE-P)
+                 (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-EVAL)
+                 (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-NONCALL-P)
+                 (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-VARS)
+                 (:EXECUTABLE-COUNTERPART SVEX-ENVLIST-1MASK)
+                 (:EXECUTABLE-COUNTERPART SVTV-OVERRIDE-TRIPLELIST-ENVS-MATCH)
+                 (:EXECUTABLE-COUNTERPART SVTV-OVERRIDE-TRIPLEMAPLIST-RELEVANT-VARS)
+                 (:EXECUTABLE-COUNTERPART SVTV-SPEC-FSM-BINDINGS)
+                 (:executable-counterpart svtv-override-triplemaplist-test-only-p)
+                 (:META FORCE-EXECUTE-FORCE-EXECUTE)
+                 (:META SVTV-OVERRIDE-SUBST-MATCHES-ENV-META)
+                 (:META
+                  SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH-CHECKS-WHEN-VARIABLE-FREE)
+                 (:REWRITE 4VEC-BIT?!-MASK-OF-LHS-EVAL-ZERO)
+                 (:REWRITE ALISTLIST-EVAL-OF-TEST-ALISTS-UNDER-BINDINGS)
+                 (:REWRITE BASE-FSM-OVCONGRUENT-OF-<FSMNAME>)
+                 (:REWRITE
+                  BASE-FSM-OVERRIDEKEY-TRANSPARENT-P-OF-<FSMNAME>)
+                 (:REWRITE ACL2::COMMUTATIVITY-OF-APPEND-UNDER-SET-EQUIV)
+                 (:REWRITE CONSTRAINTS-EVAL-OF-SVTV-SPEC-FSM-CONSTRAINTS-IMPLIES)
+                 (:REWRITE <SPECNAME>-FACTS)
+                 (:REWRITE CYCLE-OUTPUTS-CAPTURED-OF-<SPECNAME>)
+                 (:REWRITE FAL-EXTRACT-CONST-OF-SVTV-SPEC-FSM-BINDINGS)
+                 (:REWRITE HONS-ASSOC-EQUAL-OF-SVTV-SPEC-FSM-BINDINGS)
+                 (:REWRITE LEN-OF-BASE-FSM-EVAL)
+                 (:REWRITE LEN-OF-SVEX-ENVLIST-X-OVERRIDE)
+                 (:REWRITE LEN-OF-SVTV-SPEC-PIPE-ENV->CYCLE-ENVS)
+                 (:REWRITE LHPROBE-MAP-FIX-WHEN-LHPROBE-MAP-P)
+                 (:REWRITE lhprobe-map-overridemux-eval-when-only-test-vars-under-svex-env-1mask-equiv)
+                 (:REWRITE LHPROBE-MAP-P-OF-SVTV-SPEC-FSM-BINDINGS)
+                 (:REWRITE LHPROBE-OVERRIDEMUX-EVAL-SPLIT-ON-VAR-OVERRIDETYPE)
+                 ; (:REWRITE LHS-EVAL-ZERO-NTH-UNDER-OVTESTEQUIV)
+                 (:REWRITE LHS-EVAL-ZERO-NTH-UNDER-OVTESTsimilar)
+                 (:REWRITE LOOKUP-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL)
+                 (:REWRITE NEXTSTATE-KEYS-NON-OVERRIDE-OF-<SPECNAME>)
+                 (:REWRITE NEXTSTATE-KEYS-OF-SVTV-SPEC->CYCLE-FSM)
+                 (:REWRITE OUTVARS-LEN-OF-<SPECNAME>)
+                 (:REWRITE SVARLIST-NONOVERRIDE-P-OF-APPEND)
+                 (:REWRITE SVARLIST-NONOVERRIDE-P-OF-SVARLIST-REMOVE-OVERRIDE)
+                 (:REWRITE
+                  SVARLIST-NONOVERRIDE-TEST-OF-<SPECNAME>-CYCLEPHASELIST-KEYS)
+                 (:REWRITE SVEX-ALIST-ALL-XES-OF-<SPECNAME>-INITST)
+                 (:REWRITE SVEX-ENV-REDUCE-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL)
+                 (:REWRITE SVEX-ENV-X-OVERRIDE-WHEN-SVEX-ALIST-ALL-XES-P)
+                 (:REWRITE SVEX-ENVLIST-ALL-KEYS-OF-REMOVE-OVERRIDE)
+                 (:REWRITE SVEX-ENVLIST-ALL-KEYS-OF-SVTV-CYCLE-RUN-FSM-INPUTS)
+                 (:REWRITE SVEX-ENVLISTS-OVTESTS-OK-WHEN-VARIABLE-FREE)
+                 (:REWRITE SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH-RELEVANT-VARS-TEST-ONLY)
+                 (:REWRITE SVTV-OVERRIDE-TRIPLEMAPLIST-ENVS-MATCH-SIMPLIFY)
+                 (:REWRITE SVTV-SPEC-CYCLE-OUTS->PIPE-OUT-OF-<SPECNAME>)
+                 (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-OF-<SPECNAME>)
+                 (:REWRITE
+                  SVTV-SPEC-PIPE-ENV->CYCLE-ENVS-UNDER-SVEX-ENVLISTS-OVTESTSIMILAR)
+                 (:REWRITE SVTV-SPEC-RUN-IN-TERMS-OF-CYCLE-FSM)
+                 ;; (:REWRITE BITOPS::UNSIGNED-BYTE-P-INCR)
+                 (:REWRITE-QUOTED-CONSTANT
+                  SVEX-ENVLIST-1MASK-UNDER-SVEX-ENVLISTS-1MASK-EQUIV)
+                 (:TYPE-PRESCRIPTION LEN)
+                 (:TYPE-PRESCRIPTION LHPROBE-CONSTRAINTLIST-OVERRIDEMUX-EVAL)
+                 (:TYPE-PRESCRIPTION OVERRIDEKEYS-ENVLISTS-AGREE*)
+                 (:TYPE-PRESCRIPTION UNSIGNED-BYTE-P)))
+             (and stable-under-simplificationp
+                  '(:use ((:instance <svtv-spec-thmname>
+                           (env (b* ((fsm (<fsmname>))
+                                     (outs (base-fsm-eval envs initst fsm)))
+                                  (lhprobe-map-overridemux-eval (<svtvname>-fsm-bindings) envs outs)))
+                           (base-ins (svtv-cycle-run-fsm-inputs
+                                      (svex-envlist-remove-override
+                                       (svex-envlist-remove-override envs :test) :val)
+                                      (svtv-spec->cycle-phases (<specname>)))))))))
+     :rule-classes nil))
+                                  
+                                      
+
+
+
+(define svtv-to-fsm-first-thm-input-var-bindings ((input-vars svarlist-p)
+                                                  (bindings lhprobe-map-p)
+                                                  (overridetype svar-overridetype-p)
+                                                  (envs-var)) ;; envs/outs
+  :hooks nil
+  (b* (((when (atom input-vars)) nil)
+       (in (car input-vars))
+       (look (hons-get in bindings))
+       ((unless look)
+        (raise "SVTV input not found in bindings: ~x0~%" in)
+        (svtv-to-fsm-first-thm-input-var-bindings (cdr input-vars) bindings overridetype envs-var))
+       ((lhprobe probe) (cdr look)))
+    (cons `(,in (,(if probe.signedp 'lhs-eval-ext 'lhs-eval-zero)
+                 ',(lhs-change-override probe.lhs overridetype)
+                 (nth ,probe.stage ,envs-var)))
+          (svtv-to-fsm-first-thm-input-var-bindings (cdr input-vars) bindings overridetype envs-var))))
+
+
+  
+
+;; (append (svtv-to-fsm-first-thm-input-var-bindings '(inc) (counter-invar-run-fsm-bindings) nil 'envs)
+;;         (svtv-to-fsm-first-thm-input-var-bindings '(sum1) (counter-invar-run-fsm-bindings) :val 'envs)
+;;         (svtv-to-fsm-first-thm-input-var-bindings '(sum) (counter-invar-run-fsm-bindings) nil 'outs)
+;;         (svtv-to-fsm-first-thm-input-var-bindings '(sum-out sum1-out) (counter-invar-run-fsm-output-map) nil 'outs))
+
+
+
+
+
+(define svtv-to-fsm-first-thm (x spec)
+  :mode :program
+  (b* (((svtv-to-fsm-thm x))
+       ((acl2::with-fast x.bindings x.outmap x.triple-val-alist))
+       (var-bindings (append (svtv-to-fsm-first-thm-input-var-bindings x.input-vars x.bindings nil 'envs)
+                             (svtv-to-fsm-first-thm-input-var-bindings x.spec-override-vars x.bindings :val 'envs)
+                             (svtv-to-fsm-first-thm-input-var-bindings x.override-vars x.bindings nil 'outs)
+                             (svtv-to-fsm-first-thm-input-var-bindings x.output-vars x.outmap nil 'outs)))
+       ((svtv-spec spec))
+       (override-test-svtv-env (svtv-genthm-override-test-alist x.spec-override-vars x.triple-val-alist x.triples-name))
+       (override-test-envs (with-fast-alist override-test-svtv-env
+                             (svex-envlist-1mask
+                              (svex-alistlist-eval
+                               (svtv-fsm-namemap-alistlist spec.override-test-alists
+                                                           spec.namemap
+                                                           :test)
+                               override-test-svtv-env))))
+       ;; (run-length (len (svtv-probealist-outvars spec.probes)))
+       )
+    (acl2::template-subst *svtv-to-fsm-first-thm-template*
+                          :atom-alist `((<fsmname> . ,x.fsmname)
+                                        (<hyp> . ,x.hyp)
+                                        (<concl> . ,x.concl)
+                                        (<run-length> . ,x.run-length)
+                                        (<svtv-spec-thmname> . ,x.svtv-spec-thmname)
+                                        (<specname> . ,x.svtv-spec)
+                                        (<override-test-envs> . ',override-test-envs))
+                          :splice-alist `((<bindings> . ,var-bindings))
+                          :str-alist `(("<SVTVNAME>" . ,(symbol-name x.svtv))
+                                       ("<SPECNAME>" . ,(symbol-name x.svtv-spec))
+                                       ("<THMNAME>" . ,(symbol-name  x.thmname))
+                                       ("<FSMNAME>" . ,(symbol-name  x.fsmname)))
+                          :pkg-sym x.pkg-sym)))
+
+
+
+
+
+(defconst *svtv-to-fsm-final-thm-template*
+  '(defthm <thmname>
+     (b* ((fsm (<fsmname>))
+          (outs (base-fsm-eval envs initst fsm))
+          <bindings>)
+       (implies (and <cycle-num-equations>
+                     (lhprobe-constraintlist-overridemux-eval
+                      (<svtvname>-fsm-constraints)
+                      (nthcdr <basecycle> envs)
+                      (nthcdr <basecycle> outs))
+                     (svex-envlists-ovtestsimilar (take <run-length> (nthcdr <basecycle> envs))
+                                                  <override-test-envs>)
+                     <hyp>
+                     (>= (len envs) (+ <basecycle> <run-length>)))
+                <concl>))
+     :hints (("goal" :use ((:instance <thmname>-fixed-envlist
+                            (envs (take <run-length> (nthcdr <basecycle> envs)))
+                            (initst (b* ((fsm (<fsmname>)))
+                                      (base-fsm-final-state (take <basecycle> envs) initst
+                                                            (base-fsm->nextstate fsm))))))
+                         ;; :in-theory (e/d (svtv-spec-run-in-terms-of-cycle-fsm
+                         ;;    CONSTRAINTS-EVAL-OF-SVTV-SPEC-FSM-CONSTRAINTS-IMPLIES
+                         ;;    svex-envlists-ovtests-ok-when-variable-free
+                         ;;    base-fsm-eval-of-base-fsm-final-state
+                         ;;    nthcdr-of-take)
+                         ;;   (fsm-eval-when-overridekeys-envlists-agree*
+                         ;;    <thmname>-fixed-envlist
+                         ;;    nthcdr-of-base-fsm-eval-is-base-fsm-eval
+                         ;;    LOOKUP-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL
+                         ;;    unsigned-byte-p
+                         ;;    acl2::fal-extract-of-cons
+                         ;;    base-fsm-eval-of-cons
+                         ;;    lhs-eval-zero-of-cons
+                         ;;    take nth len nthcdr
+                         ;;    acl2::take-of-len-free
+                         ;;    acl2::take-of-too-many
+                         ;;    acl2::take-when-atom
+                         ;;    acl2::len-when-atom
+                         ;;    consp-of-base-fsm-eval
+                         ;;    acl2::natp-when-integerp
+                         ;;    (tau-system)
+                         ;;    ))
+
+              :in-theory '((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
+                           (:CONGRUENCE ACL2::NAT-EQUIV-IMPLIES-EQUAL-NTH-1)
+                           (:CONGRUENCE ACL2::NAT-EQUIV-IMPLIES-EQUAL-NTHCDR-1)
+                           (:DEFINITION NOT)
+                           (:EXECUTABLE-COUNTERPART <)
+                           (:EXECUTABLE-COUNTERPART BINARY-+)
+                           (:EXECUTABLE-COUNTERPART unary--)
+                           (:EXECUTABLE-COUNTERPART EQUAL)
+                           (:EXECUTABLE-COUNTERPART NFIX)
+                           (:REWRITE APPEND-TAKE-TAKE-NTHCDR)
+                           (:REWRITE BASE-FSM-EVAL-OF-BASE-FSM-FINAL-STATE)
+                           (:REWRITE BASE-FSM-EVAL-OF-TAKE)
+                           (:REWRITE ACL2::COMMUTATIVITY-2-OF-+)
+                           (:REWRITE COMMUTATIVITY-OF-+)
+                           (:REWRITE CYCLE-FSM-OF-<specname>)
+                           (:REWRITE ACL2::DISTRIBUTIVITY-OF-MINUS-OVER-+)
+                           (:REWRITE FIX-OF-NUMBER)
+                           (:REWRITE ACL2::FOLD-CONSTS-IN-+)
+                           (:REWRITE INVERSE-OF-+)
+                           (:REWRITE ACL2::LEN-OF-TAKE)
+                           (:REWRITE LHPROBE-CONSTRAINTLIST-OVERRIDEMUX-EVAL-OF-TAKE-ENVS)
+                           (:REWRITE LHPROBE-CONSTRAINTLIST-OVERRIDEMUX-EVAL-OF-TAKE-OUTS)
+                           (:REWRITE MAX-STAGE-OF-<SVTVNAME>-FSM-CONSTRAINTS)
+                           (:REWRITE ACL2::NFIX-UNDER-NAT-EQUIV)
+                           (:REWRITE ACL2::NFIX-WHEN-NATP)
+                           (:REWRITE ACL2::NTH-OF-NTHCDR)
+                           (:REWRITE ACL2::NTH-OF-TAKE)
+                           (:REWRITE NTHCDR-OF-TAKE)
+                           (:REWRITE OUTVARS-LEN-OF-<specname>)
+                           (:REWRITE UNICITY-OF-0)
+                           (:TYPE-PRESCRIPTION INTEGERP-OF-LHPROBE-CONSTRAINTLIST-MAX-STAGE)
+                           (:TYPE-PRESCRIPTION LEN)
+                           (:TYPE-PRESCRIPTION LHPROBE-CONSTRAINTLIST-OVERRIDEMUX-EVAL)
+                           (:TYPE-PRESCRIPTION NFIX))
+              ))
+     :rule-classes <rule-classes>))
+                                  
+                                      
+
+
+
+
+(define svtv-to-fsm-final-thm-input-var-bindings ((input-vars symbol-listp)
+                                                  (bindings lhprobe-map-p)
+                                                  (overridetype svar-overridetype-p)
+                                                  (envs-var symbolp) ;; envs/outs
+                                                  (base-cycle-var symbolp)
+                                                  (primary-output-var symbolp)
+                                                  (pkg-sym symbolp))
+  :returns (mv bindings equation-alist)
+  :hooks nil
+  (b* (((when (atom input-vars)) (mv nil nil))
+       (in (car input-vars))
+       (look (hons-get in bindings))
+       ((unless look)
+        (raise "SVTV input not found in bindings: ~x0~%" in)
+        (svtv-to-fsm-final-thm-input-var-bindings
+         (cdr input-vars) bindings overridetype envs-var
+         base-cycle-var primary-output-var pkg-sym))
+       ((lhprobe probe) (cdr look))
+       ((mv rest-bindings rest-equations)
+        (svtv-to-fsm-final-thm-input-var-bindings
+         (cdr input-vars) bindings overridetype envs-var
+         base-cycle-var primary-output-var pkg-sym))
+       (cycle-var (intern-in-package-of-symbol
+                   (concatenate 'string (symbol-name in) "-CYCLE-NUM")
+                   pkg-sym)))
+    (mv (cons `(,in (,(if probe.signedp 'lhs-eval-ext 'lhs-eval-zero)
+                     ',(lhs-change-override probe.lhs overridetype)
+                     (nth ,cycle-var ,envs-var)))
+              rest-bindings)
+        (cons (cons in (if (eq in primary-output-var)
+                           `(and (integerp ,cycle-var)
+                                 (<= ,probe.stage ,cycle-var)
+                                 (equal ,base-cycle-var (- ,cycle-var ,probe.stage)))
+                         `(equal ,cycle-var (+ ,probe.stage ,base-cycle-var))))
+              rest-equations))))
+
+
+  
+
+;; (append (svtv-to-fsm-final-thm-input-var-bindings '(inc) (counter-invar-run-fsm-bindings) nil 'envs)
+;;         (svtv-to-fsm-final-thm-input-var-bindings '(sum1) (counter-invar-run-fsm-bindings) :val 'envs)
+;;         (svtv-to-fsm-final-thm-input-var-bindings '(sum) (counter-invar-run-fsm-bindings) nil 'outs)
+;;         (svtv-to-fsm-final-thm-input-var-bindings '(sum-out sum1-out) (counter-invar-run-fsm-output-map) nil 'outs))
+
+
+
+
+
+
+(define svtv-to-fsm-final-thm (x spec)
+  :mode :program
+  (b* (((svtv-to-fsm-thm x))
+       ((svtv-spec spec))
+       ((acl2::with-fast x.bindings x.outmap x.triple-val-alist))
+       ((mv var-bindings1 cycle-eqns1)
+        (svtv-to-fsm-final-thm-input-var-bindings x.input-vars x.bindings nil 'envs x.base-cycle-var x.primary-output-var x.pkg-sym))
+       ((mv var-bindings2 cycle-eqns2)
+        (svtv-to-fsm-final-thm-input-var-bindings x.spec-override-vars x.bindings :val 'envs x.base-cycle-var x.primary-output-var x.pkg-sym))
+       ((mv var-bindings3 cycle-eqns3)
+        (svtv-to-fsm-final-thm-input-var-bindings x.override-vars x.bindings nil 'outs x.base-cycle-var x.primary-output-var x.pkg-sym))
+       ((mv var-bindings4 cycle-eqns4)
+        (svtv-to-fsm-final-thm-input-var-bindings x.output-vars x.outmap nil 'outs x.base-cycle-var x.primary-output-var x.pkg-sym))
+       (var-bindings (append var-bindings1 var-bindings2 var-bindings3 var-bindings4))
+       (cycle-eqns-all (append cycle-eqns1 cycle-eqns2 cycle-eqns3 cycle-eqns4))
+       (first-cycle-eqn (cdr (assoc-eq x.primary-output-var cycle-eqns-all)))
+       (rest-cycle-eqns (remove-equal first-cycle-eqn (strip-cdrs cycle-eqns-all)))
+       (cycle-eqns (cons first-cycle-eqn rest-cycle-eqns))
+       (override-test-svtv-env (svtv-genthm-override-test-alist x.spec-override-vars x.triple-val-alist x.triples-name))
+       (override-test-envs (with-fast-alist override-test-svtv-env
+                             (svex-envlist-1mask
+                              (svex-alistlist-eval
+                               (svtv-fsm-namemap-alistlist spec.override-test-alists
+                                                           spec.namemap
+                                                           :test)
+                               override-test-svtv-env))))
+       ;; (run-length (len (svtv-probealist-outvars spec.probes)))
+       )
+    (acl2::template-subst *svtv-to-fsm-final-thm-template*
+                          :atom-alist `((<fsmname> . ,x.fsmname)
+                                        (<hyp> . ,x.hyp)
+                                        (<concl> . ,x.concl)
+                                        (<run-length> . ,x.run-length)
+                                        (<svtv-spec-thmname> . ,x.svtv-spec-thmname)
+                                        (<specname> . ,x.svtv-spec)
+                                        (<override-test-envs> . ',override-test-envs)
+                                        (<basecycle> . ,x.base-cycle-var)
+                                        (<thmname> . ,x.thmname)
+                                        (<rule-classes> . ,x.rule-classes))
+                          :splice-alist `((<bindings> . ,var-bindings)
+                                          (<cycle-num-equations> . ,cycle-eqns))
+                          :str-alist `(("<SVTVNAME>" . ,(symbol-name x.svtv))
+                                       ("<SPECNAME>" . ,(symbol-name x.svtv-spec))
+                                       ("<THMNAME>" . ,(symbol-name x.thmname))
+                                       ("<FSMNAME>" . ,(symbol-name x.fsmname)))
+                          :pkg-sym x.pkg-sym)))
+
+
+(define parse-svtv-to-fsm-thm (thmname args state)
+  :returns (mv thmobj spec)
+  :mode :program :stobjs state
+  (b* ((defaults (table-alist 'svtv-to-fsm-thm-defaults (w state)))
+       (ctx `(def-svtv-to-fsm-thm ,thmname))
+       ((std::extract-keyword-args
+         :defaults defaults
+         :ctx ctx
+         svtv-spec-thmname
+         fsm
+         svtv
+         svtv-spec
+                               
+         input-vars
+         more-input-vars
+         override-vars
+         more-override-vars
+         spec-override-vars
+         more-spec-override-vars
+         output-vars
+         more-output-vars
+
+         exclude-input-vars
+
+         ;; outmap
+         ;; bindings
+         ;; triple-val-alist
+         ;; run-length
+   
+         hyp
+         concl
+         (rule-classes ':rewrite)
+
+         unsigned-byte-hyps
+         env-val-widths-hyp
+
+         (base-cycle-var 'base-cycle)
+         primary-output-var
+         (pkg-sym thmname))
+        args)
+
+       (triplemaplist (acl2::template-subst
+                       '<svtv>-triplemaplist
+                       :str-alist `(("<SVTV>" . ,(symbol-name svtv)))
+                       :pkg-sym pkg-sym))
+       ((mv err triplemaplist-val) (magic-ev-fncall triplemaplist nil state t t))
+       ((when err)
+        (er hard ctx "Couldn't evaluate ~x0" (list triplemaplist))
+        (mv nil nil))
+       (triplelist (svtv-override-triplemaplist-to-triplelist triplemaplist-val))
+       (triple-val-alist (svtv-override-triplelist-val-alist triplelist))
+       ((acl2::with-fast triple-val-alist))
+
+       ;; We only use the SVTV to get variable names (which we could do by
+       ;; scanning the svtv-spec alists instead) and to get the names of
+       ;; functions/theorems.
+       ((mv err svtv-val) (magic-ev-fncall svtv nil state t t))
+       ((when err) (er hard ctx "Couldn't evaluate ~x0" (list svtv))
+        (mv nil nil))
+       ((mv err svtv-spec-val) (magic-ev-fncall svtv-spec nil state t t))
+       ((when err) (er hard ctx "Couldn't evaluate ~x0" (list svtv-spec))
+        (mv nil nil))
+       ((svtv-spec svtv-spec-val))
+       ((acl2::with-fast svtv-spec-val.namemap))
+
+       (primary-output-var (or primary-output-var (car output-vars)))
+       (spec-override-vars (append spec-override-vars more-spec-override-vars))
+       (override-vars (append override-vars more-override-vars))
+       (output-vars (append output-vars more-output-vars))
+
+       (input-vars (svtv-generalized-thm-input-vars
+                    input-vars more-input-vars nil exclude-input-vars
+                    svtv-val triplemaplist-val
+                    override-vars nil))
+
+       
+       (dupes (acl2::hons-duplicates (append input-vars override-vars spec-override-vars)))
+       (- (and dupes
+               (er hard? 'def-svtv-to-fsm-thm
+                   "Some variables were duplicated between the input-vars, override-vars, and/or spec-override-vars.  Duplicated vars: ~x0~%"
+                   dupes)))
+
+       (auto-hyp (svtv-generalized-thm-auto-hyp
+                  unsigned-byte-hyps
+                  env-val-widths-hyp
+                  input-vars override-vars spec-override-vars
+                        
+                  triplemaplist
+                  triple-val-alist
+                  svtv-val))
+       (hyp (cond ((eq auto-hyp t) hyp)
+                  ((eq hyp t) auto-hyp)
+                  (t `(and ,auto-hyp ,hyp)))))
+    (mv (make-svtv-to-fsm-thm
+         :thmname thmname
+         :svtv-spec-thmname svtv-spec-thmname
+         :fsmname fsm
+         :svtv svtv
+         :svtv-spec svtv-spec
+         :triples-name triplemaplist
+
+         :input-vars input-vars
+         :override-vars override-vars
+         :spec-override-vars spec-override-vars
+         :output-vars output-vars
+
+         :outmap (svtv-probealist-to-lhprobe-map svtv-spec-val.probes svtv-spec-val.namemap)
+         :bindings (svtv-spec-fsm-bindings svtv-spec-val)
+         :triple-val-alist triple-val-alist
+         :run-length (len (svtv-probealist-outvars svtv-spec-val.probes))
+
+         :hyp hyp
+         :concl concl
+         :rule-classes rule-classes
+
+         :base-cycle-var base-cycle-var
+         :primary-output-var primary-output-var
+         :pkg-sym pkg-sym)
+        svtv-spec-val)))
+
+(define svtv-to-fsm-thm-fn (thmname args state)
+  :mode :program
+  (b* (((mv x svtv-spec)
+        (parse-svtv-to-fsm-thm thmname args state)))
+    (list 'progn
+          (svtv-to-fsm-first-thm x svtv-spec)
+          (svtv-to-fsm-final-thm x svtv-spec))))
+
+(defmacro def-svtv-to-fsm-thm (thmname &rest args)
+  `(make-event
+    (svtv-to-fsm-thm-fn ',thmname ',args state)))
+       

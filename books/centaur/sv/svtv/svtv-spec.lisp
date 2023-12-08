@@ -536,6 +536,7 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
 
 (define svtv-spec->cycle-fsm ((x svtv-spec-p))
   :guard (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x)))))
+  :returns (cycle base-fsm-p)
   (b* (((svtv-spec x)))
     (base-fsm-to-cycle x.cycle-phases x.fsm nil))
   ///

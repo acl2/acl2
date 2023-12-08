@@ -825,14 +825,17 @@
          (4vec-p (4vec-1mask x))
          :hints(("Goal" :in-theory (enable 4vec-p)))))
 
-(define svex-env-1mask ((x svex-env-p))
+(define svex-env-1mask-aux ((x svex-env-p))
   :returns (1mask-env svex-env-p)
   (cond ((atom x) nil)
         ((not (mbt (and (consp (car x))
                         (svar-p (caar x)))))
-         (svex-env-1mask (cdr x)))
-        (t (cons (cons (caar x) (4vec-1mask (cdar x)))
-                 (svex-env-1mask (cdr x)))))
+         (svex-env-1mask-aux (cdr x)))
+        (t (let ((mask (4vec-1mask (cdar x))))
+             (if (eql mask 0)
+                 (svex-env-1mask-aux (cdr x))
+               (cons (cons (caar x) (4vec-1mask (cdar x)))
+                     (svex-env-1mask-aux (cdr x)))))))
   ///
   (local (defthm svex-env-lookup-redef
            (equal (svex-env-lookup k x)
@@ -855,29 +858,68 @@
            :rule-classes ((:definition :controller-alist ((svex-env-boundp nil t))))))
                         
   
-  (defthm lookup-of-svex-env-1mask
-    (implies (svex-env-boundp k x)
-             (equal (svex-env-lookup k (svex-env-1mask x))
-                    (4vec-1mask (svex-env-lookup k x))))
-    :hints(("Goal" :in-theory (enable svex-env-lookup-of-cons
-                                      svex-env-boundp-of-cons))))
+  (defthm boundp-of-svex-env-1mask-aux
+    (implies (no-duplicatesp-equal (alist-keys (svex-env-fix x)))
+             (iff (svex-env-boundp k (svex-env-1mask-aux x))
+                  (and (svex-env-boundp k x)
+                       (not (equal 0 (4vec-1mask (svex-env-lookup k x)))))))
+    :hints(("Goal" :in-theory (enable svex-env-boundp-of-cons
+                                      svex-env-lookup-of-cons-split
+                                      svex-env-fix
+                                      alist-keys
+                                      svex-env-boundp-iff-member-alist-keys))))
 
-  (defthm boundp-of-svex-env-1mask
-    (iff (svex-env-boundp k (svex-env-1mask x))
-         (svex-env-boundp k x))
-    :hints(("Goal" :in-theory (enable svex-env-boundp-of-cons))))
+  (defthm lookup-of-svex-env-1mask-aux
+    (implies (no-duplicatesp-equal (alist-keys (svex-env-fix x)))
+             (4vec-1mask-equiv (svex-env-lookup k (svex-env-1mask-aux x))
+                               (svex-env-lookup k x)))
+    :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
+                                      ;; svex-env-boundp-of-cons
+                                      svex-env-fix
+                                      alist-keys
+                                      svex-env-boundp-iff-member-alist-keys
+                                      svex-env-lookup-when-not-boundp
+                                      4vec-1mask-equiv)
+                                   (svex-env-boundp-redef))
+            :induct (svex-env-1mask-aux x))))
 
-  (defthm svex-env-1mask-under-svex-envs-1mask-equiv
-    (svex-envs-1mask-equiv (svex-env-1mask x) x)
+  (defthm svex-env-1mask-aux-under-svex-envs-1mask-equiv
+    (implies (no-duplicatesp-equal (alist-keys (svex-env-fix x)))
+             (svex-envs-1mask-equiv (svex-env-1mask-aux x) x))
     :hints(("Goal" :in-theory (e/d (svex-envs-1mask-equiv
                                     SVEX-ENV-LOOKUP-WHEN-NOT-BOUNDP)
-                                   (svex-env-1mask))
-            :cases ((svex-env-boundp (SVEX-ENVS-1MASK-EQUIV-WITNESS (SVEX-ENV-1MASK X)
+                                   (svex-env-1mask-aux))
+            :cases ((svex-env-boundp (SVEX-ENVS-1MASK-EQUIV-WITNESS (SVEX-ENV-1MASK-AUX X)
                                                      X) x))))
     :rule-classes ((:rewrite)
                    (:rewrite-quoted-constant)))
 
   (local (in-theory (enable svex-env-fix))))
+
+(define svex-env-1mask ((x svex-env-p))
+  :returns (1mask-env svex-env-p)
+  (svex-env-1mask-aux (fast-alist-free (fast-alist-clean (svex-env-fix x))))
+  ///
+  (local (include-book "std/alists/alist-keys" :dir :system))
+  (local (defthm no-duplicate-keys-of-fast-alist-fork
+           (implies (no-duplicatesp-equal (alist-keys y))
+                    (no-duplicatesp-equal (alist-keys (fast-alist-fork x y))))
+           :hints(("Goal" :in-theory (enable fast-alist-fork
+                                             alist-keys)))))
+  (local (defthm atom-cdr-last
+           (not (consp (cdr (last x))))))
+  (local (defthm no-duplicate-keys-of-fast-alist-clean
+           (no-duplicatesp-equal (alist-keys (fast-alist-clean x)))
+           :hints(("Goal" :in-theory (enable fast-alist-clean alist-keys)))))
+  (local (in-theory (disable fast-alist-clean)))
+  
+  (defthm lookup-of-svex-env-1mask
+    (4vec-1mask-equiv (svex-env-lookup k (svex-env-1mask x))
+                      (svex-env-lookup k x)))
+
+  (defthm svex-env-1mask-under-svex-envs-1mask-equiv
+    (svex-envs-1mask-equiv (svex-env-1mask x) x)
+    :hints(("Goal" :in-theory (enable svex-envs-1mask-equiv)))))
 
 (define svex-envlists-1mask-equiv ((x svex-envlist-p)
                                    (y svex-envlist-p))
