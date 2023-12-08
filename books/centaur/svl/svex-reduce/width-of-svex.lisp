@@ -109,9 +109,11 @@
             ;; the argument of partsel is even narrower than its size indicates..
             (b* ((start (first x.args))
                  (size (second x.args)))
-              (and (natp start)
-                   (natp size)
-                   size)))
+              (and*-exec (natp start)
+                         (natp size)
+                         (b* ((w1 (width-of-svex (third x.args)))
+                              ((unless w1) size))
+                           (min size (nfix (- w1 start)))))))
            ((and* (equal x.fn 'sv::concat)
                   (equal-len x.args 3))
             (b* ((size (first x.args))
@@ -231,6 +233,16 @@
  (defthm alistp-of-WIDTH-OF-SVEX-EXTN-list-P
    (implies (width-of-svex-extn-list-p x)
             (alistp x))))
+
+(defthm width-of-svex-implies
+  (implies (WIDTH-OF-SVEX x)
+           (and (natp (WIDTH-OF-SVEX x))
+                (rationalp (WIDTH-OF-SVEX x))))
+  :rule-classes ( :forward-chaining)
+  :hints (("Goal"
+           :use ((:instance RETURN-TYPE-OF-WIDTH-OF-SVEX.WIDTH))
+           :in-theory (e/d (MAYBE-NATP)
+                           (RETURN-TYPE-OF-WIDTH-OF-SVEX.WIDTH)))))
 
 (verify-guards width-of-svex-fn)
 

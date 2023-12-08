@@ -69,6 +69,22 @@
                   sv::svex-kind)
                  ((:e tau-system)))))
 
+
+(rp::Def-rp-rule 4vec-p-of-FA/ha-S/c-CHAIN
+  (and (sv::4vec-p (rp::fa-s-chain x y z))
+       (sv::4vec-p (rp::fa-c-chain m x y z))
+       (sv::4vec-p (rp::ha-s-chain y z))
+       (sv::4vec-p (rp::ha-c-chain y z))
+       (sv::4vec-p (rp::ha+1-c-chain y z))
+       (sv::4vec-p (RP::HA+1-S-CHAIN m y z)))
+  :hints (("Goal"
+           :in-theory (e/d (rp::ha+1-c-chain
+                            RP::HA+1-S-CHAIN
+                            rp::ha-c-chain
+                            rp::ha-s-chain
+                            rp::fa-c-chain
+                            rp::fa-s-chain) ()))))
+
 (defines svex-has-bitxor-0
   (define svex-has-bitxor-0 ((x sv::svex-p))
     :measure (sv::svex-count x)
@@ -298,7 +314,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                                    :adder-type 'ha-c))
                     ((mv svex-alist &)
                      (careful-search-from-counterpart-svex-alist svex-alist exploded-args-and-args-alist
-                                                            :adder-type 'ha-c))
+                                                                 :adder-type 'ha-c))
                     (- (fast-alist-free exploded-args-and-args-alist))
 
                     (exploded-args-and-args-alist (process-fa/ha-c-chain-pattern-args
@@ -307,7 +323,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                                    :adder-type 'ha+1-c))
                     ((mv svex-alist &)
                      (careful-search-from-counterpart-svex-alist svex-alist exploded-args-and-args-alist
-                                                            :adder-type 'ha+1-c))
+                                                                 :adder-type 'ha+1-c))
                     (- (fast-alist-free exploded-args-and-args-alist)))
                  svex-alist)))
          ((Unless (or (not careful-look-for-ha-c)
@@ -374,7 +390,6 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
          ;;(- (design_res-broken svex-alist "before simplify-to-find-fa-c-patterns-alist"))
 
          (new-svex-alist (simplify-to-find-fa-c-patterns-alist svex-alist :strength 0))
-         
 
          ;;(- (design_res-broken new-svex-alist "after simplify-to-find-fa-c-patterns-alist"))
 
@@ -558,6 +573,15 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
          ;; certification time instead of adding all those svex-eval functions.
          )))
 
+(local
+ (defthm find-adders-in-svex-formula-checks-implies-svex-reduce-formula-checks
+   (implies (find-adders-in-svex-formula-checks state)
+            (svl::svex-reduce-formula-checks state))
+   :hints (("Goal"
+            :in-theory (e/d (find-adders-in-svex-formula-checks
+                             svl::svex-reduce-formula-checks
+                             svl::svex-ev-wog-formula-checks)
+                            ())))))
 
 (make-event
  (b* ((w '((apply$-warrant-ha-c-chain)
@@ -623,16 +647,16 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
   :gag-mode :goals
   :on (error summary)
   (define rewrite-adders-in-svex-alist ((term)
-                                        (context rp-term-listp)) 
+                                        (context rp-term-listp))
     :returns (mv res-term res-dont-rw)
     :guard-hints (("goal"
                    :case-split-limitations (0 1)
                    :in-theory (e/d ()
                                    (default-cdr
-                                    default-car
-                                    ex-from-rp
-                                    (:type-prescription rp-term-listp)
-                                    (:type-prescription acl2::binary-or*)))))
+                                     default-car
+                                     ex-from-rp
+                                     (:type-prescription rp-term-listp)
+                                     (:type-prescription acl2::binary-or*)))))
     :guard-debug t
     (time$
      (case-match term
@@ -676,7 +700,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                  svex-alist)
                :msg "---- svl::svex-alist-reduce-w/-env took ~st seconds (real-time), or ~sc seconds ~
   (cpu-time), and ~sa bytes allocated.~%~%"))
-                           
+
              (- (acl2::sneaky-save 'orig-svex-alist svex-alist))
              ;;  (- (time-tracker :rewrite-adders-in-svex :stop))
              ;;             (- (time-tracker :rewrite-adders-in-svex :print?
@@ -794,7 +818,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
 
              ;;(- (design_res-broken svex-alist "after remove-ha-pairs-under-gates-alist"))
 
-             (disable-search (and*-exec (not (aggressive-find-adders-in-svex)) 
+             (disable-search (and*-exec (not (aggressive-find-adders-in-svex))
                                         (equal new-svex-alist svex-alist)
                                         (not (adders-under-gates?-alist new-svex-alist))))
              (- (and disable-search
@@ -836,7 +860,6 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                                                              :skip-vector-adder t))))
                   (mv new-svex-alist (equal svex-alist new-svex-alist)))))
 
-            
              ((mv svex-alist not-changed?)
               (if (or* disable-search not-changed?) (mv svex-alist t)
                 (b* ((- (cw "---- ~%--- Previous half-adder search (1) made some changes. Let's look for full-adders again.~%"))
@@ -895,7 +918,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
              (svex-alist (if disable-search svex-alist
                            (svl::svex-alist-simplify-bitand/or/xor svex-alist)))
              ;; prob unnecessary
-            
+
              (svex-alist (if disable-search svex-alist
                            (remove-ha-pairs-under-gates-alist svex-alist :wrap-with-id t)))
              (svex-alist (if disable-search svex-alist
