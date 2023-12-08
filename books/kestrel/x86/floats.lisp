@@ -18,6 +18,8 @@
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system) ; todo: split out such rules
 (include-book "projects/x86isa/utils/fp-structures" :dir :system)
 (include-book "projects/x86isa/machine/instructions/fp/cmp-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system)
+(include-book "projects/x86isa/machine/state" :dir :system) ; for xr
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
@@ -446,3 +448,6 @@
                            (not (equal 0 frac))
                          (<= exp (x86isa::fp-max-finite-exp exp-width))))))
   :hints (("Goal" :in-theory (enable x86isa::fp-to-rat))))
+
+(defthm integerp-of-xr-mxcsr
+  (INTEGERP (XR :MXCSR NIL X86)))

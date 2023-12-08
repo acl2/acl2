@@ -857,7 +857,27 @@
     equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
     equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
     not-equal-of-7-and-mv-nth-1-of-sse-cmp
+
+    unsigned-byte-p-32-of-!MXCSRBITS->IE
+    unsigned-byte-p-32-of-!MXCSRBITS->DE
+    integerp-of-!MXCSRBITS->DE
+    integerp-of-!MXCSRBITS->IE
+    integerp-of-xr-mxcsr
+    MXCSRBITS->IM-of-!MXCSRBITS->IE
+    MXCSRBITS->IM-of-!MXCSRBITS->DE
+    MXCSRBITS->DM-of-!MXCSRBITS->DE
+    MXCSRBITS->DM-of-!MXCSRBITS->IE
+    MXCSRBITS->DAZ-of-!MXCSRBITS->DE
+    MXCSRBITS->DAZ-of-!MXCSRBITS->IE
+    X86ISA::MXCSRBITS->IM-of-if
+    X86ISA::MXCSRBITS->DM-of-if
+    X86ISA::MXCSRBITS->Daz-of-if
+    sse-daz-of-nil
+    X86ISA::N32P-XR-MXCSR
+    ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
+    x86isa::dp-sse-cmp ; scary?
     ))
+
 ;; Try to introduce is-nan as soon as possible:
 (table axe-rule-priorities-table 'is-nan-intro -1)
 
@@ -1405,6 +1425,9 @@
 
             acl2::bv-array-read-shorten-axe
             acl2::integerp-of-if-strong
+
+            x86isa::feature-flags-constant-opener  ; move
+
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -3529,26 +3552,9 @@
             X86ISA::FP-to-rat-CONSTANT-OPENER
             RTL::BIAS-CONSTANT-OPENER
             RTL::expw-CONSTANT-OPENER
-            unsigned-byte-p-32-of-!MXCSRBITS->IE
-            unsigned-byte-p-32-of-!MXCSRBITS->DE
             ACL2::BVCHOP-OF-IF
-            integerp-of-!MXCSRBITS->DE
-            integerp-of-!MXCSRBITS->IE
-            integerp-of-xr-mxcsr
             ifix-of-if
-            MXCSRBITS->IM-of-!MXCSRBITS->IE
-            MXCSRBITS->IM-of-!MXCSRBITS->DE
-            MXCSRBITS->DM-of-!MXCSRBITS->DE
-            MXCSRBITS->DM-of-!MXCSRBITS->IE
-            MXCSRBITS->DAZ-of-!MXCSRBITS->DE
-            MXCSRBITS->DAZ-of-!MXCSRBITS->IE
-            X86ISA::MXCSRBITS->IM-of-if
-            X86ISA::MXCSRBITS->DM-of-if
-            X86ISA::MXCSRBITS->Daz-of-if
-            sse-daz-of-nil
-            X86ISA::N32P-XR-MXCSR
-            ;X86ISA::SSE-CMP ; scary
-            x86isa::dp-sse-cmp
+
             app-view-of-if
             program-at-of-if
             x86p-of-if
@@ -3625,8 +3631,6 @@
             ctri-of-xw-irrel
             ctri-of-write
             ctri-of-set-flag
-            X86ISA::FEATURE-FLAGS-opener
-            X86ISA::FEATURE-FLAGS-base
             eql
             integerp-of-ctri
             X86ISA::XMMI-SIZE$inline ;trying

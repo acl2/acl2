@@ -102,10 +102,10 @@
            (equal (< 15 (* x 4))
                   (< 3 x))))
 
-(defthmd <-of-floor-when-<
-  (implies (and (< x y)
-                (rationalp x))
-           (< (floor x 1) y)))
+;; (defthmd <-of-floor-when-<
+;;   (implies (and (< x y)
+;;                 (rationalp x))
+;;            (< (floor x 1) y)))
 
 (defthm <-of-*-when-constant-integers
   (implies (and (syntaxp (and (quotep k1)
@@ -529,9 +529,6 @@
 (defthm ALIGNMENT-CHECKING-ENABLED-P-of-if
   (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
          (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
-
-(defthm integerp-of-xr-mxcsr
-  (INTEGERP (XR :MXCSR NIL X86)))
 
 ;; should not be needed
 (defthm xr-of-!rflags-irrel

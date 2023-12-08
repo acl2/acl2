@@ -2139,6 +2139,8 @@
 
 (acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
 
+(acl2::def-constant-opener x86isa::feature-flags)
+
 ;pretty gross (due to gross behaviour of bfix)
 (defthm RFLAGSBITS-rewrite
   (implies (and (unsigned-byte-p 1 x86isa::cf)
