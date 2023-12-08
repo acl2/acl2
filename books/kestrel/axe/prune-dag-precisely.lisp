@@ -17,8 +17,11 @@
 (include-book "prune-term")
 (include-book "dag-size-fast")
 (include-book "make-term-into-dag-simple")
+(include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
-(local (in-theory (disable mv-nth myquotep)))
+(local (in-theory (disable mv-nth myquotep w)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -164,6 +167,7 @@
        ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune
        ;;todo: size also computed above
        (- (cw "(Pruning DAG precisely (~x0 nodes, ~x1 unique)~%" (dag-or-quotep-size-fast dag) (len dag)))
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (and (print-level-at-least-tp print)
                (progn$ (cw "(DAG:~%")
                        (print-list dag)
@@ -175,6 +179,11 @@
                              print
                              state))
        ((when erp) (mv erp nil state))
+       ;; todo: should we do a rewrite here?
+       ((mv elapsed state) (real-time-since start-real-time state))
+       (- (cw " (Pruning took ")
+          (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+          (cw "s.)~%"))
        ((when (quotep result-dag-or-quotep))
         (cw "Done pruning DAG. Result: ~x0)~%" result-dag-or-quotep)
         (mv (erp-nil) result-dag-or-quotep state))

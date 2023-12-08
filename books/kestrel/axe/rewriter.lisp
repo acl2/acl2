@@ -1415,7 +1415,7 @@
         (if (equivalent-dags dag result-dag) ; nothing changed (except perhaps node numbering)
             (mv (erp-nil) dag limits state)
           (progn$ (cw "(Something changed, so continue.)~%")
-                  (print-list result-dag)
+                  ;; (print-list result-dag) ; consider printing here if in verbose mode
                   (repeat-simplify-dag result-dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                                        use-internal-contextsp
                                        external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name external-context-parent-array

@@ -27,10 +27,13 @@
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system) ; for rules mentioned below
 (include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)
+(include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove (since this book knows about boolif)
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove (since this book knows about bool-fix$inline)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (local (include-book "cars-decreasing-by-1"))
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -164,7 +167,7 @@
                                        (< nodenum-or-quotep dag-len)))
                               (bounded-possibly-negated-nodenumsp assumptions dag-len)
                               (stringp base-filename)
-                              ;; print
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts)))
                   :stobjs state))
@@ -173,9 +176,9 @@
             (mv (erp-nil) :true state)
           (mv (erp-nil) :false state)))
        (nodenum nodenum-or-quotep)
-       (- (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions)))
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions))))
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
-       (- (cw "(Attempting to prove test true with STP:~%"))
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test true with STP:~%")))
        ((mv true-result state)
         (prove-node-implication-with-stp assumptions
                                          nodenum
@@ -188,10 +191,10 @@
         (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* true-result)) ;; STP proved the test
-        (prog2$ (cw "STP proved the test true.))~%")
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test true.))~%"))
                 (mv (erp-nil) :true state)))
-       (- (cw "STP failed to prove the test true.)~%"))
-       (- (cw "(Attempting to prove test false with STP:~%"))
+       (- (and (print-level-at-least-tp print) (cw "STP failed to prove the test true.)~%")))
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test false with STP:~%")))
        ((mv false-result state)
         (prove-node-implication-with-stp assumptions
                                          `(not ,nodenum)
@@ -204,9 +207,9 @@
         (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
-        (prog2$ (cw "STP proved the test false.))~%")
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test false.))~%"))
                 (mv (erp-nil) :false state))))
-    (prog2$ (cw "STP did not resolve the test.))~%")
+    (prog2$ (and (print-level-at-least-tp print) (cw "STP did not resolve the test.))~%"))
             (mv (erp-nil) :unknown state))))
 
 (defthm w-of-mv-nth-2-of-try-to-resolve-node-with-stp
@@ -245,7 +248,7 @@
                               (<= (len dag) dag-len)
                               ;; (bounded-weak-dagp-aux dag dag-len)
                               (bounded-context-arrayp 'context-array context-array dag-len dag-len)
-                              ;; print
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (weak-dagp-aux dag-acc) ; ignores the order
@@ -508,6 +511,7 @@
         (cw "(Note: No pruning to do.)~%")
         (mv nil dag state))
        (- (cw "(Pruning DAG with approximate contexts:~%"))
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (context-array (make-full-context-array-for-dag dag))
        (dag-array (make-into-array 'dag-array dag))
        (dag-len (+ 1 (top-nodenum-of-dag dag)))
@@ -541,7 +545,10 @@
                                                    nil ; memoize
                                                    ))
        ((when erp) (mv erp nil state))
-       (- (cw "Done pruning DAG.)~%")))
+       ((mv elapsed state) (real-time-since start-real-time state))
+       (- (cw "Done pruning DAG (")
+          (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+          (cw "s.))~%")))
     (mv (erp-nil) dag-or-quotep state)))
 
 ;; Returns (mv erp dag-or-quotep state).

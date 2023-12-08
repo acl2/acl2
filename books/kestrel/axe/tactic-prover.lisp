@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,6 +33,8 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+(include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
@@ -45,6 +47,7 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
 (local (in-theory (enable rationalp-when-natp)))
 
@@ -782,11 +785,15 @@
                (mv *valid* (add-to-end prev-info info-acc) state))
      (b* ( ;; Try to prove the first problem:
           (- (cw "(Attacking sub-problem ~x0 of ~x1.~%" num (+ num (- (len problems) 1))))
+          ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
           ((mv result new-info-acc state)
            (apply-proof-tactics-to-problem (first problems) tactics rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp info-acc state))
+          ((mv elapsed state) (real-time-since start-real-time state))
           (new-info (car (last new-info-acc))))
        (if (eq result *valid*)
-           (prog2$ (cw "Proved problem ~x0.)~%" num)
+           (progn$ (cw "Proved problem ~x0 in " num)
+                   (acl2::print-to-hundredths elapsed)
+                   (cw" s.)~%" )
                    (apply-proof-tactics-to-problems (+ 1 num) (rest problems) tactics rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp
                                                     info-acc
                                                     new-info ;replaces the prev-info (todo: use it somehow?)

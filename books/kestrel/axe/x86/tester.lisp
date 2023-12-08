@@ -284,7 +284,7 @@
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (acl2::ensure-x86 parsed-executable))
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (- (cw "(Now testing ~x0.~%" function-name-string))
+       (- (cw "(Testing ~x0.~%" function-name-string))
        ;; Check the param names:
        ((when (not (or (eq :none param-names)
                        (and (symbol-listp param-names)
@@ -378,7 +378,9 @@
         (mv-let (elapsed state)
           (acl2::real-time-since start-real-time state)
           (if (equal result-dag-or-quotep ''1)
-              (progn$ (cw "Test ~x0 passed (lifting returned the constant dag ~x1).)~%" function-name-string result-dag-or-quotep)
+              (progn$ (cw "Test ~s0 passed in " function-name-string)
+                      (acl2::print-to-hundredths elapsed)
+                      (cw "s.)~%")
                       (mv (erp-nil)
                           t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
                           elapsed
@@ -448,14 +450,16 @@
     (if (eq result acl2::*error*)
         (mv :error-in-tactic-proof nil nil state)
       (if (eq result acl2::*valid*)
-          (progn$ (cw "Test ~x0 passed.)~%" function-name-string)
+          (progn$ (cw "Test ~s0 passed in " function-name-string)
+                  (acl2::print-to-hundredths elapsed)
+                  (cw "s.)~%")
                   (mv (erp-nil)
                       t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
                       elapsed
                       state))
         ;; result is :invalid, :no-change, or some remaining problems:
         (progn$ (cw "Failure info: ~x0.~%" info-acc) ; todo: sort the counterexample to be in the same order as the param names...
-                (cw "Test ~x0 failed.)~%" function-name-string)
+                (cw "Test ~s0 failed.)~%" function-name-string)
                 (mv (erp-nil)
                     nil ; failed
                     elapsed
