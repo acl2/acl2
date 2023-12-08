@@ -48,6 +48,7 @@
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -63,6 +64,8 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
+(include-book "kestrel/utilities/real-time-since" :dir :system)
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
 (acl2::ensure-rules-known (lifter-rules32))
 (acl2::ensure-rules-known (lifter-rules32-new))
@@ -143,6 +146,8 @@
       (mv (erp-nil) dag state)
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
+         (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
+         ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
          (old-dag dag)
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
@@ -161,10 +166,15 @@
                           :memoizep memoizep
                           :check-inputs nil))
          ((when erp) (mv erp nil state))
+         ((mv elapsed state) (acl2::real-time-since start-real-time state))
+         (- (cw " This limited run took ")
+            (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+            (cw "s.)~%")) ; matches "(Running"
          ((when (quotep dag-or-quote)) (mv (erp-nil) dag-or-quote state))
-         ;; (- (and print (progn$ (cw "(DAG after stepping:~%")
-         ;;                       (cw "~X01" dag nil)
-         ;;                       (cw ")~%"))))
+         (- (and ;print ;(acl2::print-level-at-least-tp print)
+                 (progn$ (cw "(DAG after this limited run:~%")
+                         (cw "~X01" dag-or-quote nil)
+                         (cw ")~%"))))
          (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely:
          ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t print state))
@@ -175,6 +185,7 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
+         ;; TODO: Maybe don't prune if the run has completed?
          ((mv erp dag-or-quotep state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
@@ -198,7 +209,7 @@
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
-          (prog2$ (cw "Note: The run has completed.~%")
+          (prog2$ (cw "(The run has completed.)~%")
                   (mv (erp-nil) dag state))
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
@@ -208,24 +219,26 @@
                       (mv (erp-nil) dag state))
             (let* ((total-steps (+ steps-for-this-iteration total-steps))
                    (state ;; Print as a term unless it would be huge:
-                    (if (< (acl2::dag-or-quotep-size dag) 1000)
-                        (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
-                             (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                        (set-print-base-radix print-base state)
-                                      state))
-                             (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
-                             (state (set-print-base-radix 10 state)) ;make event sets it to 10
-                             (- (cw ")~%")))
-                          state)
-                      (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
-                           (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                      (set-print-base-radix print-base state)
-                                    state))
-                           (- (cw "~X01" dag nil))
-                           (state (set-print-base-radix 10 state))
-                           (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
-                           (- (cw ")~%")))
-                        state))))
+                     (if (acl2::print-level-at-least-tp print)
+                         (if (< (acl2::dag-or-quotep-size dag) 1000)
+                             (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
+                                  (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                             (set-print-base-radix print-base state)
+                                           state))
+                                  (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
+                                  (state (set-print-base-radix 10 state)) ;make event sets it to 10
+                                  (- (cw ")~%")))
+                               state)
+                           (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
+                                (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                           (set-print-base-radix print-base state)
+                                         state))
+                                (- (cw "~X01" dag nil))
+                                (state (set-print-base-radix 10 state))
+                                (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
+                                (- (cw ")~%")))
+                             state))
+                       state)))
               (repeatedly-run (- steps-left steps-for-this-iteration)
                               step-increment
                               dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
@@ -275,10 +288,11 @@
                               (member print-base '(10 16)))
                   :stobjs (state)
                   :mode :program))
-  (b* ((- (cw "Lifting ~s0.~%" target)) ;todo: print the executable name
+  (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (acl2::ensure-x86 parsed-executable))
-       (- (cw "(Executable type: ~x0.)~%" executable-type))
+       (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
                    (not (eq :pe-32 executable-type))))
@@ -375,7 +389,7 @@
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
-       (- (cw "Done simplifying assumptions)~%"))
+       (- (cw " Done simplifying assumptions)~%"))
        (- (and print (cw "(Simplified assumptions: ~x0)~%" assumptions)))
        ;; Prepare for symbolic execution:
        (term-to-simulate '(run-until-return x86))
@@ -386,14 +400,21 @@
        ((when erp) (mv erp nil nil nil state))
        ;; Do the symbolic execution:
        ((mv erp rule-alist)
-        (acl2::make-rule-alist rules (w state)))
+        (acl2::make-rule-alist rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil state))
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw " (Lifting took ")
+          (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+          (cw "s.)~%"))
        (- (if (quotep result-dag-or-quotep)
-              (cw "(Unrolling/lifting produced the constant ~x0.)~%" result-dag-or-quotep)
-            (acl2::print-dag-info result-dag-or-quotep 'result t))))
+              (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
+            (progn$ (cw " Lifting produced a dag:~%")
+                    (acl2::print-dag-info result-dag-or-quotep 'result t)
+                    (cw ")~%") ; matches (Lifting...
+                    ))))
     (mv (erp-nil) result-dag-or-quotep rules assumption-rules state)))
 
 ;; Returns (mv erp event state)

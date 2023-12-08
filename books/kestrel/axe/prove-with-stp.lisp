@@ -2207,6 +2207,7 @@
                               (nodenum-type-alistp known-nodenum-type-alist)
                               (all-< (strip-cars known-nodenum-type-alist) dag-len)
                               (stringp base-filename)
+                              (print-levelp print)
                               (or (natp max-conflicts) (null max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp))
@@ -2242,7 +2243,7 @@
                           nil                                            ;fixme
                           (concatenate 'string base-filename (if depth-limit (concatenate 'string  "-depth-" (nat-to-string depth-limit)) "-uncut"))
                           cut-nodenum-type-alist
-                          t ;;print - pass in print?
+                          print
                           max-conflicts
                           nil ;initial constant-array-info
                           counterexamplep
@@ -2294,6 +2295,7 @@
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
+                              (print-levelp print)
                               (or (equal max-conflicts nil) (natp max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp))))
@@ -2353,6 +2355,7 @@
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
@@ -2392,7 +2395,7 @@
        ((when (any-node-is-given-empty-typep known-nodenum-type-alist)) ;move this test up before we print?
         (cw "(WARNING: Goal is true due to type mismatch (contradictory assumptions).)~%")
         (mv *valid* state))
-       (- (cw "(Calling STP (perhaps at several depths) on ~s0.~%" base-filename))
+       (- (and (print-level-at-least-tp print) (cw "(Calling STP (perhaps at several depths) on ~s0.~%" base-filename)))
        (- (and (eq :verbose print) ;fixme improve printing
                (prog2$ (cw "Disjuncts:~% ~x0~%This case: ~x1~%Full disjuncts:~%"
                            disjuncts
@@ -2409,19 +2412,19 @@
     (if (eq result *error*)
         (mv *error* state)
       (if (eq result *valid*)
-          (prog2$ (cw "STP proved the uncut goal ~s0.)~%" base-filename)
+          (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the uncut goal ~s0.)~%" base-filename))
                   (mv *valid* state))
         (if (eq result *invalid*)
             ;; The goal is invalid.  Since we didn't cut anything out, the only thing to do is give up (any cut goals would be more general and would also be invalid)
-            (prog2$ (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename)
+            (prog2$ (and (print-level-at-least-tp print) (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename))
                     (mv *invalid* state))
           (if (call-of *counterexample* result) ;TODO: Pass this back!
               ;; The goal is invalid.  Since we didn't cut anything out, the only thing to do is give up (any cut goals would be more general and would also be invalid)
-              (prog2$ (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename)
+              (prog2$ (and (print-level-at-least-tp print) (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename))
                       (mv result state))
             (if (call-of *possible-counterexample* result) ;TODO: Pass this back?
                 ;; The goal is invalid.  Since we didn't cut anything out, the only thing to do is give up (any cut goals would be more general and would also be invalid)
-                (prog2$ (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename) ; todo: what if untranslatable stuff was cut out that makes the goal valid?
+                (prog2$ (and (print-level-at-least-tp print) (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename)) ; todo: what if untranslatable stuff was cut out that makes the goal valid?
                         (mv result state))
               (if (eq result *timedout*)
                   ;;STP timed out on the uncut case.  Now binary search for the right depth:
@@ -2435,12 +2438,12 @@
                     (if (eq result *error*)
                         (mv *error* state)
                       (if (eq result *valid*)
-                          (prog2$ (cw "STP proved ~s0.)~%" base-filename)
+                          (prog2$ (and (print-level-at-least-tp print) (cw "STP proved ~s0.)~%" base-filename))
                                   (mv *valid* state))
                         (if (eq result *invalid*) ;TODO: is this possible?
-                            (prog2$ (cw "STP failed to find a depth at which ~s0 would be valid.)~%" base-filename)
+                            (prog2$ (and (print-level-at-least-tp print) (cw "STP failed to find a depth at which ~s0 would be valid.)~%" base-filename))
                                     (mv *invalid* state))
-                          (prog2$ (cw "STP failed to find a depth at which ~s0 would be valid.)~%" base-filename)
+                          (prog2$ (and (print-level-at-least-tp print) (cw "STP failed to find a depth at which ~s0 would be valid.)~%" base-filename))
                                   (mv *timedout* state))))))
                 ;;todo: prove this can't happen:
                 (mv (er hard? 'prove-node-disjunction-with-stp "Bad result, ~x0, from prove-node-disjunction-with-stp-at-depth." result)
@@ -2480,6 +2483,7 @@
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
@@ -2510,6 +2514,7 @@
                               (equal (alen1 'dag-parent-array dag-parent-array)
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               ;; (booleanp counterexamplep)
@@ -2550,6 +2555,7 @@
                               (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
+                              (print-levelp print)
                               (stringp base-filename))
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp-when-nat-listp)))))
@@ -2594,6 +2600,7 @@
                               (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
+                              (print-levelp print)
                               (stringp base-filename))
                   :stobjs state))
   (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - TODO: remove double negation?
@@ -2632,6 +2639,7 @@
                               (booleanp print-cex-as-signedp)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
+                              (print-levelp print)
                               (stringp base-filename))
                   :stobjs state))
   (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
@@ -2646,6 +2654,7 @@
            (booleanp print-cex-as-signedp)
            (or (null max-conflicts)
                (natp max-conflicts))
+           (print-levelp print)
            (stringp base-filename))
       (prove-term-with-stp term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
     (prog2$ (er hard? 'prove-term-with-stp-unguarded "Bad input.")

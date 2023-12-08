@@ -18,6 +18,7 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
 ;; Get the first element of LOAD-COMMANDS that has :cmd type CMD-TYPE.
 (defund get-mach-o-load-command (cmd-type load-commands)
@@ -209,3 +210,8 @@
          (if (maybe-get-mach-o-section section-name (acl2::lookup-eq-safe :sections seg))
              t
            nil))))
+
+(def-constant-opener maybe-get-mach-o-segment-from-load-commands)
+(def-constant-opener maybe-get-mach-o-segment)
+(def-constant-opener maybe-get-mach-o-section)
+(def-constant-opener mach-o-section-presentp)

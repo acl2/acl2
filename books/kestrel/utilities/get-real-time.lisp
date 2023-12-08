@@ -12,7 +12,7 @@
 
 (local (include-book "read-run-time"))
 
-(in-theory (disable get-real-time))
+(in-theory (disable get-real-time mv-nth))
 
 (defthm rationalp-of-mv-nth-0-of-get-real-time
   (rationalp (mv-nth 0 (get-real-time state)))
@@ -23,3 +23,8 @@
   (implies (state-p state)
            (state-p (mv-nth 1 (get-real-time state))))
   :hints (("Goal" :in-theory (enable get-real-time))))
+
+(defthm w-of-mv-nth-1-of-get-real-time
+  (equal (w (mv-nth 1 (get-real-time state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (get-real-time) (w)))))

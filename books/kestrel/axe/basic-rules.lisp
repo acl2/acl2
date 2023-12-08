@@ -20,19 +20,18 @@
 ;;theorems about built-in ACL2 functions.  Many of these are things that ACL2
 ;;knows by type reasoning (but Axe does not have type reasoning).
 
-(defthm rationalp-of-len
-  (equal (rationalp (len x))
-         t))
+(defthmd rationalp-of-len
+  (rationalp (len x)))
 
 (defthm nfix-does-nothing
   (implies (natp n)
            (equal (nfix n)
                   n)))
 
-(defthm acl2-numberp-of-*
+(defthmd acl2-numberp-of-*
   (acl2-numberp (* x y)))
 
-(defthm acl2-numberp-of-unary--
+(defthmd acl2-numberp-of-unary--
   (acl2-numberp (unary-- x)))
 
 ;move?
@@ -53,49 +52,52 @@
   (equal (if (if test t nil) foo bar)
          (if test foo bar)))
 
-(defthm natp-of-len
+(defthmd natp-of-len
   (natp (len x)))
 
-(defthm acl2-numberp-of-len
+(defthmd acl2-numberp-of-len
   (acl2-numberp (len x)))
 
-(defthm acl2-numberp-of-+
+(defthmd acl2-numberp-of-+
   (acl2-numberp (+ x y)))
 
-(defthm booleanp-of-iff
+(defthmd acl2-numberp-of--
+  (acl2-numberp (- x)))
+
+(defthmd booleanp-of-iff
   (booleanp (iff x y)))
 
-(defthm booleanp-of-not
+(defthmd booleanp-of-not
   (booleanp (not x)))
 
-(defthm booleanp-of-equal
+(defthmd booleanp-of-equal
   (booleanp (equal x y)))
 
-(defthm booleanp-of-<
+(defthmd booleanp-of-<
   (booleanp (< x y)))
 
-(defthm booleanp-of-bitp
+(defthmd booleanp-of-bitp
   (booleanp (bitp x)))
 
-(defthm booleanp-of-natp
+(defthmd booleanp-of-natp
   (booleanp (natp x)))
 
-(defthm booleanp-of-integerp
+(defthmd booleanp-of-integerp
   (booleanp (integerp x)))
 
-(defthm booleanp-of-rationalp
+(defthmd booleanp-of-rationalp
   (booleanp (rationalp x)))
 
-(defthm booleanp-of-acl2-numberp
+(defthmd booleanp-of-acl2-numberp
   (booleanp (acl2-numberp x)))
 
-(defthm booleanp-of-consp
+(defthmd booleanp-of-consp
   (booleanp (consp x)))
 
-(defthm booleanp-of-true-listp
+(defthmd booleanp-of-true-listp
   (booleanp (true-listp a)))
 
-(defthm booleanp-of-endp
+(defthmd booleanp-of-endp
   (booleanp (endp x)))
 
 
@@ -123,23 +125,24 @@
            (plist-worldp (w state)))
   :hints (("Goal" :in-theory (enable state-p w))))
 
-(defthm acl2-numberp-of-fix
+(defthmd acl2-numberp-of-fix
   (acl2-numberp (fix x)))
 
-(defthm equal-same
+;; Can't phrase this as just (equal x x), as that is not a legal rewrite rule.
+(defthmd equal-same
   (equal (equal x x)
          t))
 
 ;rename and rephrase
 ;; Only needed for Axe, since ACL2 knows this by type reasoning.
 ;drop if we are commuting?
-(defthm equal-cons-nil-1
+(defthmd equal-cons-nil-1
   (equal (equal (cons a b) nil)
          nil))
 
 ;rename and rephrase
 ;; Only needed for Axe, since ACL2 knows this by type reasoning.
-(defthm equal-cons-nil-2
+(defthmd equal-cons-nil-2
   (equal (equal nil (cons a b))
          nil))
 
@@ -154,7 +157,7 @@
 
 ;the LHS is unusual in that the nil is not commuted forward.
 ;however, this can occur when axe improves invariants (it does not turn around equalities)
-(defthm equal-of-not-and-nil
+(defthmd equal-of-not-and-nil
   (implies (booleanp x)
            (equal (equal (not x) nil)
                   x)))

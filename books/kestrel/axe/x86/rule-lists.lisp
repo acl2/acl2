@@ -31,10 +31,14 @@
 
 ;            x86isa::jcc/cmovcc/setcc-spec ;case dispatch ;;disabling this to produce better results
 
-            x86isa::gpr-or-spec-1$inline
-            x86isa::gpr-or-spec-2$inline
-            x86isa::gpr-or-spec-4$inline
-            x86isa::gpr-or-spec-8$inline
+            ;x86isa::gpr-or-spec-1$inline
+            ;x86isa::gpr-or-spec-2$inline
+            ;x86isa::gpr-or-spec-4$inline
+            ;x86isa::gpr-or-spec-8$inline
+            x86isa::GPR-OR-SPEC-1-redef
+            x86isa::GPR-OR-SPEC-2-redef
+            x86isa::GPR-OR-SPEC-4-redef
+            x86isa::GPR-OR-SPEC-8-redef
 
             x86isa::gpr-and-spec-1$inline
             x86isa::gpr-and-spec-2$inline
@@ -61,10 +65,15 @@
             x86isa::gpr-xor-spec-8$inline
 
             x86isa::shr-spec$inline ;; dispatches based on size
-            x86isa::shr-spec-8
-            x86isa::shr-spec-16
-            x86isa::shr-spec-32
-            x86isa::shr-spec-64
+            ;; x86isa::shr-spec-8
+            ;; x86isa::shr-spec-16
+            ;; x86isa::shr-spec-32
+            ;; x86isa::shr-spec-64
+            x86isa::shr-spec-8-redef
+            x86isa::shr-spec-16-redef
+            x86isa::shr-spec-32-redef
+            x86isa::shr-spec-64-redef
+            acl2::bvshr-rewrite-for-constant-shift-amount ; puts in slice, since we don't translate bvshr to stp
 
             x86isa::rol-spec$inline ;; dispatches based on size
             x86isa::rol-spec-8
@@ -73,10 +82,15 @@
             x86isa::rol-spec-64
 
             x86isa::sal/shl-spec$inline ;; dispatches based on size
-            x86isa::sal/shl-spec-8
-            x86isa::sal/shl-spec-16
-            x86isa::sal/shl-spec-32
-            x86isa::sal/shl-spec-64
+            ;; x86isa::sal/shl-spec-8
+            ;; x86isa::sal/shl-spec-16
+            ;; x86isa::sal/shl-spec-32
+            ;; x86isa::sal/shl-spec-64
+            x86isa::sal/shl-spec-8-redef
+            x86isa::sal/shl-spec-16-redef
+            x86isa::sal/shl-spec-32-redef
+            x86isa::sal/shl-spec-64-redef
+            ;; ACL2::BVSHL-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT ; todo: consider this since we don't translate bvshl to stp
 
             ;; unsigned multiply
             x86isa::mul-spec$inline ;; dispatches based on size
@@ -100,8 +114,12 @@
             x86isa::idiv-spec-64-trim-arg1-axe-all
 
             x86isa::sar-spec$inline
-            x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
-            x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
+            ;x86isa::sar-spec-32-nice
+            ;x86isa::sar-spec-64-nice
+            x86isa::sar-spec-8-redef
+            x86isa::sar-spec-16-redef
+            x86isa::sar-spec-32-redef
+            x86isa::sar-spec-64-redef
 
             ;; These recharacterize divide in terms of bvops:
             x86isa::mv-nth-0-of-div-spec-8
@@ -839,7 +857,27 @@
     equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
     equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
     not-equal-of-7-and-mv-nth-1-of-sse-cmp
+
+    unsigned-byte-p-32-of-!MXCSRBITS->IE
+    unsigned-byte-p-32-of-!MXCSRBITS->DE
+    integerp-of-!MXCSRBITS->DE
+    integerp-of-!MXCSRBITS->IE
+    integerp-of-xr-mxcsr
+    MXCSRBITS->IM-of-!MXCSRBITS->IE
+    MXCSRBITS->IM-of-!MXCSRBITS->DE
+    MXCSRBITS->DM-of-!MXCSRBITS->DE
+    MXCSRBITS->DM-of-!MXCSRBITS->IE
+    MXCSRBITS->DAZ-of-!MXCSRBITS->DE
+    MXCSRBITS->DAZ-of-!MXCSRBITS->IE
+    X86ISA::MXCSRBITS->IM-of-if
+    X86ISA::MXCSRBITS->DM-of-if
+    X86ISA::MXCSRBITS->Daz-of-if
+    sse-daz-of-nil
+    X86ISA::N32P-XR-MXCSR
+    ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
+    x86isa::dp-sse-cmp ; scary?
     ))
+
 ;; Try to introduce is-nan as soon as possible:
 (table axe-rule-priorities-table 'is-nan-intro -1)
 
@@ -1387,6 +1425,9 @@
 
             acl2::bv-array-read-shorten-axe
             acl2::integerp-of-if-strong
+
+            x86isa::feature-flags-constant-opener  ; move
+
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -3357,7 +3398,7 @@
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed
             acl2::fix-when-acl2-numberp
-            acl2-numberp-of--
+            acl2::acl2-numberp-of--
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;RFLAGSBITS->AF-of-myif
@@ -3419,7 +3460,7 @@
             READ-OF-WRITE-BOTH-SIZE-1
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
-            <-of-+-and-+-arg3-and-arg1
+            acl2::<-of-+-cancel-3-1
             equal-of-bvshl-and-constant
             bvchop-of-bvshl-same
             acl2::equal-of-myif-arg1-safe
@@ -3511,26 +3552,9 @@
             X86ISA::FP-to-rat-CONSTANT-OPENER
             RTL::BIAS-CONSTANT-OPENER
             RTL::expw-CONSTANT-OPENER
-            unsigned-byte-p-32-of-!MXCSRBITS->IE
-            unsigned-byte-p-32-of-!MXCSRBITS->DE
             ACL2::BVCHOP-OF-IF
-            integerp-of-!MXCSRBITS->DE
-            integerp-of-!MXCSRBITS->IE
-            integerp-of-xr-mxcsr
             ifix-of-if
-            MXCSRBITS->IM-of-!MXCSRBITS->IE
-            MXCSRBITS->IM-of-!MXCSRBITS->DE
-            MXCSRBITS->DM-of-!MXCSRBITS->DE
-            MXCSRBITS->DM-of-!MXCSRBITS->IE
-            MXCSRBITS->DAZ-of-!MXCSRBITS->DE
-            MXCSRBITS->DAZ-of-!MXCSRBITS->IE
-            X86ISA::MXCSRBITS->IM-of-if
-            X86ISA::MXCSRBITS->DM-of-if
-            X86ISA::MXCSRBITS->Daz-of-if
-            sse-daz-of-nil
-            X86ISA::N32P-XR-MXCSR
-            ;X86ISA::SSE-CMP ; scary
-            x86isa::dp-sse-cmp
+
             app-view-of-if
             program-at-of-if
             x86p-of-if
@@ -3549,10 +3573,6 @@
             ;x86isa::if-of-sub-zf-spec32-arg2
             ACL2::BFIX-WHEN-BITP
             ;;stuff related to flags changes:
-            x86isa::GPR-SUB-SPEC-1-alt-def
-            x86isa::GPR-SUB-SPEC-2-alt-def
-            x86isa::GPR-SUB-SPEC-4-alt-def
-            x86isa::GPR-SUB-SPEC-8-alt-def
 
             bvchop-of-sub-zf-spec32
             equal-of-sub-zf-spec32-and-1
@@ -3611,8 +3631,6 @@
             ctri-of-xw-irrel
             ctri-of-write
             ctri-of-set-flag
-            X86ISA::FEATURE-FLAGS-opener
-            X86ISA::FEATURE-FLAGS-base
             eql
             integerp-of-ctri
             X86ISA::XMMI-SIZE$inline ;trying

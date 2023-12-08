@@ -21,3 +21,9 @@
   (implies (state-p state)
            (state-p (mv-nth 1 (read-run-time state))))
   :hints (("Goal" :in-theory (enable read-run-time))))
+
+(defthm w-of-mv-nth-1-of-read-run-time
+  (equal (w (mv-nth 1 (read-run-time state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-run-time
+                                     update-acl2-oracle))))

@@ -19,9 +19,10 @@
 (include-book "kestrel/utilities/merge-sort-string-less-than" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
+(include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
-(include-book "kestrel/strings-light/string-starts-withp" :dir :system)
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
+(include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
@@ -36,24 +37,10 @@
 (acl2::ensure-rules-known (extra-tester-lifting-rules))
 (acl2::ensure-rules-known (tester-proof-rules))
 
-;; Returns (mv time-difference state) where time-difference is in seconds and
-;; may not be an integer.
-(defun real-time-since (start-real-time state)
-  (declare (xargs :guard (rationalp start-real-time)
-                  :stobjs state))
-  (mv-let (now state)
-    (get-real-time state)
-    (mv (- now start-real-time)
-        state)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Parens in output may not be balanced?
 
-(acl2::def-constant-opener acl2::maybe-get-mach-o-segment-from-load-commands)
-(acl2::def-constant-opener acl2::maybe-get-mach-o-segment)
-(acl2::def-constant-opener acl2::maybe-get-mach-o-section)
-(acl2::def-constant-opener acl2::mach-o-section-presentp)
 (acl2::def-constant-opener alistp) ; why?
 
 ;; ;todo: not really an assumption generator
@@ -252,18 +239,6 @@
           (or (not expectedp)
               (any-result-unexpectedp (rest result-alist))))))))
 
-;; Filter the STRINGS, keeping only those that start with PREFIX
-(defun acl2::strings-starting-with (prefix strings)
-  (declare (xargs :guard (and (string-listp strings)
-                              (stringp prefix))))
-  (if (endp strings)
-      nil
-    (let ((string (first strings)))
-      (if (acl2::string-starts-withp string prefix)
-          (cons string
-                (acl2::strings-starting-with prefix (rest strings)))
-        (acl2::strings-starting-with prefix (rest strings))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an (mv erp passedp time state).
@@ -309,7 +284,7 @@
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (acl2::ensure-x86 parsed-executable))
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (- (cw "(Now testing ~x0.~%" function-name-string))
+       (- (cw "(Testing ~x0.~%" function-name-string))
        ;; Check the param names:
        ((when (not (or (eq :none param-names)
                        (and (symbol-listp param-names)
@@ -363,49 +338,12 @@
           t                   ; use-internal-contextsp
           prune
           ;; extra-rules:
-          (append '(x86isa::SAL/SHL-SPEC-8-redef
-                    x86isa::SAL/SHL-SPEC-16-redef
-                    x86isa::SAL/SHL-SPEC-32-redef
-                    x86isa::SAL/SHL-SPEC-64-redef
-                    x86isa::SHR-SPEC-8-redef
-                    x86isa::SHR-SPEC-16-redef
-                    x86isa::SHR-SPEC-32-redef
-                    x86isa::SHR-SPEC-64-redef
-                    x86isa::SAR-SPEC-8-redef
-                    x86isa::SAR-SPEC-16-redef
-                    x86isa::SAR-SPEC-32-redef
-                    x86isa::SAR-SPEC-64-redef
-                    x86isa::GPR-OR-SPEC-1-redef
-                    x86isa::GPR-OR-SPEC-2-redef
-                    x86isa::GPR-OR-SPEC-4-redef
-                    x86isa::GPR-OR-SPEC-8-redef
-                    ) ; push back to def-unrolled
-                  extra-rules
+          (append extra-rules
                   extra-lift-rules
                   (extra-tester-lifting-rules))
           ;; remove-rules:
           (append
-           '(;; x86isa::gpr-sub-spec-1
-             ;; x86isa::gpr-sub-spec-2
-             ;; x86isa::gpr-sub-spec-4
-             ;; x86isa::gpr-sub-spec-8
-             x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             x86isa::GPR-OR-SPEC-1$inline
-             x86isa::GPR-OR-SPEC-2$inline
-             x86isa::GPR-OR-SPEC-4$inline
-             x86isa::GPR-OR-SPEC-8$inline
-             x86isa::SAL/SHL-SPEC-8
-             x86isa::SAL/SHL-SPEC-16
-             x86isa::SAL/SHL-SPEC-32
-             x86isa::SAL/SHL-SPEC-64
-             x86isa::SHR-SPEC-8
-             x86isa::SHR-SPEC-16
-             x86isa::SHR-SPEC-32
-             x86isa::SHR-SPEC-64
-             ;;x86isa::SAR-SPEC-8 ; why are these not present?
-             ;;x86isa::SAR-SPEC-16
-             ;;x86isa::SAR-SPEC-32
-             ;;x86isa::SAR-SPEC-64
+           '(x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
              acl2::bvchop-of-bvshr
              acl2::bvchop-of-bvashr)
            remove-rules
@@ -424,8 +362,6 @@
                     ;;acl2::get-mach-o-constants-constant-opener
                     ;;acl2::get-mach-o-data-address-constant-opener
                     ;;acl2::get-mach-o-data-constant-opener
-                    acl2::get-elf-section-address
-                    acl2::get-elf-section-bytes
                     elf64-section-loadedp
                     acl2::elf-section-presentp
                     fix-of-rsp
@@ -440,9 +376,11 @@
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
         (mv-let (elapsed state)
-          (real-time-since start-real-time state)
+          (acl2::real-time-since start-real-time state)
           (if (equal result-dag-or-quotep ''1)
-              (progn$ (cw "Test ~x0 passed (lifting returned the constant dag ~x1).)~%" function-name-string result-dag-or-quotep)
+              (progn$ (cw "Test ~s0 passed in " function-name-string)
+                      (acl2::print-to-hundredths elapsed)
+                      (cw "s.)~%")
                       (mv (erp-nil)
                           t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
                           elapsed
@@ -464,7 +402,7 @@
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
         (cw "Test ~x0 failed: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
-          (real-time-since start-real-time state)
+          (acl2::real-time-since start-real-time state)
           (mv (erp-nil) nil elapsed state)))
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
@@ -508,18 +446,20 @@
                                    state
                                    ;;rand
                                    ))
-       ((mv elapsed state) (real-time-since start-real-time state)))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state)))
     (if (eq result acl2::*error*)
         (mv :error-in-tactic-proof nil nil state)
       (if (eq result acl2::*valid*)
-          (progn$ (cw "Test ~x0 passed.)~%" function-name-string)
+          (progn$ (cw "Test ~s0 passed in " function-name-string)
+                  (acl2::print-to-hundredths elapsed)
+                  (cw "s.)~%")
                   (mv (erp-nil)
                       t ; passed ;; `(table test-function-table ',whole-form '(value-triple :invisible))
                       elapsed
                       state))
         ;; result is :invalid, :no-change, or some remaining problems:
         (progn$ (cw "Failure info: ~x0.~%" info-acc) ; todo: sort the counterexample to be in the same order as the param names...
-                (cw "Test ~x0 failed.)~%" function-name-string)
+                (cw "Test ~s0 failed.)~%" function-name-string)
                 (mv (erp-nil)
                     nil ; failed
                     elapsed
@@ -821,7 +761,7 @@
                                expected-failures
                                nil ; empty result-alist
                                state))
-       ((mv overall-time state) (real-time-since overall-start-real-time state))
+       ((mv overall-time state) (acl2::real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
        (- (print-test-summary result-alist executable))
        (- (cw "TOTAL TIME: ")
