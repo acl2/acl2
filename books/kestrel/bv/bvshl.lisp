@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvcat-def")
+(include-book "slice-def")
 (local (include-book "bvcat"))
 (local (include-book "unsigned-byte-p"))
 
