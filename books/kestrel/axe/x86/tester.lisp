@@ -294,6 +294,7 @@
         (mv (erp-t) nil nil state))
        ;; These serve to introduce vars for the 6 registers that may contain params (todo: confirm this)
        ;; TODO: Consider the implications if the replacement may be incomplete.
+       ;; TODO: Add more of these?  What about registers that hold floats, etc.?
        (register-assumptions (if (eq param-names :none)
                                  ;; We make the register variables be usb64s (todo: add those assumptions), and we assert that the registers
                                  ;; contain their signed forms:
@@ -309,7 +310,7 @@
                       (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
                       (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
                       (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
-                      (equal (x86isa::feature-flag ':sse) 1) ; build in?
+                      (equal (x86isa::feature-flag ':sse) 1)
                       (equal (x86isa::feature-flag ':sse2) 1)
                       (equal (x86isa::mxcsrbits->daz$inline (xr ':mxcsr 'nil x86)) 0) ; denormals are not 0 (true at reset)
                       (equal (x86isa::mxcsrbits->de$inline (xr ':mxcsr 'nil x86)) 0) ; no denormal result created yet
