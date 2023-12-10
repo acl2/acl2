@@ -213,20 +213,6 @@
                                 (:definition acl2::bvshl )))
 
 
-(defthm equal-of-bvshl-and-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep k2)))
-                (natp amt)
-                (< amt 32))
-           (equal (equal k (acl2::bvshl 32 k2 amt))
-                  (and (unsigned-byte-p 32 k)
-                       (equal 0 (bvchop amt k))
-                       (equal (slice 31 amt k)
-                              (bvchop (- 32 amt) k2)))))
-  :hints (("Goal" :in-theory (e/d (acl2::bvshl)
-                                  (;bvcat-of-minus-becomes-bvshl
-                                   )))))
-
 ;; (defthm not-equal-of-0-and-bvshl-of-1
 ;;   (implies (and (natp amt)
 ;;                 (< amt 32))
