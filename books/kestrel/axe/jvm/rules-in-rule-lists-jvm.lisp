@@ -21,6 +21,7 @@
 (include-book "kestrel/jvm/arrays-2d" :dir :system)
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system)
 (include-book "jvm-rules-axe")
+(include-book "symbolic-execution-rules")
 (include-book "kestrel/arithmetic-light/mod" :dir :system)
 (include-book "kestrel/lists-light/prefixp2" :dir :system) ; for something in axe-rules -- todo: reduce?
 

@@ -17,7 +17,6 @@
 (include-book "axe-syntax-functions-jvm2") ;for choose-state-to-step
 (include-book "kestrel/jvm/execution2" :dir :system) ;for run-until-exit-segment-or-hit-loop-header
 (include-book "kestrel/jvm/symbolic-execution2" :dir :system) ;for step-state-with-pc-designator-stack
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
@@ -33,8 +32,6 @@
            (equal (equal (cons a x) (cons b y))
                   (and (equal a b) ;gets computed
                        (equal x y)))))
-
-(def-constant-opener pc-designator-pc) ;; used by the loop lifter
 
 ;; (defun get-pc-designator-stack-from-call-stack-base-stack (call-stack)
 ;;   (declare (xargs :guard (and (jvm::call-stackp call-stack)
@@ -92,7 +89,7 @@
                             JVM::CALL-STACK-SIZE
                             JVM::EMPTY-CALL-STACKP
                             not-equal-when-lens-differ
-                            get-pc-designator-stack-from-call-stack-of-pop-frame))))
+                            ))))
 
 (defthm run-until-exit-segment-or-hit-loop-header-opener-1-non-myif
   (implies (and (axe-syntaxp (not (is-a-myif s dag-array))) ;; todo: will it always be a make-state?
@@ -123,21 +120,3 @@
                         (run-until-exit-segment-or-hit-loop-header (jvm::call-stack-size base-stack) segment-pcs loop-headers ep))))
   :rule-classes nil ;; because this calls axe-syntaxp
   :hints (("Goal" :in-theory (enable myif))))
-
-;; Only applies when S is a make-state.
-(defthm step-state-with-pc-designator-stack-becomes-step-axe
-  (implies (and (axe-syntaxp (syntactic-call-of 'jvm::make-state s dag-array))
-                (equal pc-designator-stack (pc-designator-stack-of-state s)))
-           (equal (step-state-with-pc-designator-stack pc-designator-stack s)
-                  (jvm::step (th) s)))
-  :rule-classes nil ;; because this calls axe-syntaxp
-  :hints (("Goal" :in-theory (enable step-state-with-pc-designator-stack))))
-
-;; Only applies when S is a make-state.
-(defthm step-state-with-pc-designator-stack-does-nothing-axe
-  (implies (and (axe-syntaxp (syntactic-call-of 'jvm::make-state s dag-array))
-                (not (equal pc-designator-stack (pc-designator-stack-of-state s))))
-           (equal (step-state-with-pc-designator-stack pc-designator-stack s)
-                  s))
-  :rule-classes nil ;; because this calls axe-syntaxp
-  :hints (("Goal" :in-theory (enable step-state-with-pc-designator-stack))))
