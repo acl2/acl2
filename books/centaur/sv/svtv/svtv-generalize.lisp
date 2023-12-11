@@ -1485,11 +1485,11 @@
 
 (defmacro def-svtv-ideal (ideal-name svtv-name data-name &key pkg-sym svtv-spec inclusive-overridekeys)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',ideal-name nil nil ',svtv-spec ',inclusive-overridekeys ',pkg-sym)))
+    (def-svtv-refinement-fn ',svtv-name ',data-name nil ',ideal-name nil nil ',svtv-spec ',inclusive-overridekeys nil ',pkg-sym)))
 
 (defmacro def-svtv-override-thms (name export &key pkg-sym svtv-spec inclusive-overridekeys)
   `(make-event
-    (def-svtv-refinement-fn ',name ',export nil nil nil ',svtv-spec ',inclusive-overridekeys ',pkg-sym)))
+    (def-svtv-refinement-fn ',name ',export nil nil nil nil ',svtv-spec ',inclusive-overridekeys nil ',pkg-sym)))
 
 
 ;;; For each decomposition proof, we'll have a fixed set of signals overridden
