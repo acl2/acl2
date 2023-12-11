@@ -182,7 +182,9 @@
             acl2-numberp-of-fix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
+
             double-rewrite
+            return-last
 
             not-stringp-of-cons)
           (mv-nth-rules)

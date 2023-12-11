@@ -1021,9 +1021,8 @@
 
 ;            x86isa::set-flag-of-mv-nth-1-of-wb
 
-            return-last
             ;; symbolic execution (perhaps separate these out):
-            run-until-return
+            run-until-return ; we always open this, to expose run-until-stack-shorter-than
             run-until-stack-shorter-than-opener
             run-until-stack-shorter-than-base
             stack-shorter-thanp
