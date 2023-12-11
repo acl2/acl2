@@ -1,7 +1,7 @@
 ; A book about boolif (boolean-valued if-then-else)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -53,6 +53,12 @@
 (defthm boolif-same-branches
   (equal (boolif test x x)
          (bool-fix x))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-x-y-x
+  (implies (syntaxp (not (quotep x))) ; prevent loops
+           (equal (boolif x y x)
+                  (boolif x y nil)))
   :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm boolif-of-not
