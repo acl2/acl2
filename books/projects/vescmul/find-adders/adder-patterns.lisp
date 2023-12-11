@@ -2258,4 +2258,4 @@
                                  ha-c-chain ha-s-chain
                                  ha+1-s-chain ha+1-c-chain
                                  sv::svex-apply$)
-                                ())))))
+                                (acl2::apply$-badgep))))))
