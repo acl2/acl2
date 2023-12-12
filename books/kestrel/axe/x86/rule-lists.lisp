@@ -650,13 +650,11 @@
    x86isa::+-of-if-arg2
    acl2::nth-of-if-arg1
    x86isa::cons-of-if-when-constants
-   x86isa::one-byte-opcode-execute-of-if-arg1
-   x86isa::if-of-one-byte-opcode-execute-of-if-arg2 ;do we need this?
-   x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
+   ;; x86isa::one-byte-opcode-execute-of-if-arg1 ; drop?
+   ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg2 ;do we need this?
+   ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
    x86isa::<-of-if-arg2                              ;could be dangerous
-   x86isa::logext-of-if-arg2
-   run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits:
-   ))
+   x86isa::logext-of-if-arg2))
 
 (defun simple-opener-rules ()
   '(x86isa::n08p$inline ;just unsigned-byte-p
@@ -767,7 +765,7 @@
     ))
 
 (defun get-prefixes-openers ()
-  (declare (xargs :guard t ))
+  (declare (xargs :guard t))
   '(x86isa::get-prefixes-base-1
     x86isa::get-prefixes-base-2
     x86isa::get-prefixes-base-3
@@ -881,10 +879,20 @@
 ;; Try to introduce is-nan as soon as possible:
 (table axe-rule-priorities-table 'is-nan-intro -1)
 
+(defund symbolic-execution-rules ()
+  (declare (xargs :guard t))
+  '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
+    run-until-stack-shorter-than-opener-axe ; not for IFs
+    run-until-stack-shorter-than-base-axe ; not for IFs
+    stack-shorter-thanp
+    run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
-  (append (acl2::base-rules)
+  (append (symbolic-execution-rules)
+          (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
           ;; trying these, though they are not yet as clean as they could be:
@@ -1020,12 +1028,6 @@
             x86isa::rb-of-if-arg2
 
 ;            x86isa::set-flag-of-mv-nth-1-of-wb
-
-            ;; symbolic execution (perhaps separate these out):
-            run-until-return ; we always open this, to expose run-until-stack-shorter-than
-            run-until-stack-shorter-than-opener
-            run-until-stack-shorter-than-base
-            stack-shorter-thanp
 
             ;; x86-fetch-decode-execute-opener ; this had binding hyps
             ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved

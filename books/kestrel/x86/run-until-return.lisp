@@ -38,11 +38,13 @@
       x86
     (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86))))
 
+;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-base
   (implies (stack-shorter-thanp old-rsp x86)
            (equal (run-until-stack-shorter-than old-rsp x86)
                   x86)))
 
+;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-opener
   (implies (not (stack-shorter-thanp old-rsp x86))
            (equal (run-until-stack-shorter-than old-rsp x86)

@@ -1220,56 +1220,61 @@
                       (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
                     (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline ep)))))
 
-(defthm one-byte-opcode-execute-of-if-arg1
-  (equal (one-byte-opcode-execute proc-mode (if test start-rip1 start-rip2) temp-rip prefixes rex-byte opcode modr/m sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip1 temp-rip prefixes rex-byte opcode modr/m sib x86)
-           (one-byte-opcode-execute proc-mode start-rip2 temp-rip prefixes rex-byte opcode modr/m sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg1
+;;   (equal (one-byte-opcode-execute proc-mode (if test start-rip1 start-rip2) temp-rip prefixes rex-byte opcode modr/m sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip1 temp-rip prefixes rex-byte opcode modr/m sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip2 temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
-(defthm one-byte-opcode-execute-of-if-arg2
-  (equal (one-byte-opcode-execute proc-mode start-rip (if test temp-rip1 temp-rip2) prefixes rex-byte opcode modr/m sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip temp-rip1 prefixes rex-byte opcode modr/m sib x86)
-           (one-byte-opcode-execute proc-mode start-rip temp-rip2 prefixes rex-byte opcode modr/m sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg2
+;;   (equal (one-byte-opcode-execute proc-mode start-rip (if test temp-rip1 temp-rip2) prefixes rex-byte opcode modr/m sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip temp-rip1 prefixes rex-byte opcode modr/m sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip temp-rip2 prefixes rex-byte opcode modr/m sib x86))))
 
-(defthm one-byte-opcode-execute-of-if-arg6
-  (equal (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode (if test modr/m1 modr/m2) sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m1 sib x86)
-           (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m2 sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg6
+;;   (equal (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode (if test modr/m1 modr/m2) sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m1 sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m2 sib x86))))
 
-;once this breaks the symmetry, the two one-byte-opcode-execute terms
-;resulting from a branch will be different (and perhaps each then will
-;get a nice context computed for it)
-(defthm if-of-one-byte-opcode-execute-of-if-arg2
-  (equal (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       (if test temp-rip1 temp-rip2) ;same test as above
-                                       prefixes rex-byte opcode modr/m sib
-                                       x86)
-           x)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip1
-                                       prefixes rex-byte opcode modr/m sib
-                                       x86)
-           x)))
+;; ;once this breaks the symmetry, the two one-byte-opcode-execute terms
+;; ;resulting from a branch will be different (and perhaps each then will
+;; ;get a nice context computed for it)
+;; ;drop?
+;; (defthm if-of-one-byte-opcode-execute-of-if-arg2
+;;   (equal (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        (if test temp-rip1 temp-rip2) ;same test as above
+;;                                        prefixes rex-byte opcode modr/m sib
+;;                                        x86)
+;;            x)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip1
+;;                                        prefixes rex-byte opcode modr/m sib
+;;                                        x86)
+;;            x)))
 
-(defthm if-of-one-byte-opcode-execute-of-if-arg5
-  (equal (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip
-                                       prefixes rex-byte
-                                       (if test opcode1 opcode2) ;same test as above
-                                       modr/m sib
-                                       x86)
-           x)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip
-                                       prefixes rex-byte opcode1 modr/m sib
-                                       x86)
-           x)))
+;; ;drop?
+;; (defthm if-of-one-byte-opcode-execute-of-if-arg5
+;;   (equal (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip
+;;                                        prefixes rex-byte
+;;                                        (if test opcode1 opcode2) ;same test as above
+;;                                        modr/m sib
+;;                                        x86)
+;;            x)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip
+;;                                        prefixes rex-byte opcode1 modr/m sib
+;;                                        x86)
+;;            x)))
 
 
 ;;TODO: Maybe we should have axe split the simulation instead of proving all these if lifting rules.
