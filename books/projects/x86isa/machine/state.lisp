@@ -566,17 +566,6 @@
        ((unless (unsigned-byte-p (- #.*physical-address-size* 12) val)) nil))
       (tlbp tail))
   ///
-  (define tlb-fix (x)
-    (if (tlbp x)
-        x
-      :tlb)
-    ///
-    (defthm tlbp-tlb-fix
-      (tlbp (tlb-fix x)))
-    (defthm tlb-fix-of-tlb
-      (implies (tlbp x)
-               (equal (tlb-fix x) x))))
-
   (defthm integerp-cdr-hons-assoc-equal-tlb
           (implies (tlbp tlb)
                    (b* ((result (hons-assoc-equal key tlb)))
@@ -590,6 +579,18 @@
                        (implies result
                                 (unsigned-byte-p (- #.*physical-address-size* 12) (cdr result)))))
           :hints (("Goal" :in-theory (enable (hons-assoc-equal))))))
+
+(define tlb-fix (x)
+  :guard t
+  :returns (tlb tlbp)
+  (if (tlbp x)
+    x
+    :tlb)
+  ///
+  (defthm tlb-fix-of-tlb
+          (implies (tlbp x)
+                   (equal (tlb-fix x) x))))
+
 
 (defun xdoc-x86-state (xs) ;; xs: *x86isa-state*
   (if (atom xs)
