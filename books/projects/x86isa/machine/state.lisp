@@ -550,7 +550,7 @@
     (:doc "<li>@('TLB'): This field models a TLB on an x86 processor. It is a fast alist mapping lists of virtual page number, a boolean for whether we're in supervisor mode, and access type to either the physical page number (if such an entry with the given access type is allowed) or (cons :pagefault <error code>) if the access does not have a valid mapping.<br/>")
     (tlb   :type (satisfies tlbp)
            :initially :tlb
-           :fix x)
+           :fix (tlb-fix x))
     (:doc "</li>")
 
     (:doc "</ul>")))
@@ -566,6 +566,17 @@
        ((unless (unsigned-byte-p (- #.*physical-address-size* 12) val)) nil))
       (tlbp tail))
   ///
+  (define tlb-fix (x)
+    (if (tlbp x)
+        x
+      :tlb)
+    ///
+    (defthm tlbp-tlb-fix
+      (tlbp (tlb-fix x)))
+    (defthm tlb-fix-of-tlb
+      (implies (tlbp x)
+               (equal (tlb-fix x) x))))
+
   (defthm integerp-cdr-hons-assoc-equal-tlb
           (implies (tlbp tlb)
                    (b* ((result (hons-assoc-equal key tlb)))
@@ -593,24 +604,24 @@
                                                :print-lowercase t))
                   " })" rest)))))
 
-(skip-proofs (with-output
-               :on summary
-               :summary-off #!acl2(:other-than errors time)
-               (make-event
-                 `(rstobj2::defrstobj x86
-                                      ,@(loop$ for fld in *x86isa-state* append
-                                               (if (equal (car fld) :doc)
-                                                 nil
-                                                 (list fld)))
-                                      :inline t
-                                      :non-memoizable t
-                                      :enable '(bigmem::read-mem-over-write-mem
-                                                 bigmem::read-mem-from-nil
-                                                 bigmem::loghead-identity-alt)
-                                      :accessor xr
-                                      :updater  xw
-                                      :accessor-template ( x)
-                                      :updater-template (! x)))))
+(with-output
+    :on summary
+  :summary-off #!acl2(:other-than errors time)
+  (make-event
+   `(rstobj2::defrstobj x86
+        ,@(loop$ for fld in *x86isa-state* append
+                (if (equal (car fld) :doc)
+                    nil
+                  (list fld)))
+      :inline t
+      :non-memoizable t
+      :enable '(bigmem::read-mem-over-write-mem
+                bigmem::read-mem-from-nil
+                bigmem::loghead-identity-alt)
+      :accessor xr
+      :updater  xw
+      :accessor-template ( x)
+      :updater-template (! x))))
 
 (defun without-docs (data)
   (declare (xargs :mode :program))

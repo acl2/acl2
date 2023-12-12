@@ -46,7 +46,7 @@
 (include-book "../decoding-and-spec-utils"
           :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "ihs/quotient-remainder-lemmas" :Dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
 ;; ======================================================================
 ;; INSTRUCTION: BT
@@ -183,7 +183,10 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+
 (def-inst x86-bt-0F-AB
+  ;; Added by Yahya.  Why?  Because this instruction was undefined, and used by
+  ;; the Linux boot process.  FIX!!!
 
   ;; 0F AB /r: BTS r/m16, r16
   ;; 0F AB /r: BTS r/m32, r32

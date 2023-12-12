@@ -2674,14 +2674,6 @@
                                    x862))))
 )
 
-  ;; TODO Clearly this no longer holds due to the tlb
-  ;; (defthm mv-nth-2-ia32e-la-to-pa-system-level-non-marking-view
-  ;;         (implies (and (not (marking-view x86))
-  ;;                       (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
-  ;;                  (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-  ;;                         x86))
-  ;;         :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) (force (force))))))
-
   (defrule 64-bit-modep-of-ia32e-la-to-pa
            (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (64-bit-modep x86))

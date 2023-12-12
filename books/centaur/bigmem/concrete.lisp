@@ -841,37 +841,6 @@
 	       (<= (len ret) *num-level-entries*))
     :rule-classes :linear))
 
-
-(skip-proofs (defun deserialize-page (i j k obj mem$c)
-	       (declare (xargs :stobjs (mem$c)))
-	       (b* (((when (not obj)) mem$c)
-		    ((list* head tail) obj)
-		    (mem$c (write-mem$c (+ (* (+ (* i *num-level-entries*) j) *num-page-entries*) k) head mem$c)))
-		 (deserialize-page i j (1- k) tail mem$c))))
-
-(skip-proofs (defun deserialize-l1 (i obj mem$c)
-	       (declare (xargs :stobjs (mem$c)))
-	       (b* (((list* head tail) obj)
-		    ((cons j serialized) head)		    
-		    (mem$c (deserialize-page i j (1- *num-page-entries*) serialized mem$c)))
-		   (if (equal j 0)
-		     mem$c
-		     (deserialize-l1 i tail mem$c)))))
-
-(skip-proofs (defun deserialize-level1s (obj mem$c)
-	       (declare (xargs :stobjs (mem$c)
-			       :guard (good-mem$cp mem$c)))
-	       (b* (((when (not obj)) mem$c)
-		    ((list* head tail) obj)
-		    ((cons idx serialized) head)
-		    (mem$c (deserialize-l1 idx serialized mem$c)))
-		   (deserialize-level1s tail mem$c))))
-
-(skip-proofs (defun deserialize-mem$c (obj mem$c)
-	       (declare (xargs :stobjs (mem$c)
-                               :guard (good-mem$cp mem$c)))
-	       (deserialize-level1s obj mem$c)))
-
 ;; ----------------------------------------------------------------------
 
 ;; (write-mem #ux0f0e0d0c_01020304 #xaa mem)

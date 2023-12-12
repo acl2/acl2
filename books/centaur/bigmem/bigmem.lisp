@@ -211,6 +211,7 @@
                             (mem$a mem)))))
   :RULE-CLASSES NIL)
 
+#|
 (defun serialize-mem$a (mem$a)
   (declare (ignorable mem$a) (xargs :guard (mem$ap mem$a)))
   nil)
@@ -218,36 +219,27 @@
 (defun deserialize-mem$a (obj mem$a)
   (declare (ignorable obj) (xargs :guard (mem$ap mem$a)))
   mem$a)
+|#
 
-(skip-proofs (acl2::defabsstobj-events mem
+(acl2::defabsstobj-events mem
 
-                           :foundation mem$c
+    :foundation mem$c
 
-                           :recognizer (memp :logic mem$ap :exec mem$cp)
+    :recognizer (memp :logic mem$ap :exec mem$cp)
 
-                           :creator (create-mem :logic create-mem$a :exec create-mem$c
-                                                :correspondence create-mem{correspondence}
-                                                :preserved create-mem{preserved})
-                           :corr-fn corr
+    :creator (create-mem :logic create-mem$a :exec create-mem$c
+                         :correspondence create-mem{correspondence}
+                         :preserved create-mem{preserved})
+    :corr-fn corr
 
-                           :exports ((read-mem :logic read-mem$a
-                                               :exec read-mem$c
-                                               :correspondence read-mem{correspondence}
-                                               :guard-thm read-mem{guard-thm})
-                                     (write-mem :logic write-mem$a
-                                                :exec write-mem$c
-                                                :correspondence write-mem{correspondence}
-                                                :guard-thm write-mem{guard-thm})
-                                     (serialize-mem :logic serialize-mem$a
-                                                    :exec serialize-mem$c
-                                                    :correspondence serialize-mem{correspondence}
-                                                    :guard-thm serialize-mem{guard-thm})
-                                     (deserialize-mem :logic deserialize-mem$a
-                                                      :exec deserialize-mem$c
-                                                      :correspondence deserialize-mem{correspondence}
-                                                      :guard-thm deserialize-mem{guard-thm}
-                                                      :protect t))))
-
+    :exports ((read-mem :logic read-mem$a
+                        :exec read-mem$c
+                        :correspondence read-mem{correspondence}
+                        :guard-thm read-mem{guard-thm})
+              (write-mem :logic write-mem$a
+                         :exec write-mem$c
+                         :correspondence write-mem{correspondence}
+                         :guard-thm write-mem{guard-thm})))
 
 (defthm read-mem-over-write-mem
   (equal (read-mem addr-1 (write-mem addr-2 val mem))

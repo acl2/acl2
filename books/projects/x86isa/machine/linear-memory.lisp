@@ -521,7 +521,7 @@
       (b* (((unless (canonical-address-p lin-addr))
             (mv t nil x86))
            ((mv flgs p-addrs x86)
-            (las-to-pas (1- n) (1+ lin-addr) r-w-x x86)) 
+            (las-to-pas (1- n) (1+ lin-addr) r-w-x x86))
            ((when flgs) (mv flgs nil x86))
            ((mv flg p-addr x86) ;;(if (not p-addrs)
             (ia32e-la-to-pa lin-addr r-w-x x86)
