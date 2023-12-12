@@ -4818,6 +4818,7 @@
       (b* ((old-top-nodenum (top-nodenum dag))
            (old-len (+ 1 old-top-nodenum))
            (- (and print (cw "(Simplifying DAG (~x0 nodes, ~x1 assumptions):~%" old-len (len assumptions))))
+           ;; Make an empty dag-array:
            (slack-amount old-len) ;todo: make this adjustable
            ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (empty-dag-array slack-amount))
