@@ -16,7 +16,9 @@
 (include-book "dag-parent-array-with-name")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "rational-lists")
-(include-book "kestrel/bv/bvif" :dir :system) ;since this book deals with bvif specially
+(include-book "kestrel/bv/bvif" :dir :system) ;since this book deals with bvif specially (do not remove)
+(include-book "kestrel/booleans/boolif" :dir :system) ;since this book deals with boolif specially (do not remove)
+(include-book "kestrel/utilities/myif" :dir :system) ;since this book deals with myif specially (do not remove)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "numeric-lists"))
