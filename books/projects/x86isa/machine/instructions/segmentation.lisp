@@ -231,95 +231,93 @@
 ;; ======================================================================
 ;; INSTRUCTION: SGDT
 ;; ======================================================================
+(def-inst x86-sgdt
 
-(skip-proofs
- (def-inst x86-sgdt
+          :parents (privileged-opcodes two-byte-opcodes)
 
-  :parents (privileged-opcodes two-byte-opcodes)
+          :guard-hints (("Goal" :in-theory (e/d ()
+                                                (signed-byte-p
+                                                  unsigned-byte-p))))
 
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32)
-                                        (signed-byte-p
-                                         unsigned-byte-p))))
+          :long
 
-  :long
+          "<h3>Op/En = M: \[OP m16@('&')m32\]</h3>
 
-  "<h3>Op/En = M: \[OP m16@('&')m32\]</h3>
+          <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
+          bytes (an 8-byte base and a 2-byte limit).</p>
 
-   <p>In 64-bit mode, the instruction's operand size is fixed at 8+2
-   bytes (an 8-byte base and a 2-byte limit).</p>
+          <p>\[OP  M\]<br/>
+          0F 01/0: SGDT m16@('&')32<br/>
 
-   <p>\[OP  M\]<br/>
-   0F 01/0: SGDT m16@('&')32<br/>
+          <p><b>TO-DO:</b> Handle this outside of 64-bit-mode.</p>"
 
-   <p><b>TO-DO:</b> Handle this outside of 64-bit-mode.</p>"
+          :guard (not (equal (modr/m->mod modr/m) #b11))
 
-  :guard (not (equal (modr/m->mod modr/m) #b11))
-  
-  :returns (x86 x86p :hyp (x86p x86))
-  
-  :modr/m t
+          :returns (x86 x86p :hyp (x86p x86))
 
-  :body
+          :modr/m t
 
-  ;; Note: opcode is the second byte of the two-byte opcode.
+          :body
 
-  (b* (((when (app-view x86))
-        (!!ms-fresh :sgdt-unimplemented-in-app-view))
-       ((when (not (64-bit-modep x86)))
-        (!!ms-fresh :sgdt-unimplemented-in-non-64-bit-mode))
+          ;; Note: opcode is the second byte of the two-byte opcode.
 
-       (p2 (prefixes->seg prefixes))
-       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+          (b* (((when (app-view x86))
+                (!!ms-fresh :sgdt-unimplemented-in-app-view))
+               ((when (not (64-bit-modep x86)))
+                (!!ms-fresh :sgdt-unimplemented-in-non-64-bit-mode))
 
-       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+               (p2 (prefixes->seg prefixes))
+               (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
 
-       ((the (integer 4 8) base-size)
-        (if (64-bit-modep x86) 8 4))
+               (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-       ((the (integer 6 10) base-size+2) (+ 2 base-size))
+               ((the (integer 4 8) base-size)
+                (if (64-bit-modep x86) 8 4))
 
-       (inst-ac? (alignment-checking-enabled-p x86))
-       ((mv flg0
-            &
-            (the (unsigned-byte 3) increment-RIP-by)
-            (the (signed-byte 64) addr)
-            x86)
-        (x86-operand-from-modr/m-and-sib-bytes proc-mode 0
-                                                base-size+2
-                                                inst-ac?
-                                                t ;; Memory pointer operand
-                                                seg-reg
-                                                p4?
-                                                temp-rip
-                                                rex-byte
-                                                r/m
-                                                mod
-                                                sib
-                                                0 ;; No immediate operand
-                                                x86))
-       ((when flg0)
-        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+               ((the (integer 6 10) base-size+2) (+ 2 base-size))
 
-       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
-        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+               (inst-ac? (alignment-checking-enabled-p x86))
+               ((mv flg0
+                    &
+                    (the (unsigned-byte 3) increment-RIP-by)
+                    (the (signed-byte 64) addr)
+                    x86)
+                (x86-operand-from-modr/m-and-sib-bytes proc-mode 0
+                                                       base-size+2
+                                                       inst-ac?
+                                                       t ;; Memory pointer operand
+                                                       seg-reg
+                                                       p4?
+                                                       temp-rip
+                                                       rex-byte
+                                                       r/m
+                                                       mod
+                                                       sib
+                                                       0 ;; No immediate operand
+                                                       x86))
+               ((when flg0)
+                (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
 
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+               ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+                (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+               ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
 
-       (gdtr (stri *gdtr* x86))
-       (limit (gdtr/idtrBits->limit gdtr))
-       (base (gdtr/idtrBits->base-addr gdtr))
+               (badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
-       ;; Update the x86 state:
-       ((mv flg x86)
-        (wme-size-opt
-         proc-mode base-size+2 addr seg-reg (logapp 16 limit base)
-         inst-ac? x86))
-       ((when flg) (!!ms-fresh :wme-size-opt flg))
-       (x86 (write-*ip proc-mode temp-rip x86)))
-    x86)))
+               (gdtr (stri *gdtr* x86))
+               (limit (gdtr/idtrBits->limit gdtr))
+               (base (gdtr/idtrBits->base-addr gdtr))
+
+               ;; Update the x86 state:
+               ((mv flg x86)
+                (wme-size
+                  proc-mode base-size+2 addr seg-reg (logapp 16 limit base)
+                  inst-ac? x86))
+               ((when flg) (!!ms-fresh :wme-size-opt flg))
+               (x86 (write-*ip proc-mode temp-rip x86)))
+              x86))
 
 ;; ======================================================================
 ;; INSTRUCTION: LIDT

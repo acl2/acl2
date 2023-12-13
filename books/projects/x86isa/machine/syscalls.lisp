@@ -418,26 +418,26 @@ with X86ISA_EXEC set to nil? See :doc x86isa-build-instructions."
                                    obj-fd-field) x86)))
         (mv n x86)))
 
-  (skip-proofs (define syscall-read (fd *buf count x86)
-                 :inline nil
-                 :guard (and (integerp fd)
-                             (integerp *buf)
-                             (natp count))
-                 (declare (ignorable fd *buf count x86))
-                 (syscall-read-logic fd *buf count x86)
+  (define syscall-read (fd *buf count x86)
+    :inline nil
+    :guard (and (integerp fd)
+                (integerp *buf)
+                (natp count))
+    (declare (ignorable fd *buf count x86))
+    (syscall-read-logic fd *buf count x86)
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d (syscall-read-logic) ())))
+    (local (in-theory (e/d (syscall-read-logic) ())))
 
-                 (defthm integerp-mv-nth-0-syscall-read
-                         (integerp (mv-nth 0 (syscall-read fd *buf count x86)))
-                         :rule-classes :type-prescription)
+    (defthm integerp-mv-nth-0-syscall-read
+            (integerp (mv-nth 0 (syscall-read fd *buf count x86)))
+            :rule-classes :type-prescription)
 
-                 (defthm x86p-mv-nth-1-syscall-read
-                         (implies (and (x86p x86)
-                                       (integerp fd))
-                                  (x86p (mv-nth 1 (syscall-read fd *buf count x86)))))))
+    (defthm x86p-mv-nth-1-syscall-read
+            (implies (and (x86p x86)
+                          (integerp fd))
+                     (x86p (mv-nth 1 (syscall-read fd *buf count x86))))))
 
   (define syscall-write-logic (fd *buf count x86)
     :guard (and (integerp fd)
@@ -560,27 +560,27 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
                 :offset (+ count obj-offset) obj-fd-field) x86)))
         (mv count x86)))
 
-  (skip-proofs (define syscall-write (fd *buf count x86)
-                 :inline nil
-                 :guard (and (integerp fd)
-                             (integerp *buf)
-                             (natp count))
-                 (declare (ignorable fd *buf count x86))
-                 (syscall-write-logic fd *buf count x86)
+  (define syscall-write (fd *buf count x86)
+    :inline nil
+    :guard (and (integerp fd)
+                (integerp *buf)
+                (natp count))
+    (declare (ignorable fd *buf count x86))
+    (syscall-write-logic fd *buf count x86)
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d (syscall-write-logic) ())))
+    (local (in-theory (e/d (syscall-write-logic) ())))
 
-                 (defthm integerp-mv-nth-0-syscall-write
-                         (implies (natp count)
-                                  (integerp (mv-nth 0 (syscall-write fd *buf count x86))))
-                         :rule-classes :type-prescription)
+    (defthm integerp-mv-nth-0-syscall-write
+            (implies (natp count)
+                     (integerp (mv-nth 0 (syscall-write fd *buf count x86))))
+            :rule-classes :type-prescription)
 
-                 (defthm x86p-mv-nth-1-syscall-write
-                         (implies (and (x86p x86)
-                                       (integerp fd))
-                                  (x86p (mv-nth 1 (syscall-write fd *buf count x86)))))))
+    (defthm x86p-mv-nth-1-syscall-write
+            (implies (and (x86p x86)
+                          (integerp fd))
+                     (x86p (mv-nth 1 (syscall-write fd *buf count x86))))))
 
   (define syscall-open-logic (pathname oflags mode x86)
 
@@ -695,28 +695,28 @@ not built with X86ISA_EXEC set to t? See :doc x86sa-build-instructions."
          (x86 (write-x86-file-des new-fd fd-field x86)))
         (mv new-fd x86)))
 
-  (skip-proofs (define syscall-open (pathname oflags mode x86)
-                 :inline nil
-                 :guard (and (stringp pathname)
-                             (natp oflags)
-                             (natp mode))
-                 (declare (ignorable pathname oflags mode x86))
-                 (syscall-open-logic pathname oflags mode x86)
+  (define syscall-open (pathname oflags mode x86)
+    :inline nil
+    :guard (and (stringp pathname)
+                (natp oflags)
+                (natp mode))
+    (declare (ignorable pathname oflags mode x86))
+    (syscall-open-logic pathname oflags mode x86)
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d (syscall-open-logic) ())))
+    (local (in-theory (e/d (syscall-open-logic) ())))
 
-                 (defthm integerp-mv-nth-0-syscall-open
-                         (implies (and (x86p x86)
-                                       (stringp pathname))
-                                  (integerp (mv-nth 0 (syscall-open pathname oflags mode x86))))
-                         :rule-classes :type-prescription)
+    (defthm integerp-mv-nth-0-syscall-open
+            (implies (and (x86p x86)
+                          (stringp pathname))
+                     (integerp (mv-nth 0 (syscall-open pathname oflags mode x86))))
+            :rule-classes :type-prescription)
 
-                 (defthm x86p-mv-nth-1-syscall-open
-                         (implies (and (x86p x86)
-                                       (stringp pathname))
-                                  (x86p (mv-nth 1 (syscall-open pathname oflags mode x86)))))))
+    (defthm x86p-mv-nth-1-syscall-open
+            (implies (and (x86p x86)
+                          (stringp pathname))
+                     (x86p (mv-nth 1 (syscall-open pathname oflags mode x86))))))
 
   (define syscall-close-logic (fd x86)
 
@@ -745,24 +745,24 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
          (x86 (delete-x86-file-des fd x86)))
         (mv 0 x86)))
 
-  (skip-proofs (define syscall-close (fd x86)
-                 :inline nil
-                 :guard (integerp fd)
-                 (declare (ignorable fd x86))
-                 (syscall-close-logic fd x86)
+  (define syscall-close (fd x86)
+    :inline nil
+    :guard (integerp fd)
+    (declare (ignorable fd x86))
+    (syscall-close-logic fd x86)
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d (syscall-close-logic) ())))
+    (local (in-theory (e/d (syscall-close-logic) ())))
 
-                 (defthm integerp-mv-nth-0-syscall-close
-                         (integerp (mv-nth 0 (syscall-close fd x86)))
-                         :rule-classes :type-prescription)
+    (defthm integerp-mv-nth-0-syscall-close
+            (integerp (mv-nth 0 (syscall-close fd x86)))
+            :rule-classes :type-prescription)
 
-                 (defthm x86p-mv-nth-1-syscall-close
-                         (implies (and (x86p x86)
-                                       (integerp fd))
-                                  (x86p (mv-nth 1 (syscall-close fd x86)))))))
+    (defthm x86p-mv-nth-1-syscall-close
+            (implies (and (x86p x86)
+                          (integerp fd))
+                     (x86p (mv-nth 1 (syscall-close fd x86))))))
 
   (define syscall-lseek-logic (fd offset whence x86)
 
@@ -879,26 +879,26 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
 
         (mv new-offset x86)))
 
-  (skip-proofs (define syscall-lseek (fd offset whence x86)
-                 :inline nil
-                 :guard (and (natp fd)
-                             (integerp offset)
-                             (natp whence))
-                 (declare (ignorable fd offset whence x86))
-                 (syscall-lseek-logic fd offset whence x86)
+  (define syscall-lseek (fd offset whence x86)
+    :inline nil
+    :guard (and (natp fd)
+                (integerp offset)
+                (natp whence))
+    (declare (ignorable fd offset whence x86))
+    (syscall-lseek-logic fd offset whence x86)
 
-                 ///
+    ///
 
-                 (local (in-theory (e/d (syscall-lseek-logic) ())))
+    (local (in-theory (e/d (syscall-lseek-logic) ())))
 
-                 (defthm integerp-mv-nth-0-syscall-lseek
-                         (integerp (mv-nth 0 (syscall-lseek fd offset whence x86)))
-                         :rule-classes :type-prescription)
+    (defthm integerp-mv-nth-0-syscall-lseek
+            (integerp (mv-nth 0 (syscall-lseek fd offset whence x86)))
+            :rule-classes :type-prescription)
 
-                 (defthm x86p-mv-nth-1-syscall-lseek
-                         (implies (and (x86p x86)
-                                       (natp fd))
-                                  (x86p (mv-nth 1 (syscall-lseek fd offset whence x86)))))))
+    (defthm x86p-mv-nth-1-syscall-lseek
+            (implies (and (x86p x86)
+                          (natp fd))
+                     (x86p (mv-nth 1 (syscall-lseek fd offset whence x86))))))
 
   (define syscall-fadvise64-logic (fd offset len advice x86)
     (declare (ignorable fd offset len advice x86))
@@ -963,22 +963,22 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
               (mv -1 x86))))
         (mv newfd x86)))
 
-  (skip-proofs (define syscall-dup (oldfd x86)
-                 :inline nil
-                 :guard (integerp oldfd)
-                 (declare (ignorable oldfd x86))
-                 (syscall-dup-logic oldfd x86)
-                 ///
+  (define syscall-dup (oldfd x86)
+    :inline nil
+    :guard (integerp oldfd)
+    (declare (ignorable oldfd x86))
+    (syscall-dup-logic oldfd x86)
+    ///
 
-                 (local (in-theory (e/d (syscall-dup-logic) ())))
+    (local (in-theory (e/d (syscall-dup-logic) ())))
 
-                 (defthm integerp-mv-nth-0-syscall-dup
-                         (integerp (mv-nth 0 (syscall-dup oldfd x86)))
-                         :rule-classes :type-prescription)
+    (defthm integerp-mv-nth-0-syscall-dup
+            (integerp (mv-nth 0 (syscall-dup oldfd x86)))
+            :rule-classes :type-prescription)
 
-                 (defthm x86p-mv-nth-1-syscall-dup
-                         (implies (x86p x86)
-                                  (x86p (mv-nth 1 (syscall-dup oldfd x86)))))))
+    (defthm x86p-mv-nth-1-syscall-dup
+            (implies (x86p x86)
+                     (x86p (mv-nth 1 (syscall-dup oldfd x86))))))
 
   (define syscall-dup2-logic (oldfd newfd x86)
     :long "<p>From the @('dup(2)') man page (Linux):</p>
@@ -1017,23 +1017,23 @@ not built with X86ISA_EXEC set to t? See :doc x86isa-build-instructions."
     (declare (ignorable oldfd newfd x86))
     (pop-x86-oracle x86))
 
-  (skip-proofs (define syscall-dup2 (oldfd newfd x86)
-                 :inline nil
-                 :guard (and (integerp oldfd)
-                             (integerp newfd))
-                 (declare (ignorable oldfd newfd x86))
-                 (syscall-dup2-logic oldfd newfd x86)))
+  (define syscall-dup2 (oldfd newfd x86)
+    :inline nil
+    :guard (and (integerp oldfd)
+                (integerp newfd))
+    (declare (ignorable oldfd newfd x86))
+    (syscall-dup2-logic oldfd newfd x86))
 
   (define syscall-dup3-logic (oldfd newfd flags x86)
     ;; dup3 is Linux-specific.
     (declare (ignorable oldfd newfd flags x86))
     (pop-x86-oracle x86))
 
-  (skip-proofs (define syscall-dup3 (oldfd newfd flags x86)
-                 ;; dup3 is Linux-specific.
-                 :inline nil
-                 (declare (ignorable oldfd newfd flags x86))
-                 (syscall-dup3-logic oldfd newfd flags x86)))
+  (define syscall-dup3 (oldfd newfd flags x86)
+    ;; dup3 is Linux-specific.
+    :inline nil
+    (declare (ignorable oldfd newfd flags x86))
+    (syscall-dup3-logic oldfd newfd flags x86))
 
   (define syscall-stat-logic (path buf x86)
     (declare (ignorable path buf x86))
@@ -1300,604 +1300,604 @@ to the kernel.</li>
 </ol>
 "
 
-  (skip-proofs (define x86-syscall-read (x86)
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard)
+  (define x86-syscall-read (x86)
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard)
 
-                 ;; ssize_t read(int fd, void *buf, size_t count);
+    ;; ssize_t read(int fd, void *buf, size_t count);
 
-                 ;; RAX: 0
-                 ;; RDI: file descriptor
-                 ;; RSI: address of buffer where the read contents will be stored
-                 ;; RDX: number of bytes to be read
+    ;; RAX: 0
+    ;; RDI: file descriptor
+    ;; RSI: address of buffer where the read contents will be stored
+    ;; RDX: number of bytes to be read
 
-                 ;; On return:
-                 ;; RAX: Error, if any
+    ;; On return:
+    ;; RAX: Error, if any
 
-                 (b* ((ctx 'x86-syscall-read)
-                      (fd (rr64 *rdi* x86))
-                      ;; Address ought to be read using rgfi instead of rr64.
-                      (*buf (rgfi *rsi* x86))
-                      (count (rr64 *rdx* x86))
+    (b* ((ctx 'x86-syscall-read)
+         (fd (rr64 *rdi* x86))
+         ;; Address ought to be read using rgfi instead of rr64.
+         (*buf (rgfi *rsi* x86))
+         (count (rr64 *rdx* x86))
 
-                      ((mv ret x86)
-                       (syscall-read fd *buf count x86))
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((mv ret x86)
+          (syscall-read fd *buf count x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-write (x86)
+  (define x86-syscall-write (x86)
 
-                 ;; ssize_t write(int fd, void *buf, size_t count);
+    ;; ssize_t write(int fd, void *buf, size_t count);
 
-                 ;; RAX: 1
-                 ;; RDI: file descriptor where data will be written
-                 ;; RSI: address of buffer from where data will be read
-                 ;; RDX: number of bytes to be written
+    ;; RAX: 1
+    ;; RDI: file descriptor where data will be written
+    ;; RSI: address of buffer from where data will be read
+    ;; RDX: number of bytes to be written
 
-                 ;; On return:
-                 ;; RAX: Error, if any
+    ;; On return:
+    ;; RAX: Error, if any
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard)
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard)
 
 
-                 (b* ((ctx 'x86-syscall-write)
-                      (fd (rr64 *rdi* x86))
-                      ;; Address ought to be read using rgfi instead of rr64.
-                      (*buf (rgfi *rsi* x86))
-                      (count (rr64 *rdx* x86))
+    (b* ((ctx 'x86-syscall-write)
+         (fd (rr64 *rdi* x86))
+         ;; Address ought to be read using rgfi instead of rr64.
+         (*buf (rgfi *rsi* x86))
+         (count (rr64 *rdx* x86))
 
-                      ((mv ret x86)
-                       (syscall-write fd *buf count x86))
+         ((mv ret x86)
+          (syscall-write fd *buf count x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      (x86 (!rgfi *rax* ret x86)))
+         (x86 (!rgfi *rax* ret x86)))
 
-                     x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-open (x86)
+  (define x86-syscall-open (x86)
 
-                 ;; int open (const char* path-ptr, int flags, mode_t mode);
+    ;; int open (const char* path-ptr, int flags, mode_t mode);
 
-                 ;; RAX: 2
-                 ;; RDI: address of 0-terminated pathname
-                 ;; RSI: flags
-                 ;; RDX: mode
+    ;; RAX: 2
+    ;; RDI: address of 0-terminated pathname
+    ;; RSI: flags
+    ;; RDX: mode
 
-                 ;; On return:
-                 ;; RAX: File descriptor or error
+    ;; On return:
+    ;; RAX: File descriptor or error
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard)
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard)
 
-                 (b* ((ctx 'x86-syscall-open)
-                      ;; Address ought to be read using rgfi instead of rr64.
-                      (path-ptr (rgfi *rdi* x86))
-                      (flags   (rr64 *rsi* x86))
-                      (mode     (rr64 *rdx* x86))
+    (b* ((ctx 'x86-syscall-open)
+         ;; Address ought to be read using rgfi instead of rr64.
+         (path-ptr (rgfi *rdi* x86))
+         (flags   (rr64 *rsi* x86))
+         (mode     (rr64 *rdx* x86))
 
-                      ;; path-ptr sanity check
-                      ((when (not (canonical-address-p path-ptr)))
-                       (!ms :syscall-open-path-ptr-not-canonical x86))
+         ;; path-ptr sanity check
+         ((when (not (canonical-address-p path-ptr)))
+          (!ms :syscall-open-path-ptr-not-canonical x86))
 
-                      ((mv flg path x86)
-                       (read-string-zero-terminated path-ptr x86))
-                      ((when flg)
-                       (!ms (list ctx :path flg) x86))
+         ((mv flg path x86)
+          (read-string-zero-terminated path-ptr x86))
+         ((when flg)
+          (!ms (list ctx :path flg) x86))
 
-                      ((mv ret x86)
-                       (syscall-open path flags mode x86))
+         ((mv ret x86)
+          (syscall-open path flags mode x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
 
-                     x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-close (x86)
+  (define x86-syscall-close (x86)
 
-                 ;; int close (int fd);
+    ;; int close (int fd);
 
-                 ;; RAX: 3
-                 ;; RDI: File descriptor
+    ;; RAX: 3
+    ;; RDI: File descriptor
 
-                 ;; On return:
-                 ;; RAX: Error, if any
+    ;; On return:
+    ;; RAX: Error, if any
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard)
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard)
 
-                 (b* ((ctx 'x86-syscall-close)
-                      (fd (rr64 *rdi* x86))
+    (b* ((ctx 'x86-syscall-close)
+         (fd (rr64 *rdi* x86))
 
-                      ((mv ret x86)
-                       (syscall-close fd x86))
+         ((mv ret x86)
+          (syscall-close fd x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
 
-                     x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-lseek (x86)
+  (define x86-syscall-lseek (x86)
 
-                 ;; off_t lseek(int fd, off_t offset, int whence);
+    ;; off_t lseek(int fd, off_t offset, int whence);
 
-                 ;; RAX: 7
-                 ;; RDI: File descriptor
-                 ;; RSI: Offset to seek to
-                 ;; RDX: The way seek the seek is done
+    ;; RAX: 7
+    ;; RDI: File descriptor
+    ;; RSI: Offset to seek to
+    ;; RDX: The way seek the seek is done
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard)
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard)
 
-                 (b* ((ctx 'x86-syscall-lseek)
-                      (fd (rr64 *rdi* x86))
+    (b* ((ctx 'x86-syscall-lseek)
+         (fd (rr64 *rdi* x86))
 
-                      (offset (rgfi *rsi* x86))
-                      (whence (rr64 *rdx* x86))
+         (offset (rgfi *rsi* x86))
+         (whence (rr64 *rdx* x86))
 
-                      ((mv ret x86)
-                       (syscall-lseek fd offset whence x86))
+         ((mv ret x86)
+          (syscall-lseek fd offset whence x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
 
-                     x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-fadvise64 (x86)
+  (define x86-syscall-fadvise64 (x86)
 
-                 ;; int fadvise64(int fd, off_t offset, off_t len, int advice);
+    ;; int fadvise64(int fd, off_t offset, off_t len, int advice);
 
-                 ;; RAX: 221
-                 ;; RDI: File descriptor
-                 ;; RSI: Offset to seek to
-                 ;; RDX: len
-                 ;; R10: advice
+    ;; RAX: 221
+    ;; RDI: File descriptor
+    ;; RSI: Offset to seek to
+    ;; RDX: len
+    ;; R10: advice
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-fadvise64
-                                                                 syscall-fadvise64-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-fadvise64
+                                                    syscall-fadvise64-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-fadvise64)
-                      (fd (rr64 *rdi* x86))
+    (b* ((ctx 'x86-syscall-fadvise64)
+         (fd (rr64 *rdi* x86))
 
-                      (offset (rgfi *rsi* x86))
-                      (len (rgfi *rdx* x86))
-                      (advice (rgfi *r10* x86))
+         (offset (rgfi *rsi* x86))
+         (len (rgfi *rdx* x86))
+         (advice (rgfi *r10* x86))
 
-                      ((mv ret x86)
-                       (syscall-fadvise64 fd offset len advice x86))
+         ((mv ret x86)
+          (syscall-fadvise64 fd offset len advice x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
 
-                     x86)))
+        x86))
 
 
-  (skip-proofs (define x86-syscall-link (x86)
+  (define x86-syscall-link (x86)
 
-                 ;; int link(const char* oldpath, const char* newpath);
-                 ;; RAX: 86
-                 ;; RDI: Path to existing file
-                 ;; RSI: Path to newly created hard link
+    ;; int link(const char* oldpath, const char* newpath);
+    ;; RAX: 86
+    ;; RDI: Path to existing file
+    ;; RSI: Path to newly created hard link
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-link
-                                                                 syscall-link-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-link
+                                                    syscall-link-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-link)
-                      (old-path-ptr (rgfi *rdi* x86))
-                      (new-path-ptr (rgfi *rsi* x86))
+    (b* ((ctx 'x86-syscall-link)
+         (old-path-ptr (rgfi *rdi* x86))
+         (new-path-ptr (rgfi *rsi* x86))
 
-                      ;; old-path-ptr sanity check
-                      ((when (not (canonical-address-p old-path-ptr)))
-                       (!ms (list ctx :syscall-link-oldpath-ptr-overflow) x86))
+         ;; old-path-ptr sanity check
+         ((when (not (canonical-address-p old-path-ptr)))
+          (!ms (list ctx :syscall-link-oldpath-ptr-overflow) x86))
 
-                      ((mv flg old-path x86)
-                       (read-string-zero-terminated old-path-ptr x86))
-                      ((when flg)
-                       (!ms (list ctx :old-path flg) x86))
+         ((mv flg old-path x86)
+          (read-string-zero-terminated old-path-ptr x86))
+         ((when flg)
+          (!ms (list ctx :old-path flg) x86))
 
-                      ;; new-path-ptr sanity check
-                      ((when (not (canonical-address-p new-path-ptr)))
-                       (!ms (list ctx :syscall-link-newpath-ptr-overflow) x86))
+         ;; new-path-ptr sanity check
+         ((when (not (canonical-address-p new-path-ptr)))
+          (!ms (list ctx :syscall-link-newpath-ptr-overflow) x86))
 
-                      ((mv flg new-path x86)
-                       (read-string-zero-terminated new-path-ptr x86))
-                      ((when flg)
-                       (!ms (list ctx :new-path flg) x86))
+         ((mv flg new-path x86)
+          (read-string-zero-terminated new-path-ptr x86))
+         ((when flg)
+          (!ms (list ctx :new-path flg) x86))
 
-                      ((mv ret x86)
-                       (syscall-link old-path new-path x86))
+         ((mv ret x86)
+          (syscall-link old-path new-path x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
 
-                     x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-unlink (x86)
+  (define x86-syscall-unlink (x86)
 
-                 ;; int unlink(const char* path);
-                 ;; RAX: 87
-                 ;; RDI: Path to existing hard link
+    ;; int unlink(const char* path);
+    ;; RAX: 87
+    ;; RDI: Path to existing hard link
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-unlink
-                                                                 syscall-unlink-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-unlink
+                                                    syscall-unlink-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-unlink)
-                      (path-ptr (rgfi *rdi* x86))
+    (b* ((ctx 'x86-syscall-unlink)
+         (path-ptr (rgfi *rdi* x86))
 
-                      ;; path-ptr sanity check
-                      ((when (not (canonical-address-p path-ptr)))
-                       (!ms (list ctx :syscall-link-path-ptr-overflow) x86))
+         ;; path-ptr sanity check
+         ((when (not (canonical-address-p path-ptr)))
+          (!ms (list ctx :syscall-link-path-ptr-overflow) x86))
 
-                      ((mv flg path x86)
-                       (read-string-zero-terminated path-ptr x86))
-                      ((when flg)
-                       (!ms (list ctx :path flg) x86))
+         ((mv flg path x86)
+          (read-string-zero-terminated path-ptr x86))
+         ((when flg)
+          (!ms (list ctx :path flg) x86))
 
-                      ((mv ret x86)
-                       (syscall-unlink path x86))
+         ((mv ret x86)
+          (syscall-unlink path x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx :oracle-val-for-syscall-unlink ret) x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx :oracle-val-for-syscall-unlink ret) x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
 
-                     x86)))
+        x86))
 
 
-  (skip-proofs (define x86-syscall-dup (x86)
+  (define x86-syscall-dup (x86)
 
-                 ;; int dup(int oldfd)
-                 ;; RAX: 32
-                 ;; RDI: Old file descriptor
+    ;; int dup(int oldfd)
+    ;; RAX: 32
+    ;; RDI: Old file descriptor
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-dup
-                                                                 syscall-dup-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-dup
+                                                    syscall-dup-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-dup)
-                      (oldfd (rgfi *rdi* x86))
+    (b* ((ctx 'x86-syscall-dup)
+         (oldfd (rgfi *rdi* x86))
 
-                      ((mv ret x86)
-                       (syscall-dup oldfd x86))
+         ((mv ret x86)
+          (syscall-dup oldfd x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx :oracle-val-for-syscall-dup ret) x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx :oracle-val-for-syscall-dup ret) x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-dup2 (x86)
+  (define x86-syscall-dup2 (x86)
 
-                 ;; int dup2(int oldfd, int newfd);
-                 ;; RAX: 33
-                 ;; RDI: Old file descriptor
-                 ;; RSI: New file descriptor
+    ;; int dup2(int oldfd, int newfd);
+    ;; RAX: 33
+    ;; RDI: Old file descriptor
+    ;; RSI: New file descriptor
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-dup2
-                                                                 syscall-dup2-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-dup2
+                                                    syscall-dup2-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-dup2)
-                      (oldfd (rgfi *rdi* x86))
-                      (newfd (rgfi *rsi* x86))
+    (b* ((ctx 'x86-syscall-dup2)
+         (oldfd (rgfi *rdi* x86))
+         (newfd (rgfi *rsi* x86))
 
-                      ((mv ret x86)
-                       (syscall-dup2 oldfd newfd x86))
+         ((mv ret x86)
+          (syscall-dup2 oldfd newfd x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-dup3 (x86)
+  (define x86-syscall-dup3 (x86)
 
-                 ;; int dup3(int oldfd, int newfd, int flags);
-                 ;; RAX: 292
-                 ;; RDI: Old file descriptor
-                 ;; RSI: New file descriptor
-                 ;; RDX: Flags
+    ;; int dup3(int oldfd, int newfd, int flags);
+    ;; RAX: 292
+    ;; RDI: Old file descriptor
+    ;; RSI: New file descriptor
+    ;; RDX: Flags
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-dup3
-                                                                 syscall-dup3-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-dup3
+                                                    syscall-dup3-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-dup3)
-                      (oldfd (rgfi *rdi* x86))
-                      (newfd (rgfi *rsi* x86))
-                      (flags (rgfi *rdx* x86))
+    (b* ((ctx 'x86-syscall-dup3)
+         (oldfd (rgfi *rdi* x86))
+         (newfd (rgfi *rsi* x86))
+         (flags (rgfi *rdx* x86))
 
-                      ((mv ret x86)
-                       (syscall-dup3 oldfd newfd flags x86))
+         ((mv ret x86)
+          (syscall-dup3 oldfd newfd flags x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-stat (x86)
+  (define x86-syscall-stat (x86)
 
-                 ;; int stat(const char* path, struct stat* statbuf);
-                 ;; RAX: 4
-                 ;; RDI: Address of the path
-                 ;; RSI: Address to a pre allocated structure
+    ;; int stat(const char* path, struct stat* statbuf);
+    ;; RAX: 4
+    ;; RDI: Address of the path
+    ;; RSI: Address to a pre allocated structure
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-stat
-                                                                 syscall-stat-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-stat
+                                                    syscall-stat-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-stat)
-                      (path (rgfi *rdi* x86))
-                      (statBuf (rgfi *rsi* x86))
+    (b* ((ctx 'x86-syscall-stat)
+         (path (rgfi *rdi* x86))
+         (statBuf (rgfi *rsi* x86))
 
-                      ;; path sanity check
-                      ((when (not (canonical-address-p path)))
-                       (!ms (list ctx :syscall-stat-path-ptr-not-canonical) x86))
+         ;; path sanity check
+         ((when (not (canonical-address-p path)))
+          (!ms (list ctx :syscall-stat-path-ptr-not-canonical) x86))
 
-                      ((mv flg pathname x86)
-                       (read-string-zero-terminated path x86))
-                      ((when flg)
-                       (!ms (list ctx :path flg) x86))
+         ((mv flg pathname x86)
+          (read-string-zero-terminated path x86))
+         ((when flg)
+          (!ms (list ctx :path flg) x86))
 
-                      ((mv ret x86)
-                       (syscall-stat pathname statBuf x86))
+         ((mv ret x86)
+          (syscall-stat pathname statBuf x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx :oracle-val-for-syscall-stat ret) x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx :oracle-val-for-syscall-stat ret) x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-lstat (x86)
+  (define x86-syscall-lstat (x86)
 
-                 ;; int lstat(const char* path, struct stat* statbuf);
-                 ;; RAX: 6
-                 ;; RDI: Address of the path of a link
-                 ;; RSI: Address to a pre allocated structure
+    ;; int lstat(const char* path, struct stat* statbuf);
+    ;; RAX: 6
+    ;; RDI: Address of the path of a link
+    ;; RSI: Address to a pre allocated structure
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-lstat
-                                                                 syscall-lstat-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-lstat
+                                                    syscall-lstat-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-lstat)
-                      (path (rgfi *rdi* x86))
-                      (statBuf (rgfi *rsi* x86))
+    (b* ((ctx 'x86-syscall-lstat)
+         (path (rgfi *rdi* x86))
+         (statBuf (rgfi *rsi* x86))
 
-                      ;; path sanity check
-                      ((when (not (canonical-address-p path)))
-                       (!ms (list ctx :syscall-lstat-path-ptr-not-canonical) x86))
+         ;; path sanity check
+         ((when (not (canonical-address-p path)))
+          (!ms (list ctx :syscall-lstat-path-ptr-not-canonical) x86))
 
-                      ((mv flg pathname x86)
-                       (read-string-zero-terminated path x86))
-                      ((when flg)
-                       (!ms (list ctx :path flg) x86))
+         ((mv flg pathname x86)
+          (read-string-zero-terminated path x86))
+         ((when flg)
+          (!ms (list ctx :path flg) x86))
 
-                      ((mv ret x86)
-                       (syscall-lstat pathname statBuf x86))
+         ((mv ret x86)
+          (syscall-lstat pathname statBuf x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx :oracle-val-for-syscall-lstat ret) x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx :oracle-val-for-syscall-lstat ret) x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-fstat (x86)
+  (define x86-syscall-fstat (x86)
 
-                 ;; int fstat(int fd, struct stat* statbuf);
-                 ;; RAX: 5
-                 ;; RDI: Descriptor of the file to stat
-                 ;; RSI: Address to a pre allocated structure
+    ;; int fstat(int fd, struct stat* statbuf);
+    ;; RAX: 5
+    ;; RDI: Descriptor of the file to stat
+    ;; RSI: Address to a pre allocated structure
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-fstat
-                                                                 syscall-fstat-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-fstat
+                                                    syscall-fstat-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-fstat)
-                      (fd (rgfi *rdi* x86))
-                      (statBuf (rgfi *rsi* x86))
+    (b* ((ctx 'x86-syscall-fstat)
+         (fd (rgfi *rdi* x86))
+         (statBuf (rgfi *rsi* x86))
 
-                      ((mv ret x86)
-                       (syscall-fstat fd statBuf x86))
+         ((mv ret x86)
+          (syscall-fstat fd statBuf x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-fcntl (x86)
+  (define x86-syscall-fcntl (x86)
 
-                 ;; int fcntl(unsigned int fd, unsigned int cmd, unsigned long arg);
-                 ;; RAX: 72
-                 ;; RDI: The file descriptor
-                 ;; RSI: The operation
-                 ;; RDX: The argument
+    ;; int fcntl(unsigned int fd, unsigned int cmd, unsigned long arg);
+    ;; RAX: 72
+    ;; RDI: The file descriptor
+    ;; RSI: The operation
+    ;; RDX: The argument
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-fcntl
-                                                                 syscall-fcntl-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-fcntl
+                                                    syscall-fcntl-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-fcntl)
-                      (fd (rgfi *rdi* x86))
-                      (cmd (rgfi *rsi* x86))
-                      (arg (rgfi *rdx* x86))
+    (b* ((ctx 'x86-syscall-fcntl)
+         (fd (rgfi *rdi* x86))
+         (cmd (rgfi *rsi* x86))
+         (arg (rgfi *rdx* x86))
 
-                      ((mv ret x86)
-                       (syscall-fcntl fd cmd arg x86))
+         ((mv ret x86)
+          (syscall-fcntl fd cmd arg x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-truncate (x86)
+  (define x86-syscall-truncate (x86)
 
-                 ;; int truncate(const char* path, long length);
-                 ;; RAX: 76
-                 ;; RDI: The address of the path
-                 ;; RSI: The length to truncate to
+    ;; int truncate(const char* path, long length);
+    ;; RAX: 76
+    ;; RDI: The address of the path
+    ;; RSI: The length to truncate to
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-truncate
-                                                                 syscall-truncate-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-truncate
+                                                    syscall-truncate-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-truncate)
-                      (path (rgfi *rdi* x86))
-                      (length (rgfi *rsi* x86))
+    (b* ((ctx 'x86-syscall-truncate)
+         (path (rgfi *rdi* x86))
+         (length (rgfi *rsi* x86))
 
-                      ;; path sanity check
-                      ((when (not (canonical-address-p path)))
-                       (!ms (list ctx :syscall-truncate-path-ptr-not-canonical) x86))
+         ;; path sanity check
+         ((when (not (canonical-address-p path)))
+          (!ms (list ctx :syscall-truncate-path-ptr-not-canonical) x86))
 
-                      ((mv flg pathname x86)
-                       (read-string-zero-terminated path x86))
-                      ((when flg)
-                       (!ms (list ctx :path flg) x86))
+         ((mv flg pathname x86)
+          (read-string-zero-terminated path x86))
+         ((when flg)
+          (!ms (list ctx :path flg) x86))
 
-                      ((mv ret x86)
-                       (syscall-truncate pathname length x86))
+         ((mv ret x86)
+          (syscall-truncate pathname length x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx :oracle-val-for-syscall-truncate ret) x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx :oracle-val-for-syscall-truncate ret) x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86)))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86))
 
-  (skip-proofs (define x86-syscall-ftruncate (x86)
+  (define x86-syscall-ftruncate (x86)
 
-                 ;; int ftruncate(unsigned int fd, unsigned long length);
-                 ;; RAX: 77
-                 ;; RDI: The file descriptor
-                 ;; RSI: The length to truncate to
+    ;; int ftruncate(unsigned int fd, unsigned long length);
+    ;; RAX: 77
+    ;; RDI: The file descriptor
+    ;; RSI: The length to truncate to
 
-                 :parents (x86-syscall-args-and-return-value-marshalling)
-                 :returns (x86 x86p :hyp :guard
-                               :hints (("Goal" :in-theory (e/d (syscall-ftruncate
-                                                                 syscall-ftruncate-logic)
-                                                               (force (force))))))
+    :parents (x86-syscall-args-and-return-value-marshalling)
+    :returns (x86 x86p :hyp :guard
+                  :hints (("Goal" :in-theory (e/d (syscall-ftruncate
+                                                    syscall-ftruncate-logic)
+                                                  (force (force))))))
 
-                 (b* ((ctx 'x86-syscall-ftruncate)
-                      (fd (rgfi *rdi* x86))
-                      (length (rgfi *rsi* x86))
+    (b* ((ctx 'x86-syscall-ftruncate)
+         (fd (rgfi *rdi* x86))
+         (length (rgfi *rsi* x86))
 
-                      ((mv ret x86)
-                       (syscall-ftruncate fd length x86))
+         ((mv ret x86)
+          (syscall-ftruncate fd length x86))
 
-                      ((when (or (ms x86)
-                                 (not (i64p ret))))
-                       (!ms (list ctx
-                                  :ret-val-or-ms-for-syscall-write
-                                  ret)
-                            x86))
+         ((when (or (ms x86)
+                    (not (i64p ret))))
+          (!ms (list ctx
+                     :ret-val-or-ms-for-syscall-write
+                     ret)
+               x86))
 
-                      ;; Save return code to rax
-                      (x86 (!rgfi *rax* ret x86)))
-                     x86))))
+         ;; Save return code to rax
+         (x86 (!rgfi *rax* ret x86)))
+        x86)))
 
 ;; ======================================================================

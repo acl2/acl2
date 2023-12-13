@@ -34,6 +34,7 @@
 (skip-proofs (define load-segment-reg ((seg-reg natp)
                                        (selector natp)
                                        x86)
+               :returns (x86 x86p)
                :guard (and (< seg-reg *segment-register-names-len*)              
                            (< selector #x10000))
                (b* ((cs (seg-visiblei *cs* x86))
@@ -61,6 +62,7 @@
  (skip-proofs
   (defun load-system-segment-reg (seg-reg selector x86)
     (declare (xargs :stobjs (x86)
+                    :returns (x86 x86p)
                     :guard (and (integerp seg-reg)
                                 (>= seg-reg 0)
                                 (< seg-reg *segment-register-names-len*)
