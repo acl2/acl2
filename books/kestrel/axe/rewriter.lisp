@@ -1346,12 +1346,12 @@
                                                internal-context-array
                                                external-context known-booleans work-hard-when-instructedp tag limits state))
              ((when erp) (mv erp nil nil state))
-             (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (maybe-print-hit-counts print info)))
-             (- (and print (cw ")")))
+             (- (and print
+                     (progn$ (cw "(~x0 tries.)~%" tries)
+                             (maybe-print-hit-counts print info)
+                             (cw ")"))))
              (top-nodenum (top-nodenum dag))
-             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum))
-             )
+             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
           (if (quotep renamed-top-node)
               (prog2$ (and print (cw ")~%"))
                       (mv (erp-nil) renamed-top-node limits state))
