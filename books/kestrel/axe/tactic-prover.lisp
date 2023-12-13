@@ -495,7 +495,7 @@
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
                               (ilks-plist-worldp (w state)))
-                  :guard-hints (("Goal" :in-theory (e/d (quotep-compound-recognizer)
+                  :guard-hints (("Goal" :in-theory (e/d ()
                                                         (myquotep quotep))
                                  :do-not '(generalize eliminate-destructors)))
                   :stobjs state

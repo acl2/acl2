@@ -40,6 +40,8 @@
 
 ;; TODO: Consider adding special handling for bv-array-if.
 
+;; TODO: Add more common parameters to the rewrite-stobj instead of passing them around.
+
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
 ;(include-book "node-replacement-array2")
@@ -80,10 +82,11 @@
 
 ;; TODO: Consider putting these support rules into a book that gets locally included by the encapsulate.
 
-(defthmd quotep-compound-recognizer
-  (implies (quotep x)
-           (consp x))
-  :rule-classes :compound-recognizer)
+;; Would something like this be helpful?
+;; (defthmd quotep-compound-recognizer
+;;   (implies (quotep x)
+;;            (consp x))
+;;   :rule-classes :compound-recognizer)
 
 (defthm trees-to-memoizep-of-cons-if-not-equal-car
   (equal (trees-to-memoizep (cons-if-not-equal-car tree trees))
