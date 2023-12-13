@@ -851,7 +851,7 @@ sub src_deps {
 		if ($portp || ! $localp) {
 		    $certinfo->defines->{$var} = $val;
 		}
-	    } elsif (! ($type eq set_max_mem_event || $type eq set_max_time_event || $type eq pbs_event)) {
+	    } elsif (! ($type eq set_max_mem_event || $type eq set_max_time_event || $type eq pbs_event || $type eq cert_env_event)) {
 		print STDERR "unknown event type: $type\n";
 	    }
 	}
