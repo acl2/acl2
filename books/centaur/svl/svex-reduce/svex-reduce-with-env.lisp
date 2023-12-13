@@ -1192,7 +1192,7 @@ but did not resolve the branch ~%" first))))
             (4VEC-P SVEX))
    :rule-classes :forward-chaining
    :hints (("Goal"
-            :in-theory (e/d (svex-p) ())))))
+            :in-theory (e/d (svex-p sv::svar-p) ())))))
 
 (local
  (in-theory (disable (:DEFINITION ACL2::APPLY$-BADGEP))))
