@@ -1294,6 +1294,8 @@
         (b* (;;could we stay in the world of arrays when doing this? and use the array to compute internal contexts?
              ;;could check here whether nothing changed and not build a new list?
              (dag (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print))
+             ((when (not (dag-fns-include-any dag '(if myif boolif bvif)))) ; no benefit from using contexts
+              (mv (erp-nil) dag limits state))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
              (dag-len (+ 1 (top-nodenum dag)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
