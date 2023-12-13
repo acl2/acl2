@@ -62,7 +62,6 @@
  (skip-proofs
   (defun load-system-segment-reg (seg-reg selector x86)
     (declare (xargs :stobjs (x86)
-                    :returns (x86 x86p)
                     :guard (and (integerp seg-reg)
                                 (>= seg-reg 0)
                                 (< seg-reg *segment-register-names-len*)
