@@ -1332,6 +1332,8 @@
                                                       <fsmname>))))
          (svtv-spec->cycle-fsm (<specname>))
          ///
+         ;; Associate the svtv-spec with this FSM in the svtv-spec-to-fsm-table
+         (table svtv-spec-to-fsm-table '<specname> '<fsmname>)
          (in-theory (disable (<fsmname>)))
          
          (defthm cycle-fsm-of-<specname>
@@ -1339,7 +1341,7 @@
                   (<fsmname>))
            :hints(("Goal" :in-theory (disable (<specname>)))))
 
-         (defthm base-fsm-overridekey-transparent-p-of-<fsmname>
+         (defthm base-fsm-overridekey-transparent-p-of-<fsmname>-wrt-<name>-overridekeys
            (base-fsm-overridekey-transparent-p
             (<fsmname>)
             (<name>-overridekeys))
@@ -1367,9 +1369,20 @@
        (defthm cycle-fsm-of-<specname>
          (equal (svtv-spec->cycle-fsm (<specname>))
                 (<fsmname>))
-         :hints(("Goal" :in-theory (e/d (svtv-spec->cycle-fsm
-                                         fsmname)
-                                        (<specname>))))))
+         :hints(("Goal" :in-theory (e/d ((svtv-spec->cycle-fsm)
+                                         (<fsmname>)
+                                         (<specname>))
+                                        (<specname>)))))
+       
+       (table svtv-spec-to-fsm-table '<specname> '<fsmname>)
+
+       (defthm base-fsm-overridekey-transparent-p-of-<fsmname>-wrt-<name>-overridekeys
+         (base-fsm-overridekey-transparent-p
+          (<fsmname>)
+          (<name>-overridekeys))
+         :hints(("Goal" :in-theory '(
+                                     cycle-fsm-of-<specname>)
+                 :use base-fsm-overridekey-transparent-p-of-<specname>-cycle))))
       
       (define <name>-fsm-bindings ()
         :returns (bindings lhprobe-map-p
@@ -1470,14 +1483,14 @@
 
 (defmacro def-svtv-refinement (svtv-name data-name
                                          &key
-                                         fsm-name
+                                         fsm
                                          define-fsm
                                          ideal fgl-semantic-check
                                          omit-default-aignet-transforms
                                          svtv-spec
                                          inclusive-overridekeys pkg-sym)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',fsm-name ',ideal ',fgl-semantic-check
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',fsm ',ideal ',fgl-semantic-check
       ',omit-default-aignet-transforms
       ',svtv-spec ',inclusive-overridekeys ',define-fsm ',pkg-sym)))
 
@@ -3223,6 +3236,9 @@ defining that SVTV.</p>
          :omit-default-aignet-transforms t
          :ideal idealname
          :svtv-spec specname
+         :fsm my-fsm-name
+         :define-fsm t
+         :inclusive-overridekeys t
          :pkg-sym pkg-sym)
  })
 

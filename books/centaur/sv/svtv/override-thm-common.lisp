@@ -652,7 +652,8 @@
                 (if x.lemma-nonlocal
                     `(,lemma)
                   `((local ,lemma)))))
-       ,(svtv-genthm-final-thm x))))
+       ,(svtv-genthm-final-thm x)
+       (table svtv-generalized-thm-table ',x.name ',x))))
 
 
 (defun svtv-genthm-override-svar-widths (override-input-widths triple-val-alist triples-name)
