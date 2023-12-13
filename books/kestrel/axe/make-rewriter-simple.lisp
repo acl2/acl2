@@ -264,7 +264,6 @@
 ;;  TODO: Could this be handled using node-replacement-alist instead, letting us eliminate the :var case?
 ;; 2. To replace a (simplified) term that is a function call (calling replace-fun-call-using-equality-assumption-alist).
 
-
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -1677,8 +1676,7 @@
                    (type (unsigned-byte 60) count))
           (b* (((when (or (not (mbt (natp count)))
                           (= 0 count)))
-                (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                    node-replacement-array))
+                (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                (expr (cons fn args)) ;todo: save this cons, or use below?
                ;;Try looking it up in the memoization (note that the args are now simplified):
                (memo-match (and memoization (lookup-in-memoization expr memoization))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
@@ -4170,7 +4168,7 @@
                                                           nil ;means no hit counting
                                                           )
                                                         0   ; tries
-                                                        nil ; limits
+                                                        nil ; limits ; todo: pass in
                                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                         interpreted-function-alist
                                                         rewrite-stobj
@@ -4502,11 +4500,9 @@
                                                  node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                  interpreted-function-alist rewrite-stobj
                                                  renumbering-stobj))
-                     ;; Not a ground term we could evaluate, so try to apply rewrite rules:
+                     ;; Not a ground term we could evaluate, so rewrite the non-lambda FN applied to the simplified args:
                      (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                           ;; Simplify the non-lambda FN applied to the simplified args:
-                           ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
-                           (,simplify-fun-call-and-add-to-dag-name
+                           (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
                             fn new-dargs
                             nil ; Can't memoize anything about EXPR because its nodenums are in the old dag
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
