@@ -220,15 +220,13 @@
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
            (equal (bvplus size x y)
                   (bvplus size (trim size x) y)))
-  :hints (("Goal" :in-theory (e/d (trim)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvplus-trim-arg3-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe size y 'all dag-array))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
-  :hints (("Goal" :in-theory (e/d (trim)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,7 +599,7 @@
                 (natp amt))
            (equal (rightrotate32 amt x)
                   (rightrotate32 (trim 5 amt) x)))
-  :hints (("Goal" :in-theory (e/d (rightrotate32 rightrotate leftrotate trim MOD-OF-EXPT-OF-2-CONSTANT-VERSION) ()))))
+  :hints (("Goal" :in-theory (enable rightrotate32 rightrotate leftrotate trim MOD-OF-EXPT-OF-2-CONSTANT-VERSION))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -636,7 +634,7 @@
            (equal (bvchop size i)
                   i))
   :hints (("Goal" :expand ((:with unsigned-byte-p (unsigned-byte-p isize i)))
-           :in-theory (e/d (unsigned-byte-p-forced) ( size-non-negative-when-unsigned-byte-p-free)))))
+           :in-theory (e/d (unsigned-byte-p-forced) (size-non-negative-when-unsigned-byte-p-free)))))
 
 (defthmd bvcat-tighten-upper-size-axe
   (implies (and (axe-bind-free (bind-bv-size-axe highval 'newsize dag-array) '(newsize)) ;had x instead of highval, that should be an error
@@ -647,7 +645,7 @@
                 (unsigned-byte-p-forced newsize highval))
            (equal (bvcat highsize highval lowsize lowval)
                   (bvcat newsize highval lowsize lowval)))
-  :hints (("Goal" :do-not '(preprocess) :in-theory (e/d (bvcat UNSIGNED-BYTE-P-FORCED) ()))))
+  :hints (("Goal" :do-not '(preprocess) :in-theory (enable bvcat UNSIGNED-BYTE-P-FORCED))))
 
 ;or should we bring heavier terms to the front to increase sharing?
 ;ffixme these differe from what simplify-bitxors does in terms of the order of terms?!
@@ -971,7 +969,7 @@
                   ;;could use the max of the sizes? ;
                   (bvlt 31 x y)))
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
-           :in-theory (e/d (unsigned-byte-p-forced)( sbvlt-becomes-bvlt-cheap)))))
+           :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-becomes-bvlt-cheap)))))
 
 ;gen the 32
 (defthmd sbvlt-becomes-bvlt-cheap-2
@@ -984,7 +982,7 @@
                   ;;could use the max of the sizes? ;
                   (bvlt 31 x y)))
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
-           :in-theory (e/d (unsigned-byte-p-forced)( sbvlt-becomes-bvlt-cheap)))))
+           :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-becomes-bvlt-cheap)))))
 
 (defthm not-equal-constant-when-unsigned-byte-p-bind-free-dag
   (implies (and (syntaxp (quotep k))
@@ -1163,7 +1161,7 @@
            (equal (bvlt size x y)
                   (not (equal (bvchop size y)
                               (bvchop size x)))))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthmd bvlt-when-bvlt-must-be-gen-axe
   (implies (and (axe-rewrite-objective 't)
@@ -1245,7 +1243,7 @@
            (equal (bvmod size x y)
                   (bvmod (max xsize ysize) x y)))
   :hints (("Goal" :use (:instance bvmod-tighten)
-           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED)( bvmod-tighten)))))
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (bvmod-tighten)))))
 
 (defthmd bvmult-tighten-dag
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1523,7 +1521,7 @@
                 (natp size2))
            (equal (bvor size x y)
                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :in-theory (e/d (BVOR SLICE-TOO-HIGH-IS-0) ()))))
+  :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
 
 (defthmd bvplus-disjoint-ones-arg1-gen
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
@@ -1548,7 +1546,7 @@
            (equal (bvplus size y x)
                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
   :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
-           :in-theory (e/d ( SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg1-gen)))))
+           :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg1-gen)))))
 
 (defthmd bvplus-disjoint-ones-arg2-gen-better
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
@@ -1561,7 +1559,7 @@
            (equal (bvplus size x y)
                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
   :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg2-gen)
-           :in-theory (e/d ( SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg2-gen)))))
+           :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg2-gen)))))
 
 (in-theory (disable bvplus-disjoint-ones-arg1-gen bvplus-disjoint-ones-arg2-gen bvplus-disjoint-ones-arg1-gen-better bvplus-disjoint-ones-arg2-gen-better))
 
@@ -1601,7 +1599,7 @@
                 (natp size2))
            (equal (bvor size y x)
                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :in-theory (e/d (BVOR SLICE-TOO-HIGH-IS-0) ()))))
+  :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
 
 ;how does the speed of this compare to doing it for each operator separately?
 (defthmd <-lemma-for-known-operators
@@ -1660,7 +1658,6 @@
            (equal (bvplus size x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
   :hints (("Goal"
-
            :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P unsigned-byte-p-forced
                                    expt-of-+)
                            (;anti-bvplus
@@ -2059,7 +2056,7 @@
                    (equal 29 shift-amount)
                    (equal 30 shift-amount)
                    (equal 31 shift-amount))
-           :in-theory (e/d (BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT) ()))))
+           :in-theory (enable BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT))))
 
 ;todo: make rules like this for other ops!
 (defthmd bvsx-too-high-axe

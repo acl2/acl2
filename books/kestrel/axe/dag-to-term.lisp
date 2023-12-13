@@ -108,7 +108,7 @@
 (defund dag-to-term (dag)
   (declare (xargs :guard (or (weak-dagp dag)
                              (quotep dag))
-                  :guard-hints (("Goal" :in-theory (e/d (WEAK-DAGP-AUX) ())))))
+                  :guard-hints (("Goal" :in-theory (enable WEAK-DAGP-AUX)))))
   (if (quotep dag)
       dag
     (dag-to-term-aux (top-nodenum dag) dag)))

@@ -253,7 +253,7 @@
                 (unsigned-byte-p 31 k)
                 )
            (sbvlt 32 k (nth 0 arg0)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm sbvlt-must-be-value
    (implies (sbvlt 32 x 0)
@@ -309,7 +309,7 @@
                   (myif (< (+ (mod i1 j) (mod i2 j)) j)
                         (+ (floor i1 j) (floor i2 j))
                         (+ 1 (floor i1 j) (floor i2 j)))))
-  :hints (("Goal" :in-theory (e/d (floor-of-sum) ()))))
+  :hints (("Goal" :in-theory (enable floor-of-sum))))
 
 (defthm floor-of-myif-arg1
   (equal (floor (myif test i1 i2) j)
@@ -867,7 +867,7 @@
                   (if (< (bvchop 31 x) 4)
                       t
                     (bvlt 31 20 x))))
-  :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 (defthm bvlt-of-bvplus
   (implies (integerp x)
@@ -1156,7 +1156,7 @@
   (implies (unsigned-byte-p 31 z)
            (equal (BVLT 32 (BVplus 31 x y) z)
                   (BVLT 31 (BVplus 31 x y) z)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; (defthm low-bits-dont-matter2
 ;;   (implies (and (<= x y)
@@ -1288,18 +1288,13 @@
   (implies (unsigned-byte-p 32 x)
            (equal (unsigned-byte-p 32 (+ -4 x))
                   (bvlt 32 3 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p bvchop-identity))))
 
 (defthm unsigned-byte-p-of-plus-1
   (implies (unsigned-byte-p 32 x)
            (equal (unsigned-byte-p 32 (+ 1 x))
                   (not (equal x (+ -1 (expt 2 32))))))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-                                  ()))))
-
-
-
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 ;; (thm
 ;;  (implies (and (EQUAL 0 (BVCHOP 31 x))
@@ -1349,17 +1344,13 @@
   (implies (unsigned-byte-p 30 z)
            (equal (BVLT 32 (BVUMINUS 30 x) z)
                   (BVLT 30 (BVUMINUS 30 x) z)))
-  :hints (("Goal" :in-theory (e/d (bvlt bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-identity))))
 
 (defthm bvlt-of-bvuminus-trim2b
   (implies (unsigned-byte-p 30 z)
            (equal (BVLT 32 z (BVUMINUS 30 x))
                   (BVLT 30 z (BVUMINUS 30 x))))
-  :hints (("Goal" :in-theory (e/d (bvlt bvchop-identity)
-                                  ()))))
-
-
+  :hints (("Goal" :in-theory (enable bvlt bvchop-identity))))
 
 ;; (thm
 ;;  (equal (BVLT 32 (BVUMINUS 30 x) 1073741820)
@@ -1430,7 +1421,7 @@
                   (if (unsigned-byte-p 30 (bvchop 31 z))
                       (bvlt 30 z (bvuminus 30 x))
                     nil)))
-  :hints (("Goal" :in-theory (e/d (bvlt rewrite-<-when-sizes-dont-match) ()))))
+  :hints (("Goal" :in-theory (enable bvlt rewrite-<-when-sizes-dont-match))))
 
 (defthm bvlt-of-bvuminus-tighten-arg1-31-30-alt
   (implies (integerp z)
@@ -1438,7 +1429,7 @@
                   (if (unsigned-byte-p 30 (bvchop 31 z))
                       (bvlt 30 (bvuminus 30 x) z)
                     t)))
-  :hints (("Goal" :in-theory (e/d (bvlt rewrite-<-when-sizes-dont-match2) ()))))
+  :hints (("Goal" :in-theory (enable bvlt rewrite-<-when-sizes-dont-match2))))
 
 (defthm bvlt-of-bvuminus-tighten-arg1-32-30
   (implies (integerp z)
@@ -1446,7 +1437,7 @@
                   (if (unsigned-byte-p 30 (bvchop 32 z))
                       (bvlt 30 z (bvuminus 30 x))
                     nil)))
-  :hints (("Goal" :in-theory (e/d (bvlt rewrite-<-when-sizes-dont-match) ()))))
+  :hints (("Goal" :in-theory (enable bvlt rewrite-<-when-sizes-dont-match))))
 
 (defthm bvlt-of-bvuminus-tighten-arg1-32-30-alt
   (implies (integerp z)
@@ -1454,7 +1445,7 @@
                   (if (unsigned-byte-p 30 (bvchop 32 z))
                       (bvlt 30 (bvuminus 30 x) z)
                     t)))
-  :hints (("Goal" :in-theory (e/d (bvlt rewrite-<-when-sizes-dont-match2) ()))))
+  :hints (("Goal" :in-theory (enable bvlt rewrite-<-when-sizes-dont-match2))))
 
 (defthmd bvchop-contract-hack-gen
   (implies (and (syntaxp (symbolp x)) ;seems to loop when x is a term that's too small
@@ -1503,9 +1494,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil nil)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (hs (- size 2)) (ls 2))
-           :in-theory (e/d (bvlt) ()))))
-
-
+           :in-theory (enable bvlt))))
 
 (defthm bvplus-reduce-constants
   (implies (and (syntaxp (and (quotep k1)
@@ -1550,7 +1539,7 @@
                   t))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil)))
   :hints (("Goal"
-           :in-theory (e/d (bvlt) ()))))
+           :in-theory (enable bvlt))))
 
 (defthm UNSIGNED-BYTE-P-tighten
   (implies (equal 0 (getbit 31 x))
@@ -1572,7 +1561,7 @@
                   t))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 0 nil 0)))
   :hints (("Goal"
-           :in-theory (e/d (bvlt <=-OF-BVCHOP-SAME-LINEAR) ()))))
+           :in-theory (enable bvlt <=-OF-BVCHOP-SAME-LINEAR))))
 
 (defthm bv-3-2-1-hackb
   (implies (and (bvlt 2 1 x)
@@ -1583,7 +1572,7 @@
                   t))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0 nil)))
   :hints (("Goal"
-           :in-theory (e/d (bvlt) ()))))
+           :in-theory (enable bvlt))))
 
 ;for speed:
 (in-theory (disable GETBIT-BOUND-LINEAR))
@@ -1898,7 +1887,7 @@
                   (not (or (equal 0 garg0)
                            (equal 1 garg0)
                            (equal 2 garg0)))))
-  :hints (("Goal" :in-theory (e/d (bvlt) ())))  )
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;todo: use polarity?
 (defthmd bvchop-31-equal-0-extend
@@ -1959,7 +1948,7 @@
            (equal (equal '1 (getbit '31 (bvuminus 32 x)))
                   (and (not (equal 0 x))
                        (bvle 32 x (expt 2 31)))))
-  :hints (("Goal" :in-theory (e/d (bvuminus32-when-usb31 bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus32-when-usb31 bvlt))))
 
 (defthm equal-0-getbit-bvuminus
   (implies (unsigned-byte-p 31 x)
@@ -1981,7 +1970,7 @@
            (equal (BVLT 31 16 x)
                   (not (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7)
                            (equal x 8)(equal x 9)(equal x 10)(equal x 11)(equal x 12)(equal x 13)(equal x 14)(equal x 15) (equal x 16)))))
-  :hints (("Goal" :in-theory (e/d (bvuminus32-when-usb31 bvlt) ()))) )
+  :hints (("Goal" :in-theory (enable bvuminus32-when-usb31 bvlt))))
 
 
 
@@ -2106,7 +2095,7 @@
   (implies (unsigned-byte-p 31 x)
            (equal (bvlt 32 2147483648 x)
                   nil))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 
 ;; (thm
@@ -2200,13 +2189,12 @@
                         t
                       nil))))
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 1) (ls 31)))
-           :in-theory (e/d (bvlt bvcat logapp slice-becomes-getbit)
-                           ()))))
+           :in-theory (enable bvlt bvcat logapp slice-becomes-getbit))))
 
 (defthm introduce-bvlt-hack
   (equal (< (bvplus '29 x y) '4)
          (bvlt 29 (bvplus '29 x y) 4))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 
 
@@ -2449,7 +2437,7 @@
            (equal (unsigned-byte-p 31 x)
                   (unsigned-byte-p 2 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvmod-32-4
   (implies (integerp x)
@@ -2460,25 +2448,25 @@
 (defthm bvlt-of-bvcat-31-2-30-trim
  (equal (BVLT 31 (BVCAT 2 x 30 y) z)
         (BVLT 31 (BVCAT 1 x 30 y) z))
- :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+ :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-of-slice-tighten-30-30-2
   (implies (unsigned-byte-p 29 x)
            (equal (BVLT 30 x (SLICE 30 2 GARG0))
                   (BVLT 29 x (SLICE 30 2 GARG0))))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-of-bvcat-1-1-30-k
   (equal (bvlt 31 (bvcat 1 1 30 x) 2147483644)
          (bvlt 30 x 1073741820)
          )
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-31-8-becomes-unsigned-byte-p
   (implies (UNSIGNED-BYTE-P 31 x)
            (equal (BVLT 31 x 8)
                   (unsigned-byte-p 3 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;sometimes the definitions of bvle doesn't open during backchaining
 (defthm bvle-to-bvlt
@@ -2493,7 +2481,7 @@
 (defthm bvlt-of-bvcat-1-1-30-k2
   (equal (BVLT 31 (BVCAT 1 1 30 x) 2147483643)
          (< (BVCHOP 30 X) 1073741819))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (in-theory (enable <-of-bvplus-becomes-bvlt-arg2)) ;todo drop
 
@@ -2502,7 +2490,7 @@
 (defthm bvlt-k-bvcat-2-3-30
   (equal (BVLT 32 2147483648 (BVCAT 2 3 30 x))
          t)
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; (defthm slice-of-minus-30-2
 ;;   (implies (integerp x)
@@ -2549,7 +2537,7 @@
 (defthm bvlt-of-bvcat-hack
   (equal (BVLT 32 (BVCAT 2 3 30 x) 4294967292)
          (bvlt 30 X 1073741820))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-hack-1
   (implies (and (equal size 31)
@@ -2618,7 +2606,7 @@
 (defthm bvlt-of-bvuminus-hack
   (equal (BVLT 30 (BVUMINUS 2 x) 4)
          t)
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvplus-of-bvcat-hack
   (equal (BVPLUS 32 4 (BVCAT 2 3 30 x))
@@ -2634,7 +2622,7 @@
 (defthm bvlt-of-bvplus-hack
   (equal (BVLT 31 (BVPLUS 30 x y) 1073741820)
          (BVLT 30 (BVPLUS 30 x y) 1073741820))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvplus-32-30-hack
   (implies (and (< x 4)
@@ -2755,40 +2743,36 @@
   (implies (unsigned-byte-p 4 x)
            (equal (BVLT 31 3 x)
                   (bvlt 4 3 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm UNSIGNED-BYTE-P-when-bvlt-4-2
   (implies (NOT (BVLT 4 3 GARG0))
            (equal (UNSIGNED-BYTE-P 4 GARG0)
                   (UNSIGNED-BYTE-P 2 GARG0)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-of-slice-hack
   (equal (BVLT 4 5 (SLICE 3 2 GARG0))
          nil)
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p slice-bound-lemma-gen2
-                                        slice-bound-lemma-gen)
-                                  ()))))
-
-
-
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p slice-bound-lemma-gen2
+                                        slice-bound-lemma-gen))))
 
 (defthm bvlt-when-bvlt-hack
   (implies (BVLT 4 3 GARG0)
            (equal (BVLT '4 GARG0 '4)
                   nil))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-hack77
   (equal (BVLT '30 (BVPLUS '29 x y) '1073741822)
          t)
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-hack78
   (equal (BVLT '30 '2 (BVPLUS '29 x y))
          (BVLT 29 '2 (BVPLUS '29 x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-of-bvplus-hack200
   (implies (and (integerp x)
@@ -2809,7 +2793,7 @@
 (defthm bvlt-of-bvplus-hack300
   (equal (BVLT 29 w (BVPLUS 30 x y))
          (BVLT 29 w (BVPLUS 29 x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvuminus-impossible-value
   (implies (and (syntaxp (quotep k))
@@ -2860,7 +2844,7 @@
            (equal (UNSIGNED-BYTE-P 4 FARG0)
                   (UNSIGNED-BYTE-P 2 FARG0)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-of-plus-hack
   (implies (integerp x)
@@ -3216,7 +3200,7 @@
                 (natp size))
            (equal (unsigned-byte-p size x)
                   (unsigned-byte-p 2 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 ;this caused problems, including a loop in DISJOIN-CLAUSE-SEGMENT-TO-CLAUSE-SET, which didn't make any sense to me..
 (defthmd unsigned-byte-p-when-unsigned-byte-p-bigger
@@ -3226,7 +3210,7 @@
                 (natp free))
            (equal (unsigned-byte-p size x)
                   (bvlt free x (expt 2 size))))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 ;; ;this doesn't fire, perhaps because it is hung on not..
 ;; (defthm not-bvlt-when-not-usb
@@ -3235,7 +3219,7 @@
 ;;                 (natp x))
 ;;            (equal (not (bvlt 5 16 x))
 ;;                   (equal 16 (bvchop 5 x))))
-;;   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+;;   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 ;(include-book "kestrel/utilities/polarity" :dir :system)
 
@@ -3247,7 +3231,7 @@
                 (natp x))
            (equal (bvlt 5 16 x)
                   (not (equal 16 (bvchop 5 x)))))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvmult-of-4-gen
   (implies (natp size)
@@ -4928,8 +4912,7 @@
                 (<= 2 size)) ;gen
            (equal (unsigned-byte-p size (+ -4 x))
                   (bvlt size 3 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm unsigned-byte-p-of-plus-minus-4-gen-dag
   (implies (and (unsigned-byte-p size x)
@@ -6524,7 +6507,7 @@
   (implies (unsigned-byte-p size x)
            (equal (unsigned-byte-p size (binary-+ '-1 x))
                   (not (equal 0 x))))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p bvlt) ()))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p bvlt))))
 
 
 ;gen the 1
@@ -6704,7 +6687,7 @@
 (defthm bvdiv-equal-0-rewrite
   (equal (equal 0 (bvdiv '31 x '4))
          (bvlt 31 x 4))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvdiv-equal-0-rewrite-alt
   (equal (equal (bvdiv 31 x 4) 0)
@@ -7426,9 +7409,7 @@
                 (equal 1 free))
            (equal (bvlt 3 4 x)
                   (bvlt 2 0 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN)
-                                  ()))))
-
+  :hints (("Goal" :in-theory (enable bvlt BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN))))
 
 (defthm bvlt-of-4-hack
   (implies (equal 1 (getbit 2 x))
@@ -7629,7 +7610,7 @@
 (defthm bvlt-max-63
   (equal (BVLT 6 Y 63)
          (not (equal (bvchop 6 y) 63)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 
 (defthm bvmod-cancel-hack-8-1-44-6-1
@@ -8018,7 +7999,7 @@
   (implies (syntaxp (want-to-weaken (BVLT SIZE 0 Z)))
            (equal (BVLT SIZE 0 Z)
                   (not (equal 0 (bvchop size z)))))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 
 
@@ -16856,7 +16837,7 @@
                 (NATP SIZE2))
            (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
                   1))
-  :HINTS (("Goal" :IN-THEORY (E/D () (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT))))))
+  :HINTS (("Goal" :IN-THEORY (disable SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
 
 (DEFTHM GETBIT-OF-MINUS-EXPT-gen
   (IMPLIES (AND (NATP SIZE)
@@ -16885,8 +16866,8 @@
                                    (high (+ -1 size))
                                    (low n))
                         )
-           :in-theory (e/d () (getbit-when-slice-is-known-to-be-all-ones
-                               exponents-add)))))
+           :in-theory (disable getbit-when-slice-is-known-to-be-all-ones
+                               exponents-add))))
 
 
 (defthm getbit-when-<=-of-bvchop-and-constant-high
