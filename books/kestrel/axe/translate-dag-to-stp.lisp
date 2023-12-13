@@ -824,9 +824,7 @@
                               (nodenum-type-alistp nodenum-type-alist)
                               (symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
-                  :guard-hints (("Goal" :in-theory (e/d ()
-                                                        ( ;;max
-                                                         natp))
+                  :guard-hints (("Goal" :in-theory (disable natp)
                                  :do-not '(generalize eliminate-destructors))))
            (ignore dag-len) ; only used in the guard
            )
@@ -2081,8 +2079,7 @@
 (defund make-stp-range-assertions (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
-                                 :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
-                                                 ())))))
+                                 :in-theory (enable axe-typep empty-typep list-typep most-general-typep)))))
   (if (endp nodenum-type-alist)
       nil
     (let* ((entry (first nodenum-type-alist))

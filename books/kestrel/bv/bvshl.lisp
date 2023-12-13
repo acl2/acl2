@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvcat-def")
+(include-book "slice-def")
 (local (include-book "bvcat"))
 (local (include-book "unsigned-byte-p"))
 
@@ -169,3 +170,18 @@
            (equal (bvshl 64 x shift-amount)
                   (bvshl-cases-term 64)))
   :hints (("Goal" :in-theory (enable bvshl))))
+
+;gen the size
+(defthm equal-of-bvshl-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep k2)))
+                (natp amt)
+                (< amt 32))
+           (equal (equal k (acl2::bvshl 32 k2 amt))
+                  (and (unsigned-byte-p 32 k)
+                       (equal 0 (bvchop amt k))
+                       (equal (slice 31 amt k)
+                              (bvchop (- 32 amt) k2)))))
+  :hints (("Goal" :in-theory (e/d (acl2::bvshl)
+                                  (;bvcat-of-minus-becomes-bvshl
+                                   )))))

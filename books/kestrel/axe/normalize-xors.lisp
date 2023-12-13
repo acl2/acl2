@@ -1726,36 +1726,6 @@
 
 ;; (skip- proofs (verify-guards RESOLVE-REFS-TO-CONSTANTS2))
 
-;; (defun add-as-parent-for-nodes (parent children parent-array)
-;;   (if (endp children)
-;;       parent-array
-;;     (let* ((current-parents (aref1 'parent-array parent-array (car children)))
-;;            (new-parents (cons parent current-parents)))
-;;       (add-as-parent-for-nodes parent
-;;                                (cdr children)
-;;                                (aset1 'parent-array parent-array (car children) new-parents)))))
-
-;; (skip- proofs (verify-guards add-as-parent-for-nodes))
-
-;; (defun make-dag-parent-array-with-name (n len dag-array parent-array)
-;;   (declare (xargs :measure (+ 1 (nfix (- len n)))
-;;                   ))
-;;   (if (or (not (natp n))
-;;           (not (natp len))
-;;           (>= n len))
-;;       parent-array
-;;     (let ((expr (aref1 'dag-array dag-array n)))
-;;       (if (or (variablep expr)
-;;               (fquotep expr))
-;;           (make-dag-parent-array-with-name (+ 1 n) len dag-array parent-array)
-;;         (let* ((args (dargs expr))
-;;                (node-args (keep-non-quoteps-tail args nil)))
-;;           (make-dag-parent-array-with-name (+ 1 n)
-;;                              len
-;;                              dag-array
-;;                              (add-as-parent-for-nodes n node-args parent-array)))))))
-
-;; (skip- proofs (verify-guards make-dag-parent-array-with-name))
 
 ;; ;kill
 ;; (defun add-bitxor-nest-to-dag-array (leaves)

@@ -695,7 +695,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund dag-fns-include-any-aux (dag fns)
+;; Checks whether the functions that appear in DAG include any of the
+;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
+;; of all fns found.
+(defund dag-fns-include-any (dag fns)
   (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp fns)
                               (not (member-eq 'quote fns)))
@@ -709,19 +712,19 @@
                ;; implies that (ffn-symb expr) can't be 'quote, since FNS should not include 'quote:
                (member-eq (ffn-symb expr) fns))
           t
-        (dag-fns-include-any-aux (rest dag) fns)))))
+        (dag-fns-include-any (rest dag) fns)))))
 
-;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
-;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
-;; of all fns found.
-(defund dag-fns-include-any (dag-or-quotep fns)
-  (declare (xargs :guard (and (or (quotep dag-or-quotep)
-                                  (weak-dagp dag-or-quotep))
-                              (symbol-listp fns)
-                              (not (member-eq 'quote fns)))))
-  (if (quotep dag-or-quotep)
-      nil
-    (dag-fns-include-any-aux dag-or-quotep fns)))
+;; ;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
+;; ;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
+;; ;; of all fns found.
+;; (defund dag-or-quotep-fns-include-any (dag-or-quotep fns)
+;;   (declare (xargs :guard (and (or (quotep dag-or-quotep)
+;;                                   (weak-dagp dag-or-quotep))
+;;                               (symbol-listp fns)
+;;                               (not (member-eq 'quote fns)))))
+;;   (if (quotep dag-or-quotep)
+;;       nil
+;;     (dag-fns-include-any dag-or-quotep fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

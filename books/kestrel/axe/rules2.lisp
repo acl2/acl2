@@ -3034,6 +3034,7 @@
 
 (local (in-theory (disable true-listp))) ;bozo
 
+;; todo: compare to the rules below
 (defthm impossible-value-1
   (implies (and (<= free x)
                 (< k free))
@@ -3050,21 +3051,12 @@
 ;;   (implies (unsigned-byte-p 8 x)
 ;;            (signed-byte-p 32 x)))
 
-;; (defund iushr32 (r s)
-;;   (bvchop 32 (jvm::iushr r s)))
-
-;; (defthm iushr32-recoll
-;;   (equal (bvchop 32 (jvm::iushr r s))
-;;          (iushr32 r s))
-;;   :hints (("Goal" :in-theory (enable iushr32))))
-
 ;bozo move
 (defthm not-equal-from-bound
   (implies (and (<= free x)
                 (< k free)
                 )
-           (equal (EQUAL x k)
-                  nil)))
+           (not (EQUAL x k))))
 
 ;the syntaxps are new
 (defthm not-equal-constant-when-bound-forbids-it
@@ -3161,10 +3153,10 @@
 
 ;when i need this, lst is the call-stack
 ;or just use + of if
-(defthmd len-pop-push-hack
-  (equal (equal (len lst)
-                (+ 1 (if (consp lst) (+ -1 (len lst)) 0)))
-         (consp lst)))
+;; (defthmd len-pop-push-hack
+;;   (equal (equal (len lst)
+;;                 (+ 1 (if (consp lst) (+ -1 (len lst)) 0)))
+;;          (consp lst)))
 
 ;; ;slow?
 ;; (defthm nthcdr-of-byte-fix-list

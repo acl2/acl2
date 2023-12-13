@@ -275,6 +275,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This extracts conjuncts from NODENUM.
 ;; TODO: Consider optimizing by doing things more directly
 ;; Returns (mv node-replacement-array node-replacement-count undo-pairs).
 (defund update-node-replacement-array-for-assuming-node (nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)
@@ -365,6 +366,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This extracts (negated) disjuncts from NODENUM.
 ;; TODO: Consider optimizing by doing things more directly
 ;; Returns (mv node-replacement-array node-replacement-count undo-pairs).
 (defund update-node-replacement-array-for-assuming-negation-of-node (nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)

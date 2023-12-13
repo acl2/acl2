@@ -1194,14 +1194,14 @@
 ;; Returns (mv erp simplified-dag-or-quotep limits state) where SIMPLIFIED-DAG-OR-QUOTEP is equivalent to DAG, given the REFINED-ASSUMPTION-ALIST, EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the bindings in INTERPRETED-FUNCTION-ALIST.
 ;;does one simplification pass (NO, now does 2 if contexts are to be used) -- is the result then completely simplified? - what if one of the context assumptions (a pred in an if-test governing a term) gets simplified on this pass?  that might let us do better at simplifying nodes guarded by that node.
 ;does not simplify the refined-assumptions or equality-assumption-alist (or context nodes?) passed in
-;fffixme stay in the world of arrays, instead of going back and forth between arrays and dags?
+;; TODO: Stay in the world of arrays, instead of going back and forth between arrays and dags?
 ;If both memoizep and use-internal-contextsp are non-nil, this will NOT memoize on the second pass (that would be unsound!), unless we change the memoization machinery to track contexts - fffixme can that lead to exponential behavior?!
-;fffixme consider having this return an array...
+;; TODO: Consider having this return an array.
 ;change this to load the dag into the array first and to use assumptions that refer to that array (instead of possibly being huge terms)??
-;ffixme consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
+;; TODO: consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
 ;ffffixme include only the necesary nodes in the context?!
-;ffixme external contexts could allow us to drop whole subdags and not waste time simplifying them..
-;;smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
+;; TODO: external contexts could allow us to drop whole subdags and not waste time simplifying them..
+;; Smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
 (defun simplify-dag (dag ;; must not be a quotep, (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),
                      rewriter-rule-alist
                      slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
@@ -1294,8 +1294,10 @@
         (b* (;;could we stay in the world of arrays when doing this? and use the array to compute internal contexts?
              ;;could check here whether nothing changed and not build a new list?
              (dag (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print))
-             (dag-len (+ 1 (top-nodenum dag)))
+             ((when (not (dag-fns-include-any dag '(if myif boolif bvif)))) ; no benefit from using contexts
+              (mv (erp-nil) dag limits state))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
+             (dag-len (+ 1 (top-nodenum dag)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
              ;;Load all the nodes into the dag-array (fixme only include nodes that support internal contexts?!):
 ;ffixme should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
@@ -1346,12 +1348,12 @@
                                                internal-context-array
                                                external-context known-booleans work-hard-when-instructedp tag limits state))
              ((when erp) (mv erp nil nil state))
-             (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (maybe-print-hit-counts print info)))
-             (- (and print (cw ")")))
+             (- (and print
+                     (progn$ (cw "(~x0 tries.)~%" tries)
+                             (maybe-print-hit-counts print info)
+                             (cw ")"))))
              (top-nodenum (top-nodenum dag))
-             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum))
-             )
+             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
           (if (quotep renamed-top-node)
               (prog2$ (and print (cw ")~%"))
                       (mv (erp-nil) renamed-top-node limits state))
@@ -1379,7 +1381,7 @@
 (defun repeat-simplify-dag (dag ;; must not be a quotep,  (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                             rewriter-rule-alist
                             slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
-                            refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
+                            refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
                             equality-assumption-alist ;these represent a subset of REFINED-ASSUMPTION-ALIST?
                             print-interval print
                             interpreted-function-alist monitored-symbols memoizep
@@ -1429,7 +1431,7 @@
 (defun maybe-repeat-simplify-dag (dag ;; must not be a quotep (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                                   rewriter-rule-alist
                                   slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
-                                  refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
+                                  refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
                                   equality-assumption-alist ; these represent a subset of REFINED-ASSUMPTION-ALIST?
                                   print-interval print
                                   interpreted-function-alist monitored-symbols memoizep

@@ -188,7 +188,7 @@
 (defthm take-unguarded-correct
   (equal (take-unguarded n lst)
          (take n lst))
-  :hints (("Goal" :in-theory (e/d (take-unguarded take) ()))))
+  :hints (("Goal" :in-theory (enable take-unguarded take))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,7 +403,7 @@
 (defthm bitand-unguarded-correct
   (equal (bitand-unguarded x y)
          (bitand x y))
-  :hints (("Goal" :in-theory (e/d (bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer) ()))))
+  :hints (("Goal" :in-theory (enable bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -511,7 +511,7 @@
 (defthm bvcat-unguarded-correct
   (equal (bvcat-unguarded highsize highval lowsize lowval)
          (bvcat highsize highval lowsize lowval))
-  :hints (("Goal" :in-theory (e/d (bvcat bvcat-unguarded) ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvcat-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

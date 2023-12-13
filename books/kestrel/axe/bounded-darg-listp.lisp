@@ -221,7 +221,7 @@
                 (< n (len args)))
            (equal (< 1 (len (nth n args)))
                   (consp (nth n args))))
-  :hints (("Goal" :in-theory (e/d (bounded-darg-listp dargp-less-than nth) ()))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than nth))))
 
 (defthm natp-of-nth-when-bounded-darg-listp-gen
   (implies (and (bounded-darg-listp vals bound)
@@ -252,7 +252,7 @@
                 (< n (len args))
                 (natp n))
            (dargp (nth n args)))
-  :hints (("Goal" :in-theory (e/d (all-dargp) ()))))
+  :hints (("Goal" :in-theory (enable all-dargp))))
 
 (defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
   (implies (bounded-darg-listp (cdr items) bound)
