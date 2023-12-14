@@ -746,7 +746,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvsx2          ;new
-     bvchop-of-bvshr            ;new, introduces slice ; todo: remove?? with bvshr we can split into cases easily.
+     bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 

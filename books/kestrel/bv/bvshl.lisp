@@ -177,11 +177,30 @@
                               (quotep k2)))
                 (natp amt)
                 (< amt 32))
-           (equal (equal k (acl2::bvshl 32 k2 amt))
+           (equal (equal k (bvshl 32 k2 amt))
                   (and (unsigned-byte-p 32 k)
                        (equal 0 (bvchop amt k))
                        (equal (slice 31 amt k)
                               (bvchop (- 32 amt) k2)))))
-  :hints (("Goal" :in-theory (e/d (acl2::bvshl)
+  :hints (("Goal" :in-theory (e/d (bvshl)
                                   (;bvcat-of-minus-becomes-bvshl
                                    )))))
+
+;todo: gen, or change bvshl to always return a bv, or change the bvchop-identity rule to know about bvshl
+(defthm bvchop-of-bvshl-same
+  (implies (and (natp size)
+                (< amt size)
+                (natp amt))
+           (equal (bvchop size (bvshl size x amt))
+                  (bvshl size x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+;new!
+(defthm bvchop-of-bvshl
+  (implies (and (<= size1 size2)
+                (natp size1)
+                (natp size2)
+                (natp amt))
+           (equal (bvchop size1 (bvshl size2 x amt))
+                  (bvshl size1 x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))

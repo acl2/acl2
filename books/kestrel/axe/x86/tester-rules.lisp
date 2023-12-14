@@ -200,15 +200,6 @@
                                      acl2::bvchop-of-sum-cases
                                      ))))
 
-;todo: gen, or change bvshl to always return a bv, or change the bvchop-identity rule to know about bvshl
-(defthm bvchop-of-bvshl-same
-  (implies (and (natp size)
-                (< amt size)
-                (natp amt))
-           (equal (bvchop size (acl2::bvshl size x amt))
-                  (acl2::bvshl size x amt)))
-  :hints (("Goal" :in-theory (enable acl2::bvshl))))
-
 (theory-invariant (incompatible (:rewrite bvcat-of-minus-becomes-bvshl)
                                 (:definition acl2::bvshl )))
 
