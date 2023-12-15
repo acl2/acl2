@@ -45,7 +45,7 @@
 ;; ======================================================================
 
 (local (include-book "guard-helpers"))
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+; (local (include-book "centaur/bitops/ihs-extensions" :dir :system)) ;; Redundant
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
@@ -502,8 +502,13 @@
      (r-w-x    :type (member :r :w :x) "Type of memory access: read, write, or execute")
      x86)
     :enabled t
-    :guard (and (canonical-address-p (+ -1 n lin-addr))
-                (not (app-view x86)))
+    :guard (and
+            ;; Check lowest byte-address of lin(ear)-addr(ess)
+            (canonical-address-p lin-addr)
+            ;; Check highest byte-address of lin(ear)-addr(ess)
+            (canonical-address-p (+ -1 n lin-addr))
+            ;; Not x86 "flat" mode or ``app(lication) mode''
+            (not (app-view x86)))
     :verify-guards nil
     ;; It'd be sweet if las-to-pas returned the following instead of a
     ;; list of physical addresses: <n, phy-addr>, where this region of
@@ -532,9 +537,27 @@
 
     ///
 
-    (skip-proofs (defthm las-to-pas-preserves-ia32e-la-to-pa
-                         (equal (ia32e-la-to-pa lin-addr r-w-x (mv-nth 2 (las-to-pas n lin-addr2 r-w-x-2 x86)))
-                                (ia32e-la-to-pa lin-addr r-w-x x86))))
+    (skip-proofs
+
+     ;; Need a property about ``ia32e-la-to-pa''
+     ;; WAHJr.
+
+     ;; Yahya is going to have a go at this lemma, and we will have a look at
+     ;; his attempt on Monday (12/18).
+
+     (defthm las-to-pas-preserves-ia32e-la-to-pa
+         (implies
+          (not (mv-nth 0 (las-to-pas n lin-addr2 r-w-x-2 x86)))
+          (and
+           (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x
+                                            (mv-nth 2 (las-to-pas n lin-addr2 r-w-x-2 x86))))
+                  (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+           (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x
+                                            (mv-nth 2 (las-to-pas n lin-addr2 r-w-x-2 x86))))
+                  (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))))))
+     )
+
+
 
     (defthm consp-mv-nth-1-las-to-pas
             (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
