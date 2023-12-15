@@ -67,12 +67,12 @@
                  (len (unquote val))
                1 ; can only remove the whole thing
                ))
-    (:expand (len (acl2::desugar-expand-hint val)))
-    (:use (len (acl2::desugar-use-hint val)))
-    (:in-theory (if (or (call-of 'acl2::enable val)
-                        (call-of 'acl2::disable val))
+    (:expand (len (desugar-expand-hint val)))
+    (:use (len (desugar-use-hint val)))
+    (:in-theory (if (or (call-of 'enable val)
+                        (call-of 'disable val))
                     (len (fargs val))
-                  (if (call-of 'acl2::e/d val)
+                  (if (call-of 'e/d val)
                       (let ((lists (fargs val)))
                         ;; Only mess with the first 2:
                         (+ (if (< 0 (len lists)) (len (first lists)) 0)
@@ -154,14 +154,14 @@
                          nil)))
                (mv `(:remove-do-not ,val) nil) ; can only remove the whole thing
                ))
-    (:expand (let ((desugared-val (acl2::desugar-expand-hint val)))
+    (:expand (let ((desugared-val (desugar-expand-hint val)))
                (mv `(:remove-expand-item ,(nth n desugared-val))
                    (let ((remaining-items (remove-nth n desugared-val)))
                      (if (consp remaining-items)
                          (list :expand remaining-items)
                        ;; Hides the fact that we removed an :expand item:
                        nil)))))
-    (:use (let ((desugared-val (acl2::desugar-use-hint val)))
+    (:use (let ((desugared-val (desugar-use-hint val)))
             (mv `(:remove-use-item ,(nth n desugared-val))
                 (let ((remaining-items (remove-nth n desugared-val)))
                   (if (consp remaining-items)
@@ -170,7 +170,7 @@
                     ;; TODO: Also remove the disable of the relevant rule, if it is present, and if there are no other :use
                     ;; hints for that rule.
                     nil)))))
-    (:in-theory (if (and (call-of 'acl2::enable val)
+    (:in-theory (if (and (call-of 'enable val)
                          (true-listp (cdr val)))
                     (mv `(:remove-enable-item ,(nth n (fargs val)))
                         (let ((remaining-items (remove-nth n (fargs val))))
@@ -178,7 +178,7 @@
                               (list :in-theory `(,(ffn-symb val) ,@remaining-items))
                             ;; Hides the fact that we removed an enable item:
                             nil)))
-                  (if (and (call-of 'acl2::disable val)
+                  (if (and (call-of 'disable val)
                            (true-listp (cdr val)))
                       (mv `(:remove-disable-item ,(nth n (fargs val)))
                           (let ((remaining-items (remove-nth n (fargs val))))
@@ -186,7 +186,7 @@
                                 (list :in-theory `(,(ffn-symb val) ,@remaining-items))
                               ;; Hides the fact that we removed a disable item:
                               nil)))
-                    (if (and (call-of 'acl2::e/d val)
+                    (if (and (call-of 'e/d val)
                              (true-list-listp (cdr val)))
                         (let ((lists (fargs val)))
                           (if (< n (len (first lists)))
