@@ -2489,7 +2489,8 @@ ACL2 !>>>(DEFTHM FORCE-TEST
            :HINTS (("[2]Goal" :IN-THEORY (ENABLE ENDS-IN-A-ZERO))))
 Subgoal 3
 
-Forcing Round 1 is pending (caused first by Subgoal 3).
+Forcing Round 1 is pending (caused first by applying APP0-RIGHT-ID
+to Subgoal 3).
 Subgoal 2
 Subgoal 1
 
@@ -2572,7 +2573,8 @@ When applied to the goal at hand the above induction scheme produces
 three nontautological subgoals.
 [1]Subgoal *1/3
 
-Forcing Round 2 is pending (caused first by [1]Subgoal *1/3).
+Forcing Round 2 is pending (caused first by applying ENDS-IN-A-ZERO-APP0
+to [1]Subgoal *1/3).
 [1]Subgoal *1/2
 [1]Subgoal *1/1
 

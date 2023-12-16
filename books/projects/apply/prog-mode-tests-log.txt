@@ -2558,7 +2558,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 
 q.e.d. (given one forced hypothesis)
 
@@ -2611,7 +2612,8 @@ Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2666,7 +2668,8 @@ Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2720,7 +2723,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 Goal'
 
 ([ A key checkpoint:
@@ -2783,7 +2787,8 @@ Goal'
   2> (ACL2_*1*_ACL2::HELLO JOHN)
   <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2838,7 +2843,8 @@ Goal'
   2> (ACL2_*1*_ACL2::HELLO JOHN)
   <2 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -2954,7 +2960,8 @@ Goal'
 1> (ACL2_*1*_ACL2::HELLO JOHN)
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3278,7 +3285,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ 'HELLO '(JOHN))
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 
 q.e.d. (given one forced hypothesis)
 
@@ -3333,7 +3341,8 @@ Goal'
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3390,7 +3399,8 @@ Goal'
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3446,7 +3456,8 @@ ACL2 !>>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL (HELLO 'JOHN)) NIL)
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal).
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal).
 Goal'
 
 ([ A key checkpoint:
@@ -3514,7 +3525,8 @@ Goal'
       <4 (HELLO (HI JOHN))
     <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3572,7 +3584,8 @@ Goal'
       <4 (HELLO (HI JOHN))
     <3 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -3692,7 +3705,8 @@ Goal'
   <2 (HELLO (HI JOHN))
 <1 (ACL2_*1*_ACL2::HELLO (HI JOHN))
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying APPLY$-HELLO to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -4477,7 +4491,8 @@ ACL2 !>>(THM (EQUAL (APPLY$ (LAMBDA$ NIL
                     '(HI JOHN)))
 Goal'
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying 
+APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT to Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -4906,7 +4921,8 @@ ACL2 !>>(THM (EQUAL (RUN-THIS-VERSION-3 'JOHN)
                     '((HI JOHN))))
 Goal'
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying 
+APPLY$-LOGIC-MODE-WITH-BADGE-AND-WARRANT to Goal').
 
 q.e.d. (given one forced hypothesis)
 
