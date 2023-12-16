@@ -2136,3 +2136,7 @@ relationship with @(see svex-xeval)."
     (eql -1 (logior (lognot x.upper) x.lower))))
 
 
+(define unsigned-4vec-p ((n natp) x)
+  (and (4vec-p x)
+       (unsigned-byte-p n (4vec->upper x))
+       (unsigned-byte-p n (4vec->lower x))))

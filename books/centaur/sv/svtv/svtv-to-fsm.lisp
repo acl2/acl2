@@ -4892,13 +4892,18 @@ to signed values.</p>"
               :in-theory
               '(;; LHS-EVAL-ZERO-SVEX-ENV-EQUIV-CONGRUENCE-ON-ENV
                 ;;                            SVEX-ENVLISTS-SIMILAR-IMPLIES-EQUAL-BASE-FSM-EVAL-1
-                ;; SVEX-ENVLISTS-EQUIVALENT-REFINES-SVEX-ENVLISTS-SIMILAR
+                SVEX-ENVLISTS-EQUIVALENT-REFINES-SVEX-ENVLISTS-SIMILAR
+                svex-envlists-equivalent-is-an-equivalence
+                svex-envlists-similar-is-an-equivalence
                 <svtvname>-fsm-constraints
                 <svtvname>-fsm-bindings
                 <svtvname>-fsm-output-map
                 cycle-fsm-of-<specname>
                 no-duplicate-state-keys-of-<fsmname>
                 nextstate-keys-non-override-of-<fsmname>
+
+                (:CONGRUENCE
+                 SV::SVEX-ENVLISTS-EQUIVALENT-IMPLIES-EQUAL-SVTV-SPEC-CYCLE-OUTS->PIPE-OUT-2)
                 
                 (:congruence SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-LHS-EVAL-ZERO-2)
                 (:congruence 4VEC-1MASK-EQUIV-IMPLIES-EQUAL-4VEC-BIT?!-1)
@@ -5027,7 +5032,10 @@ to signed values.</p>"
                 svex-env-reduce-of-append-envs-under-svex-envs-1mask-equiv-special
                 (svex-env-reduce)
                 SVEX-ENVS-1MASK-EQUIV-IMPLIES-SVEX-ENVS-1MASK-EQUIV-APPEND-2
-                (append)))
+                (append)
+
+                (sv::4vec-fix)
+                (unsigned-byte-p)))
              (and stable-under-simplificationp
                   '(:use ((:instance <svtv-spec-thmname>
                            (env (b* ((fsm (<fsmname>))
@@ -5192,7 +5200,10 @@ to signed values.</p>"
                            (:TYPE-PRESCRIPTION INTEGERP-OF-LHPROBE-CONSTRAINTLIST-MAX-STAGE)
                            (:TYPE-PRESCRIPTION LEN)
                            (:TYPE-PRESCRIPTION LHPROBE-CONSTRAINTLIST-OVERRIDEMUX-EVAL)
-                           (:TYPE-PRESCRIPTION NFIX))
+                           (:TYPE-PRESCRIPTION NFIX)
+
+                           acl2::natp-when-gte-0
+                           acl2::natp-when-integerp)
               ))
      :rule-classes <rule-classes>))
                                   
@@ -5310,6 +5321,9 @@ to signed values.</p>"
   :mode :program :stobjs state
   (b* ((defaults (table-alist 'svtv-to-fsm-thm-defaults (w state)))
        (ctx `(def-svtv-to-fsm-thm ,thmname))
+       (full-args args)
+       ;; Allow svtv-spec-thmname as the second arg without a keyword
+       (args (if (keywordp (car args)) args (cdr args)))
        ((std::extract-keyword-args
          :defaults defaults
          :ctx ctx
@@ -5333,11 +5347,11 @@ to signed values.</p>"
          primary-output-var
          (pkg-sym thmname))
         args)
+       (svtv-spec-thmname (or svtv-spec-thmname
+                              (and (not (keywordp (car full-args)))
+                                   (car full-args))))
 
-
-       
-
-       ((unless svtv-spec-thmname)
+       ((unless (and svtv-spec-thmname (symbolp svtv-spec-thmname)))
         (er hard ctx "~x0 must be specified" :svtv-spec-thmname)
         (mv nil nil))
        (svtv-thm (cdr (assoc-eq svtv-spec-thmname (table-alist 'svtv-generalized-thm-table (w state)))))
@@ -5391,7 +5405,7 @@ to signed values.</p>"
 
        ((unless (acl2::hons-subset eliminate-override-vars real-spec-override-vars))
         (let ((missing (hons-set-diff eliminate-override-vars real-spec-override-vars)))
-          (er hard? "The ~x0 must be a subset of the theorem's spec-override-vars, but the following are not: ~x1"
+          (er hard? ctx "The ~x0 must be a subset of the theorem's spec-override-vars, but the following are not: ~x1"
               :eliminate-override-vars missing))
         (mv nil nil))
        ((unless (acl2::hons-subset eliminate-override-signals svtv-actual-override-signals))
@@ -5468,7 +5482,6 @@ level.</p>
 @({
  (def-svtv-to-fsm-thm counter-invar-fsm-thm
    :svtv-spec-thmname counter-invar-svtv-thm
-   :fsm counter-fsm
 ; optional arguments
    :eliminate-override-vars (sum1)
    :eliminate-override-signals (\"sum1\")
@@ -5477,7 +5490,6 @@ level.</p>
    :base-cycle-var base-cycle  ;; this is the default
    :pkg-sym symbol-from-my-package)
  })
-
 
 <p> Prerequisites. As with @(see def-svtv-generalized-thm), we need to first
 show that the override transparency property holds of our SVTV and its

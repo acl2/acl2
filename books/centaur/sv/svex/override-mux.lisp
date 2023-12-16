@@ -825,17 +825,17 @@
          (4vec-p (4vec-1mask x))
          :hints(("Goal" :in-theory (enable 4vec-p)))))
 
-(define svex-env-1mask-aux ((x svex-env-p))
+(define svex-env-1mask-aux ((x svex-env-p) (acc svex-env-p))
   :returns (1mask-env svex-env-p)
-  (cond ((atom x) nil)
+  (cond ((atom x) (svex-env-fix acc))
         ((not (mbt (and (consp (car x))
                         (svar-p (caar x)))))
-         (svex-env-1mask-aux (cdr x)))
+         (svex-env-1mask-aux (cdr x) acc))
         (t (let ((mask (4vec-1mask (cdar x))))
              (if (eql mask 0)
-                 (svex-env-1mask-aux (cdr x))
-               (cons (cons (caar x) (4vec-1mask (cdar x)))
-                     (svex-env-1mask-aux (cdr x)))))))
+                 (svex-env-1mask-aux (cdr x) acc)
+               (svex-env-1mask-aux (cdr x)
+                                   (cons (cons (caar x) (4vec-1mask (cdar x))) acc))))))
   ///
   (local (defthm svex-env-lookup-redef
            (equal (svex-env-lookup k x)
@@ -860,9 +860,10 @@
   
   (defthm boundp-of-svex-env-1mask-aux
     (implies (no-duplicatesp-equal (alist-keys (svex-env-fix x)))
-             (iff (svex-env-boundp k (svex-env-1mask-aux x))
-                  (and (svex-env-boundp k x)
-                       (not (equal 0 (4vec-1mask (svex-env-lookup k x)))))))
+             (iff (svex-env-boundp k (svex-env-1mask-aux x acc))
+                  (or (svex-env-boundp k acc)
+                      (and (svex-env-boundp k x)
+                           (not (equal 0 (4vec-1mask (svex-env-lookup k x))))))))
     :hints(("Goal" :in-theory (enable svex-env-boundp-of-cons
                                       svex-env-lookup-of-cons-split
                                       svex-env-fix
@@ -871,8 +872,11 @@
 
   (defthm lookup-of-svex-env-1mask-aux
     (implies (no-duplicatesp-equal (alist-keys (svex-env-fix x)))
-             (4vec-1mask-equiv (svex-env-lookup k (svex-env-1mask-aux x))
-                               (svex-env-lookup k x)))
+             (4vec-1mask-equiv (svex-env-lookup k (svex-env-1mask-aux x acc))
+                               (if (and (svex-env-boundp k x)
+                                        (not (equal 0 (4vec-1mask (svex-env-lookup k x)))))
+                                   (svex-env-lookup k x)
+                                 (svex-env-lookup k acc))))
     :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
                                       ;; svex-env-boundp-of-cons
                                       svex-env-fix
@@ -881,24 +885,26 @@
                                       svex-env-lookup-when-not-boundp
                                       4vec-1mask-equiv)
                                    (svex-env-boundp-redef))
-            :induct (svex-env-1mask-aux x))))
+            :induct (svex-env-1mask-aux x acc))))
 
   (defthm svex-env-1mask-aux-under-svex-envs-1mask-equiv
     (implies (no-duplicatesp-equal (alist-keys (svex-env-fix x)))
-             (svex-envs-1mask-equiv (svex-env-1mask-aux x) x))
+             (svex-envs-1mask-equiv (svex-env-1mask-aux x nil) x))
     :hints(("Goal" :in-theory (e/d (svex-envs-1mask-equiv
-                                    SVEX-ENV-LOOKUP-WHEN-NOT-BOUNDP)
+                                    SVEX-ENV-LOOKUP-WHEN-NOT-BOUNDP
+                                    4vec-1mask-equiv)
                                    (svex-env-1mask-aux))
-            :cases ((svex-env-boundp (SVEX-ENVS-1MASK-EQUIV-WITNESS (SVEX-ENV-1MASK-AUX X)
+            :cases ((svex-env-boundp (SVEX-ENVS-1MASK-EQUIV-WITNESS (SVEX-ENV-1MASK-AUX X nil)
                                                      X) x))))
-    :rule-classes ((:rewrite)
-                   (:rewrite-quoted-constant)))
+    :rule-classes ((:rewrite)))
 
   (local (in-theory (enable svex-env-fix))))
 
 (define svex-env-1mask ((x svex-env-p))
   :returns (1mask-env svex-env-p)
-  (svex-env-1mask-aux (fast-alist-free (fast-alist-clean (svex-env-fix x))))
+  (svex-env-1mask-aux
+   (fast-alist-free (fast-alist-clean (svex-env-fix x)))
+   nil)
   ///
   (local (include-book "std/alists/alist-keys" :dir :system))
   (local (defthm no-duplicate-keys-of-fast-alist-fork

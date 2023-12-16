@@ -1405,12 +1405,14 @@
             :hints(("Goal" :in-theory '((<name>-fsm-constraints)
                                         (lhprobe-constraintlist-max-stage)))))))
 
-      (defthm outvars-len-of-<specname>
-        (equal (len (svtv-probealist-outvars (svtv-spec->probes (<specname>)))) 2)
-        :hints(("Goal" :in-theory '((<specname>)
-                                    (svtv-spec->probes)
-                                    (svtv-probealist-outvars)
-                                    (len)))))
+      (make-event
+       `(defthm outvars-len-of-<specname>
+          (equal (len (svtv-probealist-outvars (svtv-spec->probes (<specname>))))
+                 ,(len (svtv-probealist-outvars (svtv-spec->probes (<specname>)))))
+          :hints(("Goal" :in-theory '((<specname>)
+                                      (svtv-spec->probes)
+                                      (svtv-probealist-outvars)
+                                      (len))))))
 
       (define <name>-fsm-output-map ()
         :returns (map lhprobe-map-p
@@ -1423,24 +1425,26 @@
              ((acl2::with-fast x.namemap)))
           (svtv-probealist-to-lhprobe-map x.probes x.namemap))
         ///
-        (defthm svtv-spec-cycle-outs->pipe-out-of-<specname>
-          (implies (and (hons-get (svar-fix var) (<name>-fsm-output-map))
-                        (<= 2 (len outs)))
-                   (equal (svex-env-lookup var (svtv-spec-cycle-outs->pipe-out (<specname>) outs))
-                          (lhprobe-eval (cdr (hons-assoc-equal (svar-fix var) (<name>-fsm-output-map))) outs)))
-          :hints(("Goal" :in-theory '((:DEFINITION <NAME>-FSM-OUTPUT-MAP)
-                                      (:DEFINITION HONS-GET)
-                                      (:REWRITE CDR-CONS)
-                                      (:REWRITE LOOKUP-IN-SVTV-SPEC-CYCLE-OUTS->PIPE-OUT)
-                                      (:REWRITE LOOKUP-OF-SVTV-PROBEALIST-TO-LHPROBE-MAP)
-                                      (:REWRITE MAYBE-SVAR-P-P-WHEN-SVAR-P)
-                                      (:REWRITE OUTVARS-LEN-OF-<SPECNAME>)
-                                      (:REWRITE SVAR-P-OF-SVAR-FIX)
-                                      (:REWRITE SVAR-P-WHEN-MAYBE-SVAR-P-P)
-                                      (:REWRITE SVTV-PROBEALIST-FIX-WHEN-SVTV-PROBEALIST-P)
-                                      (:REWRITE SVTV-PROBEALIST-P-OF-SVTV-SPEC->PROBES)
-                                      (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-IMPLIES-PROBE-VARS-SUBSET-OF-NAMEMAP)
-                                      (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-OF-<SPECNAME>))))))
+        (make-event
+         `(defthm svtv-spec-cycle-outs->pipe-out-of-<specname>
+            (implies (and (hons-get (svar-fix var) (<name>-fsm-output-map))
+                          (<= ,(len (svtv-probealist-outvars (svtv-spec->probes (<specname>))))
+                              (len outs)))
+                     (equal (svex-env-lookup var (svtv-spec-cycle-outs->pipe-out (<specname>) outs))
+                            (lhprobe-eval (cdr (hons-assoc-equal (svar-fix var) (<name>-fsm-output-map))) outs)))
+            :hints(("Goal" :in-theory '((:DEFINITION <NAME>-FSM-OUTPUT-MAP)
+                                        (:DEFINITION HONS-GET)
+                                        (:REWRITE CDR-CONS)
+                                        (:REWRITE LOOKUP-IN-SVTV-SPEC-CYCLE-OUTS->PIPE-OUT)
+                                        (:REWRITE LOOKUP-OF-SVTV-PROBEALIST-TO-LHPROBE-MAP)
+                                        (:REWRITE MAYBE-SVAR-P-P-WHEN-SVAR-P)
+                                        (:REWRITE OUTVARS-LEN-OF-<SPECNAME>)
+                                        (:REWRITE SVAR-P-OF-SVAR-FIX)
+                                        (:REWRITE SVAR-P-WHEN-MAYBE-SVAR-P-P)
+                                        (:REWRITE SVTV-PROBEALIST-FIX-WHEN-SVTV-PROBEALIST-P)
+                                        (:REWRITE SVTV-PROBEALIST-P-OF-SVTV-SPEC->PROBES)
+                                        (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-IMPLIES-PROBE-VARS-SUBSET-OF-NAMEMAP)
+                                        (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-OF-<SPECNAME>)))))))
 
       
 

@@ -152,6 +152,7 @@
    lemma-custom-concl
    lemma-use-ideal
    lemma-use-svtv-spec
+   lemma-svtv-run-args
    integerp-separate
    integerp-defthm
    integerp-args
@@ -255,7 +256,8 @@
                                                    (svtv-run (<svtv>)
                                                              env
                                                              :include
-                                                             '<outputs-list>))
+                                                             '<outputs-list>
+                                                             <lemma-svtv-run-args>))
                                                   (:@ (or :use-ideal :use-svtv-spec)
                                                    (svex-env-reduce '<outputs-list>
                                                                     (svtv-spec-run ((:@ :use-ideal <ideal>)
@@ -334,7 +336,8 @@
                      (<outputs> . ,x.output-vars)
                      (<integerp-concls> . ,(if x.no-integerp nil (svtv-genthm-integerp-conclusions x)))
                      (<args> . ,x.lemma-args)
-                     (<integerp-args> . ,x.integerp-args))
+                     (<integerp-args> . ,x.integerp-args)
+                     (<lemma-svtv-run-args> . ,x.lemma-svtv-run-args))
      :str-alist `(("<NAME>" . ,(symbol-name x.name)))
      :features (append (and x.lemma-use-ideal '(:use-ideal))
                        (and x.lemma-no-run '(:lemma-no-run))
@@ -691,6 +694,7 @@
                                         
 
 (defun svtv-generalized-thm-auto-hyp (unsigned-byte-hyps
+                                      unsigned-byte-excludes
                                       env-val-widths-hyp
                                       ;; including :all and more- but not -bindings
                                       input-vars override-vars spec-override-vars
@@ -701,7 +705,8 @@
   (declare (xargs :mode :program))
   (cond (unsigned-byte-hyps
          (b* ((inmasks (svtv->inmasks svtv-val))
-              (inputs (append input-vars override-vars spec-override-vars))
+              (inputs (acl2::hons-set-diff (append input-vars override-vars spec-override-vars)
+                                           unsigned-byte-excludes))
               (masks (acl2::fal-extract inputs inmasks)))
            `(and . ,(svtv-unsigned-byte-hyps masks))))
         (env-val-widths-hyp
@@ -753,6 +758,7 @@
          output-parts
          enable
          unsigned-byte-hyps
+         unsigned-byte-excludes
          env-val-widths-hyp
          (hyp 't)
          (more-hyp 't)
@@ -766,6 +772,7 @@
          lemma-nonlocal
          lemma-use-ideal
          lemma-use-svtv-spec
+         lemma-svtv-run-args
          no-lemmas
          no-integerp
          integerp-separate
@@ -817,12 +824,14 @@
        (lemma-hyp (if (or env-val-widths-hyp
                           unsigned-byte-hyps)
                       (b* ((inmasks (svtv->inmasks svtv-val))
-                           (inputs (append input-vars override-vars spec-override-vars))
+                           (inputs (acl2::hons-set-diff (append input-vars override-vars spec-override-vars)
+                                                        unsigned-byte-excludes))
                            (masks (acl2::fal-extract inputs inmasks)))
                         `(and . ,(svtv-unsigned-byte-hyps masks)))
                     t))
        (auto-final-hyp (svtv-generalized-thm-auto-hyp
                         unsigned-byte-hyps
+                        unsigned-byte-excludes
                         env-val-widths-hyp
                         ;; including :all and more- but not -bindings
                         input-vars override-vars spec-override-vars
@@ -861,6 +870,7 @@
       :lemma-no-run lemma-no-run
       :lemma-use-ideal lemma-use-ideal
       :lemma-use-svtv-spec lemma-use-svtv-spec
+      :lemma-svtv-run-args lemma-svtv-run-args
       :hints hints
       :triples-name triplemaplist
       :triple-val-alist triple-val-alist
