@@ -522,42 +522,17 @@
                  (x86      x86p :hyp (x86p x86) :hints (("Goal" :in-theory (e/d () (x86p))))))
 
     (if (zp n)
-      (mv nil nil x86)
+        (mv nil nil x86)
       (b* (((unless (canonical-address-p lin-addr))
             (mv t nil x86))
+           ((mv flg p-addr x86)
+            (ia32e-la-to-pa lin-addr r-w-x x86))
+           ((when flg) (mv flg nil x86))
            ((mv flgs p-addrs x86)
-            (las-to-pas (1- n) (1+ lin-addr) r-w-x x86))
-           ((when flgs) (mv flgs nil x86))
-           ((mv flg p-addr x86) ;;(if (not p-addrs)
-            (ia32e-la-to-pa lin-addr r-w-x x86)
-            ;;   (la-to-pa-with-cache lin-addr r-w-x (1+ lin-addr) (car p-addrs) x86)))
-            )
-           ((when flg) (mv flg nil x86)))
-          (mv nil (cons p-addr p-addrs) x86)))
+            (las-to-pas (1- n) (1+ lin-addr) r-w-x x86)))
+        (mv flgs (if flgs nil (cons p-addr p-addrs)) x86)))
 
     ///
-
-    (skip-proofs
-
-     ;; Need a property about ``ia32e-la-to-pa''
-     ;; WAHJr.
-
-     ;; Yahya is going to have a go at this lemma, and we will have a look at
-     ;; his attempt on Monday (12/18).
-
-     (defthm las-to-pas-preserves-ia32e-la-to-pa
-         (implies
-          (not (mv-nth 0 (las-to-pas n lin-addr2 r-w-x-2 x86)))
-          (and
-           (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x
-                                            (mv-nth 2 (las-to-pas n lin-addr2 r-w-x-2 x86))))
-                  (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
-           (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x
-                                            (mv-nth 2 (las-to-pas n lin-addr2 r-w-x-2 x86))))
-                  (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))))))
-     )
-
-
 
     (defthm consp-mv-nth-1-las-to-pas
             (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
