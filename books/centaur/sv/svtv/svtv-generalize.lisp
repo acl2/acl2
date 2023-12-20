@@ -298,29 +298,6 @@
 (fgl::disable-execution svtv-spec-run)
 (fgl::remove-fgl-rewrite svtv-spec-run-fn)
 
-(local (in-theory (disable acl2::hons-union)))
-
-(define svtv-override-triplemaplist-overridekeys ((triplemaps svtv-override-triplemaplist-p)
-                                                  (namemap svtv-name-lhs-map-p))
-  (if (atom triplemaps)
-      nil
-    (acl2::hons-union (svtv-name-lhs-map-vars
-                       (fal-extract (svtv-override-triplemap-refvar-keys (car triplemaps))
-                                    (svtv-name-lhs-map-fix namemap)))
-                      (svtv-override-triplemaplist-overridekeys (cdr triplemaps) namemap)))
-  ///
-  (local (in-theory (enable svtv-override-triplemaplist-fix))))
-
-
-(define svtv-overridekeys-full ((override-test-alists svex-alistlist-p)
-                                (namemap svtv-name-lhs-map-p))
-  (if (atom override-test-alists)
-      nil
-    (acl2::hons-union (svtv-name-lhs-map-vars
-                       (fal-extract (svex-alist-keys (car override-test-alists))
-                                    (svtv-name-lhs-map-fix namemap)))
-                      (svtv-overridekeys-full (cdr override-test-alists) namemap))))
-
 
                                       
 

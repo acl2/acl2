@@ -29,7 +29,7 @@
 (set-waterfall-parallelism nil)
 
 (include-book "svtv-stobj-defsvtv")
-(include-book "svtv-generalize")
+(include-book "svtv-generalize-defs")
 (local (include-book "centaur/fgl/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (in-theory (disable unsigned-byte-p)))
@@ -204,9 +204,11 @@
               :concl (integerp res3)))))
 
 (encapsulate nil
+  (local (include-book "svtv-idealize-defs"))
   (local
-   (progn
-     (def-svtv-ideal mod-ideal mod-run mod-run-data)
+   (encapsulate nil
+     (local (include-book "svtv-generalize"))
+     (make-event '(def-svtv-ideal mod-ideal mod-run mod-run-data))
 
      (table svtv-generalized-thm-defaults :svtv 'mod-run)
      (table svtv-generalized-thm-defaults :ideal 'mod-ideal)
@@ -222,29 +224,30 @@
                                                 (b . ,(loghead 4 b)))
                                               '(res3))))
 
-     (def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
-       :spec-override-vars (a)
-       :override-vars (b)
-       :spec-override-var-bindings ((op 0))
-       :output-vars (res3)
-       :svtv mod-run
-       :ideal mod-ideal
-       :unsigned-byte-hyps t
-       :concl (equal res3 (mod-run-res3 a b))
-       :lemma-use-ideal t
-       :lemma-defthm defthm
-       :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
-                                                        svtv-override-triplemaplist-envs-match-checks-when-variable-free
-                                                        4vec-p-when-integerp
-                                                        (:ruleset svtv-generalized-thm-rules))))))
+     (make-event '(def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
+                    :spec-override-vars (a)
+                    :override-vars (b)
+                    :spec-override-var-bindings ((op 0))
+                    :output-vars (res3)
+                    :svtv mod-run
+                    :ideal mod-ideal
+                    :unsigned-byte-hyps t
+                    :concl (equal res3 (mod-run-res3 a b))
+                    :lemma-use-ideal t
+                    :lemma-defthm defthm
+                    :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
+                                                                     svtv-override-triplemaplist-envs-match-checks-when-variable-free
+                                                                     4vec-p-when-integerp
+                                                                     (:ruleset svtv-generalized-thm-rules)))))))
      )))
 
 
 
 (encapsulate nil
   (local
-   (progn
-     (def-svtv-override-thms mod-run mod-run-data)
+   (encapsulate nil
+     (local (include-book "svtv-generalize"))
+     (make-event '(def-svtv-override-thms mod-run mod-run-data))
 
      (table svtv-generalized-thm-defaults :svtv 'mod-run)
 
@@ -260,25 +263,27 @@
                                           (b . ,(loghead 4 b)))
                                         :include '(res3))))
 
-     (def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
-       :spec-override-vars (a)
-       :override-vars (b)
-       :spec-override-var-bindings ((op 0))
-       :output-vars (res3)
-       :svtv mod-run
-       :unsigned-byte-hyps t
-       :concl (equal res3 (mod-run-res3 a b))
-       :lemma-defthm defthm
-       :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
-                                                        svtv-override-triplemaplist-envs-match-checks-when-variable-free
-                                                        4vec-p-when-integerp
-                                                        (:ruleset svtv-generalized-thm-rules))))))
+     (make-event
+      '(def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
+         :spec-override-vars (a)
+         :override-vars (b)
+         :spec-override-var-bindings ((op 0))
+         :output-vars (res3)
+         :svtv mod-run
+         :unsigned-byte-hyps t
+         :concl (equal res3 (mod-run-res3 a b))
+         :lemma-defthm defthm
+         :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
+                                                          svtv-override-triplemaplist-envs-match-checks-when-variable-free
+                                                          4vec-p-when-integerp
+                                                          (:ruleset svtv-generalized-thm-rules)))))))
      )))
 
 (encapsulate nil
   (local
-   (progn
-     (def-svtv-override-thms mod-run mod-run-data :inclusive-overridekeys t)
+   (encapsulate nil
+     (local (include-book "svtv-generalize"))
+     (make-event '(def-svtv-override-thms mod-run mod-run-data :inclusive-overridekeys t))
 
      (table svtv-generalized-thm-defaults :svtv 'mod-run)
 
@@ -294,7 +299,7 @@
                                           (b . ,(loghead 4 b)))
                                         :include '(res3))))
 
-     (def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
+     (make-event '(def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
        :spec-override-vars (a)
        :override-vars (b)
        :spec-override-var-bindings ((op 0))
@@ -306,15 +311,16 @@
        :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
                                                         svtv-override-triplemaplist-envs-match-checks-when-variable-free
                                                         4vec-p-when-integerp
-                                                        (:ruleset svtv-generalized-thm-rules))))))
+                                                        (:ruleset svtv-generalized-thm-rules)))))))
      )))
 
 
 
 (encapsulate nil
   (local
-   (progn
-     (def-svtv-refinement mod-run mod-run-data :svtv-spec t)
+   (encapsulate nil
+     (local (include-book "svtv-generalize"))
+     (make-event '(def-svtv-refinement mod-run mod-run-data :svtv-spec t))
 
      (table svtv-generalized-thm-defaults :svtv 'mod-run)
      (table svtv-generalized-thm-defaults :svtv-spec 'mod-run-spec)
@@ -331,7 +337,8 @@
                                           (a . ,(loghead 4 a))
                                           (b . ,(loghead 4 b))))))
 
-     (def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
+     (make-event
+      '(def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
        :spec-override-vars (a)
        :override-vars (b)
        :spec-override-var-bindings ((op 0))
@@ -345,14 +352,15 @@
        :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
                                                         svtv-override-triplemaplist-envs-match-checks-when-variable-free
                                                         4vec-p-when-integerp
-                                                        (:ruleset svtv-generalized-thm-rules))))))
+                                                        (:ruleset svtv-generalized-thm-rules)))))))
      )))
 
 
 (encapsulate nil
   (local
-   (progn
-     (def-svtv-refinement mod-run mod-run-data :svtv-spec t :inclusive-overridekeys t)
+   (encapsulate nil
+     (local (include-book "svtv-generalize"))
+     (make-event '(def-svtv-refinement mod-run mod-run-data :svtv-spec t :inclusive-overridekeys t))
 
      (table svtv-generalized-thm-defaults :svtv 'mod-run)
      (table svtv-generalized-thm-defaults :svtv-spec 'mod-run-spec)
@@ -369,7 +377,7 @@
                                           (a . ,(loghead 4 a))
                                           (b . ,(loghead 4 b))))))
 
-     (def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
+     (make-event '(def-svtv-generalized-thm mod-run-res3-is-mod-run-res3
        :spec-override-vars (a)
        :override-vars (b)
        :spec-override-var-bindings ((op 0))
@@ -383,7 +391,7 @@
        :lemma-args (:hints (("goal" :in-theory (enable* mod-run-res3
                                                         svtv-override-triplemaplist-envs-match-checks-when-variable-free
                                                         4vec-p-when-integerp
-                                                        (:ruleset svtv-generalized-thm-rules))))))
+                                                        (:ruleset svtv-generalized-thm-rules)))))))
      )))
 
 
@@ -411,10 +419,16 @@
 (def-svtv-data-export mod-run2-data)
 
 (encapsulate nil
-  (local (def-svtv-refinement mod-run2 mod-run2-data :svtv-spec t)))
+  (local
+   (encapsulate nil
+     (local (include-book "svtv-generalize"))
+     (make-event '(def-svtv-refinement mod-run2 mod-run2-data :svtv-spec t)))))
 
 (encapsulate nil
-  (local (def-svtv-refinement mod-run2 mod-run2-data :svtv-spec t :inclusive-overridekeys t)))
+  (local
+   (encapsulate nil
+     (local (include-book "svtv-generalize"))
+     (make-event '(def-svtv-refinement mod-run2 mod-run2-data :svtv-spec t :inclusive-overridekeys t)))))
 
 
 

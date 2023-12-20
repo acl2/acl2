@@ -25,9 +25,7 @@
 
 (in-package "SV")
 
-(include-book "../svex/override-transparency-and-monotonicity")
-(include-book "../svex/override-transparency-and-ovmonotonicity")
-(include-book "fsm-base")
+(include-book "fsm-override-defs")
 
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -38,27 +36,6 @@
 
 (local (std::add-default-post-define-hook :fix))
 
-(define base-fsm-overridekey-transparent-p ((x base-fsm-p)
-                                            (overridekeys svarlist-p))
-  (b* (((base-fsm x)))
-    (and (ec-call (svex-alist-overridekey-transparent-p x.values overridekeys x.values))
-         (ec-call (svex-alist-overridekey-transparent-p x.nextstate overridekeys x.values))))
-  ///
-  (defcong set-equiv equal (base-fsm-overridekey-transparent-p x overridekeys) 2)
-
-  (defthm base-fsm-overridekey-transparent-p-of-svarlist-change-override
-    (equal (base-fsm-overridekey-transparent-p x (svarlist-change-override overridekeys type))
-           (base-fsm-overridekey-transparent-p x overridekeys))))
-
-(define base-fsm-ovmonotonic ((x base-fsm-p))
-  (b* (((base-fsm x)))
-    (and (ec-call (svex-alist-ovmonotonic x.values))
-         (ec-call (svex-alist-ovmonotonic x.nextstate)))))
-
-(define base-fsm-ovcongruent ((x base-fsm-p))
-  (b* (((base-fsm x)))
-    (and (ec-call (svex-alist-ovcongruent x.values))
-         (ec-call (svex-alist-ovcongruent x.nextstate)))))
 
 ;; (define base-fsm-partial-monotonic ((params svarlist-p)
 ;;                                     (x base-fsm-p))
@@ -152,11 +129,9 @@
                                 svex-envlist-<<=)
              :expand ((:free (initst x) (base-fsm-final-state ins initst x)))))))
 
-(define base-fsm-<<= ((x base-fsm-p) (y base-fsm-p))
-  (b* (((base-fsm x)) ((base-fsm y)))
-    (and (ec-call (svex-alist-<<= x.values y.values))
-         (ec-call (svex-alist-<<= x.nextstate y.nextstate))))
-  ///
+(defsection base-fsm-<<=
+  (local (in-theory (enable base-fsm-<<=)))
+  (local (std::set-define-current-function base-fsm-<<=))
 
   (local (defun ind (ins x-initst y-initst x y)
            (if (atom ins)
@@ -187,18 +162,10 @@
        
                                             
 
-(define overridekeys-envlists-ok ((overridekeys svarlist-p)
-                                  (impl-envs svex-envlist-p)
-                                  (spec-envs svex-envlist-p)
-                                  (spec-outs svex-envlist-p))
-  :guard (eql (len spec-envs) (len spec-outs))
-  :returns (ok)
-  :measure (len spec-envs)
-  (if (atom spec-envs)
-      (atom impl-envs)
-    (and (overridekeys-envs-ok overridekeys (car impl-envs) (car spec-envs) (car spec-outs))
-         (overridekeys-envlists-ok overridekeys (cdr impl-envs) (cdr spec-envs) (cdr spec-outs))))
-  ///
+(defsection overridekeys-envlists-ok
+  ;; :extension overridekeys-envlists-ok
+  (local (in-theory (enable overridekeys-envlists-ok)))
+  (local (std::set-define-current-function overridekeys-envlists-ok))
 
   (local (defthmd not-member-by-svar-override-p
            (implies (and (svarlist-equiv x-equiv (double-rewrite x))
@@ -382,19 +349,11 @@
                                       base-fsm-ovmonotonic))))))
 
 
-(define overridekeys-envlists-agree* ((overridekeys svarlist-p)
-                                      (impl-envs svex-envlist-p)
-                                      (spec-envs svex-envlist-p)
-                                      (spec-outs svex-envlist-p))
-  :guard (eql (len spec-envs) (len spec-outs))
-  :returns (ok)
-  :measure (len spec-envs)
-  (if (atom spec-envs)
-      (atom impl-envs)
-    (and (consp impl-envs)
-         (overridekeys-envs-agree* overridekeys (car impl-envs) (car spec-envs) (car spec-outs))
-         (overridekeys-envlists-agree* overridekeys (cdr impl-envs) (cdr spec-envs) (cdr spec-outs))))
-  ///
+(defsection overridekeys-envlists-agree*
+  ;; :extension overridekeys-envlists-agree*
+  (local (in-theory (enable overridekeys-envlists-agree*)))
+  (local (std::set-define-current-function overridekeys-envlists-agree*))
+  
   (local (defthmd not-member-by-svar-override-p
            (implies (and (svarlist-equiv x-equiv (double-rewrite x))
                          (svarlist-override-p x-equiv type1)

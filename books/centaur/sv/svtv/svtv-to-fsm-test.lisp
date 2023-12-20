@@ -25,8 +25,8 @@
 
 (in-package "SV")
 
-(include-book "svtv-to-fsm")
-(include-book "svtv-generalize")
+(include-book "svtv-to-fsm-defs")
+;; (include-book "svtv-generalize")
 (include-book "centaur/fgl/top" :dir :system)
 (include-book "svtv-stobj-defsvtv")
 (include-book "centaur/vl/loader/top" :dir :system)
@@ -65,32 +65,42 @@
 
 (def-svtv-data-export counter-invar0-run-data)
 
-(def-svtv-refinement counter-invar0-run counter-invar0-run-data
-  :svtv-spec counter-invar0-spec :inclusive-overridekeys t
-  :fsm counter-fsm :define-fsm t)
+(encapsulate nil
+  (local (include-book "svtv-generalize"))
+  (local (include-book "svtv-to-fsm"))
+  (make-event '(def-svtv-refinement counter-invar0-run counter-invar0-run-data
+                 :svtv-spec counter-invar0-spec :inclusive-overridekeys t
+                 :fsm counter-fsm :define-fsm t)))
 
 (value-triple (acl2::tshell-ensure))
 
-(def-svtv-generalized-thm counter-invar0-svtv-thm
-  :svtv counter-invar0-run
-  :svtv-spec counter-invar0-spec
-  :input-vars :all
-  :output-vars (sum-out sum1-out)
-  :unsigned-byte-hyps t
-  :override-vars (sum)
-  :spec-override-vars (sum1)
-  :hyp (and (<= sum 11)
-            (<= sum1 10))
-  :concl (and (<= sum-out 11)
-              (<= sum1-out 10)))
+
+(encapsulate nil
+  (local (include-book "svtv-generalize"))
+
+  (make-event '(def-svtv-generalized-thm counter-invar0-svtv-thm
+                 :svtv counter-invar0-run
+                 :svtv-spec counter-invar0-spec
+                 :input-vars :all
+                 :output-vars (sum-out sum1-out)
+                 :unsigned-byte-hyps t
+                 :override-vars (sum)
+                 :spec-override-vars (sum1)
+                 :hyp (and (<= sum 11)
+                           (<= sum1 10))
+                 :concl (and (<= sum-out 11)
+                             (<= sum1-out 10)))))
 
 
-(def-svtv-to-fsm-thm counter-invar0-fsm-thm
-  :svtv-spec-thmname counter-invar0-svtv-thm)
+(encapsulate nil
+  (local (include-book "svtv-to-fsm"))
+  (local (include-book "svtv-generalize"))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm
+                 :svtv-spec-thmname counter-invar0-svtv-thm))
 
-(def-svtv-to-fsm-thm counter-invar0-fsm-thm2
-  :svtv-spec-thmname counter-invar0-svtv-thm
-  :eliminate-override-vars (sum1))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm2
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-vars (sum1))))
 
 
 
@@ -113,34 +123,39 @@
 
 (def-svtv-data-export counter-invar1-run-data)
 
-(def-svtv-refinement counter-invar1-run counter-invar1-run-data
-  :svtv-spec counter-invar1-spec
-  :inclusive-overridekeys t
-  :fsm counter-fsm)
+(encapsulate nil
+  (local (include-book "svtv-to-fsm"))
+  (local (include-book "svtv-generalize"))
+  (make-event
+   '(progn
+      (def-svtv-refinement counter-invar1-run counter-invar1-run-data
+        :svtv-spec counter-invar1-spec
+        :inclusive-overridekeys t
+        :fsm counter-fsm)
 
 
 
-(def-svtv-generalized-thm counter-invar1-svtv-thm
-  :svtv counter-invar1-run
-  :svtv-spec counter-invar1-spec
-  :input-vars :all
-  :output-vars (sum-out sum1-out)
-  :unsigned-byte-hyps t
-  :override-vars (sum)
-  :spec-override-vars ()
-  :hyp (and (<= sum 11)
-            (<= sum1 10))
-  :concl (and (<= sum-out 11)
-              (<= sum1-out 10)))
+      (def-svtv-generalized-thm counter-invar1-svtv-thm
+        :svtv counter-invar1-run
+        :svtv-spec counter-invar1-spec
+        :input-vars :all
+        :output-vars (sum-out sum1-out)
+        :unsigned-byte-hyps t
+        :override-vars (sum)
+        :spec-override-vars ()
+        :hyp (and (<= sum 11)
+                  (<= sum1 10))
+        :concl (and (<= sum-out 11)
+                    (<= sum1-out 10)))
 
-(def-svtv-to-fsm-thm counter-invar1-fsm-thm
-  :svtv-spec-thmname counter-invar1-svtv-thm)
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm
+        :svtv-spec-thmname counter-invar1-svtv-thm)
 
-(def-svtv-to-fsm-thm counter-invar1-fsm-thm2
-  :svtv-spec-thmname counter-invar1-svtv-thm
-  ;; BOZO we should only have to specify one of these
-  :eliminate-override-vars (sum1)
-  :eliminate-override-signals ("sum1"))
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm2
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        ;; BOZO we should only have to specify one of these
+        :eliminate-override-vars (sum1)
+        :eliminate-override-signals ("sum1")))))
 
 
 
@@ -161,31 +176,36 @@
 
 (def-svtv-data-export counter-invar2-run-data)
 
-(def-svtv-refinement counter-invar2-run counter-invar2-run-data
-  :svtv-spec counter-invar2-spec
-  :fsm counter-fsm
-  :inclusive-overridekeys t)
+(encapsulate nil
+  (local (include-book "svtv-to-fsm"))
+  (local (include-book "svtv-generalize"))
+  (make-event
+   '(progn
+      (def-svtv-refinement counter-invar2-run counter-invar2-run-data
+        :svtv-spec counter-invar2-spec
+        :fsm counter-fsm
+        :inclusive-overridekeys t)
 
 
 
-(def-svtv-generalized-thm counter-invar2-svtv-thm
-  :svtv counter-invar2-run
-  :svtv-spec counter-invar2-spec
-  :input-vars :all
-  :output-vars (sum-out sum1-out)
-  :unsigned-byte-hyps t
-  :override-vars (sum)
-  :spec-override-vars ()
-  :hyp (and (<= sum 11)
-            ;; (<= sum1 10)
-            )
-  :concl (and (<= sum-out 11)
-              (<= sum1-out 10)))
+      (def-svtv-generalized-thm counter-invar2-svtv-thm
+        :svtv counter-invar2-run
+        :svtv-spec counter-invar2-spec
+        :input-vars :all
+        :output-vars (sum-out sum1-out)
+        :unsigned-byte-hyps t
+        :override-vars (sum)
+        :spec-override-vars ()
+        :hyp (and (<= sum 11)
+                  ;; (<= sum1 10)
+                  )
+        :concl (and (<= sum-out 11)
+                    (<= sum1-out 10)))
 
-(def-svtv-to-fsm-thm counter-invar2-fsm-thm
-  :svtv-spec-thmname counter-invar2-svtv-thm)
+      (def-svtv-to-fsm-thm counter-invar2-fsm-thm
+        :svtv-spec-thmname counter-invar2-svtv-thm)
 
-(def-svtv-to-fsm-thm counter-invar2-fsm-thm2
-  :svtv-spec-thmname counter-invar2-svtv-thm
-  :eliminate-override-signals ("sum1"))
+      (def-svtv-to-fsm-thm counter-invar2-fsm-thm2
+        :svtv-spec-thmname counter-invar2-svtv-thm
+        :eliminate-override-signals ("sum1")))))
 

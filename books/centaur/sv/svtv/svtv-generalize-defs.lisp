@@ -25,9 +25,11 @@
 
 (in-package "SV")
 
-(include-book "svtv-spec")
+(include-book "svtv-data-obj-spec")
 (include-book "svtv-stobj-export")
 (include-book "override-common")
+(include-book "override-envlist-defs")
+(include-book "fsm-override-defs")
 (local (include-book "std/alists/alist-keys" :dir :system))
 
 (local (std::add-default-post-define-hook :fix))
@@ -274,3 +276,83 @@ test or value variables of the triplemaps.</li>
   ///
   (local (in-theory (enable svex-alist-fix))))
 
+
+
+(local (in-theory (disable acl2::hons-union)))
+
+(define svtv-overridekeys-full ((override-test-alists svex-alistlist-p)
+                                (namemap svtv-name-lhs-map-p))
+  (if (atom override-test-alists)
+      nil
+    (acl2::hons-union (svtv-name-lhs-map-vars
+                       (fal-extract (svex-alist-keys (car override-test-alists))
+                                    (svtv-name-lhs-map-fix namemap)))
+                      (svtv-overridekeys-full (cdr override-test-alists) namemap))))
+
+
+
+(define svtv-override-triplemaplist-overridekeys ((triplemaps svtv-override-triplemaplist-p)
+                                                  (namemap svtv-name-lhs-map-p))
+  (if (atom triplemaps)
+      nil
+    (acl2::hons-union (svtv-name-lhs-map-vars
+                       (fal-extract (svtv-override-triplemap-refvar-keys (car triplemaps))
+                                    (svtv-name-lhs-map-fix namemap)))
+                      (svtv-override-triplemaplist-overridekeys (cdr triplemaps) namemap)))
+  ///
+  (local (in-theory (enable svtv-override-triplemaplist-fix))))
+
+
+(define 4vec-non-x-p ((x 4vec-p))
+  (b* (((4vec x)))
+    (equal (logandc2 x.upper x.lower) 0))
+  ///
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+  (defthmd 4vec-<<=-when-4vec-non-x-p
+    (implies (4vec-non-x-p x)
+             (equal (4vec-<<= x y)
+                    (4vec-equiv x y)))
+    :hints(("Goal" :in-theory (enable 4vec-<<= 4vec-fix-is-4vec-of-fields))
+           (bitops::logbitp-reasoning))))
+
+
+
+(defthmd svex-env-lookup-when-non-x-p-and-<<=
+  (implies (and (svex-env-<<= env1 env2)
+                (4vec-non-x-p (svex-env-lookup k env1)))
+           (equal (svex-env-lookup k env2)
+                  (svex-env-lookup k env1)))
+  :hints(("Goal" :use ((:instance svex-env-<<=-necc (x env1) (y env2) (var k)))
+          :in-theory (e/d (4vec-<<=-when-4vec-non-x-p)
+                          (svex-env-<<=-necc)))))
+
+(define svex-env-non-x-p ((x svex-env-p))
+  (if (atom x)
+      t
+    (and (or (not (mbt (and (consp (car x))
+                            (svar-p (caar x)))))
+             (4vec-non-x-p (cdar x)))
+         (svex-env-non-x-p (cdr x))))
+  ///
+  (local (include-book "std/lists/sets" :dir :system))
+  (defthmd lookup-when-svex-env-non-x-p
+    (implies (and (svex-env-non-x-p x)
+                  (svex-env-boundp k x))
+             (4vec-non-x-p (svex-env-lookup k x)))
+    :hints(("Goal" :in-theory (enable svex-env-boundp svex-env-lookup
+                                      hons-assoc-equal))))
+
+
+  (defthmd svex-env-reduce-when-svex-env-non-x-p-and-<<=
+    (implies (and (svex-env-non-x-p (svex-env-reduce vars env1))
+                  (svex-env-<<= env1 env2)
+                  (set-equiv (alist-keys (svex-env-fix env1)) (alist-keys (svex-env-fix env2))))
+             (equal (svex-env-reduce vars env1)
+                    (svex-env-reduce vars env2)))
+    :hints(("Goal" :in-theory (enable svex-env-reduce-redef
+                                      svex-env-boundp-iff-member-alist-keys
+                                      svex-env-lookup-when-non-x-p-and-<<=)
+            :induct (len vars))))
+
+  (local (in-theory (enable svex-env-fix))))
