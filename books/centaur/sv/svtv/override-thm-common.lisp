@@ -303,7 +303,7 @@
                                         (:@ :default-integerp-args
                                          :hints (("goal" :use <name>-override-lemma
                                                   :in-theory (disable <name>-override-lemma))))
-                                        (:@ (:not :default-integerp-args)
+                                        (:@ (not :default-integerp-args)
                                          <integerp-args>))))))
     (acl2::template-subst
      template

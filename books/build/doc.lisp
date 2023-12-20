@@ -1200,7 +1200,8 @@ use.  For instance, if we want to certify @('foo.lisp') using
   :short "(Advanced) how to distribute ACL2 book building over a cluster
 of machines."
 
-  :long "<p>Warning: getting a cluster set up and running smoothly is a
+  :long (concatenate 'string
+                     "<p>Warning: getting a cluster set up and running smoothly is a
 significant undertaking.  Aside from hardware costs, it may take significant
 energy to install and administer the system, and you will need to learn how to
 effectively use the queuing system.  You'll probably also need to be ready to
@@ -1293,9 +1294,11 @@ of set-max-mem forms are recognized and used to generate the environment
 variable CERT_MAX_MEM:</p>
 
 @({
- (set-max-mem (expt 2 k))
- (set-max-mem (* n (expt 2 30))) ;; N gigabytes
- (set-max-mem (* (expt 2 30) n))
+ (" ;; note: string breaks here to prevent warnings about unsupported
+    ;; set-max-mem args when scanning this file
+                     "set-max-mem (expt 2 k))
+ (" "set-max-mem (* n (expt 2 30))) ;; N gigabytes
+ (" "set-max-mem (* (expt 2 30) n))
  })
 
 <p>Additionally, the following pattern is scanned to set the environment variable CERT_MAX_TIME.
@@ -1322,7 +1325,7 @@ following scenario:</p>
 <p>To avoid this, @('cert.pl') now has special support for NFS lag.  We now use
 exit codes instead of files to determine success.  In cases where the exit code
 says the job completed successfully, we wait until @('A.cert') becomes visible
-to the head node before returning control to the Makefile.</p>")
+to the head node before returning control to the Makefile.</p>"))
 
 (xdoc::order-subtopics cert.pl
   (preliminaries certifying-simple-books pre-certify-book-commands
