@@ -3745,8 +3745,13 @@ In particular this requires
    override-vars
    spec-override-vars
 
-   eliminate-override-vars
-   eliminate-override-signals
+   ;; eliminate-override-vars
+   ;; eliminate-override-signals
+   ;; eliminate-all-overrides
+   remaining-override-vars
+   new-eliminated-override-vars
+   all-eliminated-override-vars
+   override-test-envs
    
    outmap
    bindings
@@ -3985,30 +3990,21 @@ In particular this requires
 ;;         (svtv-to-fsm-first-thm-input-var-bindings '(sum-out sum1-out) (counter-invar-run-fsm-output-map) nil 'outs))
 
 
-(define svtv-to-fsm-first-thm (x spec)
+(define svtv-to-fsm-first-thm (x)
   :mode :program
   (b* (((svtv-to-fsm-thm x))
        ((acl2::with-fast x.bindings x.outmap x.triple-val-alist))
        (var-bindings (append (svtv-to-fsm-first-thm-input-var-bindings x.input-vars x.bindings nil 'envs)
                              (svtv-to-fsm-first-thm-input-var-bindings
-                              (hons-set-diff x.spec-override-vars x.eliminate-override-vars)
+                              x.remaining-override-vars
                               x.bindings :val 'envs)
                              (svtv-to-fsm-first-thm-input-var-bindings
-                              (append x.override-vars x.eliminate-override-vars)
+                              x.all-eliminated-override-vars
                               x.bindings nil 'outs)
                              (svtv-to-fsm-first-thm-input-var-bindings x.output-vars x.outmap nil 'outs)))
-       (test-env (svtv-genthm-override-test-alist x.eliminate-override-vars x.triple-val-alist x.triples-name))
-       ((svtv-spec spec))
-       (override-test-svtv-env (svtv-genthm-override-test-alist
-                                (hons-set-diff x.spec-override-vars x.eliminate-override-vars) x.triple-val-alist x.triples-name))
-       (override-test-envs (with-fast-alist override-test-svtv-env
-                             (svex-envlist-1mask
-                              (svex-alistlist-eval
-                               (svtv-fsm-namemap-alistlist
-                                (svex-alistlist-removekeys x.eliminate-override-signals spec.override-test-alists)
-                                spec.namemap
-                                                           :test)
-                               override-test-svtv-env))))
+       (test-env (svtv-genthm-override-test-alist
+                  x.new-eliminated-override-vars
+                  x.triple-val-alist x.triples-name))
        ;; (run-length (len (svtv-probealist-outvars spec.probes)))
        )
     (acl2::template-subst *svtv-to-fsm-first-thm-template*
@@ -4018,7 +4014,7 @@ In particular this requires
                                         (<run-length> . ,x.run-length)
                                         (<svtv-spec-thmname> . ,x.svtv-spec-thmname)
                                         (<specname> . ,x.svtv-spec)
-                                        (<override-test-envs> . ',override-test-envs)
+                                        (<override-test-envs> . ',x.override-test-envs)
                                         (<test-env> . ',test-env))
                           :splice-alist `((<bindings> . ,var-bindings))
                           :str-alist `(("<SVTVNAME>" . ,(symbol-name x.svtv))
@@ -4168,20 +4164,19 @@ In particular this requires
 
 
 
-(define svtv-to-fsm-final-thm (x spec)
+(define svtv-to-fsm-final-thm (x)
   :mode :program
   (b* (((svtv-to-fsm-thm x))
-       ((svtv-spec spec))
        ((acl2::with-fast x.bindings x.outmap x.triple-val-alist))
        ((mv var-bindings1 cycle-eqns1)
         (svtv-to-fsm-final-thm-input-var-bindings x.input-vars x.bindings nil 'envs x.base-cycle-var x.primary-output-var x.pkg-sym))
        ((mv var-bindings2 cycle-eqns2)
         (svtv-to-fsm-final-thm-input-var-bindings
-         (hons-set-diff x.spec-override-vars x.eliminate-override-vars)
+         x.remaining-override-vars
          x.bindings :val 'envs x.base-cycle-var x.primary-output-var x.pkg-sym))
        ((mv var-bindings3 cycle-eqns3)
         (svtv-to-fsm-final-thm-input-var-bindings
-         (append x.override-vars x.eliminate-override-vars)
+         x.all-eliminated-override-vars
          x.bindings nil 'outs x.base-cycle-var x.primary-output-var x.pkg-sym))
        ((mv var-bindings4 cycle-eqns4)
         (svtv-to-fsm-final-thm-input-var-bindings x.output-vars x.outmap nil 'outs x.base-cycle-var x.primary-output-var x.pkg-sym))
@@ -4190,17 +4185,6 @@ In particular this requires
        (first-cycle-eqn (cdr (assoc-eq x.primary-output-var cycle-eqns-all)))
        (rest-cycle-eqns (remove-equal first-cycle-eqn (strip-cdrs cycle-eqns-all)))
        (cycle-eqns (cons first-cycle-eqn rest-cycle-eqns))
-       
-       (override-test-svtv-env (svtv-genthm-override-test-alist
-                                (hons-set-diff x.spec-override-vars x.eliminate-override-vars) x.triple-val-alist x.triples-name))
-       (override-test-envs (with-fast-alist override-test-svtv-env
-                             (svex-envlist-1mask
-                              (svex-alistlist-eval
-                               (svtv-fsm-namemap-alistlist
-                                (svex-alistlist-removekeys x.eliminate-override-signals spec.override-test-alists)
-                                                           spec.namemap
-                                                           :test)
-                               override-test-svtv-env))))
        ;; (run-length (len (svtv-probealist-outvars spec.probes)))
        )
     (acl2::template-subst *svtv-to-fsm-final-thm-template*
@@ -4210,7 +4194,7 @@ In particular this requires
                                         (<run-length> . ,x.run-length)
                                         (<svtv-spec-thmname> . ,x.svtv-spec-thmname)
                                         (<specname> . ,x.svtv-spec)
-                                        (<override-test-envs> . ',override-test-envs)
+                                        (<override-test-envs> . ',x.override-test-envs)
                                         (<basecycle> . ,x.base-cycle-var)
                                         (<thmname> . ,x.thmname)
                                         (<rule-classes> . ,x.rule-classes))
@@ -4224,7 +4208,7 @@ In particular this requires
 
 
 (define parse-svtv-to-fsm-thm (thmname args state)
-  :returns (mv thmobj spec)
+  :returns thmobj
   :mode :program :stobjs state
   (b* ((defaults (table-alist 'svtv-to-fsm-thm-defaults (w state)))
        (ctx `(def-svtv-to-fsm-thm ,thmname))
@@ -4259,38 +4243,33 @@ In particular this requires
                                    (car full-args))))
 
        ((unless (and svtv-spec-thmname (symbolp svtv-spec-thmname)))
-        (er hard ctx "~x0 must be specified" :svtv-spec-thmname)
-        (mv nil nil))
+        (er hard ctx "~x0 must be specified" :svtv-spec-thmname))
        (svtv-thm (cdr (assoc-eq svtv-spec-thmname (table-alist 'svtv-generalized-thm-table (w state)))))
        ((unless svtv-thm)
-        (er hard ctx "No entry in the ~x0 for svtv-spec-thm ~x1" 'svtv-generalized-thm-table svtv-spec-thmname)
-        (mv nil nil))
+        (er hard ctx "No entry in the ~x0 for svtv-spec-thm ~x1" 'svtv-generalized-thm-table svtv-spec-thmname))
 
        ((svtv-generalized-thm svtv-thm))
 
        ((with-fast svtv-thm.triple-val-alist))
 
        ((unless svtv-thm.svtv-spec)
-        (er hard ctx "The ~x0 must be about an svtv-spec, but ~x1 is not" :svtv-spec-thmname svtv-spec-thmname)
-        (mv nil nil))
+        (er hard ctx "The ~x0 must be about an svtv-spec, but ~x1 is not" :svtv-spec-thmname svtv-spec-thmname))
 
        (fsm (cdr (assoc svtv-thm.svtv-spec (table-alist 'svtv-spec-to-fsm-table (w state)))))
        ((unless fsm)
         (er hard ctx "The svtv-spec ~x0 associated with theorem ~x1 doesn't ~
                       have an associated FSM. Ensure that the svtv-spec was ~
                       defined using ~x2 with the ~x3 option."
-            svtv-thm.svtv-spec svtv-spec-thmname 'def-svtv-refinement :fsm)
-        (mv nil nil))
+            svtv-thm.svtv-spec svtv-spec-thmname 'def-svtv-refinement :fsm))
        
        ;; We only use the SVTV to get variable names (which we could do by
        ;; scanning the svtv-spec alists instead) and to get the names of
        ;; functions/theorems.
        ;; ((mv err svtv-val) (magic-ev-fncall svtv-thm.svtv nil state t t))
        ;; ((when err) (er hard ctx "Couldn't evaluate ~x0" (list svtv-thm.svtv))
-       ;;  (mv nil nil))
+       ;;  )
        ((mv err svtv-spec-val) (magic-ev-fncall svtv-thm.svtv-spec nil state t t))
-       ((when err) (er hard ctx "Couldn't evaluate ~x0" (list svtv-thm.svtv-spec))
-        (mv nil nil))
+       ((when err) (er hard ctx "Couldn't evaluate ~x0" (list svtv-thm.svtv-spec)))
        ((svtv-spec svtv-spec-val))
        ((acl2::with-fast svtv-spec-val.namemap))
        
@@ -4310,60 +4289,91 @@ In particular this requires
                                  svtv-actual-override-vars))
        (real-input-vars (acl2::hons-intersection thm-input-vars svtv-actual-input-vars))
 
-       ((unless (acl2::hons-subset eliminate-override-vars real-spec-override-vars))
+       
+
+       (eliminate-all-overrides (or (eq eliminate-override-signals :all)
+                                    (eq eliminate-override-vars :all)))
+       
+       ((unless (or eliminate-all-overrides
+                    (acl2::hons-subset eliminate-override-vars real-spec-override-vars)))
         (let ((missing (hons-set-diff eliminate-override-vars real-spec-override-vars)))
           (er hard? ctx "The ~x0 must be a subset of the theorem's spec-override-vars, but the following are not: ~x1"
-              :eliminate-override-vars missing))
-        (mv nil nil))
-       ((unless (acl2::hons-subset eliminate-override-signals svtv-actual-override-signals))
+              :eliminate-override-vars missing)))
+       ((unless (or eliminate-all-overrides
+                    (acl2::hons-subset eliminate-override-signals svtv-actual-override-signals)))
         (let ((missing (hons-set-diff eliminate-override-signals svtv-actual-override-signals)))
           (er hard? "The ~x0 must be a subset of the SVTV's overridden signals, but the following are not: ~x1"
-              :eliminate-override-signals missing))
-        (mv nil nil))
+              :eliminate-override-signals missing)))
 
        (hyps (append (svtv-genthm-hyp-to-list svtv-thm.user-final-hyp)
                      (svtv-genthm-input-binding-hyp-termlist svtv-thm.input-var-bindings)
                      (svtv-genthm-input-binding-hyp-termlist (append svtv-thm.spec-override-var-bindings
                                                                      svtv-thm.override-var-bindings))
                      (svtv-genthm-hyp-to-list svtv-thm.final-hyp)
-                     (svtv-genthm-hyp-to-list svtv-thm.hyp))))
-    (mv (make-svtv-to-fsm-thm
-         :thmname thmname
-         :svtv-spec-thmname svtv-spec-thmname
-         :fsmname fsm
-         :svtv svtv-thm.svtv
-         :svtv-spec svtv-thm.svtv-spec
-         :triples-name svtv-thm.triples-name
+                     (svtv-genthm-hyp-to-list svtv-thm.hyp)))
 
-         :input-vars real-input-vars
-         :override-vars thm-override-vars
-         :spec-override-vars real-spec-override-vars
-         :output-vars svtv-thm.output-vars
+       (remaining-override-vars (and (not eliminate-all-overrides)
+                                     (hons-set-diff real-spec-override-vars eliminate-override-vars)))
+       (new-eliminated-override-vars (if eliminate-all-overrides
+                                         real-spec-override-vars
+                                       eliminate-override-vars))
+       (all-eliminated-override-vars (append thm-override-vars
+                                             new-eliminated-override-vars))
 
-         :eliminate-override-vars eliminate-override-vars
-         :eliminate-override-signals eliminate-override-signals
+       (override-test-svtv-env (svtv-genthm-override-test-alist
+                                remaining-override-vars
+                                svtv-thm.triple-val-alist svtv-thm.triples-name))
+       (override-test-envs (if eliminate-all-overrides
+                               (make-list (len svtv-spec-val.override-test-alists) :initial-element nil)
+                             (with-fast-alist override-test-svtv-env
+                               (svex-envlist-1mask
+                                (svex-alistlist-eval
+                                 (svtv-fsm-namemap-alistlist
+                                  (svex-alistlist-removekeys eliminate-override-signals svtv-spec-val.override-test-alists)
+                                  svtv-spec-val.namemap
+                                  :test)
+                                 override-test-svtv-env))))))
+    (make-svtv-to-fsm-thm
+     :thmname thmname
+     :svtv-spec-thmname svtv-spec-thmname
+     :fsmname fsm
+     :svtv svtv-thm.svtv
+     :svtv-spec svtv-thm.svtv-spec
+     :triples-name svtv-thm.triples-name
+
+     :input-vars real-input-vars
+     :override-vars thm-override-vars
+     :spec-override-vars real-spec-override-vars
+     :output-vars svtv-thm.output-vars
+
+     ;; :eliminate-override-vars (and (not eliminate-all-overrides) eliminate-override-vars)
+     ;; :eliminate-override-signals (and (not eliminate-all-overrides) eliminate-override-signals)
+     ;; :eliminate-all-overrides eliminate-all-overrides
+     :remaining-override-vars remaining-override-vars
+     :new-eliminated-override-vars new-eliminated-override-vars
+     :all-eliminated-override-vars all-eliminated-override-vars
+
+     :override-test-envs override-test-envs
          
-         :outmap (svtv-probealist-to-lhprobe-map svtv-spec-val.probes svtv-spec-val.namemap)
-         :bindings (svtv-spec-fsm-bindings svtv-spec-val)
-         :triple-val-alist svtv-thm.triple-val-alist
-         :run-length (len (svtv-probealist-outvars svtv-spec-val.probes))
+     :outmap (svtv-probealist-to-lhprobe-map svtv-spec-val.probes svtv-spec-val.namemap)
+     :bindings (svtv-spec-fsm-bindings svtv-spec-val)
+     :triple-val-alist svtv-thm.triple-val-alist
+     :run-length (len (svtv-probealist-outvars svtv-spec-val.probes))
 
-         :hyp `(and . ,hyps)
-         :concl svtv-thm.concl
-         :rule-classes rule-classes
+     :hyp `(and . ,hyps)
+     :concl svtv-thm.concl
+     :rule-classes rule-classes
 
-         :base-cycle-var base-cycle-var
-         :primary-output-var primary-output-var
-         :pkg-sym pkg-sym)
-        svtv-spec-val)))
+     :base-cycle-var base-cycle-var
+     :primary-output-var primary-output-var
+     :pkg-sym pkg-sym)))
 
 (define svtv-to-fsm-thm-fn (thmname args state)
   :mode :program
-  (b* (((mv x svtv-spec)
-        (parse-svtv-to-fsm-thm thmname args state)))
+  (b* ((x (parse-svtv-to-fsm-thm thmname args state)))
     (list 'progn
-          (svtv-to-fsm-first-thm x svtv-spec)
-          (svtv-to-fsm-final-thm x svtv-spec))))
+          (svtv-to-fsm-first-thm x)
+          (svtv-to-fsm-final-thm x))))
 
 (defmacro def-svtv-to-fsm-thm (thmname &rest args)
   `(make-event
@@ -4460,15 +4470,19 @@ generated.  The rest are keyword arguments:</p>
 <ul>
 <li>@(':svtv-spec-thmname') (required): The name of the theorem, generated by @(see def-svtv-generalized-thm), that the new theorem is to be derived from.</li>
 
- <li>@(':eliminate-override-vars'): A list of SVTV variables that were left
-overridden in the svtv-spec-thm that we want to instead sample as outputs in
-this theorem.  Typically these were ones listed as @(':spec-override-vars') in
-the svtv-spec theorem, although they may in some cases be listed as
-@(':input-vars').</li>
+ <li>@(':eliminate-override-vars'): Either @(':all') or a list of SVTV variables
+that were left overridden in the svtv-spec-thm that we want to instead sample
+as outputs in this theorem.  Typically these were ones listed as
+@(':spec-override-vars') in the svtv-spec theorem, although they may in some
+cases be listed as @(':input-vars').  If @(':all'), then all signals overridden
+in the theorem will be eliminated and sampled as outputs, even ones that were
+hard-coded overrides in the SVTV.</li>
 
- <li>@(':eliminate-override-signals'): A list of signal names -- strings, like
-the signal names used in @(see defsvtv$) -- that are overridden unconditionall
-in the SVTV that we instead want to sample as outputs in this theorem.</li>
+ <li>@(':eliminate-override-signals'): Either @(':all') or a list of signal
+names -- strings, like the signal names used in @(see defsvtv$) -- that are
+overridden unconditionally in the SVTV that we instead want to sample as
+outputs in this theorem.  Setting this to @(':all') has the same effect as
+setting @(':eliminate-override-vars') to @(':all').</li>
 
  <li>@(':rule-classes'): the rule-classes argument for the final
 theorem. Defaults to @(':rewrite').  Note that the final theorem may not be in
