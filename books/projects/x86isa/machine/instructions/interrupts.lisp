@@ -63,56 +63,64 @@
                        x86)))
       (write-*ip proc-mode temp-rip x86)))
 
-(skip-proofs
- (def-inst x86-iret
+(def-inst x86-iret
 
-    ;; Op/En: ZO
-    ;; CF
+          ;; Op/En: ZO
+          ;; CF
 
-    :parents (one-byte-opcodes)
+          :parents (one-byte-opcodes)
 
-    :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+          :guard-debug t
+          :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
-    :returns (x86 x86p :hyp (x86p x86))
+          :returns (x86 x86p :hyp (x86p x86))
 
-    :body
+          :body
 
-    ;; TODO Support modes other than 64-bit mode.
-    (b* (((unless (equal proc-mode *64-bit-mode*)) (!!ms-fresh :iret-not-supported))
+          ;; TODO Support modes other than 64-bit mode.
+          (b* (((unless (equal proc-mode *64-bit-mode*)) (!!ms-fresh :iret-not-supported))
 
-         ;; Get addresses
-         (rsp (read-*sp proc-mode x86))
-         ((mv flg new-cs-addr) (add-to-*sp proc-mode rsp 8 x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-         ((mv flg new-rflags-addr) (add-to-*sp proc-mode rsp 16 x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-         ((mv flg new-rsp-addr) (add-to-*sp proc-mode rsp 24 x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-         ((mv flg new-ss-addr) (add-to-*sp proc-mode rsp 32 x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ;; Get addresses
+               (rsp (read-*sp proc-mode x86))
+               ((mv flg new-cs-addr) (add-to-*sp proc-mode rsp 8 x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ((mv flg new-rflags-addr) (add-to-*sp proc-mode rsp 16 x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ((mv flg new-rsp-addr) (add-to-*sp proc-mode rsp 24 x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ((mv flg new-ss-addr) (add-to-*sp proc-mode rsp 32 x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
 
-         ;; Get values
-         (check-alignment? (alignment-checking-enabled-p x86))
-         ((mv flg new-rip x86) (rme64-opt proc-mode rsp #.*ss* :r check-alignment? x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-         (new-rip (i64 new-rip))
-         ((mv flg new-cs x86) (rme64-opt proc-mode new-cs-addr #.*ss* :r check-alignment? x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-         ((mv flg new-rflags x86) (rme64-opt proc-mode new-rflags-addr #.*ss* :r check-alignment? x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-         ((mv flg new-rsp x86) (rme64-opt proc-mode new-rsp-addr #.*ss* :r check-alignment? x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
-         (new-rsp (i64 new-rsp))
-         ((mv flg new-ss x86) (rme64-opt proc-mode new-ss-addr #.*ss* :r check-alignment? x86))
-         ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ;; Get values
+               (check-alignment? (alignment-checking-enabled-p x86))
+               ((mv flg new-rip x86) (rme64 proc-mode rsp #.*ss* :r check-alignment? x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               (new-rip (i64 new-rip))
+               ((mv flg new-cs x86) (rme64 proc-mode new-cs-addr #.*ss* :r check-alignment? x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ((mv flg new-rflags x86) (rme64 proc-mode new-rflags-addr #.*ss* :r check-alignment? x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               ((mv flg new-rsp x86) (rme64 proc-mode new-rsp-addr #.*ss* :r check-alignment? x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
+               (new-rsp (i64 new-rsp))
+               ((mv flg new-ss x86) (rme64 proc-mode new-ss-addr #.*ss* :r check-alignment? x86))
+               ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
 
-         ;; Restore state
-         (x86 (write-*ip proc-mode new-rip x86))
-         (x86 (load-segment-reg *cs* new-cs x86))
-         (x86 (!rflags new-rflags x86))
-         (x86 (write-*sp proc-mode new-rsp x86))
-         (x86 (load-segment-reg *ss* new-ss x86)))
-      x86)))
+               ;; Restore state
+               ;; TODO What to do if the new-rip is not canonical?
+               (new-rip (logext *max-linear-address-size* new-rip))
+               (x86 (write-*ip proc-mode new-rip x86))
+               ;; TODO What should we do if the selectors are larger than 16 bytes?
+               (new-cs (loghead 16 new-cs))
+               (x86 (load-segment-reg *cs* new-cs x86))
+               ;; TODO What to do if the new-rflags has reserved bits set?
+               (new-rflags (loghead 32 new-rflags))
+               (x86 (!rflags new-rflags x86))
+               ;; TODO What should we do if the selectors are larger than 16 bytes?
+               (x86 (write-*sp proc-mode new-rsp x86))
+               (new-ss (loghead 16 new-ss))
+               (x86 (load-segment-reg *ss* new-ss x86)))
+              x86))
 
 (def-inst x86-int3
 
