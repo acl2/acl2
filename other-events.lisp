@@ -18957,9 +18957,10 @@
                     "A hash-table type must be a true-list of length 2, 3, or ~
                      4.  The type ~x0 is thus illegal.  See :DOC defstobj.~%"
                     type))
-               (t (let ((test (stobj-hash-table-test type))
-                        (size (stobj-hash-table-init-size type))
-                        (etype (stobj-hash-table-element-type type)))
+               (t (let* ((type (fix-stobj-hash-table-type type wrld))
+                         (test (stobj-hash-table-test type))
+                         (size (stobj-hash-table-init-size type))
+                         (etype (stobj-hash-table-element-type type)))
                     (cond ((not (member-eq test '(eq eql equal hons-equal)))
                            (er soft ctx
                                "A hash-table test must be ~v0.  The test ~
@@ -18971,7 +18972,8 @@
                            (er soft ctx
                                "A hash-table type must specify the size (the ~
                                 optional second argument) as nil or a natural ~
-                                number  The type ~x0 is thus illegal.  See ~
+                                number, either directly or using a defined ~
+                                constant.  The type ~x0 is thus illegal.  See ~
                                 :DOC defstobj.~%"
                                type))
                           ((not (eq etype t))
@@ -18989,14 +18991,16 @@
                      interpreted as (STOBJ-TABLE) or (STOBJ-TABLE SIZE).  The ~
                      type ~x0 is thus illegal.~%"
                     type))
-               ((and (cdr type)
-                     (not (natp (cadr type))))
-                (er soft ctx
-                    "A stobj-table type of the form (STOBJ-TABLE SIZE) ~
-                     must specify SIZE as a natural number.  The type ~x0 ~
-                     is thus illegal.~%"
-                    type))
-               (t (value nil))))
+               (t (let ((type (fix-stobj-table-type type wrld)))
+                    (cond ((and (cdr type)
+                                (not (natp (cadr type))))
+                           (er soft ctx
+                               "A stobj-table type of the form (STOBJ-TABLE ~
+                                SIZE) must specify SIZE as a natural number, ~
+                                either directly or using a defined constant.  ~
+                                The type ~x0 is thus illegal.~%"
+                               type))
+                          (t (value nil)))))))
         (t (let* ((stobjp (stobjp type t wrld))
                   (type-term         ; used only when (not stobjp)
                    (and (not stobjp) ; optimization
