@@ -73,14 +73,15 @@
 (define base-fsm-override-syntax-check ((x base-fsm-p)
                                         (keys svarlist-p))
   :returns (bad-keys svarlist-p)
-  (b* (((base-fsm x))
-       (syntaxcheck-data (make-overridekey-syntaxcheck-data :keys keys
-                                                            :values x.values))
-       (bad-keys1 (svexlist-overridekeys-syntax-check (svex-alist-vals x.nextstate) syntaxcheck-data))
-       (bad-keys2 (svexlist-overridekeys-syntax-check (svex-alist-vals x.values) syntaxcheck-data))
-       (ans (union bad-keys1 bad-keys2)))
-    (cw "Remaining bad keys after syntax check: ~x0 out of ~x1~%~x2~%"  (len ans) (len keys) ans)
-    ans)
+  (b* (((base-fsm x)))
+    (acl2::with-fast-alist x.values
+      (b* ((syntaxcheck-data (make-overridekey-syntaxcheck-data :keys keys
+                                                                :values x.values))
+           (bad-keys1 (svexlist-overridekeys-syntax-check (svex-alist-vals x.nextstate) syntaxcheck-data))
+           (bad-keys2 (svexlist-overridekeys-syntax-check (svex-alist-vals x.values) syntaxcheck-data))
+           (ans (union bad-keys1 bad-keys2)))
+        (cw "Remaining bad keys after syntax check: ~x0 out of ~x1~%~x2~%"  (len ans) (len keys) ans)
+        ans)))
   ///
 
   (local (defthm difference-of-insert-when-in
@@ -575,8 +576,7 @@
   (declare (ignore state)
            (xargs :stobjs state))
   (let ((args (base-fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (mfc-clause mfc))))
-    (and args
-         `((args . ,(nest-binary-appends args))))))
+    `((args . ,(nest-binary-appends args)))))
     
 
 
@@ -621,11 +621,15 @@
                   (bind-free (base-fsm-overridekey-transparent-p-by-assumptions-bind-free
                               fsm mfc state)
                              (args))
-                  (base-fsm-overridekey-transparent-p fsm args)
                   (equal args-val (force-execute (svarlist-fix args)))
                   (equal keys-val (force-execute (svarlist-fix keys)))
                   (syntaxp (and (quotep args-val) (quotep keys-val)))
-                  (equal remaining (force-execute (acl2::hons-set-diff keys-val args-val))))
+                   ;; we don't want to do this if it's ineffective, but if keys
+                   ;; is actually nil (but wrapped up in a function
+                   ;; definition), then we want to open it.
+                  (implies keys-val args-val)
+                  (equal remaining (force-execute (acl2::hons-set-diff keys-val args-val)))
+                  (base-fsm-overridekey-transparent-p fsm args))
              (equal (base-fsm-overridekey-transparent-p fsm keys)
                     (base-fsm-overridekey-transparent-p fsm remaining)))
     :hints(("Goal" :in-theory (e/d (force-execute)
@@ -711,7 +715,8 @@
              (base-fsm-overridekey-transparent-p <fsm> (tmp-override-transparent-keys))
              (:@ :fgl-semantic-check
               :hints(("Goal" :in-theory '(base-fsm-override-smart-check-in-terms-of-badguy
-                                          tmp-def-override-transparent-smart-check-fgl))))
+                                          tmp-def-override-transparent-smart-check-fgl
+                                          base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check))))
              (:@ (not :fgl-semantic-check)
               :hints (("goal" :in-theory '(def-override-transparent-open-fsm
                                             cmr::force-execute-force-execute

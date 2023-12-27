@@ -300,7 +300,6 @@
 (fgl::remove-fgl-rewrite svtv-spec-run-fn)
 
 
-                                      
 
 (defconst *svtv-generalize-template*
   '(defsection <name>-refinement
@@ -308,42 +307,52 @@
 
 
      (:@ :phase-fsm
-      (local (defthmd phase-fsm-is-data-phase-fsm
-               (equal (<phase-fsm>)
-                      (svtv-data-obj->phase-fsm (<data>)))
-               :hints (("goal" :in-theory '((<phase-fsm>)
-                                            (<data>)
-                                            (svtv-data-obj->phase-fsm)))))))
+      (local
+       (encapsulate nil
+         (local (defthm phase-fsm-is-data-phase-fsm-hons-equal
+                  (hons-equal (hons-copy (<phase-fsm>))
+                              (hons-copy (svtv-data-obj->phase-fsm (<data>))))
+                  :hints (("goal" :in-theory '((hons-equal)
+                                               (hons-copy)
+                                               (<phase-fsm>)
+                                               (<data>)
+                                               (svtv-data-obj->phase-fsm))))))
+         (defthm phase-fsm-is-data-phase-fsm
+           (equal (<phase-fsm>)
+                  (svtv-data-obj->phase-fsm (<data>)))
+           :hints (("goal" :use phase-fsm-is-data-phase-fsm-hons-equal
+                    :in-theory '(hons-equal hons-copy)))))))
 
      
      ((:@ :svtv-spec progn)
       (:@ (not :svtv-spec) local)
       (progn
-        (make-event
-         (b* (((svtv-data-obj x) (<data>))
-              ((pipeline-setup setup) x.pipeline-setup))
-           `(define <specname> ()
-              :returns (spec svtv-spec-p
-                             :hints (("goal" :in-theory '(svtv-spec-p-of-svtv-spec
-                                                          <specname>))))
-              :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>
-                                                 ,@(:@ :phase-fsm '(phase-fsm-is-data-phase-fsm))
-                                                 base-fsm-p-of-svtv-data-obj->phase-fsm
-                                                 (svex-alist-p)
-                                                 (svtv-probealist-p)
-                                                 (svex-alistlist-p)
-                                                 (svtv-cyclephaselist-p)
-                                                 (svtv-name-lhs-map-p))))
-              (make-svtv-spec :fsm
-                              ,@(:@ :phase-fsm '((<phase-fsm>)))
-                              ,@(:@ (not :phase-fsm) '((svtv-data-obj->phase-fsm (<data>))))
-                              :cycle-phases ',x.cycle-phases
-                              :namemap ',x.namemap
-                              :probes ',setup.probes
-                              :in-alists ',setup.inputs
-                              :override-test-alists ',setup.override-tests
-                              :override-val-alists ',setup.override-vals
-                              :initst-alist ',setup.initst))))
+        (with-output :off (event)
+          (make-event
+           (b* (((svtv-data-obj x) (<data>))
+                ((pipeline-setup setup) x.pipeline-setup))
+             `(define <specname> ()
+                :returns (spec svtv-spec-p
+                               :hints (("goal" :in-theory '(svtv-spec-p-of-svtv-spec
+                                                            <specname>))))
+                :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>
+                                                   ,@(:@ :phase-fsm '(phase-fsm-is-data-phase-fsm))
+                                                   base-fsm-p-of-svtv-data-obj->phase-fsm
+                                                   (svex-alist-p)
+                                                   (svtv-probealist-p)
+                                                   (svex-alistlist-p)
+                                                   (svtv-cyclephaselist-p)
+                                                   (svtv-name-lhs-map-p))))
+                (make-svtv-spec :fsm
+                                ,@(:@ :phase-fsm '((<phase-fsm>)))
+                                ,@(:@ (not :phase-fsm) '((svtv-data-obj->phase-fsm (<data>))))
+                                :cycle-phases ',x.cycle-phases
+                                :namemap ',x.namemap
+                                :probes ',setup.probes
+                                :in-alists ',setup.inputs
+                                :override-test-alists ',setup.override-tests
+                                :override-val-alists ',setup.override-vals
+                                :initst-alist ',setup.initst)))))
 
         (in-theory (disable (<specname>)))))
 
@@ -1359,7 +1368,9 @@
          (svtv-spec->cycle-fsm (<specname>))
          ///
          ;; Associate the svtv-spec with this FSM in the svtv-spec-to-fsm-table
+         ;; and vice versa in the fsm-to-svtv-spec table
          (table svtv-spec-to-fsm-table '<specname> '<fsmname>)
+         (table fsm-to-svtv-spec-table '<fsmname> '<specname>)
          (in-theory (disable (<fsmname>)))
          
          (defthm cycle-fsm-of-<specname>
@@ -1395,11 +1406,17 @@
        (defthm cycle-fsm-of-<specname>
          (equal (svtv-spec->cycle-fsm (<specname>))
                 (<fsmname>))
-         ;; BOZO nail down theory
-         :hints(("Goal" :in-theory (e/d ((svtv-spec->cycle-fsm)
-                                         (<fsmname>)
-                                         (<specname>))
-                                        (<specname>)))))
+         :hints(("Goal" :in-theory `(svtv-spec->cycle-fsm
+                                     (<specname>)
+                                     (svtv-spec->fsm)
+                                     (svtv-spec->cycle-phases)
+                                     <fsmname>
+                                     ,@(let ((spec (cdr (assoc '<fsmname> (table-alist 'fsm-to-svtv-spec-table world)))))
+                                         (and spec `((,spec))))
+                                     . ,'((:@ :phase-fsm (<phase-fsm>))
+                                          (:@ (not :phase-fsm)
+                                           (svtv-data-obj->phase-fsm)
+                                           (<data>)))))))
        
        (table svtv-spec-to-fsm-table '<specname> '<fsmname>)
 
@@ -1423,6 +1440,8 @@
         :returns (constrants lhprobe-constraintlist-p
                              :hints (("goal" :in-theory '(lhprobe-constraintlist-p-of-svtv-spec-fsm-constraints
                                                           <name>-fsm-constraints))))
+        :guard-hints (("goal" :in-theory '(svtv-spec-fsm-syntax-check-of-<specname>
+                                           svtv-spec-p-of-<specname>)))
         (svtv-spec-fsm-constraints (<specname>))
         ///
         (make-event

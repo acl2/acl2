@@ -26,7 +26,9 @@
 (in-package "SV")
 
 (include-book "symbolic")
-(include-book "centaur/fgl/simplify" :dir :system)
+(include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
+(include-book "centaur/fgl/bfr" :dir :system)
+(include-book "centaur/fgl/simplify-defs" :dir :system)
 (include-book "centaur/fgl/checks" :dir :system)
 (include-book "centaur/fgl/make-isomorphic-def" :dir :system)
 ;; (include-book "centaur/aignet/transforms" :dir :System)
