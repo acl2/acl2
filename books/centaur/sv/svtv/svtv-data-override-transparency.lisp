@@ -27,7 +27,7 @@
 
 (include-book "svtv-data-obj-spec")
 (include-book "svtv-idealize-defs")
-(include-book "fsm-override-smart-check")
+;; (include-book "fsm-override-smart-check")
 (include-book "svtv-generalize-defs")
 (include-book "override-envlist-defs")
 (include-book "std/util/defredundant" :dir :system)
@@ -337,7 +337,7 @@
                      
    
 
-  (defthm override-transparency-of-svtv-data-obj->spec-with-smart-check
+  (defthm override-transparency-of-svtv-data-obj->spec
     (b* (((svtv-spec spec) (svtv-data-obj->spec x))
          ((svtv-data-obj x))
          ;; ((flatnorm-res x.flatnorm))
@@ -357,7 +357,7 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
 
                     (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
-                    (base-fsm-override-smart-check spec.fsm overridekeys)
+                    (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
 
                     ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.values) overridetriples))
                     ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.nextstate) overridetriples))
@@ -373,11 +373,7 @@
     :hints(("Goal" :in-theory (e/d (svtv-data-obj->spec
                                     base-fsm-overridekey-transparent-p
                                     )
-                                   (design->ideal-fsm-overridekey-transparent
-                                    base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check))
-            :use ((:instance base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check
-                   (keys overridekeys)
-                   (x (svtv-data-obj->phase-fsm x))))
+                                   (design->ideal-fsm-overridekey-transparent))
             ;; :use ((:instance design->ideal-fsm-overridekey-transparent
             ;;        (x (svtv-data-obj->design x))
             ;;        (config (svtv-data-obj->phase-fsm-setup x))))

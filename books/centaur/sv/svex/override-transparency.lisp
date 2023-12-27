@@ -1309,3 +1309,94 @@
                       (svexlist-overridekey-transparent-p (cons a b) overridekeys subst))
                      (svex-alist-overridekey-transparent-p x overridekeys subst))))))
 
+
+
+(defxdoc override-transparent
+  :parents (svex-decomposition-methodology)
+  :short "Description of the override transparency property needed for decomposition"
+  :long #{"""<p>In the SVTV decomposition methodology, we expect to be able to
+override the values of certain internal signals of a design in order to reason
+about fanout logic of those signals without including the fanin logic.  In
+order to then compose these theorems with theorems about other decompositions
+of the design, we need to know that if we overrode those signals with the same
+values they would have anyway, then we get the same outputs.  This is called
+the override transparency property. Here we explain that property more
+formally.</p>
+
+<p>Override transparency is a property of an expression or set of expressions
+with respect to (1) a set of <em>overridekeys</em> (a set of internal signals
+that may be overridden) and (2) a substitution (svex-alist) giving the driving
+expressions for those internal signals if those expressions evaluate the same
+on environments that agree in a certain sense with respect to those variables.
+ (When discussing override-transparency of an FSM, we use the FSM's value
+substitution for the driving expressions; an FSM is then override-transparent
+on a set of keys if its value substitution and nextstate substitution are both
+override-transparent with respect to those keys and the value substitution.)  A
+set of expressions is override-transparent if the expressions evaluate to the
+same values on any two environments which are consistent on all override values
+and agree strictly on all other variables.  This notion of consistency on
+overridden values essentially says that environment @($\mathrm{env}_1$) overrides a
+superset of the signals that @($\mathrm{env}_2$) does, the additional overridden signals
+in @($\mathrm{env}_1$) are given the same values as are computed for them under
+@($\mathrm{env}_2$), and all other assignments are the same.</p>
+
+<p>To formalize this more completely we need a few definitions.</p>
+
+<p>Each variable has an override property, which may be @('nil'), @(':test'),
+or @(':val').  Regular inputs, outputs, and internal signals of a circuit have
+override property @('nil') (or, they are non-override variables).  We can
+reversibly change the override property of a variable, so each non-override
+variable has a unique corresponding override-test and override-val variable.  In LaTeX formulas following, we'll use non-subscripted variables such as @($s$) for non-override variables, @($s_t$) for the corresponding override-test variable, and @($s_v$) for the corresponding override-val variable.</p>
+
+<p>
+Before we compose the local assignments for each signal of the circuit to
+obtain the full update functions of all signals, we insert override muxes on
+some or all internal signals, replacing each use of such signals with a bitwise
+if-then-else expression: @($ s_t\ ?\ s_v\ :\ s$).
+Non-override variables such as @($s$) are then replaced during composition
+with their update functions, while override-test and override-val variables @($s_t$) and @($s_v$)
+remain free.  In the resulting formulas, we can then override signal @($s$) or part
+of it by setting some bits of @($s_t$) to 1s and
+setting the corresponding bits of  @($s_v$) to the desired
+values.</p>
+
+<p>We can now define the override consistency condition between environments.
+In ACL2 this predicate is named @('overridekeys-envs-agree').  This is a
+relation between two environments, parametrized by a set of variables and a
+substitution (svex-alist) giving the values of internal signals in terms of
+primary inputs and previous state variables.  It is not an equivalence relation
+because one environment @($\mathrm{env}_1$) (called @('impl-env') in the ACL2
+function) must override a superset of the variables of the other environment
+@($\mathrm{env}_2$) (@('spec-env')).</p>
+
+<h4>Definition: Override Consistency of Environments</h4>
+
+<p>Environments @($\mathrm{env}_1$) and @($\mathrm{env}_2$) are
+<em>override-consistent</em> with respect to override signals @($S$) and value
+substitution @($\sigma$) if for all non-override signals @($s$) and bit
+indices @($i$):</p>
+<ol>
+<li>Values of non-override variables and override test/value variables not in @($S$) are equal in the two environments:
+@([\mathrm{env}_1[s] = \mathrm{env}_2[s]])
+@([s \notin S \Rightarrow \mathrm{env}_1[s_t] = \mathrm{env}_2[s_t]])
+@([s \notin S \Rightarrow \mathrm{env}_1[s_v] = \mathrm{env}_2[s_v]])
+</li>
+<li>All signal bits overridden in @($\mathrm{env}_2$) are also overridden in @($\mathrm{env}_1$):
+@([\mathrm{env}_2[s_t][i] = 1 \Rightarrow \mathrm{env}_1[s_t][i] = 1])
+</li>
+<li>Signal bits overridden in both environments are overridden to the same value:
+@([\mathrm{env}_2[s_t][i] = 1 \Rightarrow \mathrm{env}_1[s_v][i] = \mathrm{env}_2[s_v][i]])
+</li>
+<li>Signal bits overridden in @($\mathrm{env}_1$) and not @($\mathrm{env}_2$) are overridden there to the corresponding bit of the evaluation with @($\mathrm{env}_2$) of that signal's binding in @($\sigma$):
+@([\mathrm{env}_1[s_t][i] = 1 \wedge \mathrm{env}_2[s_t][i] \neq 1 \Rightarrow \mathrm{env}_1[s_v][i] = \textrm{Ev}(\sigma[s],\mathrm{env}_2)[i]])
+</li>
+</ol>
+
+<p>Finally, we can now define the override transparency property of
+expressions, expression lists, and substitutions.  This is parametrized on the
+same set of variables and substitution as in the override consistency of
+environments, and simply says that for any two environments that satisfy the
+override consistency condition, the evaluations of that expression/expression
+list/substitution on those two environments are equal.</p>
+
+"""})

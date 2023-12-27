@@ -204,6 +204,7 @@
               :concl (integerp res3)))))
 
 (encapsulate nil
+  (deflabel idealize-test)
   (local (include-book "svtv-idealize-defs"))
   (local
    (encapsulate nil
@@ -244,6 +245,7 @@
 
 
 (encapsulate nil
+  (deflabel def-svtv-override-thms-test)
   (local
    (encapsulate nil
      (local (include-book "svtv-generalize"))
@@ -280,6 +282,7 @@
      )))
 
 (encapsulate nil
+  (deflabel def-svtv-override-thms-inclusive-overridekeys)
   (local
    (encapsulate nil
      (local (include-book "svtv-generalize"))
@@ -317,6 +320,7 @@
 
 
 (encapsulate nil
+  (deflabel svtv-spec-test)
   (local
    (encapsulate nil
      (local (include-book "svtv-generalize"))
@@ -357,6 +361,7 @@
 
 
 (encapsulate nil
+  (deflabel svtv-spec-inclusive-overridekeys-test)
   (local
    (encapsulate nil
      (local (include-book "svtv-generalize"))
@@ -419,12 +424,14 @@
 (def-svtv-data-export mod-run2-data)
 
 (encapsulate nil
+  (deflabel mod-run2-svtv-spec-test)
   (local
    (encapsulate nil
      (local (include-book "svtv-generalize"))
      (make-event '(def-svtv-refinement mod-run2 mod-run2-data :svtv-spec t)))))
 
 (encapsulate nil
+  (deflabel mod-run2-svtv-spec-inclusive-overridekeys-test)
   (local
    (encapsulate nil
      (local (include-book "svtv-generalize"))

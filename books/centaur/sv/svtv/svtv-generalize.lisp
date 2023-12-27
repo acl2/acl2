@@ -34,6 +34,7 @@
 
 (include-book "svtv-idealize-defs")
 (include-book "svtv-data-override-transparency")
+(include-book "fsm-override-smart-check")
 (include-book "override-part-selects")
 (include-book "process")
 (include-book "std/util/defredundant" :dir :system)
@@ -305,159 +306,70 @@
   '(defsection <name>-refinement
      (local (in-theory nil))
 
+
+     (:@ :phase-fsm
+      (local (defthmd phase-fsm-is-data-phase-fsm
+               (equal (<phase-fsm>)
+                      (svtv-data-obj->phase-fsm (<data>)))
+               :hints (("goal" :in-theory '((<phase-fsm>)
+                                            (<data>)
+                                            (svtv-data-obj->phase-fsm)))))))
+
      
-     (define <name>-triplemaplist ()
-       :prepwork ((local (in-theory nil)))
-       :returns (triplemaps svtv-override-triplemaplist-p
-                            :hints (("goal" :in-theory '(svtv-override-triplemaplist-p-of-svtv-construct-triplemaplist
-                                                         <name>-triplemaplist))))
-       :guard-hints (("goal" :in-theory '((:EXECUTABLE-COUNTERPART IF)
-                                          (:REWRITE PIPELINE-SETUP-P-OF-SVTV-DATA-OBJ->PIPELINE-SETUP)
-                                          (:REWRITE SVEX-ALISTLIST-P-OF-PIPELINE-SETUP->OVERRIDE-TESTS)
-                                          (:REWRITE SVEX-ALISTLIST-P-OF-PIPELINE-SETUP->OVERRIDE-VALS)
-                                          (:REWRITE SVTV-DATA-OBJ-P-OF-<DATA>)
-                                          (:REWRITE SVTV-PROBEALIST-P-OF-PIPELINE-SETUP->PROBES)
-                                          (:TYPE-PRESCRIPTION SVTV-CONSTRUCT-TRIPLEMAPLIST))))
-       (b* (((svtv-data-obj x) (<data>))
-            ((pipeline-setup x.pipeline-setup)))
-         (svtv-construct-triplemaplist x.pipeline-setup.override-tests
-                                       x.pipeline-setup.override-vals
-                                       x.pipeline-setup.probes))
-       ///
-       (defret syntax-check-of-<name>-triplemaplist
-         (b* (((svtv-data-obj x) (<data>))
-              ((pipeline-setup x.pipeline-setup)))
-           (svtv-override-triplemaplist-syntax-check x.pipeline-setup.override-tests
-                                                     x.pipeline-setup.override-vals
-                                                     x.pipeline-setup.probes
-                                                     triplemaps))
-         :hints(("Goal" :in-theory '((:EXECUTABLE-COUNTERPART <DATA>)
-                                     (:EXECUTABLE-COUNTERPART <NAME>-TRIPLEMAPLIST)
-                                     (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-TESTS$INLINE)
-                                     (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-VALS$INLINE)
-                                     (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->PROBES$INLINE)
-                                     (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PIPELINE-SETUP$INLINE)
-                                     (:EXECUTABLE-COUNTERPART SVTV-OVERRIDE-TRIPLEMAPLIST-SYNTAX-CHECK)))))
-       (in-theory (disable (<name>-triplemaplist))))
-
-     (:@ :triplecheck
-      (define <name>-overridekeys ()
-        :returns (overridekeys svarlist-p
-                               :hints (("goal" :in-theory '((<name>-overridekeys)
-                                                            (svarlist-p)))))
-        :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>
-                                           SVTV-OVERRIDE-TRIPLEMAPLIST-P-OF-<NAME>-TRIPLEMAPLIST
-                                           SVTV-NAME-LHS-MAP-P-OF-SVTV-DATA-OBJ->NAMEMAP
-                                           (:EXECUTABLE-COUNTERPART IF)
-                                           (:REWRITE PIPELINE-SETUP-P-OF-SVTV-DATA-OBJ->PIPELINE-SETUP)
-                                           (:REWRITE SVEX-ALISTLIST-P-OF-PIPELINE-SETUP->OVERRIDE-TESTS))))
-        (:@ :inclusive-overridekeys
-         (b* (((svtv-data-obj x) (<data>))
-              ((pipeline-setup x.pipeline-setup)))
-           (svtv-overridekeys-full x.pipeline-setup.override-tests x.namemap)))
-        (:@ (not :inclusive-overridekeys)
-         (svtv-override-triplemaplist-overridekeys (<name>-triplemaplist)
-                                                   (svtv-data-obj->namemap (<data>))))
-        ///
-        (in-theory (disable (<name>-overridekeys)))))
-      
-     (define <name>-input-vars ()
-       :prepwork ((local (in-theory nil))
-                  (defconst *<name>-input-vars*
-                    (b* (((svtv-data-obj x) (<data>))
-                         ((pipeline-setup x.pipeline-setup)))
-                      (mergesort (append (svex-alist-vars x.pipeline-setup.initst)
-                                         (svex-alistlist-vars x.pipeline-setup.inputs))))))
-       :returns (vars svarlist-p
-                      :hints (("goal" :in-theory '((svarlist-p)
-                                                   (<name>-input-vars)))))
-       *<name>-input-vars*
-       ///
-       (in-theory (disable (<name>-input-vars))))
-     
-     (defthm <data>-facts
-       (b* (((svtv-data-obj x) (<data>))
-            ((pipeline-setup x.pipeline-setup)))
-         (and x.flatten-validp
-              x.flatnorm-validp
-              x.phase-fsm-validp
-              x.cycle-fsm-validp
-              x.pipeline-validp
-              (flatnorm-setup->monotonify x.flatnorm-setup)
-
-              (svarlist-override-p (svtv-cyclephaselist-keys x.cycle-phases) nil)
-              (svtv-cyclephaselist-unique-i/o-phase x.cycle-phases)
-              (equal (svex-alist-keys-list x.pipeline-setup.override-vals)
-                     (svex-alist-keys-list x.pipeline-setup.override-tests))
-              (no-duplicatesp-each (svex-alist-keys-list x.pipeline-setup.override-tests))
-              (svarlist-override-p
-               (svtv-name-lhs-map-list-all-keys
-                (svtv-name-lhs-map-inverse-list
-                 (svtv-name-lhs-map-extract-list
-                  (take (len (svtv-probealist-outvars x.pipeline-setup.probes))
-                        (svex-alist-keys-list x.pipeline-setup.override-tests))
-                  x.namemap)))
-               nil)
-              (<= (len x.pipeline-setup.override-tests)
-                  (len (svtv-probealist-outvars x.pipeline-setup.probes)))
-
-              (svex-alistlist-check-monotonic x.pipeline-setup.inputs)
-              (svex-alistlist-check-monotonic x.pipeline-setup.override-vals)
-              (svex-alistlist-check-monotonic x.pipeline-setup.override-tests)
-              (svex-alist-check-monotonic x.pipeline-setup.initst)
-
-              ;; (equal (* (len x.cycle-phases)
-              ;;           (len (svtv-probealist-outvars x.pipeline-setup.probes)))
-              ;;        *<name>-phase-count*)
-
-              (set-equiv (append (svex-alist-vars x.pipeline-setup.initst)
-                                 (svex-alistlist-vars x.pipeline-setup.inputs))
-                         (<name>-input-vars))))
-       :hints(("Goal" :in-theory
-               '((:EXECUTABLE-COUNTERPART <)
-                 (:EXECUTABLE-COUNTERPART EQUAL)
-                 (:EXECUTABLE-COUNTERPART <DATA>)
-                 (:EXECUTABLE-COUNTERPART FLATNORM-SETUP->MONOTONIFY$INLINE)
-                 (:EXECUTABLE-COUNTERPART IF)
-                 (:EXECUTABLE-COUNTERPART LEN)
-                 (:EXECUTABLE-COUNTERPART NO-DUPLICATESP-EACH)
-                 (:EXECUTABLE-COUNTERPART NOT)
-                 (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INITST$INLINE)
-                 (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INPUTS$INLINE)
-                 (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-TESTS$INLINE)
-                 (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-VALS$INLINE)
-                 (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->PROBES$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVARLIST-OVERRIDE-P)
-                 (:EXECUTABLE-COUNTERPART SVEX-ALIST-CHECK-MONOTONIC)
-                 (:EXECUTABLE-COUNTERPART SVEX-ALIST-KEYS-LIST)
-                 (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-CHECK-MONOTONIC)
-                 (:EXECUTABLE-COUNTERPART SVTV-CYCLEPHASELIST-KEYS)
-                 (:EXECUTABLE-COUNTERPART SVTV-CYCLEPHASELIST-UNIQUE-I/O-PHASE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->CYCLE-FSM-VALIDP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->CYCLE-PHASES$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->FLATNORM-SETUP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->FLATNORM-VALIDP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->FLATTEN-VALIDP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->NAMEMAP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PHASE-FSM-VALIDP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PIPELINE-SETUP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PIPELINE-VALIDP$INLINE)
-                 (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-EXTRACT-LIST)
-                 (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-INVERSE-LIST)
-                 (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-LIST-ALL-KEYS)
-                 (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-OUTVARS)
-                 (:EXECUTABLE-COUNTERPART TAKE)
-                 ;; set-equiv-by-mergesort-equal
-                 (mergesort)
-                 (append)
-                 (svex-alist-vars)
-                 (svex-alistlist-vars)
-                 (<name>-input-vars)))))
-
      ((:@ :svtv-spec progn)
       (:@ (not :svtv-spec) local)
-      
-      (define <specname>-fsm-override-test-vars ()
+      (progn
+        (make-event
+         (b* (((svtv-data-obj x) (<data>))
+              ((pipeline-setup setup) x.pipeline-setup))
+           `(define <specname> ()
+              :returns (spec svtv-spec-p
+                             :hints (("goal" :in-theory '(svtv-spec-p-of-svtv-spec
+                                                          <specname>))))
+              :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>
+                                                 ,@(:@ :phase-fsm '(phase-fsm-is-data-phase-fsm))
+                                                 base-fsm-p-of-svtv-data-obj->phase-fsm
+                                                 (svex-alist-p)
+                                                 (svtv-probealist-p)
+                                                 (svex-alistlist-p)
+                                                 (svtv-cyclephaselist-p)
+                                                 (svtv-name-lhs-map-p))))
+              (make-svtv-spec :fsm
+                              ,@(:@ :phase-fsm '((<phase-fsm>)))
+                              ,@(:@ (not :phase-fsm) '((svtv-data-obj->phase-fsm (<data>))))
+                              :cycle-phases ',x.cycle-phases
+                              :namemap ',x.namemap
+                              :probes ',setup.probes
+                              :in-alists ',setup.inputs
+                              :override-test-alists ',setup.override-tests
+                              :override-val-alists ',setup.override-vals
+                              :initst-alist ',setup.initst))))
+
+        (in-theory (disable (<specname>)))))
+
+     (local
+      (defthmd <specname>-def
+        (equal (<specname>)
+               (svtv-data-obj->spec (<data>)))
+        :hints(("Goal" :in-theory '(<specname>
+                                    svtv-data-obj->spec
+                                    (<data>)
+                                    (svtv-data-obj->pipeline-setup)
+                                    (svtv-data-obj->namemap)
+                                    (svtv-data-obj->cycle-phases)
+                                    (pipeline-setup->probes)
+                                    (pipeline-setup->inputs)
+                                    (pipeline-setup->override-tests)
+                                    (pipeline-setup->override-vals)
+                                    (pipeline-setup->initst)
+                                    (:@ :phase-fsm phase-fsm-is-data-phase-fsm))))))
+
+     
+     ((:@ :svtv-spec progn)
+      (:@ (not :svtv-spec) local)
+
+      (make-event
+       `(define <specname>-fsm-override-test-vars ()
         :guard-hints (("goal" :in-theory '((:EXECUTABLE-COUNTERPART IF)
                                            (:EXECUTABLE-COUNTERPART SVAR-OVERRIDETYPE-P)
                                            (:REWRITE FLATNORM-RES-P-OF-SVTV-DATA-OBJ->FLATNORM)
@@ -467,25 +379,191 @@
                                            (:REWRITE
                                             SVTV-ASSIGNS-OVERRIDE-CONFIG-P-OF-PHASE-FSM-CONFIG->OVERRIDE-CONFIG)
                                            (:REWRITE SVTV-DATA-OBJ-P-OF-<DATA>))))
-        (b* (((svtv-data-obj x) (<data>))
+        ',(b* (((svtv-data-obj x) (<data>))
              (override-vars (svtv-assigns-override-vars
                              (flatnorm-res->assigns x.flatnorm)
                              (phase-fsm-config->override-config x.phase-fsm-setup))))
-          (svarlist-change-override override-vars :test))))
+            (svarlist-change-override override-vars :test)))))
+
+     (local (defthmd <specname>-fsm-override-test-vars-def
+              (equal (<specname>-fsm-override-test-vars)
+                     (b* (((svtv-data-obj x) (<data>))
+                          (override-vars (svtv-assigns-override-vars
+                                          (flatnorm-res->assigns x.flatnorm)
+                                          (phase-fsm-config->override-config x.phase-fsm-setup))))
+                       (svarlist-change-override override-vars :test)))
+              :hints (("goal" :in-theory '((<specname>-fsm-override-test-vars)
+                                           (<data>)
+                                           (svtv-assigns-override-vars)
+                                           (svtv-data-obj->flatnorm)
+                                           (flatnorm-res->assigns)
+                                           (phase-fsm-config->override-config)
+                                           (svtv-data-obj->phase-fsm-setup)
+                                           (svarlist-change-override))))))
+
+     (make-event
+      `(define <name>-triplemaplist ()
+       :prepwork ((local (in-theory nil)))
+       :returns (triplemaps svtv-override-triplemaplist-p
+                            :hints (("goal" :in-theory '((<name>-triplemaplist)
+                                                         (svtv-override-triplemaplist-p)))))
+        ',(b* (((svtv-data-obj x) (<data>))
+               ((pipeline-setup x.pipeline-setup)))
+            (svtv-construct-triplemaplist x.pipeline-setup.override-tests
+                                          x.pipeline-setup.override-vals
+                                          x.pipeline-setup.probes))))
+
+     (local
+      (defsection <name>-triplemaplist
+        ;; (local (defthmd <name>-triplemaplist-def
+        ;;          (Equal (<name>-triplemaplist)
+        ;;                 (b* (((svtv-data-obj x) (<data>))
+        ;;                      ((pipeline-setup x.pipeline-setup)))
+        ;;                   (svtv-construct-triplemaplist x.pipeline-setup.override-tests
+        ;;                                                 x.pipeline-setup.override-vals
+        ;;                                                 x.pipeline-setup.probes)))))
+        (local (std::set-define-current-function <name>-triplemaplist))
+       
+        (defret syntax-check-of-<name>-triplemaplist
+          (b* (((svtv-data-obj x) (<data>))
+               ((pipeline-setup x.pipeline-setup)))
+            (svtv-override-triplemaplist-syntax-check x.pipeline-setup.override-tests
+                                                      x.pipeline-setup.override-vals
+                                                      x.pipeline-setup.probes
+                                                      triplemaps))
+          :hints(("Goal" :in-theory '((:EXECUTABLE-COUNTERPART <DATA>)
+                                      (:EXECUTABLE-COUNTERPART <NAME>-TRIPLEMAPLIST)
+                                      (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-TESTS$INLINE)
+                                      (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-VALS$INLINE)
+                                      (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->PROBES$INLINE)
+                                      (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PIPELINE-SETUP$INLINE)
+                                      (:EXECUTABLE-COUNTERPART SVTV-OVERRIDE-TRIPLEMAPLIST-SYNTAX-CHECK)))))))
+
+     (:@ :triplecheck
+      (make-event
+       (b* ((keys (:@ :inclusive-overridekeys
+                   (b* (((svtv-data-obj x) (<data>))
+                        ((pipeline-setup x.pipeline-setup)))
+                     (svtv-overridekeys-full x.pipeline-setup.override-tests x.namemap)))
+                  (:@ (not :inclusive-overridekeys)
+                   (svtv-override-triplemaplist-overridekeys (<name>-triplemaplist)
+                                                             (svtv-data-obj->namemap (<data>))))))
+       `(define <name>-overridekeys ()
+        :returns (overridekeys svarlist-p
+                               :hints (("goal" :in-theory '((<name>-overridekeys)
+                                                            (svarlist-p)))))
+        :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>
+                                           SVTV-OVERRIDE-TRIPLEMAPLIST-P-OF-<NAME>-TRIPLEMAPLIST
+                                           SVTV-NAME-LHS-MAP-P-OF-SVTV-DATA-OBJ->NAMEMAP
+                                           (:EXECUTABLE-COUNTERPART IF)
+                                           (:REWRITE PIPELINE-SETUP-P-OF-SVTV-DATA-OBJ->PIPELINE-SETUP)
+                                           (:REWRITE SVEX-ALISTLIST-P-OF-PIPELINE-SETUP->OVERRIDE-TESTS))))
+        ',keys
+        ///
+        (in-theory (disable (<name>-overridekeys)))))))
+      
+     (define <name>-input-vars ()
+       :prepwork ((local (in-theory nil))
+                  (make-event
+                   `(defconst *<name>-input-vars*
+                      ',(b* (((svtv-data-obj x) (<data>))
+                             ((pipeline-setup x.pipeline-setup)))
+                          (mergesort (append (svex-alist-vars x.pipeline-setup.initst)
+                                             (svex-alistlist-vars x.pipeline-setup.inputs)))))))
+       :returns (vars svarlist-p
+                      :hints (("goal" :in-theory '((svarlist-p)
+                                                   (<name>-input-vars)))))
+       *<name>-input-vars*
+       ///
+       (in-theory (disable (<name>-input-vars))))
+
+     (local 
+      (defthm <data>-facts
+        (b* (((svtv-data-obj x) (<data>))
+             ((pipeline-setup x.pipeline-setup)))
+          (and x.flatten-validp
+               x.flatnorm-validp
+               x.phase-fsm-validp
+               x.cycle-fsm-validp
+               x.pipeline-validp
+               (flatnorm-setup->monotonify x.flatnorm-setup)
+
+               (svarlist-override-p (svtv-cyclephaselist-keys x.cycle-phases) nil)
+               (svtv-cyclephaselist-unique-i/o-phase x.cycle-phases)
+               (equal (svex-alist-keys-list x.pipeline-setup.override-vals)
+                      (svex-alist-keys-list x.pipeline-setup.override-tests))
+               (no-duplicatesp-each (svex-alist-keys-list x.pipeline-setup.override-tests))
+               (svarlist-override-p
+                (svtv-name-lhs-map-list-all-keys
+                 (svtv-name-lhs-map-inverse-list
+                  (svtv-name-lhs-map-extract-list
+                   (take (len (svtv-probealist-outvars x.pipeline-setup.probes))
+                         (svex-alist-keys-list x.pipeline-setup.override-tests))
+                   x.namemap)))
+                nil)
+               (<= (len x.pipeline-setup.override-tests)
+                   (len (svtv-probealist-outvars x.pipeline-setup.probes)))
+
+               (svex-alistlist-check-monotonic x.pipeline-setup.inputs)
+               (svex-alistlist-check-monotonic x.pipeline-setup.override-vals)
+               (svex-alistlist-check-monotonic x.pipeline-setup.override-tests)
+               (svex-alist-check-monotonic x.pipeline-setup.initst)
+
+               ;; (equal (* (len x.cycle-phases)
+               ;;           (len (svtv-probealist-outvars x.pipeline-setup.probes)))
+               ;;        *<name>-phase-count*)
+
+               (set-equiv (append (svex-alist-vars x.pipeline-setup.initst)
+                                  (svex-alistlist-vars x.pipeline-setup.inputs))
+                          (<name>-input-vars))))
+        :hints(("Goal" :in-theory
+                '((:EXECUTABLE-COUNTERPART <)
+                  (:EXECUTABLE-COUNTERPART EQUAL)
+                  (:EXECUTABLE-COUNTERPART <DATA>)
+                  (:EXECUTABLE-COUNTERPART FLATNORM-SETUP->MONOTONIFY$INLINE)
+                  (:EXECUTABLE-COUNTERPART IF)
+                  (:EXECUTABLE-COUNTERPART LEN)
+                  (:EXECUTABLE-COUNTERPART NO-DUPLICATESP-EACH)
+                  (:EXECUTABLE-COUNTERPART NOT)
+                  (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INITST$INLINE)
+                  (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->INPUTS$INLINE)
+                  (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-TESTS$INLINE)
+                  (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->OVERRIDE-VALS$INLINE)
+                  (:EXECUTABLE-COUNTERPART PIPELINE-SETUP->PROBES$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVARLIST-OVERRIDE-P)
+                  (:EXECUTABLE-COUNTERPART SVEX-ALIST-CHECK-MONOTONIC)
+                  (:EXECUTABLE-COUNTERPART SVEX-ALIST-KEYS-LIST)
+                  (:EXECUTABLE-COUNTERPART SVEX-ALISTLIST-CHECK-MONOTONIC)
+                  (:EXECUTABLE-COUNTERPART SVTV-CYCLEPHASELIST-KEYS)
+                  (:EXECUTABLE-COUNTERPART SVTV-CYCLEPHASELIST-UNIQUE-I/O-PHASE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->CYCLE-FSM-VALIDP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->CYCLE-PHASES$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->FLATNORM-SETUP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->FLATNORM-VALIDP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->FLATTEN-VALIDP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->NAMEMAP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PHASE-FSM-VALIDP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PIPELINE-SETUP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-DATA-OBJ->PIPELINE-VALIDP$INLINE)
+                  (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-EXTRACT-LIST)
+                  (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-INVERSE-LIST)
+                  (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-LIST-ALL-KEYS)
+                  (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-OUTVARS)
+                  (:EXECUTABLE-COUNTERPART TAKE)
+                  ;; set-equiv-by-mergesort-equal
+                  (mergesort)
+                  (append)
+                  (svex-alist-vars)
+                  (svex-alistlist-vars)
+                  (<name>-input-vars))))))
+
         
      ((:@ :svtv-spec progn)
       (:@ (not :svtv-spec) local)
       
-      (define <specname> ()
-        :prepwork ((local (in-theory nil)))
-        :returns (spec svtv-spec-p
-                       :hints (("goal" :in-theory '(svtv-spec-p-of-svtv-data-obj->spec
-                                                    <specname>))))
-        :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>)))
-        (svtv-data-obj->spec (<data>))
-        ///
-        (in-theory (disable (<specname>)))
-
+      (defsection <specname>
+        (local (std::set-define-current-function <specname>))
+        
         (local (defthm <name>-is-<data>-pipeline
                  (equal (svtv->outexprs (<name>))
                         (svtv-data-obj->pipeline (<data>)))
@@ -532,7 +610,7 @@
                                           :readable readable
                                           :allvars allvars)
                                 (svtv-spec-run spec env))
-          :hints(("Goal" :in-theory '((:DEFINITION <SPECNAME>)
+          :hints(("Goal" :in-theory '(<specname>-def
                                       (:EQUIVALENCE SVEX-ENVS-EQUIVALENT-IS-AN-EQUIVALENCE)
                                       (:REWRITE <DATA>-CORRECT)
                                       (:REWRITE <DATA>-FACTS-FOR-SPEC)
@@ -543,8 +621,8 @@
         (defthm <specname>-fsm-ovmonotonic
           (b* ((x (svtv-spec->fsm (<specname>))))
             (base-fsm-ovmonotonic x))
-          :hints(("Goal" :in-theory '((:DEFINITION <SPECNAME>)
-                                      (:DEFINITION <SPECNAME>-FSM-OVERRIDE-TEST-VARS)
+          :hints(("Goal" :in-theory '(<specname>-def
+                                      <SPECNAME>-FSM-OVERRIDE-TEST-VARS-DEF
                                       (:REWRITE BASE-FSM-OVMONOTONIC-OF-SVTV-DATA-OBJ->PHASE-FSM)
                                       (:REWRITE <DATA>-CORRECT)
                                       (:REWRITE <DATA>-FACTS)
@@ -583,7 +661,7 @@
                                 (svex-alistlist-vars x.in-alists))
                         (<name>-input-vars))))
           :hints(("Goal" :in-theory
-                  '((:DEFINITION <specname>)
+                  '(<specname>-def
                     (:EQUIVALENCE ACL2::SET-EQUIV-IS-AN-EQUIVALENCE)
                     (:EXECUTABLE-COUNTERPART NOT)
                     (:REWRITE <DATA>-FACTS)
@@ -688,8 +766,8 @@
                   (<specname>)
                   override-keys
                   (<name>-triplemaplist)))
-               :hints(("Goal" :in-theory '(<specname>
-                                           <specname>-fsm-override-test-vars
+               :hints(("Goal" :in-theory '(<specname>-def
+                                           <specname>-fsm-override-test-vars-def
                                            <data>-generalize-override-syntax-check))))))
 
      ;; (:@ :triplecheck
@@ -713,64 +791,35 @@
      ;;                                        (svexlist-check-overridetriples)))))))
 
      (:@ :triplecheck
-      (:@ :fgl-semantic-check
-       
-       (local (fgl::disable-definition sv::svex-env-fix$inline))
-       (local (fgl::disable-definition sv::svex-env-lookup))
-       (local (memoize 'svex-mask-alist-p))
-       
-       (:@ :default-aignet-transforms
-        (local (defun tmp-svtv-generalize-fgl-transforms-config ()
-                 (declare (xargs :guard t
-                                 :guard-hints (("goal" :in-theory (executable-counterpart-theory :here)))))
-                 #!aignet
-                 (list (change-fraig-config *fraig-default-config*
-                                            :random-seed-name nil
-                                            :ctrex-queue-limit 64
-                                            :sim-words 2
-                                            :initial-sim-words 1
-                                            :initial-sim-rounds 1
-                                            :ctrex-force-resim t
-                                            :ipasir-limit 100
-                                            :miters-only t
-                                            :ipasir-recycle-count 40000
-                                            ))))
-        (local (defattach fgl::fgl-aignet-transforms-config
-                 tmp-svtv-generalize-fgl-transforms-config))
+      (:@ :phase-fsm
+       (make-event
+        ;; make-event wrapper for the case where this book is included locally
+        '(def-override-transparent <phase-fsm>-override-transparent-for-<name>
+           :fsm (<phase-fsm>) :keys (<name>-overridekeys)
+           (:@ :fgl-semantic-check :fgl-semantic-check t)
+           (:@ (not :default-aignet-transforms) :use-default-aignet-transforms nil)))
+       (local
+        (defthm base-fsm-override-transparent-p-of-<data>
+          (base-fsm-overridekey-transparent-p
+           (svtv-data-obj->phase-fsm (<data>))
+           (<name>-overridekeys))
+          :hints (("goal" :in-theory '(phase-fsm-is-data-phase-fsm)
+                   :use <phase-fsm>-override-transparent-for-<name>)))))
+      (:@ (not :phase-fsm)
+       (local
+        (def-override-transparent base-fsm-override-transparent-p-of-<data>
+          :fsm (svtv-data-obj->phase-fsm (<data>)) :keys (<name>-overridekeys)
+          (:@ :fgl-semantic-check :fgl-semantic-check t)
+          (:@ (not :default-aignet-transforms) :use-default-aignet-transforms nil))))
 
-        (local (define tmp-svtv-generalize-monolithic-sat-with-transforms ()
-                 :guard-hints (("goal" :in-theory '((booleanp))))
-                 (fgl::make-fgl-satlink-monolithic-sat-config :transform t)))
-        (local (defattach fgl::fgl-toplevel-sat-check-config tmp-svtv-generalize-monolithic-sat-with-transforms)))
-       
-       
-       (local (fgl::def-fgl-thm base-fsm-override-smart-check-on-env-of-<data>
-                (b* (((svtv-data-obj x) (<data>))
-                     (overridekeys (<name>-overridekeys)))
-                  (base-fsm-override-smart-check-on-env x.phase-fsm overridekeys env)))))
-      
-      (local (defthm base-fsm-override-smart-check-of-<data>
-               (b* (((svtv-data-obj x) (<data>))
-                    (overridekeys (<name>-overridekeys)))
-                 (base-fsm-override-smart-check x.phase-fsm overridekeys))
-               (:@ :fgl-semantic-check
-                :hints(("Goal" :in-theory '(base-fsm-override-smart-check-in-terms-of-badguy
-                                            base-fsm-override-smart-check-on-env-of-<data>))))
-               (:@ (not :fgl-semantic-check)
-                :hints (("goal" :in-theory '((<data>)
-                                             (<name>-overridekeys)
-                                             (svtv-data-obj->phase-fsm)
-                                             (base-fsm-override-smart-check))))))))
-
-     (:@ (and :triplecheck :svtv-spec)
-      (defthm <specname>-base-fsm-override-transparent-p
+      (:@ :svtv-spec
+       (defthm <specname>-base-fsm-override-transparent-p
         (base-fsm-overridekey-transparent-p
          (svtv-spec->fsm (<specname>))
          (<name>-overridekeys))
-        :hints (("goal" :in-theory '(<specname>
+        :hints (("goal" :in-theory '(<specname>-def
                                      svtv-spec->fsm-of-svtv-data-obj->spec
-                                     base-fsm-override-smart-check-of-<data>
-                                     base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check)))))
+                                     base-fsm-override-transparent-p-of-<data>))))))
 
      (:@ :triplecheck
         
@@ -803,10 +852,10 @@
             (:type-prescription svex-env-<<=)
             svtv-spec->initst-alist-of-svtv-data-obj->spec
             svtv-spec->in-alists-of-svtv-data-obj->spec
-            override-transparency-of-svtv-data-obj->spec-with-smart-check
-            base-fsm-override-smart-check-of-<data>
+            override-transparency-of-svtv-data-obj->spec
+            base-fsm-override-transparent-p-of-<data>
             <data>-generalize-override-syntax-check
-            <specname>
+            <specname>-def
             svtv-spec->fsm-of-svtv-data-obj->spec
             (svex-envlist-all-keys)
             (svarlist-nonoverride-p))
@@ -845,10 +894,10 @@
              (:type-prescription svex-env-<<=)
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
-             override-transparency-of-svtv-data-obj->spec-with-smart-check
-             base-fsm-override-smart-check-of-<data>
+             override-transparency-of-svtv-data-obj->spec
+             base-fsm-override-transparent-p-of-<data>
              <data>-generalize-override-syntax-check
-             <specname>
+             <specname>-def
              svtv-spec->fsm-of-svtv-data-obj->spec
              (svex-envlist-all-keys)
              (svarlist-nonoverride-p))
@@ -885,10 +934,10 @@
              (:type-prescription svex-env-<<=)
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
-             override-transparency-of-svtv-data-obj->spec-with-smart-check
-             base-fsm-override-smart-check-of-<data>
+             override-transparency-of-svtv-data-obj->spec
+             base-fsm-override-transparent-p-of-<data>
              <data>-generalize-override-syntax-check
-             <specname>
+             <specname>-def
              svtv-spec->fsm-of-svtv-data-obj->spec
              (svex-envlist-all-keys)
              (svarlist-nonoverride-p))
@@ -917,7 +966,7 @@
         (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <specname>
+                                     <specname>-def
                                      fields-of-svtv-data-obj->ideal-spec
                                      alist-keys-of-flatnorm->ideal-fsm
                                      svex-alist-keys-of-delays-of-flatnorm-add-overrides
@@ -933,7 +982,7 @@
                (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <specname>
+                                     <specname>-def
                                      svtv-data-obj->spec
                                      svtv-spec->fsm-of-svtv-spec
                                      svtv-spec->initst-alist-of-svtv-spec
@@ -956,7 +1005,7 @@
                (svex-alist-keys (svtv->outexprs (<name>))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <specname>
+                                     <specname>-def
                                      svtv-data-obj->spec
                                      svtv-spec->probes-of-svtv-spec
                                      svtv-probealist-fix-when-svtv-probealist-p
@@ -976,7 +1025,7 @@
          (svtv-spec->cycle-phases spec))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
-                                     <specname>
+                                     <specname>-def
                                      svtv-data-obj->spec
                                      svtv-spec->cycle-phases-of-svtv-spec
                                      svtv-cyclephaselist-fix-when-svtv-cyclephaselist-p
@@ -1007,7 +1056,7 @@
 
       (defthm base-fsm-ovcongruent-of-<specname>
         (base-fsm-ovcongruent (svtv-spec->fsm (<specname>)))
-        :hints(("Goal" :in-theory '(<specname>
+        :hints(("Goal" :in-theory '(<specname>-def
                                     base-fsm-ovcongruent-of-svtv-data-obj->phase-fsm
                                     <data>-correct
                                     <data>-facts
@@ -1128,7 +1177,7 @@
                                      SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
                                     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1)
                                     (:DEFINITION <IDEAL-NAME>)
-                                    (:DEFINITION <SPECNAME>)
+                                    <specname>-def
                                     (:DEFINITION NOT)
                                     (:REWRITE <DATA>-CORRECT)
                                     (:REWRITE <DATA>-FACTS)
@@ -1162,7 +1211,7 @@
                                      SET-EQUIV-IMPLIES-SVEX-ENVS-EQUIVALENT-SVEX-ENV-REDUCE-1)
                                     (:CONGRUENCE SVEX-ENVS-SIMILAR-IMPLIES-EQUAL-SVEX-ENV-<<=-1)
                                     (:DEFINITION <IDEAL-NAME>)
-                                    (:DEFINITION <SPECNAME>)
+                                    <specname>-def
                                     (:DEFINITION NOT)
                                     (:REWRITE <DATA>-CORRECT)
                                     (:REWRITE <DATA>-FACTS)
@@ -1346,6 +1395,7 @@
        (defthm cycle-fsm-of-<specname>
          (equal (svtv-spec->cycle-fsm (<specname>))
                 (<fsmname>))
+         ;; BOZO nail down theory
          :hints(("Goal" :in-theory (e/d ((svtv-spec->cycle-fsm)
                                          (<fsmname>)
                                          (<specname>))
@@ -1421,16 +1471,13 @@
                                         (:REWRITE SVTV-PROBEALIST-FIX-WHEN-SVTV-PROBEALIST-P)
                                         (:REWRITE SVTV-PROBEALIST-P-OF-SVTV-SPEC->PROBES)
                                         (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-IMPLIES-PROBE-VARS-SUBSET-OF-NAMEMAP)
-                                        (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-OF-<SPECNAME>)))))))
-
-      
-
-      )))
+                                        (:REWRITE SVTV-SPEC-FSM-SYNTAX-CHECK-OF-<SPECNAME>))))))))))
 
 
 (defun def-svtv-refinement-fn (svtv-name
                                data-name
                                fsm-name
+                               phase-fsm-name
                                ideal
                                fgl-semantic-check
                                omit-default-aignet-transforms
@@ -1442,15 +1489,19 @@
   (acl2::template-subst *svtv-generalize-template*
                         :str-alist `(("<NAME>" . ,(symbol-name svtv-name))
                                      ("<FSMNAME>" . ,(symbol-name fsm-name))
+                                     ("<PHASE-FSM>" . ,(symbol-name phase-fsm-name))
                                      ("<DATA>" . ,(symbol-name data-name))
                                      ("<IDEAL-NAME>" . ,(symbol-name ideal))
                                      ("<SPECNAME>" . ,(if (and svtv-spec
                                                                (not (eq svtv-spec t)))
                                                           (symbol-name svtv-spec)
                                                         (concatenate 'string (symbol-name svtv-name) "-SPEC"))))
+                        :atom-alist (and phase-fsm-name
+                                         `((<phase-fsm> . ,phase-fsm-name)))
                         :features (append (if ideal
                                               '(:ideal)
                                             '(:triplecheck))
+                                          (and phase-fsm-name '(:phase-fsm))
                                           (and fsm-name '(:fsm))
                                           (and define-fsm '(:define-fsm))
                                           (and fgl-semantic-check
@@ -1465,13 +1516,14 @@
 (defmacro def-svtv-refinement (svtv-name data-name
                                          &key
                                          fsm
+                                         phase-fsm
                                          define-fsm
                                          ideal fgl-semantic-check
                                          omit-default-aignet-transforms
                                          svtv-spec
                                          inclusive-overridekeys pkg-sym)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name ',fsm ',ideal ',fgl-semantic-check
+    (def-svtv-refinement-fn ',svtv-name ',data-name ',fsm ',phase-fsm ',ideal ',fgl-semantic-check
       ',omit-default-aignet-transforms
       ',svtv-spec ',inclusive-overridekeys ',define-fsm ',pkg-sym)))
 
@@ -1479,11 +1531,11 @@
 
 (defmacro def-svtv-ideal (ideal-name svtv-name data-name &key pkg-sym svtv-spec inclusive-overridekeys)
   `(make-event
-    (def-svtv-refinement-fn ',svtv-name ',data-name nil ',ideal-name nil nil ',svtv-spec ',inclusive-overridekeys nil ',pkg-sym)))
+    (def-svtv-refinement-fn ',svtv-name ',data-name nil nil ',ideal-name nil nil ',svtv-spec ',inclusive-overridekeys nil ',pkg-sym)))
 
 (defmacro def-svtv-override-thms (name export &key pkg-sym svtv-spec inclusive-overridekeys)
   `(make-event
-    (def-svtv-refinement-fn ',name ',export nil nil nil nil ',svtv-spec ',inclusive-overridekeys nil ',pkg-sym)))
+    (def-svtv-refinement-fn ',name ',export nil nil nil nil nil ',svtv-spec ',inclusive-overridekeys nil ',pkg-sym)))
 
 
 ;;; For each decomposition proof, we'll have a fixed set of signals overridden

@@ -30,6 +30,8 @@
 (include-book "../svex/override-semantic-check")
 (include-book "fsm-override-transparency")
 (include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
+(include-book "centaur/meta/variable-free" :dir :system)
+(include-book "tools/trivial-ancestors-check" :dir :system)
 (local (include-book "std/lists/sets" :dir :system))
 (local (include-book "../svex/alist-thms"))
 (local (include-book "std/alists/alist-keys" :dir :system))
@@ -545,3 +547,268 @@
                    (keys1 (set-difference-equal (svarlist-change-override keys nil)
                                                 (base-fsm-override-syntax-check x keys)))
                    (keys2 (base-fsm-override-syntax-check x keys))))))))
+
+
+
+
+
+
+
+(define base-fsm-overridekey-transparent-p-by-assumptions-collect-args (fsm-term clause)
+  (b* (((when (atom clause)) nil)
+       (lit (car clause)))
+    (case-match lit
+      (('not ('base-fsm-overridekey-transparent-p !fsm-term arg))
+       (cons arg (base-fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (cdr clause))))
+      (& (base-fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (cdr clause))))))
+
+(define nest-binary-appends (lst)
+  
+  (if (atom lst)
+      ''nil
+    (if (atom (cdr lst))
+        (car lst)
+      `(binary-append ,(car lst)
+                      ,(nest-binary-appends (cdr lst))))))
+
+(define base-fsm-overridekey-transparent-p-by-assumptions-bind-free (fsm-term mfc state)
+  (declare (ignore state)
+           (xargs :stobjs state))
+  (let ((args (base-fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (mfc-clause mfc))))
+    (and args
+         `((args . ,(nest-binary-appends args))))))
+    
+
+
+(defthm base-fsm-overridekey-transparent-p-when-subsetp
+  (implies (and (base-fsm-overridekey-transparent-p fsm keys1)
+                (subsetp-equal (svarlist-fix keys2) (svarlist-fix keys1)))
+           (base-fsm-overridekey-transparent-p fsm keys2))
+  :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p))))
+
+
+(defthm overridekeys-envs-agree-of-nil
+  (iff (overridekeys-envs-agree nil impl-env spec-env spec-outs)
+       (svex-envs-similar impl-env spec-env))
+  :hints (("goal" :cases ((overridekeys-envs-agree nil impl-env spec-env spec-outs)))
+          (and stable-under-simplificationp
+               '(:in-theory (enable svex-envs-similar
+                                    svar-overridekeys-envs-agree)
+                 :use ((:instance overridekeys-envs-agree-implies
+                        (overridekeys nil)
+                        (v (svex-envs-similar-witness impl-env spec-env))))))))
+                        
+(defthm base-fsm-overridekey-transparent-p-of-empty-keys
+  (base-fsm-overridekey-transparent-p fsm nil)
+  :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p
+                                    svex-alist-overridekey-transparent-p))))
+
+(encapsulate nil
+  (local (defthm subsetp-of-append-set-diff
+           (subsetp-equal keys
+                          (append args (set-difference-equal keys args)))
+           :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
+  (local (defthm subsetp-set-diff
+           (subsetp-equal (set-difference-equal keys args) keys)
+           :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
+
+  (defthm base-fsm-overridekey-transparent-p-by-assumptions
+    ;; when rewriting a base-fsm-overridekey-transparent-p positive literal
+    ;; (conclusion), look for (negative literals? existing theorems?), form the
+    ;; append of all their arguments, and rewrite to the set-difference of our
+    ;; argument and theirs.
+    (implies (and (acl2::rewriting-positive-literal `(base-fsm-overridekey-transparent-p ,fsm ,keys))
+                  (bind-free (base-fsm-overridekey-transparent-p-by-assumptions-bind-free
+                              fsm mfc state)
+                             (args))
+                  (base-fsm-overridekey-transparent-p fsm args)
+                  (equal args-val (force-execute (svarlist-fix args)))
+                  (equal keys-val (force-execute (svarlist-fix keys)))
+                  (syntaxp (and (quotep args-val) (quotep keys-val)))
+                  (equal remaining (force-execute (acl2::hons-set-diff keys-val args-val))))
+             (equal (base-fsm-overridekey-transparent-p fsm keys)
+                    (base-fsm-overridekey-transparent-p fsm remaining)))
+    :hints(("Goal" :in-theory (e/d (force-execute)
+                                   (base-fsm-overridekey-transparent-p-by-decomp))
+            :do-not-induct t
+            :cases ((base-fsm-overridekey-transparent-p fsm keys))
+            :use ((:instance base-fsm-overridekey-transparent-p-by-decomp
+                   (keys1 args) (keys2 (set-difference-equal (svarlist-fix keys) (svarlist-fix args))) (x fsm)))))))
+
+(defun def-override-transparent-collect-thms-and-keys
+    (alist ;; table-alist entry mapping thmnames to keylists
+     targets-set ;; hons-set
+     found-set
+     thms-acc)
+  ;; returns thms, found-set
+  (b* (((when (atom alist)) (mv thms-acc found-set))
+       ((cons thm keys) (car alist))
+       (target-keys (acl2::hons-int1 keys targets-set))
+       (needed-keys (acl2::hons-sd1 target-keys found-set))
+       ((unless needed-keys)
+        (def-override-transparent-collect-thms-and-keys (cdr alist) targets-set found-set thms-acc))
+       (found-set (acl2::hons-put-list needed-keys t found-set)))
+    (def-override-transparent-collect-thms-and-keys (cdr alist) targets-set found-set (cons thm thms-acc))))
+
+
+(defconst *def-override-transparent-template*
+  '(with-output :off (event)
+     (encapsulate nil
+       (local (acl2::use-trivial-ancestors-check))
+       (:@ :has-missing-keys
+        (local
+         (progn
+           (defund tmp-override-transparent-keys ()
+             '<missing-keys>)
+
+           (:@ :fgl-semantic-check
+            (fgl::disable-definition sv::svex-env-fix$inline)
+            (fgl::disable-definition sv::svex-env-lookup)
+            (memoize 'svex-mask-alist-p)
+       
+            (:@ :default-aignet-transforms
+             (defun tmp-svtv-generalize-fgl-transforms-config ()
+               (declare (xargs :guard t
+                               :guard-hints (("goal" :in-theory (executable-counterpart-theory :here)))))
+               #!aignet
+               (list (change-fraig-config *fraig-default-config*
+                                          :random-seed-name nil
+                                          :ctrex-queue-limit 64
+                                          :sim-words 2
+                                          :initial-sim-words 1
+                                          :initial-sim-rounds 1
+                                          :ctrex-force-resim t
+                                          :ipasir-limit 100
+                                          :miters-only t
+                                          :ipasir-recycle-count 40000
+                                          )))
+             (defattach fgl::fgl-aignet-transforms-config
+               tmp-svtv-generalize-fgl-transforms-config)
+
+             (define tmp-svtv-generalize-monolithic-sat-with-transforms ()
+               :guard-hints (("goal" :in-theory '((booleanp))))
+               (fgl::make-fgl-satlink-monolithic-sat-config :transform t))
+             (defattach fgl::fgl-toplevel-sat-check-config tmp-svtv-generalize-monolithic-sat-with-transforms))
+       
+       
+            (fgl::def-fgl-thm tmp-def-override-transparent-smart-check-fgl
+              (base-fsm-override-smart-check-on-env <fsm> (tmp-override-transparent-keys) env)))
+
+           (:@ (not :fgl-semantic-check)
+            (defthmd def-override-transparent-open-fsm
+              (implies (and (syntaxp
+                             ((lambda (mfc state)
+                                (declare (ignore state))
+                                ;; dumb way to prevent looping
+                                (not (mfc-ancestors mfc)))
+                              mfc state))
+                            (equal fsm-val (force-execute <fsm>))
+                            (syntaxp (quotep fsm-val)))
+                       (equal <fsm> fsm-val))
+              :hints (("goal" :in-theory '(force-execute)))))
+           
+           (defthm tmp-def-override-transparent-smart-check
+             (base-fsm-overridekey-transparent-p <fsm> (tmp-override-transparent-keys))
+             (:@ :fgl-semantic-check
+              :hints(("Goal" :in-theory '(base-fsm-override-smart-check-in-terms-of-badguy
+                                          tmp-def-override-transparent-smart-check-fgl))))
+             (:@ (not :fgl-semantic-check)
+              :hints (("goal" :in-theory '(def-override-transparent-open-fsm
+                                            cmr::force-execute-force-execute
+                                            base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check
+                                            (tmp-override-transparent-keys)
+                                            (base-fsm-override-smart-check)))))))))
+
+       (defthm <name>
+         (base-fsm-overridekey-transparent-p <fsm> <keys>)
+         :hints (("goal" :in-theory '(base-fsm-overridekey-transparent-p-by-assumptions
+                                      base-fsm-overridekey-transparent-p-by-decomp
+                                      base-fsm-overridekey-transparent-p-of-empty-keys
+                                      cmr::force-execute-force-execute)
+                  :use <instances>)))
+
+       (table def-override-transparent-table '<fsm>
+              (cons (cons '<name> '<keys-val>)
+                    (cdr (assoc-equal '<fsm> (table-alist 'def-override-transparent-table world))))))))
+       
+
+
+(defun def-override-transparent-fn (name fsm-expr keys-expr
+                                         fgl-semantic-check
+                                         use-default-aignet-transforms
+                                         state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (b* ((ctx `(def-override-transparent . ,name))
+       (wrld (w state))
+       ((acl2::er (cons & keys-val))
+        (acl2::simple-translate-and-eval keys-expr nil nil
+                                         (msg "~x0" keys-expr)
+                                         ctx (w state) state nil))
+       (keys-set (pairlis$ keys-val nil))
+       ((mv thms found-set)
+        (with-fast-alist keys-set
+          (def-override-transparent-collect-thms-and-keys
+            (cdr (assoc-equal fsm-expr (table-alist 'def-override-transparent-table wrld)))
+            keys-set nil nil)))
+       (remainder (acl2::hons-sd1 keys-val found-set))
+       (thms (if remainder (cons 'tmp-def-override-transparent-smart-check thms) thms))
+       (- (fast-alist-free found-set)))
+    (value
+     (acl2::template-subst *def-override-transparent-template*
+                           :atom-alist `((<fsm> . ,fsm-expr)
+                                         (<keys> . ,keys-expr)
+                                         (<missing-keys> . ,remainder)
+                                         (<name> . ,name)
+                                         (<instances> . ,thms)
+                                         (<keys-val> . ,keys-val))
+                           :features (append (and fgl-semantic-check '(:fgl-semantic-check))
+                                             (and use-default-aignet-transforms '(:default-aignet-transforms))
+                                             (and remainder '(:has-missing-keys)))))))
+
+(defmacro def-override-transparent (name &key fsm keys fgl-semantic-check
+                                         (use-default-aignet-transforms 't))
+  `(make-event (def-override-transparent-fn ',name ',fsm ',keys ',fgl-semantic-check ',use-default-aignet-transforms state)))
+
+
+(defxdoc def-override-transparent
+  :parents (svex-decomposition-methodology def-svtv-refinement)
+  :short "For a given FSM and set of keys (internal signal names), prove that the FSM is @(see override-transparent) with respect to those keys."
+  :long "<p>This utility tries to prove that the given FSM is @(see
+override-transparent) with respect to a set of keys, using a syntactic check
+and, if necessary and the @(':fgl-semantic-check') keyword argument is
+provided, a semantic check using FGL and equivalence checking.</p>
+
+<p>Usage:</p>
+@({
+ (def-override-transparent name-of-theorem-to-prove
+    :fsm (my-fsm) :keys (my-keys)
+    ;; optional:
+    :fgl-semantic-check t                ;; default: nil
+    :use-default-aignet-transforms nil)  ;; default: t
+  })
+
+"
+  )
+
+
+
+;; test of def-override-transparent
+(local
+ (progn
+   (defund my-fsm ()
+     (base-fsm nil nil))
+
+   (defund my-keys1 () '(a b c))
+
+   (def-override-transparent base-fsm-transparent1 :fsm (my-fsm) :keys (my-keys1))
+   
+       
+   (defund my-keys2 () '(d b c))
+
+   (def-override-transparent base-fsm-transparent2 :fsm (my-fsm) :keys (my-keys2))
+
+
+   (defund my-keys3 () '(a b c d))
+
+   (def-override-transparent base-fsm-transparent3 :fsm (my-fsm) :keys (my-keys3))))
+

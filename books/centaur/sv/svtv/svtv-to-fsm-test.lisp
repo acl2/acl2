@@ -48,6 +48,28 @@
     (mv svex good bad)))
 
 
+(encapsulate nil
+  (local (defcycle counter-phase-fsm-def
+           :design *sv-design*
+           :phases nil))
+  (local (def-svtv-data-export counter-phase-data))
+  (make-event
+   (b* ((fsm (svtv-data->phase-fsm svtv-data)))
+     `(define counter-phase-fsm ()
+        :returns (fsm)
+        ',fsm)))
+
+  (local (defthm counter-phase-fsm-is-data-fsm
+           (equal (counter-phase-fsm)
+                  (svtv-data-obj->phase-fsm (counter-phase-data)))
+           :hints (("goal" :in-theory (enable (counter-phase-data)
+                                              (svtv-data-obj->phase-fsm))))))
+  
+  (defthm base-fsm-p-of-<fn>
+    (base-fsm-p (counter-phase-fsm))
+    :hints (("goal" :in-theory '(counter-phase-fsm-is-data-fsm
+                                 base-fsm-p-of-svtv-data-obj->phase-fsm)))))
+
 (defsvtv$ counter-invar0-run
   :design *sv-design*
   :cycle-phases (list (make-svtv-cyclephase :constants '(("clk" . 1)))
@@ -63,13 +85,21 @@
             :outputs (("sum" sum-out)
                       ("sum1" sum1-out)))))
 
-(def-svtv-data-export counter-invar0-run-data)
+
+
+;; temp
+
+
+
 
 (encapsulate nil
   (local (include-book "svtv-generalize"))
   (local (include-book "svtv-to-fsm"))
+  (local (def-svtv-data-export counter-invar0-run-data))
+  
   (make-event '(def-svtv-refinement counter-invar0-run counter-invar0-run-data
                  :svtv-spec counter-invar0-spec :inclusive-overridekeys t
+                 :phase-fsm counter-phase-fsm
                  :fsm counter-fsm :define-fsm t)))
 
 (value-triple (acl2::tshell-ensure))
@@ -100,7 +130,13 @@
 
   (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm2
                  :svtv-spec-thmname counter-invar0-svtv-thm
-                 :eliminate-override-vars (sum1))))
+                 :eliminate-override-vars (sum1)))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm3
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-vars :all))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm4
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-signals :all)))
 
 
 
@@ -155,7 +191,15 @@
         :svtv-spec-thmname counter-invar1-svtv-thm
         ;; BOZO we should only have to specify one of these
         :eliminate-override-vars (sum1)
-        :eliminate-override-signals ("sum1")))))
+        :eliminate-override-signals ("sum1"))
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm3
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :eliminate-override-vars :all)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm4
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :eliminate-override-signals :all))))
 
 
 
@@ -174,16 +218,17 @@
             :outputs (("sum" sum-out)
                       ("sum1" sum1-out)))))
 
-(def-svtv-data-export counter-invar2-run-data)
-
 (encapsulate nil
   (local (include-book "svtv-to-fsm"))
   (local (include-book "svtv-generalize"))
+
+  (local (def-svtv-data-export counter-invar2-run-data))
   (make-event
    '(progn
       (def-svtv-refinement counter-invar2-run counter-invar2-run-data
         :svtv-spec counter-invar2-spec
         :fsm counter-fsm
+        :phase-fsm counter-phase-fsm
         :inclusive-overridekeys t)
 
 
@@ -207,5 +252,13 @@
 
       (def-svtv-to-fsm-thm counter-invar2-fsm-thm2
         :svtv-spec-thmname counter-invar2-svtv-thm
-        :eliminate-override-signals ("sum1")))))
+        :eliminate-override-signals ("sum1"))
+
+      (def-svtv-to-fsm-thm counter-invar2-fsm-thm3
+        :svtv-spec-thmname counter-invar2-svtv-thm
+        :eliminate-override-vars :all)
+
+      (def-svtv-to-fsm-thm counter-invar2-fsm-thm4
+        :svtv-spec-thmname counter-invar2-svtv-thm
+        :eliminate-override-signals :all))))
 
