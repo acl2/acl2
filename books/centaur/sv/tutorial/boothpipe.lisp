@@ -444,7 +444,8 @@
                (equal o (loghead 32 (* (logext 16 a) (logext 16 b))))))
     :hints(("Goal" :in-theory (e/d (svex-env-lookup-of-cons
                                     4vec-p-when-integerp)
-                                   ((svex-env-lookup)))))))
+                                   ((svex-env-lookup)
+                                    (svtv-override-triplemaplist-envs-match)))))))
 
 
 
