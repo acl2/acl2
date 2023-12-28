@@ -1,10 +1,10 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author: Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -16,6 +16,8 @@
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+
+(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,17 +136,13 @@
                       (not (equal x 0))
                       (not (equal y 0)))
                  (equal (equal (inv x p) y)
-                        (equal x (inv y p))))
-        :prep-books
-        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+                        (equal x (inv y p)))))
 
       (defruled inv-of-inv
         (implies (and (dm::primep p)
                       (fep a p))
                  (equal (inv (inv a p) p)
-                        a))
-        :prep-books
-        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+                        a)))
 
       (acl2::defisar
        pfield-squarep-when-pfield-squarep-of-inv-and-not-zero
@@ -159,9 +157,7 @@
         (:assume (:nonzero (not (equal x 0))))
         (:assume (:inv-square (pfield-squarep (inv x p) p)))
         (:derive (:nonzero-inv (not (equal (inv x p) 0)))
-         :from (:nonzero :prime :fep)
-         :prep-books
-         ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+         :from (:nonzero :prime :fep))
         (:let (r (pfield-square->root (inv x p) p)))
         (:derive (:1/x-is-rr (equal (inv x p) (mul r r p)))
          :from (:inv-square)
@@ -174,7 +170,8 @@
          :use (:instance equal-of-inv-swap
                (y (mul (pfield-square->root (inv x p) p)
                        (pfield-square->root (inv x p) p)
-                       p))))
+                       p)))
+         :disable pfield::equal-of-inv)
         (:derive (:x-is-1/r-1/r (equal x (mul (inv r p) (inv r p) p)))
          :from (:1/x-is-rr :prime :fep :nonzero)
          :use (:instance pfield::inv-of-mul
@@ -182,9 +179,7 @@
                (y (pfield-square->root (inv x p) p))
                (p p))
          :enable inv-of-inv
-         :disable (pfield::inv-of-mul pfield::inv-of-inv)
-         :prep-books
-         ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+         :disable (pfield::inv-of-mul pfield::inv-of-inv))
         (:derive (:conclusion (pfield-squarep x p))
          :from (:x-is-1/r-1/r :fep-root :prime)
          :use (:instance pfield-squarep-suff
@@ -211,13 +206,9 @@
         :expand (pfield-squarep x p)
         :use (:instance pfield-squarep-suff
               (x (inv x p))
-              (r (inv (pfield-square->root x p) p)))
-        :prep-books
-        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))
+              (r (inv (pfield-square->root x p) p))))
 
       (defrule pfield-squarep-of-inv-of-0
         (implies (dm::primep p)
                  (pfield-squarep (inv 0 p) p))
-        :cases ((equal p 2))
-        :prep-books
-        ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)))))))
+        :cases ((equal p 2)))))))
