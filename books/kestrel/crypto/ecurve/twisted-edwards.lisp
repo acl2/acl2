@@ -1,10 +1,10 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Authors: Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,7 +31,6 @@
     (xdoc::ahref
      "https://eprint.iacr.org/2008/013.pdf"
      "Bernstein, Birkner, Joye, Lange, and Peters's ``Twisted Edwards Curves''")
-    (xdoc::ahref "https://eprint.iacr.org/2008/013.pdf" "this paper")
     ".")
    (xdoc::p
     "Their definition is the following:")
