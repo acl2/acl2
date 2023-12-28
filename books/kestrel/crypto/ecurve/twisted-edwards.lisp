@@ -156,11 +156,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The primality requirement in the guard of this function
-     is not strictly needed to define this function,
-     but in general we should only deal with well-formed curves.
-     In particular, curves whose @($p$) is prime.")
-   (xdoc::p
     "A point @($(x, y)$) is on the curve if and only if
      its components satisfy the curve equation.
      We require its components to be below the prime,
