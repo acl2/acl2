@@ -14150,6 +14150,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
     set-waterfall-parallelism-fn ; for #+acl2-par
     fix-stobj-array-type
+    fix-stobj-hash-table-type
+    fix-stobj-table-type
     set-gc-threshold$-fn
     certify-book-finish-complete
     chk-absstobj-invariants

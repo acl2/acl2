@@ -7975,16 +7975,17 @@
 ; badged.
 
 ; Before the introduction of apply$, there was a simple rule: :logic mode
-; functions are defined entirely in terms of :logic mode subfunctions.  When
-; apply$ was first introduced (in Version 8.0), every badged function had also
-; a warrant (and all warranted functions are necessarily in :logic mode), so
-; every badged function was in :logic mode.  But it was possible to define an
-; unbadged :logic mode function to appear to call a :program mode function (or
-; even an undefined function!).  The following commands were carried out in
-; V8.3, which has the same restrictions as V8.0 but was more powerful mainly
-; because all warrants are true in its evaluation theory (enabling top-level
-; evaluation of apply$ forms), loop$ recursion was supported, and lambda object
-; rewriting was done.
+; functions are defined entirely in terms of :logic mode subfunctions.  Without
+; some such rule we could have the sort of soundness problem described in :DOC
+; program-only.  When apply$ was first introduced (in Version 8.0), every
+; badged function had also a warrant (and all warranted functions are
+; necessarily in :logic mode), so every badged function was in :logic mode.
+; But it was possible to define an unbadged :logic mode function to appear to
+; call a :program mode function (or even an undefined function!).  The
+; following commands were carried out in V8.3, which has the same restrictions
+; as V8.0 but was more powerful mainly because all warrants are true in its
+; evaluation theory (enabling top-level evaluation of apply$ forms), loop$
+; recursion was supported, and lambda object rewriting was done.
 
 ; Consider this sketch of a V8.3 session:
 

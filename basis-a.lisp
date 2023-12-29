@@ -8111,25 +8111,94 @@
 
 (defun fix-stobj-array-type (type wrld)
 
+; Keep in sync with fix-stobj-hash-table-type and fix-stobj-table-type.
+
 ; Note: Wrld may be a world or nil.  If wrld is nil and we are in raw Lisp,
 ; then this function should be called in a context where the symbol-value is
 ; available for any symbol introduced by a previous defconst event.  Our
 ; intended use case meets that criterion: evaluation of a defstobj form during
 ; loading of the compiled file for a book.
 
+; Note that the values in the #-acl2-loop-only and #+acl2-loop-only cases are
+; different, but that's OK since this function will never be converted to logic
+; mode.  See :DOC program-only.
+
   (let* ((max (car (caddr type)))
          (n (cond ((consp wrld)
                    (let ((qc (defined-constant max wrld)))
                      (and qc (unquote qc))))
-                  #-acl2-loop-only
-                  ((eq wrld nil)
-                   (and (symbolp max)
-                        (symbol-value max)))
-                  (t nil))))
+                  (t
+                   #-acl2-loop-only
+                   (assert$ (eq wrld nil)
+                            (and (symbolp max)
+                                 (symbol-value max)))
+                   #+acl2-loop-only
+                   (er hard 'fix-stobj-array-type
+                       "Implementation error: Attempted to get logical result ~
+                        for fix-stobj-array-type when the world is empty.")))))
     (cond (n (list (car type)
                    (cadr type)
                    (list n)))
           (t type))))
+
+(defun fix-stobj-hash-table-type (type wrld)
+
+; This function is analogous to fix-stobj-array-type; see comments there, and
+; keep in sync with fix-stobj-array-type and fix-stobj-table-type.
+
+  (cond
+   ((null (cddr type)) ; (HASH-TABLE test)
+    type)
+   (t ; (HASH-TABLE test size) or (HASH-TABLE test size type-indicator)
+    (let* ((size0 (caddr type))
+           (size (cond ((consp wrld)
+                        (let ((qc (defined-constant size0 wrld)))
+                          (and qc (unquote qc))))
+                       (t
+                        #-acl2-loop-only
+                        (assert$ (eq wrld nil)
+                                 (and size0
+                                      (symbolp size0)
+                                      (symbol-value size0)))
+                        #+acl2-loop-only
+                        (er hard 'fix-stobj-hash-table-type
+                            "Implementation error: Attempted to get logical ~
+                             result for fix-stobj-hash-table-type when the ~
+                             world is empty.")))))
+      (cond (size (list* (car type)
+                         (cadr type)
+                         size
+                         (cdddr type)))
+            (t type))))))
+
+(defun fix-stobj-table-type (type wrld)
+
+; This function is analogous to fix-stobj-array-type; see comments there, and
+; keep in sync with fix-stobj-array-type and fix-stobj-hash-table-type.
+
+  (cond
+   ((null (cdr type)) ; (STOBJ-TABLE)
+    type)
+   (t ; (STOBJ-TABLE size)
+    (let* ((size0 (cadr type))
+           (size (cond ((consp wrld)
+                        (let ((qc (defined-constant size0 wrld)))
+                          (and qc (unquote qc))))
+                       (t
+                        #-acl2-loop-only
+                        (assert$ (eq wrld nil)
+                                 (and size0
+                                      (symbolp size0)
+                                      (symbol-value size0)))
+                        #+acl2-loop-only
+                        (er hard 'fix-stobj-hash-table-type
+                            "Implementation error: Attempted to get logical ~
+                             result for fix-stobj-table-type when the world ~
+                             is empty.")))))
+      (cond (size (list* (car type)
+                         size
+                         (cddr type)))
+            (t type))))))
 
 (defun defstobj-field-templates (field-descriptors renaming wrld)
 
@@ -8170,6 +8239,12 @@
                   :type (cond ((and (consp type)
                                     (eq (car type) 'array))
                                (fix-stobj-array-type type wrld))
+                              ((and (consp type)
+                                    (eq (car type) 'hash-table))
+                               (fix-stobj-hash-table-type type wrld))
+                              ((and (consp type)
+                                    (eq (car type) 'stobj-table))
+                               (fix-stobj-table-type type wrld))
                               (t type))
                   :init init
                   :accessor-name accessor-name
