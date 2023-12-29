@@ -350,7 +350,7 @@
 
   ;; First, for brevity, we introduce a function
   ;; that is the analogue of ECp,
-  ;; but the following one uses the prime field operations instead,
+  ;; but this newly introduced one uses the prime field operations instead,
   ;; and has no dependency on c.
   ;; The following function's body is copied from point-on-twisted-edwards-p.
 
