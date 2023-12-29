@@ -3488,8 +3488,8 @@
             ;bvxor-of-lognot-arg3
             acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
-            bvif-of-if-constants-nil-nonnil
-            bvif-of-if-constants-nonnil-nil
+            acl2::bvif-of-if-constants-nil-nonnil
+            acl2::bvif-of-if-constants-nonnil-nil
             acl2::bvminus-of-0-arg3
             acl2::bvif-same-branches
             acl2::equal-of-1-and-bitand

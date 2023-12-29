@@ -1227,20 +1227,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvif-of-if-constants-nil-nonnil
-  (implies (and (syntaxp (quotep k))
-                (not (equal nil k)))
-           (equal (bvif size (if test nil k) tp ep)
-                  (bvif size (not test) tp ep))))
-
-(defthm bvif-of-if-constants-nonnil-nil
-  (implies (and (syntaxp (quotep k))
-                (not (equal nil k)))
-           (equal (bvif size (if test k nil) tp ep)
-                  (bvif size test tp ep))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defthm boolif-of-boolif-of-t-and-nil
   (equal (boolif (boolif x t y) x nil)
          (acl2::bool-fix x)))
