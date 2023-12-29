@@ -739,7 +739,7 @@
     "The proof is explained in comments in this file."))
 
   ;; The closure proof is more complicated than it should be,
-  ;; due how the proof, and the twisted Edwards curve library,
+  ;; due to how the proof, and the twisted Edwards curve library,
   ;; have been developed over time.
   ;; In particular, the fixtype for twisted Edwards curve,
   ;; and the functions point-on-twisted-edwards-p and twisted-edwards-add,
