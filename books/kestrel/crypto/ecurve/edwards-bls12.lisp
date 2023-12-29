@@ -1,11 +1,11 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2020,2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors: Eric McCarthy (mccarthy@kestrel.edu)
-;          Alessandro Coglio (coglio@kestrel.edu)
+;          Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,22 +24,23 @@
 
 (defxdoc+ edwards-bls12
   :parents (elliptic-curves)
-  :short "The edwards-bls12 complete twisted Edwards elliptic curve."
+  :short "The Edwards-BLS12 complete twisted Edwards elliptic curve."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define the edwards-bls12 curve,
+    "We define the Edwards-BLS12 curve,
      as a constant value of the fixtype @(tsee twisted-edwards-curve)
      of twisted Edwards elliptic curves.
      We show that the curve is complete.")
    (xdoc::p
-    "The prime and coefficient of edwards-bls12 are formalized as nullary functions.
+    "The prime and coefficients of Edwards-BLS12
+     are formalized as nullary functions.
      We keep disabled also their executable counterparts because
      we generally want to treat them as algebraic quantities in proofs;
      in particular, we want to avoid their combination into new constants
      by the prime field normalizing rules.")
    (xdoc::p
-    "We also define various notions related to edwards-bls12,
+    "We also define various notions related to Edwards-BLS12,
      such as recognizers of points in the curve's group and subgroup."))
   :order-subtopics t
   :default-parent t)
@@ -48,11 +49,11 @@
 
 (define edwards-bls12-q ()
   :returns (q dm::primep)
-  :short "The edwards-bls12 base field prime @($F_q$)."
+  :short "The Edwards-BLS12 base field prime @($F_q$)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This defines the prime field over which edwards-bls12 is defined.")
+    "This defines the prime field over which Edwards-BLS12 is defined.")
    (xdoc::p
     "It is the same as the scalar field of the BLS12-377 elliptic curve,
      which is defined in our cryptograhic library."))
@@ -69,7 +70,7 @@
 (define edwards-bls12-a ()
   :returns (a (fep a (edwards-bls12-q))
               :hints (("Goal" :in-theory (enable fep edwards-bls12-q))))
-  :short "The Edwards-Bls12 coefficient @($a$)."
+  :short "The Edwards-BLS12 coefficient @($a$)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -97,7 +98,7 @@
 (define edwards-bls12-d ()
   :returns (d (fep d (edwards-bls12-q))
               :hints (("Goal" :in-theory (enable fep edwards-bls12-q))))
-  :short "The Edwards-Bls12 coefficient @($d$)"
+  :short "The Edwards-BLS12 coefficient @($d$)"
   :long
   (xdoc::topstring
    (xdoc::p
@@ -155,7 +156,7 @@
 
 (define edwards-bls12-curve ()
   :returns (curve twisted-edwards-curvep)
-  :short "The Edwards-Bls12 curve"
+  :short "The Edwards-BLS12 curve"
   :long
   (xdoc::topstring
    (xdoc::p
@@ -167,7 +168,10 @@
 
   (defrule twisted-edwards-curve-completep-of-edwards-bls12-curve
     (twisted-edwards-curve-completep (edwards-bls12-curve))
-    :enable (twisted-edwards-curve-completep edwards-bls12-a edwards-bls12-d edwards-bls12-q)
+    :enable (twisted-edwards-curve-completep
+             edwards-bls12-a
+             edwards-bls12-d
+             edwards-bls12-q)
     :disable (pfield-squarep-of-edwards-bls12-a
               not-pfield-squarep-of-edwards-bls12-d)
     :use (pfield-squarep-of-edwards-bls12-a
@@ -183,7 +187,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the points on the Edwards-Bls12 curve.")
+    "These are the points on the Edwards-BLS12 curve.")
    (xdoc::p
     "These are all finite points."))
   (and (pointp x)
@@ -202,13 +206,13 @@
 
 (define maybe-edwards-bls12-pointp (x)
   :returns (yes/no booleanp)
-  :short "Recognize Edwards-Bls12 points and @('nil')."
+  :short "Recognize Edwards-BLS12 points and @('nil')."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are optional Edwards-Bls12 points.
+    "These are optional Edwards-BLS12 points.
      Useful, for instance, as results of functions that may return
-     either Edwards-Bls12 points or an error value."))
+     either Edwards-BLS12 points or an error value."))
   (or (edwards-bls12-pointp x)
       (eq x nil))
   ///
@@ -226,9 +230,9 @@
   (xdoc::topstring
    (xdoc::p
     "This function can be defined on any finite point (in fact, on any pair),
-     but it is only used on Edwards-Bls12 points.")
+     but it is only used on Edwards-BLS12 points.")
    (xdoc::p
-    "This is always below the Edwards-Bls12 field prime."))
+    "This is always below the Edwards-BLS12 field prime."))
   (point-finite->x point)
   :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp)))
   ///
@@ -250,9 +254,9 @@
   (xdoc::topstring
    (xdoc::p
     "This function can be defined on any finite point (in fact, on any pair),
-     but it is only used on Edwards-Bls12 points.")
+     but it is only used on Edwards-BLS12 points.")
    (xdoc::p
-    "This is always below the Edwards-Bls12 field prime."))
+    "This is always below the Edwards-BLS12 field prime."))
   (point-finite->y point)
   :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp)))
   ///
@@ -270,7 +274,7 @@
   :returns (point1 edwards-bls12-pointp
                    :hyp (edwards-bls12-pointp point)
                    :hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
-  :short "Scalar multiplication on Edwards-Bls12."
+  :short "Scalar multiplication on Edwards-BLS12."
   (twisted-edwards-mul scalar point (edwards-bls12-curve))
   :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
 
@@ -281,7 +285,7 @@
   :returns (point1 edwards-bls12-pointp
                    :hyp (edwards-bls12-pointp point)
                    :hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
-  :short "Fast scalar multiplication on Edwards-Bls12."
+  :short "Fast scalar multiplication on Edwards-BLS12."
   (twisted-edwards-mul-fast scalar point (edwards-bls12-curve))
   :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
 
@@ -293,7 +297,7 @@
                   :hyp (and (edwards-bls12-pointp point1)
                             (edwards-bls12-pointp point2))
                   :hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
-  :short "Group addition on Edwards-Bls12."
+  :short "Group addition on Edwards-BLS12."
   (twisted-edwards-add point1 point2 (edwards-bls12-curve))
   :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
 
@@ -303,7 +307,7 @@
   :returns (point edwards-bls12-pointp
                   :hyp (edwards-bls12-pointp point1)
                   :hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
-  :short "Group point negation on Edwards-Bls12."
+  :short "Group point negation on Edwards-BLS12."
   (twisted-edwards-neg point1 (edwards-bls12-curve))
   :guard-hints (("Goal" :in-theory (enable edwards-bls12-pointp))))
 
@@ -312,8 +316,12 @@
 (define edwards-bls12-h ()
   :returns (h natp)
   :short "The elliptic curve cofactor."
-  :long "This is the number that, when multiplied by the large subgroup order @($r$),
- yields the full order of the elliptic curve group."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number that,
+     when multiplied by the large subgroup order @($r$),
+     yields the full order of the elliptic curve group."))
   4
   ///
   (in-theory (disable (:e edwards-bls12-h))))
@@ -322,7 +330,8 @@
 
 (define edwards-bls12-r ()
   :returns (r natp)
-  :short "The prime number that is the order of the large subgroup of edwards-bls12."
+  :short "The prime number that is
+          the order of the large subgroup of Edwards-BLS12."
   (primes::edwards-bls12-subgroup-prime)
 
   ///
