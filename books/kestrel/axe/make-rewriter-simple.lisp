@@ -1606,7 +1606,8 @@
                                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                                      interpreted-function-alist rewrite-stobj (+ -1 count)))
                              ;; not a lambda:
-                             (b* ( ;; handle possible ground term by evaluating:
+                             (b* (;; handle possible ground term by evaluating (since ,simplify-fun-call-and-add-to-dag-name doesn't handle ground terms):
+                                  ;; todo: this code is duplicated:
                                   ((mv erp evaluatedp val)
                                    (if (not (all-consp args)) ;; test for args being quoted constants
                                        ;; not a ground term:
@@ -4458,14 +4459,14 @@
                                         renumbering-stobj))
             (let ((fn (ffn-symb expr)))
               (case fn
-                (quote ; EXPR is a quoted constant:
-                 ;; Record the fact that NODENUM rewrote to the constant EXPR:
-                 (let ((renumbering-stobj (update-renumberingi nodenum expr renumbering-stobj)))
-                   (,simplify-dag-aux-name (rest rev-dag)
-                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                           node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                           interpreted-function-alist rewrite-stobj
-                                           renumbering-stobj)))
+                (quote ; EXPR is a quoted constant (rare):
+                  ;; Record the fact that NODENUM rewrote to the constant EXPR:
+                  (let ((renumbering-stobj (update-renumberingi nodenum expr renumbering-stobj)))
+                    (,simplify-dag-aux-name (rest rev-dag)
+                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                            interpreted-function-alist rewrite-stobj
+                                            renumbering-stobj)))
                 ;; TODO: Flesh out these cases:
                 ;; ((if myif) ..)
                 ;; (bvif ..)
