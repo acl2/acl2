@@ -1,7 +1,7 @@
 ; Tests of rewriter-basic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,7 +27,7 @@
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 ;;;
-;;; tests of simp-term-basic
+;;; tests of simp-term-basic (which returns a term)
 ;;;
 
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
@@ -93,8 +93,62 @@
    (and (not erp)
         (equal res ''2))))
 
+;; todo: use more (add more options, such as rules)
+;; todo: consider trying both with and without memoization, and other combinations of argument that shouldn't matter
+(defmacro test-simp-term (input-term output-term)
+  `(assert!
+     (mv-let (erp term)
+       (simp-term-basic ',input-term
+                        nil ; assumptions
+                        nil ; rule-alist
+                        nil ; interpreted-function-alist
+                        nil ; monitored-symbols
+                        t   ; memoizep
+                        nil   ; count-hits
+                        nil ; print
+                        nil ; normalize-xors
+                        (w state))
+       (and (not erp)
+            (equal term ',output-term)))))
+
+(test-simp-term (if a b c) (if a b c)) ; no change
+(test-simp-term (if 't x y) x)
+(test-simp-term (if '7 x y) x)
+(test-simp-term (if 'nil x y) y)
+
+(test-simp-term (not 't) 'nil)
+(test-simp-term (not '3) 'nil)
+(test-simp-term (not 'nil) 't)
+(test-simp-term (not (not 'nil)) 'nil)
+(test-simp-term (not (not 't)) 't)
+(test-simp-term (not (not '3)) 't)
+(test-simp-term (not (not (not 'nil))) 't)
+
+(test-simp-term (myif a b c) (myif a b c)) ; no change
+(test-simp-term (myif 't x y) x)
+(test-simp-term (myif '7 x y) x)
+(test-simp-term (myif 'nil x y) y)
+
+(test-simp-term (boolif a b c) (boolif a b c)) ; no change
+(test-simp-term (boolif 't x y) (bool-fix$inline x))
+(test-simp-term (boolif '7 x y) (bool-fix$inline x))
+(test-simp-term (boolif 'nil x y) (bool-fix$inline y))
+;; for these, we can evaluate the bool-fix:
+(test-simp-term (boolif 't 't y) 't)
+(test-simp-term (boolif '7 '3 y) 't)
+(test-simp-term (boolif 'nil x 'nil) 'nil)
+
+(test-simp-term (bvif '32 a b c) (bvif '32 a b c)) ; no change
+(test-simp-term (bvif '32 't x y) (bvchop '32 x))
+(test-simp-term (bvif '32 '7 x y) (bvchop '32 x))
+(test-simp-term (bvif '32 'nil x y) (bvchop '32 y))
+;; for thesem we can evaluate the bvchop:
+(test-simp-term (bvif '32 't '1 y) '1)
+(test-simp-term (bvif '32 '7 (binary-+ '2 (expt '2 '32)) y) '2)
+(test-simp-term (bvif '32 'nil x '7) '7)
+
 ;;;
-;;; tests of simplify-term-basic
+;;; tests of simplify-term-basic (which returns a DAG)
 ;;;
 
 (assert!
@@ -233,7 +287,7 @@
         (equal (dag-to-term res) '(if (not (foo x)) y 'nil)))))
 
 ;;;
-;;; Tests when not memoizing (no context info should be used)
+;;; Tests when memoizing (no context info should be used)
 ;;;
 
 ;; Non-negated test in then-branch (boolean)
