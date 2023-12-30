@@ -481,7 +481,7 @@
     (:TYPE-PRESCRIPTION NAT-LISTP)
     (:TYPE-PRESCRIPTION NATP-OF-CAR-WHEN-NAT-LISTP-TYPE)
     (:TYPE-PRESCRIPTION NATP-OF-MAXELEM-2)
-    (:TYPE-PRESCRIPTION NATP-OF-MV-NTH-3-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
+    (:TYPE-PRESCRIPTION NATP-OF-MV-NTH-3-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY-type)
     (:TYPE-PRESCRIPTION PSEUDO-DAG-ARRAYP)
     (:TYPE-PRESCRIPTION PSEUDO-TERMP)
     (:TYPE-PRESCRIPTION RATIONAL-LISTP)
@@ -3047,6 +3047,7 @@
                                pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
                                integerp-of-maxelem2
                                integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
+                               integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type
                                <-of-maxelem-when-all-<
                                ,(pack$ relieve-free-var-hyp-and-all-others-name '-return-type)
                                ,(pack$ relieve-rule-hyps-name '-return-type)
