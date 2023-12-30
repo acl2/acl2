@@ -345,7 +345,7 @@
           ;; remove-rules:
           (append
            '(x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             acl2::bvchop-of-bvshr
+             acl2::bvchop-of-bvshr-becomes-slice
              acl2::bvchop-of-bvashr)
            remove-rules
            remove-lift-rules)
@@ -416,7 +416,7 @@
                                                '(acl2::boolif-x-x-y-becomes-boolor ;drop?
                                                  acl2::boolif-when-quotep-arg2
                                                  acl2::boolif-when-quotep-arg3
-                                                 acl2::bvchop-of-bvshr
+                                                 acl2::bvchop-of-bvshr-becomes-slice
                                                  acl2::bvchop-of-bvashr))))
        ((mv result info-acc
             & ; actual-dag

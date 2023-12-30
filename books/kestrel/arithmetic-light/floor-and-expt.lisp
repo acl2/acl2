@@ -29,7 +29,7 @@
                   (if (posp n)
                       (expt 2 (+ -1 n))
                     0)))
-  :hints (("Goal" :in-theory (e/d (expt) ()))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm floor-of-expt-and-2
   (implies (posp n)

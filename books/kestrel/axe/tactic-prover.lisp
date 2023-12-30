@@ -792,7 +792,7 @@
           (new-info (car (last new-info-acc))))
        (if (eq result *valid*)
            (progn$ (cw "Proved problem ~x0 in " num)
-                   (acl2::print-to-hundredths elapsed)
+                   (print-to-hundredths elapsed)
                    (cw" s.)~%" )
                    (apply-proof-tactics-to-problems (+ 1 num) (rest problems) tactics rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp
                                                     info-acc

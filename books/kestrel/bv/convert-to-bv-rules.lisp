@@ -93,7 +93,7 @@
          (bvxor size x (bvnot size y)))
   :hints (("Goal" :in-theory (enable bvnot))))
 
-(defthm acl2::bvchop-of-lognot
+(defthm bvchop-of-lognot
   (equal (bvchop size (lognot x))
          (bvnot size x))
   :hints (("Goal" :in-theory (enable bvnot))))

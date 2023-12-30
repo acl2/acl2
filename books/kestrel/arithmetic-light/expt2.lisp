@@ -123,9 +123,7 @@
            (< (expt 2 i) 1))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :induct (expt 2 i)
-           :in-theory (e/d (expt
-                            expt-of-+)
-                           ()))))
+           :in-theory (enable expt expt-of-+))))
 
 (defthm equal-of-1-and-expt
   (equal (equal 1 (expt 2 n))
@@ -151,8 +149,7 @@
            (equal (equal (+ -1 (expt 2 n))
                          (* 2 x))
                   nil))
-  :hints (("Goal" :in-theory (e/d (expt even-not-equal-odd-hack)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable expt even-not-equal-odd-hack))))
 
 (defthm expt-bound-linear
   (implies (and (< i1 i2)
@@ -160,15 +157,13 @@
                 (integerp i2))
            (< (expt 2 i1) (expt 2 i2)))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (e/d (expt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm integerp-of-*-of-1/2-and-expt-2
   (implies (integerp n)
            (equal (integerp (* 1/2 (expt 2 n)))
                   (< 0 n)))
-  :hints (("Goal" :in-theory (e/d (expt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthmd expt-diff-collect
   (implies (and (integerp m)

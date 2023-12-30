@@ -3463,7 +3463,7 @@
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::<-of-+-cancel-3-1
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
-            bvchop-of-bvshl-same
+            acl2::bvchop-of-bvshl-same ; move?
             acl2::equal-of-myif-arg1-safe
             acl2::equal-of-myif-arg2-safe
             write-of-write-same
@@ -3488,8 +3488,8 @@
             ;bvxor-of-lognot-arg3
             acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
-            bvif-of-if-constants-nil-nonnil
-            bvif-of-if-constants-nonnil-nil
+            acl2::bvif-of-if-constants-nil-nonnil
+            acl2::bvif-of-if-constants-nonnil-nil
             acl2::bvminus-of-0-arg3
             acl2::bvif-same-branches
             acl2::equal-of-1-and-bitand
