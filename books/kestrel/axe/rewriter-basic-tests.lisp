@@ -22,6 +22,7 @@
 
 (include-book "rewriter-basic")
 (include-book "dag-to-term")
+(include-book "make-term-into-dag-simple")
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 
@@ -507,3 +508,35 @@
                         nil t t (w state))
    (and (not erp)
         (equal (dag-to-term res) ''1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b))
+                       nil nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! '(cons a b))))))
+
+
+;; TODO: The IF did not get resolved!:
+;; (assert!
+;;  (mv-let (erp res)
+;;    (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b))
+;;                        nil nil nil
+;;                        (empty-rule-alist)
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil)
+;;    (and (not erp)
+;;         (equal res (make-term-into-dag-simple! 'a)))))
