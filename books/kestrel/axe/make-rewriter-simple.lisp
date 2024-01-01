@@ -692,7 +692,7 @@
                                 ;; TODO: This tests whether atoms in the instiantiated-hyp are vars, but that seems wasteful because the hyp is fully instantiated):
                                 ;; bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms (most of them will have been evaluated above)?
                                 ;; TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist:
-                                (,simplify-tree-and-add-to-dag-name instantiated-hyp
+                                (,simplify-tree-and-add-to-dag-name instantiated-hyp ; todo: is this known to be a non-var?  if so, take advantage of that fact
                                                                     nil ;nothing is yet known to be equal to instantiated-hyp
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
@@ -760,7 +760,7 @@
 
         ;; Returns (mv erp instantiated-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         (defund ,try-to-apply-rules-name (stored-rules ;the list of rules for the fn in question
-                                          rule-alist
+                                          rule-alist ; todo: move this arg into a more standard position?
                                           args-to-match
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                           node-replacement-array node-replacement-count refined-assumption-alist
@@ -1470,10 +1470,8 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                  node-replacement-array)
+          (if (or (not (mbt (natp count))) (= 0 count))
+              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
             (if (atom tree)
                 (if (symbolp tree)
                     ;; It's a variable (this case may be very rare; can we eliminate it by pre-handling vars in the initial term?):
@@ -1487,7 +1485,7 @@
                           new-nodenum-or-quotep
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                           (and memoization
-                               (add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; Can't include TREE itself, because we only memoize rewrites of conses.
+                               (add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; We cannot add a memoization entry for TREE itself, because it is not a function call.
                                                          new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
                                                          memoization))
                           info tries limits
@@ -1507,10 +1505,11 @@
                         tree
                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                         (if (and memoization
+                                 ;; todo: drop this check?:
                                  trees-equal-to-tree ; could check just this, but then it *must* always be nil if we are not memoizing
                                  )
-                            (add-pairs-to-memoization trees-equal-to-tree ;the items (don't include expr itself, since its a nodenum)
-                                                      tree ;the nodenum/quotep they are all equal to
+                            (add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                      tree ; the nodenum to which all the TREES-EQUAL-TO-TREE rewrote
                                                       memoization)
                           memoization)
                         info tries limits
@@ -1522,10 +1521,9 @@
                     (mv (erp-nil)
                         tree ; return the quoted constant
                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                        (if (and memoization
-                                 trees-equal-to-tree)
-                            (add-pairs-to-memoization trees-equal-to-tree ;the items (don't include expr itself, since its a quoted constant)
-                                                      tree ;the constant they are all equal to
+                        (if (and memoization trees-equal-to-tree)
+                            (add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                      tree ; the constant to which all the TREES-EQUAL-TO-TREE rewrote
                                                       memoization)
                           memoization)
                         info tries limits
@@ -1535,10 +1533,10 @@
                   (let ((memo-match (and memoization (lookup-in-memoization tree memoization))))
                     (if memo-match
                         (mv (erp-nil)
-                            memo-match
+                            memo-match ; a darg
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                            (add-pairs-to-memoization trees-equal-to-tree
-                                                      memo-match ;the nodenum or quotep they are all equal to
+                            (add-pairs-to-memoization trees-equal-to-tree ; We don't add a memoization entry for TREE itself, because it already has one.
+                                                      memo-match ;the nodenum or quotep to which all the TREES-EQUAL-TO-TREE rewrote
                                                       memoization)
                             info tries limits
                             node-replacement-array)
@@ -1571,34 +1569,33 @@
                                                                         (+ -1 count) ;could perhaps be avoided with a more complex measure
                                                                         ))
                         (t
-                         ;; It wasn't any kind of IF:
-                         (b* ((args (fargs tree))
-                              ;; We are simplifying a call of FN on ARGS, where the ARGS are axe-trees.
+                         ;; It wasn't a NOT or any kind of IF:
+                         (b* (;; We are simplifying a call of FN on args that are axe-trees.
                               ;; First we simplify the args:
                               ;; TODO: Should we simplify the args earlier? e.g., before looking the term up in the memoization?
                               ;; TODO: might it be possible to not check for ground-terms because we never build them? -- think about where terms might come from other than sublis-var-simple, which we could change to not build ground terms (of functions we know about)
                               ;; TODO: maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
                               ;; TODO: could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
                               ;; (- (and (eq :verbose! print) (cw "(Rewriting args of ~x0:~%" fn)))
-                              ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                              ((mv erp simplified-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                    node-replacement-array)
-                               (,simplify-trees-and-add-to-dag-name args
+                               (,simplify-trees-and-add-to-dag-name (fargs tree)
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
                               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                               ;; (- (and (eq :verbose! print) (cw "Done rewriting args.)~%")))
                               )
-                           ;; ARGS is now a list of dargs (nodenums and quoteps). Now we simplify FN applied to (the simplified) ARGS:
+                           ;; SIMPLIFIED-ARGS is now a list of dargs (nodenums and quoteps). Now we simplify FN applied to SIMPLIFIED-ARGS:
                            (if (consp fn) ;;tests for lambda
                                ;; It's a lambda, so we beta-reduce and simplify the result:
                                ;; note that we don't look up lambdas in the assumptions (this is consistent with simplifying first)
                                ;; TODO: It's possible that we wasted time above simplifying lambda args (some args may be unneeded if the lambda body is a resolvable if), but
-                               ;; I'm not sure how to prevent that.
+                               ;; I'm not sure how to prevent that (we want to simplify args first because they may be mentioned multiple times in the lambda-body).
                                (let* ((formals (lambda-formals fn))
                                       (body (lambda-body fn))
-                                      ;; TTODO: could optimize this pattern: (,sublis-var-and-eval-name (pairlis$-fast formals args) body ...)
-                                      (new-expr (,sublis-var-and-eval-name (pairlis$-fast formals args) body interpreted-function-alist)))
+                                      ;; TTODO: could optimize this pattern: (,sublis-var-and-eval-name (pairlis$-fast formals simplified-args) body ...) -- see subcor-var.
+                                      (new-expr (,sublis-var-and-eval-name (pairlis$-fast formals simplified-args) body interpreted-function-alist)))
                                  ;;simplify the result of beta-reducing:
                                  (,simplify-tree-and-add-to-dag-name new-expr
                                                                      (and memoization (cons tree trees-equal-to-tree)) ;we memoize the lambda
@@ -1607,16 +1604,16 @@
                                                                      interpreted-function-alist rewrite-stobj (+ -1 count)))
                              ;; not a lambda:
                              (b* (;; handle possible ground term by evaluating (since ,simplify-fun-call-and-add-to-dag-name doesn't handle ground terms):
-                                  ;; todo: this code is duplicated:
+                                  ;; todo: this code is essentially duplicated in ,simplify-dag-aux-name:
                                   ((mv erp evaluatedp val)
-                                   (if (not (all-consp args)) ;; test for args being quoted constants
+                                   (if (not (all-consp simplified-args)) ;; test for all quoted constants
                                        ;; not a ground term:
                                        (mv (erp-nil) nil nil)
                                      ;; ground term, so try to evaluate (may fail, but we may have a constant opener rule to apply later):
                                      (b* (((mv erp val)
-                                           (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)))
+                                           (,apply-axe-evaluator-to-quoted-args-name fn simplified-args interpreted-function-alist)))
                                        (if erp
-                                           (if (call-of :unknown-function erp)
+                                           (if (call-of :unknown-function erp) ; I suppose this could also be a bad arity?
                                                (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
                                              ;; anything else non-nil is a true error:
                                              (mv erp nil nil))
@@ -1630,23 +1627,23 @@
                                          quoted-val
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          (and memoization
-                                              ;;we memoize the ground term (should we? could use a separate memoization for ground terms)
-                                              (add-pairs-to-memoization (cons ;we could avoid this cons
-                                                                         tree ;; the original tree, with unsimplified args (might be ground)
-                                                                         ;; should we include here fn applied to args (the simplified args)?
-                                                                         trees-equal-to-tree)
-                                                                        quoted-val ;the quoted constant they are all equal to
+                                              (add-pairs-to-memoization (cons ;todo: we could avoid this cons
+                                                                          tree ;; the original tree, with unsimplified args (might be ground, but that might be rare)
+                                                                          ;; should we include here fn applied to simplified-args? could use a separate memoization for ground terms
+                                                                          trees-equal-to-tree)
+                                                                        quoted-val ;the quoted constant to which TREE and all the TREES-EQUAL-TO-TREE rewrote
                                                                         memoization))
                                          info tries limits
                                          node-replacement-array))
                                  ;; Otherwise, simplify the non-lambda FN applied to the simplified args:
-                                 ;; TODO: Perhaps pass in the original expr for use by cons-with-hint:
-                                 (,simplify-fun-call-and-add-to-dag-name fn args
+                                 ;; TODO: Perhaps pass in the original tree for use by cons-with-hint:
+                                 (,simplify-fun-call-and-add-to-dag-name fn simplified-args
                                                                          (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting is equal to tree
                                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                                          interpreted-function-alist rewrite-stobj (+ -1 count)))))))))))))))
 
+        ;; Simplifies the application of FN to the ARGS where FN is a symbol and the ARGS are simplified.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; No special handling if FN is an IF (of any type).  No evaluation of ground terms.
         (defund ,simplify-fun-call-and-add-to-dag-name (fn ;;a function symbol
@@ -1675,8 +1672,7 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count)))
-                          (= 0 count)))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count)))
                 (mv :count-exceeded nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                (expr (cons fn args)) ;todo: save this cons, or use below?
                ;;Try looking it up in the memoization (note that the args are now simplified):
@@ -1690,8 +1686,7 @@
                     info tries limits
                     node-replacement-array))
                ;; Next, try to apply rules:
-               ((mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                    node-replacement-array)
+               ((mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                 (,try-to-apply-rules-name (get-rules-for-fn fn rule-alist)
                                           rule-alist args
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
@@ -4467,7 +4462,8 @@
                                             node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                             interpreted-function-alist rewrite-stobj
                                             renumbering-stobj)))
-                ;; TODO: Flesh out these cases:
+                ;; EXPR is a function call (can't be a lambda application since it is a dag-expr):
+                ;; TODO: Flesh out these cases (but functions like ,simplify-bvif-tree-and-add-to-dag-name are not appropriate here because they take entire trees).
                 ;; ((if myif) ..)
                 ;; (bvif ..)
                 ;; (not ..)

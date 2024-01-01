@@ -379,7 +379,7 @@
        ;;        (len alist-for-key)
        ;;        key
        ;;        result))
-       (new-alist (acons-fast tree result alist-for-key))
+       (new-alist (acons-fast tree result alist-for-key)) ; todo: could it ever already be present?
        (memoization (aset1 'memoization memoization key new-alist)))
     memoization))
 
