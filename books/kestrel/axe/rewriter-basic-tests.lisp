@@ -1,7 +1,7 @@
 ; Tests of rewriter-basic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -95,11 +95,13 @@
 
 ;; todo: use more (add more options, such as rules)
 ;; todo: consider trying both with and without memoization, and other combinations of argument that shouldn't matter
-(defmacro test-simp-term (input-term output-term)
+;; to debug failures, consider doing (trace$ simp-term-basic).
+(defmacro test-simp-term (input-term output-term
+                                     &key (assumptions 'nil))
   `(assert!
      (mv-let (erp term)
        (simp-term-basic ',input-term
-                        nil ; assumptions
+                        ',assumptions
                         nil ; rule-alist
                         nil ; interpreted-function-alist
                         nil ; monitored-symbols
@@ -111,10 +113,13 @@
        (and (not erp)
             (equal term ',output-term)))))
 
+;; TODO: Make versions of all of these that call simplify-dag-basic
+
 (test-simp-term (if a b c) (if a b c)) ; no change
 (test-simp-term (if 't x y) x)
 (test-simp-term (if '7 x y) x)
 (test-simp-term (if 'nil x y) y)
+(test-simp-term (if test x y) x :assumptions (test))
 
 (test-simp-term (not 't) 'nil)
 (test-simp-term (not '3) 'nil)
@@ -123,11 +128,13 @@
 (test-simp-term (not (not 't)) 't)
 (test-simp-term (not (not '3)) 't)
 (test-simp-term (not (not (not 'nil))) 't)
+(test-simp-term (not test) 'nil :assumptions (test))
 
 (test-simp-term (myif a b c) (myif a b c)) ; no change
 (test-simp-term (myif 't x y) x)
 (test-simp-term (myif '7 x y) x)
 (test-simp-term (myif 'nil x y) y)
+(test-simp-term (myif test x y) x :assumptions (test))
 
 (test-simp-term (boolif a b c) (boolif a b c)) ; no change
 (test-simp-term (boolif 't x y) (bool-fix$inline x))
@@ -137,6 +144,11 @@
 (test-simp-term (boolif 't 't y) 't)
 (test-simp-term (boolif '7 '3 y) 't)
 (test-simp-term (boolif 'nil x 'nil) 'nil)
+(test-simp-term (boolif test x y) (bool-fix$inline x) :assumptions (test))
+;; todo::
+;; (test-simp-term (boolif test x y) (boolif test 't y) :assumptions (x))
+;;; todo:
+;; (test-simp-term (boolif (if a y nil) a c) (boolif a 't c))
 
 (test-simp-term (bvif '32 a b c) (bvif '32 a b c)) ; no change
 (test-simp-term (bvif '32 't x y) (bvchop '32 x))
@@ -668,3 +680,20 @@
 ;;                        nil)
 ;;    (and (not erp)
 ;;         (equal res (make-term-into-dag-simple! ''nil)))))
+
+;; todo:
+;; Rewriter should replace (foo x) with t because the args of boolif can be simplified using iff.
+;; (assert!
+;;  (mv-let (erp res)
+;;    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test (foo x) 't))
+;;                        '((foo x)) ; assumptions
+;;                        nil nil
+;;                        (empty-rule-alist)
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil)
+;;    (and (not erp)
+;;         (equal res (make-term-into-dag-simple! '(boolif test 't 't))))))
