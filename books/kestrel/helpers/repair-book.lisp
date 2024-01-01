@@ -35,8 +35,6 @@
 ;; TODO: Add support for repairs that involve failures to translate
 ;; terms/hints/etc. possibly due to missing names.
 
-;; TODO: Integrate the advice tool.
-
 ;; TODO: Add support for determining what changed (e.g., by doing a git diff).
 
 ;; TODO: When searching for all failed books, handle cert.pl output that is directed to another dir.
@@ -81,7 +79,6 @@
 ;; Makes recommendations for a rune that fired only in the old proof.
 ;; TODO: Figure out which exact event failed (what if not at top level)?
 ;; TODO: Actually try the suggestions, and provide new hints for the event.
-;; TODO: Try the advice tool!
 ;; todo: look at other things about the proof, not just the runes...
 ;; todo: instead of printing here, accumulate a list of notes to print if no repair works
 (defun recs-for-old-rune (rune counter state)
@@ -301,6 +298,7 @@
         (cw ")~%")
         (mv (consume-event-data-forms (list name) event-data-forms)
             state))
+       ;; Now try the Proof Advice tool:
        ((mv erp successp
             & ; best-rec ; todo: use this? better yet, pass print nil to best-rec-for-checkpoints but have it return all successful recs, for printing
             state)
