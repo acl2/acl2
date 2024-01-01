@@ -975,11 +975,11 @@
         ;; Helper function for rewriting a tree that is an IF or MYIF or BOOLIF (used for both if/myif and boolif).
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; Note that this function does not return node-replacement-count since no changes have been made that are relevant to the caller.
-        (defund ,simplify-if/myif/boolif-tree-and-add-to-dag2-name (fn
+        (defund ,simplify-if/myif/boolif-tree-and-add-to-dag2-name (fn ; if or myif or boolif
                                                                     simplified-test ; a nodenum
-                                                                    thenpart
-                                                                    elsepart
-                                                                    tree
+                                                                    thenpart ; to be simplified
+                                                                    elsepart ; to be simplified
+                                                                    tree ; original tree, to be added to the memoization
                                                                     trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
@@ -1047,10 +1047,10 @@
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the main function small.
         (defund ,simplify-if/myif-tree-and-add-to-dag-name (tree ; a call of IF or MYIF
-                                                       trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
-                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                                       interpreted-function-alist rewrite-stobj count)
+                                                            trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
+                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                            interpreted-function-alist rewrite-stobj count)
           (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                       (axe-treep tree)
                                       (bounded-axe-treep tree dag-len)
@@ -1169,17 +1169,18 @@
                     simplified-test))))
             (if (consp simplified-test) ; tests for quotep (that is, checks whether we resolved the test)
                 ;; Rewrite either the "then" branch or the "else" branch, according to whether the test simplified to nil, wrapping the result in bool-fix:
+                ;; TODO: Consider dropping the bool-fix if we have a known boolean:
                 (,simplify-tree-and-add-to-dag-name `(bool-fix$inline ,(if (unquote simplified-test) (second args) (third args))) ;the "then" branch or the "else" branch
-                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    (and memoization (cons tree trees-equal-to-tree)) ;the bool-fix$inline tree we are rewriting here is equal to TREE
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     interpreted-function-alist rewrite-stobj (+ -1 count))
-              ;; Failed to resolve the test (from here on, the process is the same as for IF/MYIF except we pass BOOLIF as the FN):
+              ;; Failed to resolve the test (from here on, the process is mostly the same as for IF/MYIF except we pass BOOLIF as the FN):
               (,simplify-if/myif/boolif-tree-and-add-to-dag2-name 'boolif
                                                                   simplified-test
                                                                   (second args)
                                                                   (third args)
-                                                                  tree trees-equal-to-tree
+                                                                  tree trees-equal-to-tree ; could cons these and pass them together (they will be consed later)
                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                                   interpreted-function-alist rewrite-stobj (+ -1 count)))))
