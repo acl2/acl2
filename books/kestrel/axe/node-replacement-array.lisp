@@ -32,7 +32,7 @@
 ;; to later unassume the replacement of B, unless we've already unassumed the
 ;; replacement of A...  We could instead address this by a repeated lookup.
 
-;; See also node-replacement-array2.lisp.
+;; See also node-replacement-array3.lisp.
 
 (local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
                    assoc-equal
@@ -424,7 +424,7 @@
                   *nil*
                 *t* ; any non-nil constant is equivalent to t
                 )
-            res ; a replacement nodenum (this should be rare, but perhaps we just simplified something and replaced it with nodenum using the node-replament-array, and are now replacing again)
+            res ; a replacement nodenum (this should be rare, but perhaps we just simplified something and replaced it with nodenum using the node-replacement-array, and are now replacing again)
             ))))))
 
 (defthm dargp-of-apply-node-replacement-array-bool
