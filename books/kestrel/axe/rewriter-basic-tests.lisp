@@ -594,3 +594,77 @@
 ;;                        nil)
 ;;    (and (not erp)
 ;;         (equal res (make-term-into-dag-simple! 'a)))))
+
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not 't))
+                       nil nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! ''nil)))))
+
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not '3))
+                       nil nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! ''nil)))))
+
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not 'nil))
+                       nil nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! ''t)))))
+
+;; todo: the NOT did not get resolved:
+;; (assert!
+;;  (mv-let (erp res)
+;;    (simplify-dag-basic (make-term-into-dag-simple! '(not x))
+;;                        '(x) ; assumptions
+;;                        nil nil
+;;                        (empty-rule-alist)
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil)
+;;    (and (not erp)
+;;         (equal res (make-term-into-dag-simple! ''nil)))))
+
+;; todo: the NOT did not get resolved:
+;; (assert!
+;;  (mv-let (erp res)
+;;    (simplify-dag-basic (make-term-into-dag-simple! '(not (foo x)))
+;;                        '((foo x)) ; assumptions
+;;                        nil nil
+;;                        (empty-rule-alist)
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil
+;;                        nil)
+;;    (and (not erp)
+;;         (equal res (make-term-into-dag-simple! ''nil)))))
