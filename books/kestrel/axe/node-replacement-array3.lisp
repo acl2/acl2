@@ -1,7 +1,7 @@
 ; Functions to update a node-replacement-array (new version)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -131,6 +131,7 @@
       (if (consp pnn) ; check for (not <nodenum>)
           ;; Since we are assuming (not <nodenum>), we can set <nodenum> to be replaced with 'nil:
           (let* ((negated-nodenum (farg1 pnn))
+                 ;; Save the old value, for use when undoing:
                  (old-val (if (< negated-nodenum node-replacement-count)
                               (aref1 'node-replacement-array node-replacement-array negated-nodenum)
                             nil)))
@@ -174,7 +175,8 @@
                             (mv pnn *t*) ; todo: maybe consider also adding the reverse equality, but that would mean adding nodes
                             ))))
                     ;; Now replace the chosen NODENUM with the chosen REPLACEMENT:
-                    (let ((old-val (if (< nodenum node-replacement-count)
+                    (let (;; Save the old value, for use when undoing:
+                          (old-val (if (< nodenum node-replacement-count)
                                        (aref1 'node-replacement-array node-replacement-array nodenum)
                                      nil)))
                       (mv-let (node-replacement-array node-replacement-count)
