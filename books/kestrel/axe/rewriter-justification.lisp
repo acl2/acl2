@@ -45,3 +45,15 @@
   (implies y
            (equal (boolif test x y)
                   (boolif test x t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(thm
+  (implies arg
+           (equal (not arg)
+                  (not t))))
+
+(thm
+  (implies arg
+           (equal (not arg)
+                  nil)))
