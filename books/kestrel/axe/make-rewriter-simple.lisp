@@ -4353,8 +4353,14 @@
                                                       consp-of-cdr-when-dag-exprp-and-quote
                                                       not-cddr-when-dag-exprp-and-quotep
                                                       consp-of-car-of-last-when-weak-dagp-aux
-                                                      acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux)
-                                                     (natp dargp))
+                                                      acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
+                                                      natp-of-renumber-darg-with-stobj
+                                                      consp-of-dargs-when-dag-exprp-iff
+                                                      true-listp-of-renumber-darg-with-stobj
+                                                      <-of-renumber-darg-with-stobj)
+                                                     (natp dargp
+                                                           DARGP-LESS-THAN-WHEN-NOT-CONSP-CHEAP
+                                                           DARGP-LESS-THAN-WHEN-CONSP-CHEAP))
                                      :do-not '(generalize eliminate-destructors)))))
       (if (endp rev-dag)
           ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
@@ -4373,7 +4379,7 @@
                    ;; Maybe apply a replacement:
                    (new-nodenum-or-quotep (apply-node-replacement-array new-nodenum node-replacement-array node-replacement-count))
                    ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
-                   (renumbering-stobj (update-renumberingi nodenum new-nodenum-or-quotep renumbering-stobj)))
+                   (renumbering-stobj (update-renumbering nodenum new-nodenum-or-quotep renumbering-stobj)))
                 (,simplify-dag-aux-name (rest rev-dag)
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                         node-replacement-array node-replacement-count rule-alist refined-assumption-alist
@@ -4383,20 +4389,58 @@
               (case fn
                 (quote ; EXPR is a quoted constant (rare):
                   ;; Record the fact that NODENUM is just the constant EXPR:
-                  (let ((renumbering-stobj (update-renumberingi nodenum expr renumbering-stobj)))
+                  (let ((renumbering-stobj (update-renumbering nodenum expr renumbering-stobj)))
                     (,simplify-dag-aux-name (rest rev-dag)
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                             node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                             rewrite-stobj
                                             renumbering-stobj)))
-                ;; EXPR is a function call (can't be a lambda application since it is a dag-expr):
+                ((if myif) ; (if/myif <test> <then> <else>)
+                 (b* ((dargs (dargs expr))
+                      ((when (not (consp (rest (rest dargs))))) ; for guards
+                       (mv :bad-arity dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+                      ;; Renumber the args:
+                      (test-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
+                      (then-darg (renumber-darg-with-stobj (second dargs) renumbering-stobj))
+                      (else-darg (renumber-darg-with-stobj (third dargs) renumbering-stobj))
+                      ;; TODO: Try to apply node replacements, including using info from the test?
+                      ;; TODO: Consult the memoization?
+                      )
+                   (if (consp test-darg) ; test for quotep
+                       ;; The test was resolved, so the whole node is replaced by one branch:
+                       (b* ((new-nodenum-or-quotep (if (unquote test-darg) then-darg else-darg))
+                            ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
+                            (renumbering-stobj (update-renumbering nodenum new-nodenum-or-quotep renumbering-stobj)))
+                         ;; I suppose we could update the memoization here if we wanted to (but remember that it deals in the new nodenums).
+                         (,simplify-dag-aux-name (rest rev-dag)
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                 node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                 rewrite-stobj
+                                                 renumbering-stobj))
+                     ;; The test was not resolved, so just try to apply rules:
+                     (b* (((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                           (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
+                            fn (list test-darg then-darg else-darg)
+                            nil ; Can't memoize anything about EXPR because its nodenums are in the old dag
+                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                            node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                            rewrite-stobj 1000000000))
+                          ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+                          ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
+                          (renumbering-stobj (update-renumbering nodenum new-nodenum-or-quotep renumbering-stobj)))
+                       (,simplify-dag-aux-name (rest rev-dag)
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                               node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                               rewrite-stobj
+                                               renumbering-stobj)))))
                 ;; TODO: Flesh out these cases (but functions like ,simplify-bvif-tree-and-add-to-dag-name are not appropriate here because they take entire trees).
-                ;; ((if myif) ..)
                 ;; (bvif ..)
                 ;; (not ..)
-                (t ;; EXPR is some other (non-lambda) function call:
+                (t ;; EXPR is some other function call (can't be a lambda application since it is a dag-expr):
+
                  (b* (;; Renumber the args:
                       (new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
+                      ;; TODO: Try to apply node replacements?
                       ;; TODO: Consider consulting the memoization here, now that the nodenums have been renumbered
                       ;; Handle possible ground term by evaluating (since ,simplify-fun-call-and-add-to-dag-name doesn't handle ground terms):
                       ((mv erp evaluatedp val)
@@ -4417,7 +4461,7 @@
                    (if evaluatedp
                        (let* ((quoted-val (enquote val))
                               ;; Record the fact that NODENUM rewrote to QUOTED-VAL:
-                              (renumbering-stobj (update-renumberingi nodenum quoted-val renumbering-stobj)))
+                              (renumbering-stobj (update-renumbering nodenum quoted-val renumbering-stobj)))
                          ;; I suppose we could update the memoization here if we wanted to (but remember that it deals in the new nodenums).
                          (,simplify-dag-aux-name (rest rev-dag)
                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
@@ -4434,7 +4478,7 @@
                             rewrite-stobj 1000000000))
                           ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
                           ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
-                          (renumbering-stobj (update-renumberingi nodenum new-nodenum-or-quotep renumbering-stobj)))
+                          (renumbering-stobj (update-renumbering nodenum new-nodenum-or-quotep renumbering-stobj)))
                        (,simplify-dag-aux-name (rest rev-dag)
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                node-replacement-array node-replacement-count rule-alist refined-assumption-alist

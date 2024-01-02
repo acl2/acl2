@@ -628,21 +628,20 @@
    (and (not erp)
         (equal res (make-term-into-dag-simple! '(cons a b))))))
 
+;; The test gets resolved
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! 'a)))))
 
-;; TODO: The IF did not get resolved!:
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b))
-;;                        nil nil nil
-;;                        (empty-rule-alist)
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil)
-;;    (and (not erp)
-;;         (equal res (make-term-into-dag-simple! 'a)))))
+;; The test gets resolved
+;; todo: add tests like this for boolif and bvif
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(myif 't a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! 'a)))))
 
 (assert!
  (mv-let (erp res)
