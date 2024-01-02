@@ -182,10 +182,19 @@
 (test-simp-term (bvif '32 't x y) (bvchop '32 x))
 (test-simp-term (bvif '32 '7 x y) (bvchop '32 x))
 (test-simp-term (bvif '32 'nil x y) (bvchop '32 y))
-;; for thesem we can evaluate the bvchop:
+;; for these, we can evaluate the bvchop:
 (test-simp-term (bvif '32 't '1 y) '1)
 (test-simp-term (bvif '32 '7 (binary-+ '2 (expt '2 '32)) y) '2)
 (test-simp-term (bvif '32 'nil x '7) '7)
+
+;; The test is used to rewrite the then-branch:
+(test-simp-term (bvif '32 (equal x '8) x y)
+                (bvif '32 (equal x '8) '8 y)
+                :memoizep nil)
+;; The negation of the test is used to rewrite the else-branch:
+(test-simp-term (bvif '32 (not (equal x '8)) y x)
+                (bvif '32 (not (equal x '8)) y '8)
+                :memoizep nil)
 
 ;;;
 ;;; tests of simplify-term-basic (which returns a DAG)
