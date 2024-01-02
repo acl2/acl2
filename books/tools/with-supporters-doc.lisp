@@ -44,7 +44,7 @@
   below, and each @('event-i') is an @(see event).  The effect is the same
   as</p>
 
-  @({((encapsulate () (local ev) EXTRA event-1 ... event-k)})
+  @({(encapsulate () (local ev) EXTRA event-1 ... event-k)})
 
   <p>where @('EXTRA') is a sequence of events that includes the supporters of
   the @('name-i') and @('event-i') so that the second pass of that
