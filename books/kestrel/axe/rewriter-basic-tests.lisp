@@ -97,7 +97,9 @@
 ;; todo: consider trying both with and without memoization, and other combinations of argument that shouldn't matter
 ;; to debug failures, consider doing (trace$ simp-term-basic).
 (defmacro test-simp-term (input-term output-term
-                                     &key (assumptions 'nil))
+                                     &key
+                                     (assumptions 'nil)
+                                     (memoizep 't))
   `(assert!
      (mv-let (erp term)
        (simp-term-basic ',input-term
@@ -105,7 +107,7 @@
                         nil ; rule-alist
                         nil ; interpreted-function-alist
                         nil ; monitored-symbols
-                        t   ; memoizep
+                        ,memoizep
                         nil   ; count-hits
                         nil ; print
                         nil ; normalize-xors
@@ -145,10 +147,36 @@
 (test-simp-term (boolif '7 '3 y) 't)
 (test-simp-term (boolif 'nil x 'nil) 'nil)
 (test-simp-term (boolif test x y) (bool-fix$inline x) :assumptions (test))
-;; todo::
-;; (test-simp-term (boolif test x y) (boolif test 't y) :assumptions (x))
-;;; todo:
-;; (test-simp-term (boolif (if a y nil) a c) (boolif a 't c))
+
+;; The then-branch of the BOOLIF gets simplified preserving IFF:
+(test-simp-term (boolif test x y) (boolif test 't y) :assumptions (x))
+;; The else-branch of the BOOLIF gets simplified preserving IFF:
+(test-simp-term (boolif test x y) (boolif test x 't) :assumptions (y))
+
+
+;; can't simplify the then-branch to t because we are memoizing:
+(test-simp-term (boolif (test x) (test x) y) (boolif (test x) (test x) y))
+;; If we turn off memoization, the rewriter assumes the BOOLIF test when simplifying the then-branch:
+(test-simp-term (boolif (test x) (test x) y) (boolif (test x) 't y) :memoizep nil)
+;; we now handle variable assumptions better:
+(test-simp-term (boolif test test y) (boolif test 't y) :memoizep nil)
+(test-simp-term (boolif (not test) test y) (boolif (not test) 'nil y) :memoizep nil)
+
+;; can't simplify the else-branch to t because we are memoizing:
+(test-simp-term (boolif (not (test x)) y (test x)) (boolif (not (test x)) y (test x)))
+;; If we turn off memoization, the rewriter assumes the BOOLIF test when simplifying the else-branch:
+(test-simp-term (boolif (not (test x)) y (test x)) (boolif (not (test x)) y 't) :memoizep nil)
+(test-simp-term (boolif (not test) y test) (boolif (not test) y 't) :memoizep nil)
+(test-simp-term (boolif test y test) (boolif test y 'nil) :memoizep nil)
+
+;; Here the A is just one conjunct of the test we are assuming:
+(test-simp-term (boolif (if a y 'nil) a c)
+                (boolif (if a y 'nil) 't c)
+                :memoizep nil)
+
+(test-simp-term (boolif (if y a 'nil) a c)
+                (boolif (if y a 'nil) 't c)
+                :memoizep nil)
 
 (test-simp-term (bvif '32 a b c) (bvif '32 a b c)) ; no change
 (test-simp-term (bvif '32 't x y) (bvchop '32 x))
