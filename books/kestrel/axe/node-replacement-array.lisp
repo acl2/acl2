@@ -487,6 +487,58 @@
            :in-theory (e/d (apply-node-replacement-array-bool)
                            (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns DARG (indicating no replacement) or a new darg with to replace DARG.
+;; The result is equivalent to DARG under iff (but not necessarily equal), given the information in the node-replacement-array.
+;; This is just a wrapper that handles the quotep case.
+(defund apply-node-replacement-array-bool-to-darg (darg node-replacement-array node-replacement-count)
+  (declare (xargs :guard (and (dargp darg)
+                              (natp node-replacement-count)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (consp darg) ;; checks for quotep
+      darg ;; already a constant, so do not replace
+    (apply-node-replacement-array-bool darg node-replacement-array node-replacement-count)))
+
+(defthm dargp-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (dargp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
+;; Use consp as the normal form
+(defthm natp-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (equal (natp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count))
+                  (not (consp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count))))))
+
+(defthm dargp-less-than-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp-less-than darg bound) ; in case no replacement happens
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (dargp-less-than (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)
+                            bound))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
+(defthm <-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (not (consp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)))
+                (dargp-less-than darg bound) ; in case no replacement happens
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (< (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)
+              bound))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
 ;;;
 ;;; add-node-replacement-entry-and-maybe-expand
 ;;;

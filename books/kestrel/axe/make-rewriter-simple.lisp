@@ -249,13 +249,15 @@
 
 ;; How we use the node-replacement-array:
 ;; - To check if a rewritten hyp is known to be non-nil (calling known-true-in-node-replacement-arrayp on its nodenum).
-;; - To check whether a simplified IF test is known to be non-nil (calling known-true-in-node-replacement-arrayp on its nodenum).
+;; - To handle a simplified IF/MYIF/BOOLIF/BVIF test that is known to be non-nil (calling apply-node-replacement-array-bool-to-darg on it).
+;; - To handle an argument to NOT that is known to be non-nil (calling apply-node-replacement-array-bool-to-darg on it).
 ;; - To replace a var (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
 ;; - To replace a simplified function call (calling apply-node-replacement-array on its nodenum after we add the node to the dag).
 ;; - When rewriting, a THEN or ELSE branch, if not memoizing, temporarily add info by calling update-node-replacement-array-for-assuming-node or
-;;   update-node-replacement-array-for-assuming-negation-of-node and the calling undo-writes-to-node-replacement-array to undo.
+;;   update-node-replacement-array-for-assuming-negation-of-node and later calling undo-writes-to-node-replacement-array to undo.
 ;; Advantages: Lookup is very fast
 ;; Disadvantages: The thing being looked up must already be in the dag.
+;; TODO: Consider whether to support chains of replacements, by looking up repeatedly (might loop).
 ;; TODO: Consider whether to look up unsimplified assumptions.
 ;; TODO: Consider whether to simplify the RHSes of assumptions (at start, or when used).
 
@@ -941,18 +943,20 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count))) (= 0 count)))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count))) ;; for termination
                 (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-               ;; Assume the test false (if not memoizing):
+               ;; Now we rewrite the else-branch.
+               ;; Assume the test false (if not memoizing), step 1:
                ((mv node-replacement-array node-replacement-count undo-pairs)
                 (if memoization ; can't use context if we are memoizing:
                     (mv node-replacement-array node-replacement-count nil)
                   (update-node-replacement-array-for-assuming-negation-of-node simplified-test node-replacement-array node-replacement-count dag-array dag-len (get-known-booleans rewrite-stobj))))
+               ;; Assume the test false (if not memoizing), step 2:
                (refined-assumption-alist-for-else-branch
                  (if memoization ; can't use context if we are memoizing:
                      refined-assumption-alist
                    (extend-refined-assumption-alist-assuming-negation-of-node refined-assumption-alist simplified-test dag-array dag-len)))
-               ;; Rewrite the "else" branch:
+               ;; Rewrite the else-branch:
                ((mv erp simplified-else-branch dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                 (,simplify-tree-and-add-to-dag-name else-branch
                                                     nil ;no trees are yet known equal to the else branch
@@ -960,13 +964,14 @@
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist-for-else-branch
                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-               ;; Clear test assumption. node-replacement-array should then be
+               ;; Clear the test assumption. node-replacement-array should then be
                ;; like it was before we set it (except perhaps longer):
                ;; If memoizing, undo-pairs will be nil:
                (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count dag-len)))
             ;; Now simplify the call of IF/MYIF/BOOLIF (this function takes simplified args and does not handle ifs specially, or else things might loop):
+            ;; (We know we don't have a ground term, because simplified-test is not a constant.)
             (,simplify-fun-call-and-add-to-dag-name fn (list simplified-test simplified-then-branch simplified-else-branch)
-                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    (and memoization (cons tree trees-equal-to-tree)) ;the call of FN we are rewriting here is equal to tree
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     interpreted-function-alist rewrite-stobj (+ -1 count))))
@@ -1008,13 +1013,15 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count))) (= 0 count)))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count))) ;; for termination
                 (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-               ;; When rewriting the then-branch, we assume the test true (if not memoizing):
+               ;; First, we rewrite the then-branch.
+               ;; Assume the test true (if not memoizing), step 1:
                ((mv node-replacement-array node-replacement-count undo-pairs)
                 (if memoization ; can't use context if we are memoizing:
                     (mv node-replacement-array node-replacement-count nil)
                   (update-node-replacement-array-for-assuming-node simplified-test node-replacement-array node-replacement-count dag-array dag-len (get-known-booleans rewrite-stobj))))
+               ;; Assume the test true (if not memoizing), step 2:
                (refined-assumption-alist-for-then-branch
                  (if memoization ; can't use context if we are memoizing:
                      refined-assumption-alist
@@ -1022,7 +1029,7 @@
                ;; Rewrite the then-branch:
                ((mv erp simplified-then-branch dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                 (,simplify-tree-and-add-to-dag-name then-branch
-                                                    nil ;no trees are yet known equal to the then branch
+                                                    nil ;no trees are yet known equal to the then-branch
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist-for-then-branch
                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
@@ -1071,8 +1078,7 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count)))
-                          (= 0 count)))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count))) ;; for termination
                 (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                (args (fargs tree))
                ((when (not (consp (rest (rest args))))) ;; for guards
@@ -1085,15 +1091,8 @@
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-               ;; Handle a simplified-test that is known to be :non-nil:
-               (simplified-test
-                (if (consp simplified-test) ; tests for quotep
-                    simplified-test
-                  ;; Simplified-test is a nodenum, so look it up in the node-replacement-array (skip this if the test is a known boolean?):
-                  (if (known-true-in-node-replacement-arrayp simplified-test node-replacement-array node-replacement-count)
-                      ;; Since the test is known to be non-nil, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
-                      *t*
-                    simplified-test))))
+               ;; Special treatment for IF/MYIF: Handle a simplified-test that is known to be :non-nil as if it were 't:
+               (simplified-test (apply-node-replacement-array-bool-to-darg simplified-test node-replacement-array node-replacement-count)))
             (if (consp simplified-test) ; tests for quotep (that is, checks whether we resolved the test)
                 ;; Rewrite either the "then" branch or the "else" branch, according to whether the test simplified to nil:
                 (,simplify-tree-and-add-to-dag-name (if (unquote simplified-test) (second args) (third args))
@@ -1156,15 +1155,9 @@
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-               ;; Handle a simplified-test that is known to be :non-nil:
-               (simplified-test
-                (if (consp simplified-test) ; tests for quotep
-                    simplified-test
-                  ;; Simplified-test is a nodenum, so look it up in the node-replacement-array (skip this if the test is a known boolean?):
-                  (if (known-true-in-node-replacement-arrayp simplified-test node-replacement-array node-replacement-count)
-                      ;; Since the test is known to be non-nil, it's as if it rewrote to 't (even though it may not be a predicate, BOOLIF only looks at whether it is nil):
-                      *t*
-                    simplified-test))))
+               ;; Special treatment for BOOLIF: Handle a simplified-test that is known to be :non-nil as if it were 't:
+               ;; skip this if the test is a known boolean??
+               (simplified-test (apply-node-replacement-array-bool-to-darg simplified-test node-replacement-array node-replacement-count)))
             (if (consp simplified-test) ; tests for quotep (that is, checks whether we resolved the test)
                 ;; Rewrite either the "then" branch or the "else" branch, according to whether the test simplified to nil, wrapping the result in bool-fix:
                 ;; TODO: Consider dropping the bool-fix if we have a known boolean:
@@ -1326,8 +1319,7 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (if (or (not (mbt (natp count)))
-                  (= 0 count))
+          (if (or (not (mbt (natp count))) (= 0 count)) ; for termination
               (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
             (b* ((args (fargs tree))
                  ((when (not (consp (rest (rest (rest args)))))) ;; check arity, for guards
@@ -1340,15 +1332,8 @@
                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                       interpreted-function-alist rewrite-stobj (+ -1 count)))
                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                 ;; Handle a simplified-test that is known to be :non-nil:
-                 (simplified-test
-                  (if (consp simplified-test) ; tests for quotep
-                      simplified-test
-                    ;; Simplified-test is a nodenum, so look it up in the node-replacement-array (skip this if the test is a known boolean?):
-                    (if (known-true-in-node-replacement-arrayp simplified-test node-replacement-array node-replacement-count)
-                        ;; Since the test is known to be non-nil, it's as if it rewrote to 't (even though it may not be a predicate, BVIF only looks at whether it is nil):
-                        *t*
-                      simplified-test))))
+                 ;; Special treatment for BVIF: Handle a simplified-test that is known to be :non-nil as if it were 't:
+                 (simplified-test (apply-node-replacement-array-bool-to-darg simplified-test node-replacement-array node-replacement-count)))
               (if (consp simplified-test) ; tests for quotep
                   ;; test was resolved (todo: do better here, if already a bv??):
                   (,simplify-tree-and-add-to-dag-name `(bvchop
@@ -1371,7 +1356,7 @@
                                                           node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                           interpreted-function-alist rewrite-stobj (+ -1 count))))))
 
-        ;; Rewrite a tree that is a NOT
+        ;; Rewrites a tree that is a NOT.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         (defund ,simplify-not-tree-and-add-to-dag-name (tree ; a call of NOT
                                                         trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
@@ -1400,11 +1385,10 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count)))
-                          (= 0 count)))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count))) ; for termination
                 (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                (args (fargs tree))
-               ((when (not (consp args))) ;; for guards
+               ((when (not (consp args))) ; for guards
                 (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                ;; First, rewrite the arg:
                ((mv erp simplified-arg dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -1413,25 +1397,20 @@
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
-               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Special treatment for NOT: Treat any non-nil arg like t:
+               (simplified-arg (apply-node-replacement-array-bool-to-darg simplified-arg node-replacement-array node-replacement-count)))
             (if (consp simplified-arg) ; tests for quotep
                 (mv (erp-nil)
                     (if (unquote simplified-arg) *nil* *t*) ; negate since we are rewriting a NOT
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                     node-replacement-array)
-              ;; Next (special treatment for NOT), handle any arg is known to be non-nil:
-              (let ((simplified-arg (apply-node-replacement-array-bool simplified-arg node-replacement-array node-replacement-count)))
-                (if (consp simplified-arg) ; tests for quotep
-                    (mv (erp-nil)
-                        (if (unquote simplified-arg) *nil* *t*) ; negate since we are rewriting a NOT
-                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                        node-replacement-array)
-                  ;; Arg did not rewrite to a constant, so try to apply rules to the call of NOT on the simplified arg:
-                  (,simplify-fun-call-and-add-to-dag-name 'not (list simplified-arg)
-                                                          (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                                          interpreted-function-alist rewrite-stobj (+ -1 count)))))))
+              ;; Arg did not rewrite to a constant, so try to apply rules to the call of NOT on the simplified arg:
+              (,simplify-fun-call-and-add-to-dag-name 'not (list simplified-arg)
+                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                      interpreted-function-alist rewrite-stobj (+ -1 count)))))
 
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; Rewrite TREE repeatedly using RULE-ALIST and REFINED-ASSUMPTION-ALIST and add the result to the DAG-ARRAY (if not a quote), returning a nodenum or a quotep.
