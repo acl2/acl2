@@ -44,7 +44,7 @@
   below, and each @('event-i') is an @(see event).  The effect is the same
   as</p>
 
-  @({((encapsulate () (local ev) EXTRA event-1 ... event-k)})
+  @({(encapsulate () (local ev) EXTRA event-1 ... event-k)})
 
   <p>where @('EXTRA') is a sequence of events that includes the supporters of
   the @('name-i') and @('event-i') so that the second pass of that
@@ -231,7 +231,7 @@
   <p>where @('name') is the name of an event and @('event-i') are @(see
   events).  The effect is the same as</p>
 
-  @({((encapsulate () EXTRA event-1 ... event-k)})
+  @({(encapsulate () EXTRA event-1 ... event-k)})
 
   <p>where @('EXTRA') includes redundant definitions and other events
   introduced after @('name'), as necessary, in order to avoid undefined
