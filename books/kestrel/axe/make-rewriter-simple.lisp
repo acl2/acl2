@@ -4360,7 +4360,7 @@
           ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
           (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
         (b* ((entry (first rev-dag))
-             (nodenum (the (integer 0 2147483646) (car entry))) ; or, since they are consecutive, we could track this numerically..
+             (nodenum (the (integer 0 2147483646) (car entry))) ; or, since they are consecutive, we could track this numerically.
              (print (get-print rewrite-stobj))
              (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
              (expr (cdr entry)))
@@ -4370,7 +4370,7 @@
                    ((mv erp new-nodenum dag-array dag-len dag-parent-array dag-variable-alist)
                     (add-variable-to-dag-array expr dag-array dag-len dag-parent-array dag-variable-alist))
                    ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
-                   ;; See if the resulting node is known to be equal to something:
+                   ;; Maybe apply a replacement:
                    (new-nodenum-or-quotep (apply-node-replacement-array new-nodenum node-replacement-array node-replacement-count))
                    ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
                    (renumbering-stobj (update-renumberingi nodenum new-nodenum-or-quotep renumbering-stobj)))
@@ -4382,7 +4382,7 @@
             (let ((fn (ffn-symb expr)))
               (case fn
                 (quote ; EXPR is a quoted constant (rare):
-                  ;; Record the fact that NODENUM rewrote to the constant EXPR:
+                  ;; Record the fact that NODENUM is just the constant EXPR:
                   (let ((renumbering-stobj (update-renumberingi nodenum expr renumbering-stobj)))
                     (,simplify-dag-aux-name (rest rev-dag)
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
