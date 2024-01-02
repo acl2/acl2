@@ -999,6 +999,10 @@
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist-for-else-branch
                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Special treatment for BOOLIF: Handle a simplified-else-branch that is known to be :non-nil as if it were 't:
+               (simplified-else-branch (if (eq 'boolif fn)
+                                           (apply-node-replacement-array-bool-to-darg simplified-else-branch node-replacement-array node-replacement-count)
+                                         simplified-else-branch))
                ;; Clear the test assumption. node-replacement-array should then be
                ;; like it was before we set it (except perhaps longer):
                ;; If memoizing, undo-pairs will be nil:
@@ -1069,7 +1073,11 @@
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist-for-then-branch
                                                     interpreted-function-alist rewrite-stobj (+ -1 count)))
                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-               ;; Undo the assumption of the test to be true. node-replacement-array should then be
+               ;; Special treatment for BOOLIF: Handle a simplified-then-branch that is known to be :non-nil as if it were 't:
+               (simplified-then-branch (if (eq 'boolif fn)
+                                           (apply-node-replacement-array-bool-to-darg simplified-then-branch node-replacement-array node-replacement-count)
+                                         simplified-then-branch))
+               ;; Undo the assumption of the test being true.  node-replacement-array should then be
                ;; like it was before we assumed the test (except perhaps longer):
                ;; If memoizing, undo-pairs will be nil:
                (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count dag-len)))

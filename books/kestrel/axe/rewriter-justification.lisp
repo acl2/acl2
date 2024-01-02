@@ -34,13 +34,11 @@
            (equal (boolif test x y)
                   (bool-fix$inline x))))
 
-;; Helps justify a (not-yet-implemented) rewriter step
 (thm
   (implies x
            (equal (boolif test x y)
                   (boolif test t y))))
 
-;; Helps justify a (not-yet-implemented) rewriter step
 (thm
   (implies y
            (equal (boolif test x y)
