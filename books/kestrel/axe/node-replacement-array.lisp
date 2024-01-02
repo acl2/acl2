@@ -733,6 +733,7 @@
 ;; Turns ASSUMPTION into an alist mapping terms to replacement terms or *non-nil*.
 ;; Extends ACC.
 ;; TODO: What else should we handle here (ifs that represent conjunctions, negated disjunctions?
+;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
 (defun term-replacement-alist-for-assumption (assumption known-booleans acc)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-booleans)
@@ -748,7 +749,7 @@
         (quote ;can this happen?
          (prog2$ (cw "NOTE: term-replacement-alist-for-assumption is skipping constant assumption ~x0.~%" assumption)
                  acc))
-        (equal ;fixme consider more sophisticated tests to decide whether to turn around the assumption?
+        (equal ; todo: consider more sophisticated tests to decide whether to turn around the assumption?
          (let ((x (farg1 assumption))
                (y (farg2 assumption)))
            (if (and (quotep x) (quotep y))
