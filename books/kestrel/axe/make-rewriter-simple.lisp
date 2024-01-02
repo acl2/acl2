@@ -1224,7 +1224,7 @@
         (defund ,simplify-bvif-tree-and-add-to-dag3-name (simplified-size
                                                           simplified-test ; a nodenum
                                                           simplified-then-branch
-                                                          else-branch
+                                                          else-branch ; to be simplified
                                                           tree ; original BVIF tree
                                                           trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to tree (to be added to the memoization)
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
@@ -1254,8 +1254,7 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count)))
-                          (= 0 count)))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count))) ; for termination
                 (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                ;; Simplify the "else" branch (TODO assume the negation of the test, as is done for IF)::
                ((mv erp simplified-else-branch dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -1267,7 +1266,7 @@
                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)))
             ;; Try to apply rules to the call of BVIF on simplified args:
             (,simplify-fun-call-and-add-to-dag-name 'bvif (list simplified-size simplified-test simplified-then-branch simplified-else-branch)
-                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    (and memoization (cons tree trees-equal-to-tree)) ; the BVIF call we are rewriting here is equal to TREE
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                     node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                     interpreted-function-alist rewrite-stobj (+ -1 count))))
@@ -1304,8 +1303,7 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (b* (((when (or (not (mbt (natp count)))
-                          (= 0 count)))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count))) ; for termination
                 (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                ;; Simplify the size param:
                ((mv erp simplified-size dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
@@ -1327,13 +1325,13 @@
                                                       simplified-test
                                                       simplified-then-branch
                                                       (fourth args) ; "else" branch
-                                                      tree ;original bvif tree (bvif applied to the args, except the test is unsimplified)
+                                                      tree ; original bvif tree (bvif applied to the unsimplified args)
                                                       trees-equal-to-tree
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                                                       node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                                                       interpreted-function-alist rewrite-stobj (+ -1 count))))
 
-        ;; Rewrites a call of BVIF.
+        ;; Rewrites TREE, which must be of the form (bvif <size> <test> <then> <else>).
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
         ;; This is separate just to keep the main function small.
         (defund ,simplify-bvif-tree-and-add-to-dag-name (tree ; a call of BVIF
@@ -1362,42 +1360,42 @@
                           :split-types t
                           :measure (nfix count))
                    (type (unsigned-byte 60) count))
-          (if (or (not (mbt (natp count))) (= 0 count)) ; for termination
-              (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-            (b* ((args (fargs tree))
-                 ((when (not (consp (rest (rest (rest args)))))) ;; check arity, for guards
-                  (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                 ;; First, simplify the test of the BVIF:
-                 ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
-                  (,simplify-tree-and-add-to-dag-name (second args) ;the test of the BVIF
-                                                      nil ;no trees are yet known equal to the test
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                                      interpreted-function-alist rewrite-stobj (+ -1 count)))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                 ;; Special treatment for BVIF: Handle a simplified-test that is known to be :non-nil as if it were 't:
-                 (simplified-test (apply-node-replacement-array-bool-to-darg simplified-test node-replacement-array node-replacement-count)))
-              (if (consp simplified-test) ; tests for quotep
-                  ;; test was resolved (todo: do better here, if already a bv??):
-                  (,simplify-tree-and-add-to-dag-name `(bvchop
-                                                        ,(first args) ; size arg
-                                                        ,(if (unquote simplified-test)
-                                                             ;; test rewrote to non-nil:
-                                                             (third args) ; "then" branch
-                                                           ;; test rewrote to nil:
-                                                           (fourth args) ; "else" branch
-                                                           ))
-                                                      (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                                      node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                                      interpreted-function-alist rewrite-stobj (+ -1 count))
-                ;;couldn't resolve the test:
-                (,simplify-bvif-tree-and-add-to-dag2-name simplified-test
-                                                          args
-                                                          tree trees-equal-to-tree
-                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
-                                                          node-replacement-array node-replacement-count rule-alist refined-assumption-alist
-                                                          interpreted-function-alist rewrite-stobj (+ -1 count))))))
+          (b* (((when (or (not (mbt (natp count))) (= 0 count))) ; for termination
+                (mv :count-exceeded dag-len dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               (args (fargs tree))
+               ((when (not (consp (rest (rest (rest args)))))) ;; check arity, for guards
+                (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; First, simplify the test of the BVIF:
+               ((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                (,simplify-tree-and-add-to-dag-name (second args) ;the test of the BVIF
+                                                    nil ;no trees are yet known equal to the test
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    interpreted-function-alist rewrite-stobj (+ -1 count)))
+               ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+               ;; Special treatment for BVIF: Handle a simplified-test that is known to be :non-nil as if it were 't:
+               (simplified-test (apply-node-replacement-array-bool-to-darg simplified-test node-replacement-array node-replacement-count)))
+            (if (consp simplified-test) ; tests for quotep
+                ;; test was resolved (todo: do better here, if already a bv??):
+                (,simplify-tree-and-add-to-dag-name `(bvchop
+                                                       ,(first args) ; size arg
+                                                       ,(if (unquote simplified-test)
+                                                            ;; test rewrote to non-nil:
+                                                            (third args) ; "then" branch
+                                                          ;; test rewrote to nil:
+                                                          (fourth args) ; "else" branch
+                                                          ))
+                                                    (and memoization (cons tree trees-equal-to-tree)) ;the thing we are rewriting here is equal to tree
+                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                    node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                    interpreted-function-alist rewrite-stobj (+ -1 count))
+              ;;couldn't resolve the test:
+              (,simplify-bvif-tree-and-add-to-dag2-name simplified-test
+                                                        args
+                                                        tree trees-equal-to-tree
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                        node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                        interpreted-function-alist rewrite-stobj (+ -1 count)))))
 
         ;; Rewrites a tree that is a NOT.
         ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
