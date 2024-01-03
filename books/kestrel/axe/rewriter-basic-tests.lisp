@@ -643,6 +643,14 @@
     (and (not erp)
          (equal res (make-term-into-dag-simple! 'a)))))
 
+;; The test gets resolved
+;; todo:
+;; (assert!
+;;   (mv-let (erp res)
+;;     (simplify-dag-basic (make-term-into-dag-simple! '(if x a b)) '(x) nil nil (empty-rule-alist) nil nil nil nil nil nil)
+;;     (and (not erp)
+;;          (equal res (make-term-into-dag-simple! 'a)))))
+
 (assert!
  (mv-let (erp res)
    (simplify-dag-basic (make-term-into-dag-simple! '(not 't))
