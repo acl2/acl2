@@ -191,7 +191,7 @@
   (good-renumbering-stobj -1 renumbering-stobj)
   :hints (("Goal" :in-theory (enable good-renumbering-stobj))))
 
-(defthm good-renumbering-stobj-after-update-renumberingi
+(defthm good-renumbering-stobj-of-update-renumberingi
   (implies (and; (renumbering-stobjp renumbering-stobj)
                 (good-renumbering-stobj i renumbering-stobj)
                 (natp i)
@@ -200,7 +200,7 @@
            (good-renumbering-stobj (+ 1 i) (update-renumberingi (+ 1 i) darg renumbering-stobj)))
   :hints (("Goal" :in-theory (enable good-renumbering-stobj))))
 
-(defthm good-renumbering-stobj-after-update-renumbering
+(defthm good-renumbering-stobj-of-update-renumbering
   (implies (and; (renumbering-stobjp renumbering-stobj)
                 (good-renumbering-stobj i renumbering-stobj)
                 (natp i)
