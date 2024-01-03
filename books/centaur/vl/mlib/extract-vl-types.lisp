@@ -494,6 +494,7 @@
                                       )
          :measure (acl2::nat-list-measure (list (len dims) measure-cnt))
          :no-function t
+         :normalize nil
          (declare (ignorable measure-cnt))
          (cond ((atom dims)
                 (b* ((result ,(if debug-fn-name `(,debug-fn-name value excludes depth-limit) 'value))
@@ -527,6 +528,7 @@
                                            (trace stringp))
          :measure (acl2::nat-list-measure (list (len dims) cnt))
          :no-function t
+         :normalize nil
          (if (zp cnt)
              nil
            (b* ((cnt (1- cnt))
@@ -753,6 +755,7 @@
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
                      :parents nil
+                     :normalize nil
                      ;;:short ,(str::cat "Debug aux function for  @(see " name ") VL coretype. Not intended to be called by users.")
                      (declare (ignorable excludes depth-limit))
                      (b* ((value (sv::4vec-part-select 0 ,size value)))
@@ -820,6 +823,7 @@
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
                      :parents nil
+                     :normalize nil
                      ;;:short ,(str::cat "Debug aux function for  @(see |" name "|) VL struct type. Not intended to be called by users.")
                      (declare (ignorable excludes))
                      (cond ((< depth-limit 1)
@@ -887,6 +891,7 @@
                                                           (true-listp excludes)))
                                            (depth-limit integerp))
                      :parents nil
+                     :normalize nil
                      (declare (ignorable excludes))
                      (cond ((< depth-limit 1)
                             (list :value value
@@ -967,6 +972,7 @@
                                            (depth-limit integerp))
                      (declare (ignorable excludes depth-limit))
                      :parents nil
+                     :normalize nil
                      (list :value value
                            :string
                            (,accessor-macro-name value)))
@@ -1012,6 +1018,7 @@
                                                          (true-listp excludes)))
                                           (depth-limit integerp))
                     :parents nil
+                    :normalize nil
                     (declare (ignorable excludes))
                     ,debug-clause)
 
