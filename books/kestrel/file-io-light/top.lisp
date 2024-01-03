@@ -79,6 +79,7 @@
 ;; Reading/writing objects:
 (include-book "read-object-from-file") ; reading a single object
 (include-book "read-objects-from-file")
+(include-book "read-objects-from-file-with-pkg")
 (include-book "read-objects-from-book") ; using the package of the book
 (include-book "write-objects-to-file")
 (include-book "write-objects-to-file-bang")
