@@ -304,6 +304,7 @@
 ;;; bounded-good-renumbering-stobj
 ;;;
 
+;; Checks that all the entries from 0 through I are dargs less than BOUND.
 ;; If i is negative, this makes no real claim
 (defund bounded-good-renumbering-stobj (i bound renumbering-stobj)
   (declare (xargs :guard (and (integerp i)
