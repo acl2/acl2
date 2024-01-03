@@ -4355,22 +4355,24 @@
              (b* ((dargs (dargs expr))
                   ((when (not (consp (rest (rest dargs))))) ; for guards
                    (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
-                  ;; Renumber the args:
-                  (test-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
-                  (then-darg (renumber-darg-with-stobj (second dargs) renumbering-stobj)) ; todo: might not be needed
-                  (else-darg (renumber-darg-with-stobj (third dargs) renumbering-stobj)) ; todo: might not be needed
+                  ;; Renumber the test (then-branch and else-branch get renumbered below only if needed):
+                  (renumbered-test-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
                   ;; TODO: Try to apply node replacements, including using info from the test?
                   ;; TODO: Consult the memoization?
                   )
-               (if (consp test-darg) ; test for quotep
+               (if (consp renumbered-test-darg) ; test for quotep
                    ;; The test was resolved, so the whole node is replaced by one branch:
                    ;; I suppose we could update the memoization here if we wanted to (but remember that it deals in the new nodenums).
                    (mv (erp-nil)
-                       (if (unquote test-darg) then-darg else-darg)
+                       (if (unquote renumbered-test-darg)
+                           (renumber-darg-with-stobj (second dargs) renumbering-stobj)
+                         (renumber-darg-with-stobj (third dargs) renumbering-stobj))
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
                  ;; The test was not resolved, so just try to apply rules:
                  (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
-                  fn (list test-darg then-darg else-darg)
+                  fn (list renumbered-test-darg
+                           (renumber-darg-with-stobj (second dargs) renumbering-stobj)
+                           (renumber-darg-with-stobj (third dargs) renumbering-stobj))
                   nil ; Can't memoize anything about EXPR because its nodenums are in the old dag
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
