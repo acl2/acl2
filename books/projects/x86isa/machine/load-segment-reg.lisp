@@ -32,11 +32,10 @@
 ;; TODO handle failure reading descriptor
 ;; TODO check limits on the gdtr/ldtr
 (skip-proofs (define load-segment-reg ((seg-reg natp)
-                                       (selector natp)
+                                       (selector :type (unsigned-byte 16))
                                        x86)
                :returns (x86 x86p)
-               :guard (and (< seg-reg *segment-register-names-len*)              
-                           (< selector #x10000))
+               :guard (< seg-reg *segment-register-names-len*)
                (b* ((cs (seg-visiblei *cs* x86))
                     (x86 (!seg-visiblei *cs* (!segment-selectorBits->rpl 0 cs) x86))
                     ((mv & descriptor x86)
