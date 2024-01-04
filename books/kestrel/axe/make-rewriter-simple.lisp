@@ -2002,8 +2002,7 @@
         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-fun-call-and-add-to-dag- suffix)
           (implies (and (rule-alistp rule-alist)
                         (info-worldp info))
-                   (info-worldp (mv-nth 8 ,call-of-simplify-fun-call-and-add-to-dag))
-                   )
+                   (info-worldp (mv-nth 8 ,call-of-simplify-fun-call-and-add-to-dag)))
           :flag ,simplify-fun-call-and-add-to-dag-name)
 
         :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -2062,31 +2061,27 @@
        ;; The rule-limits returned are ok:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-free-var-hyp-and-all-others- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 11 ,call-of-relieve-free-var-hyp-and-all-others)))
           :flag ,relieve-free-var-hyp-and-all-others-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-rule-hyps- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 11 ,call-of-relieve-rule-hyps)))
           :flag ,relieve-rule-hyps-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-try-to-apply-rules- suffix)
-          (implies (and
-                    (stored-axe-rule-listp stored-rules)
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (stored-axe-rule-listp stored-rules)
+                        (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-try-to-apply-rules)))
           :flag ,try-to-apply-rules-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-trees-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-trees-and-add-to-dag)))
           :flag ,simplify-trees-and-add-to-dag-name)
 
@@ -2097,51 +2092,44 @@
           :flag ,simplify-if/myif/boolif-tree-and-add-to-dag3-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if/myif/boolif-tree-and-add-to-dag2- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-if/myif/boolif-tree-and-add-to-dag2)))
           :flag ,simplify-if/myif/boolif-tree-and-add-to-dag2-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if/myif-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-if/myif-tree-and-add-to-dag)))
           :flag ,simplify-if/myif-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-not-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-not-tree-and-add-to-dag)))
           :flag ,simplify-not-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-boolif-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-boolif-tree-and-add-to-dag)))
           :flag ,simplify-boolif-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag3- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
           :flag ,simplify-bvif-tree-and-add-to-dag3-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag2- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
           :flag ,simplify-bvif-tree-and-add-to-dag2-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag1- suffix)
-          (implies (and
-                     (rule-alistp rule-alist)
-                     (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
           :flag ,simplify-bvif-tree-and-add-to-dag1-name)
 
@@ -2152,9 +2140,8 @@
           :flag ,simplify-bvif-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-tree-and-add-to-dag)))
           :flag ,simplify-tree-and-add-to-dag-name)
 
@@ -2349,7 +2336,7 @@
                                  ,call-of-simplify-bvif-tree-and-add-to-dag3)
                           (AXE-RULE-HYP-LISTP HYPS)))))
 
-       ;; main theorems about the mutual-recursion:
+       ;; main return-type theorems about functions in the mutual-recursion:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
         (defthm ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix)
           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
