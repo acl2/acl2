@@ -3191,7 +3191,7 @@
        (svexarr (resize-svexs (aliass-length aliases) svexarr))
        (svexarr (cwtime (lhsarr-to-svexarr 0 aliases svexarr) :mintime 1))
        (norm-assigns (assigns-subst assigns aliases svexarr))
-       (assigns-alist (netassigns->resolves (assigns->netassigns norm-assigns)))
+       (assigns-alist (segment-driver-map-resolve (assigns->segment-drivers norm-assigns)))
        (assign-rhses (svex-alist-vals assigns-alist))
        ;; (delays (delay-svarlist->delays (svarlist-collect-delays (svexlist-collect-vars assign-rhses))))
 
