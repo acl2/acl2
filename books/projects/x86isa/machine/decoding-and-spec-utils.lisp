@@ -2122,7 +2122,7 @@ reference made from privilege level 3.</blockquote>"
    (r/m (unsigned-byte-p 3 r/m))
    (sib (unsigned-byte-p 8 sib))
    (x86 x86p))
-  :returns (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
+  :returns (seg-reg (integer-range-p 0 *segment-register-names-len-1* seg-reg))
   :inline t
   :no-function t
   :parents (decoding-and-spec-utils)
