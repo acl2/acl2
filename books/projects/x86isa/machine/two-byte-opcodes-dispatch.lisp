@@ -60,7 +60,7 @@
        (create-dispatch-for-opcodes
         #ux0F_00 256 :two-byte (w state))))
 
-   `(skip-proofs (define two-byte-opcode-execute
+   `(define two-byte-opcode-execute
       ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
        (start-rip        :type (signed-byte   #.*max-linear-address-size*))
        (temp-rip         :type (signed-byte   #.*max-linear-address-size*))
@@ -81,8 +81,8 @@
 
       :short "Two-byte opcode dispatch function."
       :long "<p>@('two-byte-opcode-execute') is the doorway to the two-byte
-     opcode map, and will lead to the three-byte opcode map if @('opcode') is
-     either @('#x38') or @('#x3A').</p>"
+      opcode map, and will lead to the three-byte opcode map if @('opcode') is
+      either @('#x38') or @('#x3A').</p>"
       :guard (and (prefixes-p prefixes)
                   (modr/m-p modr/m)
                   (sib-p sib)
@@ -91,20 +91,20 @@
                      :do-not '(preprocess)
                      :in-theory (e/d (member-equal)
                                      (logbit
-                                      bitops::logbit-to-logbitp
-                                      unsigned-byte-p
-                                      (:t unsigned-byte-p)
-                                      signed-byte-p))))
+                                       bitops::logbit-to-logbitp
+                                       unsigned-byte-p
+                                       (:t unsigned-byte-p)
+                                       signed-byte-p))))
 
       (case opcode ,@dispatch)
 
       ///
 
       (defthm x86p-two-byte-opcode-execute
-        (implies (x86p x86)
-                 (x86p (two-byte-opcode-execute
-                        proc-mode start-rip temp-rip prefixes mandatory-prefix
-                        rex-byte opcode modr/m sib x86))))))))
+              (implies (x86p x86)
+                       (x86p (two-byte-opcode-execute
+                               proc-mode start-rip temp-rip prefixes mandatory-prefix
+                               rex-byte opcode modr/m sib x86)))))))
 
 (local
  (defthm unsigned-byte-p-from-<=-loghead

@@ -197,7 +197,8 @@
   :operation t
 
   :guard (and (natp operation)
-	      (<= operation 8))
+              (or (<= operation 8)
+                  (equal operation #.*OP-XADD*)))
 
   :returns (x86 x86p :hyp (x86p x86)
 		:hints (("Goal" :in-theory (e/d* ()

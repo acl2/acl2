@@ -1933,7 +1933,7 @@ reference made from privilege level 3.</blockquote>"
 
   (if body
       `(progn (define ,name
-          (,@(and operation `((operation :type (integer 0 36))))
+          (,@(and operation `((operation :type (integer 0 38))))
             ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
             ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
             ,@(and high/low  `((high/low  :type (integer 0 1))))
