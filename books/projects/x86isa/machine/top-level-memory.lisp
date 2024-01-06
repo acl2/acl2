@@ -237,17 +237,6 @@
                                    ))
                           ))
 
-       (defrule ,(mk-name "MV-NTH-2-" fn "-IN-SYSTEM-LEVEL-NON-MARKING-VIEW")
-                (implies (and (not (app-view x86))
-                              (not (marking-view x86))
-                              (x86p x86)
-                              (not (mv-nth 0 ,fn-call)))
-                         (equal (mv-nth 2 ,fn-call) x86))
-                :enable (,@(and signed?
-                                `(,lin-mem-fn-name
-                                   ;; ,(mk-name "RML" size-str)
-                                   ))))
-
        (defrule ,(mk-name "XR-" fn "-STATE-APP-VIEW")
                 (implies (app-view x86)
                          (equal (xr fld index (mv-nth 2 ,fn-call))
@@ -261,6 +250,7 @@
                 (implies (and (not (app-view x86))
                               (not (equal fld :mem))
                               (not (equal fld :fault))
+                              (not (equal fld :tlb))
                               ,@(if (< size 10)
                                   nil
                                   `((member-equal fld *x86-field-names-as-keywords*))))

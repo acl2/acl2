@@ -8,7 +8,7 @@
 
 (define write-xmm-regs ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                         (inst-ac? booleanp)
-                        (seg-reg (integer-range-p 0 *segment-register-names-len-1* seg-reg))
+                        (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
                         (start-reg :type (unsigned-byte 4))
                         (start-addr :type (signed-byte 64))
                         (cnt :type (integer 0 16))
@@ -98,7 +98,7 @@
 
 (define read-xmm-regs ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                        (inst-ac? booleanp)
-                       (seg-reg (integer-range-p 0 *segment-register-names-len-1* seg-reg))
+                       (seg-reg (integer-range-p 0 *segment-register-names-len* seg-reg))
                        (start-reg :type (unsigned-byte 4))
                        (start-addr :type (signed-byte 64))
                        (cnt natp)
