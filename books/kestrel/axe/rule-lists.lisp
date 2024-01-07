@@ -118,7 +118,13 @@
     boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
     ;; Rules about equal:
     equal-of-t-when-booleanp-arg1
-    equal-of-t-when-booleanp-arg2))
+    equal-of-t-when-booleanp-arg2
+    ;; Rules about iff (or should we open iff, perhaps to expose and equality of bool-fixes)?:
+    iff-of-constant-arg1
+    iff-of-constant-arg2
+    iff-same
+    iff-bool-fix-arg1
+    iff-bool-fix-arg2))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
@@ -134,11 +140,7 @@
      boolif-when-quotep-arg3 ; introduces boolor of not, or booland
      boolif-x-x-y-becomes-boolor ; introduces boolor
      boolif-x-y-x-becomes-booland ; introduces booland
-
-     ;; Rules about iff (or should we open iff)?
-     ;; todo: move these to boolean-rules-safe
-     iff-of-constant-arg1
-     iff-of-constant-arg2)))
+     )))
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
@@ -2441,7 +2443,7 @@
 
      equal-of-0-and-bitxor
      equal-of-bool-to-bit-split
-     iff ;causes a split
+     iff ;causes a split (todo: consider opening iff to equal of bool-fixes)
      bvlt-of-bvplus-of-bvuminus
 ;                               bvlt-of-bvplus-of-bvuminus-alt ;tue feb 23 00:54:24 2010
      bvlt-of-bvplus-same
