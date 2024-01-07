@@ -193,17 +193,17 @@
                                  :exec input-rflags))
 
               (raw-result (the (unsigned-byte ,(1+ result-nbits))
-                            (+ (the (unsigned-byte ,result-nbits) dst)
-                               (the (unsigned-byte ,result-nbits) src))))
+                               (+ (the (unsigned-byte ,result-nbits) dst)
+                                  (the (unsigned-byte ,result-nbits) src))))
               (signed-raw-result
-               (the (signed-byte ,(1+ result-nbits))
-                 (+ (the (signed-byte ,result-nbits)
-                      (,ntoi dst))
-                    (the (signed-byte ,result-nbits)
-                      (,ntoi src)))))
+                (the (signed-byte ,(1+ result-nbits))
+                     (+ (the (signed-byte ,result-nbits)
+                             (,ntoi dst))
+                        (the (signed-byte ,result-nbits)
+                             (,ntoi src)))))
 
               (result (the (unsigned-byte ,result-nbits)
-                        (n-size ,result-nbits raw-result)))
+                           (n-size ,result-nbits raw-result)))
 
               (cf (the (unsigned-byte 1) (,cf-spec-fn raw-result)))
               (pf (the (unsigned-byte 1) (,pf-spec-fn result)))
@@ -214,28 +214,28 @@
 
               (output-rflags (mbe :logic
                                   (change-rflagsBits
-                                   input-rflags
-                                   :cf cf
-                                   :pf pf
-                                   :af af
-                                   :zf zf
-                                   :sf sf
-                                   :of of)
+                                    input-rflags
+                                    :cf cf
+                                    :pf pf
+                                    :af af
+                                    :zf zf
+                                    :sf sf
+                                    :of of)
                                   :exec
                                   (the (unsigned-byte 32)
-                                    (!rflagsBits->cf
-                                     cf
-                                     (!rflagsBits->pf
-                                      pf
-                                      (!rflagsBits->af
-                                       af
-                                       (!rflagsBits->zf
-                                        zf
-                                        (!rflagsBits->sf
-                                         sf
-                                         (!rflagsBits->of
-                                          of
-                                          input-rflags)))))))))
+                                       (!rflagsBits->cf
+                                         cf
+                                         (!rflagsBits->pf
+                                           pf
+                                           (!rflagsBits->af
+                                             af
+                                             (!rflagsBits->zf
+                                               zf
+                                               (!rflagsBits->sf
+                                                 sf
+                                                 (!rflagsBits->of
+                                                   of
+                                                   input-rflags)))))))))
 
               (output-rflags (mbe :logic (n32 output-rflags)
                                   :exec output-rflags))
@@ -243,7 +243,26 @@
               ;; No undefined flags.
               (undefined-flags 0))
 
-             (mv result output-rflags undefined-flags)))))
+             (mv result output-rflags undefined-flags))
+         ///
+
+         (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+           :bound ,result-nbits
+           :concl (mv-nth 0 (,fn-name dst src input-rflags))
+           :gen-type t
+           :gen-linear t)
+
+         (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
+           :bound 32
+           :concl (mv-nth 1 (,fn-name dst src input-rflags))
+           :gen-type t
+           :gen-linear t)
+
+         (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
+           :bound 32
+           :concl (mv-nth 2 (,fn-name dst src input-rflags))
+           :gen-type t
+           :gen-linear t))))
 
 (make-event (gpr-xadd-spec-gen-fn 1))
 (make-event (gpr-xadd-spec-gen-fn 2))

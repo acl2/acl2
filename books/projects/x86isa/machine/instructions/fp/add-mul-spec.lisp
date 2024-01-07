@@ -87,7 +87,7 @@
                                (posp exp-width) (posp frac-width))
                    :guard-hints (("Goal"
                                   :in-theory (e/d () (unsigned-byte-p not)))))
-            (type (integer 0 36) operation))
+            (type (integer 0 38) operation))
    (b* (((mv result mxcsr)
          (ec-call
           (rtl::sse-binary-spec
@@ -146,7 +146,7 @@
 ;; Single-Precision Operations:
 
 (define sp-sse-add/sub/mul/div
-  ((operation :type (integer 0 36))
+  ((operation :type (integer 0 38))
    (op1       :type (unsigned-byte 32))
    (op2       :type (unsigned-byte 32))
    (mxcsr     :type (unsigned-byte 32)))
@@ -170,7 +170,7 @@
 ;; Double-Precision Operations:
 
 (define dp-sse-add/sub/mul/div
-  ((operation :type (integer 0 36))
+  ((operation :type (integer 0 38))
    (op1       :type (unsigned-byte 64))
    (op2       :type (unsigned-byte 64))
    (mxcsr     :type (unsigned-byte 32)))

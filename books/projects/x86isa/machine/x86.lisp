@@ -602,18 +602,6 @@
                 rme08-does-not-affect-state-in-app-view)
               (theory 'minimal-theory)))))
 
-  (defret get-prefixes-does-not-modify-x86-state-in-system-level-non-marking-view
-    (implies (and (not (app-view x86))
-                  (not (marking-view x86))
-                  (x86p x86)
-                  (not flg))
-             (equal new-x86 x86))
-    :hints (("Goal"
-             :in-theory (union-theories
-                         '(get-prefixes
-                           mv-nth-2-rme08-in-system-level-non-marking-view)
-                         (theory 'minimal-theory)))))
-
   (local
    (in-theory (e/d
                (rme08 rml08 rvm08)
@@ -772,31 +760,6 @@
     :hints (("Goal" :in-theory (e/d (get-prefixes-opener-lemma-no-prefix-byte-pre)
                                     (rme08 get-prefixes)))))
 
-  (defthm get-prefixes-opener-lemma-group-1-prefix
-    (b* (((mv flg byte x86)
-          (rme08 proc-mode start-rip #.*cs* :x x86))
-         (prefix-byte-group-code (get-one-byte-prefix-array-code byte)))
-      (implies
-       (and (or (app-view x86)
-                (not (marking-view x86)))
-            (not flg) ;; No error in reading a byte
-            (equal prefix-byte-group-code 1)
-            (not (zp cnt))
-            (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
-       (equal (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
-              (let ((prefixes
-                     (if (equal byte #.*lock*)
-                         (!prefixes->lck byte prefixes)
-                       (!prefixes->rep byte prefixes))))
-                (get-prefixes
-                 proc-mode (1+ start-rip) prefixes 0 (1- cnt) x86)))))
-    :hints (("Goal"
-             :in-theory
-             (e/d* (add-to-*ip)
-                   (rb
-                    unsigned-byte-p
-                    negative-logand-to-positive-logand-with-integerp-x)))))
-
   (defthm get-prefixes-opener-lemma-group-2-prefix
     (b* (((mv flg byte byte-x86)
           (rme08 proc-mode start-rip #.*cs* :x x86))
@@ -831,59 +794,44 @@
                     negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-3-prefix
-    (implies (and (or (app-view x86)
-                      (and (not (app-view x86))
-                           (not (marking-view x86))))
-                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip #.*cs* :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 proc-mode start-rip #.*cs* :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 3)))
-                  (not (zp cnt))
-                  (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
-             (equal (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
-                    (get-prefixes proc-mode (1+ start-rip)
-                                  (!prefixes->opr
-                                   (mv-nth 1
-                                           (rme08
-                                            proc-mode start-rip #.*cs* :x x86))
-                                   prefixes)
-                                  0
-                                  (1- cnt) x86)))
-    :hints (("Goal"
-             :in-theory
-             (e/d* (add-to-*ip)
-                   (rb
-                    unsigned-byte-p
-                    negative-logand-to-positive-logand-with-integerp-x)))))
+          (b* (((mv flg byte x862) (rme08 proc-mode start-rip #.*cs* :x x86))
+               (prefix-byte-group-code (get-one-byte-prefix-array-code byte)))
+              (implies (and (not flg) ;; No error in reading a byte
+                            (equal prefix-byte-group-code 3)
+                            (not (zp cnt))
+                            (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x862))))
+                       (equal (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
+                              (get-prefixes proc-mode (1+ start-rip)
+                                            (!prefixes->opr byte prefixes)
+                                            0
+                                            (1- cnt) x862))))
+          :hints (("Goal"
+                   :in-theory
+                   (e/d* (add-to-*ip)
+                         (rb
+                           unsigned-byte-p
+                           negative-logand-to-positive-logand-with-integerp-x)))))
 
   (defthm get-prefixes-opener-lemma-group-4-prefix
-    (implies (and (or (app-view x86)
-                      (and (not (app-view x86))
-                           (not (marking-view x86))))
-                  (let* ((flg (mv-nth 0 (rme08 proc-mode start-rip #.*cs* :x x86)))
-                         (prefix-byte-group-code
-                          (get-one-byte-prefix-array-code
-                           (mv-nth 1 (rme08 proc-mode start-rip #.*cs* :x x86)))))
-                    (and (not flg) ;; No error in reading a byte
-                         (equal prefix-byte-group-code 4)))
-                  (not (zp cnt))
-                  (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
-             (equal (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
-                    (get-prefixes proc-mode (1+ start-rip)
-                                  (!prefixes->adr
-                                   (mv-nth 1 (rme08
-                                              proc-mode start-rip #.*cs* :x x86))
-                                   prefixes)
-                                  0
-                                  (1- cnt) x86)))
-    :hints (("Goal"
-             :in-theory
-             (e/d* (add-to-*ip)
-                   (rb
-                    unsigned-byte-p
-                    negative-logand-to-positive-logand-with-integerp-x)))))
+          (b* (((mv flg byte x862) (rme08 proc-mode start-rip #.*cs* :x x86))
+               (prefix-byte-group-code (get-one-byte-prefix-array-code byte)))
+              (implies (and (not flg) ;; No error in reading a byte
+                            (equal prefix-byte-group-code 4)
+                            (not (zp cnt))
+                            (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x862))))
+                       (equal (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
+                              (get-prefixes proc-mode (1+ start-rip)
+                                            (!prefixes->adr
+                                              byte
+                                              prefixes)
+                                            0
+                                            (1- cnt) x862))))
+          :hints (("Goal"
+                   :in-theory
+                   (e/d* (add-to-*ip)
+                         (rb
+                           unsigned-byte-p
+                           negative-logand-to-positive-logand-with-integerp-x)))))
 
   (local
    (defret xr-msr-and-seg-hidden-of-get-prefixes-in-app-view
@@ -915,7 +863,8 @@
      :hints (("Goal"
               :induct <call>
               :in-theory (e/d ()
-                              (unsigned-byte-p
+                              (unsigned-byte-p get-prefixes-opener-lemma-group-4-prefix
+                               get-prefixes-opener-lemma-group-3-prefix
                                las-to-pas rb rme08 rml08))))))
 
   (local
@@ -1357,79 +1306,79 @@
                                       (or (ms x86) (fault x86)))
                                  (equal (x86-fetch-decode-execute x86) x86)))
 
-               (skip-proofs (defthm x86-fetch-decode-execute-opener
-                                    ;; Note that this opener lemma applies to all supported modes of operation
-                                    ;; (see x86-operation-mode).
+               (defthm x86-fetch-decode-execute-opener
+                       ;; Note that this opener lemma applies to all supported modes of operation
+                       ;; (see x86-operation-mode).
 
-                                    ;; TODO: Extend to VEX and EVEX prefixes.
-                                    (implies
-                                      (and
-                                        (not (set-interrupt-flag-next x86))
-                                        (not (ms x86))
-                                        (not (fault x86))
-                                        (equal proc-mode (x86-operation-mode x86))
-                                        (equal start-rip (read-*ip proc-mode x86))
-                                        (not (mv-nth 0 (get-prefixes proc-mode start-rip 0 0 15 x86)))
-                                        (equal prefixes (mv-nth 1 (get-prefixes proc-mode start-rip 0 0 15 x86)))
-                                        (equal rex-byte (mv-nth 2 (get-prefixes proc-mode start-rip 0 0 15 x86)))
-                                        (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
-                                        (equal prefix-length (prefixes->num prefixes))
-                                        (equal temp-rip0
-                                               (mv-nth 1 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
+                       ;; TODO: Extend to VEX and EVEX prefixes.
+                       (implies
+                         (and
+                           (not (set-interrupt-flag-next x86))
+                           (not (ms x86))
+                           (not (fault x86))
+                           (equal proc-mode (x86-operation-mode x86))
+                           (equal start-rip (read-*ip proc-mode x86))
+                           (not (mv-nth 0 (get-prefixes proc-mode start-rip 0 0 15 x86)))
+                           (equal prefixes (mv-nth 1 (get-prefixes proc-mode start-rip 0 0 15 x86)))
+                           (equal rex-byte (mv-nth 2 (get-prefixes proc-mode start-rip 0 0 15 x86)))
+                           (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
+                           (equal prefix-length (prefixes->num prefixes))
+                           (equal temp-rip0
+                                  (mv-nth 1 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
 
-                                        ;; *** No VEX prefixes ***
-                                        (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
-                                        (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
-                                        ;; *** No EVEX prefixes ***
-                                        (not (equal opcode/vex/evex-byte #.*evex-byte0*))
+                           ;; *** No VEX prefixes ***
+                           (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
+                           (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
+                           ;; *** No EVEX prefixes ***
+                           (not (equal opcode/vex/evex-byte #.*evex-byte0*))
 
-                                        (equal modr/m?
-                                               (one-byte-opcode-ModR/M-p proc-mode opcode/vex/evex-byte))
-                                        (equal modr/m (if modr/m?
-                                                        (mv-nth 1 (rme08 proc-mode temp-rip0 #.*cs* :x x86))
-                                                        0))
-                                        (equal temp-rip1 (if modr/m?
-                                                           (mv-nth 1 (add-to-*ip proc-mode temp-rip0 1 x86))
-                                                           temp-rip0))
-                                        (equal p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
-                                        (equal 16-bit-addressp (equal 2 (select-address-size proc-mode p4? x86)))
-                                        (equal sib? (and modr/m? (x86-decode-sib-p modr/m 16-bit-addressp)))
-                                        (equal sib (if sib? (mv-nth 1 (rme08 proc-mode temp-rip1 #.*cs* :x x86)) 0))
+                           (equal modr/m?
+                                  (one-byte-opcode-ModR/M-p proc-mode opcode/vex/evex-byte))
+                           (equal modr/m (if modr/m?
+                                           (mv-nth 1 (rme08 proc-mode temp-rip0 #.*cs* :x x86))
+                                           0))
+                           (equal temp-rip1 (if modr/m?
+                                              (mv-nth 1 (add-to-*ip proc-mode temp-rip0 1 x86))
+                                              temp-rip0))
+                           (equal p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+                           (equal 16-bit-addressp (equal 2 (select-address-size proc-mode p4? x86)))
+                           (equal sib? (and modr/m? (x86-decode-sib-p modr/m 16-bit-addressp)))
+                           (equal sib (if sib? (mv-nth 1 (rme08 proc-mode temp-rip1 #.*cs* :x x86)) 0))
 
-                                        (equal temp-rip2 (if sib?
-                                                           (mv-nth 1 (add-to-*ip proc-mode temp-rip1 1 x86))
-                                                           temp-rip1))
+                           (equal temp-rip2 (if sib?
+                                              (mv-nth 1 (add-to-*ip proc-mode temp-rip1 1 x86))
+                                              temp-rip1))
 
-                                        (or (app-view x86) (not (marking-view x86)))
-                                        (not (mv-nth 0 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
-                                        (if modr/m?
-                                          (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip0 1 x86)))
-                                               (not (mv-nth 0 (rme08 proc-mode temp-rip0 #.*cs* :x x86))))
-                                          t)
-                                        (if sib?
-                                          (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip1 1 x86)))
-                                               (not (mv-nth 0 (rme08 proc-mode temp-rip1 #.*cs* :x x86))))
-                                          t)
-                                        (x86p x86)
-                                        ;; Print the rip and the first opcode byte of the instruction
-                                        ;; under consideration after all the non-trivial hyps (above) of
-                                        ;; this rule have been relieved:
-                                        (syntaxp
-                                          (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
-                                               (not (cw "              op0: ~s0 ] ~%"
-                                                        (str::hexify (unquote opcode/vex/evex-byte)))))))
-                                      (equal
-                                        (x86-fetch-decode-execute x86)
-                                        (one-byte-opcode-execute
-                                          proc-mode start-rip temp-rip2 prefixes rex-byte
-                                          opcode/vex/evex-byte modr/m sib x86)))
-                                    :hints (("Goal"
-                                             :cases ((app-view x86))
-                                             :in-theory (e/d ()
-                                                             (one-byte-opcode-execute
-                                                               signed-byte-p
-                                                               not
-                                                               member-equal))))))))
+                           (or (app-view x86) (not (marking-view x86)))
+                           (not (mv-nth 0 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
+                           (if modr/m?
+                             (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip0 1 x86)))
+                                  (not (mv-nth 0 (rme08 proc-mode temp-rip0 #.*cs* :x x86))))
+                             t)
+                           (if sib?
+                             (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip1 1 x86)))
+                                  (not (mv-nth 0 (rme08 proc-mode temp-rip1 #.*cs* :x x86))))
+                             t)
+                           (x86p x86)
+                           ;; Print the rip and the first opcode byte of the instruction
+                           ;; under consideration after all the non-trivial hyps (above) of
+                           ;; this rule have been relieved:
+                           (syntaxp
+                             (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                                  (not (cw "              op0: ~s0 ] ~%"
+                                           (str::hexify (unquote opcode/vex/evex-byte)))))))
+                         (equal
+                           (x86-fetch-decode-execute x86)
+                           (one-byte-opcode-execute
+                             proc-mode start-rip temp-rip2 prefixes rex-byte
+                             opcode/vex/evex-byte modr/m sib x86)))
+                       :hints (("Goal"
+                                :cases ((app-view x86))
+                                :in-theory (e/d ()
+                                                (one-byte-opcode-execute
+                                                  signed-byte-p
+                                                  not
+                                                  member-equal)))))))
 
 (in-theory (e/d (vex-decode-and-execute
                  evex-decode-and-execute
