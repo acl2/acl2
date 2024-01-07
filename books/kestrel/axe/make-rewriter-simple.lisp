@@ -4344,7 +4344,8 @@
                    (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                   ;; Renumber the test (then-branch and else-branch get renumbered below only if needed):
                   (renumbered-test-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
-                  ;; TODO: Try to apply node replacements, including using info from the test?
+                  ;; Special treatment for IF (can rewrite the test in an IFF context):
+                  (renumbered-test-darg (apply-node-replacement-array-bool-to-darg renumbered-test-darg node-replacement-array node-replacement-count))
                   ;; TODO: Consult the memoization?
                   )
                (if (consp renumbered-test-darg) ; test for quotep
@@ -4358,6 +4359,7 @@
                  ;; The test was not resolved, so just try to apply rules:
                  (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
                   fn (list renumbered-test-darg
+                           ;; TODO: Try to apply node replacements, including using info from the test?
                            (renumber-darg-with-stobj (second dargs) renumbering-stobj)
                            (renumber-darg-with-stobj (third dargs) renumbering-stobj))
                   nil ; Can't memoize anything about EXPR because its nodenums are in the old dag

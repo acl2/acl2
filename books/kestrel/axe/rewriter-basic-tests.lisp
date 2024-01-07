@@ -635,7 +635,7 @@
     (and (not erp)
          (equal res (make-term-into-dag-simple! 'a)))))
 
-;; The test gets resolved
+;; The test gets resolved:
 ;; todo: add tests like this for boolif and bvif
 (assert!
   (mv-let (erp res)
@@ -643,13 +643,19 @@
     (and (not erp)
          (equal res (make-term-into-dag-simple! 'a)))))
 
-;; The test gets resolved
-;; todo:
-;; (assert!
-;;   (mv-let (erp res)
-;;     (simplify-dag-basic (make-term-into-dag-simple! '(if x a b)) '(x) nil nil (empty-rule-alist) nil nil nil nil nil nil)
-;;     (and (not erp)
-;;          (equal res (make-term-into-dag-simple! 'a)))))
+;; The test gets resolved, even when it's an assumption:
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if (natp x) a b)) '((natp x)) nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! 'a)))))
+
+;; The test gets resolved, even when it's an assumption and is non-boolean:
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if x a b)) '(x) nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! 'a)))))
 
 (assert!
  (mv-let (erp res)
