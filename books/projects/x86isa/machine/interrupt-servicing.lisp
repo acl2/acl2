@@ -11,6 +11,7 @@
 (define push-stack-val ((size :type (member 1 2 4 8))
                         (val (unsigned-byte-p (* 8 size) val))
                         x86)
+  :returns (x86 x86p :hyp (x86p x86))
   (b* ((ctx 'push-stack-val)
        (proc-mode (x86-operation-mode x86))
        (check-alignment? (alignment-checking-enabled-p x86))
@@ -32,7 +33,7 @@
                                  x86)
   :returns (mv (flg booleanp)
                (gate-descriptor interrupt/trap-gate-descriptorBits-p)
-               x86)
+               (x86 x86p :hyp (x86p x86)))
   (b* ((idtr (stri *idtr* x86))
        (limit (1+ (gdtr/idtrBits->limit idtr)))
        (table-offset (* 16 int-vec))
@@ -47,6 +48,8 @@
 
 (define setup-interrupt-handler1 ((int-vec :type (unsigned-byte 8))
                                   x86)
+  :returns (mv (flg booleanp)
+               (x86 x86p :hyp (x86p x86)))
   :prepwork
   ((local (defthm unsigned-byte-p-64-of-xr-rflags
                   (unsigned-byte-p 64 (xr :rflags i x86))
@@ -138,6 +141,8 @@
 ;; Attempt to handle a page fault
 (define handle-page-fault ((flt page-fault-p)
                            x86)
+  :returns (mv (flg booleanp)
+               (x86 x86p :hyp (x86p x86)))
   (b* (((list & err-no addr) flt)
        ;; (- (cw "handling page fault; err-no: ~x4; rip: ~x0; rcx: ~x1; rdi: ~x2; rsi: ~x3; addr: ~x5~%" (rip x86) (rgfi *rcx* x86) (rgfi *rsi* x86) (rgfi *rdi* x86) err-no addr))
        ;; Addresses are signed but ctr registers are unsigned
@@ -153,12 +158,15 @@
 
 (define handle-general-interrupt ((flt general-interrupt-p)
                                  x86)
+  :returns (mv (flg booleanp)
+               (x86 x86p :hyp (x86p x86)))
   (b* (((list & vec) flt)
        ;; (- (cw "vec: ~x0; handling general interrupt;~%" vec))
        )
       (setup-interrupt-handler vec () x86)))
 
 (define handle-faults (x86)
+  :returns (x86 x86p :hyp (x86p x86))
   (b* ((flts (fault x86))
        ;; If there are no faults, we're done
        ((unless (consp flts)) x86)
@@ -176,7 +184,9 @@
        ;; Clear ms (assuming if it is not nil that is because of the fault)
        (x86 (!ms nil x86)))
       ;; We only handle a single fault per execution
-      x86))
-
-(define service-interrupts (x86)
-  (handle-faults x86))
+      x86)
+  ///
+  (defthm x86-unchanged-handle-faults-no-fault
+          (implies (not (fault x86))
+                   (equal (handle-faults x86)
+                          x86))))
