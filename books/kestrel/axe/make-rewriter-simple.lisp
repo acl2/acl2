@@ -4273,19 +4273,19 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).`
+    ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
     (defund ,simplify-dag-expr-name (expr
-                                    old-nodenum ; just for guards?
-                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    memoization ; this is over the NEW nodenums (the ones in dag-array)
-                                    info tries limits
-                                    node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
-                                    rule-alist refined-assumption-alist
-                                    rewrite-stobj
-                                    ;; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
-                                    ;; we could renumber outside this function, but not all nodes may be needed:
-                                    renumbering-stobj
-                                    )
+                                     old-nodenum ; just for guards?
+                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                     memoization ; this is over the NEW nodenums (the ones in dag-array)
+                                     info tries limits
+                                     node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
+                                     rule-alist refined-assumption-alist
+                                     rewrite-stobj
+                                     ;; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
+                                     ;; we could renumber outside this function, but not all nodes may be needed:
+                                     renumbering-stobj
+                                     )
       (declare (xargs :guard (and (natp old-nodenum)
                                   (bounded-dag-exprp old-nodenum expr)
                                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4301,28 +4301,23 @@
                                   (< old-nodenum (renumbering-length renumbering-stobj))
                                   (bounded-good-renumbering-stobj (+ -1 old-nodenum) dag-len renumbering-stobj))
                       :stobjs (rewrite-stobj renumbering-stobj)
-                      :guard-hints (("Goal" :in-theory (e/d (;car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
-                                                             ;maybe-dargp
+                      :guard-hints (("Goal" :in-theory (e/d (;; todo: simplify this hint
                                                              integerp-when-dargp
                                                              rationalp-when-integerp
                                                              symbolp-of-car-when-dag-exprp
-                                                             ;tree-to-memoizep
                                                              axe-treep-when-dag-exprp
                                                              car-of-cadr-when-cars-increasing-by-1
                                                              all-myquotep-when-all-dargp
                                                              consp-of-cdr-when-dargp
                                                              consp-of-cdr-when-dag-exprp-and-quote
                                                              not-cddr-when-dag-exprp-and-quotep
-                                                             ;consp-of-car-of-last-when-weak-dagp-aux
-                                                             ;acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                                              natp-of-renumber-darg-with-stobj
                                                              consp-of-dargs-when-dag-exprp-iff
                                                              true-listp-of-renumber-darg-with-stobj
                                                              <-of-renumber-darg-with-stobj
                                                              <-of-if-arg2-axe ; todo: -axe suffix here is confusing (not an axe rule)
                                                              )
-                                                            (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))
-                                     :do-not '(generalize eliminate-destructors))))
+                                                            (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap)))))
                (ignore old-nodenum))
       (if (atom expr)
           ;; EXPR is a variable:
@@ -4462,28 +4457,23 @@
                                (bounded-node-replacement-arrayp 'node-replacement-array new-node-replacement-array new-dag-len)
                                (<= node-replacement-count (alen1 'node-replacement-array new-node-replacement-array))))))
       :hints (("Goal" :in-theory (e/d (,simplify-dag-expr-name
-                                       ;;car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
-                                       ;maybe-dargp
+                                       ;; todo: simplify this hint
                                        integerp-when-dargp
                                        rationalp-when-integerp
                                        symbolp-of-car-when-dag-exprp
-                                       ;tree-to-memoizep
                                        axe-treep-when-dag-exprp
                                        car-of-cadr-when-cars-increasing-by-1
                                        all-myquotep-when-all-dargp
                                        consp-of-cdr-when-dargp
                                        consp-of-cdr-when-dag-exprp-and-quote
                                        not-cddr-when-dag-exprp-and-quotep
-                                       ;consp-of-car-of-last-when-weak-dagp-aux
-                                       ;acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                        natp-of-renumber-darg-with-stobj
                                        consp-of-dargs-when-dag-exprp-iff
                                        true-listp-of-renumber-darg-with-stobj
                                        <-of-renumber-darg-with-stobj
                                        <-of-if-arg2-axe ; todo: -axe suffix here is confusing (not an axe rule)
                                        not-<-of-nth-of-dargs)
-                                      (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))
-               :do-not '(generalize eliminate-destructors))))
+                                      (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
