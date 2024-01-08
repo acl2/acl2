@@ -2002,8 +2002,7 @@
         (defthm ,(pack$ 'info-worldp-of-mv-nth-8-of-simplify-fun-call-and-add-to-dag- suffix)
           (implies (and (rule-alistp rule-alist)
                         (info-worldp info))
-                   (info-worldp (mv-nth 8 ,call-of-simplify-fun-call-and-add-to-dag))
-                   )
+                   (info-worldp (mv-nth 8 ,call-of-simplify-fun-call-and-add-to-dag)))
           :flag ,simplify-fun-call-and-add-to-dag-name)
 
         :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -2062,31 +2061,27 @@
        ;; The rule-limits returned are ok:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-free-var-hyp-and-all-others- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 11 ,call-of-relieve-free-var-hyp-and-all-others)))
           :flag ,relieve-free-var-hyp-and-all-others-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-11-of-relieve-rule-hyps- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 11 ,call-of-relieve-rule-hyps)))
           :flag ,relieve-rule-hyps-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-try-to-apply-rules- suffix)
-          (implies (and
-                    (stored-axe-rule-listp stored-rules)
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (stored-axe-rule-listp stored-rules)
+                        (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-try-to-apply-rules)))
           :flag ,try-to-apply-rules-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-trees-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-trees-and-add-to-dag)))
           :flag ,simplify-trees-and-add-to-dag-name)
 
@@ -2097,51 +2092,44 @@
           :flag ,simplify-if/myif/boolif-tree-and-add-to-dag3-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if/myif/boolif-tree-and-add-to-dag2- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-if/myif/boolif-tree-and-add-to-dag2)))
           :flag ,simplify-if/myif/boolif-tree-and-add-to-dag2-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-if/myif-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-if/myif-tree-and-add-to-dag)))
           :flag ,simplify-if/myif-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-not-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-not-tree-and-add-to-dag)))
           :flag ,simplify-not-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-boolif-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-boolif-tree-and-add-to-dag)))
           :flag ,simplify-boolif-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag3- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag3)))
           :flag ,simplify-bvif-tree-and-add-to-dag3-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag2- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag2)))
           :flag ,simplify-bvif-tree-and-add-to-dag2-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-bvif-tree-and-add-to-dag1- suffix)
-          (implies (and
-                     (rule-alistp rule-alist)
-                     (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-bvif-tree-and-add-to-dag1)))
           :flag ,simplify-bvif-tree-and-add-to-dag1-name)
 
@@ -2152,9 +2140,8 @@
           :flag ,simplify-bvif-tree-and-add-to-dag-name)
 
         (defthm ,(pack$ 'rule-limitsp-of-mv-nth-10-of-simplify-tree-and-add-to-dag- suffix)
-          (implies (and
-                    (rule-alistp rule-alist)
-                    (rule-limitsp limits))
+          (implies (and (rule-alistp rule-alist)
+                        (rule-limitsp limits))
                    (rule-limitsp (mv-nth 10 ,call-of-simplify-tree-and-add-to-dag)))
           :flag ,simplify-tree-and-add-to-dag-name)
 
@@ -2349,7 +2336,7 @@
                                  ,call-of-simplify-bvif-tree-and-add-to-dag3)
                           (AXE-RULE-HYP-LISTP HYPS)))))
 
-       ;; main theorems about the mutual-recursion:
+       ;; main return-type theorems about functions in the mutual-recursion:
        (,(pack$ 'defthm-flag-simplify-tree-and-add-to-dag- suffix)
         (defthm ,(pack$ 'theorem-for-relieve-free-var-hyp-and-all-others- suffix)
           (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4287,7 +4274,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).`
-    (defun ,simplify-dag-expr-name (expr
+    (defund ,simplify-dag-expr-name (expr
                                     old-nodenum ; just for guards?
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     memoization ; this is over the NEW nodenums (the ones in dag-array)
@@ -4314,20 +4301,20 @@
                                   (< old-nodenum (renumbering-length renumbering-stobj))
                                   (bounded-good-renumbering-stobj (+ -1 old-nodenum) dag-len renumbering-stobj))
                       :stobjs (rewrite-stobj renumbering-stobj)
-                      :guard-hints (("Goal" :in-theory (e/d (car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
-                                                             maybe-dargp
+                      :guard-hints (("Goal" :in-theory (e/d (;car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
+                                                             ;maybe-dargp
                                                              integerp-when-dargp
                                                              rationalp-when-integerp
                                                              symbolp-of-car-when-dag-exprp
-                                                             tree-to-memoizep
+                                                             ;tree-to-memoizep
                                                              axe-treep-when-dag-exprp
                                                              car-of-cadr-when-cars-increasing-by-1
                                                              all-myquotep-when-all-dargp
                                                              consp-of-cdr-when-dargp
                                                              consp-of-cdr-when-dag-exprp-and-quote
                                                              not-cddr-when-dag-exprp-and-quotep
-                                                             consp-of-car-of-last-when-weak-dagp-aux
-                                                             acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
+                                                             ;consp-of-car-of-last-when-weak-dagp-aux
+                                                             ;acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                                              natp-of-renumber-darg-with-stobj
                                                              consp-of-dargs-when-dag-exprp-iff
                                                              true-listp-of-renumber-darg-with-stobj
@@ -4357,7 +4344,8 @@
                    (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
                   ;; Renumber the test (then-branch and else-branch get renumbered below only if needed):
                   (renumbered-test-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
-                  ;; TODO: Try to apply node replacements, including using info from the test?
+                  ;; Special treatment for IF (can rewrite the test in an IFF context):
+                  (renumbered-test-darg (apply-node-replacement-array-bool-to-darg renumbered-test-darg node-replacement-array node-replacement-count))
                   ;; TODO: Consult the memoization?
                   )
                (if (consp renumbered-test-darg) ; test for quotep
@@ -4371,15 +4359,40 @@
                  ;; The test was not resolved, so just try to apply rules:
                  (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
                   fn (list renumbered-test-darg
+                           ;; TODO: Try to apply node replacements, including using info from the test?
                            (renumber-darg-with-stobj (second dargs) renumbering-stobj)
                            (renumber-darg-with-stobj (third dargs) renumbering-stobj))
-                  nil ; Can't memoize anything about EXPR because its nodenums are in the old dag
+                  nil ; Can't memoize anything about EXPR because its nodenums are in the old dag (but we could cons the new expr?)
+                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                  node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                  rewrite-stobj 1000000000))))
+            ;; (not <expr>):
+            (not
+             (b* ((dargs (dargs expr))
+                  ((when (not (consp dargs))) ; for guards
+                   (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                  ;; Renumber the expr:
+                  (renumbered-expr (renumber-darg-with-stobj (first dargs) renumbering-stobj))
+                  ;; Special treatment for NOT (can rewrite the arg in an IFF context):
+                  (renumbered-expr (apply-node-replacement-array-bool-to-darg renumbered-expr node-replacement-array node-replacement-count))
+                  ;; TODO: Consult the memoization?
+                  )
+               (if (consp renumbered-expr) ; test for quotep
+                   ;; Ground term:
+                   ;; I suppose we could update the memoization here if we wanted to (but remember that it deals in the new nodenums).
+                   (mv (erp-nil)
+                       (if (unquote renumbered-expr) *nil* *t*) ; negate the expr
+                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                 ;; The expr is not constant, so just try to apply rules:
+                 (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
+                  fn (list renumbered-expr)
+                  nil ; Can't memoize anything about EXPR because its nodenums are in the old dag (but we could cons the new expr?)
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                   rewrite-stobj 1000000000))))
             ;; TODO: Flesh out these cases (but functions like ,simplify-bvif-tree-and-add-to-dag-name are not appropriate here because they take entire trees).
             ;; (bvif ..)
-            ;; (not ..)
+            ;; (boolif ..)
             (t ;; EXPR is some other function call (can't be a lambda application since it is a dag-expr):
               (b* (;; Renumber the args:
                    (new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
@@ -4426,7 +4439,7 @@
                     (rule-alistp rule-alist)
                     (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                     (< old-nodenum (renumbering-length renumbering-stobj))
-                    (bounded-good-renumbering-stobj old-nodenum dag-len renumbering-stobj))
+                    (bounded-good-renumbering-stobj (+ -1 old-nodenum) dag-len renumbering-stobj))
                (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info new-tries new-limits
                             new-node-replacement-array ; no real change
                             )
@@ -4439,26 +4452,30 @@
                  (implies (not erp)
                           (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                (dargp-less-than new-nodenum-or-quotep new-dag-len)
+                               (dargp new-nodenum-or-quotep) ; implied by dargp-less-than (just above) but matches better
+                               (<= dag-len new-dag-len)
                                (info-worldp new-info)
                                (maybe-memoizationp new-memoization)
+                               (maybe-bounded-memoizationp new-memoization new-dag-len)
                                (triesp new-tries)
                                (rule-limitsp new-limits)
                                (bounded-node-replacement-arrayp 'node-replacement-array new-node-replacement-array new-dag-len)
                                (<= node-replacement-count (alen1 'node-replacement-array new-node-replacement-array))))))
-      :hints (("Goal" :in-theory (e/d (car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
-                                       maybe-dargp
+      :hints (("Goal" :in-theory (e/d (,simplify-dag-expr-name
+                                       ;;car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
+                                       ;maybe-dargp
                                        integerp-when-dargp
                                        rationalp-when-integerp
                                        symbolp-of-car-when-dag-exprp
-                                       tree-to-memoizep
+                                       ;tree-to-memoizep
                                        axe-treep-when-dag-exprp
                                        car-of-cadr-when-cars-increasing-by-1
                                        all-myquotep-when-all-dargp
                                        consp-of-cdr-when-dargp
                                        consp-of-cdr-when-dag-exprp-and-quote
                                        not-cddr-when-dag-exprp-and-quotep
-                                       consp-of-car-of-last-when-weak-dagp-aux
-                                       acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
+                                       ;consp-of-car-of-last-when-weak-dagp-aux
+                                       ;acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                        natp-of-renumber-darg-with-stobj
                                        consp-of-dargs-when-dag-exprp-iff
                                        true-listp-of-renumber-darg-with-stobj
@@ -4509,11 +4526,11 @@
                       :stobjs (rewrite-stobj renumbering-stobj)
                       :guard-hints (("Goal" ;:expand (WEAK-DAGP-AUX REV-DAG)
                                      :in-theory (e/d (car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
-                                                      maybe-dargp
+                                                      ;maybe-dargp
                                                       integerp-when-dargp
                                                       rationalp-when-integerp
                                                       symbolp-of-car-when-dag-exprp
-                                                      tree-to-memoizep
+                                                      ;tree-to-memoizep
                                                       axe-treep-when-dag-exprp
                                                       car-of-cadr-when-cars-increasing-by-1
                                                       all-myquotep-when-all-dargp
@@ -4522,7 +4539,6 @@
                                                       not-cddr-when-dag-exprp-and-quotep
                                                       consp-of-car-of-last-when-weak-dagp-aux
                                                       acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
-
                                                       consp-of-dargs-when-dag-exprp-iff
                                                       )
                                                      (natp dargp DARGP-LESS-THAN-WHEN-NOT-CONSP-CHEAP DARGP-LESS-THAN-WHEN-CONSP-CHEAP))
@@ -4603,7 +4619,7 @@
                                                       renumbering-stobj)
                :in-theory (enable ,simplify-dag-aux-name
                                   car-of-car-of-last-when-cars-increasing-by-1-linear
-                                  maybe-dargp
+                                  ;maybe-dargp
                                   integerp-when-dargp
                                   rationalp-when-integerp
                                   symbolp-of-car-when-dag-exprp

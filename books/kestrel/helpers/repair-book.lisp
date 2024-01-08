@@ -190,7 +190,10 @@
       (recs-for-new-runes (rest new-runes) (+ counter (len recs-for-new-rune)) (append recs-for-new-rune acc)))))
 
 (defun consume-event-data-forms (names event-data-forms)
-  (if (eq :none event-data-forms)
+  (if (or (eq :none event-data-forms)
+          ;; we've been told to consume some forms but there are none left (perhaps there is a new theorem at the end of the book)
+          (prog2$ (cw "Warning: No more event data forms.")
+                  (null event-data-forms)))
       event-data-forms
     (if (endp names)
         event-data-forms
@@ -200,6 +203,7 @@
             (er hard? 'consume-event-data-forms "Bad event-data forms (expected forms for these names: ~X01): ~X23." names nil event-data-forms nil)
           (consume-event-data-forms (rest names) (rest event-data-forms)))))))
 
+;; Tries to repair the failing EVENT.
 ;; Currently only for defthm events
 ;; Returns (mv remaining-event-data-forms state).
 (defun repair-event-with-event-data (event new-event-data-alist event-data-forms state)
@@ -207,7 +211,7 @@
                   :mode :program))
   (b* (((when (not (and (consp event) (member-eq (car event) '(defthm defthmd))))) ; todo: generalize
         (cw "WARNING: Can only repair defthms.  Skipping ~x0~%" event) ; todo: track whether we ignored anything
-        ;; Even though we can't repair if, we consume any event-data-forms that came from this event, to
+        ;; Even though we can't repair it, we consume any event-data-forms that came from this event, to
         ;; try to keep things in sync:
         (let ((names-with-event-data (strip-cars new-event-data-alist)))
           (mv (consume-event-data-forms names-with-event-data event-data-forms) state)))
@@ -222,30 +226,34 @@
                      (mv (consume-event-data-forms names-with-event-data event-data-forms) state)))  ; todo: throw an error?
        (- (cw "~%(Failed Event: ~x0~%" name)) ; print better?
        ;; Get recommendations that come from the event-data:
-       (recs-from-event-data
-         (if (eq :none event-data-forms)
-             nil
-         (b* (((when (not (consp event-data-forms)))
-               (cw "Error: No more event data.") ; todo: throw an error? ;todo: can still attempt some repairs (e.g., using advice)
-               nil)
-              (event-data-form (first event-data-forms))  ; we assume they are in sync and also that this is not a compound event (todo)
-              ((when (not (and (eq name (car event-data-form)))))
-               (cw "Error: No event data for ~x0." name) ; todo: throw an error?
-               nil ; todo: do better: try to skip some forms while looking for name?
-               )
-              (new-event-data (car (cdr (assoc-equal name new-event-data-alist)))) ; why the car?
-              (old-event-data (cdr event-data-form))
-              ;; (- (cw "New event data: ~x0.~%" new-event-data))
-              ;; (- (cw "Old event data: ~x0.~%" old-event-data))
-              (new-runes (get-event-data-1 'rules new-event-data))
-              (old-runes (get-event-data-1 'rules old-event-data))
-              (new-only-runes (set-difference-equal new-runes old-runes))
-              (old-only-runes (set-difference-equal old-runes new-runes))
-              (counter 0)
-              ((mv recs-for-old-runes counter) (recs-for-old-runes old-only-runes counter nil state))
-              ((mv recs-for-new-runes & ;counter
-                   ) (recs-for-new-runes new-only-runes counter nil)))
-           (append recs-for-old-runes recs-for-new-runes))))
+       ((mv recs-from-event-data remaining-event-data-forms)
+        (if (eq :none event-data-forms)
+            (mv nil event-data-forms)
+          (b* (((when (not (consp event-data-forms)))
+                (cw "Error: No more event data.~%") ; todo: throw an error? ;todo: can still attempt some repairs (e.g., using advice)
+                (mv nil nil))
+               (event-data-form (first event-data-forms)) ; we assume they are in sync and also that this is not a compound event (todo)
+               ((when (not (and (eq name (car event-data-form)))))
+                (cw "Error: No event data for ~x0." name) ; todo: throw an error?
+                ;; todo: do better: try to skip some forms while looking for name?
+                (mv nil event-data-forms) ; maybe the theorem is brand new and there just is no event-data for it yet
+                )
+               ;; Normal case:
+               (remaining-event-data-forms (consume-event-data-forms (list name) event-data-forms)) ; why not just cdr (since it was a defthm, we can consume a single event-data-form)?
+               (new-event-data (car (cdr (assoc-equal name new-event-data-alist)))) ; why the car?
+               (old-event-data (cdr event-data-form))
+               ;; (- (cw "New event data: ~x0.~%" new-event-data))
+               ;; (- (cw "Old event data: ~x0.~%" old-event-data))
+               (new-runes (get-event-data-1 'rules new-event-data))
+               (old-runes (get-event-data-1 'rules old-event-data))
+               (new-only-runes (set-difference-equal new-runes old-runes))
+               (old-only-runes (set-difference-equal old-runes new-runes))
+               (counter 0)
+               ((mv recs-for-old-runes counter) (recs-for-old-runes old-only-runes counter nil state))
+               ((mv recs-for-new-runes & ;counter
+                    ) (recs-for-new-runes new-only-runes counter nil)))
+            (mv (append recs-for-old-runes recs-for-new-runes)
+                remaining-event-data-forms))))
        (sorted-recs (help::merge-sort-recs-by-confidence recs-from-event-data))
        (max-wins 10)
        ;; (- (cw "Will try ~x0 recs: ~X12.~%" (len sorted-recs) sorted-recs nil))
@@ -296,8 +304,7 @@
        ;; If we found a repair based on event-data, stop:
        ((when (posp num-successful-recs))
         (cw ")~%")
-        (mv (consume-event-data-forms (list name) event-data-forms)
-            state))
+        (mv remaining-event-data-forms state))
        ;; Now try the Proof Advice tool:
        ((mv erp successp
             & ; best-rec ; todo: use this? better yet, pass print nil to best-rec-for-checkpoints but have it return all successful recs, for printing
@@ -323,12 +330,10 @@
                                         10 ;max-wins
                                         t ; start-and-return
                                         state))
-       ((when erp) (mv (consume-event-data-forms (list name) event-data-forms) state)) ; todo: throw a hard error?
+       ((when erp) (mv remaining-event-data-forms state)) ; todo: throw a hard error?
        (- (and print (not successp) (cw "~%NO REPAIR FOUND~%~%")))
        (- (cw ")~%")))
-    ;; Since it was a defthm, we can consume a single event-data-form (or do what we do above for consistency?):
-    (mv (consume-event-data-forms (list name) event-data-forms)
-        state)))
+    (mv remaining-event-data-forms state)))
 
 ;; TODO: If event-data gets out of sync, look for any event data for the given name (perhaps count occurrences of each name as we go?)
 ;; Returns (mv erp state).
@@ -349,7 +354,8 @@
          (state (f-put-global 'event-data-fal nil state))
          ;; Submit the event, saving event-data:
          ((mv erp state) (submit-event-core `(saving-event-data ,event) nil state)) ; todo: make this even quieter
-         (new-event-data-alist (reverse (true-list-fix (f-get-global 'event-data-fal state)))) ; the final cdr is 'event-data-fal, so replace it with nil
+         ;; Event-data for this event:
+         (new-event-data-alist (reverse (true-list-fix (f-get-global 'event-data-fal state)))) ; true-list-fix needed because the final cdr is 'event-data-fal
          )
       (if erp
           ;; this event failed, so attempt a repair:

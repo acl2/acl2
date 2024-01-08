@@ -1227,18 +1227,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm boolif-of-boolif-of-t-and-nil
-  (equal (boolif (boolif x t y) x nil)
-         (acl2::bool-fix x)))
-
-;; This reduces one mention of X and only increases the mentions of nil
-(defthm boolif-combine-1
-  (equal (boolif (boolif x z1 z2) (boolif x z3 z4) nil)
-         (boolif x
-                 (boolif z1 z3 nil)
-                 (boolif z2 z4 nil)))
-  :hints (("Goal" :in-theory (enable boolif))))
-
 ;todo: drop
 (defthm bvchop-of-bool-to-bit
   (implies (posp n)

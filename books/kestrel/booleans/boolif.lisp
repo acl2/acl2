@@ -155,3 +155,18 @@
   (implies (not (equal v1 v2))
            (equal (boolif (equal v1 x) nil (equal v2 x))
                   (equal v2 x))))
+
+;; "x or y" and "x" is just x
+;todo: rename to have 'same' in the name
+(defthm boolif-of-boolif-of-t-and-nil
+  (equal (boolif (boolif x t y) x nil)
+         (acl2::bool-fix x))
+  :hints (("Goal" :in-theory (enable acl2::bool-fix))))
+
+;; This reduces one mention of X and only increases the mentions of nil
+(defthm boolif-combine-1
+  (equal (boolif (boolif x z1 z2) (boolif x z3 z4) nil)
+         (boolif x
+                 (boolif z1 z3 nil)
+                 (boolif z2 z4 nil)))
+  :hints (("Goal" :in-theory (enable boolif))))
