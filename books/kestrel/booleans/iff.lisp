@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function IFF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -43,3 +43,11 @@
 (defthm iff-bool-fix-arg2
   (equal (iff x (bool-fix y))
          (iff x y)))
+
+;; Maybe only needed for Axe?
+;; Looped?
+(defthmd iff-becomes-equal
+  (implies (and (booleanp x)
+                (booleanp y))
+           (equal (iff x y)
+                  (equal x y))))
