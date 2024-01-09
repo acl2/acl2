@@ -232,7 +232,6 @@
                                    (bvlt lowsize y k)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   (
-;                                                  <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
@@ -342,7 +341,6 @@
                                    (bvlt lowsize k y)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
                                   (
-;                                                  <-of-bvmult-hack ;bozo
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
