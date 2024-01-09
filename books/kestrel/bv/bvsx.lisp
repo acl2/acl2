@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -139,8 +139,14 @@
                       0))))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+;rename
 (defthm bvsx-of-0
   (equal (bvsx new-size old-size 0)
+         0)
+  :hints (("Goal" :in-theory (enable bvsx bvcat))))
+
+(defthm bvsx-of-0-arg1
+  (equal (bvsx 0 old-size val)
          0)
   :hints (("Goal" :in-theory (enable bvsx bvcat))))
 
