@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function unsigned-byte-p.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; For unsigned-byte-p-forward and unsigned-byte-p-from-bounds,
 ; see the copyrights on the ihs and coi libraries.
 ;
@@ -296,7 +296,8 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm unsigned-byte-p-of-+-of--1
-  (implies (unsigned-byte-p bits x)
+  (implies (and (syntaxp (not (quotep x))) ; avoid problem due to ACL2 matching (+ -1 x) with a constant
+                (unsigned-byte-p bits x))
            (equal (unsigned-byte-p bits (+ -1 x))
                   (not (equal 0 x))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
