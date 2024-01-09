@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -118,7 +118,13 @@
     boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
     ;; Rules about equal:
     equal-of-t-when-booleanp-arg1
-    equal-of-t-when-booleanp-arg2))
+    equal-of-t-when-booleanp-arg2
+    ;; Rules about iff (or should we open iff, perhaps to expose and equality of bool-fixes)?:
+    iff-of-constant-arg1
+    iff-of-constant-arg2
+    iff-same
+    iff-bool-fix-arg1
+    iff-bool-fix-arg2))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
@@ -134,11 +140,7 @@
      boolif-when-quotep-arg3 ; introduces boolor of not, or booland
      boolif-x-x-y-becomes-boolor ; introduces boolor
      boolif-x-y-x-becomes-booland ; introduces booland
-
-     ;; Rules about iff (or should we open iff)?
-     ;; todo: move these to boolean-rules-safe
-     iff-of-constant-arg1
-     iff-of-constant-arg2)))
+     )))
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
@@ -658,8 +660,11 @@
      bvshr-of-0-arg2
      bvshr-of-0-arg3
 
-     bvashr-of-0-arg2 ; todo: rules for arg1 and arg3?
+     bvashr-of-0-arg1
+     bvashr-of-0-arg2
+     bvashr-of-0-arg3
 
+     bvshl-of-0-arg1
      bvshl-of-0-arg2
      bvshl-of-0-arg3
 
@@ -720,7 +725,6 @@
      bvif-when-size-is-not-positive ;bvif-of-0-arg1
      bvlt-when-not-posp-arg1
      ;; Rules about size=0:
-     bvshl-of-0-arg1
      bvcat-of-0-arg1
      bvcat-of-0-arg3
 
@@ -2441,7 +2445,7 @@
 
      equal-of-0-and-bitxor
      equal-of-bool-to-bit-split
-     iff ;causes a split
+     iff ;causes a split (todo: consider opening iff to equal of bool-fixes)
      bvlt-of-bvplus-of-bvuminus
 ;                               bvlt-of-bvplus-of-bvuminus-alt ;tue feb 23 00:54:24 2010
      bvlt-of-bvplus-same

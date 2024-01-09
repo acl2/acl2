@@ -1,7 +1,7 @@
 ; Arithmetic (sign-preserving) right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -78,9 +78,20 @@
                         (bvshr width x shift-amount))))
   :hints (("Goal" :in-theory (enable bvashr))))
 
+(defthm bvashr-of-0-arg1
+  (equal (bvashr 0 x shift-amount)
+         0)
+  :hints (("Goal" :in-theory (enable bvashr))))
+
 (defthm bvashr-of-0-arg2
   (equal (bvashr width 0 shift-amount)
          0)
+  :hints (("Goal" :in-theory (enable bvashr))))
+
+(defthm bvashr-of-0-arg3
+  (implies (integerp width)
+           (equal (bvashr width x 0)
+                  (bvchop width x)))
   :hints (("Goal" :in-theory (enable bvashr))))
 
 (defthm unsigned-byte-p-of-bvashr

@@ -331,7 +331,7 @@
                          ;;hyp rewrote to *nil*:
                          (progn$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                  (and (member-eq rule-symbol monitored-symbols)
-                                      (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol)
+                                      (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol)
                                               ;; (cw "Alist: ~x0.~%Assumptions:~%~x1~%DAG:~x2~%" ;;ffixme improve this printing
                                               ;;     alist
                                               ;;     refined-assumption-alist
