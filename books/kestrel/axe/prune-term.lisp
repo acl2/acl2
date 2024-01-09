@@ -342,26 +342,34 @@
               (if (eq :false result)
                   ;; Throw away the then-branch:
                   (prune-term-aux (farg3 term) assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state) ;we could add the negated condition as an assumption here
-                (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
-                     (test-conjuncts (get-conjuncts-of-term2 test))
+                ;; Could not resolve the test:
+                (b* (;; Prune the then-branch, assuming the (pruned, but not simplified) test:
+                     (then-branch (farg2 term))
                      ((mv erp then-branch state)
-                      (prune-term-aux (farg2 term)
-                                      (union-equal (fixup-assumptions test-conjuncts) assumptions)
-                                      (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                      rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                      (if (quotep then-branch)
+                          ;; special case (avoid fixing up assumptions, which can print a message when one gets reoriented):
+                          (mv (erp-nil) then-branch state)
+                        (let ((test-conjuncts (get-conjuncts-of-term2 test)))
+                          (prune-term-aux then-branch
+                                          (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                          (union-equal (get-equalities test-conjuncts) equality-assumptions)
+                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
-                     ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
-                     ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
-                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
+                     ;; Print the else-branch, assuming the negation of the (pruned, but not simplified) test:
+                     (else-branch (farg3 term))
                      ((mv erp else-branch state)
-                      (prune-term-aux (farg3 term)
-                                      (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
-                                      (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                      rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                      (if (quotep else-branch)
+                          (mv (erp-nil) else-branch state)
+                        ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
+                        (let ((negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test))))
+                          (prune-term-aux else-branch
+                                          (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                          (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
+                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    then-branch ; special case when both branches are the same
-                                 ;; TODO: Handle ground term here:
+                                 ;; Can't be a ground term since test was not resolved:
                                  `(,fn ,test ,then-branch ,else-branch))))
                   (mv (erp-nil) new-term state))))))
          (boolif ;; (boolif test then-branch else-branch)
@@ -399,23 +407,27 @@
                           ;; todo: skip the bool-fix if known-boolean:
                           (make-bool-fix else-branch)
                           state)))
-                ;; todo: if it simplifies to something other than t/nil, use that here?
-                (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
-                     (test-conjuncts (get-conjuncts-of-term2 test))
+                ;; Failed to resolve the test.
+                (b* (;; Prune the then-branch, assuming the (pruned, but not simplified) test:
                      ((mv erp then-branch state)
-                      (prune-term-aux then-branch
-                                      (union-equal (fixup-assumptions test-conjuncts) assumptions)
-                                      (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                      rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                      (if (quotep then-branch)
+                          (mv (erp-nil) then-branch state)
+                        (let ((test-conjuncts (get-conjuncts-of-term2 test)))
+                          (prune-term-aux then-branch
+                                          (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                          (union-equal (get-equalities test-conjuncts) equality-assumptions)
+                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
-                     ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
+                     ;; Prune the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
-                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
                      ((mv erp else-branch state)
-                      (prune-term-aux else-branch
-                                      (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
-                                      (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                      rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                      (if (quotep else-branch)
+                          (mv (erp-nil) else-branch state)
+                        (let ((negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test))))
+                          (prune-term-aux else-branch
+                                          (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                          (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
+                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    (make-bool-fix then-branch) ; special case when both branches are the same
@@ -456,23 +468,27 @@
                       (mv (erp-nil)
                           (make-bvchop size else-branch)
                           state)))
-                ;; todo: if it simplifies to something other than t/nil, use that here?
-                (b* (;; Recur on the then-branch, assuming the (pruned, but not simplified) test:
-                     (test-conjuncts (get-conjuncts-of-term2 test))
+                ;; Failed to resolve the test:
+                (b* (;; Prune the then-branch, assuming the (pruned, but not simplified) test:
                      ((mv erp then-branch state)
-                      (prune-term-aux then-branch
-                                      (union-equal (fixup-assumptions test-conjuncts) assumptions)
-                                      (union-equal (get-equalities test-conjuncts) equality-assumptions)
-                                      rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                      (if (quotep then-branch)
+                          (mv (erp-nil) then-branch state)
+                        (let ((test-conjuncts (get-conjuncts-of-term2 test)))
+                          (prune-term-aux then-branch
+                                          (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                          (union-equal (get-equalities test-conjuncts) equality-assumptions)
+                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
                      ;; Recur on the else-branch, assuming the negation of the (pruned, but not simplified) test:
                      ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
-                     (negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test)))
                      ((mv erp else-branch state)
-                      (prune-term-aux else-branch
-                                      (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
-                                      (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
-                                      rule-alist interpreted-function-alist monitored-rules call-stp print state))
+                      (if (quotep else-branch)
+                          (mv (erp-nil) else-branch state)
+                        (let ((negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test))))
+                          (prune-term-aux else-branch
+                                          (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                          (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
+                                          rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
                      (new-term (if (equal then-branch else-branch)
                                    (make-bvchop size then-branch) ; special case when both branches are the same
