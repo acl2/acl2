@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -660,8 +660,11 @@
      bvshr-of-0-arg2
      bvshr-of-0-arg3
 
-     bvashr-of-0-arg2 ; todo: rules for arg1 and arg3?
+     bvashr-of-0-arg1
+     bvashr-of-0-arg2
+     bvashr-of-0-arg3
 
+     bvshl-of-0-arg1
      bvshl-of-0-arg2
      bvshl-of-0-arg3
 
@@ -722,7 +725,6 @@
      bvif-when-size-is-not-positive ;bvif-of-0-arg1
      bvlt-when-not-posp-arg1
      ;; Rules about size=0:
-     bvshl-of-0-arg1
      bvcat-of-0-arg1
      bvcat-of-0-arg3
 
