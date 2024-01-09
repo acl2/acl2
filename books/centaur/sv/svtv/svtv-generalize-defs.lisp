@@ -173,6 +173,17 @@
 
   (local (in-theory (enable svtv-override-triplemap-fix))))
 
+
+(define svtv-override-triplemaplist-envs-match-aux ((triplemaps svtv-override-triplemaplist-p)
+                                                    (env svex-env-p)
+                                                    (spec svex-env-p))
+  (if (atom triplemaps)
+      t
+    (and (svtv-override-triplemap-envs-match (car triplemaps) env spec)
+         (svtv-override-triplemaplist-envs-match-aux (cdr triplemaps) env spec))))
+
+;; BOZO see if we can disable this executable counterpart or something -- leads
+;; to too many fast-alist discipline problems.
 (define svtv-override-triplemaplist-envs-match ((triplemaps svtv-override-triplemaplist-p)
                                                 (env svex-env-p)
                                                 (spec svex-env-p))
@@ -214,10 +225,21 @@ simplify @('env') terms containing irrelevant pairs, i.e. those that aren't
 test or value variables of the triplemaps.</li>
 
 </ul>"
-  (if (atom triplemaps)
-      t
-    (and (svtv-override-triplemap-envs-match (car triplemaps) env spec)
-         (svtv-override-triplemaplist-envs-match (cdr triplemaps) env spec))))
+  :verify-guards nil
+  (mbe :logic (if (atom triplemaps)
+                  t
+                (and (svtv-override-triplemap-envs-match (car triplemaps) env spec)
+                     (svtv-override-triplemaplist-envs-match (cdr triplemaps) env spec)))
+       :exec (with-fast-alist env
+               (with-fast-alist spec
+                 (svtv-override-triplemaplist-envs-match-aux triplemaps env spec))))
+  ///
+  (local (defthm svtv-override-triplemaplist-envs-match-aux-elim
+           (equal (svtv-override-triplemaplist-envs-match-aux triplemaps env spec)
+                  (svtv-override-triplemaplist-envs-match triplemaps env spec))
+           :hints(("Goal" :in-theory (enable svtv-override-triplemaplist-envs-match-aux)))))
+
+  (verify-guards svtv-override-triplemaplist-envs-match))
 
 (define svex-alist-noncall-p ((x svex-alist-p))
   (if (atom x)

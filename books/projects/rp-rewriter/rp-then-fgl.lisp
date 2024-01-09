@@ -90,6 +90,7 @@
          ((std::extract-keyword-args
            :allowed-keys #!keyword'(rule-classes
                                     new-synps
+                                    vacuity-check
                                     disable-meta-rules
                                     enable-meta-rules
                                     enable-rules
