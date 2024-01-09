@@ -147,8 +147,33 @@ function get_unloaded()
     });
 }
 
+function get_rootdir()
+{
+    "use strict";
+    // Don't use vlsGetJson because this is a special pre-model-loading command
+    // that has no MODEL
+    $.ajax({
+	url: "/get-rootdir",
+	data: null,
+	dataType: "json",
+	cache: false,
+	success: function(data,textStatus,jqXHR) {
+	    if (data[":ERROR"]) {
+		$("#rootdir").html("<p>Error: " + data[":ERROR"]);
+		return;
+	    }
+
+	    $("#rootdir").html("<h4>Root directory: " + data[":VALUE"] + "</h4>");
+	},
+	fail: function() {
+	    $("#rootdir").html("<p>Error getting root directory.</p>");
+	}
+    });
+}
+
 $(document).ready(function()
 {
+    get_rootdir();
     get_loaded();
     get_unloaded();
 });

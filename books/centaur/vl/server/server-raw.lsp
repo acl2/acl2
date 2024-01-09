@@ -621,6 +621,13 @@ a bleeding edge zip.</p>")
               (vls-success :json (bridge::json-encode ans)))
        :catch (vls-fail errmsg))))
 
+  (hunchentoot:define-easy-handler (get-rootdir :uri "/get-rootdir") ()
+    (setf (hunchentoot:content-type*) "application/json")
+    (with-vls-bindings
+      (vls-try-catch
+       :try (vls-success :json (bridge::json-encode *vls-root*))
+       :catch (vls-fail errmsg))))
+
   (hunchentoot:define-easy-handler (load-model :uri "/load-model" :default-request-type :post)
     ((model :parameter-type 'string))
     (setf (hunchentoot:content-type*) "application/json")
