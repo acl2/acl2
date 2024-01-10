@@ -78,6 +78,7 @@
 (include-book "bvminus-rules")
 (include-book "bvuminus")
 (include-book "bvmult")
+(include-book "bvmult-rules")
 (include-book "bvmod")
 (include-book "bvdiv")
 (include-book "bvdiv-rules")
