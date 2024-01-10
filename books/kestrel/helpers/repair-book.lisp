@@ -192,7 +192,7 @@
 (defun consume-event-data-forms (names event-data-forms)
   (if (or (eq :none event-data-forms)
           ;; we've been told to consume some forms but there are none left (perhaps there is a new theorem at the end of the book)
-          (prog2$ (cw "Warning: No more event data forms.")
+          (prog2$ (cw "Warning: No more event data forms.~%")
                   (null event-data-forms)))
       event-data-forms
     (if (endp names)

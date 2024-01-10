@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation *.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -420,6 +420,7 @@
                                   (y x))
            :in-theory (disable <-of-*-and-*-cancel))))
 
+;why special?
 (defthm <-of-*-same-linear-special
   (implies (and (< 1 y)
                 (< 0 x)
@@ -430,6 +431,16 @@
   :rule-classes :linear
   :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1 (x1 1) (x2 y) (y x))
            :in-theory (disable <-of-*-and-*-same-forward-1))))
+
+(defthm <-of-*-same-linear-2
+  (implies (and (<= 1 y)
+                (<= 0 x)
+                (rationalp x)
+                ;; (rationalp y)
+                )
+           (<= x (* x y)))
+  :rule-classes :linear
+)
 
 (defthm <-of-*-and-*-linear
   (implies (and (< x1 x2)  ; strict

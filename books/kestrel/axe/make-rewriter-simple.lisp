@@ -4273,19 +4273,19 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).`
+    ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
     (defund ,simplify-dag-expr-name (expr
-                                    old-nodenum ; just for guards?
-                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    memoization ; this is over the NEW nodenums (the ones in dag-array)
-                                    info tries limits
-                                    node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
-                                    rule-alist refined-assumption-alist
-                                    rewrite-stobj
-                                    ;; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
-                                    ;; we could renumber outside this function, but not all nodes may be needed:
-                                    renumbering-stobj
-                                    )
+                                     old-nodenum ; just for guards?
+                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                     memoization ; this is over the NEW nodenums (the ones in dag-array)
+                                     info tries limits
+                                     node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
+                                     rule-alist refined-assumption-alist
+                                     rewrite-stobj
+                                     ;; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
+                                     ;; we could renumber outside this function, but not all nodes may be needed:
+                                     renumbering-stobj
+                                     )
       (declare (xargs :guard (and (natp old-nodenum)
                                   (bounded-dag-exprp old-nodenum expr)
                                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4301,28 +4301,23 @@
                                   (< old-nodenum (renumbering-length renumbering-stobj))
                                   (bounded-good-renumbering-stobj (+ -1 old-nodenum) dag-len renumbering-stobj))
                       :stobjs (rewrite-stobj renumbering-stobj)
-                      :guard-hints (("Goal" :in-theory (e/d (;car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
-                                                             ;maybe-dargp
+                      :guard-hints (("Goal" :in-theory (e/d (;; todo: simplify this hint
                                                              integerp-when-dargp
                                                              rationalp-when-integerp
                                                              symbolp-of-car-when-dag-exprp
-                                                             ;tree-to-memoizep
                                                              axe-treep-when-dag-exprp
                                                              car-of-cadr-when-cars-increasing-by-1
                                                              all-myquotep-when-all-dargp
                                                              consp-of-cdr-when-dargp
                                                              consp-of-cdr-when-dag-exprp-and-quote
                                                              not-cddr-when-dag-exprp-and-quotep
-                                                             ;consp-of-car-of-last-when-weak-dagp-aux
-                                                             ;acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                                              natp-of-renumber-darg-with-stobj
                                                              consp-of-dargs-when-dag-exprp-iff
                                                              true-listp-of-renumber-darg-with-stobj
                                                              <-of-renumber-darg-with-stobj
                                                              <-of-if-arg2-axe ; todo: -axe suffix here is confusing (not an axe rule)
                                                              )
-                                                            (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))
-                                     :do-not '(generalize eliminate-destructors))))
+                                                            (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap)))))
                (ignore old-nodenum))
       (if (atom expr)
           ;; EXPR is a variable:
@@ -4338,6 +4333,7 @@
             (quote ; EXPR is a quoted constant (rare):
               (mv (erp-nil) expr dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
             ;; (if/myif <test> <then> <else>):
+            ;; Functions like simplify-bvif-tree-and-add-to-dag-name are not appropriate here because they take entire trees.
             ((if myif)
              (b* ((dargs (dargs expr))
                   ((when (not (consp (rest (rest dargs))))) ; for guards
@@ -4390,9 +4386,94 @@
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
                   rewrite-stobj 1000000000))))
-            ;; TODO: Flesh out these cases (but functions like ,simplify-bvif-tree-and-add-to-dag-name are not appropriate here because they take entire trees).
-            ;; (bvif ..)
-            ;; (boolif ..)
+            ;; (boolif <test> <then> <else>):
+            (boolif
+              (b* ((dargs (dargs expr))
+                   ((when (not (consp (rest (rest dargs))))) ; for guards
+                    (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                   ;; Renumber the test (then-branch and else-branch get renumbered below only if needed):
+                   (renumbered-test-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
+                   ;; Special treatment for BOOLIF (can rewrite the test in an IFF context):
+                   (renumbered-test-darg (apply-node-replacement-array-bool-to-darg renumbered-test-darg node-replacement-array node-replacement-count))
+                   ;; TODO: Consult the memoization?
+                   )
+                (if (consp renumbered-test-darg) ; test for quotep
+                    ;; The test was resolved, so the whole node is replaced by (the bool-fix of) one branch:
+                    ;; TODO: Do something faster, with no bool-fix, if the selected branch is a known-boolean?
+                    (let ((selected-branch
+                            ;; Since this is a boolif, we can rewrite the selected branch in an IFF context:
+                            (apply-node-replacement-array-bool-to-darg
+                              (renumber-darg-with-stobj
+                                (if (unquote renumbered-test-darg)
+                                    (second dargs)
+                                  (third dargs))
+                                renumbering-stobj)
+                              node-replacement-array node-replacement-count)))
+                      (if (consp selected-branch) ; tests for quotep
+                          (mv (erp-nil)
+                              (if (unquote selected-branch) *t* *nil*) ; bool-fixes the constant
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                        (,simplify-fun-call-and-add-to-dag-name 'bool-fix$inline
+                                                                (list selected-branch)
+                                                                nil ; should we pass the tree here (remember that the memoization deals in the new nodenums)?
+                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                rewrite-stobj 1000000000)))
+                  ;; The test was not resolved, so just try to apply rules (can't be a ground term because the test is not a constant):
+                  (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
+                   fn (list renumbered-test-darg
+                            ;; Since this is a boolif, we can rewrite the branches in an IFF context:
+                            ;; TODO: Try to apply node replacements using info from the test as well
+                            (apply-node-replacement-array-bool-to-darg (renumber-darg-with-stobj (second dargs) renumbering-stobj) node-replacement-array node-replacement-count)
+                            (apply-node-replacement-array-bool-to-darg (renumber-darg-with-stobj (third dargs) renumbering-stobj) node-replacement-array node-replacement-count))
+                   nil ; Can't memoize anything about EXPR because its nodenums are in the old dag (but we could cons the new expr?)
+                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                   rewrite-stobj 1000000000))))
+            ;; (bvif <size> <test> <then> <else>):
+            (bvif
+              (b* ((dargs (dargs expr))
+                   ((when (not (consp (rest (rest (rest dargs)))))) ; for guards
+                    (mv :bad-arity nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))
+                   ;; Renumber the size and test (then-branch and else-branch get renumbered below only if needed):
+                   (renumbered-size-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
+                   (renumbered-test-darg (renumber-darg-with-stobj (second dargs) renumbering-stobj))
+                   ;; Special treatment for BVIF (can rewrite the test in an IFF context):
+                   (renumbered-test-darg (apply-node-replacement-array-bool-to-darg renumbered-test-darg node-replacement-array node-replacement-count))
+                   ;; TODO: Consult the memoization?
+                   )
+                (if (consp renumbered-test-darg) ; test for quotep
+                    ;; The test was resolved, so the whole node is replaced by (the bvchop of) one branch:
+                    ;; TODO: Do something faster, with no bvchop, if the selected branch is already a BV
+                    (let ((selected-branch
+                            (renumber-darg-with-stobj
+                              (if (unquote renumbered-test-darg)
+                                  (third dargs)
+                                (fourth dargs))
+                              renumbering-stobj)))
+                      (if (and (consp selected-branch) ; tests for quotep
+                               (consp renumbered-size-darg))
+                          ;; Ground term:
+                          (mv (erp-nil)
+                              (enquote (bvchop-unguarded (unquote renumbered-size-darg) (unquote selected-branch))) ; todo: optimize
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
+                        (,simplify-fun-call-and-add-to-dag-name 'bvchop
+                                                                (list renumbered-size-darg selected-branch)
+                                                                nil ; should we pass the tree here (remember that the memoization deals in the new nodenums)?
+                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                                                node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                                                                rewrite-stobj 1000000000)))
+                  ;; The test was not resolved, so just try to apply rules (can't be a ground term because the test is not a constant):
+                  (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
+                   fn (list renumbered-size-darg
+                            renumbered-test-darg
+                            ;; TODO: Try to apply node replacements using info from the test as well
+                            (renumber-darg-with-stobj (third dargs) renumbering-stobj)
+                            (renumber-darg-with-stobj (fourth dargs) renumbering-stobj))
+                   nil ; Can't memoize anything about EXPR because its nodenums are in the old dag (but we could cons the new expr?)
+                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                   node-replacement-array node-replacement-count rule-alist refined-assumption-alist
+                   rewrite-stobj 1000000000))))
             (t ;; EXPR is some other function call (can't be a lambda application since it is a dag-expr):
               (b* (;; Renumber the args:
                    (new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
@@ -4462,28 +4543,23 @@
                                (bounded-node-replacement-arrayp 'node-replacement-array new-node-replacement-array new-dag-len)
                                (<= node-replacement-count (alen1 'node-replacement-array new-node-replacement-array))))))
       :hints (("Goal" :in-theory (e/d (,simplify-dag-expr-name
-                                       ;;car-of-car-of-last-when-cars-increasing-by-1-linear ; todo: simplify this hint
-                                       ;maybe-dargp
+                                       ;; todo: simplify this hint
                                        integerp-when-dargp
                                        rationalp-when-integerp
                                        symbolp-of-car-when-dag-exprp
-                                       ;tree-to-memoizep
                                        axe-treep-when-dag-exprp
                                        car-of-cadr-when-cars-increasing-by-1
                                        all-myquotep-when-all-dargp
                                        consp-of-cdr-when-dargp
                                        consp-of-cdr-when-dag-exprp-and-quote
                                        not-cddr-when-dag-exprp-and-quotep
-                                       ;consp-of-car-of-last-when-weak-dagp-aux
-                                       ;acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                        natp-of-renumber-darg-with-stobj
                                        consp-of-dargs-when-dag-exprp-iff
                                        true-listp-of-renumber-darg-with-stobj
                                        <-of-renumber-darg-with-stobj
                                        <-of-if-arg2-axe ; todo: -axe suffix here is confusing (not an axe rule)
                                        not-<-of-nth-of-dargs)
-                                      (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))
-               :do-not '(generalize eliminate-destructors))))
+                                      (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
