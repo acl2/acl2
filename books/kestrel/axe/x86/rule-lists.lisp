@@ -1450,8 +1450,9 @@
 (defun assumption-simplification-rules ()
   (append
    '(standard-state-assumption
-     standard-assumptions-core-64
      standard-state-assumption-32
+     standard-assumptions-core-64
+     standard-state-assumption-64
      standard-assumptions-mach-o-64
      standard-assumptions-elf-64
      standard-assumptions-pe-64
