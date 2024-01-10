@@ -1,7 +1,7 @@
 ; Conjunctions and disjunctions in Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -294,29 +294,29 @@
   :hints (("Goal" :use (:instance axe-disjunctionp)
            :in-theory (disable axe-disjunctionp))))
 
-(defund bounded-axe-conjunctionp (item dag-len)
+(defund bounded-axe-conjunctionp (item bound)
   (declare (xargs :guard (and (axe-conjunctionp item)
-                              (natp dag-len))))
+                              (natp bound))))
   (if (quotep item)
       t
-    (bounded-possibly-negated-nodenumsp item dag-len)))
+    (bounded-possibly-negated-nodenumsp item bound)))
 
 (defthm bounded-axe-conjunctionp-of-quote-nil
-  (bounded-axe-conjunctionp ''nil dag-len)
+  (bounded-axe-conjunctionp ''nil bound)
   :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp))))
 
 (defthm bounded-axe-conjunctionp-of-nil
-  (bounded-axe-conjunctionp nil dag-len)
+  (bounded-axe-conjunctionp nil bound)
   :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp))))
 
 (defthm bounded-axe-conjunctionp-of-quote-t
-  (bounded-axe-conjunctionp ''t dag-len)
+  (bounded-axe-conjunctionp ''t bound)
   :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp))))
 
 (defthm bounded-axe-conjunctionp-of-singleton-when-natp
   (implies (natp item)
-           (equal (bounded-axe-conjunctionp (list item) dag-len)
-                  (< item dag-len)))
+           (equal (bounded-axe-conjunctionp (list item) bound)
+                  (< item bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp))))
 
 (defthm bounded-possibly-negated-nodenumsp-when-bounded-axe-conjunctionp
@@ -336,51 +336,50 @@
 
 ;; (defthmd all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-conjunctionp
 ;;   (implies (and (axe-conjunctionp d)
-;;                 (bounded-axe-conjunctionp d dag-len)
+;;                 (bounded-axe-conjunctionp d bound)
 ;;                 (not (quotep d)))
-;;            (all-< (strip-nots-from-possibly-negated-nodenums d) dag-len))
+;;            (all-< (strip-nots-from-possibly-negated-nodenums d) bound))
 ;;   :hints (("Goal" :in-theory (enable bounded-axe-conjunctionp axe-conjunctionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: rename dag-len arg
-(defund bounded-axe-disjunctionp (item dag-len)
+(defund bounded-axe-disjunctionp (item bound)
   (declare (xargs :guard (and (axe-disjunctionp item)
-                              (natp dag-len))))
+                              (natp bound))))
   (if (quotep item)
       t
-    (bounded-possibly-negated-nodenumsp item dag-len)))
+    (bounded-possibly-negated-nodenumsp item bound)))
 
 (defthm bounded-axe-disjunctionp-of-quote-t
-  (bounded-axe-disjunctionp ''t dag-len)
+  (bounded-axe-disjunctionp ''t bound)
   :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp))))
 
 (defthm bounded-axe-disjunctionp-of-quote-nil
-  (bounded-axe-disjunctionp ''nil dag-len)
+  (bounded-axe-disjunctionp ''nil bound)
   :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp))))
 
 (defthm bounded-axe-disjunctionp-of-singleton-when-natp
   (implies (natp item)
-           (equal (bounded-axe-disjunctionp (list item) dag-len)
-                  (< item dag-len)))
+           (equal (bounded-axe-disjunctionp (list item) bound)
+                  (< item bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp))))
 
 (defthm bounded-axe-conjunctionp-of-negate-axe-disjunction
   (implies (and (axe-disjunctionp item)
-                (natp dag-len)
-                (bounded-axe-disjunctionp item dag-len)
+                (natp bound)
+                (bounded-axe-disjunctionp item bound)
                 )
-           (bounded-axe-conjunctionp (negate-axe-disjunction item) dag-len))
+           (bounded-axe-conjunctionp (negate-axe-disjunction item) bound))
   :hints (("Goal" :in-theory (enable negate-axe-disjunction
                                      bounded-axe-conjunctionp
                                      bounded-axe-disjunctionp))))
 
 (defthm bounded-axe-disjunctionp-of-negate-axe-conjunction
   (implies (and (axe-conjunctionp item)
-                (natp dag-len)
-                (bounded-axe-conjunctionp item dag-len)
+                (natp bound)
+                (bounded-axe-conjunctionp item bound)
                 )
-           (bounded-axe-disjunctionp (negate-axe-conjunction item) dag-len))
+           (bounded-axe-disjunctionp (negate-axe-conjunction item) bound))
   :hints (("Goal" :in-theory (enable negate-axe-conjunction
                                      bounded-axe-disjunctionp
                                      bounded-axe-conjunctionp))))
@@ -402,10 +401,10 @@
 
 ;; (defthmd all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp
 ;;   (implies (and (axe-disjunctionp d)
-;;                 (bounded-axe-disjunctionp d dag-len)
+;;                 (bounded-axe-disjunctionp d bound)
 ;;                 (not (disjunction-is-truep d))
 ;;                 (not (disjunction-is-falsep d)))
-;;            (all-< (strip-nots-from-possibly-negated-nodenums d) dag-len))
+;;            (all-< (strip-nots-from-possibly-negated-nodenums d) bound))
 ;;   :hints (("Goal" :in-theory (enable bounded-axe-disjunctionp axe-disjunctionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -443,9 +442,9 @@
 (defthm bounded-axe-disjunctionp-of-combine-axe-disjunctions-aux
   (implies (and (possibly-negated-nodenumsp x)
                 (possibly-negated-nodenumsp y)
-                (bounded-axe-disjunctionp x dag-len)
-                (bounded-axe-disjunctionp y dag-len))
-           (bounded-axe-disjunctionp (combine-axe-disjunctions-aux x y) dag-len))
+                (bounded-axe-disjunctionp x bound)
+                (bounded-axe-disjunctionp y bound))
+           (bounded-axe-disjunctionp (combine-axe-disjunctions-aux x y) bound))
   :hints (("Goal" :in-theory (enable combine-axe-disjunctions-aux bounded-axe-disjunctionp))))
 
 ;x is a quotep or a list of nodenums and negated nodenums
@@ -474,10 +473,10 @@
 (defthm bounded-axe-disjunctionp-of-combine-axe-disjunctions
   (implies (and (axe-disjunctionp x)
                 (axe-disjunctionp y)
-                (bounded-axe-disjunctionp x dag-len)
-                (bounded-axe-disjunctionp y dag-len))
+                (bounded-axe-disjunctionp x bound)
+                (bounded-axe-disjunctionp y bound))
            (bounded-axe-disjunctionp (combine-axe-disjunctions x y)
-                                     dag-len))
+                                     bound))
   :hints (("Goal" :in-theory (enable combine-axe-disjunctions))))
 
 (defthm consp-of-combine-axe-disjunctions
@@ -525,10 +524,10 @@
 (defthm bounded-axe-conjunctionp-of-combine-axe-conjunctions-aux
   (implies (and (possibly-negated-nodenumsp x)
                 (possibly-negated-nodenumsp y)
-                (bounded-axe-conjunctionp x dag-len)
-                (bounded-axe-conjunctionp y dag-len))
+                (bounded-axe-conjunctionp x bound)
+                (bounded-axe-conjunctionp y bound))
            (bounded-axe-conjunctionp (combine-axe-conjunctions-aux x y)
-                                     dag-len))
+                                     bound))
   :hints (("Goal" :in-theory (enable combine-axe-conjunctions-aux bounded-axe-conjunctionp))))
 
 
@@ -560,10 +559,10 @@
 (defthm bounded-axe-conjunctionp-of-combine-axe-conjunctions
   (implies (and (axe-conjunctionp x)
                 (axe-conjunctionp y)
-                (bounded-axe-conjunctionp x dag-len)
-                (bounded-axe-conjunctionp y dag-len))
+                (bounded-axe-conjunctionp x bound)
+                (bounded-axe-conjunctionp y bound))
            (bounded-axe-conjunctionp (combine-axe-conjunctions x y)
-                                     dag-len))
+                                     bound))
   :hints (("Goal" :in-theory (enable combine-axe-conjunctions))))
 
 (local
