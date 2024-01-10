@@ -285,7 +285,7 @@
        (- (acl2::ensure-x86 parsed-executable))
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "(Testing ~x0.~%" function-name-string))
-       ;; Check the param names:
+       ;; Check the param names, if any:
        ((when (not (or (eq :none param-names)
                        (and (symbol-listp param-names)
                             (no-duplicatesp param-names)
@@ -327,6 +327,7 @@
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
+       ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
        ((mv erp result-dag-or-quotep & & state)
         (def-unrolled-fn-core
           target
@@ -335,7 +336,7 @@
           nil ;suppress-assumptions
           stack-slots
           position-independentp
-          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte
+          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
           t                   ; use-internal-contextsp
           prune
           ;; extra-rules:
@@ -351,6 +352,7 @@
            remove-lift-rules)
           ;; extra-assumption-rules:
           (append (lifter-rules64-new)
+                  ;; todo: build these in deeper
                   '(section-assumptions-mach-o-64
                     acl2::mach-o-section-presentp-constant-opener
                     acl2::maybe-get-mach-o-segment-constant-opener
@@ -363,7 +365,7 @@
                     ;;acl2::get-mach-o-constants-constant-opener
                     ;;acl2::get-mach-o-data-address-constant-opener
                     ;;acl2::get-mach-o-data-constant-opener
-                    elf64-section-loadedp
+                    elf64-section-loadedp ; todo:package
                     acl2::elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp))
@@ -425,7 +427,7 @@
         (acl2::apply-tactic-prover result-dag
                                    ;; tests ;a natp indicating how many tests to run
                                    tactics
-                                   nil ; assumptions
+                                   nil ; assumptions ; TODO: We may need separateness assumptions!
                                    t   ; simplify-assumptions
                                    ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                                    print
