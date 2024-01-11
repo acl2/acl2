@@ -461,10 +461,14 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 (def-merge-n-unsigneds 8 32)
 (def-merge-n-unsigneds 8 64)
 
+(def-merge-n-unsigneds 16 2)
+(def-merge-n-unsigneds 16 4)
 (def-merge-n-unsigneds 16 8)
 (def-merge-n-unsigneds 16 16)
 (def-merge-n-unsigneds 16 32)
 
+(def-merge-n-unsigneds 32 2)
+(def-merge-n-unsigneds 32 4)
 (def-merge-n-unsigneds 32 8)
 (def-merge-n-unsigneds 32 16)
 
