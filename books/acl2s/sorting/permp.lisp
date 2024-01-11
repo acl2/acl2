@@ -10,6 +10,8 @@
     ((!e . r) r)
     ((f . r) (cons f (del e r)))))
 
+(sig del (all (listof :a)) => (listof :a))
+
 (definec permp (x y :tl) :bool
   (match x
     (nil (endp y))
