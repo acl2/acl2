@@ -191,9 +191,11 @@
 
 (defun consume-event-data-forms (names event-data-forms)
   (if (or (eq :none event-data-forms)
-          ;; we've been told to consume some forms but there are none left (perhaps there is a new theorem at the end of the book)
-          (prog2$ (cw "Warning: No more event data forms.~%")
-                  (null event-data-forms)))
+          (if (null event-data-forms)
+              ;; we've been told to consume some forms but there are none left (perhaps there is a new theorem at the end of the book)
+              (prog2$ (cw "Warning: No more event data forms.~%")
+                      t)
+            nil))
       event-data-forms
     (if (endp names)
         event-data-forms
@@ -365,7 +367,10 @@
                ((when erp) (mv erp state)))
             (repair-events-with-event-data (rest events) event-data-forms state))
         ;; this event succeeded, so continue:
-        (b* ((names-with-event-data (strip-cars new-event-data-alist))
+        (b* ((- (cw "Event ~x0 succeeded.~%" event))
+             (names-with-event-data (strip-cars new-event-data-alist))
+             ;; (- (cw "~x0 Event-data forms generated: ~x1.~%" (len names-with-event-data) names-with-event-data))
+             ;; (- (cw "~x0 saved event-data forms left.~%" (len event-data-forms)))
              (event-data-forms (consume-event-data-forms names-with-event-data event-data-forms)))
           (repair-events-with-event-data (rest events) event-data-forms state))))))
 
@@ -407,8 +412,8 @@
           (prog2$ (cw "WARNING: ~s0 does not exist.  Skipping repairs based on saved event-data.~%" event-data-file-path)
                   (mv nil :none state))))
        ((when erp) (cw "Error (~x0) reading: ~x1.~%" erp event-data-file-path) (mv erp nil state))
-       ;; (- (cw "Saved event data contains ~x0 forms.~%" (len event-data-forms)))
-       ;; Walk through the book events and that file in sync
+       (- (cw "(~x0 event data forms for ~s1.)~%" (len event-data-forms) book-path))
+       ;; Walk through the book and the event-data-forms in sync:
        ((mv erp state) (repair-events-with-event-data events event-data-forms state))
        ((when erp) (mv erp nil state))
        (- (cw "Done repairing ~s0)~%" book-path))
