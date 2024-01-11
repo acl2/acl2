@@ -212,17 +212,40 @@
 (defmacro binary-file-load (filename &key (elf 't) (mach-o 'nil))
   `(binary-file-load-fn ,filename exld::elf exld::mach-o x86 state :elf ,elf :mach-o ,mach-o))
 
+(local (include-book "std/io/top" :dir :system))
+
+(local (defthm unsigned-byte-p-8-read-byte$
+               (implies (and (state-p1 state)
+                             (open-input-channel-p1 channel :byte state)
+                             (mv-nth 0 (read-byte$ channel state)))
+                 (unsigned-byte-p 8 (mv-nth 0 (read-byte$ channel state))))
+               :hints (("Goal" :in-theory (enable unsigned-byte-p)))))
+
 (define read-channel-into-byte-list1 ((channel symbolp)
                                       (limit natp)
                                       acc
                                       state)
   :guard (open-input-channel-p channel :byte state)
+  :returns (mv (bytes byte-listp
+                      :hyp (and (state-p1 state)
+                                (symbolp channel)
+                                (open-input-channel-p channel :byte state)
+                                (byte-listp acc))
+                      :hints (("Goal" :in-theory (enable byte-listp))))
+               (state state-p1 :hyp (and (state-p1 state)
+                                         (symbolp channel)
+                                         (open-input-channel-p1 channel :byte state))))
   (if (zp limit)
     (mv acc state)
     (b* (((mv current-byte state) (read-byte$ channel state)))
-        (if (equal current-byte nil)
+        (if (not current-byte)
           (mv acc state)
-          (read-channel-into-byte-list1 channel (1- limit) (cons current-byte acc) state)))))
+          (read-channel-into-byte-list1 channel (1- limit) (cons current-byte acc) state))))
+  ///
+  (defthm read-channel-into-byte-list1-leaves-channel-open
+          (implies (open-input-channel-p1 channel :byte state)
+                   (open-input-channel-p1 channel :byte
+                                          (mv-nth 1 (read-channel-into-byte-list1 channel limit acc state))))))
 
 ;; Read from the given byte channel into the returned list. Reads limit
 ;; bytes or until EOF, whichever comes first.
@@ -231,14 +254,16 @@
       (mv (reverse result) state)))
 
 (define chars-to-c-str ((char-lst character-listp))
+  :returns (c-str byte-listp :hints (("Goal" :in-theory (enable unsigned-byte-p))))
   (if (mbt (character-listp char-lst))
-    (if (equal char-lst nil)
+    (if (not char-lst)
      '(0)
      (cons (char-code (car char-lst))
            (chars-to-c-str (cdr char-lst))))
     nil))
 
 (define string-to-c-str ((str stringp))
+  :returns (c-str byte-listp)
   (b* ((lst (coerce str 'list)))
       (chars-to-c-str lst)))
 
@@ -248,10 +273,20 @@
     `(cons (logand #xFF ,value) (pack-u (ash ,value -8) ,(- bytes 1)))))
 
 (define pack-u32 ((val n32p))
-  (pack-u val 4))
+  :returns (bytes byte-listp)
+  (pack-u val 4)
+  ///
+  (defthm len-of-pack-u32-is-4
+          (equal (len (pack-u32 x))
+                 4)))
 
 (define pack-u64 ((val n64p))
-  (pack-u val 8))
+  :returns (bytes byte-listp)
+  (pack-u val 8)
+  ///
+  (defthm len-of-pack-u64-is-8
+          (equal (len (pack-u64 x))
+                 8)))
 
 ;; From linux/arch/x86/include/asm/segment.h
 ;; /*
@@ -264,14 +299,92 @@
 ;; 	 (((limit) & _AC(0x000f0000,ULL)) << (48-16)) |	\
 ;; 	 (((base)  & _AC(0x00ffffff,ULL)) << 16) |	\
 ;; 	 (((limit) & _AC(0x0000ffff,ULL))))
-(define gdt-entry ((flags n16p)
-                   (base n32p)
-                   (limit n16p))
+(define gdt-entry ((flags :type (unsigned-byte 16))
+                   (base :type (unsigned-byte 32))
+                   (limit :type (unsigned-byte 20)))
+  :returns (entry n64p)
   (logior (ash (logand base #xff000000) (- 56 24))
           (ash (logand flags #x0000f0ff) 40)
           (ash (logand limit #x000f0000) (- 48 16))
           (ash (logand base #x00ffffff) 16)
           (logand limit #x0000ffff)))
+
+(local (defthm reverse-of-byte-listp-is-byte-listp
+               (implies (byte-listp x)
+                        (byte-listp (acl2::rev x)))))
+
+(local (defthm byte-listp-is-true-listp (implies (byte-listp x)
+                                                 (true-listp x))))
+
+(define load-file-into-memory ((filename stringp)
+                               (ptr canonical-address-p)
+                               x86
+                               state)
+  :returns (mv (file-contents byte-listp :hyp (and (stringp filename)
+                                                   (canonical-address-p ptr)
+                                                   (state-p1 state)))
+               (x86 x86p :hyp (x86p x86))
+               (state state-p1 :hyp (and (stringp filename)
+                                         (state-p1 state))))
+  (b* (((mv channel state) (open-input-channel filename :byte state))
+       ((when (not channel)) (mv nil x86 state))
+       ((mv file-contents state) (read-channel-into-byte-list channel (1- (ash 1 60)) state))
+       ((unless (canonical-address-p (+ ptr (len file-contents)))) (mv nil x86 state))
+       ((mv & x86) (write-bytes-to-memory ptr file-contents x86)) 
+       (state (close-input-channel channel state)))
+      (mv file-contents x86 state)))
+
+(define init-zero-page ((zero-page-ptr canonical-address-p)
+                        (command-line-ptr canonical-address-p)
+                        (disk-image-ptr canonical-address-p)
+                        (disk-image-size natp)
+                        (kernel-ptr n32p)
+                        (kernel-image byte-listp)
+                        x86)
+  :guard (and (canonical-address-p (+ zero-page-ptr #xFFF)))
+  (b* (((unless (> (len kernel-image) #x211)) x86) ;; Make sure the kernel-image has the initial loadflags
+       ((unless (> (len kernel-image) (+ #x26c #x1f1))) x86) ;; Make sure the kernel image has the setup header
+       (setup-header (take #x26c (nthcdr #x1f1 kernel-image)))
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x1f1) setup-header x86))
+       ;; Set various setup-header fields (all fields are little endian)
+       ;; Set vid_mode to normal (0xffff)
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x1fa) '(#xff #xff) x86))
+       ;; Set type_of_loader
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x210) '(#xff) x86))
+       ;; Set loadflags
+       ;; This is a bit field. We want to set QUIET_FLAG (bit 5) to 0 (print early messages)
+       ;; and set CAN_USE_HEAP (bit 7) to 0 (i.e. heap_end_ptr is invalid)
+       (loadflags (logand (nth #x211 kernel-image) #x5F))
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x211) (list loadflags) x86))
+       ;; We (may be) loading the kernel at a nonstandard address, so we may need to relocate code32_start.
+       ;; kernel-ptr could theoretically be a 64-bit pointer and this is a 32-bit field, so I don't
+       ;; think it is relevant if we're launching the kernel through the 64-bit entrypoint, but I set
+       ;; it anyways.
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x214) (pack-u32 kernel-ptr) x86))
+       ;; Set ramdisk_image
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x218) (pack-u32 (logand #xFFFFFFFF disk-image-ptr)) x86))
+       ;; Set ramdisk_size
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x21c) (pack-u32 (logand #xFFFFFFFF disk-image-size)) x86))
+       ;; Linux docs state setting heap_end_ptr is obligatory, but we CAN_USE_HEAP to 0, so I don't think we have to
+       ;; Set cmd_line_ptr
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x228) (pack-u32 (logand #xFFFFFFFF command-line-ptr)) x86))
+       ;; Theoretically, we should be making sure we're loading the kernel at a properly aligned address
+       ;; That being said, the kernel I am looking at while building this seems to have a preferred alignment of 0x1.
+       ;; However, it also seems to have a min_alignment of 0x15 or 2^21, which is clearly contradictory.
+       ;; I'm going to hope loading at 0x100000 is fine
+
+       ;; boot_params is now populated
+
+       ;; We need to fill out the rest of the zero page. It isn't nearly as well documented.
+       ;; I'm going to hope we can get away with leaving most of this info zeroed out
+       ;; Lots of it involves info about things we don't have (like a screen or BIOS).
+       ;; Set ext_ramdisk_image
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c0) (pack-u32 (logand #xFFFFFFFF (ash disk-image-ptr -32))) x86))
+       ;; Set ext_ramdisk_size
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c4) (pack-u32 (logand #xFFFFFFFF (ash disk-image-size -32))) x86))
+       ;; Set ext_cmd_line_ptr
+       ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c8) (pack-u32 (logand #xFFFFFFFF (ash command-line-ptr -32))) x86)))
+      x86))
 
 ;; ----------------------------------------------------------------------
 ;; Load linux. We load a linux kernel image (i.e. vmlinuz),
@@ -280,136 +393,91 @@
 ;; in memory. We then setup the state in the way the kernel expects and
 ;; then jump to the kernel 64-bit entrypoint.
 ;; Run (init-sys-view #x10000000 x86) to setup paging and set model to system view before running this function
-(skip-proofs (define linux-load ((kernel-image-filename stringp)
-                                 (disk-image-filename stringp)
-                                 (command-line stringp)
-                                 x86
-                                 state)
-               :guard-debug t
-               (b* (;; Enable some features in cr0
-                    (x86 (!ctri 0 (logior #x60000010 ;; initial value of cr0 using vmx on an i7 10700k
-                                          (ash 1 0)  ;; Protected mode enable
-                                          (ash 1 31) ;; paging enable
-                                          ) x86))
+(define linux-load ((kernel-image-filename stringp)
+                    (disk-image-filename stringp)
+                    (command-line stringp)
+                    x86
+                    state)
+  :guard-debug t
+  (b* (;; Enable some features in cr0
+       (x86 (!ctri 0 (logior #x60000010 ;; initial value of cr0 using vmx on an i7 10700k
+                             (ash 1 0)  ;; Protected mode enable
+                             (ash 1 31) ;; paging enable
+                             ) x86))
 
-                    ;; Read kernel from file and write it to memory
-                    ((mv kernel-image-channel state) (open-input-channel kernel-image-filename :byte state))
-                    ((mv kernel-image state) (read-channel-into-byte-list kernel-image-channel (1- (ash 1 60)) state))
-                    (kernel-ptr #x1000000)
-                    ((mv & x86) (write-bytes-to-memory kernel-ptr kernel-image x86)) 
-                    (state (close-input-channel kernel-image-channel state)) ;; Setup command line
+       (kernel-ptr #x1000000)
+       ((mv kernel-image x86 state) (load-file-into-memory kernel-image-filename kernel-ptr x86 state))
 
-                    (zero-page-ptr #x1000)
-                    (gdt-ptr (+ zero-page-ptr #x1000))
-                    (gdt-size #x20)
+       (zero-page-ptr #x1000)
+       (gdt-ptr (+ zero-page-ptr #x1000))
+       (gdt-size #x20)
+       (command-line-ptr (+ gdt-ptr gdt-size))
+       (disk-image-ptr #x100000)
 
-                    (command-line-c-str (string-to-c-str command-line))
-                    (command-line-ptr (+ gdt-ptr gdt-size))
-                    ((mv & x86) (write-bytes-to-memory command-line-ptr command-line-c-str x86))
+       ;; Setup command line
+       (command-line-c-str (string-to-c-str command-line))
+       ((unless (canonical-address-p (+ command-line-ptr (len command-line-c-str)))) (mv x86 state))
+       ((mv & x86) (write-bytes-to-memory command-line-ptr command-line-c-str x86))
 
-                    ;; Setup ramdisk image
-                    ((mv disk-image-channel state) (open-input-channel disk-image-filename :byte state))
-                    ((mv disk-image state) (read-channel-into-byte-list disk-image-channel (1- (ash 1 60)) state))
-                    (disk-image-size (len disk-image))
-                    (disk-image-ptr #x100000)
-                    ((mv & x86) (write-bytes-to-memory disk-image-ptr disk-image x86))
-                    (state (close-input-channel disk-image-channel state))
+       ((mv disk-image x86 state) (load-file-into-memory disk-image-filename disk-image-ptr x86 state))
+       (disk-image-size (len disk-image))
 
-                    ;; Setup Zero page
+       ;; Setup Zero page
 
-                    ;; We assume the memory is zero initialized on loading
-                    ;; The zero page is a struct boot_params as defined in
-                    ;; arch/x86/include/uapi/asm/bootparam.h in the linux source
-                    ;; Copy over the setup header from the kernel image
-                    (setup-header (take #x26c (nthcdr #x1f1 kernel-image)))
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x1f1) setup-header x86))
-                    ;; Set various setup-header fields (all fields are little endian)
-                    ;; Set vid_mode to normal (0xffff)
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x1fa) '(#xff #xff) x86))
-                    ;; Set type_of_loader
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x210) '(#xff) x86))
-                    ;; Set loadflags
-                    ;; This is a bit field. We want to set QUIET_FLAG (bit 5) to 0 (print early messages)
-                    ;; and set CAN_USE_HEAP (bit 7) to 0 (i.e. heap_end_ptr is invalid)
-                    (loadflags (logand (nth #x211 kernel-image) #x5F))
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x211) (list loadflags) x86))
-                    ;; We (may be) loading the kernel at a nonstandard address, so we may need to relocate code32_start.
-                    ;; kernel-ptr could theoretically be a 64-bit pointer and this is a 32-bit field, so I don't
-                    ;; think it is relevant if we're launching the kernel through the 64-bit entrypoint, but I set
-                    ;; it anyways.
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x214) (pack-u32 kernel-ptr) x86))
-                    ;; Set ramdisk_image
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x218) (pack-u32 (logand #xFFFFFFFF disk-image-ptr)) x86))
-                    ;; Set ramdisk_size
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x21c) (pack-u32 (logand #xFFFFFFFF disk-image-size)) x86))
-                    ;; Linux docs state setting heap_end_ptr is obligatory, but we CAN_USE_HEAP to 0, so I don't think we have to
-                    ;; Set cmd_line_ptr
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x228) (pack-u32 (logand #xFFFFFFFF command-line-ptr)) x86))
-                    ;; Theoretically, we should be making sure we're loading the kernel at a properly aligned address
-                    ;; That being said, the kernel I am looking at while building this seems to have a preferred alignment of 0x1.
-                    ;; However, it also seems to have a min_alignment of 0x15 or 2^21, which is clearly contradictory.
-                    ;; I'm going to hope loading at 0x100000 is fine
+       ;; We assume the memory is zero initialized on loading
+       ;; The zero page is a struct boot_params as defined in
+       ;; arch/x86/include/uapi/asm/bootparam.h in the linux source
+       ;; Copy over the setup header from the kernel image
+       (x86 (init-zero-page zero-page-ptr command-line-ptr disk-image-ptr disk-image-size kernel-ptr kernel-image x86))
 
-                    ;; boot_params is now populated
+       ;; From https://www.kernel.org/doc/html/latest/arch/x86/boot.html
+       ;;
+       ;; In 64-bit boot protocol, the kernel is started by jumping to the
+       ;; 64-bit kernel entry point, which is the start address of loaded 64-bit
+       ;; kernel plus 0x200.
+       ;;
+       ;; At entry, the CPU must be in 64-bit mode with paging enabled. The
+       ;; range with setup_header.init_size from start address of loaded kernel
+       ;; and zero page and command line buffer get ident mapping; a GDT must be
+       ;; loaded with the descriptors for selectors __BOOT_CS(0x10) and
+       ;; __BOOT_DS(0x18); both descriptors must be 4G flat segment; __BOOT_CS
+       ;; must have execute/read permission, and __BOOT_DS must have read/write
+       ;; permission; CS must be __BOOT_CS and DS, ES, SS must be __BOOT_DS;
+       ;; interrupt must be disabled; %rsi must hold the base address of the
+       ;; struct boot_params.
 
-                    ;; We need to fill out the rest of the zero page. It isn't nearly as well documented.
-                    ;; I'm going to hope we can get away with leaving most of this info zeroed out
-                    ;; Lots of it involves info about things we don't have (like a screen or BIOS).
-                    ;; Set ext_ramdisk_image
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c0) (pack-u32 (logand #xFFFFFFFF (ash disk-image-ptr -32))) x86))
-                    ;; Set ext_ramdisk_size
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c4) (pack-u32 (logand #xFFFFFFFF (ash disk-image-size -32))) x86))
-                    ;; Set ext_cmd_line_ptr
-                    ((mv & x86) (write-bytes-to-memory (+ zero-page-ptr #x0c8) (pack-u32 (logand #xFFFFFFFF (ash command-line-ptr -32))) x86))
+       ;; Setup GDT
+       (cs-descriptor (gdt-entry #xa09b 0 #xfffff))
+       ((mv & x86) (write-bytes-to-memory (+ gdt-ptr #x10) (pack-u64 cs-descriptor) x86))
+       (ds-descriptor (gdt-entry #xc093 0 #xfffff))
+       ((mv & x86) (write-bytes-to-memory (+ gdt-ptr #x18) (pack-u64 ds-descriptor) x86))
+       (x86 (!stri *gdtr* (!gdtr/idtrBits->base-addr gdt-ptr (!gdtr/idtrBits->limit (1- gdt-size) 0)) x86))
+       ;; Set CS = 0x10 and DS = ES = SS = 0x18
+       (x86 (load-segment-reg *CS* #x10 x86))
+       (x86 (load-segment-reg *DS* #x18 x86))
+       (x86 (load-segment-reg *ES* #x18 x86))
+       (x86 (load-segment-reg *SS* #x18 x86))
 
-                    ;; This concludes the zero page initialization
+       ;; Clear the interrupt flag (bit 9 of rflags)
+       (x86 (!rflags (logand (lognot (ash 1 9))
+                             (rflags x86))
+                     x86))
 
-                    ;; From https://www.kernel.org/doc/html/latest/arch/x86/boot.html
-                    ;;
-                    ;; In 64-bit boot protocol, the kernel is started by jumping to the
-                    ;; 64-bit kernel entry point, which is the start address of loaded 64-bit
-                    ;; kernel plus 0x200.
-                    ;;
-                    ;; At entry, the CPU must be in 64-bit mode with paging enabled. The
-                    ;; range with setup_header.init_size from start address of loaded kernel
-                    ;; and zero page and command line buffer get ident mapping; a GDT must be
-                    ;; loaded with the descriptors for selectors __BOOT_CS(0x10) and
-                    ;; __BOOT_DS(0x18); both descriptors must be 4G flat segment; __BOOT_CS
-                    ;; must have execute/read permission, and __BOOT_DS must have read/write
-                    ;; permission; CS must be __BOOT_CS and DS, ES, SS must be __BOOT_DS;
-                    ;; interrupt must be disabled; %rsi must hold the base address of the
-                    ;; struct boot_params.
+       (x86 (!rgfi *rsi* zero-page-ptr x86))
 
-                    ;; Setup GDT
-                    (cs-descriptor (gdt-entry #xa09b 0 #xfffff))
-                    ((mv & x86) (write-bytes-to-memory (+ gdt-ptr #x10) (pack-u64 cs-descriptor) x86))
-                    (ds-descriptor (gdt-entry #xc093 0 #xfffff))
-                    ((mv & x86) (write-bytes-to-memory (+ gdt-ptr #x18) (pack-u64 ds-descriptor) x86))
-                    (x86 (!stri *gdtr* (!gdtr/idtrBits->base-addr gdt-ptr (!gdtr/idtrBits->limit (1- gdt-size) 0)) x86))
-                    ;; Set CS = 0x10 and DS = ES = SS = 0x18
-                    (x86 (load-segment-reg *CS* #x10 x86))
-                    (x86 (load-segment-reg *DS* #x18 x86))
-                    (x86 (load-segment-reg *ES* #x18 x86))
-                    (x86 (load-segment-reg *SS* #x18 x86))
-
-                    ;; Clear the interrupt flag (bit 9 of rflags)
-                    (x86 (!rflags (logand (lognot (ash 1 9))
-                                          (rflags x86))
-                                  x86))
-
-                    (x86 (!rgfi *rsi* zero-page-ptr x86))
-
-                    ((mv & x86) (init-x86-state-64 
-                                  nil 
-                                  (+ kernel-ptr (* (nth #x1F1 kernel-image) 512) #x400)
-                                  nil
-                                  nil 
-                                  nil 
-                                  nil 
-                                  nil 
-                                  nil 
-                                  nil 
-                                  nil 
-                                  nil
-                                  x86)))
-                   (mv x86 state))))
+       ((unless (and (> (len kernel-image) #x1F1)
+                     (canonical-address-p (+ kernel-ptr (* (nth #x1F1 kernel-image) 512) #x400)))) (mv x86 state))
+       ((mv & x86) (init-x86-state-64 
+                     nil 
+                     (+ kernel-ptr (* (nth #x1F1 kernel-image) 512) #x400)
+                     nil
+                     nil 
+                     nil 
+                     nil 
+                     nil 
+                     nil 
+                     nil 
+                     (rflags x86) 
+                     nil
+                     x86)))
+      (mv x86 state)))
