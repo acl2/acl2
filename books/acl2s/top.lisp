@@ -53,6 +53,7 @@
 (include-book "acl2s/extra-doc" :dir :system :ttags :all)
 (include-book "acl2s/installation" :dir :system :ttags :all)
 (include-book "acl2s/match" :dir :system :ttags :all)
+(include-book "acl2s/sorting/permp" :dir :system :ttags :all)
 (include-book "acl2s/sorting/sorting" :dir :system :ttags :all)
 (include-book "acl2s/mode-acl2s-dependencies" :dir :system :ttags :all)
 (include-book "acl2s/defdata-testing" :dir :system :ttags :all)
