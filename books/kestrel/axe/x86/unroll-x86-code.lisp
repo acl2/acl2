@@ -359,6 +359,7 @@
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
+       ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
@@ -387,6 +388,10 @@
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
+       ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
+       (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
+          (acl2::print-to-hundredths assumption-simp-elapsed)
+          (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%"))
        (- (and print (cw "(Simplified assumptions: ~x0)~%" assumptions)))
        ;; Prepare for symbolic execution:
