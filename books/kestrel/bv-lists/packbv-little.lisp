@@ -1,6 +1,6 @@
 ; A little-endian version of packbv
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,3 +23,8 @@
            (type (integer 0 *) itemsize)
            (type (integer 0 *) itemcount))
   (packbv itemcount itemsize (reverse-list items)))
+
+(defthm packbv-little-of-0-arg1
+  (equal (packbv-little 0 itemsize items)
+         0)
+  :hints (("Goal" :in-theory (enable packbv-little))))
