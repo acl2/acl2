@@ -628,7 +628,7 @@
    (and (not erp)
         (equal res (make-term-into-dag-simple! '(cons a b))))))
 
-;; The test gets resolved
+;; The test gets resolved:
 (assert!
   (mv-let (erp res)
     (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
@@ -636,12 +636,53 @@
          (equal res (make-term-into-dag-simple! 'a)))))
 
 ;; The test gets resolved:
-;; todo: add tests like this for boolif and bvif
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if 'nil a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! 'b)))))
+
+;; The test gets resolved:
 (assert!
   (mv-let (erp res)
     (simplify-dag-basic (make-term-into-dag-simple! '(myif 't a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
     (and (not erp)
          (equal res (make-term-into-dag-simple! 'a)))))
+
+;; The test gets resolved:
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(myif 'nil a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! 'b)))))
+
+;; The test gets resolved:
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 't a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! '(bool-fix$inline a))))))
+
+;; The test gets resolved:
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 'nil a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! '(bool-fix$inline b))))))
+
+;; The test gets resolved:
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 't a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! '(bvchop '32 a))))))
+
+;; The test gets resolved:
+(assert!
+  (mv-let (erp res)
+    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 'nil a b)) nil nil nil (empty-rule-alist) nil nil nil nil nil nil)
+    (and (not erp)
+         (equal res (make-term-into-dag-simple! '(bvchop '32 b))))))
 
 ;; The test gets resolved, even when it's an assumption:
 (assert!
@@ -699,51 +740,65 @@
    (and (not erp)
         (equal res (make-term-into-dag-simple! ''t)))))
 
-;; todo: the NOT did not get resolved:
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-dag-basic (make-term-into-dag-simple! '(not x))
-;;                        '(x) ; assumptions
-;;                        nil nil
-;;                        (empty-rule-alist)
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil)
-;;    (and (not erp)
-;;         (equal res (make-term-into-dag-simple! ''nil)))))
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not x))
+                       '(x) ; assumptions
+                       nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! ''nil)))))
 
 ;; todo: the NOT did not get resolved:
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-dag-basic (make-term-into-dag-simple! '(not (foo x)))
-;;                        '((foo x)) ; assumptions
-;;                        nil nil
-;;                        (empty-rule-alist)
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil)
-;;    (and (not erp)
-;;         (equal res (make-term-into-dag-simple! ''nil)))))
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not (foo x)))
+                       '((foo x)) ; assumptions
+                       nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! ''nil)))))
 
-;; todo:
-;; Rewriter should replace (foo x) with t because the args of boolif can be simplified using iff.
-;; (assert!
-;;  (mv-let (erp res)
-;;    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test (foo x) 't))
-;;                        '((foo x)) ; assumptions
-;;                        nil nil
-;;                        (empty-rule-alist)
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil
-;;                        nil)
-;;    (and (not erp)
-;;         (equal res (make-term-into-dag-simple! '(boolif test 't 't))))))
+;; Rewriter replaces (foo x) with t because the args of boolif can be simplified using iff:
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(boolif test (foo x) 'nil))
+                       '((foo x)) ; assumptions
+                       nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! '(boolif test 't 'nil))))))
+
+;; Rewriter replaces (foo x) with t because the args of boolif can be simplified using iff:
+(assert!
+ (mv-let (erp res)
+   (simplify-dag-basic (make-term-into-dag-simple! '(boolif test 'nil (foo x)))
+                       '((foo x)) ; assumptions
+                       nil nil
+                       (empty-rule-alist)
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil
+                       nil)
+   (and (not erp)
+        (equal res (make-term-into-dag-simple! '(boolif test 'nil 't))))))

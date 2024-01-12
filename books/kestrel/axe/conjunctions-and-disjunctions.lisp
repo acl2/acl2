@@ -122,10 +122,10 @@
 ;;                                      strip-not-from-possibly-negated-nodenum
 ;;                                      possibly-negated-nodenump))))
 
-;;;
-;;; axe-conjunctionp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Either a quoted boolean constant or a non-empty list of possibly-negated-nodenums.
+;; Same format as axe-disjunctionp but interpreted differently.
 (defund axe-conjunctionp (item)
   (declare (xargs :guard t))
   (or (and (myquotep item)
@@ -152,10 +152,10 @@
                   (booleanp (unquote x))))
   :hints (("Goal" :in-theory (enable axe-conjunctionp))))
 
-;;;
-;;; axe-disjunctionp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Either a quoted boolean constant or a non-empty list of possibly-negated-nodenums.
+;; Same format as axe-conjunctionp but interpreted differently.
 (defund axe-disjunctionp (item)
   (declare (xargs :guard t))
   (or (and (myquotep item)
@@ -200,6 +200,8 @@
            (consp (cdr d)))
   :hints (("Goal" :in-theory (enable axe-disjunctionp possibly-negated-nodenumsp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;TODO: Add 'axe' to some of these names:
 
 ;; These are unique (except non-nil constants may differ) because we disallow empty lists of conjuncts/disjuncts:
@@ -208,8 +210,7 @@
 (defun false-conjunction () (declare (xargs :guard t)) *nil*)
 (defun true-conjunction () (declare (xargs :guard t)) *t*)
 
-;; The quotation of a something other than nil
-;; todo: restruct to the quotation of t?
+;; Checks whether X is a true (non-nil) quoted constant.
 (defun disjunction-is-truep (x)
   (declare (xargs :guard (axe-disjunctionp x)
                   :guard-hints (("Goal" :in-theory (enable axe-disjunctionp)))))
