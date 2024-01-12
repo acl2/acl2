@@ -1,7 +1,7 @@
 ; Formal Unit Tester for x86
 ;
 ; Copyright (C) 2021-2022 Kestrel Technology, LLC
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,7 +71,7 @@
              (separate :r (len section-bytes) section-start
                        ;; Only a single stack slot is written
                        ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))))
+                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86)))))
     ;; no assumptions if section not present:
     t))
 
@@ -106,15 +106,14 @@
          (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
              (separate :r (len section-bytes) section-start
                        :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
-                                                      (rgfi *rsp* x86) ; rephrase?
-                                                      ))
+                                                      (rsp x86)))
            t))))
 
 ;; Returns a list of terms over the variables X86 and (perhaps TEXT-OFFSET).
 ;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
 (defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf)
   ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
-  ;;                             (alistp parsed-elf) ; strengthen
+  ;;                             (parsed-elfp parsed-elf)
   ;;                             )))
   (if (endp section-names)
       nil
