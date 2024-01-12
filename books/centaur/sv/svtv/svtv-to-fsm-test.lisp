@@ -136,7 +136,39 @@
                  :eliminate-override-vars :all))
   (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm4
                  :svtv-spec-thmname counter-invar0-svtv-thm
-                 :eliminate-override-signals :all)))
+                 :eliminate-override-signals :all))
+
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm5
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :cycle-num-rewrite-strategy :all-free))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm6
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-vars (sum1)
+                 :cycle-num-rewrite-strategy :all-free))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm7
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-vars :all
+                 :cycle-num-rewrite-strategy :all-free))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm8
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-signals :all
+                 :cycle-num-rewrite-strategy :all-free))
+
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm9
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :cycle-num-rewrite-strategy :single-var))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm10
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-vars (sum1)
+                 :cycle-num-rewrite-strategy :single-var))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm11
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-vars :all
+                 :cycle-num-rewrite-strategy :single-var))
+  (make-event '(def-svtv-to-fsm-thm counter-invar0-fsm-thm12
+                 :svtv-spec-thmname counter-invar0-svtv-thm
+                 :eliminate-override-signals :all
+                 :cycle-num-rewrite-strategy :single-var)))
 
 
 
@@ -199,7 +231,50 @@
 
       (def-svtv-to-fsm-thm counter-invar1-fsm-thm4
         :svtv-spec-thmname counter-invar1-svtv-thm
-        :eliminate-override-signals :all))))
+        :eliminate-override-signals :all)
+
+      
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm5
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :cycle-num-rewrite-strategy :all-free)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm6
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        ;; BOZO we should only have to specify one of these
+        :eliminate-override-vars (sum1)
+        :eliminate-override-signals ("sum1")
+        :cycle-num-rewrite-strategy :all-free)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm7
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :eliminate-override-vars :all
+        :cycle-num-rewrite-strategy :all-free)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm8
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :eliminate-override-signals :all
+        :cycle-num-rewrite-strategy :all-free)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm9
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :cycle-num-rewrite-strategy :single-var)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm10
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        ;; BOZO we should only have to specify one of these
+        :eliminate-override-vars (sum1)
+        :eliminate-override-signals ("sum1")
+        :cycle-num-rewrite-strategy :single-var)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm11
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :eliminate-override-vars :all
+        :cycle-num-rewrite-strategy :single-var)
+
+      (def-svtv-to-fsm-thm counter-invar1-fsm-thm12
+        :svtv-spec-thmname counter-invar1-svtv-thm
+        :eliminate-override-signals :all
+        :cycle-num-rewrite-strategy :single-var))))
 
 
 

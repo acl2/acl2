@@ -1174,3 +1174,35 @@
                  `(:expand (,(car (last clause)))))))
   
   (local (in-theory (enable svex-env-fix))))
+
+
+
+
+
+(define svex-alist-filter-override ((x svex-alist-p)
+                                    (type svar-overridetype-p))
+  :returns (new-x svex-alist-p)
+  (if (atom x)
+      nil
+    (if (and (mbt (and (consp (car x))
+                       (svar-p (caar x))))
+             (svar-override-p (caar x) type))
+        (cons (mbe :logic (cons (caar x) (svex-fix (cdar x)))
+                   :exec (car x))
+              (svex-alist-filter-override (cdr x) type))
+      (svex-alist-filter-override (cdr x) type)))
+  ///
+  (defret svex-lookup-of-<fn>
+    (equal (svex-lookup k new-x)
+           (and (svar-override-p k type)
+                (svex-lookup k x)))
+    :hints(("Goal" :in-theory (enable svex-lookup
+                                      svex-alist-fix))))
+
+  (defret svex-alist-eval-of-<fn>
+    (equal (svex-alist-eval new-x env)
+           (svex-env-filter-override (svex-alist-eval x env) type))
+    :hints(("Goal" :in-theory (enable svex-env-filter-override
+                                      svex-alist-eval))))
+
+  (local (in-theory (enable svex-alist-fix))))

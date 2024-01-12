@@ -3761,7 +3761,8 @@ In particular this requires
    hyp
    concl
    rule-classes
-   
+
+   cycle-num-rewrite-strategy
    base-cycle-var
    primary-output-var
    pkg-sym))
@@ -4115,49 +4116,83 @@ In particular this requires
 
 
 
-(define svtv-to-fsm-final-thm-input-var-bindings ((input-vars symbol-listp)
-                                                  (bindings lhprobe-map-p)
-                                                  (overridetype svar-overridetype-p)
-                                                  (envs-var symbolp) ;; envs/outs
-                                                  (base-cycle-var symbolp)
-                                                  (primary-output-var symbolp)
-                                                  (pkg-sym symbolp))
-  :returns (mv bindings equation-alist)
+(define svtv-to-fsm-final-thm-var-bindings ((vars symbol-listp)
+                                            (bindings lhprobe-map-p)
+                                            (overridetype svar-overridetype-p)
+                                            (envs-var symbolp) ;; envs/outs
+                                            (x svtv-to-fsm-thm-p))
+  :returns (mv bindings (equation-alist alistp))
   :hooks nil
-  (b* (((when (atom input-vars)) (mv nil nil))
-       (in (car input-vars))
+  :guard (b* (((svtv-to-fsm-thm x)))
+           (and (symbolp x.base-cycle-var)
+                (symbolp x.pkg-sym)))
+  :prepwork ((local (defthm alistp-remove-equal (implies (alistp x) (alistp (remove-equal k x))))))
+  :verify-guards :after-returns
+  (b* (((when (atom vars)) (mv nil nil))
+       (in (car vars))
        (look (hons-get in bindings))
        ((unless look)
         (raise "SVTV input not found in bindings: ~x0~%" in)
-        (svtv-to-fsm-final-thm-input-var-bindings
-         (cdr input-vars) bindings overridetype envs-var
-         base-cycle-var primary-output-var pkg-sym))
+        (svtv-to-fsm-final-thm-var-bindings
+         (cdr vars) bindings overridetype envs-var x))
        ((lhprobe probe) (cdr look))
        ((mv rest-bindings rest-equations)
-        (svtv-to-fsm-final-thm-input-var-bindings
-         (cdr input-vars) bindings overridetype envs-var
-         base-cycle-var primary-output-var pkg-sym))
-       (cycle-var (intern-in-package-of-symbol
-                   (concatenate 'string (symbol-name in) "-CYCLE-NUM")
-                   pkg-sym)))
+        (svtv-to-fsm-final-thm-var-bindings
+         (cdr vars) bindings overridetype envs-var x))
+       ((svtv-to-fsm-thm x))
+       ;; Depending on the cycle-num-rewrite-strategy, we generate the cycle-var and equation differently:
+       ;; :all-free -- cycle var <varname>-cycle-num, (equal cycle-var (+ probe.stage base-cycle-var))
+       ;; :by-cycle -- cycle var <base-cycle-var>+stage,
+       ;;              (equal cycle-var (+ probe.stage base-cycle-var)) (but uniquify)
+       ;; :single-var -- cycle var is actual expression (+ pipe.stage base-cycle-var), no equations
+       ((mv cycle-var equations)
+        (case x.cycle-num-rewrite-strategy
+          (:all-free (b* ((cycle-var (intern-in-package-of-symbol
+                                      (concatenate 'string (symbol-name in) "-CYCLE-NUM")
+                                      x.pkg-sym))
+                          (eqn (if (eq in x.primary-output-var)
+                                   `(and (integerp ,cycle-var)
+                                         (<= ,probe.stage ,cycle-var)
+                                         (equal ,x.base-cycle-var (- ,cycle-var ,probe.stage)))
+                                 `(equal ,cycle-var (+ ,probe.stage ,x.base-cycle-var)))))
+                       (mv cycle-var (cons (cons in eqn) rest-equations))))
+          (:by-cycle (b* (((when (eql probe.stage 0))
+                           (mv x.base-cycle-var rest-equations))
+                          (cycle-var
+                           (intern-in-package-of-symbol
+                            (concatenate 'string (symbol-name x.base-cycle-var)
+                                         "+" (str::natstr probe.stage))
+                            x.pkg-sym))
+                          (eqn (if (eq in x.primary-output-var)
+                                   `(and (integerp ,cycle-var)
+                                         (<= ,probe.stage ,cycle-var)
+                                         (equal ,x.base-cycle-var (- ,cycle-var ,probe.stage)))
+                                 `(equal ,cycle-var (+ ,probe.stage ,x.base-cycle-var))))
+                          (eqns (b* ((look (rassoc-equal eqn rest-equations))
+                                     ((unless look)
+                                      (cons (cons in eqn) rest-equations))
+                                     ((when (eq in x.primary-output-var))
+                                      (cons (cons in eqn) (remove-equal look rest-equations))))
+                                  rest-equations)))
+                       (mv cycle-var eqns)))
+          (t ;; :single-var
+           (mv (if (eql probe.stage 0)
+                   x.base-cycle-var
+                 `(+ ,probe.stage ,x.base-cycle-var))
+               rest-equations)))))
     (mv (cons `(,in (,(if probe.signedp 'lhs-eval-ext 'lhs-eval-zero)
                      ',(lhs-change-override probe.lhs overridetype)
                      (nth ,cycle-var ,envs-var)))
               rest-bindings)
-        (cons (cons in (if (eq in primary-output-var)
-                           `(and (integerp ,cycle-var)
-                                 (<= ,probe.stage ,cycle-var)
-                                 (equal ,base-cycle-var (- ,cycle-var ,probe.stage)))
-                         `(equal ,cycle-var (+ ,probe.stage ,base-cycle-var))))
-              rest-equations))))
+        equations)))
 
 
   
 
-;; (append (svtv-to-fsm-final-thm-input-var-bindings '(inc) (counter-invar-run-fsm-bindings) nil 'envs)
-;;         (svtv-to-fsm-final-thm-input-var-bindings '(sum1) (counter-invar-run-fsm-bindings) :val 'envs)
-;;         (svtv-to-fsm-final-thm-input-var-bindings '(sum) (counter-invar-run-fsm-bindings) nil 'outs)
-;;         (svtv-to-fsm-final-thm-input-var-bindings '(sum-out sum1-out) (counter-invar-run-fsm-output-map) nil 'outs))
+;; (append (svtv-to-fsm-final-thm-var-bindings '(inc) (counter-invar-run-fsm-bindings) nil 'envs)
+;;         (svtv-to-fsm-final-thm-var-bindings '(sum1) (counter-invar-run-fsm-bindings) :val 'envs)
+;;         (svtv-to-fsm-final-thm-var-bindings '(sum) (counter-invar-run-fsm-bindings) nil 'outs)
+;;         (svtv-to-fsm-final-thm-var-bindings '(sum-out sum1-out) (counter-invar-run-fsm-output-map) nil 'outs))
 
 
 
@@ -4169,22 +4204,26 @@ In particular this requires
   (b* (((svtv-to-fsm-thm x))
        ((acl2::with-fast x.bindings x.outmap x.triple-val-alist))
        ((mv var-bindings1 cycle-eqns1)
-        (svtv-to-fsm-final-thm-input-var-bindings x.input-vars x.bindings nil 'envs x.base-cycle-var x.primary-output-var x.pkg-sym))
+        (svtv-to-fsm-final-thm-var-bindings
+         x.input-vars x.bindings nil 'envs x))
        ((mv var-bindings2 cycle-eqns2)
-        (svtv-to-fsm-final-thm-input-var-bindings
-         x.remaining-override-vars
-         x.bindings :val 'envs x.base-cycle-var x.primary-output-var x.pkg-sym))
+        (svtv-to-fsm-final-thm-var-bindings
+         x.remaining-override-vars x.bindings :val 'envs x))
        ((mv var-bindings3 cycle-eqns3)
-        (svtv-to-fsm-final-thm-input-var-bindings
-         x.all-eliminated-override-vars
-         x.bindings nil 'outs x.base-cycle-var x.primary-output-var x.pkg-sym))
+        (svtv-to-fsm-final-thm-var-bindings
+         x.all-eliminated-override-vars x.bindings nil 'outs x))
        ((mv var-bindings4 cycle-eqns4)
-        (svtv-to-fsm-final-thm-input-var-bindings x.output-vars x.outmap nil 'outs x.base-cycle-var x.primary-output-var x.pkg-sym))
+        (svtv-to-fsm-final-thm-var-bindings
+         x.output-vars x.outmap nil 'outs x))
        (var-bindings (append var-bindings1 var-bindings2 var-bindings3 var-bindings4))
        (cycle-eqns-all (append cycle-eqns1 cycle-eqns2 cycle-eqns3 cycle-eqns4))
-       (first-cycle-eqn (cdr (assoc-eq x.primary-output-var cycle-eqns-all)))
-       (rest-cycle-eqns (remove-equal first-cycle-eqn (strip-cdrs cycle-eqns-all)))
-       (cycle-eqns (cons first-cycle-eqn rest-cycle-eqns))
+       (cycle-eqns (case x.cycle-num-rewrite-strategy
+                     (:single-var ;; cycle-eqns are empty anyway
+                      `((natp ,x.base-cycle-var)))
+                     (t
+                      (b* ((first-cycle-eqn (cdr (assoc-eq x.primary-output-var cycle-eqns-all)))
+                           (rest-cycle-eqns (remove-equal first-cycle-eqn (strip-cdrs cycle-eqns-all))))
+                        (cons first-cycle-eqn rest-cycle-eqns)))))
        ;; (run-length (len (svtv-probealist-outvars spec.probes)))
        )
     (acl2::template-subst *svtv-to-fsm-final-thm-template*
@@ -4234,6 +4273,7 @@ In particular this requires
          ;; unsigned-byte-hyps
          ;; env-val-widths-hyp
 
+         (cycle-num-rewrite-strategy ':by-cycle)
          (base-cycle-var 'base-cycle)
          primary-output-var
          (pkg-sym thmname))
@@ -4248,6 +4288,10 @@ In particular this requires
        ((unless svtv-thm)
         (er hard ctx "No entry in the ~x0 for svtv-spec-thm ~x1" 'svtv-generalized-thm-table svtv-spec-thmname))
 
+       ((unless (member-eq cycle-num-rewrite-strategy '(:all-free :by-cycle :single-var)))
+        (er hard ctx "Unknown :cycle-num-rewrite-strategy argument ~x0: possible values are ~&1~%"
+            cycle-num-rewrite-strategy '(:all-free :by-cycle :single-var)))
+       
        ((svtv-generalized-thm svtv-thm))
 
        ((with-fast svtv-thm.triple-val-alist))
@@ -4364,6 +4408,7 @@ In particular this requires
      :concl svtv-thm.concl
      :rule-classes rule-classes
 
+     :cycle-num-rewrite-strategy cycle-num-rewrite-strategy
      :base-cycle-var base-cycle-var
      :primary-output-var primary-output-var
      :pkg-sym pkg-sym)))
@@ -4403,6 +4448,7 @@ level.</p>
    :eliminate-override-vars (sum1)
    :eliminate-override-signals (\"sum1\")
    :rule-classes :rewrite    ;; this is the default
+   :cycle-num-rewrite-strategy :by-cycle ;; this is the default
    :primary-output-var (sum-out)
    :base-cycle-var base-cycle  ;; this is the default
    :pkg-sym symbol-from-my-package)
@@ -4468,7 +4514,10 @@ proves one:</p>
 generated.  The rest are keyword arguments:</p>
 
 <ul>
-<li>@(':svtv-spec-thmname') (required): The name of the theorem, generated by @(see def-svtv-generalized-thm), that the new theorem is to be derived from.</li>
+
+<li>@(':svtv-spec-thmname') (required): The name of the theorem, generated by
+@(see def-svtv-generalized-thm), that the new theorem is to be derived
+from.</li>
 
  <li>@(':eliminate-override-vars'): Either @(':all') or a list of SVTV variables
 that were left overridden in the svtv-spec-thm that we want to instead sample
@@ -4488,9 +4537,37 @@ setting @(':eliminate-override-vars') to @(':all').</li>
 theorem. Defaults to @(':rewrite').  Note that the final theorem may not be in
 a very good form for a non-rewrite rule.</li>
 
- <li>@(':primary-output-var'): Some output that is sampled in the
+<li>@(':cycle-num-rewrite-strategy'): one of @(':all-free'),
+@(':by-cycle') (the default), or @(':single-var').  This affects the form of
+the rewrite rule and how aggressively it tries to match the possible forms of
+the cycle numbers at which signals are sampled.  In all three cases, every SVTV
+variable mentiond in the theorem is bound to @('(lhs-eval-zero LHS (nth CYCLE
+envs/outs))') where envs/outs is either the list of input environments or
+outputs of the FSM simulation, LHS is canonical form of the concatenation of
+variable selects comprising that SVTV variable, and CYCLE is some expression
+giving the cycle number at which the variable is sampled or provided as input.
+The form of CYCLE affects how the rule applies as a rewrite rule.  Ultimately,
+all such cycles are relative to some base cycle, the first cycle at which any
+variables are sampled from the envs/outs.  But if we express all cycles as
+offsets relative to that base cycle, then it will be difficult to apply this
+theorem as a rewrite rule: the left-hand side will contain expressions such as
+@('(+ N base-cycle)') for various constant values of N, and these may not match
+the way these cycle numbers are expressed in the target term.  This is still a
+good option if we don't intend to use this as a rewrite rule or if the SVTV is
+purely combinational so that everything happens in a single cycle; this is what
+we do under the @(':single-var') setting.  Otherwise, we can use free variables
+that are constrained to their proper values by hypotheses so as to make the
+rewrite rule easier to apply.  Under the setting @(':all-free'), every SVTV
+variable has a corresponding cycle-number variable that are all
+independent (until restricted by the hypotheses).  Under the setting
+@(':by-cycle'), there is one cycle-number variable for each cycle in which a
+variable is sampled.</li>
+
+ <li>@(':primary-output-var'): This is irrelevant if the
+@(':cycle-num-rewrite-strategy') is set to @(':single-var').  Otherwise, this
+should be set to the name of an output that is sampled in the
 svtv-spec-thm (i.e., listed in the @(':output-vars') of the @(see
-def-svtv-generalized-thm) form). For best behavior as a rewrite rule, this
+def-svtv-generalized-thm) form).  For best behavior as a rewrite rule, this
 variable should occur in the LHS of the conclusion.  When applied as a rewrite
 rule, this variable will essentially match an expression such as
 @('(lhs-eval-zero \"signal\" (nth (+ 3 k) outs))') where outs is an evaluation
@@ -4509,4 +4586,102 @@ generated names.  Defaults to the theorem name.</li>
 
 ")
 
+(define svtv-spec-cycle-fsm-inputsubsts ((x svtv-spec-p))
+  :returns (substs svex-alistlist-p)
+  (b* (((svtv-spec x)))
+    (svtv-fsm-to-base-fsm-inputsubsts
+     (take (len (svtv-probealist-outvars x.probes))
+           x.in-alists)
+     x.override-val-alists
+     x.override-test-alists
+     x.namemap))
+  ///
+  (defretd eval-of-<fn>
+    (equal (svex-alistlist-eval substs env)
+           (svtv-spec-pipe-env->cycle-envs x env))
+    :hints(("Goal" :in-theory (enable svtv-spec-pipe-env->cycle-envs)))))
 
+
+(defthmd svtv-spec-pipe-env->cycle-envs-in-terms-of-inputsubst
+  (equal (svtv-spec-pipe-env->cycle-envs x env)
+         (svex-alistlist-eval (svtv-spec-cycle-fsm-inputsubsts x) env))
+  :hints(("Goal" :in-theory (enable eval-of-svtv-spec-cycle-fsm-inputsubsts))))
+
+
+(defthmd svtv-spec-cycle-fsm-inputsubsts-expand
+  (implies (and (equal spec-eval (force-execute spec))
+                (syntaxp (quotep spec-eval)))
+           (equal (svtv-spec-cycle-fsm-inputsubsts spec)
+                  (force-execute (sv::svtv-spec-cycle-fsm-inputsubsts spec-eval))))
+  :hints(("Goal" :in-theory (enable force-execute))))
+
+
+(defthmd lhs-eval-zero-of-svex-alist-eval
+  (implies (and (syntaxp (and (quotep lhs) (quotep alist)))
+                (equal subst (force-execute (lhs-subst-zero lhs alist))))
+           (equal (lhs-eval-zero lhs (svex-alist-eval alist env))
+                  (svex-eval subst env)))
+  :hints(("Goal" :in-theory (enable force-execute))))
+
+(defthmd unsigned-byte-p-of-4vec-concat
+  (implies (and (integerp x)
+                (natp n))
+           (unsigned-byte-p n (4vec-concat n x 0)))
+  :hints(("Goal" :in-theory (enable 4vec-concat
+                                    4vec->upper
+                                    4vec->lower
+                                    4vec-fix 4vec))))
+
+
+(defthmd svex-alist-eval-when-const
+  (implies (and (syntaxp (quotep alist))
+                (equal (svex-alist-vars alist) nil))
+           (equal (svex-alist-eval alist env)
+                  (force-execute (svex-alist-eval alist nil))))
+  :hints(("Goal" :in-theory (enable force-execute
+                                    svex-alist-eval-equal-when-extract-vars-similar))))
+
+
+
+(encapsulate nil
+  (local (defthm svex-alist-eval-of-nth
+           (equal (svex-alist-eval (nth n x) env)
+                  (nth n (svex-alistlist-eval x env)))))
+  (local (in-theory (disable nth-of-svex-alistlist-eval)))
+  
+  (defthmd lhs-eval-zero-of-svtv-spec-pipe-env->cycle-envs
+    (implies (and (syntaxp (and (quotep lhs)
+                                (quotep n)))
+                  (equal substs (force-execute (svtv-spec-cycle-fsm-inputsubsts spec)))
+                  (syntaxp (quotep substs))
+                  (equal subst (force-execute (lhs-subst-zero lhs (nth n substs)))))
+             (equal (sv::lhs-eval-zero lhs (nth n (svtv-spec-pipe-env->cycle-envs spec env)))
+                    (svex-eval subst env)))
+    :hints(("Goal" :in-theory (enable force-execute
+                                      eval-of-svtv-spec-cycle-fsm-inputsubsts)))))
+
+
+(defthmd svex-envs-ovtestsimilar-of-svex-alist-eval-quote
+  (implies (and (syntaxp (quotep alist))
+                (equal test-alist (sv::force-execute (sv::svex-alist-filter-override alist :test)))
+                (syntaxp (not (equal test-alist alist))))
+           (equal (sv::svex-envs-ovtestsimilar (sv::svex-alist-eval alist env) other)
+                  (sv::svex-envs-ovtestsimilar (sv::svex-alist-eval test-alist env) other)))
+  :hints(("Goal" :in-theory (enable sv::force-execute)
+          :cases ((sv::svex-envs-ovtestsimilar (sv::svex-alist-eval alist env) other)))
+         (and stable-under-simplificationp
+              '(:in-theory (enable sv::svex-envs-ovtestsimilar))))
+  :otf-flg t)
+
+
+(defthmd svex-envs-ovtestsimilar-of-quote
+  (implies (and (syntaxp (quotep alist))
+                (equal test-alist (sv::force-execute (sv::svex-env-1mask (sv::svex-env-filter-override alist :test))))
+                (syntaxp (not (equal test-alist alist))))
+           (equal (sv::svex-envs-ovtestsimilar alist other)
+                  (sv::svex-envs-ovtestsimilar test-alist other)))
+  :hints(("Goal" :in-theory (enable sv::force-execute)
+          :cases ((sv::svex-envs-ovtestsimilar alist other)))
+         (and stable-under-simplificationp
+              '(:in-theory (enable sv::svex-envs-ovtestsimilar))))
+  :otf-flg t)

@@ -123,17 +123,17 @@
     (svtv-data-defnamemap-core design user-names svtv-data)))
        
 
-(defun assigns-for-defnamemap-sigs (args env signame)
+(defun assigns-for-defnamemap-sigs (args typeargs env-args lookupfn signame)
   (declare (xargs :mode :program))
   (if (atom args)
       nil
     (cons (if (consp (car args))
-              `(,(caar args) (sv::lhs-eval-zero (,signame ,(cadar args)) ,env))
+              `(,(caar args) (,lookupfn (,signame ,(cadar args) . ,typeargs) . ,env-args))
             (mv-let (sym ign)
               (acl2::decode-varname-for-patbind (car args))
               (declare (ignore ign))
-              `(,(car args) (sv::lhs-eval-zero (,signame ,sym) ,env))))
-          (assigns-for-defnamemap-sigs (cdr args) env signame))))
+              `(,(car args) (,lookupfn (,signame ,sym . ,typeargs) . ,env-args))))
+          (assigns-for-defnamemap-sigs (cdr args) typeargs env-args lookupfn signame))))
 
 
 
@@ -150,22 +150,52 @@
                     pkg-sym)))
     `(progn (defconst ,constname
               ',(make-fast-alist namemap))
-            (defmacro ,signame (name)
-              (b* ((look (hons-get name ,constname)))
-                (and (not look) (er hard? ',signame "Didn't find signal: ~x0~%" name))
-                (list 'quote (cdr look))))
+            (defmacro ,signame (name &optional overridetype)
+              (prog2$ (and (not (member-eq overridetype '(nil :test :val)))
+                           (er hard? ',signame "Bad overridetype: ~x0" overridetype))
+                      (b* ((look (hons-get name ,constname)))
+                        (and (not look) (er hard? ',signame "Didn't find signal: ~x0~%" name))
+                        (list 'quote
+                              (if overridetype
+                                  (lhs-change-override (cdr look) overridetype)
+                                (cdr look))))))
             (def-b*-binder ,bindername
               :body
               #!acl2
-              (b* (((mv pre-bindings name rest)
-                    (if (and (consp (car forms))
-                             (not (eq (caar forms) 'quote)))
-                        (mv `((?tmp-for-namemap-sigs ,(car forms)))
-                            'tmp-for-namemap-sigs
-                            `(check-vars-not-free (tmp-for-namemap-sigs) ,rest-expr))
-                      (mv nil (car forms) rest-expr))))
+              (b* (((mv args muxp typeargs) (cond ((member-eq :test args)
+                                                       (mv (remove-eq :test args) nil '(:test)))
+                                                      ((member-eq :val args)
+                                                       (mv (remove-eq :val args) nil '(:val)))
+                                                      ((member-eq :mux args)
+                                                       (mv (remove-eq :mux args) t '(:val)))
+                                                      (t (mv args nil nil))))
+                   (lookupfn (if muxp 'sv::lhs-overridemux-eval-zero 'sv::lhs-eval-zero))
+                   ((mv pre-bindings env-args rest)
+                    (b* ((rest rest-expr)
+                         (env-arg (car forms))
+                         ((mv env-pre-bindings env-arg rest)
+                          (if (and (consp env-arg)
+                                       (not (eq (car env-arg) 'quote)))
+                              (mv `((?tmp-env-for-namemap-sigs ,env-arg))
+                                  'tmp-env-for-namemap-sigs
+                                  `(check-vars-not-free (tmp-for-namemap-sigs) ,rest))
+                            (mv nil env-arg rest)))
+                         ((unless muxp) (mv env-pre-bindings (list env-arg) rest))
+                         (out-arg (cadr forms))
+                         ((mv out-pre-bindings out-arg rest)
+                          (if (and (consp out-arg)
+                                       (not (eq (car out-arg) 'quote)))
+                              (mv `((?tmp-out-for-namemap-sigs ,out-arg))
+                                  'tmp-out-for-namemap-sigs
+                                  `(check-vars-not-free (tmp-for-namemap-sigs) ,rest))
+                            (mv nil out-arg rest))))
+                      (mv (append env-pre-bindings out-pre-bindings)
+                          (list env-arg out-arg)
+                          rest))))
+                          
+                         
                 `(b* (,@pre-bindings
-                      . ,(sv::assigns-for-defnamemap-sigs args name ',sv::signame))
+                      . ,(sv::assigns-for-defnamemap-sigs args typeargs env-args lookupfn ',sv::signame))
                    ,rest))))))
 
 

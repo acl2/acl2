@@ -77,8 +77,11 @@
 
   (setq *print-readably* readably)
 
-  #+Clozure
-  (setq ccl::*print-array* t)
+  ;; [ Sol ] -- getting rid of this because it sometimes causes a backtrace to
+  ;; print a giant bit array without any limits. Not doing it here won't
+  ;; prevent that but at least it won't undo the user's setting of it.
+  ;; #+Clozure
+  ;; (setq ccl::*print-array* t)
 
   #+Clozure
   (setq ccl::*backtrace-print-level* level)
