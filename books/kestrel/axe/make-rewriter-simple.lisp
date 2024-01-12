@@ -4951,8 +4951,7 @@
                   ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
                    (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           (and memoize
-                                            (empty-memoization)) ; todo: add an option to make this bigger?
+                                           (and memoize (empty-memoization)) ; todo: add an option to make this bigger?
                                            ;; TODO: If print is :brief, maybe-print-hit-counts below will only print the total number of hits, so
                                            ;; tracking hit counts for each rule is overkill:
                                            (and count-hits print (empty-info-world)) ;used to track the number of rule hits
@@ -4972,6 +4971,7 @@
                   (- (and count-hits print (maybe-print-hit-counts print info)))
                   (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
                   (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
+                  ;; todo: print the new len?
                   (- (and print (cw ")~%"))) ; balances "(Simplifying DAG"
                   )
                (if (quotep new-top-nodenum-or-quotep)
