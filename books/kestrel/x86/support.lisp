@@ -1799,34 +1799,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Quite powerful
+;; For when the range starting at ad1 is within the range starting at ad3.
+;; Often the Ns will be constant.
 (defthm separate-when-separate
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad3 ad1)
-                (<= n1 (+ n3 (- ad3 ad1))) ; rephrase to subtract the larger from the smaller?
+                (<= (- ad1 ad3) (- n3 n1))
                 (<= ad4 ad2)
-                (<= n2 (+ n4 (- ad4 ad2))))
+                (<= (- ad2 ad4) (- n4 n2)))
            (separate rwx n1 ad1 rwx n2 ad2))
   :hints (("Goal" :in-theory (enable separate))))
 
 ;; Quite powerful
+;; For when the range starting at ad1 is within the range starting at ad4.
+;; Often the Ns will be constant.
 (defthm separate-when-separate-alt
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad4 ad1)
-                (<= n1 (+ n4 (- ad4 ad1)))
+                (<= (- ad1 ad4) (- n4 n1))
                 (<= ad3 ad2)
-                (<= n2 (+ n3 (- ad3 ad2))))
+                (<= (- ad2 ad3) (- n3 n2)))
            (separate rwx n1 ad1 rwx n2 ad2))
   :hints (("Goal" :in-theory (enable separate))))
 
-;drop?!
-;todo: compare to X86ISA::SEPARATE-SMALLER-REGIONS
-(defthm separate-when-separate-2
-  (implies (and (separate :r n3 addr3 :r n4 addr4) ; free vars
-                (<= addr3 addr1)
-                (<= n1 (+ n3 (- addr3 addr1)))
-                (<= addr4 addr2)
-                (<= n2 (+ n4 (- addr4 addr2))))
-           (separate :r n1 addr1 :r n2 addr2)))
+;; ;drop?!
+;; ;todo: compare to X86ISA::SEPARATE-SMALLER-REGIONS
+;; (defthm separate-when-separate-2
+;;   (implies (and (separate :r n3 addr3 :r n4 addr4) ; free vars
+;;                 (<= addr3 addr1)
+;;                 (<= n1 (+ n3 (- addr3 addr1)))
+;;                 (<= addr4 addr2)
+;;                 (<= n2 (+ n4 (- addr4 addr2))))
+;;            (separate :r n1 addr1 :r n2 addr2)))
 
 ;; May be expensive, but needed if separate-of-1-and-1 fires.
 ;; TODO: Could add a syntaxp to restrict this to equalities of things that might be addresses.
