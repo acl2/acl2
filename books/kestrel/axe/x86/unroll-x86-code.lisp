@@ -245,7 +245,15 @@
                               total-steps
                               state))))))))
 
-;; Returns (mv erp result-dag-or-quotep rules-used assumption-rules-used state).
+(defconst *lifter-rules32-all*
+  (append (lifter-rules32)
+          (lifter-rules32-new)))
+
+(defconst *lifter-rules64-all*
+  (append (lifter-rules64)
+          (lifter-rules64-new)))
+
+;; Returns (mv erp result-dag-or-quotep lifter-rules-used assumption-rules-used state).
 (defun def-unrolled-fn-core (target
                              parsed-executable
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
@@ -351,16 +359,6 @@
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
-       (lifter-rules (if (member-eq executable-type *executable-types32*)
-                         (append (lifter-rules32)
-                                 (lifter-rules32-new))
-                       (append (lifter-rules64)
-                               (lifter-rules64-new))))
-       (rules (append extra-rules lifter-rules)) ; todo: use union?
-       (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
-            (and non-existent-remove-rules
-                 (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
-       (rules (set-difference-eq rules remove-rules))
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
@@ -384,7 +382,7 @@
         (acl2::simplify-terms-repeatedly
          assumptions
          assumption-rule-alist
-         rules-to-monitor
+         rules-to-monitor ; do we want to monitor here?  What if some rules are not incldued?
          nil ; don't memoize (avoids time spent making empty-memoizations)
          state))
        ((when erp) (mv erp nil nil nil state))
@@ -396,14 +394,21 @@
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
+       ;; TODO: Just call simplify-term here?
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
        ;; Do the symbolic execution:
-       ((mv erp rule-alist)
-        (acl2::make-rule-alist rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
+       (lifter-rules (if 32-bitp *lifter-rules32-all* *lifter-rules64-all*))
+       (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
+       (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
+            (and non-existent-remove-rules
+                 (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
+       (lifter-rules (set-difference-eq lifter-rules remove-rules))
+       ((mv erp lifter-rule-alist)
+        (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil state))
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
        ((when erp) (mv erp nil nil nil state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw " (Lifting took ")
@@ -415,7 +420,7 @@
                     (acl2::print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
-    (mv (erp-nil) result-dag-or-quotep rules assumption-rules state)))
+    (mv (erp-nil) result-dag-or-quotep lifter-rules assumption-rules state)))
 
 ;; Returns (mv erp event state)
 (defun def-unrolled-fn (lifted-name
@@ -497,7 +502,7 @@
                                       t))
                                 position-independent))
        ;; Lift the function to obtain the DAG:
-       ((mv erp result-dag rules-used
+       ((mv erp result-dag lifter-rules-used
             & ; assumption-rules-used
             state)
         (def-unrolled-fn-core target parsed-executable
@@ -587,7 +592,7 @@
                                 :hints ,(if restrict-theory
                                             `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
                                                                    )))
-                                          `(("Goal" :in-theory (enable ,@rules-used
+                                          `(("Goal" :in-theory (enable ,@lifter-rules-used
                                                                        ;; ,@assumption-rules-used ; todo consider this
                                                                        ))))
                                 :otf-flg t))
