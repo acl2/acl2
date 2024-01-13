@@ -1417,6 +1417,7 @@ nil
        (names-to-extract (throw-away-keyword-parts args)))
 
     `(encapsulate nil
+       (local (include-book "std/lists/len" :dir :system))
        (with-output
          :off :all
          :on (comment error)
