@@ -581,30 +581,41 @@
 
 ;; Often N and PADDR and BYTES are constants
 (include-book "kestrel/bv-lists/packbv-little" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 ;todo: delete the specializations above..
 ;drop any hyps?
 ;todo: if we can't resolve the index, something like bv-array-read might be preferable.  but we would need multi-byte reads...
 ;rename
-(defthm read-in-terms-of-nth-and-pos-eric-gen
-  (implies (and (program-at paddr bytes x86-init)
+;compare to read-in-terms-of-nth-and-pos-eric-8-bytes, etc.
+(defthm read-when-program-at-gen
+  (implies (and (program-at paddr bytes x86)
                 (<= paddr addr)
                 (< (+ -1 n addr) (+ paddr (len bytes))) ; todo: rephrase
                 (canonical-address-p paddr)
                 (canonical-address-p (+ -1 (len bytes) paddr))
-                (program-at paddr bytes x86) ; ensure the bytes are still present (todo: might not be needed if we apply this rule last)
+                ;;(program-at paddr bytes x86-init)
+                ;;(program-at paddr bytes x86) ; ensure the bytes are still present (todo: might not be needed if we apply this rule last)
                 (byte-listp bytes)
                 (integerp addr)
                 (app-view x86)
-                (app-view x86-init)
+                ;; (app-view x86-init)
                 (x86p x86))
            (equal (read n addr x86)
                   ;; todo: consider what should happen here if ADDR is not a constant:
-                  (acl2::packbv-little n 8 (take n (nthcdr (- addr paddr) bytes)))))
+                  ;;(acl2::packbv-little n 8 (take n (nthcdr (- addr paddr) bytes)))
+                  (acl2::bv-array-read-chunk-little n 8 (len bytes) (- addr paddr) bytes)))
   :hints (("Goal" :in-theory (enable read
-                                     acl2::packbv-little ; todo
+                                     acl2::bv-array-read-chunk-little
+                                     ;acl2::packbv-little ; todo
+                                     bv-array-read
                                      ))))
+
+;; we can usually unroll this into a bvcat if we can't do better
+;; todo: try last?
+(acl2::defopeners acl2::bv-array-read-chunk-little) ; move
+(acl2::def-constant-opener acl2::bv-array-read-chunk-little)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -3228,7 +3228,7 @@
 (table axe-rule-priorities-table 'read-of-write-disjoint -1)
 
 ;; Wait to try this rule until the read is cleaned up by removing irrelevant inner sets
-(table acl2::axe-rule-priorities-table 'read-in-terms-of-nth-and-pos-eric-gen 1)
+(table acl2::axe-rule-priorities-table 'read-when-program-at-gen 1)
 
 
 ;; These rules expand operations on effective addresses, exposing the
