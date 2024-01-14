@@ -4567,12 +4567,13 @@
     ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj).
     ;; TODO: Add support for assumptions that come in array form?
     ;; TODO: Add support for rewriting nodes in (an approximation of) their contexts -- but disallow memoization in that case!
-    (defund ,simplify-dag-aux-name (rev-dag ;low nodes come first
-                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+    (defund ,simplify-dag-aux-name (rev-dag ; the old dag, low nodes come first
+                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist ; the new DAG
                                     memoization ; this is over the NEW nodenums (the ones in dag-array)
                                     info tries limits
                                     node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
-                                    rule-alist refined-assumption-alist
+                                    rule-alist
+                                    refined-assumption-alist ; these are over node in the NEW dag
                                     rewrite-stobj
                                     renumbering-stobj ; maps nodenums in rev-dag to the dargs (nodenums or quoteps) they rewrote to in dag-array
                                     )
