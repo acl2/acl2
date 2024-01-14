@@ -15,7 +15,7 @@
 (include-book "interpreted-function-alistp")
 
 ;; TODO: Consider adding more things to this, such as:
-;; interpreted-function-alist and rule-alist.
+;; rule-alist.
 ;; We could also add things like memoization, info, tries, and limits,
 ;; but then the stobj would have to be returned from each function
 ;; in the main clique.
