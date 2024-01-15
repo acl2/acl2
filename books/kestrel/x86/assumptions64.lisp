@@ -28,6 +28,7 @@
    ;; text section (also a number stored in the executable).
    ;; The addresses where the program is located are canonical:
    ;; TODO: Or should these be guards (then we could just use program-at)?
+   ;; todo: factor out these checks:
    (canonical-address-p addr)
    (canonical-address-p (+ addr
                            (- (len bytes) 1)))
@@ -39,7 +40,11 @@
                bytes
                x86)))
 
+;; todo: add 64 to the name
 (defund addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
+  (declare (xargs :guard (and (natp num-stack-slots)
+                              (integerp address) ; strengthen?  what if this goes negative?
+                              )))
   (if (zp num-stack-slots)
       nil
     (cons address
@@ -69,41 +74,41 @@
 ;; recall that the stack grows downward
 ;; These are just the starting addresses of the slots (1 address per 8-byte slot)
 (defun addresses-of-subsequent-stack-slots (num-stack-slots rsp)
+  (declare (xargs :guard (and (natp num-stack-slots)
+                              (integerp rsp) ; strengthen?  what if this subsequent stack slots go negative?
+                              )))
   (let ((first-slot-address (+ -8 rsp)))
     (addresses-of-subsequent-stack-slots-aux num-stack-slots first-slot-address)))
 
 ;; (defun all-addreses-of-stack-slots (num-slots rsp)
 ;;   (x86isa::create-canonical-address-list (* 8 num-slots) (+ (* -8 num-slots) rsp)))
 
-;; This is separate so we can easily create a list of terms to pass to symsim.
-;; NOTE: Some of these (e.g., stack pointer alignment) are conventions that may not be respected by malware!
-;; Creates a list of terms.
-(defun standard-state-assumption-terms-64 (x86)
-  `((standard-state-assumption ,x86)
-    (equal (64-bit-modep ,x86) t)
-    ;; Alignment checking is turned off.
-    (not (alignment-checking-enabled-p ,x86))
+;; NOTE: Some of these conjuncts (e.g., stack pointer alignment) are
+;; conventions that may not be respected by malware!
+(defun standard-state-assumption-64 (x86)
+  (declare (xargs :stobjs x86))
+  (and (standard-state-assumption x86)
+       (equal (64-bit-modep x86) t)
+       ;; Alignment checking is turned off:
+       (not (alignment-checking-enabled-p x86))
 
-    ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
-    ;; This may not be respected by malware.
-    ;; TODO: Try without this
-    (equal 0 (bvchop 3 (rgfi *rsp* ,x86)))
+       ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
+       ;; This may not be respected by malware.
+       ;; TODO: Try without this
+       (equal 0 (bvchop 3 (rgfi *rsp* x86)))
 
-    ;; The return address must be canonical because we will transfer
-    ;; control to that address when doing the return:
-    (canonical-address-p (read 8 (rgfi *rsp* x86) x86))
+       ;; The return address must be canonical because we will transfer
+       ;; control to that address when doing the return:
+       (canonical-address-p (read 8 (rgfi *rsp* x86) x86))
 
-    ;; The stack slot contaning the return address must be canonical
-    ;; because the stack pointer returns here when we pop the saved
-    ;; RBP:
-    (canonical-address-p (rgfi *rsp* x86))
+       ;; The stack slot contaning the return address must be canonical
+       ;; because the stack pointer returns here when we pop the saved
+       ;; RBP:
+       (canonical-address-p (rgfi *rsp* x86))
 
-    ;; The stack slot 'below' the return address must be canonical
-    ;; because the stack pointer returns here when we do the return:
-    (canonical-address-p (+ 8 (rgfi *rsp* x86)))))
-
-(defmacro standard-state-assumption-64 (x86)
-  `(and ,@(standard-state-assumption-terms-64 x86)))
+       ;; The stack slot 'below' the return address must be canonical
+       ;; because the stack pointer returns here when we do the return:
+       (canonical-address-p (+ 8 (rgfi *rsp* x86)))))
 
 
 ;TODO: Show that there is a state that satisfies these assumptions
@@ -119,9 +124,13 @@
                                      offset-to-subroutine ;from the start of the text section
                                      stack-slots-needed
                                      x86)
-  (declare (xargs :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
+  (declare (xargs :guard (and (consp text-section-bytes)
+                              (true-listp text-section-bytes)
+                              (acl2::all-unsigned-byte-p 8 text-section-bytes)
+                              (integerp offset-to-subroutine) ; natp?
+                              (integerp text-offset)
+                              (natp stack-slots-needed))
+                  :stobjs x86))
   (and (standard-state-assumption-64 x86)
        (bytes-loaded-at-address-64 text-section-bytes text-offset x86)
        ;; The program counter is at the start of the routine to lift:
@@ -132,10 +141,14 @@
        ;; old: (canonical-address-p (+ -8 (rgfi *rsp* x86))) ;; The stack slot where the RBP will be saved
 
        ;; The program is disjoint from the part of the stack that is written:
-       (separate :r (len text-section-bytes) text-offset
+       (if (posp stack-slots-needed)
+           ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+           (separate :r (len text-section-bytes) text-offset
                  ;; Only a single stack slot is written
                  ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                 :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))))
+                     :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))
+         ;; Can't call separate here because (* 8 stack-slots-needed) = 0.
+         t)))
 
 (defun standard-assumptions-mach-o-64 (subroutine-name
                                        parsed-mach-o
