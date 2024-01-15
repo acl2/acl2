@@ -501,6 +501,7 @@ my $DEBUG          = $ENV{"ACL2_BOOKS_DEBUG"} ? 1 : 0;
 my $TIME_CERT      = $ENV{"TIME_CERT"} ? 1 : 0;
 my $STARTJOB       = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
+my $FAILURE_LINES  = $ENV{"FAILURE_LINES"} || "300";
 my $ACL2           = $ENV{"ACL2"} || "acl2";
 my $STACK_TRACES   = $ENV{"NO_STACK_TRACES"} ? 0 : 1;
 
@@ -874,7 +875,7 @@ if ($success) {
 	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
 	($STEP eq "complete") ? "PCERT1->CERT COMPLETION" : "UNKNOWN";
     print "\n**$taskname FAILED** for $dir$file.lisp\n\n" .
-        ($outfile ? `tail -300 $outfile | sed 's/^/   | /'` : "") .
+        ($outfile ? `tail -$FAILURE_LINES $outfile | sed 's/^/   | /'` : "") .
         "\n**$taskname FAILED** for $dir$file.lisp\n\n";
 
     if ($ON_FAILURE_CMD) {
