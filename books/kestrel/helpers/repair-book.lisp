@@ -189,15 +189,16 @@
     (let ((recs-for-new-rune (recs-for-new-rune (first new-runes) counter)))
       (recs-for-new-runes (rest new-runes) (+ counter (len recs-for-new-rune)) (append recs-for-new-rune acc)))))
 
+;; Try to remove from the front of EVENT-DATA-FORMS all the forms corresponding to the NAMES.
 (defun consume-event-data-forms (names event-data-forms)
-  (if (or (eq :none event-data-forms)
-          (if (null event-data-forms)
-              ;; we've been told to consume some forms but there are none left (perhaps there is a new theorem at the end of the book)
-              (prog2$ (cw "Warning: No more event data forms.~%")
-                      t)
-            nil))
+  (if (endp names)
       event-data-forms
-    (if (endp names)
+    (if (or (eq :none event-data-forms)
+            (if (null event-data-forms)
+              ;; we've been told to consume some forms but there are none left (perhaps there is a new theorem at the end of the book)
+                (prog2$ (cw "Warning: No more event data forms.~%")
+                        t)
+              nil))
         event-data-forms
       (let ((name (first names)))
         (if (not (and (consp event-data-forms) (eq name (car (first event-data-forms)))))
@@ -361,7 +362,9 @@
          )
       (if erp
           ;; this event failed, so attempt a repair:
-          (b* (((mv event-data-forms state) (repair-event-with-event-data event new-event-data-alist event-data-forms state))
+          (b* ((- (cw "Event ~x0 failed.~%" event))
+               ;; TODO: Consider submitting it again with :print t.
+               ((mv event-data-forms state) (repair-event-with-event-data event new-event-data-alist event-data-forms state))
                ;; Submit the event with skip-proofs so we can continue:
                ((mv erp state) (submit-event-core `(skip-proofs ,event) nil state)) ; todo: make this even quieter
                ((when erp) (mv erp state)))
