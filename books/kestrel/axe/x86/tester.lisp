@@ -1,7 +1,7 @@
 ; Formal Unit Tester for x86
 ;
 ; Copyright (C) 2021-2022 Kestrel Technology, LLC
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,7 +71,7 @@
              (separate :r (len section-bytes) section-start
                        ;; Only a single stack slot is written
                        ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))))
+                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86)))))
     ;; no assumptions if section not present:
     t))
 
@@ -106,15 +106,14 @@
          (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
              (separate :r (len section-bytes) section-start
                        :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
-                                                      (rgfi *rsp* x86) ; rephrase?
-                                                      ))
+                                                      (rsp x86)))
            t))))
 
 ;; Returns a list of terms over the variables X86 and (perhaps TEXT-OFFSET).
 ;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
 (defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf)
   ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
-  ;;                             (alistp parsed-elf) ; strengthen
+  ;;                             (parsed-elfp parsed-elf)
   ;;                             )))
   (if (endp section-names)
       nil
@@ -285,7 +284,7 @@
        (- (acl2::ensure-x86 parsed-executable))
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "(Testing ~x0.~%" function-name-string))
-       ;; Check the param names:
+       ;; Check the param names, if any:
        ((when (not (or (eq :none param-names)
                        (and (symbol-listp param-names)
                             (no-duplicatesp param-names)
@@ -327,6 +326,7 @@
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
+       ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
        ((mv erp result-dag-or-quotep & & state)
         (def-unrolled-fn-core
           target
@@ -335,7 +335,7 @@
           nil ;suppress-assumptions
           stack-slots
           position-independentp
-          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte
+          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
           t                   ; use-internal-contextsp
           prune
           ;; extra-rules:
@@ -351,6 +351,7 @@
            remove-lift-rules)
           ;; extra-assumption-rules:
           (append (lifter-rules64-new)
+                  ;; todo: build these in deeper
                   '(section-assumptions-mach-o-64
                     acl2::mach-o-section-presentp-constant-opener
                     acl2::maybe-get-mach-o-segment-constant-opener
@@ -363,7 +364,7 @@
                     ;;acl2::get-mach-o-constants-constant-opener
                     ;;acl2::get-mach-o-data-address-constant-opener
                     ;;acl2::get-mach-o-data-constant-opener
-                    elf64-section-loadedp
+                    elf64-section-loadedp ; todo:package
                     acl2::elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp))
@@ -425,7 +426,7 @@
         (acl2::apply-tactic-prover result-dag
                                    ;; tests ;a natp indicating how many tests to run
                                    tactics
-                                   nil ; assumptions
+                                   nil ; assumptions ; TODO: We may need separateness assumptions!
                                    t   ; simplify-assumptions
                                    ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                                    print

@@ -467,7 +467,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd memi-becomes-read-1
+  (implies (x86p x86)
+           (equal (memi (bvchop 48 addr) x86)
+                  (read 1 addr x86)))
+  :hints (("Goal" :in-theory (enable read read-byte))))
 
+(defthmd memi-becomes-read-2
+  (implies (and (x86p x86)
+                (integerp addr)
+                (integerp n))
+           (equal (memi (bvplus 48 n addr) x86)
+                  (read 1 (+ n addr) x86)))
+  :hints (("Goal" :in-theory (enable read bvplus read-byte))))
 
 ;todo: compare to read-when-program-at
 ;; Note that the program-at assumption we have will be about the initial x86 state,
@@ -494,22 +506,8 @@
                        bytes)))
   :hints (("Goal" :in-theory (enable read))))
 
-(defthmd memi-becomes-read-1
-  (implies (x86p x86)
-           (equal (memi (bvchop 48 addr) x86)
-                  (read 1 addr x86)))
-  :hints (("Goal" :in-theory (enable read read-byte))))
-
-(defthmd memi-becomes-read-2
-  (implies (and (x86p x86)
-                (integerp addr)
-                (integerp n))
-           (equal (memi (bvplus 48 n addr) x86)
-                  (read 1 (+ n addr) x86)))
-  :hints (("Goal" :in-theory (enable read bvplus read-byte))))
-
 ;todo: gen
-;; this is a 4-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
+;; this is a 2-byte version of READ-IN-TERMS-OF-NTH-AND-POS-ERIC
 (defthm read-in-terms-of-nth-and-pos-eric-2-bytes
   (implies (and (program-at paddr bytes x86-init)
                 (program-at paddr bytes x86)
@@ -580,6 +578,46 @@
                            (read 4 (+ 4 addr) x86)
                            (read 3 (+ 5 addr) x86)
                            (read 2 (+ 6 addr) x86)))))
+
+;; Often N and PADDR and BYTES are constants
+(include-book "kestrel/bv-lists/packbv-little" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
+(local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
+(local (include-book "kestrel/lists-light/take" :dir :system))
+;todo: delete the specializations above..
+;drop any hyps?
+;todo: if we can't resolve the index, something like bv-array-read might be preferable.  but we would need multi-byte reads...
+;rename
+;compare to read-in-terms-of-nth-and-pos-eric-8-bytes, etc.
+(defthm read-when-program-at-gen
+  (implies (and (program-at paddr bytes x86)
+                (<= paddr addr)
+                (< (+ -1 n addr) (+ paddr (len bytes))) ; todo: rephrase
+                (canonical-address-p paddr)
+                (canonical-address-p (+ -1 (len bytes) paddr))
+                ;;(program-at paddr bytes x86-init)
+                ;;(program-at paddr bytes x86) ; ensure the bytes are still present (todo: might not be needed if we apply this rule last)
+                (byte-listp bytes)
+                (integerp addr)
+                (app-view x86)
+                ;; (app-view x86-init)
+                (x86p x86))
+           (equal (read n addr x86)
+                  ;; todo: consider what should happen here if ADDR is not a constant:
+                  ;;(acl2::packbv-little n 8 (take n (nthcdr (- addr paddr) bytes)))
+                  (acl2::bv-array-read-chunk-little n 8 (len bytes) (- addr paddr) bytes)))
+  :hints (("Goal" :in-theory (enable read
+                                     acl2::bv-array-read-chunk-little
+                                     ;acl2::packbv-little ; todo
+                                     bv-array-read
+                                     ))))
+
+;; we can usually unroll this into a bvcat if we can't do better
+;; todo: try last?
+(acl2::defopeners acl2::bv-array-read-chunk-little) ; move
+(acl2::def-constant-opener acl2::bv-array-read-chunk-little)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename since used for a read proof as well
 ;add -alt to name?

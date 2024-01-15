@@ -617,18 +617,18 @@
     acl2::bvlt-of-bvplus-1-cancel
     acl2::bvlt-of-bvplus-1-cancel-alt)))
 
-;not used?
-(defun canonical-address-rules ()
-  '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
-    x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
-    ;;not-member-p-canonical-address-listp-when-disjoint-p ;free vars? looped? ;why?
-    ;;not-member-p-canonical-address-listp-when-disjoint-p-alt ;free vars? looped? ;why?
-    ;;not-member-p-when-disjoint-p ;todo: make an alt version
-    x86isa::canonical-address-listp-of-cdr
-    x86isa::cdr-create-canonical-address-list
-    x86isa::car-create-canonical-address-list
-    x86isa::canonical-address-p-of-i48
-    x86isa::i48-when-canonical-address-p))
+;; ;not used?
+;; (defun canonical-address-rules ()
+;;   '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
+;;     x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
+;;     ;;not-member-p-canonical-address-listp-when-disjoint-p ;free vars? looped? ;why?
+;;     ;;not-member-p-canonical-address-listp-when-disjoint-p-alt ;free vars? looped? ;why?
+;;     ;;not-member-p-when-disjoint-p ;todo: make an alt version
+;;     x86isa::canonical-address-listp-of-cdr
+;;     x86isa::cdr-create-canonical-address-list
+;;     x86isa::car-create-canonical-address-list
+;;     x86isa::canonical-address-p-of-i48
+;;     x86isa::i48-when-canonical-address-p))
 
 ;; These are about if but are not 'if lifting' rules.
 (defun if-rules ()
@@ -888,6 +888,46 @@
     run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
     ))
 
+(defun separate-rules ()
+  (declare (xargs :guard t))
+  '(x86isa::separate-normalize-r-w-x-1
+    x86isa::separate-normalize-r-w-x-2
+    x86isa::not-separate-self
+    x86isa::separate-of-plus
+    x86isa::separate-of-plus-alt
+    x86isa::separate-below-and-above
+    x86isa::separate-below-and-above-alt
+    x86isa::separate-lemma-1
+    x86isa::separate-lemma-1-alt
+    x86isa::separate-lemma-1b
+    x86isa::separate-lemma-1b-alt
+    x86isa::separate-lemma-2b
+    x86isa::separate-lemma-2b-alt
+    x86isa::separate-lemma-3
+    x86isa::separate-lemma-3-alt
+    x86isa::separate-of-if-arg3
+    x86isa::separate-of-if-arg6
+    x86isa::separate-below-and-above-offset
+    x86isa::separate-below-and-above-offset-alt
+    x86isa::separate-same-lemma-1
+    x86isa::separate-same-lemma-1-alt
+    x86isa::separate-from-separate-lemma-1
+    x86isa::separate-from-separate-lemma-1b
+    x86isa::separate-from-separate-lemma-1c
+    x86isa::separate-from-separate-lemma-1d
+    x86isa::separate-from-separate-lemma-1-alt
+    x86isa::separate-from-separate-lemma-1b-alt
+    x86isa::separate-from-separate-lemma-1c-alt
+    x86isa::separate-from-separate-lemma-1d-alt
+    ;; these 2 may subsume much of the stuff above:
+    x86isa::separate-when-separate
+    x86isa::separate-when-separate-alt
+    ;; these may be expensive but seem necessary in some cases
+    ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
+    ;;x86isa::not-equal-when-separate
+    ;;x86isa::not-equal-when-separate-alt
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
@@ -907,6 +947,7 @@
           (if-rules)
           (decoding-and-dispatch-rules)
           (get-prefixes-openers)
+          (separate-rules)
           (x86-type-rules)
           (x86-bv-rules)
           (acl2::array-reduction-rules)
@@ -986,43 +1027,6 @@
 
             x86isa::app-view-of-xw
             app-view-of-set-flag
-
-            x86isa::separate-normalize-r-w-x-1
-            x86isa::separate-normalize-r-w-x-2
-            x86isa::not-separate-self
-            x86isa::separate-of-plus
-            x86isa::separate-of-plus-alt
-            x86isa::separate-below-and-above
-            x86isa::separate-below-and-above-alt
-            x86isa::separate-lemma-1
-            x86isa::separate-lemma-1-alt
-            x86isa::separate-lemma-1b
-            x86isa::separate-lemma-1b-alt
-            x86isa::separate-lemma-2b
-            x86isa::separate-lemma-2b-alt
-            x86isa::separate-lemma-3
-            x86isa::separate-lemma-3-alt
-            x86isa::separate-of-if-arg3
-            x86isa::separate-of-if-arg6
-            x86isa::separate-below-and-above-offset
-            x86isa::separate-below-and-above-offset-alt
-            x86isa::separate-same-lemma-1
-            x86isa::separate-same-lemma-1-alt
-            x86isa::separate-from-separate-lemma-1
-            x86isa::separate-from-separate-lemma-1b
-            x86isa::separate-from-separate-lemma-1c
-            x86isa::separate-from-separate-lemma-1d
-            x86isa::separate-from-separate-lemma-1-alt
-            x86isa::separate-from-separate-lemma-1b-alt
-            x86isa::separate-from-separate-lemma-1c-alt
-            x86isa::separate-from-separate-lemma-1d-alt
-            ;; these 2 may subsume much of the stuff above:
-            x86isa::separate-when-separate
-            x86isa::separate-when-separate-alt
-            ;; these may be expensive but seem necessary in some cases
-            ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
-            ;x86isa::not-equal-when-separate
-            ;x86isa::not-equal-when-separate-alt
 
             x86isa::rb-wb-equal
             x86isa::rb-of-if-arg2
@@ -1446,8 +1450,9 @@
 (defun assumption-simplification-rules ()
   (append
    '(standard-state-assumption
-     standard-assumptions-core-64
      standard-state-assumption-32
+     standard-assumptions-core-64
+     standard-state-assumption-64
      standard-assumptions-mach-o-64
      standard-assumptions-elf-64
      standard-assumptions-pe-64
@@ -3222,6 +3227,10 @@
 ;; Try this rule first
 (table axe-rule-priorities-table 'read-of-write-disjoint -1)
 
+;; Wait to try this rule until the read is cleaned up by removing irrelevant inner sets
+(table acl2::axe-rule-priorities-table 'read-when-program-at-gen 1)
+
+
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
 (defun low-level-rules-32 ()
@@ -3803,6 +3812,7 @@
             jnp-condition
             jz-condition
             jnz-condition)
+          (separate-rules) ; I am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; I need booleanp-of-isnan, at least
           (extra-tester-rules)
           (lifter-rules64-new) ; overkill?
