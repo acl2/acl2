@@ -11604,7 +11604,6 @@
 ;;          (bvchop-list elem-width (take len lst)))
 ;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
-
 (defthmd bvchop-tighten
   (implies (and (< YSIZE SIZE)
                 (NATP SIZE)
@@ -11612,12 +11611,6 @@
                 (UNSIGNED-BYTE-P YSIZE (BVCHOP SIZE X)))
            (equal (BVCHOP SIZE X)
                   (BVCHOP ySIZE X))))
-
-(defthm <-of-0-and-integer-length
-  (implies (natp x)
-           (equal (< 0 (integer-length x))
-                  (< 0 x)))
-  :hints (("Goal" :in-theory (enable integer-length))))
 
 (defthm bvmult-of-bvplus-hack-gen
   (implies (and (<= (+ n size2) size)
