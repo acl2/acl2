@@ -88,6 +88,13 @@
                                       )
            :use (:instance bv-array-read-of-bvchop-helper (m (+ -1 (integer-length len)))))))
 
+(defthm bv-array-read-of-bvchop-gen
+  (implies (and (<= (ceiling-of-lg len) n)
+                (natp n))
+           (equal (bv-array-read size len (bvchop n index) vals)
+                  (bv-array-read size len index vals)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
 ;or do we want to go to nth?
 (defthm bv-array-read-of-take
   (implies (posp len)
@@ -255,3 +262,10 @@
                          (bv-array-read 8 16 m data))
                   t))
   :hints (("Goal" :use (:instance equal-of-bvchop-and-bv-array-read))))
+
+(defthm bv-array-read-of-+-of-expt-of-ceiling-of-lg
+  (implies (and (natp len)
+                (natp index))
+           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len)))data)
+                  (bv-array-read element-width len index data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))

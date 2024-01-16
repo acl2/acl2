@@ -393,7 +393,7 @@
            (bitnot bitnot-unguarded arg1)   ;see bitnot-unguarded-correct
            (logmaskp logmaskp arg1)         ;drop?
            (integer-length integer-length-unguarded arg1) ;see INTEGER-LENGTH-UNGUARDED-CORRECT
-           (ceiling-of-lg ceiling-of-lg arg1)
+           (ceiling-of-lg ceiling-of-lg-unguarded arg1) ; see ceiling-of-lg-unguarded-correct
            (unary-/ unary-/-unguarded arg1) ;see unary-/-unguarded-correct
            (nfix nfix arg1)                 ;unguarded
            (ifix ifix arg1)                 ;unguarded

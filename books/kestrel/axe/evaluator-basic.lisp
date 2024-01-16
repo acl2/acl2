@@ -104,6 +104,7 @@
     (min min-unguarded)
     (max max-unguarded)
     (integer-length integer-length-unguarded)
+    (ceiling-of-lg ceiling-of-lg-unguarded)
     ;; (return-last return-last-unguarded) ;we don't want to execute this normally, because that would mean executing the eager-arg
     (width-of-widest-int width-of-widest-int-unguarded)
 
@@ -151,5 +152,5 @@
     (bv-array-read bv-array-read-unguarded)
     (bv-array-write bv-array-write-unguarded)))
 
-;; Makes the evaluator:
+;; Makes the evaluator (also checks that each alias given is equivalent to its function):
 (make-evaluator-simple basic *axe-evaluator-basic-fns-and-aliases*)

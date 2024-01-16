@@ -44,3 +44,18 @@
            (equal (bv-array-read-chunk-little element-count element-size array-len (+ k index) array)
                   (bv-array-read-chunk-little element-count element-size (- array-len k) index (nthcdr k array))))
   :hints (("Goal" :in-theory (enable bv-array-read-chunk-little bv-array-read-opener))))
+
+(defthm bv-array-read-chunk-little-of-+-of-expt-of-ceiling-of-lg
+ (implies (and (natp len)
+               (natp index))
+          (equal (acl2::bv-array-read-chunk-little num element-width len (+ index (expt 2 (ceiling-of-lg len))) data)
+                 (acl2::bv-array-read-chunk-little num element-width len index data)))
+ :hints (("Goal" :in-theory (enable acl2::bv-array-read-chunk-little))))
+
+(defthm bv-array-read-chunk-little-of-expt-of-ceiling-of-lg
+ (implies (and (natp len)
+               (natp index))
+          (equal (acl2::bv-array-read-chunk-little num element-width len (expt 2 (ceiling-of-lg len)) data)
+                 (acl2::bv-array-read-chunk-little num element-width len 0 data)))
+ :hints (("Goal" :use (:instance bv-array-read-chunk-little-of-+-of-expt-of-ceiling-of-lg (index 0))
+          :in-theory (disable bv-array-read-chunk-little-of-+-of-expt-of-ceiling-of-lg))))

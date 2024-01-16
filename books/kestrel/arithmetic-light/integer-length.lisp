@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -118,6 +118,12 @@
              (equal i -1)))
   :hints (("Goal" :in-theory (enable integer-length))))
 
+(defthm <-of-0-and-integer-length
+  (implies (natp x)
+           (equal (< 0 (integer-length x))
+                  (< 0 x)))
+  :hints (("Goal" :in-theory (enable integer-length))))
+
 (defthm unsigned-byte-p-of-integer-length
   (implies (natp x)
            (unsigned-byte-p (integer-length x) x))
@@ -145,6 +151,14 @@
   (if (zp n)
       n
     (sub1-induct (+ -1 n)))))
+
+(defthm integer-length-of-*-of-2
+  (implies (integerp n)
+           (equal (integer-length (* 2 n))
+                  (if (equal n 0)
+                      0
+                    (+ 1 (integer-length n)))))
+  :hints (("Goal" :in-theory (enable integer-length))))
 
 (defthm integer-length-of-*-of-expt2
   (implies (and (natp n)
@@ -232,3 +246,31 @@
            (equal (< k (expt 2 i))
                   (or (<= k 0)
                       (<= (integer-length k) i)))))
+
+(local
+ (defthm integer-length-of-+-of--1-when-power-of-2
+   (implies (and (natp i)
+                 (equal i (expt 2 (+ -1 (integer-length i)))) ; power of 2
+                 )
+            (equal (integer-length (+ -1 i))
+                   (+ -1 (integer-length i))))
+   :hints (("Goal" :in-theory (enable integer-length)))))
+
+(local
+ (defthm integer-length-of-+-of--1-when-not-power-of-2
+   (implies (and (natp i)
+                 (not (equal i (expt 2 (+ -1 (integer-length i))))) ; power of 2
+                 )
+            (equal (integer-length (+ -1 i))
+                   (integer-length i)))
+   :hints (("Goal" :expand ((integer-length i)
+                            (integer-length (+ -1 i)))
+            :in-theory (e/d (integer-length) (integer-length-of-floor-by-2))))))
+
+(defthmd integer-length-of-+-of--1
+  (implies (natp i)
+           (equal (integer-length (+ -1 i))
+                  (if (equal i (expt 2 (+ -1 (integer-length i)))) ; power of 2
+                      (+ -1 (integer-length i))
+                    (integer-length i))))
+  :hints (("Goal" :cases ((not (equal i (expt 2 (+ -1 (integer-length i)))))))))
