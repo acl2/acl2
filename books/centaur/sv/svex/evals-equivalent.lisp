@@ -26,7 +26,9 @@
 (in-package "SV")
 
 (include-book "symbolic")
-(include-book "centaur/fgl/simplify" :dir :system)
+(include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
+(include-book "centaur/fgl/bfr" :dir :system)
+(include-book "centaur/fgl/simplify-defs" :dir :system)
 (include-book "centaur/fgl/checks" :dir :system)
 (include-book "centaur/fgl/make-isomorphic-def" :dir :system)
 ;; (include-book "centaur/aignet/transforms" :dir :System)
@@ -618,6 +620,9 @@ to the svexes.</p>"
                                 :msg "; a4veclist-eval x: ~st sec, ~sa bytes.~%"))
                 (hint-eval (time$ (a4veclist-eval hint-a4vecs aig-env)
                                   :msg "; a4veclist-eval sub: ~st sec, ~sa bytes.~%"))
+                (?ign (fgl::fgl-prog2 (fgl::syntax-interp (prog2$ (cw "x-eval: ~x0~%" x-eval)
+                                                (cw "hint-eval: ~x0~%" hint-eval)))
+                                 nil))
                 (evals-integer-listp (integer-listp x-eval))
                 ((mv hint-upper hint-lower) (4veclist-separate-upper-lower hint-eval))
                 ((mv iso-ok hint-upper hint-lower) (fgl::fgl-make-isomorphic iso-ok hint-upper hint-lower))
@@ -643,3 +648,334 @@ to the svexes.</p>"
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct))))))
 
+
+
+(define hons-aig-accumulate-nodes (x acc)
+  (b* (((when (atom x))
+        (if (or (booleanp x)
+                (hons-get x acc))
+            acc
+          (hons-acons x t acc)))
+       ((when (eq (cdr x) nil))
+        (hons-aig-accumulate-nodes (car x) acc))
+       ((when (hons-get x acc)) acc)
+       (acc (hons-acons x t acc))
+       (acc (hons-aig-accumulate-nodes (car x) acc)))
+    (hons-aig-accumulate-nodes (cdr x) acc)))
+
+(define hons-aiglist-accumulate-nodes (x acc)
+  (if (atom x)
+      acc
+    (hons-aiglist-accumulate-nodes
+     (cdr x) (hons-aig-accumulate-nodes (car x) acc))))
+
+(define a4vec-accumulate-nodes ((x a4vec-p) acc)
+  (b* (((a4vec x)))
+    (hons-aiglist-accumulate-nodes x.upper (hons-aiglist-accumulate-nodes x.lower acc))))
+
+(define a4veclist-accumulate-nodes ((x a4veclist-p) acc)
+  (if (atom x)
+      acc
+    (a4veclist-accumulate-nodes (cdr x) (a4vec-accumulate-nodes (car x) acc))))
+
+
+(define a4veclist-subnodes ((x a4veclist-p))
+  (b* ((acc (a4veclist-accumulate-nodes x nil)))
+    (fast-alist-free acc)
+    (alist-keys acc)))
+
+
+(define eval-collection-for-svexlist-evals-equal-and-integerp-with-transforms-fgl-extreme
+  ((x-a4vecs a4veclist-p)
+   (hint-a4vecs a4veclist-p)
+   (subnodes)
+   (env))
+  :returns (mv (x-eval 4veclist-p)
+               (hint-eval 4veclist-p)
+               (subnodes-eval boolean-listp))
+  (b* ((x-aiglist (sv::a4veclist->aiglist x-a4vecs))
+       (hint-aiglist (sv::a4veclist->aiglist hint-a4vecs))
+       (all-aigs (append x-aiglist hint-aiglist subnodes))
+       (bitlist (time$ (acl2::aig-eval-list all-aigs env)
+                       :msg "; SV bit-blasting: aig-eval-list: ~st sec, ~sa bytes.~%"))
+       (x-aig-len (length x-aiglist))
+       (hint-aig-len (length hint-aiglist))
+       ;; 4veclist-from-bitlist doesn't care about extra bits so we don't need to use take.
+       (hint-bitlist (nthcdr x-aig-len bitlist))
+       (subnodes-bitlist (nthcdr hint-aig-len hint-bitlist)))
+    (mv (time$ (sv::4veclist-from-bitlist x-a4vecs bitlist) :msg "; bits->4vecs: ~st sec, ~sa bytes.~%")
+        (time$ (sv::4veclist-from-bitlist hint-a4vecs hint-bitlist) :msg "; bits->4vecs: ~st sec, ~sa bytes.~%")
+        subnodes-bitlist))
+  ///
+  (local (include-book "std/lists/nthcdr" :dir :system))
+  (local (include-book "std/lists/take" :dir :system))
+
+  (local (defthm take-of-nthcdr
+           (equal (take n (nthcdr m x))
+                  (nthcdr m (take (+ (nfix n) (nfix m)) x)))
+           :hints(("Goal" :in-theory (e/d (take nthcdr)
+                                          ())))))
+
+  (local (defthm nthcdr-less-than-first-len-of-append
+           (implies (<= (nfix n) (len a))
+                    (equal (nthcdr n (append a b))
+                           (append (nthcdr n a) b)))))
+  (local (defthm 4vec-from-bitlist-of-append
+           (implies (<= (+ (nfix upper-len) (nfix lower-len)) (len a))
+                    (Equal (4vec-from-bitlist upper-len lower-len (append a b))
+                           (b* (((mv 4vec rest)
+                                 (4vec-from-bitlist upper-len lower-len a)))
+                             (mv 4vec (append rest b)))))
+           :hints(("Goal" :in-theory (enable 4vec-from-bitlist)
+                   :do-not-induct t)
+                  (and stable-under-simplificationp
+                       '(:cases ((natp upper-len)))))))
+
+  (local (defthm len-of-4vec-from-bitlist-rest
+           (implies (<= (+ (nfix upper-len) (nfix lower-len)) (len a))
+                    (equal (len (mv-nth 1 (4vec-from-bitlist upper-len lower-len a)))
+                           (- (len a) (+ (nfix upper-len) (nfix lower-len)))))
+           :hints(("Goal" :in-theory (enable 4vec-from-bitlist)))))
+  
+  (local (defthm 4veclist-from-bitlist-of-append
+           (implies (<= (len (a4veclist->aiglist x)) (len a))
+                    (equal (4veclist-from-bitlist x (append a b))
+                           (4veclist-from-bitlist x a)))
+           :hints(("Goal" :in-theory (enable 4veclist-from-bitlist a4veclist->aiglist
+                                             a4vec->aiglist)))))
+  
+  (defret <fn>-correct
+    (and (equal x-eval (a4veclist-eval x-a4vecs env))
+         (equal hint-eval (a4veclist-eval hint-a4vecs env))
+         (equal subnodes-eval (acl2::aig-eval-list subnodes env)))))    
+       
+
+
+(define svexlist-evals-equal-and-integerp-with-transforms ((x svexlist-p)
+                                                           (env1 svex-env-p)
+                                                           (env2 svex-env-p)
+                                                           (symbolic-params alistp)
+                                                           (transforms))
+  (declare (ignorable symbolic-params transforms))
+  (and (svexlist-evals-equal x env1 env2)
+       (integer-listp (svexlist-eval x env1)))
+  ///
+
+
+  ;; (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl
+  ;;   (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+  ;;          (b* (((mv ?masks toposort) (svexlist-mask-alist/toposort-memo x))
+  ;;               (x-len (len x))
+  ;;               (full-svexes (append x toposort))
+  ;;               (eval1 (svexlist-eval-for-symbolic full-svexes env1 symbolic-params))
+  ;;               (eval2 (svexlist-eval-for-symbolic full-svexes env2 symbolic-params))
+  ;;               (x-eval1 (take x-len eval1))
+  ;;               (x-eval2 (take x-len eval2))
+  ;;               (hint-eval1 (nthcdr x-len eval1))
+  ;;               (hint-eval2 (nthcdr x-len eval2))
+  ;;               ((mv iso-ok hint-eval1 hint-eval2) (fgl::fgl-make-isomorphic iso-ok hint-eval1 hint-eval2))
+  ;;               ((unless iso-ok)
+  ;;                (b* ((?ign (cw "ERROR: the equivalence hint objects couldn't be made isomorphic!~%"))
+  ;;                     (?foo (break$)))
+  ;;                  (fgl::abort-rewrite (svexlist-evals-equal x env1 env2))))
+  ;;               (evals-equal (equal x-eval1 x-eval2))
+  ;;               (len1 (fgl::syntax-bind len1 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-eval1)))))
+  ;;               (len2 (fgl::syntax-bind len2 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-eval2)))))
+  ;;               ((unless (fgl::syntax-bind lens-equal (equal len1 len2)))
+  ;;                (b* ((?ign (cw "ERROR: the number of BFR objects in the ~
+  ;;                                equivalence hint objects wasn't equal after ~
+  ;;                                they were made isomorphic!~%"))
+  ;;                     (?foo (break$)))
+  ;;                  (fgl::abort-rewrite (svexlist-evals-equal x env1 env2))))
+  ;;               (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+  ;;            (fgl::fgl-simplify-ordered evals-equal transforms
+  ;;                                       :tracked-obj
+  ;;                                       (cons hint-eval1 hint-eval2))))
+  ;;   :hints(("Goal" :in-theory (enable svexlist-evals-equal)))))
+
+  
+  (fgl::def-fgl-rewrite svexlist-evals-equal-and-integerp-with-transforms-fgl
+    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms)
+           (b* ((orig-x x)
+
+                (env1 (make-fast-alist (svex-env-fix env1)))
+                (env2 (make-fast-alist (svex-env-fix env2)))
+                (svars (set::union
+                        (svexlist-vars-for-symbolic-eval x env1 symbolic-params)
+                        (svexlist-vars-for-symbolic-eval x env2 symbolic-params)))
+                (x (svexlist-x-out-unused-vars x svars
+                                               (symbolic-params-x-out-cond symbolic-params)))
+                (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params))))
+                (boolmasks (make-fast-alist
+                            (hons-copy
+                             (ec-call
+                              (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params)))))))
+         
+                ((unless (and (svex-env-check-boolmasks boolmasks env1)
+                              (svex-env-check-boolmasks boolmasks env2)))
+                 (b* ((?ign (cw "ERROR: some bits assumed to be Boolean were not~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+
+                ((mv err x-a4vecs hint-a4vecs)
+                 (time$ (svexlist->a4vecs-for-varlist-with-subexprs x svars boolmasks)
+                        :msg "; svex->aigs: ~st sec, ~sa bytes.~%"))
+                ((when err)
+                 (b* ((?ign (cw "ERROR gathering AIG bits for variables: ~@0~%" err)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+
+                ((mv ?err aig-env1)
+                 ;; ignore the error; it can't exist if the above doesn't
+                 (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env1)
+                        :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
+                (aig-env1 (make-fast-alist aig-env1))
+                
+                ((mv ?err aig-env2)
+                 ;; ignore the error; it can't exist if the above doesn't
+                 (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env2)
+                        :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
+                (aig-env2 (make-fast-alist aig-env2))
+
+                (?ign (fast-alist-free env1))
+                (?ign (fast-alist-free env2))
+
+                (x-eval1 (time$ (a4veclist-eval x-a4vecs aig-env1)
+                                :msg "; a4veclist-eval (x, env1): ~st sec, ~sa bytes.~%"))
+                (hint-eval1 (time$ (a4veclist-eval hint-a4vecs aig-env1)
+                                  :msg "; a4veclist-eval (sub, env1): ~st sec, ~sa bytes.~%"))
+                (x-eval2 (time$ (a4veclist-eval x-a4vecs aig-env2)
+                                :msg "; a4veclist-eval (x, env2): ~st sec, ~sa bytes.~%"))
+                (hint-eval2 (time$ (a4veclist-eval hint-a4vecs aig-env2)
+                                  :msg "; a4veclist-eval (sub, env2): ~st sec, ~sa bytes.~%"))
+                (evals-equal-and-integerp (and (equal x-eval1 x-eval2) (integer-listp x-eval1)))
+                ((mv hint1-upper hint1-lower) (4veclist-separate-upper-lower hint-eval1))
+                ((mv hint2-upper hint2-lower) (4veclist-separate-upper-lower hint-eval2))
+                ;; We are going to allow equivalences between the two
+                ;; evaluations as well as the upper/lowers of the same
+                ;; evaluation.
+                (hint1 (list hint1-upper hint1-lower hint1-upper))
+                (hint2 (list hint2-upper hint2-lower hint1-lower))
+                ((mv iso-ok hint-iso1 hint-iso2) (fgl::fgl-make-isomorphic iso-ok hint1 hint2))
+                ((unless iso-ok)
+                 (b* ((?ign (cw "ERROR: the equivalence hint objects couldn't be made isomorphic!~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+                (len1 (fgl::syntax-bind len1 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-iso1)))))
+                (len2 (fgl::syntax-bind len2 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-iso2)))))
+                ((unless (fgl::syntax-bind lens-equal (equal len1 len2)))
+                 (b* ((?ign (cw "ERROR: the number of BFR objects in the ~
+                                 equivalence hint objects wasn't equal after ~
+                                 they were made isomorphic!~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                
+             (fgl::fgl-simplify-ordered evals-equal-and-integerp transforms
+                                        :tracked-obj
+                                        (cons hint-iso1 hint-iso2))))
+    :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
+                                    SVEXLIST->A4VECS-FOR-VARLIST
+                                    svexlist->a4vec-aig-env-for-varlist)
+                                   (svexlist->a4vec-correct)))))
+
+
+  
+  
+
+  (fgl::def-fgl-rewrite svexlist-evals-equal-and-integerp-with-transforms-fgl-extreme
+    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms)
+           (b* ((orig-x x)
+
+                (env1 (make-fast-alist (svex-env-fix env1)))
+                (env2 (make-fast-alist (svex-env-fix env2)))
+                (svars (set::union
+                        (svexlist-vars-for-symbolic-eval x env1 symbolic-params)
+                        (svexlist-vars-for-symbolic-eval x env2 symbolic-params)))
+                (x (svexlist-x-out-unused-vars x svars
+                                               (symbolic-params-x-out-cond symbolic-params)))
+                (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params))))
+                (boolmasks (make-fast-alist
+                            (hons-copy
+                             (ec-call
+                              (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params)))))))
+         
+                ((unless (and (svex-env-check-boolmasks boolmasks env1)
+                              (svex-env-check-boolmasks boolmasks env2)))
+                 (b* ((?ign (cw "ERROR: some bits assumed to be Boolean were not~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+
+                ((mv err x-a4vecs hint-a4vecs)
+                 (time$ (svexlist->a4vecs-for-varlist-with-subexprs x svars boolmasks)
+                        :msg "; svex->aigs: ~st sec, ~sa bytes.~%"))
+                ((when err)
+                 (b* ((?ign (cw "ERROR gathering AIG bits for variables: ~@0~%" err)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+
+                ((mv ?err aig-env1)
+                 ;; ignore the error; it can't exist if the above doesn't
+                 (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env1)
+                        :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
+                (aig-env1 (make-fast-alist aig-env1))
+                
+                ((mv ?err aig-env2)
+                 ;; ignore the error; it can't exist if the above doesn't
+                 (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env2)
+                        :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
+                (aig-env2 (make-fast-alist aig-env2))
+
+                (?ign (fast-alist-free env1))
+                (?ign (fast-alist-free env2))
+                (aigs (a4veclist-subnodes (append x-a4vecs hint-a4vecs)))
+                ((mv x-eval1 hint-eval1 aigs-eval1)
+                 (eval-collection-for-svexlist-evals-equal-and-integerp-with-transforms-fgl-extreme
+                  x-a4vecs hint-a4vecs aigs aig-env1))
+                ((mv x-eval2 hint-eval2 aigs-eval2)
+                 (eval-collection-for-svexlist-evals-equal-and-integerp-with-transforms-fgl-extreme
+                  x-a4vecs hint-a4vecs aigs aig-env2))
+                ;; (x-eval1 (time$ (a4veclist-eval x-a4vecs aig-env1)
+                ;;                 :msg "; a4veclist-eval (x, env1): ~st sec, ~sa bytes.~%"))
+                ;; (hint-eval1 (time$ (a4veclist-eval hint-a4vecs aig-env1)
+                ;;                   :msg "; a4veclist-eval (sub, env1): ~st sec, ~sa bytes.~%"))
+                ;; (x-eval2 (time$ (a4veclist-eval x-a4vecs aig-env2)
+                ;;                 :msg "; a4veclist-eval (x, env2): ~st sec, ~sa bytes.~%"))
+                ;; (hint-eval2 (time$ (a4veclist-eval hint-a4vecs aig-env2)
+                ;;                   :msg "; a4veclist-eval (sub, env2): ~st sec, ~sa bytes.~%"))
+                (evals-equal-and-integerp (and (equal x-eval1 x-eval2) (integer-listp x-eval1)))
+                ((mv hint1-upper hint1-lower) (4veclist-separate-upper-lower hint-eval1))
+                ((mv hint2-upper hint2-lower) (4veclist-separate-upper-lower hint-eval2))
+                ;; We are going to allow equivalences between the two
+                ;; evaluations as well as the upper/lowers of the same
+                ;; evaluation.  
+                (hint1 (list hint1-upper hint1-lower hint1-upper aigs-eval1))
+                (hint2 (list hint2-upper hint2-lower hint1-lower aigs-eval2))
+                ((mv iso-ok hint-iso1 hint-iso2) (fgl::fgl-make-isomorphic iso-ok hint1 hint2))
+                ((unless iso-ok)
+                 (b* ((?ign (cw "ERROR: the equivalence hint objects couldn't be made isomorphic!~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+                (len1 (fgl::syntax-bind len1 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-iso1)))))
+                (len2 (fgl::syntax-bind len2 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-iso2)))))
+                ((unless (fgl::syntax-bind lens-equal (equal len1 len2)))
+                 (b* ((?ign (cw "ERROR: the number of BFR objects in the ~
+                                 equivalence hint objects wasn't equal after ~
+                                 they were made isomorphic!~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
+                                            (integer-listp (svexlist-eval orig-x env1))))))
+                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                
+             (fgl::fgl-simplify-ordered evals-equal-and-integerp transforms
+                                        :tracked-obj
+                                        (cons hint-iso1 hint-iso2))))
+    :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
+                                    SVEXLIST->A4VECS-FOR-VARLIST
+                                    svexlist->a4vec-aig-env-for-varlist)
+                                   (svexlist->a4vec-correct))))))

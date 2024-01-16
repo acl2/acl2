@@ -50,7 +50,7 @@
                 (natp index))
            (equal (assoc-equal index array)
                   nil))
-  :hints (("Goal" :in-theory (e/d (bounded-integer-alistp assoc-equal) ()))))
+  :hints (("Goal" :in-theory (enable bounded-integer-alistp assoc-equal))))
 
 (defthm bound2-of-car-of-assoc-equal-when-bounded-integer-alistp
   (implies (and (bounded-integer-alistp array n)

@@ -253,4 +253,4 @@
            (<= (- i) (truncate i j)))
   :rule-classes :linear
   :hints (("Goal" :cases ((< j 0))
-           :in-theory (enable acl2::truncate-becomes-floor-gen))))
+           :in-theory (enable truncate-becomes-floor-gen))))

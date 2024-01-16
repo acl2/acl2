@@ -197,6 +197,9 @@
                 t)))
     :rule-classes :forward-chaining))
 
+(create-case-match-macro 4vec-<-pattern
+                         ('sv::4vec-< x y))
+
 (define */+-to-mult-spec-meta ((term rp-termp)
                                (context rp-term-listp))
   (cond
@@ -265,6 +268,25 @@
       (mv `(2vec-adder ,x ,y '0 ',(1+ (max size-x size-y)))
           `(nil t t t t))))
 
+   ((4vec-<-pattern-p term)
+    (4vec-<-pattern-body
+     term
+     (b* (((mv size-x integerp-x)
+           (calculate-vec-size x context))
+          ((mv size-y integerp-y)
+           (calculate-vec-size y context))
+          ((unless (and integerp-x
+                        integerp-y
+                        (not (equal size-x -1))
+                        (not (equal size-y -1))))
+           (mv term nil)))
+       (mv `(unary-- (svl::bits (2vec-subtract ,x ,y ',(max size-x size-y) '1)
+                                ',(max size-x size-y)
+                                '1))
+           `(unary-- (svl::bits (2vec-subtract t t t t)
+                                t
+                                t))))))
+
    (t (mv term nil))))
 
 #|(*-to-mult-spec-meta  '(BINARY-* (ACL2::RP 'INTEGERP
@@ -302,6 +324,7 @@
                  2vec-adder
                  2VEC-SUBTRACT
                  unary--
+                 sv::4vec-<
                  SVL-MULT-FINAL-SPEC
                  binary-or binary-xor binary-and binary-?
                  logbit$inline binary-not))))
@@ -313,6 +336,8 @@
    (progn
      (in-theory (disable logbit))
      (rp::create-regular-eval-lemma svl::4VEC-CONCAT$ 3
+                                    */+-to-mult/adder-spec-meta-fchecks)
+     (rp::create-regular-eval-lemma sv::4vec-< 2
                                     */+-to-mult/adder-spec-meta-fchecks)
      (rp::create-regular-eval-lemma SVL-MULT-FINAL-SPEC 3
                                     */+-to-mult/adder-spec-meta-fchecks)
@@ -581,6 +606,181 @@
            :use ((:instance calculate-vec-size-correct))
            :in-theory nil)))
 
+
+
+(local
+ (defthm bitp-of-f2-with-3-elements
+   (implies (and (bitp x)
+                 (bitp y)
+                 (bitp z))
+            (bitp (f2 (sum x y z))))
+   :hints (("Goal"
+            :in-theory (e/d (bitp) ())))))
+
+(local
+ (defthm bitp-of-f2-with-2-elements
+   (implies (and (bitp x)
+                 (bitp y))
+            (bitp (f2 (sum x y))))
+   :hints (("Goal"
+            :in-theory (e/d (bitp) ())))))
+
+(defthm integerp-of-2vec-subtract
+  (implies (and (natp size)
+                (bitp carry-in))
+           (integerp (2vec-subtract x y size carry-in)))
+  :hints (("Goal"
+           :do-not-induct t
+           :induct (2vec-subtract x y size carry-in)
+           :in-theory (e/d (2vec-subtract)
+                           (+-is-sum
+                            floor
+                            rw-dir1)))))
+
+(local
+ (encapsulate
+   nil
+
+   (local
+    (defthm <-to-negp
+      (implies (and (integerp x)
+                    (integerp y))
+               (equal (SV::4VEC-< x y)
+                      (sv::bool->vec (< (+ x (- y)) 0))))
+      :hints (("Goal"
+               :in-theory (e/d (SV::4VEC-<
+                                SV::BOOL->VEC)
+                               (+-is-sum
+                                rw-dir1))))))
+
+   (local
+    (defthmd -to-2vec-subtract-no-carry
+      (implies (and (natp size)
+                    (unsigned-byte-p size x)
+                    (unsigned-byte-p size y))
+               (equal (+ x (- y))
+                      (2vec-subtract x y size 1)))
+      :otf-flg t
+      :hints (("Goal"
+               :do-not-induct t
+               :case-split-limitations (1 1)
+               :use ((:instance -to-2vec-subtract
+                                (carry-in 1)))
+               :in-theory (e/d () (unsigned-byte-p
+                                   rw-dir1
+                                   +-is-sum))))))
+
+   
+
+   (progn
+     (local
+      (use-arith-5 t))
+   
+     (local
+      (defthm <-of-4vec-list
+        (implies (and (force (integerp x))
+                      (force (integerp b)))
+                 (equal (< (svl::4vec-list b x) 0)
+                        (< x 0)))
+        :hints (("Goal"
+                 :use ((:instance BITP-M2
+                                  (x b)))
+                 :in-theory (e/d (svl::4vec-concat$
+                                  SV::4VEC-CONCAT
+                                  SV::4VEC bitp)
+                                 (BITP-M2 rw-dir1
+                                  +-is-sum))))))
+
+     (local
+      (use-arith-5 nil)))
+
+   (local
+    (defthm bitsof-4vec-list
+      (implies (and (posp size))
+               (equal (svl::bits (svl::4vec-list b x) size 1)
+                      (svl::bits x (1- size) 1)))
+      :hints (("Goal"
+               :use ((:instance SVL::BITS-OF-CONCAT-2
+                                (SVL::C-SIZE 1)
+                                (SVL::SIZE 1)
+                                (SVL::START size)
+                                (svl::term1 b)
+                                (svl::term2 x)))
+                                
+               :in-theory (e/d () (rw-dir1
+                                   +-is-sum
+                                   SVL::BITS-OF-CONCAT-2))))
+      ))
+
+   (local
+    (defthm neg-2vec-subtract
+      (implies (and (natp size)
+                    (bitp carry-in))
+               (equal (- (svl::bits (2vec-subtract x y size carry-in)
+                                    size 1))
+                      (sv::bool->vec (< (2vec-subtract x y size carry-in) 0))))
+      :hints (("goal"
+               :do-not-induct t
+               :induct (2vec-subtract x y size carry-in)
+               :in-theory (e/d (2vec-subtract
+                                sv::bool->vec
+                                NOT$ BITP
+                                BIT-FIX)
+                               (+-is-sum
+                                floor
+
+                                unsigned-byte-p
+                                rw-dir1))))))
+
+   (defthm 4vec-<-to-subtraction-rewrite
+     (implies (and (integerp x)
+                   (integerp y)
+                   (force (natp size))
+                   (unsigned-byte-p size x)
+                   (unsigned-byte-p size y))
+              (EQUAL
+               (- (SVL::BITS (+ x (- y))
+                             size
+                             1))
+               (SV::4VEC-< x y)
+
+               ))
+     :hints (("Goal"
+              :in-theory (e/d (-to-2vec-subtract-no-carry
+                               ;;svl::bits
+                               SV::4VEC-PART-SELECT
+                               SV::4VEC-RSH
+                               SV::4VEC-CONCAT
+                               SV::4VEC-SHIFT-CORE
+                               #|sv::bool->vec|#)
+                              (+-IS-SUM
+                               mod2-is-m2
+                               floor expt
+                               UNSIGNED-BYTE-P
+                               rw-dir1)))))))
+
+(local
+ (encapsulate
+   nil
+   (local
+    (use-arith-5 t))
+
+   (defthm unsigned-byte-p-max
+     (implies (and (unsigned-byte-p size-x x)
+                   ;;(natp size-x)
+                   (natp other-size)
+                   )
+              (and (unsigned-byte-p (max size-x other-size) x)
+                   (unsigned-byte-p (max other-size size-x) x)))
+     :hints (("Goal"
+              :in-theory (e/d () (rw-dir1)))))))
+
+(local
+ (defthm  natp-of-max
+   (implies (and (natp x) (natp y))
+            (natp (max x y)))
+   :rule-classes :type-prescription))
+
 (defthm */+-to-mult-spec-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts)
                 (eval-and-all context a)
@@ -590,6 +790,7 @@
                   (rp-evlt term a)))
   :hints (("Goal"
            :do-not-induct t
+           ;;:case-split-limitations (6 6)
            :use ((:instance *-of-known-sized-vecs
                             (x (rp-evlt (cadr term) a))
                             (y (rp-evlt (caddr term) a))
@@ -605,7 +806,7 @@
                              regular-eval-lemmas-with-ex-from-rp
                              regular-eval-lemmas)
                             (+-IS-SUM
-                             max
+                             max ;;floor floor2-if-f2
                              *-of-known-sized-vecs
                              SVL-MULT-FINAL-SPEC
                              RP-TRANS-LST
@@ -645,6 +846,13 @@
 (rp::add-meta-rule
  :meta-fnc */+-to-mult-spec-meta
  :trig-fnc binary-+
+ :valid-syntaxp t
+ :formula-checks */+-to-mult/adder-spec-meta-fchecks
+ :returns (mv term dont-rw))
+
+(rp::add-meta-rule
+ :meta-fnc */+-to-mult-spec-meta
+ :trig-fnc sv::4vec-<
  :valid-syntaxp t
  :formula-checks */+-to-mult/adder-spec-meta-fchecks
  :returns (mv term dont-rw))

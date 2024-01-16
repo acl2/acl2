@@ -18,8 +18,8 @@
 
 (include-book "pack")
 
-(defun defmergesort-fn (merge-name
-                        merge-sort-name
+(defun defmergesort-fn (merge-sort-name
+                        merge-name
                         comparison-fn ;; todo: allow an expression?
                         element-pred
                         verify-guards
@@ -265,8 +265,8 @@
 ;; todo: allow more options
 ;; todo: should list-pred imply true-listp (maybe not?)
 ;; todo: should be comparison be strict like < or weak like <=
-(defmacro defmergesort (merge-name ;the name to use for the "merge" function
-                        merge-sort-name ;the name to use for the "merge sort" function
+(defmacro defmergesort (merge-sort-name ;the name to use for the "merge sort" function
+                        merge-name ;the name to use for the "merge" function
                         comparison ;the comparison function (e.g., <) (todo: allow this to take extra args?)
                         element-pred ;the name of a predicate recognizing the items to sort
                         ;; list-pred ;a predicate asserting that all elements of a list satisfy element-pred
@@ -274,4 +274,4 @@
                         (verify-guards 't)
                         (extra-theorems 't) ;whether to generate theorems that mention non-built-in functions, like perm
                         )
-  (defmergesort-fn merge-name merge-sort-name comparison element-pred verify-guards extra-theorems))
+  (defmergesort-fn merge-sort-name merge-name comparison element-pred verify-guards extra-theorems))

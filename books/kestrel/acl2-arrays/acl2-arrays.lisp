@@ -229,8 +229,7 @@
                     (< len maximum-length)
                     (<= maximum-length *maximum-positive-32-bit-integer*)
                     (bounded-integer-alistp l len)))))))
-  :hints (("Goal" :in-theory (e/d (array1p-rewrite)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable array1p-rewrite))))
 
 (defthm alistp-of-reverse-list
   (equal (alistp (reverse-list x))
@@ -256,7 +255,7 @@
                 (assoc-equal key x)))
   :hints (("Goal" :in-theory (enable reverse-list))))
 
-(local (in-theory (enable revappend-lemma)))
+(local (in-theory (enable revappend-becomes-append-of-reverse-list)))
 
 ;use list fix in concl?
 (defthm bounded-integer-alistp-of-reverse-list
@@ -638,9 +637,8 @@
                 (array1p array-name array)
                 (natp index))
            (not (assoc-equal index array)))
-  :hints (("Goal" :in-theory (e/d (not-assoc-equal-when-bounded-integer-alistp-out-of-bounds
-                                   array1p-rewrite header)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable not-assoc-equal-when-bounded-integer-alistp-out-of-bounds
+                                     array1p-rewrite header))))
 
 ;; Disabled since this can be expensive and is rarely needed.
 (defthmd aref1-when-too-large
@@ -649,8 +647,7 @@
                 (natp n))
            (equal (aref1 array-name array n)
                   (default array-name array)))
-  :hints (("Goal" :in-theory (e/d (AREF1 ARRAY1P-rewrite HEADER not-assoc-equal-when-bounded-integer-alistp-out-of-bounds)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable AREF1 ARRAY1P-rewrite HEADER not-assoc-equal-when-bounded-integer-alistp-out-of-bounds))))
 
 (defthm aref1-when-too-large-cheap
   (implies (and (<= (alen1 array-name array) n)
@@ -720,7 +717,7 @@
 ;; (defthm assoc-equal-of-header-of-compress1
 ;;   (equal (assoc-equal :header (compress1 array-name array))
 ;;          (assoc-equal :header array))
-;;   :hints (("Goal" :in-theory (e/d (compress1) ()))))
+;;   :hints (("Goal" :in-theory (enable compress1))))
 
 (defthm array1p-forward-to-<=-of-alen1
   (implies (array1p array-name array)

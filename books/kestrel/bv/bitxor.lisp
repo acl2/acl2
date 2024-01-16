@@ -55,7 +55,7 @@
   (implies (syntaxp (quotep y))
            (equal (bitxor x y)
                   (bitxor y x)))
-  :hints (("Goal" :use (:instance bitxor-commutative)
+  :hints (("Goal" :use bitxor-commutative
            :in-theory (disable bitxor-commutative))))
 
 (defthmd bitxor-combine-constants
@@ -230,8 +230,7 @@
                 (getbit 0 y)))
   :hints (("Goal"
            :cases ((equal 0 (getbit 0 x))
-                   (equal 1 (getbit 0 x)))
-           :in-theory (enable))))
+                   (equal 1 (getbit 0 x))))))
 
 (defthm equal-of-bitxor-same
   (equal (equal x (bitxor x y))
@@ -243,7 +242,7 @@
   (equal (equal x (bitxor y x))
          (and (unsigned-byte-p 1 x)
               (equal 0 (getbit 0 y))))
-  :hints (("Goal" :use (:instance equal-of-bitxor-same)
+  :hints (("Goal" :use equal-of-bitxor-same
            :in-theory (e/d (bitxor-commutative) (equal-of-bitxor-same)))))
 
 (defthm equal-of-bitxor-and-bitxor-same-2
@@ -294,7 +293,7 @@
   (implies (posp size)
            (equal (bitxor y (bvchop size x))
                   (bitxor y x)))
-  :hints (("Goal" :use (:instance bitxor-of-bvchop-arg1)
+  :hints (("Goal" :use bitxor-of-bvchop-arg1
            :in-theory (disable bitxor-of-bvchop-arg1))))
 
 (defthm bitxor-of-bvxor-arg1

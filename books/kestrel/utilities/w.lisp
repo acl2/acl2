@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function W
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,8 +39,10 @@
          (w state))
   :hints (("Goal" :in-theory (enable w update-acl2-oracle))))
 
+;dup in globals.lisp
 (defthm w-of-put-global
-  (implies (not (equal key 'current-acl2-world))
-           (equal (w (put-global key value state))
-                  (w state)))
-  :hints (("Goal" :in-theory (enable w put-global get-global))))
+  (equal (w (put-global key value state))
+         (if (equal key 'current-acl2-world)
+             value
+           (w state)))
+  :hints (("Goal" :in-theory (enable w))))

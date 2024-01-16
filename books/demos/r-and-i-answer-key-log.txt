@@ -316,8 +316,7 @@ ACL2 !>>(THEOREM PROBLEM-2
                           ((HELLO WORLD !) (15))))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by the :executable-counterparts
 of EQUAL and MAKE-EQUIV-CLASSES.
@@ -367,8 +366,7 @@ ACL2 !>>(THEOREM PROBLEM-4
                                    (CONS (CONS 'B '2) 'NIL))))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by case analysis.
 
@@ -400,8 +398,7 @@ ACL2 !>>(THEOREM PROBLEM-5
                              'NIL))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by case analysis.
 
@@ -1114,8 +1111,7 @@ ACL2 !>>>(DEFTHM PROBLEM-40
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1187,8 +1183,7 @@ ACL2 !>>:-----
 ; r-and-i-answer-key-log.txt.  Notice that the output prints the
 ; induction scheme suggested by the hint.
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1245,8 +1240,7 @@ ACL2 !>>(THEOREM PROBLEM-41-COUNTEREXAMPLE
                              '(1 2 3 . 4)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by the :executable-counterparts
 of APP and EQUAL.
@@ -1287,8 +1281,7 @@ ACL2 !>>>(DEFTHM PROBLEM-41
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP X NIL))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1391,8 +1384,7 @@ ACL2 !>>>(DEFTHM PROBLEM-42
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1481,8 +1473,7 @@ ACL2 !>>>(DEFTHM PROBLEM-43
                            :INDUCT (REV X)
                            :IN-THEORY (ENABLE PROBLEM-42))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1567,8 +1558,7 @@ ACL2 !>>:-----
 ; arithmetic we allow ourselves to use freely in Recursion
 ; and Induction.
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1634,8 +1624,7 @@ ACL2 !>>(THEOREM PROBLEM-44-COUNTEREXAMPLE
                              '(1 2 3 . 4)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by the :executable-counterparts
 of EQUAL and REV.
@@ -1659,8 +1648,7 @@ ACL2 !>>>(DEFTHM PROBLEM-44C
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1735,8 +1723,7 @@ ACL2 !>>>(DEFTHM PROBLEM-44B
                            :INDUCT (REV X)
                            :IN-THEORY (ENABLE PROBLEM-44C))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1822,8 +1809,7 @@ ACL2 !>>>(DEFTHM PROBLEM-44A
                     :INDUCT (APP A B)
                     :IN-THEORY (ENABLE PROBLEM-40 PROBLEM-41 PROBLEM-44B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -1948,8 +1934,7 @@ ACL2 !>>>(DEFTHM PROBLEM-44
                            :INDUCT (REV X)
                            :IN-THEORY (ENABLE PROBLEM-44A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2056,8 +2041,7 @@ ACL2 !>>>(DEFTHM PROBLEM-45
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (SWAP-TREE X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2145,8 +2129,7 @@ ACL2 !>>>(DEFTHM PROBLEM-46
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (MEM E A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2264,8 +2247,7 @@ ACL2 !>>>(DEFTHM PROBLEM-47A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (INT A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2406,8 +2388,7 @@ ACL2 !>>>(DEFTHM PROBLEM-47
                            :INDUCT (MEM E A)
                            :IN-THEORY (ENABLE PROBLEM-47A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2584,8 +2565,7 @@ ACL2 !>>>(DEFTHM PROBLEM-48A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (SUB X Y))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2703,8 +2683,7 @@ ACL2 !>>>(DEFTHM PROBLEM-48
                            :INDUCT (SUB X X)
                            :IN-THEORY (ENABLE PROBLEM-48A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2810,8 +2789,7 @@ of the term being rewritten.  This is generally a severe restriction
 on the applicability of a :REWRITE rule.  See :DOC free-variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -2945,8 +2923,7 @@ the term being rewritten.  This is generally a severe restriction on
 the applicability of a :REWRITE rule.  See :DOC free-variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -3116,8 +3093,7 @@ ACL2 !>>>(DEFTHM PROBLEM-50A
                     :INDUCT (SUB A C)
                     :IN-THEORY (ENABLE PROBLEM-48A PROBLEM-48 PROBLEM-49A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -3226,8 +3202,7 @@ ACL2 !>>(THEOREM PROBLEM-50 (SUB (APP A A) A)
                  :HINTS (("Goal" :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-50A)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by the :executable-counterpart of
 IF and the simple :rewrite rules PROBLEM-48 and PROBLEM-50A.
@@ -3288,8 +3263,7 @@ ACL2 !>>>(DEFTHM PROBLEM-51A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (MAPNIL1 A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -3370,8 +3344,7 @@ ACL2 !>>>(DEFTHM PROBLEM-51B
                            :INDUCT (NILS X)
                            :IN-THEORY (ENABLE PROBLEM-51A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -3517,8 +3490,7 @@ ACL2 !>>>(DEFTHM PROBLEM-51
                            :INDUCT (MAPNIL1 A B)
                            :IN-THEORY (ENABLE PROBLEM-51A PROBLEM-51B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -3716,8 +3688,7 @@ ACL2 !>>>(DEFTHM PROBLEM-53
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (PERM X X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -3813,8 +3784,7 @@ ACL2 !>>>(DEFTHM PROBLEM-54A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (PERM X Y))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -3997,8 +3967,7 @@ ACL2 !>>>(DEFTHM PROBLEM-54
                            :INDUCT (PERM X Y)
                            :IN-THEORY (ENABLE PROBLEM-54A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -4148,8 +4117,7 @@ restriction on the applicability of a :REWRITE rule.  See :DOC free-
 variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -4290,8 +4258,7 @@ of the term being rewritten.  This is generally a severe restriction
 on the applicability of a :REWRITE rule.  See :DOC free-variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -4429,8 +4396,7 @@ ACL2 !>>>(DEFTHM PROBLEM-55C
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (RM A X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -4562,8 +4528,7 @@ ACL2 !>>>(DEFTHM PROBLEM-55D
                            :INDUCT (RM D X)
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -4708,8 +4673,7 @@ ACL2 !>>>(DEFTHM PROBLEM-55E
                     :IN-THEORY (ENABLE PROBLEM-54A
                                        PROBLEM-54 PROBLEM-55C PROBLEM-55D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -4875,8 +4839,7 @@ the term being rewritten.  This is generally a severe restriction on
 the applicability of a :REWRITE rule.  See :DOC free-variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -5043,8 +5006,7 @@ ACL2 !>>(THEOREM <<=-NON-STRICT-TOTAL-ORDER
                       (OR (<<= X Y) (<<= Y X)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definition <<= and the simple :rewrite rule LEXORDER-REFLEXIVE
 we reduce the conjecture to the following three conjectures.
@@ -5157,8 +5119,7 @@ ACL2 !>>>(DEFTHM PROBLEM-58A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (INSERT E X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -5373,8 +5334,7 @@ ACL2 !>>>(DEFTHM PROBLEM-58
                            :INDUCT (ISORT X)
                            :IN-THEORY (ENABLE PROBLEM-58A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -5466,8 +5426,7 @@ ACL2 !>>>(DEFTHM PROBLEM-59A
                     :IN-THEORY (ENABLE PROBLEM-48
                                        PROBLEM-49A PROBLEM-54A PROBLEM-54))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -5647,8 +5606,7 @@ ACL2 !>>>(DEFTHM PROBLEM-59
                            :INDUCT (ISORT X)
                            :IN-THEORY (ENABLE PROBLEM-54 PROBLEM-59A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -5754,8 +5712,7 @@ ACL2 !>>>(DEFTHM PROBLEM-60A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (INSERT E X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6007,8 +5964,7 @@ ACL2 !>>>(DEFTHM PROBLEM-60B
                            :INDUCT (ISORT X)
                            :IN-THEORY (ENABLE PROBLEM-60A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6093,8 +6049,7 @@ ACL2 !>>>(DEFTHM PROBLEM-60C
                            :INDUCT (ISORT X)
                            :IN-THEORY (ENABLE PROBLEM-60B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6174,8 +6129,7 @@ ACL2 !>>>(DEFTHM PROBLEM-60D
                            :INDUCT (INSERT E X)
                            :IN-THEORY (ENABLE PROBLEM-60A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6297,8 +6251,7 @@ ACL2 !>>>(DEFTHM PROBLEM-60E
                            :INDUCT (ISORT X)
                            :IN-THEORY (ENABLE PROBLEM-60D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6376,8 +6329,7 @@ ACL2 !>>>(DEFTHM PROBLEM-60
                            :DO-NOT '(GENERALIZE)
                            :IN-THEORY (ENABLE PROBLEM-60C PROBLEM-60E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by the simple :rewrite rules PROBLEM-60C
 and PROBLEM-60E.
@@ -6439,8 +6391,7 @@ ACL2 !>>>(DEFTHM PROBLEM-61A
                            :INDUCT (REV1 X A)
                            :IN-THEORY (ENABLE PROBLEM-40))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6523,8 +6474,7 @@ ACL2 !>>>(DEFTHM PROBLEM-61
                     :DO-NOT '(GENERALIZE)
                     :IN-THEORY (ENABLE PROBLEM-41 PROBLEM-44B PROBLEM-61A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :rewrite rule PROBLEM-61A we reduce the conjecture to
 
@@ -6581,8 +6531,7 @@ ACL2 !>>>(DEFTHM PROBLEM-62-DIRECT
                            :INDUCT (MAPNIL A)
                            :IN-THEORY (ENABLE PROBLEM-51A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6692,8 +6641,7 @@ ACL2 !>>>(DEFTHM PROBLEM-62A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6790,8 +6738,7 @@ ACL2 !>>>(DEFTHM PROBLEM-62B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (MAPNIL A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6876,8 +6823,7 @@ ACL2 !>>>(DEFTHM PROBLEM-62C
                            :INDUCT (MAPNIL1 A B)
                            :IN-THEORY (ENABLE PROBLEM-62A PROBLEM-62B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -6964,8 +6910,7 @@ ACL2 !>>>(DEFTHM PROBLEM-62D
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (MAPNIL A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7048,8 +6993,7 @@ ACL2 !>>>(DEFTHM PROBLEM-62
                     :DO-NOT '(GENERALIZE)
                     :IN-THEORY (ENABLE PROBLEM-41 PROBLEM-62C PROBLEM-62D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :rewrite rule PROBLEM-62C we reduce the conjecture to
 
@@ -7156,8 +7100,7 @@ ACL2 !>>>(DEFTHM PROBLEM-64A
                            :INDUCT (MCFLATTEN X A)
                            :IN-THEORY (ENABLE PROBLEM-40))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7247,8 +7190,7 @@ ACL2 !>>>(DEFTHM PROBLEM-64B
                            :INDUCT (FLATTEN X)
                            :IN-THEORY (ENABLE PROBLEM-44C))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7334,8 +7276,7 @@ ACL2 !>>>(DEFTHM PROBLEM-64
                     :DO-NOT '(GENERALIZE)
                     :IN-THEORY (ENABLE PROBLEM-41 PROBLEM-64A PROBLEM-64B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :rewrite rule PROBLEM-64A we reduce the conjecture to
 
@@ -7424,8 +7365,7 @@ ACL2 !>>>(DEFTHM PROBLEM-66A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (FIX-NAT X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7507,8 +7447,7 @@ ACL2 !>>>(DEFTHM PROBLEM-66B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (NAT X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7644,8 +7583,7 @@ ACL2 !>>>(DEFTHM PROBLEM-66C
                            :INDUCT (PLUS X Y)
                            :IN-THEORY (ENABLE PROBLEM-66A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7727,8 +7665,7 @@ ACL2 !>>>(DEFTHM PROBLEM-66D
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (PLUS I J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7810,8 +7747,7 @@ ACL2 !>>>(DEFTHM PROBLEM-66E
                            :INDUCT (PLUS I J)
                            :IN-THEORY (ENABLE PROBLEM-66A PROBLEM-66B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7908,8 +7844,7 @@ ACL2 !>>>(DEFTHM PROBLEM-67A
                            :INDUCT (TIMES X Y)
                            :IN-THEORY (ENABLE PROBLEM-66C))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -7986,8 +7921,7 @@ ACL2 !>>>(DEFTHM PROBLEM-67B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (TIMES I J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8071,8 +8005,7 @@ ACL2 !>>>(DEFTHM PROBLEM-67C
                            :INDUCT (TIMES I J)
                            :IN-THEORY (ENABLE PROBLEM-66D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8169,8 +8102,7 @@ ACL2 !>>>(DEFTHM PROBLEM-68A
                            :INDUCT (POWER X Y)
                            :IN-THEORY (ENABLE PROBLEM-67A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8249,8 +8181,7 @@ ACL2 !>>>(DEFTHM PROBLEM-68B
                            :INDUCT (POWER I J)
                            :IN-THEORY (ENABLE PROBLEM-67B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8328,8 +8259,7 @@ ACL2 !>>>(DEFTHM PROBLEM-68C
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (POWER I J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8432,8 +8362,7 @@ ACL2 !>>>(DEFTHM PROBLEM-69A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (LIST (FIX-NAT I) (LESSEQP I J)))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8538,8 +8467,7 @@ ACL2 !>>>(DEFTHM PROBLEM-69B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (LESSEQP I J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8693,8 +8621,7 @@ ACL2 !>>>(DEFTHM PROBLEM-70A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (EVENNAT I))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8797,8 +8724,7 @@ ACL2 !>>>(DEFTHM PROBLEM-71A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (PLUS I Z))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -8894,8 +8820,7 @@ ACL2 !>>>(DEFTHM PROBLEM-71
                            :DO-NOT '(GENERALIZE)
                            :IN-THEORY (ENABLE PROBLEM-66B PROBLEM-71A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using primitive type reasoning,
 the :rewrite rules PROBLEM-66B and PROBLEM-71A and the :type-prescription
@@ -8950,8 +8875,7 @@ ACL2 !>>>(DEFTHM PROBLEM-72
                    :INDUCT (PLUS I J)
                    :IN-THEORY (ENABLE PROBLEM-66B PROBLEM-66C PROBLEM-66D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9040,8 +8964,7 @@ ACL2 !>>>(DEFTHM PROBLEM-73A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (PLUS I J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9120,8 +9043,7 @@ ACL2 !>>>(DEFTHM PROBLEM-73
                            :INDUCT (PLUS I J)
                            :IN-THEORY (ENABLE PROBLEM-71A PROBLEM-73A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9231,8 +9153,7 @@ ACL2 !>>>(DEFTHM PROBLEM-74A
                    :IN-THEORY (ENABLE PROBLEM-66B
                                       PROBLEM-66C PROBLEM-66E PROBLEM-73A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9321,8 +9242,7 @@ ACL2 !>>>(DEFTHM PROBLEM-74B
                     :IN-THEORY (ENABLE PROBLEM-66B PROBLEM-67A
                                        PROBLEM-67B PROBLEM-73 PROBLEM-74A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9412,8 +9332,7 @@ ACL2 !>>>(DEFTHM PROBLEM-74
                            :INDUCT (TIMES I J)
                            :IN-THEORY (ENABLE PROBLEM-74B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9501,8 +9420,7 @@ ACL2 !>>>(DEFTHM PROBLEM-75A
                            :INDUCT (TIMES I Z)
                            :IN-THEORY (ENABLE PROBLEM-71A PROBLEM-73))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9605,8 +9523,7 @@ ACL2 !>>>(DEFTHM PROBLEM-75B
                     :INDUCT (TIMES I J)
                     :IN-THEORY (ENABLE PROBLEM-71A PROBLEM-73 PROBLEM-74A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9702,8 +9619,7 @@ ACL2 !>>>(DEFTHM PROBLEM-75
                            :INDUCT (TIMES I J)
                            :IN-THEORY (ENABLE PROBLEM-75A PROBLEM-75B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9808,8 +9724,7 @@ ACL2 !>>>(DEFTHM PROBLEM-76A
                     :INDUCT (TIMES I K)
                     :IN-THEORY (ENABLE PROBLEM-72 PROBLEM-73 PROBLEM-74A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9896,8 +9811,7 @@ ACL2 !>>>(DEFTHM PROBLEM-76B
                            :INDUCT (TIMES J K)
                            :IN-THEORY (ENABLE PROBLEM-75 PROBLEM-76A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -9986,8 +9900,7 @@ ACL2 !>>>(DEFTHM PROBLEM-76
                     :IN-THEORY (ENABLE PROBLEM-66B PROBLEM-68A PROBLEM-68C
                                        PROBLEM-73 PROBLEM-75 PROBLEM-76B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10089,8 +10002,7 @@ ACL2 !>>>(DEFTHM PROBLEM-77A
                     :INDUCT (POWER B I)
                     :IN-THEORY (ENABLE PROBLEM-74 PROBLEM-75 PROBLEM-76B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10172,8 +10084,7 @@ ACL2 !>>>(DEFTHM PROBLEM-77B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (POWER '(NIL) I))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10252,8 +10163,7 @@ ACL2 !>>>(DEFTHM PROBLEM-77
                     :INDUCT (TIMES I J)
                     :IN-THEORY (ENABLE PROBLEM-76 PROBLEM-77A PROBLEM-77B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10340,8 +10250,7 @@ ACL2 !>>>(DEFTHM PROBLEM-78
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (LESSEQP I I))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10437,8 +10346,7 @@ of the term being rewritten.  This is generally a severe restriction
 on the applicability of a :REWRITE rule.  See :DOC free-variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10572,8 +10480,7 @@ ACL2 !>>>(DEFTHM PROBLEM-80
                            :INDUCT (PLUS I K)
                            :IN-THEORY (ENABLE PROBLEM-69A PROBLEM-69B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10667,8 +10574,7 @@ ACL2 !>>>(DEFTHM PROBLEM-81
                     :INDUCT (EVENNAT I)
                     :IN-THEORY (ENABLE PROBLEM-70A PROBLEM-73 PROBLEM-73A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -10899,8 +10805,7 @@ ACL2 !>>>(DEFTHM PROBLEM-85
            :HINTS (("Goal" :DO-NOT-INDUCT T
                            :DO-NOT '(GENERALIZE))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By case analysis we reduce the conjecture to the following two conjectures.
 
@@ -11002,8 +10907,7 @@ ACL2 !>>>(DEFTHM PROBLEM-87A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (CC X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -11587,8 +11491,7 @@ ACL2 !>>(THEOREM
          :HINTS (("Goal" :IN-THEORY (ENABLE (OMEGA) (O^) (O*) (O+))))
          :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by the :executable-counterparts
 of CHECK-ALL-ROWS, CONS, EQUAL, OB*, OB+, OB^ and OMEGA.
@@ -11648,8 +11551,7 @@ ACL2 !>>(THEOREM PROBLEM-91
                                       (< I1 I2)))))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definition M2 we reduce the conjecture to
 
@@ -11767,8 +11669,7 @@ ACL2 !>>(THEOREM PROBLEM-95
                  :HINTS (("Goal" :IN-THEORY (ENABLE PROBLEM-85)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definition ATOM we reduce the conjecture to the following
 three conjectures.
@@ -12516,8 +12417,7 @@ Unless these definitions are disabled, this rule is unlikely ever to
 be used.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions DN, M and P we reduce the conjecture to
 the following two conjectures.
@@ -12598,8 +12498,7 @@ ACL2 !>>>(DEFTHM PROBLEM-101B
                            :USE ((:INSTANCE PROBLEM-101A (X X))
                                  (:INSTANCE PROBLEM-101A (X (DN X)))))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypotheses provided by the :USE hint.
 These hypotheses can be derived from PROBLEM-101A via instantiation.
@@ -12677,8 +12576,7 @@ ACL2 !>>>(DEFTHM PROBLEM-101C
 ACL2 Observation in ( DEFTHM PROBLEM-101C ...):  Our heuristics choose
 (M X) as the :TYPED-TERM.
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypotheses provided by the :USE hint.
 These hypotheses can be derived from PROBLEM-101A via instantiation.
@@ -12737,8 +12635,7 @@ ACL2 !>>>(DEFTHM PROBLEM-101D
                            :USE ((:INSTANCE PROBLEM-101A (X X))
                                  (:INSTANCE PROBLEM-101A (X (DN X)))))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypotheses provided by the :USE hint.
 These hypotheses can be derived from PROBLEM-101A via instantiation.
@@ -12853,8 +12750,7 @@ Goal
                         ((EQUAL (M Y) 0) 2)
                         (T (MAKE-ORD (M Y) 1 2)))))).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By case analysis we reduce the conjecture to the following three conjectures.
 
@@ -13009,8 +12905,7 @@ ACL2 !>>>(DEFTHM PROBLEM-102
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (F1 I J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -13087,8 +12982,7 @@ ACL2 !>>>(DEFTHM PROBLEM-103
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (F2 X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -13178,8 +13072,7 @@ ACL2 !>>>(DEFTHM PROBLEM-104
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (F3 X Y))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -13273,8 +13166,7 @@ ACL2 !>>>(DEFTHM PROBLEM-105
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (F4 X Y Q))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -13490,8 +13382,7 @@ ACL2 !>>>(DEFTHM PROBLEM-107
                            :INDUCT (FLATTEN! X)
                            :IN-THEORY (ENABLE PROBLEM-40))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -13715,8 +13606,7 @@ ACL2 !>>>(DEFTHM PROBLEM-108A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (GOPHER X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -13817,8 +13707,7 @@ ACL2 !>>>(DEFTHM PROBLEM-108B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (GOPHER X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -13905,8 +13794,7 @@ ACL2 !>>>(DEFTHM PROBLEM-108C
                            :DO-NOT '(GENERALIZE)
                            :IN-THEORY (ENABLE PROBLEM-85))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using linear arithmetic, the
 :linear rule PROBLEM-85 and the :type-prescription rule CC.
@@ -13952,8 +13840,7 @@ ACL2 !>>>(DEFTHM PROBLEM-108D
                            :IN-THEORY (ENABLE PROBLEM-108A
                                               PROBLEM-108B PROBLEM-108C))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using linear arithmetic, the
 :linear rules PROBLEM-108A and PROBLEM-108C and the :type-prescription
@@ -14007,8 +13894,7 @@ Goal
                           (CAR (GOPHER Y))))
               (O< (CC (CDR (GOPHER X))) (CC X)))).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By case analysis we reduce the conjecture to the following two conjectures.
 
@@ -14069,8 +13955,7 @@ ACL2 !>>>(DEFTHM PROBLEM-109A
                            :INDUCT (GOPHER X)
                            :IN-THEORY (ENABLE PROBLEM-40))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -14203,8 +14088,7 @@ ACL2 !>>>(DEFTHM PROBLEM-109B
                            :INDUCT (GOPHER X)
                            :IN-THEORY (ENABLE PROBLEM-40))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -14337,8 +14221,7 @@ ACL2 !>>>(DEFTHM PROBLEM-109C
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP X Y))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -14544,8 +14427,7 @@ ACL2 !>>>(DEFTHM PROBLEM-109D
                            :INDUCT (FLATTEN X)
                            :IN-THEORY (ENABLE PROBLEM-40 PROBLEM-109C))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -14641,8 +14523,7 @@ ACL2 !>>>(DEFTHM PROBLEM-109
                            :IN-THEORY (ENABLE PROBLEM-109A
                                               PROBLEM-109B PROBLEM-109D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -14809,8 +14690,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (CC X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -15831,8 +15711,7 @@ rule is now intended to rewrite left to right, you must prove the lemma
 again after PERM is known to be an equivalence relation.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the :executable-counterpart of TAU-SYSTEM and the simple :rewrite
 rule PROBLEM-53 we reduce the conjecture to the following two conjectures.
@@ -15894,8 +15773,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111C
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (FILTER FN Y E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -16500,8 +16378,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111D
                            :INDUCT (LEN X)
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -17504,8 +17381,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111E
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (RM D X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -17628,8 +17504,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111F
                            :IN-THEORY (ENABLE PROBLEM-111C
                                               PROBLEM-111D PROBLEM-111E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -18046,8 +17921,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111G
                                        PROBLEM-55 PROBLEM-111B PROBLEM-111D
                                        PROBLEM-111E PROBLEM-111F))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -18371,8 +18245,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111H
                     :IN-THEORY (ENABLE PROBLEM-46 PROBLEM-54A
                                        PROBLEM-54 PROBLEM-55 PROBLEM-111B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -18476,8 +18349,7 @@ that occurrence of X in the right-hand side with (DOUBLE-REWRITE X).
 See :doc double-rewrite for more information on this issue.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -18706,8 +18578,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111J
                    :IN-THEORY (ENABLE PROBLEM-53 PROBLEM-54
                                       PROBLEM-54A PROBLEM-55 PROBLEM-111B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -18853,8 +18724,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111K
                                     PROBLEM-54A PROBLEM-54 PROBLEM-55B
                                     PROBLEM-55 PROBLEM-111B PROBLEM-111J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -18996,8 +18866,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111L
                     :IN-THEORY (ENABLE PROBLEM-54A
                                        PROBLEM-54 PROBLEM-55 PROBLEM-111B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -19115,8 +18984,7 @@ that occurrence of X in the right-hand side with (DOUBLE-REWRITE X).
 See :doc double-rewrite for more information on this issue.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -19259,8 +19127,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111M
            :HINTS (("Goal" :DO-NOT-INDUCT T
                            :DO-NOT '(GENERALIZE))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 This simplifies, using trivial observations, to the following two conjectures.
 
@@ -19326,8 +19193,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111N
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (ALL-REL '>>= A E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -19512,8 +19378,7 @@ This is generally a severe restriction on the applicability of a :REWRITE
 rule.  See :DOC free-variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -19637,8 +19502,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111P
                            :IN-THEORY (ENABLE PROBLEM-111M
                                               PROBLEM-111N PROBLEM-111O))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -19902,8 +19766,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111Q
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (FILTER '<< X E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -20035,8 +19898,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111R
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (FILTER '>>= X E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -20177,8 +20039,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111S
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (RM D X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -20324,8 +20185,7 @@ restriction on the applicability of a :REWRITE rule.  See :DOC free-
 variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -20921,8 +20781,7 @@ restriction on the applicability of a :REWRITE rule.  See :DOC free-
 variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -21119,8 +20978,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111V
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (ALL-REL FN B E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -21800,8 +21658,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111W
                     :IN-THEORY (E/D (PROBLEM-55B PROBLEM-111U PROBLEM-111V)
                                     (REL)))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -21967,8 +21824,7 @@ ACL2 !>>>(DEFTHM PROBLEM-111-B
                     :IN-THEORY (ENABLE PROBLEM-111P PROBLEM-111Q PROBLEM-111R
                                        PROBLEM-111W PROBLEM-111-A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -22164,8 +22020,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (MEM (MAXIMAL LST) LST))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -22320,8 +22175,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (DEL E LST))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -22456,8 +22310,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112C
                            :INDUCT (RM E LST)
                            :IN-THEORY (ENABLE PROBLEM-55A PROBLEM-111E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -22608,8 +22461,7 @@ ACL2 Observation in ( DEFTHM PROBLEM-112D ...):  The :TRIGGER-TERMS
 for the :FORWARD-CHAINING rule PROBLEM-112D will consist of the list
 containing (LIST-OF-NATSP LST).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -22754,8 +22606,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112E
                            :INDUCT (RM (MAXIMAL LST) LST)
                            :IN-THEORY (ENABLE PROBLEM-112A PROBLEM-112D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -23089,8 +22940,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112F
                            :INDUCT (RM E LST)
                            :IN-THEORY (ENABLE PROBLEM-111E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -23233,8 +23083,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112G
                            :INDUCT (RM E X)
                            :IN-THEORY (ENABLE PROBLEM-111E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -23368,8 +23217,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112H
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (LIST-OF-NATSP X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -23511,8 +23359,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112I
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (LEN X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -23604,8 +23451,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112J
                                        PROBLEM-112E PROBLEM-112F PROBLEM-112G
                                        PROBLEM-112H PROBLEM-112I))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -23816,8 +23662,7 @@ ACL2 !>>>(DEFTHM PROBLEM-112
                            :DO-NOT '(GENERALIZE)
                            :IN-THEORY (ENABLE PROBLEM-112D PROBLEM-112J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using linear arithmetic, primitive
 type reasoning, the :forward-chaining rule PROBLEM-112D, the :rewrite
@@ -23918,8 +23763,7 @@ ACL2 !>>>(DEFTHM PROBLEM-113A
                            :INDUCT (NTH N M)
                            :IN-THEORY (ENABLE PROBLEM-112I))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -24091,8 +23935,7 @@ ACL2 !>>>(DEFTHM PROBLEM-113B
                            :INDUCT (LEN-DIFF MEM (CONS PTR SEEN))
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -24222,8 +24065,7 @@ ACL2 !>>>(DEFTHM PROBLEM-113C
                    :INDUCT (LEN-DIFF MEM SEEN)
                    :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A PROBLEM-113B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -24488,8 +24330,7 @@ Goal
                   (M2 (IF (MEM PTR MEM) 1 2)
                       (LEN-DIFF MEM SEEN))))).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions ADDRESSP and M2 we reduce the conjecture
 to the following two conjectures.
@@ -24614,8 +24455,7 @@ Goal
                   (M2 (IF (MEM PTR MEM) 1 2)
                       (LEN-DIFF MEM SEEN))))).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions ADDRESSP and M2 we reduce the conjecture
 to the following two conjectures.
@@ -24728,8 +24568,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114A
                            :INDUCT (PATH PTR MEM SEEN)
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -24959,8 +24798,7 @@ restriction on the applicability of a :REWRITE rule.  See :DOC free-
 variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -25100,8 +24938,7 @@ restriction on the applicability of a :REWRITE rule.  See :DOC free-
 variables.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -25239,8 +25076,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114D
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A
                                               PROBLEM-114B PROBLEM-114C))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -25394,8 +25230,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114E
                     :DO-NOT '(GENERALIZE)
                     :IN-THEORY (ENABLE PROBLEM-48A PROBLEM-48 PROBLEM-49))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using the :rewrite rules CDR-CONS,
 PROBLEM-48, PROBLEM-48A and PROBLEM-49 and the :type-prescription rule
@@ -25444,8 +25279,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114F
                            :INDUCT (SUB A (APP A B))
                            :IN-THEORY (ENABLE PROBLEM-48A PROBLEM-114E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -25545,8 +25379,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114G
                            :INDUCT (APP A B)
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-114E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -25632,8 +25465,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114H
                                        PROBLEM-49 PROBLEM-49A PROBLEM-113A
                                        PROBLEM-114E PROBLEM-114F))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -25779,8 +25611,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114I
                    :INDUCT (SUB A B)
                    :IN-THEORY (ENABLE PROBLEM-48A PROBLEM-55A PROBLEM-55D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -25906,8 +25737,7 @@ ACL2 !>>(THEOREM
                                      PROBLEM-49A PROBLEM-112F PROBLEM-114I)))
          :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -26056,8 +25886,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114K
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -26155,8 +25984,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114L
                    :USE (:INSTANCE PROBLEM-114J (X (PATH PTR MEM SEEN))
                                    (Y (CONS PTR (APP SEEN MEM)))))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from PROBLEM-114J via instantiation.
@@ -26237,8 +26065,7 @@ ACL2 !>>>(DEFTHM PROBLEM-114
                            :DO-NOT '(GENERALIZE)
                            :IN-THEORY (ENABLE PROBLEM-114A PROBLEM-114L))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 This simplifies, using the :executable-counterparts of BINARY-+, LEN
 and UNARY-- and the :rewrite rules COMMUTATIVITY-OF-+ and PROBLEM-114A
@@ -26383,8 +26210,7 @@ ACL2 !>>>(DEFTHM PROBLEM-115A
                            :DO-NOT '(GENERALIZE)
                            :EXPAND (FFIB 2 I J))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using the :definition FFIB, the
 :executable-counterparts of BINARY-+, EQUAL and ZP and primitive type
@@ -26434,8 +26260,7 @@ ACL2 !>>>(DEFTHM PROBLEM-115B
                            :INDUCT (FFIB N I J)
                            :IN-THEORY (ENABLE PROBLEM-115A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -26621,8 +26446,7 @@ ACL2 !>>>(DEFTHM PROBLEM-115
                            :IN-THEORY (ENABLE PROBLEM-115B)
                            :CASES ((ZP N)))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We now split the goal into the cases specified by the :CASES hint to
 produce two new non-trivial subgoals.
@@ -26719,8 +26543,7 @@ ACL2 !>>(THEOREM PROBLEM-116-COUNTEREXAMPLE
                              '(1 2 3 . 4)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we reduce the conjecture to T, by the :executable-counterparts
 of EQUAL, LEN and ROTN.
@@ -26761,8 +26584,7 @@ ACL2 !>>(THEOREM
                       :IN-THEORY (ENABLE PROBLEM-40 PROBLEM-41 PROBLEM-44C)))
              :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -26886,8 +26708,7 @@ ACL2 !>>>(DEFTHM PROBLEM-116
                            :USE (:INSTANCE PROBLEM-116A (X X)
                                            (Y NIL)))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from PROBLEM-116A via instantiation.
@@ -27048,8 +26869,7 @@ ACL2 !>>>(DEFTHM PROBLEM-117A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (LEN X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -27143,8 +26963,7 @@ that occurrence of C in the right-hand side with (DOUBLE-REWRITE C).
 See :doc double-rewrite for more information on this issue.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -28035,8 +27854,7 @@ the function symbol VADD, which has a non-recursive definition.  Unless
 this definition is disabled, this rule is unlikely ever to be used.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definition VADD we reduce the conjecture to
 
@@ -28136,8 +27954,7 @@ ACL2 !>>>(DEFTHM PROBLEM-118
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (TREE-COPY X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -28304,8 +28121,7 @@ ACL2 !>>(THEOREM PROBLEM-119-A
                           X))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions FZ and GZ we reduce the conjecture to
 
@@ -28336,8 +28152,7 @@ ACL2 !>>(THEOREM PROBLEM-119-B
                           X))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions FZ and GZ we reduce the conjecture to
 
@@ -28423,8 +28238,7 @@ ACL2 !>>(THEOREM PROBLEM-120-A
                                (EXPR-LIST (CDR X)))))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions EXPR and EXPR-LIST we reduce the conjecture
 to
@@ -28458,8 +28272,7 @@ ACL2 !>>(THEOREM PROBLEM-120-B
                                (EXPR-LIST (CDR X)))))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions EXPR and EXPR-LIST we reduce the conjecture
 to
@@ -28577,8 +28390,7 @@ ACL2 !>>(THEOREM PROBLEM-122-A
                           (CONS (CAR X) (SLASH-LIST (CDR X) S))))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions SLASH and SLASH-LIST we reduce the conjecture
 to
@@ -28612,8 +28424,7 @@ ACL2 !>>(THEOREM PROBLEM-122-B
                                 (SLASH-LIST (CDR LST) S))))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions SLASH and SLASH-LIST we reduce the conjecture
 to
@@ -28656,8 +28467,7 @@ ACL2 !>>>(DEFTHM PROBLEM-123A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (LOOKUP X S))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -28803,8 +28613,7 @@ ACL2 !>>>(DEFTHM PROBLEM-123B
                            :INDUCT (SLASH-FN FN X S)
                            :IN-THEORY (ENABLE PROBLEM-123A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -29000,8 +28809,7 @@ target.  Because the new rule will be tried first, it may nonetheless
 find application.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions EXPR and SLASH we reduce the conjecture
 to
@@ -29172,8 +28980,7 @@ ACL2 !>>>(DEFTHM PROBLEM-127
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (F5 X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -29360,8 +29167,7 @@ ACL2 !>>(THEOREM PROBLEM-128
                  :HINTS (("Goal" :IN-THEORY (ENABLE PROBLEM-127)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 This simplifies, using the :compound-recognizer rule ZP-COMPOUND-RECOGNIZER,
 the :definitions F5 (if-intro) and NFIX (if-intro), primitive type
@@ -29452,8 +29258,7 @@ ACL2 !>>>(DEFTHM PROBLEM-129A
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A
                                               PROBLEM-112I PROBLEM-114E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -29724,8 +29529,7 @@ ACL2 !>>>(DEFTHM PROBLEM-129B
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A
                                               PROBLEM-112I PROBLEM-114E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -29996,8 +29800,7 @@ ACL2 !>>>(DEFTHM PROBLEM-129C
                            :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49A
                                               PROBLEM-112I PROBLEM-114E))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -30274,8 +30077,7 @@ the hypotheses of the conjecture being rewritten.  This is generally
 a severe restriction on the applicability of the :LINEAR rule.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -30506,8 +30308,7 @@ conjecture being rewritten.  This is generally a severe restriction
 on the applicability of the :LINEAR rule.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -30851,8 +30652,7 @@ Goal
                   (M2 (IF (MEM PTR (FLATTEN-M M)) 1 2)
                       (LEN-DIFF (FLATTEN-M M) SEEN))))).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions ADDRESSP and M2 we reduce the conjecture
 to the following four conjectures.
@@ -31057,8 +30857,7 @@ ACL2 !>>(THEOREM
                       :IN-THEORY (ENABLE PROBLEM-48 PROBLEM-49 PROBLEM-49A)))
              :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -31236,8 +31035,7 @@ ACL2 !>>>(DEFTHM PROBLEM-129G
                                     (M M)
                                     (SEEN (CONS PTR SEEN))))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But we augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from PROBLEM-129F via instantiation.
@@ -31286,8 +31084,7 @@ ACL2 !>>(THEOREM PROBLEM-129
                  :HINTS (("Goal" :IN-THEORY (ENABLE PROBLEM-129G)))
                  :RULE-CLASSES NIL)
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using the :definitions ADDRESSP
 and REACHABLES, primitive type reasoning and the :rewrite rule PROBLEM-129G.
@@ -31447,8 +31244,7 @@ ACL2 !>>>(DEFTHM PROBLEM-130A
            :HINTS (("Goal" :DO-NOT-INDUCT T
                            :DO-NOT '(GENERALIZE))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 The destructor terms (CAR X) and (CDR X) can be eliminated by using
 CAR-CDR-ELIM to replace X by (CONS X1 X2), (CAR X) by X1 and (CDR X)
@@ -31519,8 +31315,7 @@ ACL2 !>>>(DEFTHM PROBLEM-130B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (RMB X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -31790,8 +31585,7 @@ ACL2 !>>>(DEFTHM PROBLEM-130C
                            :IN-THEORY (ENABLE PROBLEM-108C
                                               PROBLEM-130A PROBLEM-130B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -32106,8 +31900,7 @@ ACL2 !>>>(DEFTHM PROBLEM-130
                            :IN-THEORY (ENABLE PROBLEM-108C
                                               PROBLEM-130B PROBLEM-130C))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 This simplifies, using the :definitions CC and RMB (if-intro), primitive
 type reasoning, the :meta rule CANCEL_PLUS-LESSP-CORRECT and the :rewrite
@@ -32214,8 +32007,7 @@ ACL2 !>>>(DEFTHM PROBLEM-131A
            :HINTS (("Goal" :DO-NOT-INDUCT T
                            :DO-NOT '(GENERALIZE))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 This simplifies, using the :definitions ATOM and PROPER, to
 
@@ -32275,8 +32067,7 @@ ACL2 !>>>(DEFTHM PROBLEM-131B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (CC A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -32375,8 +32166,7 @@ ACL2 !>>>(DEFTHM PROBLEM-131C
                            :INDUCT (CC X)
                            :IN-THEORY (ENABLE PROBLEM-131B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -32474,8 +32264,7 @@ ACL2 !>>>(DEFTHM PROBLEM-131D
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (REV X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -32570,8 +32359,7 @@ Goal
                             (REV (CDR (REV (CDR X))))))
                   (CC X)))).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By case analysis we reduce the conjecture to the following four conjectures.
 
@@ -32656,8 +32444,7 @@ ACL2 !>>>(DEFTHM PROBLEM-131
                     :IN-THEORY (ENABLE PROBLEM-44B PROBLEM-44 PROBLEM-130
                                        PROBLEM-131A PROBLEM-131D))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -34579,8 +34366,7 @@ ACL2 !>>>(DEFTHM PROBLEM-133A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (IF-COMPLEXITY X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -34665,8 +34451,7 @@ ACL2 !>>>(DEFTHM PROBLEM-133B
            :HINTS (("Goal" :DO-NOT-INDUCT T
                            :DO-NOT '(GENERALIZE))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 But simplification reduces this to T, using primitive type reasoning
 and the :rewrite rule <-*-X-Y-Y.
@@ -34722,8 +34507,7 @@ this definition is disabled, such triggering terms are unlikely to
 arise and so PROBLEM-133C is unlikely to ever be used.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -35432,8 +35216,7 @@ this definition is disabled, such triggering terms are unlikely to
 arise and so PROBLEM-133D is unlikely to ever be used.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -36162,8 +35945,7 @@ Goal
                   (IF-DEPTH (A3 X)))
               (M2 (IF-COMPLEXITY X) (IF-DEPTH X))))).
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 By the simple :definitions A1, A2, A3, IF-EXPRP and M2 we reduce the
 conjecture to the following four conjectures.
@@ -39929,8 +39711,7 @@ ACL2 !>>>(DEFTHM PROBLEM-136A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (APP A B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -40053,8 +39834,7 @@ replacing that occurrence of VAL in the first hypothesis with
 on this issue.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -40719,8 +40499,7 @@ ACL2 !>>>(DEFTHM PROBLEM-136C
                            :INDUCT (TAUTP X A)
                            :IN-THEORY (ENABLE PROBLEM-136A PROBLEM-136B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -43277,8 +43056,7 @@ ACL2 !>>>(DEFTHM PROBLEM-136D
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (NORM X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -43488,8 +43266,7 @@ ACL2 !>>>(DEFTHM PROBLEM-136E
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (NORM X))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -43903,8 +43680,7 @@ ACL2 !>>>(DEFTHM PROBLEM-136
                                            (B A)
                                            (X (NORM X))))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from PROBLEM-136C via instantiation.
@@ -46638,8 +46414,7 @@ ACL2 !>>>(DEFTHM PROBLEM-137A
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (FALSIFY X A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -47309,8 +47084,7 @@ ACL2 !>>>(DEFTHM PROBLEM-137B
                            :DO-NOT '(GENERALIZE)
                            :INDUCT (FALSIFY X A))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -51416,8 +51190,7 @@ ACL2 !>>>(DEFTHM PROBLEM-137C
                            :INDUCT (FALSIFY X A)
                            :IN-THEORY (ENABLE PROBLEM-137B))))
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 Name the formula above *1.
 
@@ -54484,8 +54257,7 @@ Unless this definition is disabled, this rule is unlikely ever to be
 used.
 
 
-[Note:  A hint was supplied for our processing of the goal above. 
-Thanks!]
+[Note:  A hint was supplied for the goal above.  Thanks!]
 
 We augment the goal with the hypothesis provided by the :USE hint.
 The hypothesis can be derived from PROBLEM-137C via instantiation.

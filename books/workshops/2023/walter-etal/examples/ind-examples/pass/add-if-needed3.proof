@@ -1,0 +1,111 @@
+;; Student provided example.
+(definec add-if-needed (e :all l :tl) :tl
+  (cond
+   ((endp l) (list e))
+   ((== (car l) e) (cons e (cdr l)))
+   (t (cons (car l) (add-if-needed e (cdr l))))))
+
+;; this is what we want to prove!
+(property (l :tl e :all)
+  (=> (in e l)
+      (== (len (add-if-needed e l))
+          (len l)))
+  :hints (("goal" :induct (tlp l))))
+
+Conjecture 1:
+(=> (^ (tlp l)
+       (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Proof by: Induction on (tlp l)
+
+Base Case 1:
+
+(=> (! (consp l))
+    (=> (^ (tlp l)
+           (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+
+(=> (^ (! (consp l))
+       (tlp l)
+       (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Context:
+C1. (! (consp l))
+C2. (tlp l)
+C3. (in e l)
+
+Derived Context:
+D1. nil {C1, C3, Def in}
+
+QED
+
+Induction Case 1:
+
+(=> (^ (consp l)
+       (=> (^ (tlp (cdr l))
+              (in e (cdr l)))
+           (== (len (add-if-needed e (cdr l)))
+               (len (cdr l)))))
+    (=> (^ (tlp l)
+           (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+
+(=> (^ (consp l)
+       (=> (^ (tlp (cdr l))
+              (in e (cdr l)))
+           (== (len (add-if-needed e (cdr l)))
+               (len (cdr l))))
+       (tlp l)
+       (! (== (len (add-if-needed e l))
+              (len l))))
+    (! (in e l)))
+
+Context:
+
+C1. (consp l)
+C2. (=> (^ (tlp (cdr l))
+           (in e (cdr l)))
+        (== (len (add-if-needed e (cdr l)))
+            (len (cdr l))))
+C3. (tlp l)
+C4. (!= (len (add-if-needed e l))
+        (len l))
+
+Derived Context:
+
+;; D2 shouldn't go through? 
+;; Check the rest of this.
+
+D1. (!= (car l) e) {Def add-if-needed, C1, C4, Def len, cons axioms}
+D2. (tlp (cdr l)) {C3}
+D3. (== (len (add-if-needed e l)) (+ 1 (len (add-if-needed e (cdr l))))) {Def add-if-needed, C1, D1, Def len, cons axioms}
+D4. (== (len l) (+ 1 (len (cdr l)))) {Def len, C1}
+D5. (!= (len (add-if-needed e (cdr l)))
+        (len (cdr l))) {arith, D3, D4, C4}
+          
+D6. (! (in e (cdr l))) {D5, C2}
+
+Goal:
+(! (in e l))
+
+Proof:
+
+(! (in e l))
+== {Def in, C1, PL}
+(! (or (== e (car l)) (in e (cdr l))))
+== {D1, D6, PL}
+t
+
+QED
+
+QED

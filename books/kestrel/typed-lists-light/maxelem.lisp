@@ -140,10 +140,10 @@
                           val))))))
   :hints (("Goal" ;:do-not-induct t
         ;   :expand (MAXELEM (CDR LST))
-           :in-theory (e/d (update-nth-rw;update-nth-rewrite nth-when-n-is-zp
-                            ;update-nth
-                            )
-                           ()))))
+           :in-theory (enable update-nth-rw
+                              ;;update-nth-rewrite nth-when-n-is-zp
+                              ;;update-nth
+                              ))))
 
 ;expensive?
 ;newly disabled
@@ -193,3 +193,8 @@
            (<= (maxelem (cdr lst)) (maxelem lst)))
   :rule-classes ((:linear :trigger-terms ((maxelem (cdr lst)))))
   :hints (("Goal" :in-theory (enable maxelem))))
+
+(defthm member-equal-of-maxelem-same
+  (iff (member-equal (maxelem x) x)
+       (consp x))
+  :hints (("Goal" :in-theory (enable maxelem member-equal))))

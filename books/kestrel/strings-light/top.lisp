@@ -32,3 +32,4 @@
 (include-book "strcdr")
 (include-book "strnthcdr")
 (include-book "subseq")
+(include-book "strings-starting-with")

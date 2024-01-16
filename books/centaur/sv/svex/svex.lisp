@@ -153,47 +153,31 @@ single @(see 4vec) result.  The semantics are given by @(see svex-eval).</p>
 <p>Our @(see svex) expressions are always created with @(see hons) for
 automatic structure sharing.  Most operations over these expressions should
 typically be @(see memoize)d in some way or another.</p>"
-  :prepwork (;; (local (in-theory (enable svar-p svar-fix)))
-             (local (defthm car-of-svar-when-consp
+  :prepwork ((local (defthm car-when-svar-p
                       (implies (and (svar-p x)
-                                    (consp x)
-                                    (syntaxp (quotep v)))
-                               (equal (equal (car x) v)
-                                      (equal v :var)))
+                                    (consp x))
+                               (equal (car x) :var))
                       :hints(("Goal" :in-theory (enable svar-p)))))
-             (local (defthm 4vec-not-svar-p
-                      (implies (svar-p x)
-                               (not (4vec-p x)))
-                      :hints(("Goal" :in-theory (enable 4vec-p svar-p)))))
-             (local (defthm car-of-4vec-fix-type
-                      (or (integerp (car (4vec-fix x)))
-                          (not (car (4vec-fix x))))
-                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))
-                      :rule-classes ((:type-prescription :typed-term (car (4vec-fix x))))))
-             (local (defthm car-of-4vec-fix-integerp
-                      (implies (consp (4vec-fix x))
-                               (integerp (car (4vec-fix x))))
-                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))))
-             (local (defthm cons-fnsym-not-svar-p
-                      (implies (not (eq x :var))
-                               (not (svar-p (cons x y))))
-                      :hints(("Goal" :in-theory (enable fnsym-p svar-p))))))
+             (local (defthm car-when-4vec-p
+                      (implies (and (4vec-p x)
+                                    (consp x))
+                               (integerp (car x)))
+                      :hints(("Goal" :in-theory (enable 4vec-p))))))
   (defflexsum svex
-    (:var
-     :short "A variable, which represents a @(see 4vec)."
-     :cond (if (atom x)
-               (or (stringp x)
-                   (and x (symbolp x)))
-             (eq (car x) :var))
-     :fields ((name :acc-body x :type svar-p))
-     :ctor-body name)
     (:quote
      :short "A ``quoted constant'' @(see 4vec), which represents itself."
-     :cond (or (atom x)
-               (integerp (car x)))
+     :cond (if (consp x)
+               (integerp (car x))
+             (or (integerp x) (not x)))
      :fields ((val :acc-body x
                    :type 4vec))
      :ctor-body val)
+    (:var
+     :short "A variable, which represents a @(see 4vec)."
+     :cond (or (atom x)
+               (eq (car x) :var))
+     :fields ((name :acc-body x :type svar-p))
+     :ctor-body name)
     (:call
      :short "A function applied to some expressions."
      :cond t

@@ -315,7 +315,7 @@
   (if ref-p
       (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val ref-val)
            (4vec-muxtest-subsetp spec-test impl-test))
-    (and (4vec-equiv spec-test impl-test)
+    (and (4vec-1mask-equiv spec-test impl-test)
          (4vec-<<= impl-val spec-val) ))
   ///
   (defret 4vec-override-mux-<<=-when-<fn>
@@ -346,7 +346,7 @@
            (and (4vec-override-mux-<<= impl-test impl-val spec-test spec-val ref-val)
                 (4vec-muxtest-subsetp spec-test impl-test)
                 (implies (not ref-p)
-                         (and (4vec-equiv spec-test impl-test)
+                         (and (4vec-1mask-equiv spec-test impl-test)
                               (4vec-<<= impl-val spec-val)))))
     :hints ((and stable-under-simplificationp
                  '(:in-theory (enable 4vec-muxtest-subsetp)))))

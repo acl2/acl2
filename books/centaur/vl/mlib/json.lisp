@@ -1999,7 +1999,7 @@ which could not hold such large values.</p>"
 (def-vl-jp-list final)
 (def-vl-jp-aggregate genvar)
 (def-vl-jp-list genvar)
-(def-vl-jp-aggregate fundecl :omit (function constraints loaditems))
+(def-vl-jp-aggregate fundecl :omit (function-map constraints loaditems))
 (def-vl-jp-list fundecl)
 (def-vl-jp-aggregate taskdecl :omit (loaditems))
 (def-vl-jp-list taskdecl)

@@ -858,9 +858,10 @@ of @(see svex-env-lookup), and they bind the same variables.")
   (local (acl2::use-trivial-ancestors-check))
 
   (defret <fn>-of-svex-env-extract
-    :pre-bind ((x  (svex-env-extract vars x))
-               (y x))
-    agree)
+    :pre-bind ((y x)
+               (x  (svex-env-extract vars1 x)))
+    (implies (subsetp-equal (svarlist-fix vars) (svarlist-fix vars1))
+             agree))
 
   (defret <fn>-when-subset
     (implies (and agree

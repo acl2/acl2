@@ -24,8 +24,16 @@
          (myif x y z))
   :hints (("Goal" :in-theory (enable myif))))
 
-;add myif when non nil?
-(defthm myif-of-t
+(defthm myif-of-constant-when-not-nil
+  (implies (and (syntaxp (quotep x))
+                (not (equal x nil)) ; todo: simplify?
+                )
+           (equal (myif x y z)
+                  y))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; disabled since we have myif-of-constant-when-not-nil
+(defthmd myif-of-t
   (equal (myif t thenpart elsepart)
          thenpart)
   :hints (("Goal" :in-theory (enable myif))))
@@ -103,16 +111,23 @@
                   (myif test1 a c)))
   :hints (("Goal" :in-theory (enable myif))))
 
+;rename
 (defthm myif-nil-t
   (equal (myif test nil t)
          (not test))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm myif-t-nil
+(defthm myif-of-t-and-nil-when-booleanp
   (implies (booleanp test)
            (equal (myif test t nil)
                   test))
   :hints (("Goal" :in-theory (enable myif))))
+
+;; todo: where should this go?
+;; (defthm myif-of-t-and-nil
+;;   (equal (myif test t nil)
+;;          (bool-fix test))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;used for inside-out rewriting
 (defthm myif-when-not-nil
@@ -126,13 +141,6 @@
   (implies (equal nil x) ;can be slow?
            (equal (myif x y z)
                   z))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm myif-of-constant-when-not-nil
-  (implies (and (syntaxp (quotep x))
-                (not (equal x nil)))
-           (equal (myif x y z)
-                  y))
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd equal-of-myif-arg2
@@ -272,4 +280,65 @@
   (implies (implies ep (not test))
            (equal (myif test nil ep)
                   ep))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;rename
+(defthm myif-of-myif-test
+  (equal (myif (myif test t nil) a b)
+         (myif test a b))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;i suppose we could use any predicate here in place of booleanp
+;shouldn't we turn myif into boolif in this case?
+(defthm booleanp-of-myif
+  (implies (and (booleanp y)
+                (booleanp z))
+           (booleanp (myif x y z)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm myif-x-x-t-not-nil
+  (implies (not (equal nil val))
+           (equal (equal nil (myif x x val))
+                  nil))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;move
+(defthmd not-of-myif
+  (equal (not (myif test tp ep))
+         (myif test (not tp) (not ep)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd <-of-myif-arg1
+  (equal (< (myif test a b) k)
+         (myif test (< a k) (< b k)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthmd <-of-myif-arg2
+  (equal (< k (myif test a b))
+         (myif test (< k a) (< k b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; could a and/or b to be constant as well
+(defthmd <-of-myif-arg1-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< (myif test a b) k)
+                  (myif test (< a k) (< b k))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; could a and/or b to be constant as well
+(defthmd <-of-myif-arg2-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< k (myif test a b))
+                  (myif test (< k a) (< k b))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+(defthm natp-of-myif2
+  (implies (and (natp a)
+                (natp b))
+           (natp (myif test a b)))
   :hints (("Goal" :in-theory (enable myif))))

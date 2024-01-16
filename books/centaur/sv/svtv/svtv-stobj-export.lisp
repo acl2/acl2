@@ -346,10 +346,11 @@ themselves and can be fairly quickly regenerated.</p>"
       (make-event
        (b* ((obj (svtv-data-to-obj <stobj>))
             (events
-             `(progn (define <name> ()
+             `(progn (defconst *<name>* ',obj)
+                     (define <name> ()
                        :no-function t
                        :returns (obj svtv-data-obj-p)
-                       ',obj)
+                       *<name>*)
                      (with-output :stack :pop
                        (progn
                          (defthm flatten-validp-of-<name>

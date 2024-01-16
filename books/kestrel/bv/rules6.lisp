@@ -254,8 +254,7 @@
 (defthmd bvchop-of-logxor-back
   (implies (and (natp n) (natp a) (natp b)) ;used to have integerp hyps
            (equal (logxor (bvchop n a) (bvchop n b))
-                  (bvchop n (logxor a b))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvchop n (logxor a b)))))
 
 (theory-invariant (incompatible (:rewrite bvchop-of-logxor) (:rewrite bvchop-of-logxor-back)))
 
@@ -289,7 +288,7 @@
   :hints (("Goal"
            :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE (x (bvxor size x y))
                            (newsize size))
-           :in-theory (e/d () (LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
+           :in-theory (disable LOGTAIL-BECOMES-SLICE-BIND-FREE))))
 
 ;(bvmult 4 (bvxor 4 12 10) 6)
 ;(bvxor 4 (bvmult 4 12 6) (bvmult 4 10 6))
@@ -347,7 +346,7 @@
            (equal (bvmult size k x)
                   (bvand size k (repeatbit size x))))
   :hints (("Goal" :in-theory (enable repeatbit)
-           :use ((:instance usb1-cases)))))
+           :use (usb1-cases))))
 
 ;; ;bozo why did this arise?
 ;; (IMPLIES (SIGNED-BYTE-P 32 X)
@@ -456,9 +455,8 @@
                 (integerp newsize))
            (equal (bvmult size x y)
                   (bvmult size (bvchop size x) y)))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (bvmult-pad-arg1
-                                   bvmult-pad-arg2)))))
+  :hints (("Goal" :in-theory (enable bvmult-pad-arg1
+                                     bvmult-pad-arg2))))
 
 ;todo: use trim, not bvchop
 (defthm bvmult-trim-arg2
@@ -468,8 +466,7 @@
                 (integerp newsize))
            (equal (BVMULT size x y)
                   (bvmult size x (bvchop size y))))
-  :hints (("Goal" :in-theory (e/d () (bvmult-pad-arg1
-                                                bvmult-pad-arg2)))))
+  :hints (("Goal" :in-theory (disable bvmult-pad-arg1 bvmult-pad-arg2))))
 
 ;add theory invars?
 ;(in-theory (disable BVCAT-OF-BVCHOP-HIGH BVCAT-OF-BVCHOP-low))
@@ -633,7 +630,7 @@
                 (posp xsize))
            (equal (+ x y)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
-  :hints (("Goal" :use (:instance plus-becomes-bvplus)
+  :hints (("Goal" :use plus-becomes-bvplus
            :in-theory (e/d (unsigned-byte-p-forced) (plus-becomes-bvplus)))))
 
 (defthmd plus-becomes-bvplus-arg2-free
@@ -643,6 +640,6 @@
                 (posp xsize))
            (equal (+ y x)
                   (bvplus (+ 1 (max xsize ysize)) x y)))
-  :hints (("Goal" :use (:instance plus-becomes-bvplus-arg1-free)
+  :hints (("Goal" :use plus-becomes-bvplus-arg1-free
            :in-theory (e/d (<-of-constant-when-unsigned-byte-p-size-param)
                            ( plus-becomes-bvplus-arg1-free)))))

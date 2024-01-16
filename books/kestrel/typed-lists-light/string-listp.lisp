@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function string-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -39,6 +39,17 @@
   (implies (string-listp x)
            (string-listp (remove-equal a x)))
   :hints (("Goal" :in-theory (enable string-listp))))
+
+(defthm string-listp-of-remove-duplicates-equal-simple
+  (implies (string-listp l)
+           (string-listp (remove-duplicates-equal l)))
+  :hints (("Goal" :in-theory (enable string-listp remove-duplicates-equal))))
+
+;; The non-standard param name X here is to match the rule in std.
+(defthm string-listp-of-remove-duplicates-equal
+  (equal (string-listp (remove-duplicates-equal x))
+         (string-listp (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable string-listp remove-duplicates-equal))))
 
 (defthm string-listp-forward-to-true-listp
   (implies (string-listp x)

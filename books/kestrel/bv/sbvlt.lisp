@@ -13,7 +13,6 @@
 
 (include-book "bvchop")
 (include-book "logext") ;todo: include less?
-(include-book "kestrel/booleans/boolor" :dir :system) ;todo
 (include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -168,28 +167,6 @@
                 (not (sbvlt size free k)) ; gets computed
                 )
            (not (sbvlt size x k)))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
-(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant
-  (implies (syntaxp (and (quotep k1)
-                         (quotep k2)
-                         (quotep size)))
-           (equal (boolor (sbvlt size x k1)
-                          (sbvlt size x k2))
-                  (if (sbvle size k1 k2) ;gets computed
-                      (sbvlt size x k2)
-                    (sbvlt size x k1))))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
-(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant-2
-  (implies (syntaxp (and (quotep k1)
-                         (quotep k2)
-                         (quotep size)))
-           (equal (boolor (sbvlt size k1 x)
-                          (sbvlt size k2 x))
-                  (if (sbvle size k2 k1) ;gets computed
-                      (sbvlt size k2 x)
-                    (sbvlt size k1 x))))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm sbvlt-when-not-integerp-arg2

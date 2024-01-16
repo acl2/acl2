@@ -103,6 +103,7 @@
 ;;
 
 ;; Checks that DAG is a true-list of pairs of the form (<nodenum> . <bounded-dag-expr>).
+;; TODO: Disable?
 (defun weak-dagp-aux (dag)
   (declare (xargs :guard t))
   (if (atom dag)
@@ -136,6 +137,14 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux bounded-dag-exprp))))
 
+(defthm weak-dagp-aux-of-acons
+  (equal (weak-dagp-aux (acons nodenum expr dag))
+         (and (natp nodenum)
+              (bounded-dag-exprp nodenum expr)
+              (weak-dagp-aux dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
+
+
 (defthm rational-listp-of-strip-cars-when-weak-dagp-aux
   (implies (weak-dagp-aux dag)
            (rational-listp (strip-cars dag)))
@@ -149,6 +158,11 @@
 (defthm weak-dagp-aux-forward-to-alistp
   (implies (weak-dagp-aux dag)
            (alistp dag))
+  :rule-classes :forward-chaining)
+
+(defthm weak-dagp-aux-forward-to-true-alistp
+  (implies (weak-dagp-aux dag)
+           (true-listp dag))
   :rule-classes :forward-chaining)
 
 (defthm integerp-of-car-of-car-when-weak-dagp-aux-cheap
@@ -681,7 +695,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund dag-fns-include-any-aux (dag fns)
+;; Checks whether the functions that appear in DAG include any of the
+;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
+;; of all fns found.
+(defund dag-fns-include-any (dag fns)
   (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp fns)
                               (not (member-eq 'quote fns)))
@@ -695,19 +712,19 @@
                ;; implies that (ffn-symb expr) can't be 'quote, since FNS should not include 'quote:
                (member-eq (ffn-symb expr) fns))
           t
-        (dag-fns-include-any-aux (rest dag) fns)))))
+        (dag-fns-include-any (rest dag) fns)))))
 
-;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
-;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
-;; of all fns found.
-(defund dag-fns-include-any (dag-or-quotep fns)
-  (declare (xargs :guard (and (or (quotep dag-or-quotep)
-                                  (weak-dagp dag-or-quotep))
-                              (symbol-listp fns)
-                              (not (member-eq 'quote fns)))))
-  (if (quotep dag-or-quotep)
-      nil
-    (dag-fns-include-any-aux dag-or-quotep fns)))
+;; ;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
+;; ;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
+;; ;; of all fns found.
+;; (defund dag-or-quotep-fns-include-any (dag-or-quotep fns)
+;;   (declare (xargs :guard (and (or (quotep dag-or-quotep)
+;;                                   (weak-dagp dag-or-quotep))
+;;                               (symbol-listp fns)
+;;                               (not (member-eq 'quote fns)))))
+;;   (if (quotep dag-or-quotep)
+;;       nil
+;;     (dag-fns-include-any dag-or-quotep fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

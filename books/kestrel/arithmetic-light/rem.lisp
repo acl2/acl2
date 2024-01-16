@@ -43,8 +43,7 @@
                     (if (equal 0 (mod x y))
                         0
                       (+ (- y) (mod x y))))))
-  :hints (("Goal" :in-theory (e/d (rem mod truncate-becomes-floor-gen)
-                                  ())
+  :hints (("Goal" :in-theory (enable rem mod truncate-becomes-floor-gen)
            :cases ((equal 0 y)))))
 
 (defthm rem-x-y-=-x-better

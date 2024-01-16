@@ -120,12 +120,12 @@
                   :stobjs state))
   ;; Record the start time:
   (mv-let (start-time state)
-    (acl2::get-real-time state)
+    (get-real-time state)
     (mv-let (erp provedp state)
       (prove$-nice-fn term hints instructions otf-flg time-limit step-limit state)
       ;; Record the end time:
       (mv-let (end-time state)
-        (acl2::get-real-time state)
+        (get-real-time state)
         (if erp
             (mv erp nil nil nil state)
           (mv nil provedp (- end-time start-time) (last-prover-steps$ state) state))))))

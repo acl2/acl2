@@ -26,6 +26,8 @@
 
 (in-package "SVL")
 
+(include-book "projects/rp-rewriter/top" :dir :system)
+(include-book "../fnc-defs")
 (include-book "centaur/sv/svex/eval" :dir :system)
 (include-book "centaur/sv/svex/eval-dollar" :dir :system)
 (include-book "tools/templates" :dir :system)
@@ -200,7 +202,7 @@
     (and (pseudo-termp x)
          (subsetp-equal
           (acl2::all-fnnames x)
-          '(if bitp equal safe-max safe-min nth > < not))
+          '(if + bitp equal safe-max safe-min nth > < not))
          (subsetp-equal
           (acl2::all-vars x)
           '(widths args)))
@@ -273,6 +275,10 @@
                 (b* ((a (width-of-svex-extn-formula-eval a args widths))
                      (b (width-of-svex-extn-formula-eval b args widths)))
                   (safe-min a b)))
+               (('+ a b)
+                (b* ((a (width-of-svex-extn-formula-eval a args widths))
+                     (b (width-of-svex-extn-formula-eval b args widths)))
+                  (and (natp a) (natp b) (+ a b))))
                (('nth a 'widths)
                 (b* ((a (nfix (width-of-svex-extn-formula-eval a args widths))))
                   (nth a widths)))
@@ -289,11 +295,11 @@
                (('< x y)
                 (b* ((x (width-of-svex-extn-formula-eval x args widths))
                      (y (width-of-svex-extn-formula-eval y args widths)))
-                (and (rationalp x) (rationalp y) (< x y))))
+                (and (integerp x) (integerp y) (< x y))))
                (('> x y)
                 (b* ((x (width-of-svex-extn-formula-eval x args widths))
                      (y (width-of-svex-extn-formula-eval y args widths)))
-                (and (rationalp x) (rationalp y) (> x y))))
+                (and (integerp x) (integerp y) (> x y))))
                (('not x)
                 (not (width-of-svex-extn-formula-eval x args widths)))
                (('bitp a)
@@ -408,3 +414,14 @@
    )
   :layout :tree
   )
+
+
+
+(with-output
+    :off :all
+    :gag-mode nil
+    (rp::def-formula-checks
+      svex-reduce-formula-checks
+      (acl2::logbit$inline
+       bits
+       integerp)))

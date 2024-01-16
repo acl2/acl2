@@ -15,7 +15,7 @@
 
 
 ; An attempt to prove compress-compress below yields the following as the first
-; simpilfication checkpoint.
+; simplification checkpoint.
 
 #|
 Subgoal *1/3''
@@ -63,7 +63,7 @@ Subgoal *1/2.3.1'
                      (CAR (APPEND (COMPRESS (CDR X)) Y)))))
 |#
 
-; We can get ACL2 to simplify the last line of this goal using the followig two
+; We can get ACL2 to simplify the last line of this goal using the following two
 ; lemmas.
 
 (defthm car-append
@@ -374,7 +374,7 @@ Subgoal *1/2.5'
 |#
 
 ; This is clear if the compress term on the last line above returnss a
-; true-listp, which follows from the followig three rules.
+; true-listp, which follows from the following three rules.
 
 (defthm true-listp-rev
   (true-listp (rev x))
@@ -392,4 +392,3 @@ Subgoal *1/2.5'
 (defthm rev-compress
   (equal (rev (compress x))
          (compress (rev x))))
-

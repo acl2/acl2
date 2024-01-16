@@ -1,7 +1,7 @@
 ; Theorems about boolean operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,12 +40,12 @@
                     (booland test x))))
   :hints (("Goal" :in-theory (enable booland boolif))))
 
-(defthm boolif-x-x-y
+(defthm boolif-x-x-y-becomes-boolor
   (equal (boolif x x y)
          (boolor x y))
   :hints (("Goal" :in-theory (enable boolor boolif))))
 
-(defthm boolif-x-y-x
+(defthm boolif-x-y-x-becomes-booland
   (equal (boolif x y x)
          (booland x y))
   :hints (("Goal" :in-theory (enable booland boolif))))
@@ -78,11 +78,6 @@
          (booland (not x) (not y)))
   :hints (("Goal" :in-theory (enable boolor))))
 
-;use a congruence
-(defthm not-of-bool-fix
-  (equal (not (bool-fix x))
-         (not x)))
-
 ;do we prefer (equal nil x) or (not x) - maybe it depends on whether x is boolean
 ;(equal nil x) allows substitution
 ;do we have a rule for (equal nil (equal nil x)) ?
@@ -114,27 +109,6 @@
          (bool-fix x))
   :hints (("Goal" :in-theory (enable boolor))))
 
-;others like this? 3 conjuncts?
-(defthm booland-of-not-same
-  (equal (booland x (not x))
-         nil))
-
-;not needed if we commute arguments to booland (ignoring not)
-(defthm booland-of-not-same-alt
-  (equal (booland (not x) x)
-         nil))
-
-;rename?
-(defthm booland-of-not-and-booland-same
-  (equal (booland x (booland (not x) y))
-         nil))
-
-;rename?
-;not needed if we commute arguments to booland (ignoring not)
-(defthm booland-of-not-and-booland-same-alt
-  (equal (booland (not x) (booland x y))
-         nil))
-
 (defthm boolor-of-booland-not-boolor
   (equal (boolor (booland (not x) y) (boolor x z))
          (boolor y (boolor x z)))
@@ -144,16 +118,6 @@
   (equal (boolif test x (not (boolor test y)))
          (boolif test x (not y)))
   :hints (("Goal" :in-theory (enable boolif))))
-
-(defthm booland-of-bool-fix-arg1
-  (equal (booland (bool-fix x) y)
-         (booland x y))
-  :hints (("Goal" :in-theory (enable booland))))
-
-(defthm booland-of-bool-fix-arg2
-  (equal (booland x (bool-fix y))
-         (booland x y))
-  :hints (("Goal" :in-theory (enable booland))))
 
 (defthm boolif-of-not-same-arg3
   (equal (boolif x y (not x))
@@ -194,17 +158,6 @@
   (equal (implies p q)
          (boolor (not p) q)))
 
-
-(defthm boolor-of-bool-fix-arg1
-  (equal (boolor (bool-fix x) y)
-         (boolor x y))
-  :hints (("Goal" :in-theory (enable boolor))))
-
-(defthm boolor-of-bool-fix-arg2
-  (equal (boolor x (bool-fix y))
-         (boolor x y))
-  :hints (("Goal" :in-theory (enable boolor))))
-
 (defthmd myif-becomes-boolif
   (implies (and (booleanp b)
                 (booleanp c))
@@ -216,3 +169,29 @@
 (defthm boolor-of-not-of-boolor-of-not-same
   (equal (boolor x (not (boolor y (not x))))
          (bool-fix x)))
+
+;; where should this go?
+(defthm myif-of-bool-fix-arg1
+  (equal (myif (bool-fix test) x y)
+         (myif test x y))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm bool-fix-of-myif
+  (equal (bool-fix (myif test tp ep))
+         (myif test (bool-fix tp) (bool-fix ep)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm boolif-of-myif-arg1
+  (equal (boolif (myif test a1 a2) b c)
+         (boolif (boolif test a1 a2) b c))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-of-myif-arg2
+  (equal (boolif test (myif test2 a b) c)
+         (boolif test (boolif test2 a b) c))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-of-myif-arg3
+  (equal (boolif test c (myif test2 a b))
+         (boolif test c (boolif test2 a b)))
+  :hints (("Goal" :in-theory (enable boolif))))

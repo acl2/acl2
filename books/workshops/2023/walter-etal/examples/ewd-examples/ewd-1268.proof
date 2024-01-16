@@ -1,0 +1,88 @@
+#|
+
+ Author: Pete Manolios
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD12xx/EWD1268.html
+
+ Now we turn to the calculational proof. As usual, we shall exploit
+ the associativity of the addition —i.e. the equality 
+
+ (p + q) + r = p + (q + r )        for all p, q, r   —
+
+ implicitly by omitting such semantically redundant parenthesis. Here
+ we go! For any a, b, 
+
+ (a + b)2
+ = { definition of exponentiation }
+ (a + b) ∙ (a + b)
+ = { distribution p∙(q + r ) = p∙q + p∙r }
+ (a + b) ∙ a + (a + b) ∙ b
+ = { distribution (p + q) ∙ r = p∙r + q∙r, twice }
+ a∙a + b∙a + a∙b + b∙b
+ = { symmetry of ∙ : p∙q = q∙p }
+ a∙a + a∙b + a∙b + b∙b
+ = { definition of exponentiation twice; property of 2: p + p = 2∙p }
+ a2 + 2∙a∙b + b2
+
+|#
+
+(property (a b :rational)
+  (== (expt (+ a b) 2)
+      (+ (expt a 2) (* 2 a b) (expt b 2))))
+
+Conjecture EWD1268:
+
+(=> (^ (rationalp a)
+       (rationalp b))
+    (== (expt (+ a b) 2)
+        (+ (expt a 2) (* 2 a b) (expt b 2))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+
+Goal:
+(== (expt (+ a b) 2)
+    (+ (expt a 2) (* 2 a b) (expt b 2)))
+
+Proof:
+
+(expt (+ a b) 2)
+== { Arith }
+(+ (expt a 2) (* 2 a b) (expt b 2))
+
+QED
+
+Conjecture EWD1268-full:
+
+(=> (^ (rationalp a)
+       (rationalp b))
+    (== (expt (+ a b) 2)
+        (+ (expt a 2) (* 2 a b) (expt b 2))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+
+Goal:
+(== (expt (+ a b) 2)
+    (+ (expt a 2) (* 2 a b) (expt b 2)))
+
+Proof:
+
+(expt (+ a b) 2)
+== { Arith }
+(* (+ a b) (+ a b))
+== { Arith }
+(+ (* (+ a b) a) (* (+ a b) b))
+== { Arith }
+(+ (* a a) (* b a) (* a b) (* b b))
+== { Arith }
+(+ (* a a) (* a b) (* a b) (* b b))
+== { Arith }
+(+ (expt a 2) (* 2 a b) (expt b 2))
+
+QED

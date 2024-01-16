@@ -14,6 +14,7 @@
 (include-book "sbvlt")
 (include-book "bvlt")
 (include-book "kestrel/utilities/myif-def" :dir :system)
+(include-book "kestrel/booleans/boolor" :dir :system)
 (local (include-book "logext"))
 (local (include-book "logapp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -67,3 +68,27 @@
                                   unsigned-byte-p-of-bvchop-one-more
                                   logext)
                            (sbvlt-becomes-bvlt-better)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)
+                         (quotep size)))
+           (equal (boolor (sbvlt size x k1)
+                          (sbvlt size x k2))
+                  (if (sbvle size k1 k2) ;gets computed
+                      (sbvlt size x k2)
+                    (sbvlt size x k1))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant-2
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)
+                         (quotep size)))
+           (equal (boolor (sbvlt size k1 x)
+                          (sbvlt size k2 x))
+                  (if (sbvle size k2 k1) ;gets computed
+                      (sbvlt size k2 x)
+                    (sbvlt size k1 x))))
+  :hints (("Goal" :in-theory (enable sbvlt))))

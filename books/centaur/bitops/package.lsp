@@ -102,8 +102,8 @@
     signed-saturate signed-saturate-fn
     unsigned-saturate unsigned-saturate-fn
     merge-2-bits  merge-4-bits  merge-8-bits merge-16-bits merge-32-bits merge-64-bits
-    merge-2-u2s   merge-4-u2s   merge-8-u2s
-    merge-2-u4s   merge-4-u4s
+    merge-2-u2s   merge-4-u2s   merge-8-u2s  merge-16-u2s  merge-32-u2s
+    merge-2-u4s   merge-4-u4s   merge-8-u4s  merge-16-u4s  merge-32-u4s
     merge-2-u8s   merge-4-u8s   merge-8-u8s  merge-16-u8s  merge-32-u8s merge-64-u8s
     merge-2-u16s  merge-4-u16s  merge-8-u16s merge-16-u16s merge-32-u16s
     merge-2-u32s  merge-4-u32s  merge-8-u32s merge-16-u32s

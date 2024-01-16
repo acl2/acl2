@@ -746,6 +746,7 @@
                              svex-kind
                              svex-call->fn
                              svex-call->args
+                             sv::svex-quote->val
                              svexlist-eval
                              svex-eval
                              RSH-REDUCE

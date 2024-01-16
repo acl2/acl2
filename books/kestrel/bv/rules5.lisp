@@ -281,7 +281,7 @@
                 (posp size))
            (equal (sbvlt size x (bvplus size x y))
                   (sbvlt size 0 y)))
-  :hints (("Goal" :use (:instance sbvlt-of-bvplus-same-arg2)
+  :hints (("Goal" :use sbvlt-of-bvplus-same-arg2
            :in-theory (e/d (signed-addition-overflowsp-symmetric
                             signed-addition-underflowsp-symmetric)
                            (SIGNED-ADDITION-OVERFLOWSP
@@ -314,7 +314,7 @@
                 (unsigned-byte-p size y))
            (equal (unsigned-byte-p size (bvplus sizeplusone y (bvuminus sizeplusone x)))
                   (bvle size x y)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger)
+  :hints (("Goal" :use unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger
            :in-theory (disable unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger))))
 
 (defthm unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt-signed

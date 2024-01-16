@@ -16,7 +16,9 @@
 (include-book "dag-parent-array-with-name")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "rational-lists")
-(include-book "kestrel/bv/bvif" :dir :system) ;since this book deals with bvif specially
+(include-book "kestrel/bv/bvif" :dir :system) ;since this book deals with bvif specially (do not remove)
+(include-book "kestrel/booleans/boolif" :dir :system) ;since this book deals with boolif specially (do not remove)
+(include-book "kestrel/utilities/myif" :dir :system) ;since this book deals with myif specially (do not remove)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "numeric-lists"))
@@ -198,7 +200,7 @@
       (max-nodenum-in-possibly-negated-nodenums-aux items acc))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
-     
+
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
 ;;;
@@ -751,11 +753,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Go top-down from NODENUM, filling in the context array.  Assumes we started at the top node and so will cover all ways a node can be reached from the top.
+;; Go top-down from NODENUM, filling in the CONTEXT-ARRAY.  Assumes we started at the top node and so will cover all ways a node can be reached from the top.
 ;; Returns the context-array, named 'context-array, which associates nodenums with their contextps.
 ;; It might seem faster to just take the dag as a list and cdr down it, but we need the dag to be an array so we can quickly dig conjuncts out of dag nodes.
 (defund make-full-context-array-aux (nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
   (declare (xargs :guard (and (integerp nodenum)
+                              (<= -1 nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                               (context-arrayp 'context-array context-array dag-len)
@@ -764,8 +767,11 @@
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len)
                               (< nodenum dag-len))
                   :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 DAG-PARENT-ARRAYP) (PSEUDO-DAG-ARRAYP))))
-                  :measure (nfix (+ 1 nodenum))))
-  (if (not (natp nodenum))
+                  :measure (nfix (+ 1 nodenum))
+                  :split-types t)
+           (type (integer -1 2147483645) nodenum))
+  (if (mbe :logic (not (natp nodenum))
+           :exec (equal -1 nodenum))
       context-array
     (let* ((parents (aref1 'dag-parent-array dag-parent-array nodenum))
            (context-array (set-context-of-nodenum nodenum parents dag-array-name dag-array dag-len context-array)))
@@ -796,8 +802,11 @@
            (context-arrayp 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array) dag-len))
   :hints (("Goal" :in-theory (enable make-full-context-array-aux len-when-pseudo-dagp))))
 
-;returns 'context-array, which associates nodenums with their contextps
-;; Use make-full-context-array instead if you don't already have the parent array.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an array, named 'context-array, which associates nodenums with their contextps.
+;; Note that we need the dag to be an array so we can quickly dig conjuncts out of dag nodes.
+;; Use make-full-context-array instead if you don't already have the dag-parent-array.
 (defun make-full-context-array-with-parents (dag-array-name dag-array dag-len dag-parent-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (posp dag-len)
@@ -831,8 +840,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;new version! deprecate the old way of doing things (already done?)?
-;returns 'context-array, which associates nodenums with their contextps ("full" means all nodes have a valid entry in this array)
-;smashes 'dag-parent-array
+; Returns 'context-array, which associates nodenums with their contextps ("full" means all nodes have a valid entry in this array).
+; Smashes 'dag-parent-array.
 ;; Use make-full-context-array-with-parents instead if you already have the parent array.
 (defun make-full-context-array (dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -841,9 +850,9 @@
                                         dag-array
                                         dag-len
                                         (make-minimal-dag-parent-array-with-name dag-len ; somewhat unusual not to use (alen1 dag-array-name dag-array) here, but this array doesn't need to grow after creation
-                                                                         dag-array-name
-                                                                         dag-array
-                                                                         'dag-parent-array)))
+                                                                                 dag-array-name
+                                                                                 dag-array
+                                                                                 'dag-parent-array)))
 
 (defthm context-arrayp-of-make-full-context-array
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -1081,3 +1090,14 @@
            (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) (len dag) bound))
   :hints (("Goal" :in-theory (enable make-full-context-array-for-dag
                                      ))))
+
+(defthm bounded-context-arrayp-of-make-full-context-array-gen
+  (implies (and (pseudo-dagp dag)
+                (<= (len dag) 2147483646)
+                (<= (len dag) bound)
+                (natp bound)
+                (<= len (len dag))
+                (natp len))
+           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) len bound))
+  :hints (("Goal" :use (:instance bounded-context-arrayp-of-make-full-context-array)
+           :in-theory (disable bounded-context-arrayp-of-make-full-context-array))))

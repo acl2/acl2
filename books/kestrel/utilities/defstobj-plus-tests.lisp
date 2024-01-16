@@ -1,6 +1,6 @@
 ; Tests of defstobj+
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -945,3 +945,13 @@
   (baz :type t :initially 250) ; some theorems get suppressed since :type is t
   (posf :type (satisfies posp) :initially 250) ; some theorems get suppressed since :type is t
   )
+
+;; A test where the array length is a constant
+(defconst *one-hundred* 100)
+(defstobj+ array-test-1
+  (array-field-1 :type (array integer (*one-hundred*)) :initially 0 :resizable t))
+
+;; A test where the hash table length is a constant
+;; todo: add similar test for stobj-table field (if supported)
+(defstobj+ hash-table-test-1
+  (hash-table-field-1 :type (hash-table equal *one-hundred*)))

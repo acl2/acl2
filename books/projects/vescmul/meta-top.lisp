@@ -57,6 +57,8 @@
 
 (include-book "equal-of-if-with-constants")
 
+
+
 (local
  (include-book "summation-tree-meta-fncs-correct"))
 
@@ -283,7 +285,7 @@
 (add-postprocessor
  :processor-fnc unpack-booth-general-postprocessor
  :valid-syntaxp t
- :disabledp nil
+ :disabledp t
  :formula-checks mult-formula-checks
  :returns (mv term rp-state)
  :hints (("Goal"

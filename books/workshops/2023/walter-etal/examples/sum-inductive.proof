@@ -1,0 +1,111 @@
+(definec sum (n :nat) :nat
+  (if (zp n)
+      0
+    (+ n (sum (1- n)))))
+
+(definec fsum (n :nat) :all
+  (/ (* n (1+ n)) 2))
+
+Conjecture Fsum-sum:
+
+(=> (natp n)
+    (= (fsum n) (sum n)))
+
+Proof by: Induction on (sum n)
+
+Contract Case 1:
+(=> (! (natp n))
+    (=> (natp n)
+        (= (fsum n) (sum n))))
+
+Exportation:
+(=> (and (! (natp n))
+         (natp n))
+    (= (fsum n) (sum n)))
+
+Context:
+C1. (not (natp n))
+C2. (natp n)
+
+Derived Context:
+D1. nil {C1, C2}
+
+; We derived nil, so we're done!
+
+QED
+
+Base Case 1:
+(=> (and (natp n)
+         (zp n))
+    (=> (natp n)
+        (= (fsum n) (sum n))))
+
+Exportation:
+(=> (and (natp n)
+         (zp n))
+    (= (fsum n) (sum n)))
+
+Context:
+C1. (natp n)
+C2. (zp n)
+
+Derived Context:
+D1. (= n 0) { C2, C1, Def zp }
+
+Goal: (= (fsum n) (sum n))
+
+Proof:
+(fsum n)
+== { Def sum, Def fsum, D1, eval }
+(sum n)
+
+QED
+
+Induction Case 1:
+(=> (and (natp n)
+         (! (zp n))
+         (=> (natp (1- n))
+             (= (fsum (1- n))
+                (sum (1- n)))))
+    (=> (natp n)
+        (= (fsum n) (sum n))))
+
+Exportation:
+(=> (and (natp n)
+         (! (zp n))
+         (=> (natp (1- n))
+             (= (fsum (1- n))
+                (sum (1- n)))))
+    (= (fsum n) (sum n)))
+
+Context:
+C1. (natp n)
+C2. (! (zp n))
+C3. (=> (natp (1- n))
+        (= (fsum (1- n)) (sum (1- n))))
+
+Derived Context:
+D1. (natp (1- n)) { C1, C2, Arith }
+D2. (= (fsum (1- n)) (sum (1- n))) { C3, MP, D1 }
+
+Goal: (= (fsum n) (sum n))
+
+Proof:
+(sum n)
+== { Def sum, C2 }
+(+ n (sum (1- n)))
+== { D2 }
+(+ n (fsum (1- n)))
+== { Def fsum }
+(+ n (/ (* (1- n) n) 2))
+== { Arithmetic }
+(/ (+ (* 2 n) (* n (1- n))) 2)
+== { Arithmetic }
+(/ (* n (1+ n)) 2)
+== { Def fsum }
+(fsum n)
+
+QED
+
+QED
+

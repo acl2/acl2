@@ -1,0 +1,144 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up the following calculational proof of (1) in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD13xx/EWD1315.html
+
+Proofs known as "proofs by indirect equality" traditionally exploit
+(0)      x = y     ≡   〈∀u : true : u⊑x ≡ u⊑y 〉
+for some reflexive, antisymmetric ⊑ : they establish equality by establishing the right-hand side of (0). The following lemma shows that we may be able to get away with a proof obligation that is formally weaker.
+Lemma For reflexive, antisymmetric ⊑ and predicate P such that P.x ∧ P.y , we have
+(1)      x = y     ≡   〈∀u : P.u : u⊑x  ≡  u⊑y 〉
+Proof
+LHS ⇒ RHS   This follows from Leibniz's Principle.
+RHS ⇐ LHS   We observe for any x,y, P such that P.x ∧ P.y
+〈∀u : P.u : u⊑x ≡ u⊑y 〉
+⇒       { instantiate u:= x and u:= y }
+(P.x ⇒ (x⊑x ≡ x⊑y )) ∧ (P.y ⇒ (y⊑x ≡ y⊑y ))
+≡       { P.x ∧ P.y }
+(x⊑x ≡ x⊑y ) ∧ (y⊑x ≡ y⊑y )
+≡       { ⊑ is reflexive }
+x⊑y ∧ y⊑x
+⇒       { ⊑ is antisymmetric }
+x = y                                           (End of Proof)
+
+
+|#
+
+(defstub le (* *) => *)
+
+(skip-proofs
+ (property le-contract (x y :all)
+           (booleanp (le x y))))
+
+(skip-proofs
+ (property le-reflexive (x :all)
+           (== (le x x) t)))
+
+(skip-proofs
+ (property le-anti-symmetric (x y :all)
+           (=> (!= x y)
+               (! (== (le y x)
+                      (le x y))))))
+
+;; Predicate p
+(defstub p (*) => *)
+
+(skip-proofs
+ (property p-contract (x :all)
+           (booleanp (p x))))
+
+
+(definec rhs (u x y :all) :boolean
+  (=> (p u)
+      (== (le u x) (le u y))))
+
+
+;; Leibniz principle
+(property leibniz-le (x y u :all)
+          (=> (== x y)
+              (== (le u x) (le u y))))
+
+
+Lemma LHS=>RHS:
+(=> (^ (== x y)
+       (p x)
+       (p y))
+    (rhs u x y))
+
+Exportation:
+(=> (^ (== x y)
+       (p x)
+       (p y))
+    (rhs u x y))
+
+Context:
+C1. (== x y)
+C2. (p x)
+C3. (p y)
+
+Goal: (rhs u x y)
+
+Proof:
+(rhs u x y)
+== { Def rhs }
+(=> (p u)
+    (== (le u x) (le u y)))
+== { PL }
+(v (! (p u)) (== (le u x) (le u y)))
+== { C1, Lemma leibniz-le, PL }
+t
+
+QED
+
+;; Assuming RHS holds, we can initialize u twice (with x and with y) to create
+;; 2 more context items
+Lemma RHS=>LHS:
+(=> (^ (p x)
+       (p y)
+       (rhs x x y)
+       (rhs y x y))
+    (=> (rhs u x y)
+        (== x y)))
+
+Exportation:
+(=> (^ (p x)
+       (p y)
+       (rhs x x y)
+       (rhs y x y)
+       (rhs u x y))
+    (== x y))
+
+Context:
+C1. (p x)
+C2. (p y)
+C3. (rhs x x y)
+C4. (rhs y x y)
+C5. (rhs u x y)
+
+Derived Context:
+D1. (=> (p x)
+        (== (le x x) (le x y)))
+{ C3, Def rhs }
+D2. (== (le x x) (le x y)) { C1, D1, MP }
+D3. (=> (p y)
+        (== (le y x) (le y y)))
+{ C4, Def rhs }
+D4. (== (le y x) (le y y)) { C2, D3, MP }
+D5. (== t (le x y)) { D2, Lemma le-reflexive }
+D6. (== (le y x) t) { D4, Lemma le-reflexive ((x y)) }
+D7. (== (le y x) (le x y)) { D5, D6, Obvious }
+D8. (=> (== (le y x) (le x y)) (== x y)) { Lemma le-anti-symmetric, PL }
+D9. (== x y) { D7, D8, MP }
+
+Goal: (== x y)
+
+QED
+
+;; Proof builder fails for this proof.
+
+
+       

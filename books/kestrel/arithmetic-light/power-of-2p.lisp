@@ -46,10 +46,7 @@
   (implies (integerp n)
            (equal (power-of-2p (expt 2 n))
                   (<= 0 n)))
-  :hints
-  (("Goal" :in-theory (e/d (power-of-2p expt)
-                           ()))))
-
+  :hints (("Goal" :in-theory (enable power-of-2p expt))))
 
 (defthm expt-2-of-+-of--1-and-integer-length-when-power-of-2p-cheap
   (implies (power-of-2p x)

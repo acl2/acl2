@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "axe-rules")
-(include-book "kestrel/sequences/defforall" :dir :system)
+;(include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/split-list-fast" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -109,8 +109,35 @@
 ;;;
 
 ;todo: split out?
-(defforall all-stored-axe-rulep (items) (stored-axe-rulep items))
-(verify-guards all-stored-axe-rulep)
+(defund stored-axe-rule-listp (rules)
+  (declare (xargs :guard t))
+  (if (atom rules)
+      (null rules)
+    (and (stored-axe-rulep (first rules))
+         (stored-axe-rule-listp (rest rules)))))
+
+(defthm stored-axe-rule-listp-forward-to-true-listp
+  (implies (stored-axe-rule-listp rules)
+           (true-listp rules))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable stored-axe-rule-listp))))
+
+(defthm stored-axe-rulep-of-car
+  (implies (stored-axe-rule-listp rules)
+           (equal (stored-axe-rulep (car rules))
+                  (consp rules)))
+  :hints (("Goal" :in-theory (enable stored-axe-rule-listp))))
+
+(defthm stored-axe-rule-listp-of-cdr
+  (implies (stored-axe-rule-listp rules)
+           (stored-axe-rule-listp (cdr rules)))
+  :hints (("Goal" :in-theory (enable stored-axe-rule-listp))))
+
+(defthm stored-axe-rule-listp-of-cons
+  (equal (stored-axe-rule-listp (cons rule rules))
+         (and (stored-axe-rulep rule)
+              (stored-axe-rule-listp rules)))
+  :hints (("Goal" :in-theory (enable stored-axe-rule-listp))))
 
 ;; ;fixme the defforall could do this?
 ;; ;make it an equality?
@@ -136,8 +163,8 @@
 (defund merge-by-rule-priority (stored-rules1 stored-rules2 acc priorities)
   (declare (xargs :measure (+ (len stored-rules1) (len stored-rules2))
                   :guard (and (alistp priorities)
-                              (all-stored-axe-rulep stored-rules1)
-                              (all-stored-axe-rulep stored-rules2)
+                              (stored-axe-rule-listp stored-rules1)
+                              (stored-axe-rule-listp stored-rules2)
                               (true-listp acc))))
   ;;null would be faster than atom?  but then this wouldn't terminate?
   (cond ((atom stored-rules1) (revappend acc stored-rules2)) ;fixme use endp? or null (might need to use mbe to put null here)
@@ -164,10 +191,9 @@
 ;; TODO: For stability, consider comparing the rule names if there priorities are the same.
 (defun merge-sort-by-rule-priority (stored-rules priorities)
   (declare (xargs :measure (len stored-rules)
-                  :hints (("Goal" :in-theory (e/d () (len))))
+                  :hints (("Goal" :in-theory (disable len)))
                   :guard (and (alistp priorities)
-                              (true-listp stored-rules)
-                              (all-stored-axe-rulep stored-rules))
+                              (stored-axe-rule-listp stored-rules))
                   :verify-guards nil ;done below
                   ))
   (if (endp stored-rules) ;combine these first 2 cases?
@@ -182,39 +208,39 @@
                                       priorities)))))
 
 ;defforall could do these too?
-(defthm all-stored-axe-rulep-of-mv-nth-0-of-split-list-fast-aux
-  (implies (and (all-stored-axe-rulep lst)
-                (all-stored-axe-rulep acc)
+(defthm stored-axe-rule-listp-of-mv-nth-0-of-split-list-fast-aux
+  (implies (and (stored-axe-rule-listp lst)
+                (stored-axe-rule-listp acc)
                 (<= (len tail) (len lst)))
-           (all-stored-axe-rulep (mv-nth 0 (split-list-fast-aux lst tail acc)))))
+           (stored-axe-rule-listp (mv-nth 0 (split-list-fast-aux lst tail acc)))))
 
-(defthm all-stored-axe-rulep-of-mv-nth-0-of-split-list-fast
-  (implies (all-stored-axe-rulep lst)
-           (all-stored-axe-rulep (mv-nth 0 (split-list-fast lst))))
+(defthm stored-axe-rule-listp-of-mv-nth-0-of-split-list-fast
+  (implies (stored-axe-rule-listp lst)
+           (stored-axe-rule-listp (mv-nth 0 (split-list-fast lst))))
   :hints (("Goal" :in-theory (enable split-list-fast))))
 
-(defthm all-stored-axe-rulep-of-mv-nth-1-of-split-list-fast-aux
-  (implies (all-stored-axe-rulep lst)
-           (all-stored-axe-rulep (mv-nth 1 (split-list-fast-aux lst tail acc)))))
+(defthm stored-axe-rule-listp-of-mv-nth-1-of-split-list-fast-aux
+  (implies (stored-axe-rule-listp lst)
+           (stored-axe-rule-listp (mv-nth 1 (split-list-fast-aux lst tail acc)))))
 
-(defthm all-stored-axe-rulep-of-mv-nth-1-split-list-fast
-  (implies (all-stored-axe-rulep lst)
-           (all-stored-axe-rulep (mv-nth 1 (split-list-fast lst))))
+(defthm stored-axe-rule-listp-of-mv-nth-1-split-list-fast
+  (implies (stored-axe-rule-listp lst)
+           (stored-axe-rule-listp (mv-nth 1 (split-list-fast lst))))
   :hints (("Goal" :in-theory (enable split-list-fast))))
 
-(defthm all-stored-axe-rulep-of-merge-by-rule-priority
-  (implies (and (all-stored-axe-rulep l1)
-                (all-stored-axe-rulep l2)
-                (all-stored-axe-rulep acc))
-           (all-stored-axe-rulep (merge-by-rule-priority l1 l2 acc priorities)))
+(defthm stored-axe-rule-listp-of-merge-by-rule-priority
+  (implies (and (stored-axe-rule-listp l1)
+                (stored-axe-rule-listp l2)
+                (stored-axe-rule-listp acc))
+           (stored-axe-rule-listp (merge-by-rule-priority l1 l2 acc priorities)))
   :hints (("Goal" :in-theory (enable merge-by-rule-priority))))
 
 (verify-guards merge-sort-by-rule-priority
   :hints (("Goal" :induct (merge-sort-by-rule-priority stored-rules priorities))))
 
-(defthm all-stored-axe-rulep-of-merge-sort-by-rule-priority
-  (implies (all-stored-axe-rulep stored-rules)
-           (all-stored-axe-rulep (merge-sort-by-rule-priority stored-rules priorities)))
+(defthm stored-axe-rule-listp-of-merge-sort-by-rule-priority
+  (implies (stored-axe-rule-listp stored-rules)
+           (stored-axe-rule-listp (merge-sort-by-rule-priority stored-rules priorities)))
   :hints (("Goal" :in-theory (enable merge-sort-by-rule-priority))))
 
 (defthm true-listp-of-merge-sort-by-rule-priority
@@ -223,11 +249,10 @@
   :hints (("Goal" :in-theory (enable merge-sort-by-rule-priority))))
 
 (defun rule-is-presentp (rule-symbol stored-axe-rules)
-  (declare (xargs :guard (and (all-stored-axe-rulep stored-axe-rules)
-                              (symbolp rule-symbol)
-                              (true-listp stored-axe-rules))
-                  :guard-hints (("Goal" :expand ((all-stored-axe-rulep stored-axe-rules))
-                                 :in-theory (enable all-stored-axe-rulep stored-axe-rulep))) ;yuck
+  (declare (xargs :guard (and (stored-axe-rule-listp stored-axe-rules)
+                              (symbolp rule-symbol))
+                  :guard-hints (("Goal" :expand ((stored-axe-rule-listp stored-axe-rules))
+                                 :in-theory (enable stored-axe-rule-listp stored-axe-rulep))) ;yuck
                   ))
   (if (endp stored-axe-rules) ;use endp?
       nil
@@ -246,9 +271,8 @@
 ;disable
 (defun remove-from-stored-rules (rule-names-to-remove stored-rules)
   (declare (xargs :guard (and (symbol-listp rule-names-to-remove)
-                              (all-stored-axe-rulep stored-rules)
-                              (true-listp stored-rules))
-                  :guard-hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep)))))
+                              (stored-axe-rule-listp stored-rules))
+                  :guard-hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep)))))
   (if (endp stored-rules)
       nil
     (let ((stored-rule (first stored-rules)))
@@ -256,29 +280,28 @@
           (remove-from-stored-rules rule-names-to-remove (rest stored-rules))
         (cons stored-rule (remove-from-stored-rules rule-names-to-remove (rest stored-rules)))))))
 
-(defthm all-stored-axe-rulep-of-remove-from-stored-rules
-  (implies (all-stored-axe-rulep stored-rules)
-           (all-stored-axe-rulep (remove-from-stored-rules rule-names stored-rules))))
+(defthm stored-axe-rule-listp-of-remove-from-stored-rules
+  (implies (stored-axe-rule-listp stored-rules)
+           (stored-axe-rule-listp (remove-from-stored-rules rule-names stored-rules))))
 
 ;rename.
 (defun rules-from-stored-axe-rules (stored-rules)
-  (declare (xargs :guard (and (all-stored-axe-rulep stored-rules)
-                              (true-listp stored-rules))
-                  :guard-hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep)))))
+  (declare (xargs :guard (stored-axe-rule-listp stored-rules)
+                  :guard-hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep)))))
   (if (endp stored-rules)
       nil
     (cons (stored-rule-symbol (first stored-rules))
           (rules-from-stored-axe-rules (rest stored-rules)))))
 
 (defthm symbol-listp-of-rules-from-stored-axe-rules
-  (implies (all-stored-axe-rulep rules)
+  (implies (stored-axe-rule-listp rules)
            (symbol-listp (rules-from-stored-axe-rules rules)))
-  :hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep))))
+  :hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep))))
 
 ;todo: drop once the guards of the accessors are changed
-(defthm <=-of-len-of-car-when-all-stored-axe-rulep
-  (implies (and (all-stored-axe-rulep stored-rules)
+(defthm <=-of-len-of-car-when-stored-axe-rule-listp
+  (implies (and (stored-axe-rule-listp stored-rules)
                 (consp stored-rules))
            (<= 3 (len (car stored-rules))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (enable all-stored-axe-rulep stored-axe-rulep))))
+  :hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep))))

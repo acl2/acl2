@@ -58,4 +58,4 @@
                (fep x8 prime)
                (fep x9 prime)
                (fep x10 prime)))
- :hints (("Goal" :in-theory (e/d (member-equal) ()))))
+ :hints (("Goal" :in-theory (enable member-equal))))

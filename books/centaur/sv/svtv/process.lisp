@@ -213,8 +213,8 @@
   :returns (inalist svex-alist-p)
   (b* ((in-assigns (svtv-inputs->assigns ins phase))
        (ov-assigns (svtv-overrides->assigns overrides phase))
-       (netassigns (assigns->netassigns in-assigns))
-       (inalist (netassigns->resolves netassigns))
+       (netassigns (assigns->segment-drivers in-assigns))
+       (inalist (segment-driver-map-resolve netassigns))
        ((mv masks conflicts) (assigns-check-masks in-assigns nil nil))
        (- (and (consp conflicts)
                (raise "Conflicting assignments. Masks: ~x0~%"

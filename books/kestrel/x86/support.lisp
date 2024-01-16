@@ -112,7 +112,7 @@
 ;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
 
 ;; (thm
-;;  (Implies (and (CANONICAL-ADDRESS-p rip)
+;;  (implies (and (CANONICAL-ADDRESS-p rip)
 ;;                (natp len)
 ;;                (natp k)
 ;;                (< k len)
@@ -1003,7 +1003,7 @@
 ;;                       (ACL2::REPEATBIT (+ (- LOW) SIZE) 1))
 
 ;; (thm
-;;  (Implies (and (< n size)
+;;  (implies (and (< n size)
 ;;                (natp size)
 ;;                (natp n))
 ;;           (equal (acl2::bvplus size -1 (expt 2 n))
@@ -1019,7 +1019,7 @@
 ;; ;a bunch of 0's followed by a bunch of 1's
 ;; instead, just drop the (expt 2 size)
 ;; (defthm bvplus-of-expt-and-all-ones
-;;  (Implies (and (< n size)
+;;  (implies (and (< n size)
 ;;                (natp size)
 ;;                (natp n))
 ;;           (equal (acl2::bvplus size (expt 2 n) (+ -1 (expt 2 size)))
@@ -1166,15 +1166,6 @@
                       (equal k3 k1)
                     (equal k3 k2)))))
 
-;drop?  looped
-(defthmd if-x-nil-t
-  (equal (if x nil t)
-         (not x)))
-
-(defthm if-of-not
-  (equal (if (not test) tp ep)
-         (if test ep tp)))
-
 (defthm if-of-if-same-arg2
   (equal (if test (if test tp ep) ep2)
          (if test tp ep2)))
@@ -1229,56 +1220,61 @@
                       (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
                     (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline ep)))))
 
-(defthm one-byte-opcode-execute-of-if-arg1
-  (equal (one-byte-opcode-execute proc-mode (if test start-rip1 start-rip2) temp-rip prefixes rex-byte opcode modr/m sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip1 temp-rip prefixes rex-byte opcode modr/m sib x86)
-           (one-byte-opcode-execute proc-mode start-rip2 temp-rip prefixes rex-byte opcode modr/m sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg1
+;;   (equal (one-byte-opcode-execute proc-mode (if test start-rip1 start-rip2) temp-rip prefixes rex-byte opcode modr/m sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip1 temp-rip prefixes rex-byte opcode modr/m sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip2 temp-rip prefixes rex-byte opcode modr/m sib x86))))
 
-(defthm one-byte-opcode-execute-of-if-arg2
-  (equal (one-byte-opcode-execute proc-mode start-rip (if test temp-rip1 temp-rip2) prefixes rex-byte opcode modr/m sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip temp-rip1 prefixes rex-byte opcode modr/m sib x86)
-           (one-byte-opcode-execute proc-mode start-rip temp-rip2 prefixes rex-byte opcode modr/m sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg2
+;;   (equal (one-byte-opcode-execute proc-mode start-rip (if test temp-rip1 temp-rip2) prefixes rex-byte opcode modr/m sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip temp-rip1 prefixes rex-byte opcode modr/m sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip temp-rip2 prefixes rex-byte opcode modr/m sib x86))))
 
-(defthm one-byte-opcode-execute-of-if-arg6
-  (equal (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode (if test modr/m1 modr/m2) sib x86)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m1 sib x86)
-           (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m2 sib x86))))
+;; ;drop?
+;; (defthm one-byte-opcode-execute-of-if-arg6
+;;   (equal (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode (if test modr/m1 modr/m2) sib x86)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m1 sib x86)
+;;            (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes rex-byte opcode modr/m2 sib x86))))
 
-;once this breaks the symmetry, the two one-byte-opcode-execute terms
-;resulting from a branch will be different (and perhaps each then will
-;get a nice context computed for it)
-(defthm if-of-one-byte-opcode-execute-of-if-arg2
-  (equal (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       (if test temp-rip1 temp-rip2) ;same test as above
-                                       prefixes rex-byte opcode modr/m sib
-                                       x86)
-           x)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip1
-                                       prefixes rex-byte opcode modr/m sib
-                                       x86)
-           x)))
+;; ;once this breaks the symmetry, the two one-byte-opcode-execute terms
+;; ;resulting from a branch will be different (and perhaps each then will
+;; ;get a nice context computed for it)
+;; ;drop?
+;; (defthm if-of-one-byte-opcode-execute-of-if-arg2
+;;   (equal (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        (if test temp-rip1 temp-rip2) ;same test as above
+;;                                        prefixes rex-byte opcode modr/m sib
+;;                                        x86)
+;;            x)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip1
+;;                                        prefixes rex-byte opcode modr/m sib
+;;                                        x86)
+;;            x)))
 
-(defthm if-of-one-byte-opcode-execute-of-if-arg5
-  (equal (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip
-                                       prefixes rex-byte
-                                       (if test opcode1 opcode2) ;same test as above
-                                       modr/m sib
-                                       x86)
-           x)
-         (if test
-             (one-byte-opcode-execute proc-mode start-rip
-                                       temp-rip
-                                       prefixes rex-byte opcode1 modr/m sib
-                                       x86)
-           x)))
+;; ;drop?
+;; (defthm if-of-one-byte-opcode-execute-of-if-arg5
+;;   (equal (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip
+;;                                        prefixes rex-byte
+;;                                        (if test opcode1 opcode2) ;same test as above
+;;                                        modr/m sib
+;;                                        x86)
+;;            x)
+;;          (if test
+;;              (one-byte-opcode-execute proc-mode start-rip
+;;                                        temp-rip
+;;                                        prefixes rex-byte opcode1 modr/m sib
+;;                                        x86)
+;;            x)))
 
 
 ;;TODO: Maybe we should have axe split the simulation instead of proving all these if lifting rules.
@@ -1803,34 +1799,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Quite powerful
+;; For when the range starting at ad1 is within the range starting at ad3.
+;; Often the Ns will be constant.
 (defthm separate-when-separate
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad3 ad1)
-                (<= n1 (+ n3 (- ad3 ad1))) ; rephrase to subtract the larger from the smaller?
+                (<= (- ad1 ad3) (- n3 n1))
                 (<= ad4 ad2)
-                (<= n2 (+ n4 (- ad4 ad2))))
+                (<= (- ad2 ad4) (- n4 n2)))
            (separate rwx n1 ad1 rwx n2 ad2))
   :hints (("Goal" :in-theory (enable separate))))
 
 ;; Quite powerful
+;; For when the range starting at ad1 is within the range starting at ad4.
+;; Often the Ns will be constant.
 (defthm separate-when-separate-alt
   (implies (and (separate rwx n3 ad3 rwx n4 ad4)
                 (<= ad4 ad1)
-                (<= n1 (+ n4 (- ad4 ad1)))
+                (<= (- ad1 ad4) (- n4 n1))
                 (<= ad3 ad2)
-                (<= n2 (+ n3 (- ad3 ad2))))
+                (<= (- ad2 ad3) (- n3 n2)))
            (separate rwx n1 ad1 rwx n2 ad2))
   :hints (("Goal" :in-theory (enable separate))))
 
-;drop?!
-;todo: compare to X86ISA::SEPARATE-SMALLER-REGIONS
-(defthm separate-when-separate-2
-  (implies (and (separate :r n3 addr3 :r n4 addr4) ; free vars
-                (<= addr3 addr1)
-                (<= n1 (+ n3 (- addr3 addr1)))
-                (<= addr4 addr2)
-                (<= n2 (+ n4 (- addr4 addr2))))
-           (separate :r n1 addr1 :r n2 addr2)))
+;; ;drop?!
+;; ;todo: compare to X86ISA::SEPARATE-SMALLER-REGIONS
+;; (defthm separate-when-separate-2
+;;   (implies (and (separate :r n3 addr3 :r n4 addr4) ; free vars
+;;                 (<= addr3 addr1)
+;;                 (<= n1 (+ n3 (- addr3 addr1)))
+;;                 (<= addr4 addr2)
+;;                 (<= n2 (+ n4 (- addr4 addr2))))
+;;            (separate :r n1 addr1 :r n2 addr2)))
 
 ;; May be expensive, but needed if separate-of-1-and-1 fires.
 ;; TODO: Could add a syntaxp to restrict this to equalities of things that might be addresses.
@@ -1942,14 +1942,9 @@
            (xw ':rip '0 pc2 x86))))
 
 ;move
-(defthm if-t-nil
+(defthm acl2::if-t-nil
   (equal (if x t nil)
          (acl2::bool-fix x)))
-
-(defthm if-x-x-y
-  (implies (booleanp x)
-           (equal (if x x y)
-                  (if x t y))))
 
 (defthm xr-of-myif
   (equal (xr fld index (acl2::myif test then else))
@@ -2152,6 +2147,8 @@
 (acl2::def-constant-opener x86isa::rflagsbits->zf$inline)
 
 (acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+
+(acl2::def-constant-opener x86isa::feature-flags)
 
 ;pretty gross (due to gross behaviour of bfix)
 (defthm RFLAGSBITS-rewrite

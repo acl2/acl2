@@ -254,7 +254,7 @@
                     ,pred))
          :hints (("Goal" :use (:instance ,(pack$ 'type-of-aref1-when- fn)
                                          (num-valid-indices (+ 1 index)))
-                  :in-theory (e/d () (,(pack$ 'type-of-aref1-when- fn))))))
+                  :in-theory (disable ,(pack$ 'type-of-aref1-when- fn)))))
 
        (defthm ,(pack$ fn '-monotone)
          (implies (and (,fn array-name array n ,@extra-vars)

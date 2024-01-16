@@ -73,12 +73,12 @@
   (implies (2d-bv-arrayp bytesize numrows numcols item)
            (equal (len item)
                   numrows))
-  :hints (("Goal" :in-theory (e/d (2d-bv-arrayp) ()))))
+  :hints (("Goal" :in-theory (enable 2d-bv-arrayp))))
 
 (defthm true-listp-when-2d-bv-arrayp
   (implies (2d-bv-arrayp bytesize numrows numcols item)
            (true-listp item))
-  :hints (("Goal" :in-theory (e/d (2d-bv-arrayp) ()))))
+  :hints (("Goal" :in-theory (enable 2d-bv-arrayp))))
 
 (defthm bv-arrayp-of-nth
   (implies (and (bv-arrayp-list bytesize len item)
@@ -212,7 +212,7 @@
                   (if (<= n (len x))
                       t
                     (equal len 0))))
-  :hints (("Goal" :in-theory (e/d (bv-arrayp-list take zp) ()))))
+  :hints (("Goal" :in-theory (enable bv-arrayp-list take zp))))
 
 (defthm bv-arrayp-list-of-nthcdr
   (implies (bv-arrayp-list size len x)
@@ -227,7 +227,7 @@
                 (natp start)
                 (natp end))
            (bv-arrayp-list size len (subrange start end x)))
-  :hints (("Goal" :in-theory (e/d (subrange) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 (defthm 2d-bv-arrayp-of-subrange
   (implies (and (2d-bv-arrayp bytesize numrows numcols val)

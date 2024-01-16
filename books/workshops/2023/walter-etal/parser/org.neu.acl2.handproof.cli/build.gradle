@@ -1,0 +1,18 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
+}
+dependencies {
+	api project(':org.neu.acl2.handproof')
+	api project(':org.neu.acl2.handproof.ide')
+	api "org.eclipse.xtend:org.eclipse.xtend.lib:${xtextVersion}"
+	api 'info.picocli:picocli:4.6.3'
+	api group: 'org.json', name: 'json', version: '20220320'
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+mainClassName = 'org.neu.acl2.handproof.cli.CLIChecker2'
+shadowJar {
+    append 'plugin.properties'
+}

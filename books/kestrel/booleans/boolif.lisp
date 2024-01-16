@@ -1,7 +1,7 @@
 ; A book about boolif (boolean-valued if-then-else)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,8 @@
       t
     nil))
 
-(defthm booleanp-of-boolif
+;; Only needed for Axe?
+(defthmd booleanp-of-boolif
   (booleanp (boolif x y z)))
 
 (defthm boolif-when-quotep-arg1
@@ -30,6 +31,13 @@
                   (if test
                       (bool-fix x)
                     (bool-fix y))))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+;; Does not introduce bool-fix, unlike boolif-of-t-and-nil.
+(defthmd boolif-of-t-and-nil-when-booleanp
+  (implies (booleanp x)
+           (equal (boolif x t nil)
+                  x))
   :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm boolif-of-t-and-nil
@@ -45,6 +53,12 @@
 (defthm boolif-same-branches
   (equal (boolif test x x)
          (bool-fix x))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-x-y-x
+  (implies (syntaxp (not (quotep x))) ; prevent loops
+           (equal (boolif x y x)
+                  (boolif x y nil)))
   :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm boolif-of-not
@@ -133,3 +147,26 @@
          (boolif test x (boolif test y1 y2))))
 
 (theory-invariant (incompatible (:rewrite boolif-of-if-arg3) (:defintion boolif)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; could restrict to v1 and v2 being constants
+(defthm boolif-of-equal-and-nil-and-equal-diff
+  (implies (not (equal v1 v2))
+           (equal (boolif (equal v1 x) nil (equal v2 x))
+                  (equal v2 x))))
+
+;; "x or y" and "x" is just x
+;todo: rename to have 'same' in the name
+(defthm boolif-of-boolif-of-t-and-nil
+  (equal (boolif (boolif x t y) x nil)
+         (acl2::bool-fix x))
+  :hints (("Goal" :in-theory (enable acl2::bool-fix))))
+
+;; This reduces one mention of X and only increases the mentions of nil
+(defthm boolif-combine-1
+  (equal (boolif (boolif x z1 z2) (boolif x z3 z4) nil)
+         (boolif x
+                 (boolif z1 z3 nil)
+                 (boolif z2 z4 nil)))
+  :hints (("Goal" :in-theory (enable boolif))))

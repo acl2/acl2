@@ -413,7 +413,7 @@
            (equal (bvlt size x y)
                   (not (equal (bvchop size y)
                               (bvchop size x)))))
-  :hints (("Goal" :use (:instance bvlt-when-bvlt-must-be))))
+  :hints (("Goal" :use bvlt-when-bvlt-must-be)))
 
 ;induction proof?
 ;wont match?
@@ -496,7 +496,7 @@
                 (unsigned-byte-p free k))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 ;could this be expensive?
@@ -506,7 +506,7 @@
                 (unsigned-byte-p free x))
            (equal (< x k)
                   (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+  :hints (("Goal" :use <-becomes-bvlt-alt
            :in-theory (disable <-becomes-bvlt-alt))))
 
 (theory-invariant (incompatible (:definition bvlt) (:rewrite <-becomes-bvlt)))
@@ -864,3 +864,18 @@
          (and (equal 0 (getbit 0 x))
               (equal 1 (getbit 0 y))))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen the 1
+(defthm bvlt-of-bvplus-1-cancel
+  (implies (posp size)
+           (equal (bvlt size (bvplus size 1 x) x)
+                  (equal (bvchop size x) (+ -1 (expt 2 size)))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
+
+(defthm bvlt-of-bvplus-1-cancel-alt
+  (implies (posp size)
+           (equal (bvlt size x (bvplus size 1 x))
+                  (not (equal (bvchop size x) (+ -1 (expt 2 size))))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))

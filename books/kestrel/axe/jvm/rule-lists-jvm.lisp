@@ -160,6 +160,14 @@
     booleanp-of-null-refp
     booleanp-of-addressp))
 
+;; mostly for debugging?
+;; todo: add a smart version of this
+(defun symbolic-execution-rules-for-run-n-steps ()
+  '(run-n-steps-opener-axe
+    run-n-steps-zp
+    run-n-steps-of-myif-split ;todo: do something smarter? (more like what the non-step-limited execution does?)
+    ))
+
 ;; Used for smart if handling
 (defun step-state-with-pc-and-call-stack-height-rules ()
   (declare (xargs :guard t))

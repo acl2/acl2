@@ -1780,12 +1780,12 @@
 ; princ$.  Princ$ requires state-p1 in its guard.  So we set up a backchaining
 ; rule to get that from fmt-state-p.
 
-(defthm fmt-state-p-implies-state-p1-ppr2-column
+(defthm fmt-state-p-implies-state-p-ppr2-column
     (implies (and (fmt-state-p state)
                   (open-output-channel-p1 channel :character state))
              (state-p (ppr2-column lst loc col channel state eviscp))))
 
-(defthm fmt-state-p-implies-state-p1-ppr2
+(defthm fmt-state-p-implies-state-p-ppr2
     (implies (and (fmt-state-p state)
                   (open-output-channel-p1 channel :character state))
              (state-p (ppr2 lst col channel state eviscp))))

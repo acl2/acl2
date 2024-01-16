@@ -31,6 +31,7 @@
 (in-package "SV")
 (include-book "moddb")
 (include-book "alias-norm")
+(include-book "norm-netlist")
 ;; (include-book "../svex/rewrite")
 (include-book "../svex/assigns-compose")
 (include-book "centaur/misc/hons-extra" :dir :system)
@@ -69,9 +70,9 @@ stateholding elements using the alias table (see @(see assigns-subst)).</li>
 <li>Convert the lists of assignments and stateholding elements, which may
 have arbitrary LHS expressions as the left-hand sides, into a list of
 assignments to variables.  This involves segmenting each assignment into
-separate assignments to its individual LHS components (see @(see assigns->netassigns)),
+separate assignments to its individual LHS components (see @(see assigns->segment-drivers)),
 and then for wires that have multiple assignments, resolving these together to
-obtain a single RHS (see @(see netassigns->resolves)).</li>
+obtain a single RHS (see @(see segment-driver-map-resolve)).</li>
 <li>Compose assignments together to obtain the full 0-delay formulas for each
 canonical wire and full update functions for each state bit; that is, formulas
 in terms of primary inputs and previous states (see @(see
@@ -1122,13 +1123,13 @@ svex-assigns-compose)).</li>
        ;; assign a = { z, c[6:4], 3'bz }
        ;; assign b = { z, c[3:0], 1'bz }
        ;; that is, simplify the assignments so that we have only assignments to whole wires.
-       (net-assigns (cwtime (assigns->netassigns norm-assigns)))
+       (net-assigns (cwtime (assigns->segment-drivers norm-assigns)))
        ;; (net-delays (cwtime (assigns->netassigns norm-delays)))
 
        ;; (- (sneaky-save 'net-assigns net-assigns))
 
        ;; Resolve together multiple assignments to the same wire.
-       (res-assigns (make-fast-alist (cwtime (netassigns->resolves net-assigns))))
+       (res-assigns (make-fast-alist (cwtime (segment-driver-map-resolve net-assigns))))
 
        ;; compose norm-fixups with res-assigns
        (final-fixups (assigns-compose norm-fixups res-assigns))
