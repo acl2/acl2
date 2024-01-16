@@ -19,7 +19,7 @@
 (local (include-book "floor"))
 (local (include-book "mod"))
 (local (include-book "expt"))
-(local (include-book "expt2"))
+;(local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "times"))
 (local (include-book "numerator"))
@@ -156,7 +156,8 @@
   :hints (("Goal" ;:expand (INTEGER-LENGTH (* X (EXPT 2 (+ -1 N))))
            :induct (sub1-induct n)
            :in-theory (e/d (integer-length expt)
-                           (expt-hack)))))
+                           (;expt-hack
+                            )))))
 
 ;; conflicts with expanding integer-length?
 (defthm integer-length-of-*-of-1/2
@@ -201,12 +202,17 @@
   :hints (("Goal" :in-theory (enable integer-length))))
 
 (defthm <-of-integer-length-arg1
-  (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to EXPT
+  (implies (and (syntaxp (not (and (quotep n) (< 1000 (unquote n))))) ;prevent huge calls to expt
                 (posp x)
                 (natp n))
            (equal (< (integer-length x) n)
                   (< x (expt 2 (+ -1 n)))))
-  :hints (("Goal" :in-theory (enable integer-length posp))))
+  :hints (("subgoal *1/3" :use ((:instance <-of-expt-of-integer-length-same-linear (n x))
+                                (:instance <=-of-expt-and-expt-same-base-linear (r 2) (i1 (integer-length x)) (i2 (+ -1 n))))
+           :in-theory (disable <-of-expt-of-integer-length-same
+                               <-of-expt-and-expt-same-base
+                               <-of-integer-length-arg2))
+          ("Goal" :in-theory (enable integer-length posp))))
 
 ;; or move to expt2.lisp
 (defthm <-of-expt-2-and-constant
@@ -217,3 +223,12 @@
                   (and (< 0 k)
                        (not (equal k (expt 2 i)))
                        (< i (integer-length k))))))
+
+;; or move to expt2.lisp
+(defthm <-of-constant-and-expt-2
+  (implies (and (syntaxp (quotep k))
+                (integerp k) ;gen?
+                (natp i))
+           (equal (< k (expt 2 i))
+                  (or (<= k 0)
+                      (<= (integer-length k) i)))))

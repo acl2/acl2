@@ -263,6 +263,7 @@
           (zcash::edwards-add-spec u1/num v1/num u2/num v2/num u3/num v3/num))
  ;; todo: global rules ignored if no rule-lists given
  :NO-SPLITP nil
+ :var-ordering '(a_computation/product_num v3/num)
  :monitor '( solve-for-v3)
  :tactic '(:rep (:seq (:rep :rewrite) :subst))
  :global-rules '(pfield::fep-of-sub

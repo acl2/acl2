@@ -359,7 +359,7 @@
                 (< 0 n))
             (equal (bvplus n x y)
                    (bvchop n (ripple-carry-adder n x y 0))))
-   :hints (("Goal" :in-theory (e/d (bvplus) ())
+   :hints (("Goal" :in-theory (enable bvplus)
             :use (:instance bvplus-becomes-ripple-carry-adder-helper (carry 0) (x (bvchop n x)) (y (bvchop n y)))
             :do-not '(generalize eliminate-destructors))))
 
@@ -401,4 +401,4 @@
 ;;                 (unsigned-byte-p 1 z))
 ;;            (equal (full-adder-sum x y z)
 ;;                   (getbit 0 (+ x y z))))
-;;   :hints (("Goal" :in-theory (e/d () (BVXOR-1-BECOMES-BITXOR)))))
+;;   :hints (("Goal" :in-theory (disable BVXOR-1-BECOMES-BITXOR))))

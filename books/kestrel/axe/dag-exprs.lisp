@@ -174,6 +174,14 @@
                 (cdr (dargs expr))))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
+;; trying to enforce a normal form...
+(defthmd dag-function-call-exprp-when-dag-exprp
+  (implies (dag-exprp expr)
+           (equal (dag-function-call-exprp expr)
+                  (and (consp expr)
+                       (not (equal 'quote (car expr))))))
+  :hints (("Goal" :in-theory (enable dag-function-call-exprp dag-exprp))))
+
 ;drop?
 (local (in-theory (enable consp-of-cdr-of-nth-when-all-dargp)))
 

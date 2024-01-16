@@ -40,7 +40,7 @@
 ;; ;BBBOZO should this really byte-fix (etc.) its values?  if so, don't use it to phrase the postcond, or you'll be able to prove that the contents are something not quite true (but that byte-fixes) to the real values
 ;; ;this used to change the length
 ;; (defund store-array (ref contents len type heap)
-;;   (acl2::set-field ref
+;;   (set-field ref
 ;;                    (array-contents-pair) ;(array-contents-pair)
 ;;                    ;;bbozo handle other types
 ;;                    (if (equal type ':byte)

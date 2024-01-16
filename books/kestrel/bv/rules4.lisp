@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -86,7 +86,7 @@
                 (natp n))
            (equal (getbit n x)
                   (getbit (+ -1 size) x)))
-  :hints (("Goal" :use (:instance getbit-when-signed-byte-p-high-helper))))
+  :hints (("Goal" :use getbit-when-signed-byte-p-high-helper)))
 
 (defthm slice-when-signed-byte-p-high
   (implies (and (signed-byte-p size x)
@@ -124,7 +124,7 @@
                 (natp size))
            (equal (< (+ y (* (EXPT 2 size) (LOGTAIL size X))) X)
                   (< y (bvchop size x))))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
+  :hints (("Goal" :use bvchop-plus-times-expt-logtail
            :in-theory (disable bvchop-plus-times-expt-logtail))))
 
 (defthm <-of-times-expt-logtail-cancel2
@@ -132,7 +132,7 @@
                 (natp size))
            (equal (< X (+ y (* (EXPT 2 size) (LOGTAIL size X))))
                   (< (bvchop size x) y)))
-  :hints (("Goal" :use (:instance bvchop-plus-times-expt-logtail)
+  :hints (("Goal" :use bvchop-plus-times-expt-logtail
            :in-theory (disable bvchop-plus-times-expt-logtail))))
 
 (defthm low-bits-dont-matter
@@ -231,10 +231,8 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize y k)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (
-;                                                  <-of-bvmult-hack ;bozo
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
+                                  (<-of-bvplus-becomes-bvlt-arg1
+                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
@@ -264,8 +262,7 @@
                         (:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize))))
            :in-theory (disable ;LOGTAIL-LESSP
                        <-of-logtail-arg1
-                       bvchop-plus-times-expt-logtail)
-           )))
+                       bvchop-plus-times-expt-logtail))))
 
 (defthm logapp-less-than-alt
   (implies (and (natp lowsize)
@@ -328,7 +325,7 @@
                                (< (bvchop lowsize x)
                                   (bvchop lowsize lowval))))))))
   :hints (("Goal" :use ((:instance BVCAT-NUMERIC-BOUND (k (EXPT 2 (+ LOWSIZE HIGHSIZE))))
-                        (:instance <-of-bvcat-alt-helper))
+                        <-of-bvcat-alt-helper)
            :in-theory (e/d (UNSIGNED-BYTE-P)(<-OF-BVCAT <-of-bvcat-alt-helper)))))
 
 (defthm bvlt-of-bvcat-arg3
@@ -341,10 +338,8 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize k y)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (
-;                                                  <-of-bvmult-hack ;bozo
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
+                                  (<-of-bvplus-becomes-bvlt-arg1
+                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen

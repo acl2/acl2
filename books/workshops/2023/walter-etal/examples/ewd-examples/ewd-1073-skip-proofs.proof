@@ -1,0 +1,105 @@
+#|
+
+ Author: Pete Manolios
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD10xx/EWD1073.html
+
+
+
+ As next example we show how taking the maximum distributes over taking the minimum. Denoting the maximum of x and y by x↑y and their minimum by x↓y, the theorem to be proved is that for all x,y,z.
+
+ (5) 	x↑(y↓z)=(x↑y) ↓ (x↑z).
+
+ We use for the definition of ↑ and ↓ that for all a,b,w
+
+ (6) 	w ≥ a↑b     ≡    w≥a ∧ w≥b
+
+ (7) 	w ≥ a↓b    ≡    w≥a ∨ w≥b
+
+ and in view of the above we prove equality by using
+
+ (8) 	a = b     ≡    (∀w :: w≥a ≡ w≥b)
+
+ To demonstrate (5), we observe for any x,y,z,w
+
+ 	w ≥ x↑(y↓z)
+ = 	{ (6) with a,b := x,(y↓z) }
+ 	w ≥ x  ∧  w ≥ y↓z
+ = 	{ (7) with a,b := x,z }
+ 	w ≥ x  ∧  (w ≥ y  ∨  w ≥ z)
+ = 	{ predicate calculus, in particular: ∧ distributes over ∨}
+ 	(w ≥ x  ∧  w ≥ y)  ∨  (w ≥ x  ∧  w ≥ z)
+ = 	{ (6) with a,b := x,y and a,b := x,z}
+ 	w ≥ x↑y  ∨  w ≥ x↑z
+ = 	{ (7) with a,b := (x↑y),(x↑z) }
+ 	w  ≥  (x↑y)↓(x↑z) ,
+
+ which, in view of (8), proves (5).
+
+|#
+
+(defstub up (* *) => *
+  :formals (x y) :guard (^ (rationalp x) (rationalp y)))
+
+(defstub dn (* *) => *
+  :formals (x y) :guard (^ (rationalp x) (rationalp y)))
+
+(skip-proofs
+ (property up-fun-contract (a b :rational)
+   (rationalp (up a b))
+   :rule-classes ((:type-prescription) (:rewrite))))
+ 
+(skip-proofs
+ (property dn-fun-contract (a b :rational)
+   (rationalp (dn a b))
+   :rule-classes ((:type-prescription) (:rewrite))))
+
+(skip-proofs
+ (property >=-up (w a b :rational)
+   (== (>= w (up a b))
+       (^ (>= w a) (>= w b)))))
+ 
+(skip-proofs
+ (property >=-dn (w a b :rational)
+   (== (>= w (dn a b))
+       (v (>= w a) (>= w b)))))
+ 
+(property (w x y z :rational)
+  (== (>= w (up x (dn y z)))
+      (>= w (dn (up x y) (up x z)))))
+
+Conjecture ewd-1073-up-dn:
+(=> (^ (rationalp w)
+       (rationalp x)
+       (rationalp y)
+       (rationalp z))
+    (== (>= w (up x (dn y z)))
+        (>= w (dn (up x y) (up x z)))))
+
+Context:
+C1. (rationalp w)
+C2. (rationalp x)
+C3. (rationalp y)
+C4. (rationalp z)
+
+Goal: (== (>= w (up x (dn y z)))
+          (>= w (dn (up x y) (up x z))))
+
+Proof: 
+(>= w (up x (dn y z)))
+== { Lemma >=-up }
+(^ (>= w x) (>= w (dn y z)))
+== { Lemma >=-dn }
+(^ (>= w x) (v (>= w y) (>= w z)))
+== { PL }
+(v (^ (>= w x) (>= w y)) (^ (>= w x) (>= w z)))
+== { Lemma >=-up }
+(v (>= w (up x y)) (>= w (up x z)))
+== { Lemma >=-dn }
+(>= w (dn (up x y) (up x z)))
+
+QED
+

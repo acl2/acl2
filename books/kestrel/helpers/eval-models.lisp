@@ -32,7 +32,7 @@
 
 (local (in-theory (disable assoc-equal natp)))
 
-(local (in-theory (enable rationalp-when-natp acl2-numberp-when-natp integerp-when-natp <=-of-0-when-0-natp)))
+(local (in-theory (enable rationalp-when-natp acl2-numberp-when-natp integerp-when-natp <=-of-0-when-natp)))
 
 ;; An indicator for a test, of the form (book-name theorem-name removal-type).
 (defun test-infop (x)

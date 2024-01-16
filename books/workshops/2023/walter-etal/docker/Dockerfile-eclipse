@@ -1,0 +1,60 @@
+FROM atwalter/acl2s:latest
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+            build-essential procps curl file git sudo openssl ca-certificates \
+    && apt-get install -y openjdk-17-jdk libswt-gtk-4-jni xutils-dev wget mesa-utils libgl1-mesa-glx fonts-dejavu-extra libwebkit2gtk-4.0-37 xdg-utils \
+    && apt-get install -y maven \
+    && rm -rf /var/lib/apt/lists/* # remove cached apt files
+ 
+ARG USERNAME=cs2800
+ARG PASSWORD=cs2800
+RUN groupadd ${USERNAME} && \
+    useradd -rm -d /home/${USERNAME} -s /bin/bash -g ${USERNAME} -u 1001 ${USERNAME} -p "$(openssl passwd -1 ${PASSWORD})" && \
+    usermod -aG sudo,acl2 ${USERNAME} && \
+    echo '%sudo ALL=(ALL) ALL' >> /etc/sudoers && exit
+
+RUN wget "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.27-202303020300/eclipse-SDK-4.27-linux-gtk-x86_64.tar.gz&r=1" -O /tmp/eclipse.tar.gz -q && \
+    tar -xf /tmp/eclipse.tar.gz -C /opt && \
+    rm /tmp/eclipse.tar.gz && \
+    chown -R ${USERNAME}:${USERNAME} /opt
+
+USER ${USERNAME}
+
+# Install and setup quicklisp
+
+WORKDIR /tmp
+RUN curl -O https://beta.quicklisp.org/quicklisp.lisp
+RUN if [ -z "$HTTP_PROXY" ] ; then \
+        sbcl --load quicklisp.lisp --quit --eval '(quicklisp-quickstart:install)' ;\
+    else \
+        sbcl --load quicklisp.lisp --quit --eval "(quicklisp-quickstart:install :proxy \"$HTTP_PROXY\")" ;\
+    fi
+ENV QUICKLISP_SETUP /home/${USERNAME}/quicklisp/setup.lisp
+
+WORKDIR /home/${USERNAME}
+ADD --chown=${USERNAME}:${USERNAME} . /home/${USERNAME}/checker
+USER root
+RUN chown -R ${USERNAME}:${USERNAME} /opt/eclipse/configuration
+USER ${USERNAME}
+
+RUN mv /home/${USERNAME}/checker/workspace /home/${USERNAME}/workspace
+
+# Build the backend
+RUN cd /home/${USERNAME}/checker && \
+    make cert build-java-binary && \
+    $ACL2_SYSTEM_BOOKS/build/cert.pl /home/${USERNAME}/checker/examples/ind-examples/pass/just-thms.lisp
+ENV PROVE_FILE_SH="/home/${USERNAME}/checker/prove-file-java.sh"
+
+# Build the Eclipse plugin
+RUN cd /home/${USERNAME}/checker/parser && \
+    mvn clean && \
+    mvn package
+
+# Install the plugin inside Eclipse
+RUN mkdir -p /home/${USERNAME}/bin && \
+    ln -s /opt/eclipse/eclipse ~/bin/eclipse && \
+    /opt/eclipse/eclipse -consolelog -nosplash -application org.eclipse.equinox.p2.director -repository "jar:file:/home/${USERNAME}/checker/parser/org.neu.acl2.handproof.repository/target/org.neu.acl2.handproof.repository-1.0.4-SNAPSHOT.zip"'!/' -repository http://download.eclipse.org/releases/2023-03 -installIU org.neu.acl2.handproof.feature.feature.group
+
+ENV USERNAME ${USERNAME}
+CMD ["/bin/bash", "-c", "/home/${USERNAME}/bin/eclipse"]

@@ -1,0 +1,1 @@
+A proof of the Schröder-Bernstein theorem, which states that when there exists an injection from A to B, and another from B to A, then there exists a bijection between A and B.

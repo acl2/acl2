@@ -875,7 +875,8 @@ Rules: ((:DEFINITION FORCE)
 ACL2 !>>(THM (NULL (CDDR (H X Y))))
 Goal'
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -1127,7 +1128,8 @@ ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
                   (EQUAL (CAR X) X)))
 Subgoal 2
 
-Forcing Round 1 is pending (caused first by Subgoal 2).
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Subgoal 2).
 Subgoal 1
 Subgoal 1.2
 Subgoal 1.2'
@@ -1258,7 +1260,8 @@ ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
              :OTF-FLG T)
 Subgoal 2
 
-Forcing Round 1 is pending (caused first by Subgoal 2).
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Subgoal 2).
 Subgoal 1
 Subgoal 1.2
 Subgoal 1.2'
@@ -1946,7 +1949,8 @@ ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
              :OTF-FLG T)
 Subgoal 2
 
-Forcing Round 1 is pending (caused first by Subgoal 2).
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Subgoal 2).
 Subgoal 1
 Subgoal 1.2
 Subgoal 1.2'

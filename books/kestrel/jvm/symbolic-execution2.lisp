@@ -1,4 +1,4 @@
-; Mote symbolic execution machinery
+; More symbolic execution machinery
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute
@@ -11,17 +11,16 @@
 
 (in-package "ACL2")
 
+;; Currently, this book is only used by the loop lifter?
+
 (include-book "symbolic-execution-common")
 (include-book "pc-designators")
 (include-book "misc/defp" :dir :system) ;drop?
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-;; Only used by the loop lifter?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;; get-pc-designator-stack-from-call-stack
-;;;
-
+;; Strips out just the pc-designators from CALL-STACK.
 (defund get-pc-designator-stack-from-call-stack (call-stack)
   (declare (xargs :guard (and (jvm::call-stackp call-stack)
                               (all-framep call-stack) ;drop someday
@@ -40,14 +39,12 @@
 (defthm len-of-get-pc-designator-stack-from-call-stack
   (equal (len (get-pc-designator-stack-from-call-stack call-stack))
          (jvm::call-stack-size call-stack))
-  :hints (("Goal" :in-theory (e/d (get-pc-designator-stack-from-call-stack)
-                                  (;get-pc-designator-stack-from-call-stack-of-pop-frame ;looped?
-                                   )))))
+  :hints (("Goal" :in-theory (enable get-pc-designator-stack-from-call-stack))))
 
-(defthmd get-pc-designator-stack-from-call-stack-of-pop-frame
-  (equal (get-pc-designator-stack-from-call-stack (jvm::pop-frame call-stack))
-         (cdr (get-pc-designator-stack-from-call-stack call-stack)))
-  :hints (("Goal" :in-theory (enable get-pc-designator-stack-from-call-stack jvm::call-stack-size jvm::pop-frame))))
+;; (defthmd get-pc-designator-stack-from-call-stack-of-pop-frame
+;;   (equal (get-pc-designator-stack-from-call-stack (jvm::pop-frame call-stack))
+;;          (cdr (get-pc-designator-stack-from-call-stack call-stack)))
+;;   :hints (("Goal" :in-theory (enable get-pc-designator-stack-from-call-stack jvm::call-stack-size jvm::pop-frame))))
 
 (defthmd get-pc-designator-stack-from-call-stack-of-push-frame
   (equal (get-pc-designator-stack-from-call-stack (jvm::push-frame frame call-stack))
@@ -61,6 +58,7 @@
 ;;; pc-designator-stack-of-state
 ;;;
 
+;todo: rename?
 (defun pc-designator-stack-of-state (s)
   ;; (declare (xargs :guard (and (jvm::jvm-statep s)
   ;;                             (jvm::bound-in-alistp (th)
@@ -87,7 +85,9 @@
 
 ;; We could perhaps combine these next two, perhaps with a non-splitting IF in the RHS (only resolvable if the test is a constant?)
 
-;; Only applies when S is a make-state.
+;; Only applies when S is a make-state (todo: phrase it that way?).
+;; TODO: Make this fail faster (without extracting the whole symbolic pc-designator-stack)?
+;; There is also an Axe version of this rule.
 (defthm step-state-with-pc-designator-stack-becomes-step
   (implies (and (syntaxp (call-of 'jvm::make-state s))
                 (equal pc-designator-stack (pc-designator-stack-of-state s)))
@@ -96,6 +96,8 @@
   :hints (("Goal" :in-theory (enable step-state-with-pc-designator-stack))))
 
 ;; Only applies when S is a make-state.
+;; It might be faster to combine this with step-state-with-pc-designator-stack-becomes-step, but that could problems with unresolved cases if anything goes wrong.
+;; There is also an Axe version of this rule.
 (defthm step-state-with-pc-designator-stack-does-nothing
   (implies (and (syntaxp (call-of 'jvm::make-state s))
                 (not (equal pc-designator-stack (pc-designator-stack-of-state s))))

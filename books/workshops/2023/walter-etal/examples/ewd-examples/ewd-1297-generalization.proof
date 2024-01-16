@@ -1,0 +1,259 @@
+
+Conjecture EWD-1297-2:
+(=> (^ (posp a)
+       (posp b)
+       (posp c)
+       (posp d))
+    (== (< (/ (+ a c) (+ b d)) (/ c d))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (posp a)
+C2. (posp b)
+C3. (posp c)
+C4. (posp d)
+
+Goal: (== (< (/ (+ a c) (+ b d)) (/ c d))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ (+ a c) (+ b d)) (/ c d))
+== { Lemma multiply-<-fractions ((a (+ a c)) (b (+ b d))) }
+(< (* (+ a c) d) (* c (+ b d)))
+== { algebra }
+(< (* a d) (* c b))
+== { Lemma multiply-<-fractions }
+(< (/ a b) (/ c d))
+
+QED
+
+Conjecture EWD-1297:
+(=> (^ (posp a)
+       (posp b)
+       (posp c)
+       (posp d)
+       (< (/ a b) (/ c d)))
+    (^ (< (/ a b) (/ (+ a c) (+ b d)))
+       (< (/ (+ a c) (+ b d)) (/ c d))))
+
+Context:
+C1. (posp a)
+C2. (posp b)
+C3. (posp c)
+C4. (posp d)
+C5. (< (/ a b) (/ c d))
+
+Goal: (^ (< (/ a b) (/ (+ a c) (+ b d)))
+         (< (/ (+ a c) (+ b d)) (/ c d)))
+
+Proof:
+(^ (< (/ a b) (/ (+ a c) (+ b d)))
+   (< (/ (+ a c) (+ b d)) (/ c d)))
+== { Conjecture EWD-1297-1, Conjecture EWD-1297-2, C5 }
+t
+
+QED
+
+
+;; try generalizing, first with rationals:
+
+
+Conjecture EWD-1297-3:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d))
+    (== (< (/ (+ a c) (+ b d)) (/ c d))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+
+Goal: (== (< (/ (+ a c) (+ b d)) (/ c d))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ (+ a c) (+ b d)) (/ c d))
+== { Lemma multiply-<-fractions ((a (+ a c)) (b (+ b d))) }
+(< (* (+ a c) d) (* c (+ b d)))
+== { algebra }
+(< (* a d) (* c b))
+== { Lemma multiply-<-fractions }
+(< (/ a b) (/ c d))
+
+QED
+
+;; that did not work, let's try adding hyps
+
+Conjecture EWD-1297-5:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (!= 0 (+ b d))
+       (!= 0 b)
+       (!= 0 d))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (!= 0 (+ b d))
+C6.  (!= 0 b)
+C7.  (!= 0 d)
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { C5, C6, Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))), algebra }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { C6, C7, Lemma multiply-<-fractions, algebra }
+(< (/ a b) (/ c d))
+
+QED
+
+;; This did not work as well. Got d < 0  counter example. Fixing,
+
+Conjecture EWD-1297-7:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (!= 0 (+ b d))
+       (< 0 d))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (!= 0 (+ b d))
+C6.  (< 0 d)
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { C5, C6,  Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))), algebra }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { C6, Lemma multiply-<-fractions, algebra }
+(< (/ a b) (/ c d))
+
+QED
+
+;; This did not work as well, since getting b < 0 counter example. Fixing.
+
+Conjecture EWD-1297-9:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (!= 0 (+ b d))
+       (< 0 b)
+       (< 0 d))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (!= 0 (+ b d))
+C6.  (< 0 b)
+C7.  (< 0 d)
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { C5, C6,C7,  Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))), algebra }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { C6, C7, Lemma multiply-<-fractions, algebra }
+(< (/ a b) (/ c d))
+
+QED
+
+;; This works, but we can get rid of C5.
+
+Conjecture EWD-1297-11:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (< 0 b)
+       (< 0 d))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (< 0 b)
+C6.  (< 0 d)
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { C5, C6,  Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))), algebra }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { C6, C5, Lemma multiply-<-fractions, algebra }
+(< (/ a b) (/ c d))
+
+QED
+
+;; can we just have (* b d) > 0 ?
+
+Conjecture EWD-1297-13:
+(=> (^ (rationalp a)
+       (rationalp b)
+       (rationalp c)
+       (rationalp d)
+       (< 0 (* b d)))
+    (== (< (/ a b) (/ (+ a c) (+ b d)))
+        (< (/ a b) (/ c d))))
+
+Context:
+C1. (rationalp a)
+C2. (rationalp b)
+C3. (rationalp c)
+C4. (rationalp d)
+C5. (< 0 (* b d))
+
+Goal: (== (< (/ a b) (/ (+ a c) (+ b d)))
+          (< (/ a b) (/ c d)))
+
+Proof:
+(< (/ a b) (/ (+ a c) (+ b d)))
+== { C5,  Lemma multiply-<-fractions ((c (+ a c)) (d (+ b d))), algebra }
+(< (* a (+ b d)) (* (+ a c) b))
+== { algebra }
+(< (* a d) (* c b))
+== { C5, Lemma multiply-<-fractions, algebra }
+(< (/ a b) (/ c d))
+
+QED

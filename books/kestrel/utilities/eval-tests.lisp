@@ -29,7 +29,7 @@
           (er hard? 'eval-tests "Test ~x0 has the wrong length (should have ~x1 values)." test (len vars))
         (let ((alist (pairlis$ vars test)))
           (mv-let (erp res)
-            (acl2::magic-ev-term form alist nil t state)
+            (magic-ev-term form alist nil t state)
             (if erp
                 (er hard? 'eval-tests "Error (~x0) evaluating test form ~x1 with the alist ~x2." erp form alist)
               (if (not res)
@@ -42,7 +42,7 @@
                               (true-list-listp test-inputs))
                   :mode :program ; because of translate-term
                   :stobjs state))
-  (eval-tests-aux (acl2::translate-term form 'eval-tests-fn (w state)) vars test-inputs state))
+  (eval-tests-aux (translate-term form 'eval-tests-fn (w state)) vars test-inputs state))
 
 ;; For each of the TEST-INPUTS, this binds the VARS to the values in the
 ;; test-input and then evaluates FORM.

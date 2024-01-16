@@ -78,6 +78,13 @@
                   (not (consp item)))))
 
 ;we use consp as the normal form
+;; can this loop?
+(defthmd natp-when-dargp
+  (implies (dargp darg)
+           (equal (natp darg)
+                  (not (consp darg)))))
+
+;we use consp as the normal form
 (defthmd consp-of-cdr-when-dargp
   (implies (dargp darg)
            (equal (consp (cdr darg))
@@ -88,6 +95,15 @@
   (implies (dargp darg)
            (iff (cdr darg)
                 (consp darg))))
+
+;we use consp as the normal form
+; not used?
+(defthmd car-when-dargp
+  (implies (dargp darg)
+           (equal (car darg)
+                  (if (consp darg)
+                      'quote
+                    nil))))
 
 (defthmd not-cddr-when-dargp
   (implies (dargp darg)

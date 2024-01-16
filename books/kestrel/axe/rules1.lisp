@@ -1051,20 +1051,19 @@
 ;;          (logext-list n (myif test x y)))
 ;;   :hints (("Goal" :in-theory (enable myif))))
 
-;ffixme use a higher order function?
-(defund MAX-INTEGER-LENGTH (lst)
-  (if (endp lst)
-      0 ;hope this is okay
-    (max (integer-length (car lst))
-         (MAX-INTEGER-LENGTH (cdr lst)))))
+;; (defund MAX-INTEGER-LENGTH (lst)
+;;   (if (endp lst)
+;;       0 ;hope this is okay
+;;     (max (integer-length (car lst))
+;;          (MAX-INTEGER-LENGTH (cdr lst)))))
 
-(defthm max-integer-length-bound
-  (implies (and (< n (len lst))
-                (natp n))
-           (<= (INTEGER-LENGTH (NTH n Lst))
-               (MAX-INTEGER-LENGTH Lst)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (MAX-INTEGER-LENGTH nth) (nth-of-cdr)))))
+;; (defthm max-integer-length-bound
+;;   (implies (and (< n (len lst))
+;;                 (natp n))
+;;            (<= (INTEGER-LENGTH (NTH n Lst))
+;;                (MAX-INTEGER-LENGTH Lst)))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :in-theory (e/d (MAX-INTEGER-LENGTH nth) (nth-of-cdr)))))
 
 ;; ;fixme
 ;; (skip -proofs

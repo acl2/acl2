@@ -46,7 +46,7 @@
                        (equal (len fn) 3)
                        (eq (car fn) 'lambda)
                        (symbol-listp (cadr fn))
-                       ;; lambda body is a regular, pseudo-term, not an axe-tree:
+                       ;; lambda body is a regular pseudo-term, not an axe-tree:
                        (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))
@@ -381,7 +381,7 @@
                        (equal (len fn) 3)
                        (eq (car fn) 'lambda)
                        (symbol-listp (cadr fn))
-                       ;; lambda body is a regular, pseudo-term, not an axe-tree:
+                       ;; lambda body is a regular pseudo-term, not an axe-tree:
                        (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))

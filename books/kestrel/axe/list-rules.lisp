@@ -37,7 +37,7 @@
                        (equal (nthcdr (+ 1 n) x)
                               (nthcdr (+ 1 n) y)))))
   :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
-           :in-theory (e/d (update-nth) ()))))
+           :in-theory (enable update-nth))))
 
 (defthmd nth-differs-hack2
   (implies (not (equal (nth n x)

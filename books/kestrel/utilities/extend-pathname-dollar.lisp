@@ -21,10 +21,10 @@
 ;; (extend-pathname "." "../foo" state).
 ;; DIR is either a string or a keyword representing a project directory
 ;; Note: This can add a slash if the filename is a dir.
-;move
 (defund extend-pathname$ (dir filename state)
-  (declare (xargs :guard (or (keywordp dir)
-                             (stringp dir))
+  (declare (xargs :guard (and (or (keywordp dir)
+                                  (stringp dir))
+                              (stringp filename))
                   :stobjs state
                   :mode :program))
   (if (keywordp dir)
@@ -45,3 +45,14 @@
 ;; (extend-pathname$ "../" "foo" state)
 ;; (extend-pathname$ :system "foo" state)
 ;; ;; (extend-pathname$ :cbd "foo" state) ; not allowed
+
+(defund extend-pathnames$ (dir filenames state)
+  (declare (xargs :guard (and (or (keywordp dir)
+                                  (stringp dir))
+                              (string-listp filenames))
+                  :stobjs state
+                  :mode :program))
+  (if (endp filenames)
+      nil
+    (cons (extend-pathname$ dir (first filenames) state)
+          (extend-pathnames$ dir (rest filenames) state))))

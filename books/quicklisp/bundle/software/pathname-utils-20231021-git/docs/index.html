@@ -1,0 +1,410 @@
+<!DOCTYPE html> <html lang="EN"> <head> <meta charset="utf-8"> <title>Pathname Utils</title> <style>html body{margin:0 auto 0 auto;padding:20px;max-width:1024px;font-family:sans-serif;font-size:14pt;overflow-y:scroll;}html body a{text-decoration:none;}html body a[href]{color:#0055AA;}html body a[href]:hover{color:#0088EE;}html body pre{background:#FAFAFA;border:1px solid #DDDDDD;padding:0.75em;overflow-x:auto;}html body pre >code a[href]{color:#223388;}article.project h1{font-size:1.7em;}article.project h1,article.project h2,article.project h3,article.project h4,article.project h5,article.project h6{margin:0.2em 0 0.1em 0;text-indent:1em;}article.project >header{text-align:center;}article.project >header img.logo{display:block;margin:auto;max-height:170px;}article.project >header h1{display:inline-block;text-indent:0;font-size:2.5em;}article.project >header .version{vertical-align:bottom;}article.project >header .languages{margin-top:-0.5em;text-transform:capitalize;}article.project >header .description{margin:0;}article.project >header .pages{margin-top:0.5em;font-size:1.2em;text-transform:capitalize;}article.project >header .pages a{display:inline-block;padding:0 0.2em;}article.project >section{margin:1em 0 1em 0;}article.project #index >ul{list-style:none;margin:0;padding:0;}article.project .row label{display:inline-block;min-width:8em;}article.project #system .row{display:flex;}article.project #system #dependencies{display:inline;margin:0;padding:0;}article.project #system #dependencies li{display:inline;padding:0 0.2em;}article.definition{margin:1em 0 0 0;}article.definition >header h1,article.definition >header h2,article.definition >header h3,article.definition >header h4,article.definition >header h5,article.definition >header h6{text-indent:0;display:inline-block;}article.definition >header ul{display:inline-block;list-style:none;margin:0;padding:0;}article.definition >header ul li{display:inline-block;padding:0 0.2em 0 0;}article.definition >header .visibility{display:none;}article.definition >header .visibility,article.definition >header .type{text-transform:lowercase;}article.definition >header .source-link{visibility:hidden;float:right;}article.definition >header .source-link:after{visibility:visible;content:"[SRC]";}article.definition .docstring{margin:0 0 0 1em;}article.definition .docstring pre{font-size:0.8em;white-space:pre-wrap;}.definition.package >header ul.nicknames{display:inline-block;list-style:none;margin:0;padding:0 0 0 1em;}.definition.package >header ul.nicknames li{display:inline;}.definition.package >header ul.nicknames:before{content:"(";}.definition.package >header ul.nicknames:after{content:")";}.definition.package ul.definitions{margin:0;list-style:none;padding:0 0 0 0.5em;}.definition.callable >header .name:before,.definition.type >header .name:before{content:"(";font-weight:normal;}.definition.callable >header .arguments:after,.definition.type >header .arguments:after{content:")";}.definition.callable >header .arguments .arguments:before,.definition.type >header .arguments .arguments:before{content:"(";}.definition.callable >header .arguments .argument,.definition.type >header .arguments .argument{padding:0;}.definition.callable >header .arguments .argument.lambda-list-keyword,.definition.type >header .arguments .argument.lambda-list-keyword{color:#991155;}.definition li>mark{background:none;border-left:0.3em solid #0088EE;padding-left:0.3em;display:block;} </style> </head> <body> <article class="project"> <header>   <h1>pathname utils</h1>   <span class="version">1.1.0</span>    <p class="description">A collection of utilities for pathname manipulation.</p>   </header> <section id="documentation"><h2 id="about_pathname-utils">About Pathname-Utils</h2> <p>This is a collection of common tests and operations to help handling pathnames. It does not actually deal in handling the accessing of files on the underlying system however.</p> <h2 id="how_to">How To</h2> <p>Since this is a purely utility/toolkit library, simply having a look at the symbol index should give you the best idea of what is offered.</p> </section>   <section id="system"> <h2>System Information</h2>  <div class="row"> <label for="version">Version:</label> <a id="version">1.1.0</a> </div>   <div class="row"> <label for="dependencies">Dependencies:</label> <ul id="dependencies"><li><a class="external">trivial-features</a></li></ul> </div>   <div class="row"> <label for="author">Author:</label> <a id="author" href="mailto:shinmera@tymoon.eu">Nicolas Hafner</a> </div>   <div class="row"> <label for="license">License:</label> <a id="license" href="https://github.com/Shinmera/pathname-utils/blob/master/LICENSE">zlib</a> </div>   <div class="row"> <label for="homepage">Homepage:</label> <a id="homepage" href="https://Shinmera.github.io/pathname-utils/">https://Shinmera.github.io/pathname-utils/</a> </div>   <div class="row"> <label for="sources">Sources:</label> <a id="sources" href="https://github.com/Shinmera/pathname-utils.git">https://github.com/Shinmera/pathname-utils.git</a> </div>  </section>    <section id="index"> <h2>Definition Index</h2> <ul> <li> <article class="definition package" id="PACKAGE PATHNAME-UTILS"> <header> <h3> <a href="#PACKAGE%20PATHNAME-UTILS">PATHNAME-UTILS</a> </h3> <ul class="nicknames"> <li>ORG.SHIRAKUMO.PATHNAME-UTILS</li> </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> <ul class="definitions"> <li> <article class="definition special-variable" id="VARIABLE PATHNAME-UTILS:*WILD-COMPONENT*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20PATHNAME-UTILS%3A%2AWILD-COMPONENT%2A">*WILD-COMPONENT*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L9">Source</a>  </header> <div class="docstring"><pre>The proper value to use for a wild pathname component.</pre></div> </article> </li>  <li> <article class="definition special-variable" id="VARIABLE PATHNAME-UTILS:*WILD-DIRECTORY*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20PATHNAME-UTILS%3A%2AWILD-DIRECTORY%2A">*WILD-DIRECTORY*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L15">Source</a>  </header> <div class="docstring"><pre>A pathname that is wild in its directory spec (can match any directory).</pre></div> </article> </li>  <li> <article class="definition special-variable" id="VARIABLE PATHNAME-UTILS:*WILD-FILE*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20PATHNAME-UTILS%3A%2AWILD-FILE%2A">*WILD-FILE*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L11">Source</a>  </header> <div class="docstring"><pre>A pathname that is wild in its file spec (can match any file).</pre></div> </article> </li>  <li> <article class="definition special-variable" id="VARIABLE PATHNAME-UTILS:*WILD-INFERIORS*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20PATHNAME-UTILS%3A%2AWILD-INFERIORS%2A">*WILD-INFERIORS*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L17">Source</a>  </header> <div class="docstring"><pre>A pathname that has wild inferiors (can match any number of subdirectories).</pre></div> </article> </li>  <li> <article class="definition special-variable" id="VARIABLE PATHNAME-UTILS:*WILD-INFERIORS-COMPONENT*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20PATHNAME-UTILS%3A%2AWILD-INFERIORS-COMPONENT%2A">*WILD-INFERIORS-COMPONENT*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L10">Source</a>  </header> <div class="docstring"><pre>The proper value to use for a wild inferiors pathname component.</pre></div> </article> </li>  <li> <article class="definition special-variable" id="VARIABLE PATHNAME-UTILS:*WILD-PATH*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20PATHNAME-UTILS%3A%2AWILD-PATH%2A">*WILD-PATH*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L19">Source</a>  </header> <div class="docstring"><pre>A pathname that is wild in both its file and its directory.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:ABSOLUTE-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AABSOLUTE-P">ABSOLUTE-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L82">Source</a>  </header> <div class="docstring"><pre>Returns the pathname if it is an absolute pathname.
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:CLEAN-DIRECTORY-SPEC"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ACLEAN-DIRECTORY-SPEC">CLEAN-DIRECTORY-SPEC</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">DIR</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L21">Source</a>  </header> <div class="docstring"><pre>Removes superfluous components from the directory spec.
+
+Specifically, if the encountered part is UNSPECIFIC or the
+string &quot;.&quot;, it is omitted. If the part is :BACK, the
+preceding component is omitted if possible. If not possible,
+an equivalent amount of :UP specs are inserted instead.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:COMPONENTS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ACOMPONENTS">COMPONENTS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L298">Source</a>  </header> <div class="docstring"><pre>Returns a plist containing all the components making up the given pathname.
+
+The plist contains the following keys:
+  :namestring
+  :truename
+  :host
+  :device
+  :name
+  :type
+  :version
+  :directory
+
+If the pathname has no truename, its value in the plist is NIL.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:DIRECTORY-NAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ADIRECTORY-NAME">DIRECTORY-NAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L290">Source</a>  </header> <div class="docstring"><pre>Returns the name of the topmost directory in the pathname, if any.
+
+The pathname is coerced using TO-DIRECTORY
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-DIRECTORY" class="xref">TO-DIRECTORY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:DIRECTORY-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ADIRECTORY-P">DIRECTORY-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L103">Source</a>  </header> <div class="docstring"><pre>Returns the pathname if it denotes a directory (not a file).
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:DIRECTORY-SEPARATOR"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ADIRECTORY-SEPARATOR">DIRECTORY-SEPARATOR</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument lambda-list-keyword">&amp;OPTIONAL</li>    <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L294">Source</a>  </header> <div class="docstring"><pre>Returns the namestring separator between directories as a string.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:DOS-NAMESTRING"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ADOS-NAMESTRING">DOS-NAMESTRING</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">STREAM</li>    <li class="argument">JUNK-ALLOWED</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L486">Source</a>  </header> <div class="docstring"><pre>Produce a namestring according to DOS rules.
+
+- If the pathname is absolute:
+  - If the first directory component is :HOME, the
+    (USER-HOMEDIR-PATHNAME) is emitted.
+  - If the pathname has a device, the device name followed by a colon
+    and a backslash is emitted.
+  - Otherwise a backslash is emitted.
+- For every directory component, the component followed by a backslash
+  is emitted. In the case of :UP or :BACK, they are emitted as two
+  dots.
+- The pathname name, if any, is emitted
+- The pathname type, if any, is emitted following a dot.
+
+If the pathname contains illegal characters or components, a
+continuable error is signalled unless :JUNK-ALLOWED T is passed. If
+the error is continued or :JUNK-ALLOWED T is passed, the component or
+character is ignored. The following characters are illegal:
+  \ / &lt; &gt; : &quot; | ? * Nul
+
+If STREAM is NIL, the namestring is printed to a string and returned.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ANATIVE-NAMESTRING" class="xref">NATIVE-NAMESTRING</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:DOWNWARDS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ADOWNWARDS">DOWNWARDS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>    <li class="argument">SUBDIR</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L230">Source</a>  </header> <div class="docstring"><pre>Moves the topmost pathname component a level downwards.
+
+Specifically, if we have a file &quot;foo/bar.jpg&quot;, and move it
+downwards by &quot;baz&quot;, the resulting pathname will be
+&quot;foo/baz/bar.jpg&quot;. If the pathname is a directory-pathname
+then the last directory is moved downwards by one.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ASUBDIRECTORY" class="xref">SUBDIRECTORY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:ENOUGH-PATHNAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AENOUGH-PATHNAME">ENOUGH-PATHNAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">SUBPATH</li>    <li class="argument">BASE</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L242">Source</a>  </header> <div class="docstring"><pre>Like ENOUGH-NAMESTRING but returns an actual pathname.
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:FILE-IN"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AFILE-IN">FILE-IN</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">DIRECTORY</li>    <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L268">Source</a>  </header> <div class="docstring"><pre>Returns a pathname to the given file but in the given directory.
+
+This is useful when carrying over a file to another directory.
+Essentially this constructs a pathname with the name and type
+of FILE, but the rest of DIR.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:FILE-NAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AFILE-NAME">FILE-NAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L284">Source</a>  </header> <div class="docstring"><pre>Returns the complete file name as it would be used by the OS, if any.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:FILE-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AFILE-P">FILE-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L109">Source</a>  </header> <div class="docstring"><pre>Returns the pathname if it denotes a file (not a directory).
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:FILE-TYPE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AFILE-TYPE">FILE-TYPE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L273">Source</a>  </header> <div class="docstring"><pre>Returns the actual file type.
+
+This is different from PATHNAME-TYPE in the following manner:
+If PATHNAME-TYPE is specific, but contains a dot, only the part
+after the dot is used as it would indicate the actual file-type
+on any recent system. If PATHNAME-TYPE is unspecific, the
+PATHNAME-NAME is specific, and it contains a dot, then that last
+part is used instead. Otherwise NIL is returned.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:LOGICAL-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ALOGICAL-P">LOGICAL-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L87">Source</a>  </header> <div class="docstring"><pre>Returns the pathname if it is a logical pathname.
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:NATIVE-NAMESTRING"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ANATIVE-NAMESTRING">NATIVE-NAMESTRING</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">STREAM</li>    <li class="argument">JUNK-ALLOWED</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L442">Source</a>  </header> <div class="docstring"><pre>Produce a namestring appropriate for the current platform.
+
+This avoids pitfalls with printing namestrings with the default common
+lisp functions, as they may contain unsuitable characters, or syntax
+not known to other native applications.
+
+If the pathname contains illegal characters or components, a
+continuable error is signalled unless :JUNK-ALLOWED T is passed.
+
+If STREAM is NIL, the namestring is printed to a string and returned.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-NATIVE-NAMESTRING" class="xref">PARSE-NATIVE-NAMESTRING</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3AUNIX-NAMESTRING" class="xref">UNIX-NAMESTRING</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ADOS-NAMESTRING" class="xref">DOS-NAMESTRING</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:NORMALIZE-DIRECTORY-SPEC"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ANORMALIZE-DIRECTORY-SPEC">NORMALIZE-DIRECTORY-SPEC</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">DIR</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L38">Source</a>  </header> <div class="docstring"><pre>Attempts to normalize the directory specification into one as specified by CLHS.
+
+Also cleans the directory spec.
+
+See CLEAN-DIRECTORY-SPEC.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:NORMALIZE-PATHNAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ANORMALIZE-PATHNAME">NORMALIZE-PATHNAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L51">Source</a>  </header> <div class="docstring"><pre>Returns a normalised form of the given pathname.
+
+More specifically, the given object is ensured to be a pathname
+using CL:PATHNAME, then turned into a new pathname with the
+following properties: an unspecific component is turned into
+NIL and the directory component is normalised through
+NORMALIZE-DIRECTORY-SPEC.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3AUNSPECIFIC-P" class="xref">UNSPECIFIC-P</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ANORMALIZE-DIRECTORY-SPEC" class="xref">NORMALIZE-DIRECTORY-SPEC</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PARENT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APARENT">PARENT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L202">Source</a>  </header> <div class="docstring"><pre>Returns the parent of the pathname.
+
+If the pathname is a directory-pathname, it returns a pathname
+that points to the parent thereof, if possible. Specifically,
+if the directory is relative and empty, :up is inserted. If
+it is absolute and empty, the same pathname is returned. If
+it is not empty, then the last component of the directory is
+removed. If the pathname is a file pathname, this is equivalent
+to TO-DIRECTORY.
+
+The pathname is coerced using PATHNAME*.
+
+If you need to preserve the pathname's file component, consider
+using UPWARDS instead.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-DIRECTORY" class="xref">TO-DIRECTORY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PARSE-DOS-NAMESTRING"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-DOS-NAMESTRING">PARSE-DOS-NAMESTRING</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NAMESTRING</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">AS</li>    <li class="argument">JUNK-ALLOWED</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L386">Source</a>  </header> <div class="docstring"><pre>Parse a namestring according to DOS rules.
+
+Specifically:
+
+- A path starting with a character followed by a colon is an absolute
+  path.
+- Any subsequent slash or backslash is used as a directory separator.
+- A path starting with a directory component that starts and ends with
+  a percentage is denoting a environment-variable-relative pathname
+  and is parsed by merging the rest of the parsed pathname with the
+  pathname resulting from parsing the environment variable of the
+  indicated name. If the variable is empty or does not exist, it is
+  ignored.
+- A directory component that is empty is ignored.
+- A directory component that is a single dot is ignored.
+- A directory component that is two dots is converted to :BACK.
+- If the namestring is a file namestring:
+  - If the file namestring starts with a dot, the entire file
+    namestring is used as the pathname's name, including the dot.
+  - If the file namestring contains one or more dots not in the
+    leading position, the part after the last dot is used as the
+    pathname type, and the rest as the name.
+
+You may also pass :AS :DIRECTORY to force the namestring to be turned
+into a directory-pathname even if it does not end in a directory
+separator.
+
+If the namestring contains illegal characters or components, a
+continuable error is signalled unless :JUNK-ALLOWED T is passed. If
+the error is continued or :JUNK-ALLOWED T is passed, the component or
+character is ignored. The following characters are illegal:
+  &lt; &gt; : &quot; | ? * Nul
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-NATIVE-NAMESTRING" class="xref">PARSE-NATIVE-NAMESTRING</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PARSE-NATIVE-NAMESTRING"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-NATIVE-NAMESTRING">PARSE-NATIVE-NAMESTRING</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NAMESTRING</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">AS</li>    <li class="argument">JUNK-ALLOWED</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L310">Source</a>  </header> <div class="docstring"><pre>Parse a namestring appropriate for the current platform.
+
+This avoids pitfalls with parsing namestrings with the default common
+lisp functions where possible, as they treat certain characters
+specially to allow for wild pathnames.
+
+You may also pass :AS :DIRECTORY to force the namestring to be turned
+into a directory-pathname even if it does not end in a directory
+separator.
+
+If the namestring contains illegal characters or components, a
+continuable error is signalled unless :JUNK-ALLOWED T is passed.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ANATIVE-NAMESTRING" class="xref">NATIVE-NAMESTRING</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-UNIX-NAMESTRING" class="xref">PARSE-UNIX-NAMESTRING</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-DOS-NAMESTRING" class="xref">PARSE-DOS-NAMESTRING</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PARSE-UNIX-NAMESTRING"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-UNIX-NAMESTRING">PARSE-UNIX-NAMESTRING</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NAMESTRING</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">AS</li>    <li class="argument">JUNK-ALLOWED</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L320">Source</a>  </header> <div class="docstring"><pre>Parse a namestring according to Unix rules.
+
+Specifically:
+
+- A path with a leading slash is an absolute path.
+- Any subsequent slash is used as a directory separator.
+- A path with a tilde as the first directory component points to the
+  home directory.
+- A directory component that is empty is ignored.
+- A directory component that is a single dot is ignored.
+- A directory component that is two dots is converted to :BACK.
+- If the namestring is a file namestring:
+  - If the file namestring starts with a dot, the entire file
+    namestring is used as the pathname's name, including the dot.
+  - If the file namestring contains one or more dots not in the
+    leading position, the part after the last dot is used as the
+    pathname type, and the rest as the name.
+
+You may also pass :AS :DIRECTORY to force the namestring to be turned
+into a directory-pathname even if it does not end in a directory
+separator.
+
+If the namestring contains illegal characters or components, a
+continuable error is signalled unless :JUNK-ALLOWED T is passed. If
+the error is continued or :JUNK-ALLOWED T is passed, the component or
+character is ignored. The following characters are illegal:
+  Nul
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APARSE-NATIVE-NAMESTRING" class="xref">PARSE-NATIVE-NAMESTRING</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PATHNAME*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A">PATHNAME*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L65">Source</a>  </header> <div class="docstring"><pre>Ensures that the argument is a pathname.
+
+If a pathname is passed, it is returned verbatim.
+If it is anything else, the value is coerced to a pathname using
+NORMALIZE-PATHNAME.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ANORMALIZE-PATHNAME" class="xref">NORMALIZE-PATHNAME</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PATHNAME-EQUAL"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME-EQUAL">PATHNAME-EQUAL</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">A</li>    <li class="argument">B</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L150">Source</a>  </header> <div class="docstring"><pre>Returns T if the two pathnames denote the same file.
+
+Note that this comparison has to access the file system and might
+therefore be costly.
+
+First the two pathnames are turned into truenames using TRUENAME
+and then compared using PATHNAME=. This should result in a
+comparison that returns true in any situation where the two
+pathnames really do refer to the same file, but might not look
+the same due to symbolic links or similar effects in the file
+system.
+
+See <a href="http://l1sp.org/cl/truename" class="xref">CL:TRUENAME</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%3D" class="xref">PATHNAME=</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PATHNAME="> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%3D">PATHNAME=</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">A</li>    <li class="argument">B</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">IGNORE-VERSION</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L133">Source</a>  </header> <div class="docstring"><pre>Returns T if the two pathnames are the same.
+
+Note that this comparison is purely based on the pathnames itself
+and does not check whether the two might resolve to the same file
+on the system.
+
+Relative pathnames are turned into absolute ones by merging them
+with *default-pathname-defaults* before being compared.
+
+Each component of the pathnames are compared using EQUAL, but
+treating parts that are UNSPECIFIC-P as the same, regardless
+of the way in which they might be unspecific.
+
+If IGNORE-VERSION is non-NIL (the default), then the version
+component of the pathnames is not compared. This is useful, as it
+can be different for pathnames that appear to be the same on some
+implementations.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3AUNSPECIFIC-P" class="xref">UNSPECIFIC-P</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:PHYSICAL-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APHYSICAL-P">PHYSICAL-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L92">Source</a>  </header> <div class="docstring"><pre>Returns the pathname if it is a physical pathname.
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:POP-DIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3APOP-DIRECTORY">POP-DIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L195">Source</a>  </header> <div class="docstring"><pre>Pops the last component off the pathname-directory part.
+
+The pathname is coerced using PATHNAME*.
+Note that this will probably not behave as expected for
+pathnames containing :back and :up. For the &quot;intuitive&quot;
+behaviour to ascend pathnames, see PARENT or UPWARDS.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:RELATIVE-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ARELATIVE-P">RELATIVE-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L76">Source</a>  </header> <div class="docstring"><pre>Returns the pathname if it is a relative pathname.
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:RELATIVE-PATHNAME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ARELATIVE-PATHNAME">RELATIVE-PATHNAME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FROM</li>    <li class="argument">TO</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L245">Source</a>  </header> <div class="docstring"><pre>Computes a relative pathname from one place to another.
+
+The pathnames are first turned into absolute ones by 
+MERGE-PATHNAMES. Then, the common directory components are
+eliminated, leftover directory components on the from path
+are converted into :up, and finally the remaining components
+of the to path are appended, producing the final directory
+component. The name, type, and version are taken from the to
+pathname.
+
+If the two pathnames differ in device or host, an error is
+signalled instead.
+
+The pathnames are coerced using NORMALIZE-PATHNAME after the
+merge.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ANORMALIZE-PATHNAME" class="xref">NORMALIZE-PATHNAME</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:ROOT-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AROOT-P">ROOT-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L97">Source</a>  </header> <div class="docstring"><pre>Returns the pathname if it denotes an absolute root directory.
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:SUBDIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ASUBDIRECTORY">SUBDIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>    <li class="argument lambda-list-keyword">&amp;REST</li>    <li class="argument">SUBDIRS</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L183">Source</a>  </header> <div class="docstring"><pre>Returns a directory-pathname with the given subdirectories appended.
+
+For example, appending &quot;bar&quot; and &quot;baz&quot; to &quot;foo/&quot; will
+result in &quot;foo/bar/baz/&quot;.
+
+The PATHNAME is coerced using TO-DIRECTORY. For any of the
+subdirs, if it is a pathname, stream, or keyword, it is coerced
+to a pathname using TO-DIRECTORY. If it is a string, it is
+coerced using TO-DIRECTORY but with a trailing slash appended.
+
+If you need to preserve the pathname's file component, consider
+using DOWNWARDS instead.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-DIRECTORY" class="xref">TO-DIRECTORY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:SUBPATH-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ASUBPATH-P">SUBPATH-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">SUBPATH</li>    <li class="argument">BASE</li>    <li class="argument lambda-list-keyword">&amp;OPTIONAL</li>    <li class="argument">ROOT</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L114">Source</a>  </header> <div class="docstring"><pre>Returns true if SUBPATH denotes a path on a lower level than BASE.
+
+A pathname is considered a subpath of a base pathname if all of
+the following are true:
+- Their hosts match
+- Their devices match
+- The base's name is null or their names match
+- The base's type is null or their types match
+- The directory component of the subpath denotes a subdirectory
+  of the directory component of the base.
+
+If the subpath or base are relative pathnames, they are made
+absolute by merging them with the root pathname. If the root
+pathname is relative, an error is signalled.
+
+The actually returned value is the coerced value of SUBPATH by
+NORMALIZE-PATHNAME.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ANORMALIZE-PATHNAME" class="xref">NORMALIZE-PATHNAME</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:TO-ABSOLUTE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-ABSOLUTE">TO-ABSOLUTE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L178">Source</a>  </header> <div class="docstring"><pre>Turns the pathname into an absolute pathname.
+
+The given pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:TO-DIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-DIRECTORY">TO-DIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L162">Source</a>  </header> <div class="docstring"><pre>Turns the pathname into a pathname-directory if it is not already one.
+
+If the argument is :UP or :BACK, it is turned into a relative
+pathname with the argument as its only pathname-directory-component.
+If the argument is :HOME, it is turned into an absolute pathname
+pointing to the home directory.
+Otherwise the pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:TO-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-FILE">TO-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L168">Source</a>  </header> <div class="docstring"><pre>Turns the pathname into a file pathname.
+
+This means stripping the device, host, and directory components
+of the pathname. The given pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:TO-PHYSICAL"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-PHYSICAL">TO-PHYSICAL</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L156">Source</a>  </header> <div class="docstring"><pre>Turns the pathname into a physical one if it is not already one.
+
+The pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ALOGICAL-P" class="xref">LOGICAL-P</a>
+See <a href="http://l1sp.org/cl/translate-logical-pathname" class="xref">CL:TRANSLATE-LOGICAL-PATHNAME</a>
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:TO-RELATIVE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-RELATIVE">TO-RELATIVE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L172">Source</a>  </header> <div class="docstring"><pre>Turns the pathname into a relative pathname.
+
+The given pathname is coerced using PATHNAME*
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APATHNAME%2A" class="xref">PATHNAME*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:TO-ROOT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3ATO-ROOT">TO-ROOT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L153">Source</a>  </header> <div class="docstring"><pre>Returns the absolute root of the pathname.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:UNIX-NAMESTRING"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AUNIX-NAMESTRING">UNIX-NAMESTRING</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">STREAM</li>    <li class="argument">JUNK-ALLOWED</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L447">Source</a>  </header> <div class="docstring"><pre>Produce a namestring according to Unix rules.
+
+- If the pathname is absolute:
+  - If the first directory component is :HOME, ~/ is emitted
+  - Otherwise / is emitted
+- For every directory component, the component followed by a slash is
+  emitted. In the case of :UP or :BACK, they are emitted as two dots.
+- The pathname name, if any, is emitted
+- The pathname type, if any, is emitted following a dot.
+
+If the pathname contains illegal characters or components, a
+continuable error is signalled unless :JUNK-ALLOWED T is passed. If
+the error is continued or :JUNK-ALLOWED T is passed, the component or
+character is ignored. The following characters are illegal:
+  / Nul
+
+If STREAM is NIL, the namestring is printed to a string and returned.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3ANATIVE-NAMESTRING" class="xref">NATIVE-NAMESTRING</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:UNSPECIFIC-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AUNSPECIFIC-P">UNSPECIFIC-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">COMPONENT</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L70">Source</a>  </header> <div class="docstring"><pre>Returns true if the given component is unspecific.
+
+This includes :UNSPECIFIC, NIL, and the empty string.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION PATHNAME-UTILS:UPWARDS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20PATHNAME-UTILS%3AUPWARDS">UPWARDS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/pathname-utils/blob/master/toolkit.lisp#L219">Source</a>  </header> <div class="docstring"><pre>Moves the topmost pathname component a level upwards.
+
+Specifically, if we have a file &quot;foo/bar/baz.jpg&quot;, and move
+it upwards by one, the resulting pathname will be 
+&quot;foo/baz.jpg&quot;. If the pathname is a directory-pathname then
+the last directory is moved upwards by one.
+
+See <a href="#FUNCTION%20PATHNAME-UTILS%3APARENT" class="xref">PARENT</a></pre></div> </article> </li> </ul> </article> </li> </ul> </section>  </article> <script>window.addEventListener("DOMContentLoaded", function(){
+    var unmarkElement = function(el){
+        if(el.tagName === "mark" || el.tagName === "MARK"){
+            [].forEach.call(el.childNodes, function(child){
+                el.parentNode.insertBefore(child, el);
+            });
+            el.parentNode.removeChild(el);
+        }else if(el.parentNode.tagName === "mark"){
+            return unmarkElement(el.parentNode);
+        }
+        return null;
+    }
+
+    var unmarkAll = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("mark"), unmarkElement);
+    }
+    
+    var markElement = function(el){
+        if(el.parentNode.tagName === "mark" || el.parentNode.tagName === "MARK"){
+            return el.parentNode;
+        } else {
+            unmarkAll();
+            var marked = document.createElement("mark");
+            el.parentNode.insertBefore(marked, el);
+            marked.appendChild(el);
+            return marked;
+        }
+    }
+
+    var markFragmented = function(){
+        if(window.location.hash){
+            var el = document.getElementById(decodeURIComponent(window.location.hash.substr(1)));
+            if(el) markElement(el);
+        }
+    }
+
+    var registerXrefLink = function(link){
+        var el = document.getElementById(decodeURIComponent(link.getAttribute("href").substr(1)));
+        if(el){
+            link.addEventListener("click", function(){
+                markElement(el);
+            });
+        }
+    }
+
+    var registerXrefLinks = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("a.xref"), registerXrefLink);
+    }
+
+    markFragmented();
+    registerXrefLinks();
+}); </script> </body> </html> 

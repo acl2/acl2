@@ -29,7 +29,7 @@
                   (if (posp n)
                       (expt 2 (+ -1 n))
                     0)))
-  :hints (("Goal" :in-theory (e/d (expt) ()))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm floor-of-expt-and-2
   (implies (posp n)
@@ -77,10 +77,10 @@
   :hints (("Goal" :in-theory (enable floor-of-floor))))
 
 (defthm floor-of-*-of-expt-and-expt
-  (implies  (and (< size size2)
-                 (natp size)
-                 (integerp size2)
-                 (integerp i))
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2)
+                (integerp i))
             (equal (floor (* i (expt 2 size))
                           (expt 2 size2))
                    (floor i (expt 2 (- size2 size)))))

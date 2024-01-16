@@ -30,7 +30,7 @@
   (implies (syntaxp (not (equal name '':fake-name)))
            (equal (alen1 name l)
                   (alen1 :fake-name l)))
-  :hints (("Goal" :in-theory (e/d (alen1) ()))))
+  :hints (("Goal" :in-theory (enable alen1))))
 
 ;; Introduce alen1
 (defthm alen1-intro

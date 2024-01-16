@@ -32,8 +32,8 @@
   (and (consp x)
        (symbolp (car x))))
 
-(acl2::defmergesort acl2::merge-symbol<-of-cars
-                    acl2::merge-sort-symbol<-of-cars
+(acl2::defmergesort acl2::merge-sort-symbol<-of-cars
+                    acl2::merge-symbol<-of-cars
                     acl2::symbol<-of-cars
                     acl2::consp-and-symbolp-car)
 

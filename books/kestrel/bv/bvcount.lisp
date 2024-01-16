@@ -102,7 +102,7 @@
                 (natp size)
                 (integerp size2))
            (unsigned-byte-p size2 (bvcount size x)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcount)
+  :hints (("Goal" :use unsigned-byte-p-of-bvcount
            :in-theory (disable unsigned-byte-p-of-bvcount))))
 
 (defthm bvcount-of-bvchop

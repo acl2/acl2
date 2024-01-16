@@ -32,7 +32,7 @@
   (b* ((dag-array-name (if dag-array-name dag-array-name ''dag-array))
        (dag-parent-array-name (if dag-parent-array-name dag-parent-array-name ''dag-parent-array))
        (return-vals (cdr ret-spec))
-       (expected-return-vals '(erp dag-len dag-array dag-parent-array dag-variable-alist dag-constant-alist))
+       (expected-return-vals '(erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((when (not (subsetp-eq expected-return-vals ret-spec)))
         (er hard? 'def-dag-builder-theorems-fn "Missing return values: ~x0." (set-difference-eq expected-return-vals ret-spec)))
        (fn (ffn-symb call))

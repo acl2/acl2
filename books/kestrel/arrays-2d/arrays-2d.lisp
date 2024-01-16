@@ -191,7 +191,7 @@
                   (if (equal 0 row)
                       (nth col a)
                     (array-elem-2d (+ -1 row) col b))))
-  :hints (("Goal" :in-theory (e/d (array-elem-2d) ()))))
+  :hints (("Goal" :in-theory (enable array-elem-2d))))
 
 (defthm len-of-cols-to-array-aux
   (implies (natp rownum)

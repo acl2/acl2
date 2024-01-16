@@ -2016,10 +2016,6 @@
                 (not (eff-addrs-okp nbytes eff-addr seg-reg x86))))
   :hints (("Goal" :in-theory (enable ea-to-la segment-max-eff-addr32 segment-base-and-bounds segment-min-eff-addr32))))
 
-(defthm integerp-of-if
-  (equal (integerp (if test tp ep))
-         (if test (integerp tp) (integerp ep))))
-
 ;; I wonder if this fact would let us drop come checks from the model
 (defthm canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
   (implies (and (signed-byte-p 33 k) ;gen?
@@ -2340,12 +2336,12 @@
                                      SEGMENT-BASE-AND-BOUNDS))))
 
 (defthm esp-bound
-  (implies  (and (stack-segment-assumptions32 stack-slots-needed x86-orig) ;binds the free var stack-slots-needed
-                 (stack-segment-assumptions32 stack-slots-needed x86)
-                 (natp k)
-                 (<= 4294967284 k) ;gen?
-                 )
-            (not (< k (ESP X86))))
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig) ;binds the free var stack-slots-needed
+                (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (<= 4294967284 k) ;gen?
+                )
+           (not (< k (ESP X86))))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm eff-addrs-okp-of-esp

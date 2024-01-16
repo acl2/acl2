@@ -1,0 +1,40 @@
+This is the book for the paper : "Verification of GossipSub in ACL2s" by Ankit
+Kumar, Max von Hippel, Panagiotis Manolios and Cristina Nita-Rotaru,
+which is a companion work of "Formal Model-Driven Analysis of
+Resilience of GossipSub to Attacks from Misbehaving Peers", by the
+same authors, to appear in Security and Privacy 2024.
+
+Contents of this book:
+
+|------------------------+--------------------------------------------------------|
+| .                      |                                                        |
+|------------------------+--------------------------------------------------------|
+| README                 | this file                                              |
+| make.sh                | certifies all files in this book                       |
+| top.lisp               | includes all files in this book                        |
+| higher-order.lisp      | higher order functionality like map and reduce         |
+| utils.lisp             | utilities                                              |
+| scoring.lisp           | scoring function and related properties                |
+| nbrs-topics-state.lisp | state for neighbor subscriptions, meshes and fanout    |
+| msgs-state.lisp        | state for messages                                     |
+| peer-state.lisp        | state of a peer, includes nbrs-topics and msgs-state   |
+| network.lisp           | a network state                                        |
+| demo.lsp               | demo file to go through while going through the paper  |
+| graphs.lisp            | example graph topologies used for testing attacks      |
+| unittest.lsp           | some GossipSub unit tests used in conformance checking |
+| cert.acl2              | required for certification of this book                |
+|------------------------+--------------------------------------------------------|
+
+|-----------------------+--------------------------------------------------------------------------|
+| ./attacks:            |                                                                          |
+|-----------------------+--------------------------------------------------------------------------|
+| top.lisp              | includes all attack files                                                |
+| attack.lisp           | common functions used to demonstrate attacks on networks                 |
+| AG1.lisp              | Attack Gadget with 1 attacked topic                                      |
+| AG-StopAttacks.lisp   | Attack Gadget showing full communication disruption in attacked topics   |
+| AG2-stop.lisp         | Attack Gadget showing full communication disruption in 2 attacked topics |
+| eclipse.lisp          | Eclipse attack demo                                                      |
+| partition-attack.lisp | Partitioning attack demo                                                 |
+| cert.acl2             | required for certification of this book                                  |
+|-----------------------+--------------------------------------------------------------------------|
+

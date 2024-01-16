@@ -1,0 +1,25 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: org.neu.acl2.handproof.ui
+Bundle-ManifestVersion: 2
+Bundle-Name: org.neu.acl2.handproof.ui
+Bundle-Vendor: My Company
+Bundle-Version: 1.0.4.qualifier
+Bundle-SymbolicName: org.neu.acl2.handproof.ui; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.neu.acl2.handproof,
+ org.neu.acl2.handproof.ide,
+ org.eclipse.xtext.ui,
+ org.eclipse.xtext.ui.shared,
+ org.eclipse.xtext.ui.codetemplates.ui,
+ org.eclipse.ui.editors;bundle-version="3.5.0",
+ org.eclipse.ui.ide;bundle-version="3.5.0",
+ org.eclipse.ui,
+ org.eclipse.compare,
+ org.eclipse.xtext.builder,
+ org.eclipse.core.runtime
+Import-Package: org.apache.log4j, javax.inject
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Export-Package: org.neu.acl2.handproof.ui.quickfix,
+ org.neu.acl2.handproof.ui.internal,
+ org.neu.acl2.handproof.ui.contentassist
+Bundle-Activator: org.neu.acl2.handproof.ui.internal.HandproofActivator

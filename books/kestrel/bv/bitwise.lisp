@@ -150,7 +150,7 @@
 (defthmd bvxor-all-ones-helper-alt
   (equal (bvxor size x (+ -1 (expt 2 size)))
          (bvnot size x))
-  :hints (("Goal" :use (:instance bvxor-all-ones-helper)
+  :hints (("Goal" :use bvxor-all-ones-helper
            :in-theory (disable bvxor-all-ones-helper))))
 
 ;we currently prefer bvnot for mutli-bit opens and bitxor with 1 for single bit ops <- a bit weird
@@ -162,7 +162,7 @@
                 )
            (equal (bvxor size mask x)
                   (bvnot size x)))
-  :hints (("Goal" :use (:instance bvxor-all-ones-helper)
+  :hints (("Goal" :use bvxor-all-ones-helper
            :in-theory (disable bvxor-all-ones-helper))))
 
 (defthmd bvnot-becomes-bvxor
@@ -207,7 +207,7 @@
                 (equal mask (+ -1 (expt 2 size))))
            (equal (equal (bvnot size x) (bvxor size mask x))
                   t))
-  :hints (("Goal" :use (:instance equal-of-bvxor-ones-and-bvnot)
+  :hints (("Goal" :use equal-of-bvxor-ones-and-bvnot
            :in-theory (disable equal-of-bvxor-ones-and-bvnot))))
 
 (defthmd bvand-of-bvnot-same-helper
@@ -227,7 +227,7 @@
 (defthm bvand-of-bvnot-same-alt
   (equal (bvand size (bvnot size x) x)
          0)
-  :hints (("Goal" :use (:instance bvand-of-bvnot-same))))
+  :hints (("Goal" :use bvand-of-bvnot-same)))
 
 ;;(add-invisible-fns bvand bvnot)  ;;todo: it would be nice for this to work
 
@@ -241,7 +241,7 @@
 (defthm bvand-of-bvand-of-bvnot-same-alt
   (equal (bvand size (bvnot size x) (bvand size x y))
          0)
-  :hints (("Goal" :use (:instance bvand-of-bvand-of-bvnot-same)
+  :hints (("Goal" :use bvand-of-bvand-of-bvnot-same
            :in-theory (disable bvand-of-bvand-of-bvnot-same))))
 
 ;since it can be expensive to do this in general??...
@@ -297,14 +297,14 @@
   (implies (equal k (+ -1 (expt 2 size)))
            (equal (bvand size x (bvand size (bvxor size k x) y))
                   0))
-  :hints (("Goal" :use (:instance bvand-of-bvand-of-bvnot-same)
+  :hints (("Goal" :use bvand-of-bvand-of-bvnot-same
            :in-theory (e/d (BVXOR-ALL-ONES-HELPER-ALT) (bvand-of-bvand-of-bvnot-same)))))
 
 (defthm bvand-of-bvand-of-bvxor-of-ones-same-alt
   (implies (equal k (+ -1 (expt 2 size)))
            (equal (bvand size (bvxor size k x) (bvand size x y))
                   0))
-  :hints (("Goal" :use (:instance bvand-of-bvand-of-bvnot-same)
+  :hints (("Goal" :use bvand-of-bvand-of-bvnot-same
            :in-theory (e/d (bvxor-all-ones-helper-alt) (bvand-of-bvand-of-bvnot-same)))))
 
 ;may help when size is not a constant
@@ -322,7 +322,7 @@
                   0))
   :hints (("Goal" :in-theory (disable BVAND-OF-BVAND-OF-BVNOT-SAME)
            :use (BVXOR-ALL-ONES
-                 (:instance bvand-of-bvand-of-bvnot-same)))))
+                 bvand-of-bvand-of-bvnot-same))))
 
 ;rename
 (defthm bvand-of-bvand-of-bvnot-same-alt-xor-version
@@ -332,7 +332,7 @@
                   0))
   :hints (("Goal" :in-theory (disable BVAND-OF-BVAND-OF-BVNOT-SAME-alt)
            :use (BVXOR-ALL-ONES
-                 (:instance bvand-of-bvand-of-bvnot-same-alt)))))
+                 bvand-of-bvand-of-bvnot-same-alt))))
 
 (defthm bitand-of-bitxor-of-1-same
   (equal (bitand x (bitxor 1 x))
@@ -401,12 +401,12 @@
 (defthm bvnot-of-bvxor-1-back
    (equal (bvxor 1 (bvnot 1 x) y)
           (bvnot 1 (bvxor 1 x y)))
-   :hints (("Goal" :use (:instance bvnot-of-bvxor-1))))
+   :hints (("Goal" :use bvnot-of-bvxor-1)))
 
 (defthm bvnot-of-bvxor-1-back-alt
   (equal (bvxor 1 y (bvnot 1 x))
          (bvnot 1 (bvxor 1 y x)))
-  :hints (("Goal" :use (:instance bvnot-of-bvxor-1-back)
+  :hints (("Goal" :use bvnot-of-bvxor-1-back
            :in-theory (e/d (BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2) (bvnot-of-bvxor-1-back)))))
 
 ;(local (in-theory (enable BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2))) ;hope these don't loop
@@ -498,7 +498,7 @@
 (defthm bitor-x-not-x-alt
   (equal (bitor (bvnot 1 x) x)
          1)
-  :hints (("Goal" :use (:instance bitor-x-not-x)
+  :hints (("Goal" :use bitor-x-not-x
            :in-theory (disable bitor-x-not-x))))
 
 ;or go to bitnot

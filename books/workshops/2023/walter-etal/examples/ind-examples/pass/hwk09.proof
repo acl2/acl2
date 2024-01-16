@@ -1,0 +1,366 @@
+
+(defdata lor (listof rational))
+
+(definec orderedp (x :lor) :bool
+  (or (endp (cdr x))
+      (and (<= (car x) (second x))
+           (orderedp (cdr x)))))
+
+(definec del (e :rational x :lor) :lor
+  (cond ((endp x) nil)
+        ((equal e (car x)) (cdr x))
+        (t (cons (car x) (del e (cdr x))))))
+
+(definec perm (x :lor y :lor) :bool
+  (if (endp x)
+      (endp y)
+    (and (in (car x) y)
+         (perm (cdr x) (del (car x) y)))))
+
+(definec insert (a :rational x :lor) :lor
+  (cond ((endp x) (list a))
+        ((<= a (car x)) (cons a x))
+        (t (cons (car x) (insert a (cdr x))))))
+
+(definec isort (x :lor) :lor
+  (if (endp x)
+      nil
+    (insert (car x) (isort (cdr x)))))
+
+
+
+(defthm sort-ordered
+  (implies (lorp x)
+           (orderedp (isort x))))
+
+(defthm sort-perm
+  (implies (lorp x)
+           (perm (isort x) x)))
+
+
+
+
+
+Lemma car-del-first-or-second:
+(implies (and (lorp x)
+              (rationalp e))
+         (equal (car (del e x))
+                (if (consp x)
+                    (if (equal e (car x))
+                        (second x)
+                      (car x))
+                  nil)))
+
+Context:
+C1. (lorp x)
+C2. (rationalp e)
+
+Goal: (equal (car (del e x))
+                (if (consp x)
+                    (if (equal e (car x))
+                        (second x)
+                      (car x))
+                  nil))
+
+Proof:
+(car (del e x))
+== { Def del }
+(car (if (endp x)
+         nil
+       (if (equal e (car x))
+           (cdr x)
+         (cons (car x) (del e (cdr x))))))
+== { cons axioms, car-cdr axioms, PL }
+(if (consp x)
+    (if (equal e (car x))
+        (second x)
+      (car x))
+  nil)
+
+QED
+
+
+
+
+
+
+
+
+(definec indfunc (e :rational x :lor) :lor
+  (cond ((endp x) nil)
+        ((equal e (car x)) (indfunc e (cdr x)))
+        ((endp (cdr x)) (cons (car x) (indfunc e (cdr x))))
+        (t (cons (car x) (indfunc e (cdr x))))))
+
+
+
+
+
+Lemma del-ordered:
+(implies (and (lorp x)
+              (rationalp e)
+              (orderedp x))
+         (orderedp (del e x)))
+
+Context:
+C1. (lorp x)
+
+Proof by: Induction on (indfunc e x)
+
+Induction Case 0:
+(implies (not (and (rationalp e)(lorp x)))
+         (implies (and (lorp x)
+                       (rationalp e)
+                       (orderedp x))
+                  (orderedp (del e x))))
+
+Exportation:
+(implies (and (not (and (rationalp e)(lorp x)))
+              (lorp x)
+              (rationalp e)
+              (orderedp x))
+         (orderedp (del e x)))
+
+Context:
+C2. (not (and (rationalp e)(lorp x)))
+C3. (rationalp e)
+C4. (orderedp x)
+
+Derived Context:
+D1. nil { C1, C2, C3, PL }
+
+QED
+
+
+
+Induction Case 1:
+(implies (endp x)
+         (implies (and (lorp x)
+                       (rationalp e)
+                       (orderedp x))
+                  (orderedp (del e x))))
+
+Exportation:
+(implies (and (lorp x)
+              (endp x)
+              (rationalp e)
+              (orderedp x))
+         (orderedp (del e x)))
+
+Context:
+C2. (endp x)
+C3. (rationalp e)
+C4. (orderedp x)
+
+Derived Context:
+D1. (== x nil) { Def tlp, C1, C2 }
+
+Goal: (orderedp (del e x))
+
+Proof:
+(orderedp (del e x))
+== { Def del, D1 }
+(orderedp nil)
+== { Eval }
+t
+
+QED
+
+Induction Case 2:
+(implies (and (not (endp x))
+              (equal e (car x))
+              (implies (and (lorp (cdr x))
+                            (rationalp e)
+                            (orderedp (cdr x)))
+                       (orderedp (del e (cdr x)))))
+         (implies (and (lorp x)
+                       (rationalp e)
+                       (orderedp x))
+                  (orderedp (del e x))))
+
+Exportation:
+(implies (and (lorp x)
+              (not (endp x))
+              (orderedp x)
+              (rationalp e)
+              (equal e (car x))
+              (implies (and (lorp (cdr x))
+                            (rationalp e)
+                            (orderedp (cdr x)))
+                       (orderedp (del e (cdr x)))))
+         (orderedp (del e x)))
+
+Context:
+C2. (not (endp x))
+C3. (orderedp x)
+C4. (rationalp e)
+C5. (equal e (car x))
+C6. (implies (and (lorp (cdr x))
+                  (rationalp e)
+                  (orderedp (cdr x)))
+             (orderedp (del e (cdr x))))
+
+Derived Context:
+D1. (lorp (cdr x)) { Def tlp, C1, C2 }
+D2. (or (endp (cdr x))
+        (and (<= (car x) (second x))
+             (orderedp (cdr x))))
+    { Def orderedp, C3 }
+
+
+Goal: (orderedp (del e x))
+
+Proof:
+(orderedp (del e x))
+== { Def del, C2, C5 }
+(orderedp (cdr x))
+== { Def orderedp, D2, PL }
+t
+
+QED
+
+
+Induction Case 3:
+(implies (and (not (endp x))
+              (endp (cdr x))
+              (not (equal e (car x)))
+              (implies (and (lorp (cdr x))
+                            (rationalp e)
+                            (orderedp (cdr x)))
+                       (orderedp (del e (cdr x)))))
+         (implies (and (lorp x)
+                       (rationalp e)
+                       (orderedp x))
+                  (orderedp (del e x))))
+
+Exportation:
+(implies (and (lorp x)
+              (not (endp x))
+              (endp (cdr x))
+              (orderedp x)
+              (rationalp e)
+              (not (equal e (car x)))
+              (implies (and (lorp (cdr x))
+                            (rationalp e)
+                            (orderedp (cdr x)))
+                       (orderedp (del e (cdr x)))))
+         (orderedp (del e x)))
+
+Context:
+C2. (not (endp x))
+C3. (endp (cdr x))
+C4. (orderedp x)
+C5. (rationalp e)
+C6. (not (equal e (car x)))
+C7. (implies (and (lorp (cdr x))
+                  (rationalp e)
+                  (orderedp (cdr x)))
+             (orderedp (del e (cdr x))))
+
+Derived Context:
+D1. (lorp (cdr x)) { Def tlp, C1, C2 }
+D2. (equal (cdr x) nil) { Def tlp, C3, D1 }
+
+
+Goal: (orderedp (del e x))
+
+Proof:
+(orderedp (del e x))
+== { Def del, C2, C6 }
+(orderedp (cons (car x) (del e (cdr x))))
+== { Def orderedp, cons axioms }
+(or (endp (del e (cdr x)))
+    (and (<= (car x) (car (del e (cdr x))))
+         (orderedp (del e (cdr x)))))
+== { Def del, D2 } 
+t
+
+QED
+
+
+Induction Case 4:
+(implies (and (not (endp x))
+              (not (endp (cdr x)))
+              (not (equal e (car x)))
+              (implies (and (lorp (cdr x))
+                            (rationalp e)
+                            (orderedp (cdr x)))
+                       (orderedp (del e (cdr x)))))
+         (implies (and (lorp x)
+                       (rationalp e)
+                       (orderedp x))
+                  (orderedp (del e x))))
+
+Exportation:
+(implies (and (lorp x)
+              (not (endp x))
+              (not (endp (cdr x)))
+              (orderedp x)
+              (rationalp e)
+              (not (equal e (car x)))
+              (implies (and (lorp (cdr x))
+                            (rationalp e)
+                            (orderedp (cdr x)))
+                       (orderedp (del e (cdr x)))))
+         (orderedp (del e x)))
+
+Context:
+C2. (not (endp x))
+C3. (not (endp (cdr x)))
+C4. (orderedp x)
+C5. (rationalp e)
+C6. (not (equal e (car x)))
+C7. (implies (and (lorp (cdr x))
+                  (rationalp e)
+                  (orderedp (cdr x)))
+             (orderedp (del e (cdr x))))
+
+
+Derived Context:
+D1. (lorp (cdr x)) { Def tlp, C1, C2 }
+D2. (and (<= (car x) (second x))
+         (orderedp (cdr x)))
+    { Def orderedp, C4, C3, PL }
+D3. (orderedp (del e (cdr x))) { C7, D1, C5, D2, MP }
+D4. (and (<= (car x) (second x))
+         (or (endp (cddr x))
+             (and (<= (second x) (third x))
+                  (orderedp (cddr x)))))
+    { Def orderedp, D2 }
+
+Goal: (orderedp (del e x))
+
+Proof:
+(orderedp (del e x))
+== { Def del, C2, C6 }
+(orderedp (cons (car x) (del e (cdr x))))
+== { Def orderedp, cons axioms }
+(or (endp (del e (cdr x)))
+    (and (<= (car x) (car (del e (cdr x))))
+         (orderedp (del e (cdr x)))))
+== { D3, PL }
+(or (endp (del e (cdr x)))
+    (<= (car x) (car (del e (cdr x)))))
+== { D1, C5, Lemma car-del-first-or-second ((x (cdr x))) }
+(or (endp (del e (cdr x)))
+    (<= (car x) (if (consp (cdr x))
+                    (if (equal e (cadr x))
+                        (second (cdr x))
+                      (cadr x))
+                  nil)))
+== { C3 }
+(or (endp (del e (cdr x)))
+    (<= (car x) (if (equal e (cadr x))
+                    (second (cdr x))
+                  (cadr x))))
+== { Eval }
+(or (endp (del e (cdr x)))
+    (<= (car x) (if (equal e (second x))
+                    (third x)
+                  (second x))))
+== { D4, PL }
+t
+
+QED
+
+QED

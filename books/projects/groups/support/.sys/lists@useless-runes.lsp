@@ -2056,7 +2056,7 @@
  (41 41 (:META META-INTEGERP-CORRECT))
  )
 (X)
-(DM::Y)
+(Y)
 (DM::XY)
 (DM::YX)
 (DM::DLISTP-X)

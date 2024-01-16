@@ -514,6 +514,18 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
+(defthm pseudo-dag-arrayp-forward-to-<=-of-alen1
+  (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+           (<= (alen1 dag-array-name dag-array) 2147483646))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
+
+(defthm pseudo-dag-arrayp-forward-chaining-another-2
+  (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+           (natp (alen1 dag-array-name dag-array)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
+
 (defthm pseudo-dag-arrayp-forward-to-natp-arg3
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
            (natp dag-len))
@@ -526,11 +538,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-(defthm pseudo-dag-arrayp-forward-to-<=-of-alen1
-  (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-           (<= (alen1 dag-array-name dag-array) 2147483646))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
+
 
 (defthm pseudo-dag-arrayp-forward-4
   (implies (pseudo-dag-arrayp array-name array dag-len)

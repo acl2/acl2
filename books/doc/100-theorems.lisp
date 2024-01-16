@@ -36,6 +36,7 @@
 (include-book "projects/numbers/triangular" :dir :system)
 (include-book "projects/numbers/triples" :dir :system)
 (include-book "projects/numbers/z2q" :dir :system)
+(include-book "projects/schroder-bernstein/schroder-bernstein" :dir :system)
 (include-book "workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac" :dir :system)
 ;; (include-book "workshops/2018/kwan-greenstreet/cauchy-schwarz" :dir :system) ; needs ACL2r
 ;; (include-book "workshops/2020/kwan-peng-greenstreet/abstract-cs" :dir :system) ; needs ACL2r
@@ -98,7 +99,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;; "<h3 id=\"6\">6. Godel's Incompleteness Theorem</h3>"
+     "<h3 id=\"6\">6. Godel's Incompleteness Theorem</h3>"
+
+     "<p>By Natarajan Shankar, using Nqthm, a predecessor to ACL2.</p>"
+
+     "<p>See <a href=\"https://www.cs.utexas.edu/users/boyer/ftp/nqthm/nqthm-1992/examples/shankar/goedel.events\">this file</a>.  See also <a href=\"https://philpapers.org/rec/SHAMMA-3\">this book</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,7 +220,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
      ;; "<h3 id=\"24\">24. <u>The Undecidability of the Continuum Hypothesis</u></h3>"
-     ;; "<h3 id=\"25\">25. Schroeder-Bernstein Theorem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"25\">25. Schroeder-Bernstein Theorem</h3>"
+
+     "@(def sb::injectivity-of-sb)"
+     "@(def sb::surjectivity-of-sb)"
+
+     "<p>By Grant Jurgensen, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/schroder-bernstein/schroder-bernstein.lisp\">books/projects/schroder-bernstein/schroder-bernstein.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"26\">26. Leibniz's Series for Pi</h3>"
      ;; "<h3 id=\"27\">27. Sum of the Angles of a Triangle</h3>"
      ;; "<h3 id=\"28\">28. Pascal's Hexagon Theorem</h3>"
@@ -366,7 +382,16 @@
 
 
      ;; "<h3 id=\"59\">59. The Laws of Large Numbers</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
      ;; "<h3 id=\"60\">60. Bezout's Theorem</h3>"
+
+     ;; TODO: John Cowles proved this?
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"61\">61. Theorem of Ceva</h3>"
      ;; "<h3 id=\"62\">62. Fair Games Theorem</h3>"
      ;; "<h3 id=\"63\">63. Cantor's Theorem</h3>"
@@ -386,7 +411,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
      ;; "<h3 id=\"67\">67. e is Transcendental</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"68\">68. Sum of an arithmetic series</h3>"
+
+     ;; TODO: Ruben Gamboa proved this?
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -542,7 +572,15 @@
 
      ;; "<h3 id=\"89\">89. The Factor and Remainder Theorems</h3>"
      ;; "<h3 id=\"90\">90. Stirling's Formula</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"91\">91. The Triangle Inequality</h3>"
+
+     ;; TODO: Ruben Gamboa proved this?
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"92\">92. Pick's Theorem</h3>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

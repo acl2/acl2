@@ -331,7 +331,7 @@
                          ;;hyp rewrote to *nil*:
                          (progn$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                  (and (member-eq rule-symbol monitored-symbols)
-                                      (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol)
+                                      (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol)
                                               ;; (cw "Alist: ~x0.~%Assumptions:~%~x1~%DAG:~x2~%" ;;ffixme improve this printing
                                               ;;     alist
                                               ;;     refined-assumption-alist
@@ -1194,14 +1194,14 @@
 ;; Returns (mv erp simplified-dag-or-quotep limits state) where SIMPLIFIED-DAG-OR-QUOTEP is equivalent to DAG, given the REFINED-ASSUMPTION-ALIST, EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the bindings in INTERPRETED-FUNCTION-ALIST.
 ;;does one simplification pass (NO, now does 2 if contexts are to be used) -- is the result then completely simplified? - what if one of the context assumptions (a pred in an if-test governing a term) gets simplified on this pass?  that might let us do better at simplifying nodes guarded by that node.
 ;does not simplify the refined-assumptions or equality-assumption-alist (or context nodes?) passed in
-;fffixme stay in the world of arrays, instead of going back and forth between arrays and dags?
+;; TODO: Stay in the world of arrays, instead of going back and forth between arrays and dags?
 ;If both memoizep and use-internal-contextsp are non-nil, this will NOT memoize on the second pass (that would be unsound!), unless we change the memoization machinery to track contexts - fffixme can that lead to exponential behavior?!
-;fffixme consider having this return an array...
+;; TODO: Consider having this return an array.
 ;change this to load the dag into the array first and to use assumptions that refer to that array (instead of possibly being huge terms)??
-;ffixme consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
+;; TODO: consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
 ;ffffixme include only the necesary nodes in the context?!
-;ffixme external contexts could allow us to drop whole subdags and not waste time simplifying them..
-;;smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
+;; TODO: external contexts could allow us to drop whole subdags and not waste time simplifying them..
+;; Smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
 (defun simplify-dag (dag ;; must not be a quotep, (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),
                      rewriter-rule-alist
                      slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
@@ -1229,6 +1229,8 @@
                   :guard (and (pseudo-dagp dag)
                               (natp external-context-array-len)
                               (natp slack-amount)
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
                               (rule-limitsp limits))))
   ;;Even if use-internal-contextsp is non-nil, we first simplify without internal contexts, to make sure that the contexts themselves are simplified (fixme might that take several passes? when we use them on the second pass (otherwise when using a term that came from a context we might have to simplify it before using it, which might be awkward (a whole subdag would be involved, and simplifying the context might cause other terms from context to be simplified)... and what about something like (if x (foo x) (bar x)) where the test x guards an appearance of itself? rethink this?
 ;in many cases the contexts will equate terms with constants..
@@ -1246,7 +1248,7 @@
        (dag-parent-array (make-empty-array 'dag-parent-array initial-array-size))
        (dag-parent-array (copy-array-vals max-external-context-nodenum external-context-parent-array-name external-context-parent-array 'dag-parent-array dag-parent-array))
        (dag-constant-alist external-context-dag-constant-alist) ;inline?
-       (dag-variable-alist external-context-dag-variable-alist) ;inline?
+       (dag-variable-alist (make-fast-alist external-context-dag-variable-alist)) ; to avoid stealing the hash-table of external-context-dag-variable-alist, which is a fast alist
        (- (and print (cw "(Simplifying without using contexts (memoize ~x0):~%" memoizep)))
        ;; Work hard on the first rewrite if there won't be a second one:
        (work-hard-on-first-rewrite (not use-internal-contextsp) ;nil ;work-hard-when-instructedp ;Mon Sep 20 09:54:39 2010 since we are not using contexts, working hard can be a big waste.  on the other hand, we are memoizing on this rewrite (but can't on the one with contexts), so work-hards would be memoized here but not there
@@ -1292,8 +1294,10 @@
         (b* (;;could we stay in the world of arrays when doing this? and use the array to compute internal contexts?
              ;;could check here whether nothing changed and not build a new list?
              (dag (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print))
-             (dag-len (+ 1 (top-nodenum dag)))
+             ((when (not (dag-fns-include-any dag '(if myif boolif bvif)))) ; no benefit from using contexts
+              (mv (erp-nil) dag limits state))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
+             (dag-len (+ 1 (top-nodenum dag)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
              ;;Load all the nodes into the dag-array (fixme only include nodes that support internal contexts?!):
 ;ffixme should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
@@ -1344,12 +1348,12 @@
                                                internal-context-array
                                                external-context known-booleans work-hard-when-instructedp tag limits state))
              ((when erp) (mv erp nil nil state))
-             (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (maybe-print-hit-counts print info)))
-             (- (and print (cw ")")))
+             (- (and print
+                     (progn$ (cw "(~x0 tries.)~%" tries)
+                             (maybe-print-hit-counts print info)
+                             (cw ")"))))
              (top-nodenum (top-nodenum dag))
-             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum))
-             )
+             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
           (if (quotep renamed-top-node)
               (prog2$ (and print (cw ")~%"))
                       (mv (erp-nil) renamed-top-node limits state))
@@ -1373,10 +1377,11 @@
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
 ;; bindings in INTERPRETED-FUNCTION-ALIST
+;; todo: do we want exhaustivep iff use-internal-contextsp is true?
 (defun repeat-simplify-dag (dag ;; must not be a quotep,  (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                             rewriter-rule-alist
                             slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
-                            refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
+                            refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
                             equality-assumption-alist ;these represent a subset of REFINED-ASSUMPTION-ALIST?
                             print-interval print
                             interpreted-function-alist monitored-symbols memoizep
@@ -1396,53 +1401,29 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
                               )
                   :stobjs state))
   (mv-let (erp result-dag limits state)
-    (simplify-dag dag
-                  rewriter-rule-alist
-                  slack-amount
-                  refined-assumption-alist
-                  equality-assumption-alist
-                  print-interval print
-                  interpreted-function-alist monitored-symbols memoizep
+    (simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                   use-internal-contextsp
-                  external-context-array-name
-                  external-context-array
-                  external-context
-                  external-context-array-len
-                  external-context-parent-array-name
-                  external-context-parent-array
-                  external-context-dag-constant-alist
-                  external-context-dag-variable-alist
-                  work-hard-when-instructedp tag limits state)
+                  external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name external-context-parent-array
+                  external-context-dag-constant-alist external-context-dag-variable-alist work-hard-when-instructedp tag limits state)
     (if erp
         (mv erp nil nil state)
       (if (quotep result-dag)
           (mv (erp-nil) result-dag limits state)
-        (if (equivalent-dags dag result-dag)
+        (if (equivalent-dags dag result-dag) ; nothing changed (except perhaps node numbering)
             (mv (erp-nil) dag limits state)
-          (progn$ (cw "(Something changed, so simplify again.)~%")
-                  (print-list result-dag)
-                  (repeat-simplify-dag result-dag
-                                       rewriter-rule-alist
-                                       slack-amount
-                                       refined-assumption-alist
-                                       equality-assumption-alist
-                                       print-interval print
-                                       interpreted-function-alist monitored-symbols memoizep
+          (progn$ (cw "(Something changed, so continue.)~%")
+                  ;; (print-list result-dag) ; consider printing here if in verbose mode
+                  (repeat-simplify-dag result-dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                                        use-internal-contextsp
-                                       external-context-array-name
-                                       external-context-array
-                                       external-context
-                                       external-context-array-len
-                                       external-context-parent-array-name
-                                       external-context-parent-array
-                                       external-context-dag-constant-alist
-                                       external-context-dag-variable-alist
-                                       work-hard-when-instructedp tag limits state)))))))
+                                       external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name external-context-parent-array
+                                       external-context-dag-constant-alist external-context-dag-variable-alist work-hard-when-instructedp tag limits state)))))))
 
-;call simplify-dag either once or repeatedly, according to exhaustivep
+;; Calls simplify-dag either once or repeatedly, according to EXHAUSTIVEP.
 ;; Returns (mv erp result limits state) where RESULT is a
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
@@ -1450,7 +1431,7 @@
 (defun maybe-repeat-simplify-dag (dag ;; must not be a quotep (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                                   rewriter-rule-alist
                                   slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
-                                  refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
+                                  refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
                                   equality-assumption-alist ; these represent a subset of REFINED-ASSUMPTION-ALIST?
                                   print-interval print
                                   interpreted-function-alist monitored-symbols memoizep
@@ -1469,45 +1450,23 @@
                                   work-hard-when-instructedp tag
                                   exhaustivep
                                   limits state)
-  (declare (xargs :mode :program
-                  :guard (and (rule-limitsp limits)
+  (declare (xargs :guard (and (rule-limitsp limits)
                               ;;todo
-                              )
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
+                              (booleanp exhaustivep))
+                  :mode :program
                   :stobjs state))
   (if exhaustivep
-      (repeat-simplify-dag dag
-                           rewriter-rule-alist
-                           slack-amount
-                           refined-assumption-alist
-                           equality-assumption-alist
-                           print-interval print
-                           interpreted-function-alist monitored-symbols memoizep
+      (repeat-simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                            use-internal-contextsp
-                           external-context-array-name
-                           external-context-array
-                           external-context
-                           external-context-array-len
-                           external-context-parent-array-name
-                           external-context-parent-array
-                           external-context-dag-constant-alist
-                           external-context-dag-variable-alist
+                           external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name
+                           external-context-parent-array external-context-dag-constant-alist external-context-dag-variable-alist
                            work-hard-when-instructedp tag limits state)
-    (simplify-dag dag
-                  rewriter-rule-alist
-                  slack-amount
-                  refined-assumption-alist
-                  equality-assumption-alist
-                  print-interval print
-                  interpreted-function-alist monitored-symbols memoizep
+    (simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                   use-internal-contextsp
-                  external-context-array-name
-                  external-context-array
-                  external-context
-                  external-context-array-len
-                  external-context-parent-array-name
-                  external-context-parent-array
-                  external-context-dag-constant-alist
-                  external-context-dag-variable-alist
+                  external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name
+                  external-context-parent-array external-context-dag-constant-alist external-context-dag-variable-alist
                   work-hard-when-instructedp tag limits state)))
 
 ;; Returns (mv erp result limits state) where RESULT is a dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST, EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the bindings in INTERPRETED-FUNCTION-ALIST.
@@ -1528,6 +1487,9 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist)
+                              (booleanp exhaustivep)
                               )
                   :stobjs state))
   (b* (((mv erp normalized-dag changep) (normalize-xors dag print)) ;now does both bitxors and bvxors (seemed important to do them both at the same time?)
@@ -1581,6 +1543,9 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist)
+                              (booleanp exhaustivep)
                               )
                   :stobjs state))
   (mv-let (erp simplified-dag-or-quotep limits state)
@@ -1635,7 +1600,10 @@
                               (non-false-contextp context)
                               (acl2-numberp rule-set-number)
                               (alistp priorities)
-                              (rule-limitsp limits))))
+                              (booleanp exhaustivep)
+                              (rule-limitsp limits)
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist))))
   (if (endp tagged-rule-sets)
       (mv (erp-nil) dag limits state)
     (b* ((- (and (> total-rule-set-count 1) (cw "(Applying rule set ~x0 of ~x1.~%" rule-set-number total-rule-set-count)))

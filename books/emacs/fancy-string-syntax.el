@@ -160,6 +160,6 @@
       
       
 (add-hook 'lisp-mode-hook
-          '(lambda ()
-             (setq parse-sexp-lookup-properties t)
-             (setq syntax-propertize-function 'fancystring-syntax-propertize-function)))
+          #'(lambda ()
+              (setq parse-sexp-lookup-properties t)
+              (setq syntax-propertize-function 'fancystring-syntax-propertize-function)))

@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+;; Note that this file brings in all 3 versions of Axe (JVM, x86, and R1CS).
+;; Instead of including this file, consider just including the parts of Axe
+;; that you need.
+
 ;; Supporting utilities:
 (include-book "add-and-normalize-expr")
 (include-book "add-bitxor-nest-to-dag-array")
@@ -72,6 +76,7 @@
 (include-book "dag-size-sparse")
 (include-book "dag-size-fast")
 (include-book "dag-size")
+(include-book "dag-stobj")
 (include-book "dag-to-term")
 (include-book "dag-to-term-with-lets")
 (include-book "dag-variable-alist")
@@ -141,6 +146,7 @@
 (include-book "math-rules")
 (include-book "memoization")
 (include-book "merge-and-remove-dups")
+(include-book "merge-less-than-and-remove-dups")
 (include-book "merge-dag-into-dag-quick")
 (include-book "merge-nodes-into-dag-array")
 (include-book "merge-sort-by-cdr-greater")
@@ -150,7 +156,6 @@
 (include-book "merge-term-into-dag-array-basic")
 (include-book "merge-tree-into-dag-array-basic")
 (include-book "sublis-var-and-eval-basic")
-(include-book "no-atoms")
 (include-book "node-replacement-alist")
 (include-book "node-info")
 (include-book "node-replacement-array")

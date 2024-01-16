@@ -1,7 +1,7 @@
 ; Converting a dag to a term using lets.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 
 ;; TODO: Consider not lifting let-bound variables up through IFs (can cause problems with guards).
 ;; TODO: Consider splitting the result into several functions if a single function would be too large.
@@ -307,13 +308,6 @@
  (defthm bound-hack
   (implies (<= 0 x)
            (<= 0 (+ 1 x)))))
-
-(local
- (defthm integerp-of-if
-   (equal (integerp (if test tp ep))
-          (if test
-              (integerp tp)
-            (integerp ep)))))
 
 (defthm supporters-arrayp-forward
   (implies (supporters-arrayp array-name array array-len)

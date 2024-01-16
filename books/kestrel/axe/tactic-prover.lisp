@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,7 +18,8 @@
 
 ;; TODO: Add support for :axe-prover option to call the Axe prover
 
-;; TODO: Make a lighter-weight version that does not depend on skip-proofs.
+;; See also the provers created by make-prover-simple (they are more
+;; lightweight and do not depend on skip-proofs).
 
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
@@ -32,6 +33,8 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+(include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
@@ -44,6 +47,7 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
 (local (in-theory (enable rationalp-when-natp)))
 
@@ -203,6 +207,7 @@
        (- (and print (cw "(Applying the Axe rewriter~%")))
        ((mv erp new-dag state)
         (simp-dag dag ; TODO: Use the basic rewriter (but it will need to support rewriting nodes assuming their [approximate] contexts)
+                  ;; todo: consider :exhaustivep t
                   :rule-alist rule-alist
                   :interpreted-function-alist interpreted-function-alist
                   :monitor monitor
@@ -293,8 +298,9 @@
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 (defun apply-tactic-prune (problem print call-stp-when-pruning state)
   (declare (xargs :guard (and (proof-problemp problem)
+                              (print-levelp print)
                               (booleanp call-stp-when-pruning))
-                  :stobjs (state)
+                  :stobjs state
                   :guard-hints (("Goal" :in-theory (disable pseudo-dag-or-quotep quotep)))))
   (b* ((dag (first problem))
        ((when (quotep dag))
@@ -318,6 +324,7 @@
                     nil                ;no interpreted-fns (todo)
                     nil                ;no point in monitoring anything
                     call-stp-when-pruning ;todo: does it make sense for this to be nil, since we are not rewriting?
+                    print
                     state))
        ((when erp) (mv *error* nil state)) ;todo: perhaps add erp to the return signature of this and similar functions (and remove the *error* case from tactic-resultp)
        ((mv erp new-dag)
@@ -342,9 +349,9 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
-                              ;; print
+                              (print-levelp print)
                               (booleanp call-stp-when-pruning))
-                  :stobjs (state)))
+                  :stobjs state))
   (b* ((dag (first problem))
        ((when (quotep dag))
         (if (unquote dag)
@@ -363,6 +370,7 @@
         (prune-term term assumptions rule-alist interpreted-function-alist
                     monitor
                     call-stp-when-pruning
+                    print
                     state))
        ((when erp) (mv *error* nil state))
        ((mv erp new-dag)
@@ -487,7 +495,7 @@
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
                               (ilks-plist-worldp (w state)))
-                  :guard-hints (("Goal" :in-theory (e/d (quotep-compound-recognizer)
+                  :guard-hints (("Goal" :in-theory (e/d ()
                                                         (myquotep quotep))
                                  :do-not '(generalize eliminate-destructors)))
                   :stobjs state
@@ -605,6 +613,7 @@
 ;;
 
 ;; Returns (mv exhaustivep state)
+;; Tries to show that the given CASES are exhaustive, given the ASSUMPTIONS.
 (defun prove-cases-exhaustivep (cases assumptions state)
   (declare (xargs :stobjs state
                   :mode :program ; because this calls prove$-fn
@@ -675,6 +684,7 @@
                               (booleanp call-stp-when-pruning)
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
+                              (print-levelp print)
                               (booleanp normalize-xors))))
   (if (eq :rewrite tactic)
       (apply-tactic-rewrite problem rule-alist interpreted-function-alist monitor normalize-xors print state)
@@ -713,6 +723,7 @@
                                (booleanp call-stp-when-pruning)
                                (booleanp counterexamplep)
                                (booleanp print-cex-as-signedp)
+                               (print-levelp print)
                                (booleanp normalize-xors))))
    ;; TODO: What if the DAG is a constant?
    (if (endp tactics)
@@ -767,17 +778,22 @@
                                (booleanp call-stp-when-pruning)
                                (booleanp counterexamplep)
                                (booleanp print-cex-as-signedp)
+                               (print-levelp print)
                                (booleanp normalize-xors))))
    (if (endp problems)
        (prog2$ (cw "Finished proving all problems.~%")
                (mv *valid* (add-to-end prev-info info-acc) state))
      (b* ( ;; Try to prove the first problem:
           (- (cw "(Attacking sub-problem ~x0 of ~x1.~%" num (+ num (- (len problems) 1))))
+          ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
           ((mv result new-info-acc state)
            (apply-proof-tactics-to-problem (first problems) tactics rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp info-acc state))
+          ((mv elapsed state) (real-time-since start-real-time state))
           (new-info (car (last new-info-acc))))
        (if (eq result *valid*)
-           (prog2$ (cw "Proved problem ~x0.)~%" num)
+           (progn$ (cw "Proved problem ~x0 in " num)
+                   (print-to-hundredths elapsed)
+                   (cw" s.)~%" )
                    (apply-proof-tactics-to-problems (+ 1 num) (rest problems) tactics rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp
                                                     info-acc
                                                     new-info ;replaces the prev-info (todo: use it somehow?)
@@ -802,7 +818,7 @@
 ;todo: redo this to first convert to a dag, then extract hyps and conc from the dag (may blow up but unlikely in practice?)
 ; TODO: Consider if
 (defun dag-or-term-to-dag-and-assumptions (item type wrld)
-  (declare (xargs :mode :program ;why?
+  (declare (xargs :mode :program ; because this calls translate-term
                   :guard (member-eq type '(:boolean :bit))))
   (if (eq nil item) ;we interpret nil as a term (not an empty dag)
       (if (eq type :boolean)

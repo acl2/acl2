@@ -95,7 +95,7 @@
 ;;            (equal (bv-array-write element-size len index val data)
 ;;                   (bv-array-write element-size len 0 val data)))
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+;;   :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthmd bv-array-read-of-bv-array-write-diff
   (implies (and (not (equal index1 index2))
@@ -132,7 +132,7 @@
                 (integerp len2))
            (equal (bv-array-read width len index (bv-array-write width len2 index val lst))
                   (bvchop width val)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener bv-array-write ceiling-of-lg) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write ceiling-of-lg))))
 
 (defthm bv-array-read-of-bv-array-write-tighten
   (implies (and (< esize1 esize2)
@@ -165,10 +165,9 @@
                 (natp index))
            (equal (bv-array-read width len index (bvchop-list width lst))
                   (bv-array-read width len index lst)))
-  :hints (("Goal" :in-theory (e/d (;LIST::NTH-WITH-LARGE-INDEX
-                                   NTH-WHEN-<=-LEN
-                                   bv-array-read BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable;LIST::NTH-WITH-LARGE-INDEX
+                              NTH-WHEN-<=-LEN
+                              bv-array-read BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
 (defthmd bv-array-read-when-data-isnt-an-all-unsigned-byte-p
   (implies (and (syntaxp (and (quotep data)
@@ -227,11 +226,10 @@
                   (if (not (equal index1 index2))
                       (bv-array-read width len index1 lst)
                     (bvchop width val))))
-  :hints
-  (("Goal" :in-theory (e/d (bvchop-when-i-is-not-an-integer
-                            bv-array-read
-                            ceiling-of-lg
-                            bv-array-write) ()))))
+  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
+                                     bv-array-read
+                                     ceiling-of-lg
+                                     bv-array-write))))
 
 ;maybe change bv-array-read to give 0 for an out-of-bounds index (after the index is chopped - not an issue for a power of 2?)
 ;there is also a version with work-hard around the first two hyps
@@ -247,13 +245,10 @@
                   (if (not (equal index1 index2))
                       (bv-array-read width len index1 lst)
                     (bvchop width val))))
-  :hints
-  (("Goal" :in-theory (e/d (bvchop-when-i-is-not-an-integer
-                            ceiling-of-lg
-                            bv-array-read
-;list::nth-with-large-index-2
-                            bv-array-write)
-                           ()))))
+  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
+                                     ceiling-of-lg
+                                     bv-array-read
+                                     bv-array-write))))
 
 ;this one has only one index and so only one bound hyp.  we'd prefer this one to fire first
 ;see also bv-array-read-of-bv-array-write-same-better-work-hard
@@ -276,7 +271,7 @@
                 (natp len))
            (equal (bv-array-read width len index data)
                   0))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 ;splits into cases
 ;does not require that the indices be in bounds
@@ -295,11 +290,10 @@
                         ;;out of bounds read is 0:
                         0)
                     (bv-array-read width2 len index1 lst))))
-  :hints (("Goal" :in-theory (e/d (bvchop-when-i-is-not-an-integer
-                                   ceiling-of-lg
-                                   bv-array-write
-                                   bv-array-read update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
+                                     ceiling-of-lg
+                                     bv-array-write
+                                     bv-array-read update-nth2))))
 
 (defthm bv-array-read-when-not-integerp-arg1-cheap
   (implies (not (integerp element-size))
@@ -463,9 +457,7 @@
                 (integerp len))
            (equal (bv-array-read width1 len index (bv-array-write width2 len index val lst))
                   (bvchop width1 val)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bv-array-write)
-                                  ()))))
-
+  :hints (("Goal" :in-theory (enable bv-array-read bv-array-write))))
 
 ;; ;drop?
 ;; (defthm endp-of-bv-array-write
@@ -532,7 +524,7 @@
                   (if (< key 1)
                       (bvchop element-size val)
                     (bvchop element-size (car lst)))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write-opener update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
 
 ;move
 (defthm car-of-bv-array-write-gen
@@ -694,8 +686,7 @@
                 (not (unsigned-byte-p (ceiling-of-lg len) index))) ;prevents loops
            (equal (bv-array-read width len index arr)
                   (bv-array-read width len (bvchop (ceiling-of-lg len) index) arr)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 ;; Replaces myif with bv-array-if
 (defthm bv-array-write-of-myif
@@ -704,8 +695,7 @@
                 (natp index))
            (equal (bv-array-write width len index val (myif test arr1 arr2))
                   (bv-array-write width len index val (bv-array-if width len test arr1 arr2))))
-  :hints (("Goal" :in-theory (e/d (bv-array-if bv-array-write update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-if bv-array-write update-nth2))))
 
 (defthm bv-arrayp-of-myif
   (equal (bv-arrayp element-width length (myif test val1 val2))
@@ -770,7 +760,7 @@
                test
                (bv-array-read element-size (bvchop size2 len1) index data)
                (bv-array-read element-size (bvchop size2 len2) index data)))
-  :hints (("Goal" :in-theory (enable boolif bvif))))
+  :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm bv-array-write-of-bv-array-read
   (implies (and (natp len)
@@ -841,10 +831,9 @@
   (equal (bv-array-read 1 2 index '(0 1))
          (getbit 0 (ifix index)))
   :hints (("Goal"
-           :in-theory (e/d (bv-array-read ;LIST::NTH-OF-CONS
-                            GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                            NTH-OF-CONS)
-                           ()))))
+           :in-theory (enable bv-array-read ;LIST::NTH-OF-CONS
+                              GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
+                              NTH-OF-CONS))))
 
 ;drop the getbit?
 (defthm array-reduction-1-0
@@ -869,9 +858,8 @@
                   ;(bvchop element-size (car data))
                   ))
   :hints (("Goal"
-           :in-theory (e/d (bv-array-read ;LIST::NTH-OF-CONS
-                                   )
-                           ()))))
+           :in-theory (enable bv-array-read ;LIST::NTH-OF-CONS
+                              ))))
 
 ;; ;bozo should we restrict this to constant arrays?
 ;; (DEFTHMd ARRAY-REDUCTION-WHEN-ALL-SAME-improved
@@ -1058,7 +1046,7 @@
                 (< i (len src)))
            (equal (BV-ARRAY-READ 8 (LEN (NTHCDR I SRC)) 0 (NTHCDR I SRC))
                   (BV-ARRAY-READ 8 (LEN src) i src)))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) ()))))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-READ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1067,4 +1055,3 @@
 (defun empty-bv-array (element-size len)
   (declare (ignore element-size))
   (repeat len 0))
-

@@ -90,7 +90,7 @@
                 (posp b))
            (equal (group2 c (ungroup b x))
                   (map-ungroup b (group2 a x))))
-  :hints (("Goal" :in-theory (e/d (ungroup map-ungroup group2 posp) ())
+  :hints (("Goal" :in-theory (enable ungroup map-ungroup group2 posp)
            :do-not '(generalize eliminate-destructors))))
 
 ;restrict to constants?
@@ -113,9 +113,7 @@
                 (posp b))
            (equal (group c (ungroup b x))
                   (map-ungroup b (group (/ c b) x))))
-  :hints (("Goal" :in-theory (e/d (posp
-                                   equal-of-0-and-mod)
-                                  ())
+  :hints (("Goal" :in-theory (enable posp equal-of-0-and-mod)
 ;           :cases ((equal b 1))
            :do-not '(generalize eliminate-destructors))))
 

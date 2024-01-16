@@ -1,7 +1,7 @@
 ; Rule about bvif together with other functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "bvsx")
 (include-book "bvmult")
 (include-book "bvshl")
+(include-book "kestrel/booleans/boolif" :dir :system)
 (local (include-book "bvplus"))
 
 ;let sizes differ?

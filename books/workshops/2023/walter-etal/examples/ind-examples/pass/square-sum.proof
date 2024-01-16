@@ -1,0 +1,114 @@
+(definec square-sum (n :nat) :nat
+  (if (== n 0)
+      1
+    (+ (expt 2 n) (square-sum (1- n)))))
+
+;; we want to show that the sum of the first n squares is equal to
+;; 2^(1+n)-1.
+(property (n :nat)
+  (== (square-sum n)
+      (1- (expt 2 (1+ n)))))
+
+Conjecture square-sum-equiv:
+(=> (natp n)
+    (== (square-sum n)
+        (1- (expt 2 (1+ n)))))
+
+Proof by: induction on (square-sum n)
+
+;; We could have used nat-ind, but will use square-sum to illustrate
+;; inducting with functions that are not data definitions.
+
+Contract Case 1:
+(=> (! (natp n))
+    (=> (natp n)
+        (== (square-sum n)
+            (1- (expt 2 (1+ n))))))
+
+Exportation:
+(=> (^ (! (natp n))
+       (natp n))
+    (== (square-sum n)
+        (1- (expt 2 (1+ n)))))
+
+Context:
+C1. (! (natp n))
+C2. (natp n)
+
+Derived Context:
+D1. nil { C1, C2 }
+
+QED
+     
+Base Case 1:
+(=> (^ (natp n)
+       (== n 0))
+    (== (square-sum n)
+        (1- (expt 2 (1+ n)))))
+
+Context:
+C1. (natp n)
+C2. (== n 0)
+
+Goal:
+(== (square-sum n)
+    (1- (expt 2 (1+ n))))
+
+Proof:
+(square-sum n)
+== { C2, eval }
+1
+== { C2, eval }
+(1- (expt 2 (1+ n)))
+
+QED
+
+Induction Case 1:
+(=> (^ (natp n)
+       (!= n 0)
+       (=> (natp (1- n))
+           (== (square-sum (1- n))
+               (1- (expt 2 (1+ (1- n)))))))
+    (=> (natp n)
+        (== (square-sum n)
+            (1- (expt 2 (1+ n))))))
+
+Exportation:
+(=> (^ (natp n)
+       (!= n 0)
+       (=> (natp (1- n))
+           (== (square-sum (1- n))
+               (1- (expt 2 (1+ (1- n)))))))
+    (== (square-sum n)
+        (1- (expt 2 (1+ n)))))
+
+Context:
+C1. (natp n)
+C2. (!= n 0)
+C3. (=> (natp (1- n))
+        (== (square-sum (1- n))
+            (1- (expt 2 (1+ (1- n))))))
+
+Derived Context:
+D1. (natp (1- n)) { C1, C2, Arith } ;; why does using c3 instead of c2 work here?
+D2. (== (square-sum (1- n))
+        (1- (expt 2 (1+ (1- n))))) { MP, C3, D1 }
+
+Goal:
+(== (square-sum n)
+    (1- (expt 2 (1+ n))))
+
+Proof:
+(square-sum n)
+== { def square-sum, C2 }
+(+ (expt 2 n) (square-sum (1- n)))
+== { D2 }
+(+ (expt 2 n) (1- (expt 2 (1+ (1- n)))))
+== { arith }
+(+ (expt 2 n) (1- (expt 2 n)))
+== { arith }
+(1- (expt 2 (1+ n)))
+
+QED
+
+QED

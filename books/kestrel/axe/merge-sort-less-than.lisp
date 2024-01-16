@@ -14,4 +14,4 @@
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 
 ;; will have all-rationalp as a guard
-(defmergesort merge-< merge-sort-< < rationalp)
+(defmergesort merge-sort-< merge-< < rationalp)
