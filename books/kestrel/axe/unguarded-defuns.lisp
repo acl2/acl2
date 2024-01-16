@@ -654,3 +654,17 @@
   (equal (bvashr-unguarded width x shift-amount)
          (bvashr width x shift-amount))
   :hints (("Goal" :in-theory (enable bvashr bvashr-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund ceiling-of-lg-unguarded (x)
+  (declare (xargs :guard t))
+  (if (integerp x)
+      (ceiling-of-lg x)
+    0))
+
+(defthm ceiling-of-lg-unguarded-correct
+  (equal (ceiling-of-lg-unguarded x)
+         (ceiling-of-lg x))
+  :hints (("Goal" :cases ((acl2-numberp x))
+           :in-theory (enable ceiling-of-lg ceiling-of-lg-unguarded))))
