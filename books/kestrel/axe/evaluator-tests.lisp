@@ -101,7 +101,7 @@
                              (MV T (UNARY-/-UNGUARDED ARG1))
                              (IF
                               (EQ 'CEILING-OF-LG FN)
-                              (MV T (CEILING-OF-LG ARG1))
+                              (MV T (CEILING-OF-LG-unguarded ARG1))
                               (IF
                                (EQ 'INTEGER-LENGTH FN)
                                (MV
@@ -1564,7 +1564,7 @@
                             (MV T (UNARY-/-UNGUARDED ARG1))
                             (IF
                              (EQ 'CEILING-OF-LG FN)
-                             (MV T (CEILING-OF-LG ARG1))
+                             (MV T (CEILING-OF-LG-unguarded ARG1))
                              (IF
                               (EQ 'INTEGER-LENGTH FN)
                               (MV
