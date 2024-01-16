@@ -245,15 +245,8 @@
                               total-steps
                               state))))))))
 
-(defconst *lifter-rules32-all*
-  (append (lifter-rules32)
-          (lifter-rules32-new)))
-
-(defconst *lifter-rules64-all*
-  (append (lifter-rules64)
-          (lifter-rules64-new)))
-
 ;; Returns (mv erp result-dag-or-quotep lifter-rules-used assumption-rules-used state).
+;; This is also called by the formal unit tester.
 (defun def-unrolled-fn-core (target
                              parsed-executable
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
@@ -403,7 +396,7 @@
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
        ;; Do the symbolic execution:
-       (lifter-rules (if 32-bitp *lifter-rules32-all* *lifter-rules64-all*))
+       (lifter-rules (if 32-bitp (lifter-rules32-all) (lifter-rules64-all)))
        (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
             (and non-existent-remove-rules

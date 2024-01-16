@@ -24,6 +24,7 @@
 
 ;; Most of these are just names of functions to open
 (defun instruction-rules ()
+  (declare (xargs :guard t))
   (append '(x86isa::gpr-arith/logic-spec-1 ;; dispatches based on operation
             x86isa::gpr-arith/logic-spec-2 ;; dispatches based on operation
             x86isa::gpr-arith/logic-spec-4 ;; dispatches based on operation
@@ -137,6 +138,7 @@
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
+  (declare (xargs :guard t))
   '(atom ;open to expose consp
     car-cons
     acl2::consp-of-cons
@@ -152,6 +154,7 @@
     ))
 
 (defun linear-memory-rules ()
+  (declare (xargs :guard t))
   '(
     ;; Open these read operations to RB, which then gets turned into READ (TODO: Turn these into READ directly?)
     x86isa::rml08
@@ -180,14 +183,17 @@
     ))
 
 (defun read-introduction-rules ()
+  (declare (xargs :guard t))
   '(mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read))
 
 (defun write-introduction-rules ()
+  (declare (xargs :guard t))
   '(mv-nth-1-of-wb-1-becomes-write
     mv-nth-1-of-wb-becomes-write))
 
 (defun read-byte-rules ()
+  (declare (xargs :guard t))
   '(read-byte-of-xw-irrel
     read-byte-when-program-at
     read-byte-of-set-flag
@@ -196,6 +202,7 @@
     ))
 
 (defun read-rules ()
+  (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
     integerp-of-read
     <-of-read-and-non-positive
@@ -210,6 +217,7 @@
     ))
 
 (defun write-rules ()
+  (declare (xargs :guard t))
   '(write-of-bvchop-arg3-gen
     xr-of-write-when-not-mem
     x86p-of-write
@@ -234,6 +242,7 @@
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG.
 (defun state-rules ()
+  (declare (xargs :guard t))
   '(
     ;x86isa::x86p-set-flag
     force ;todo: think about this
@@ -428,6 +437,7 @@
     ))
 
 (defun decoding-and-dispatch-rules ()
+  (declare (xargs :guard t))
   '(x86isa::two-byte-opcode-execute ;todo: restrict to constants?  ;big case split
     x86isa::64-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep ; axe can't eval this
     x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if-when-constants
@@ -467,6 +477,7 @@
 ))
 
 (defun x86-type-rules ()
+  (declare (xargs :guard t))
   '(x86isa::n01p-pf-spec64 ;targets unsigned-byte-p-of-pf-spec64
     x86isa::n01p-of-spec64 ;targets unsigned-byte-p-of-of-spec64
     x86isa::n01p-sf-spec64 ;targets unsigned-byte-p-of-sf-spec64
@@ -632,6 +643,7 @@
 
 ;; These are about if but are not 'if lifting' rules.
 (defun if-rules ()
+  (declare (xargs :guard t))
   '(acl2::if-nil-t
     acl2::if-of-not
     x86isa::if-of-if-same-arg2
@@ -640,6 +652,7 @@
 
 ;todo: try always including these?  these help with conditional branches
 (defun if-lifting-rules ()
+  (declare (xargs :guard t))
   '(x86isa::mv-nth-of-if          ;could restrict to when both branches are cons nests
    x86isa::equal-of-if-constants ;seems safe
    x86isa::equal-of-if-constants-alt ;seems safe
@@ -657,6 +670,7 @@
    x86isa::logext-of-if-arg2))
 
 (defun simple-opener-rules ()
+  (declare (xargs :guard t))
   '(x86isa::n08p$inline ;just unsigned-byte-p
     ; 64-bit-modep ; using rules about this instead, since this is no longer just true
     ))
@@ -684,6 +698,7 @@
 
 ;; these are for functions axe can't evaluate
 (defun constant-opener-rules ()
+  (declare (xargs :guard t))
   '(x86isa::zf-spec$inline-constant-opener
 
     x86isa::cf-spec8$inline-constant-opener
@@ -787,6 +802,7 @@
 
 ;todo: separate out the 64 but rules
 (defun segment-base-and-bounds-rules ()
+  (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
     segment-base-and-bounds-of-set-rsp
     segment-base-and-bounds-of-set-rbp
@@ -931,6 +947,7 @@
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
+  (declare (xargs :guard t))
   (append (symbolic-execution-rules)
           (acl2::base-rules)
           (acl2::type-rules)
@@ -1448,6 +1465,7 @@
 ;; Used in both versions of the lifter
 ;; TODO: Split into 32-bit and 64-bit rules:
 (defun assumption-simplification-rules ()
+  (declare (xargs :guard t))
   (append
    '(standard-state-assumption
      standard-state-assumption-32
@@ -1547,6 +1565,7 @@
 
 ;move?
 (defun myif-rules ()
+  (declare (xargs :guard t))
   (append '(acl2::myif-same-branches ;add to lifter-rules?
             acl2::myif-of-t-and-nil-when-booleanp
             acl2::myif-nil-t
@@ -1563,6 +1582,7 @@
 
 ;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
+  (declare (xargs :guard t))
   (append (lifter-rules-common)
           '(x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
@@ -1675,6 +1695,7 @@
 
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 (defun lifter-rules32-new ()
+  (declare (xargs :guard t))
   '(
     ACL2::BVCHOP-NUMERIC-BOUND
 ;    not-mv-nth-0-of-ea-to-la-of-cs
@@ -2209,7 +2230,13 @@
     write-to-segment-of-write-to-segment-included
     ))
 
+(defund lifter-rules32-all ()
+  (declare (xargs :guard t))
+  (append (lifter-rules32)
+          (lifter-rules32-new)))
+
 (defun lifter-rules64 ()
+  (declare (xargs :guard t))
   (append (lifter-rules-common)
           (read-introduction-rules)
           (write-introduction-rules)
@@ -3224,6 +3251,11 @@
     mv-nth-0-of-rme-size-of-set-undef
     ))
 
+(defund lifter-rules64-all ()
+  (declare (xargs :guard t))
+  (append (lifter-rules64)
+          (lifter-rules64-new)))
+
 ;; Try this rule first
 (table axe-rule-priorities-table 'read-of-write-disjoint -1)
 
@@ -3234,6 +3266,7 @@
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
 (defun low-level-rules-32 ()
+    (declare (xargs :guard t))
   (append (linear-memory-rules)
           (read-introduction-rules)
           (write-introduction-rules)
@@ -3361,11 +3394,13 @@
     ))
 
 (defun debug-rules32 ()
+  (declare (xargs :guard t))
   (append (debug-rules-common)
           '(not-mv-nth-0-of-add-to-*sp-gen
             mv-nth-1-of-add-to-*sp-gen)))
 
 (defun debug-rules64 ()
+  (declare (xargs :guard t))
   (append (debug-rules-common)
           (get-prefixes-openers)
           ;; todo: flesh out this list:
