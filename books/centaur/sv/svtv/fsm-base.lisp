@@ -143,7 +143,7 @@
 
   (defcong svex-envs-similar svex-envs-similar (base-fsm-step-env in prev-st x.nextstate) 1)
 
-  (defcong svex-envs-similar svex-envs-equivalent (base-fsm-step-env in prev-st x.nextstate) 2)
+  (defcong svex-envs-similar equal (base-fsm-step-env in prev-st x.nextstate) 2)
   
   (defcong svex-alist-eval-equiv svex-envs-equivalent (base-fsm-step-env in prev-st x.nextstate) 3))
   
@@ -170,9 +170,9 @@
     (equal (base-fsm-step ins (svex-env-reduce (svex-alist-keys x.nextstate) prev-st) x.nextstate)
            (base-fsm-step ins prev-st x.nextstate)))
 
-  (defcong svex-envs-similar svex-envs-equivalent (base-fsm-step in prev-st x.nextstate) 1)
+  (defcong svex-envs-similar equal (base-fsm-step in prev-st x.nextstate) 1)
 
-  (defcong svex-envs-similar svex-envs-equivalent (base-fsm-step in prev-st x.nextstate) 2)
+  (defcong svex-envs-similar equal (base-fsm-step in prev-st x.nextstate) 2)
   
   (defcong svex-alist-eval-equiv svex-envs-equivalent (base-fsm-step in prev-st x.nextstate) 3))
 
@@ -197,9 +197,9 @@
     (equal (base-fsm-step-outs ins (svex-env-reduce (svex-alist-keys (base-fsm->nextstate x)) prev-st) x)
            (base-fsm-step-outs ins prev-st x)))
 
-  (defcong svex-envs-similar svex-envs-equivalent (base-fsm-step-outs in prev-st x) 1)
+  (defcong svex-envs-similar equal (base-fsm-step-outs in prev-st x) 1)
 
-  (defcong svex-envs-similar svex-envs-equivalent (base-fsm-step-outs in prev-st x) 2)
+  (defcong svex-envs-similar equal (base-fsm-step-outs in prev-st x) 2)
   
   (defcong base-fsm-eval-equiv svex-envs-equivalent (base-fsm-step-outs in prev-st x) 3))
 
@@ -230,7 +230,7 @@
     (equal (base-fsm-final-state ins (svex-env-reduce (svex-alist-keys x.nextstate) prev-st) x.nextstate)
            (base-fsm-final-state ins prev-st x.nextstate)))
 
-  (defcong svex-envs-similar svex-envs-equivalent (base-fsm-final-state ins prev-st x.nextstate) 2)
+  (defcong svex-envs-similar equal (base-fsm-final-state ins prev-st x.nextstate) 2)
 
   (defcong svex-alist-eval-equiv svex-envs-equivalent (base-fsm-final-state ins prev-st x.nextstate) 3)
   
@@ -241,7 +241,7 @@
                                              (base-fsm-step (car ins) prev-st x.nextstate)
                                              x.nextstate))))
 
-  (defcong svex-envlists-similar svex-envs-equivalent (base-fsm-final-state ins prev-st x.nextstate) 1
+  (defcong svex-envlists-similar equal (base-fsm-final-state ins prev-st x.nextstate) 1
     :hints (("goal" :induct (base-fsm-final-st-ins-cong-ind ins ins-equiv prev-st x.nextstate))))
 
   (defcong svex-envs-equivalent svex-envlists-equivalent (cons a b) 1
@@ -356,7 +356,7 @@
                       (base-fsm-step-outs (car ins) initst svtv)
                       (base-fsm-step (car ins) initst (base-fsm->nextstate svtv))))))
 
-  (defcong svex-envs-similar svex-envlists-equivalent (base-fsm-eval ins prev-st x) 2)
+  (defcong svex-envs-similar equal (base-fsm-eval ins prev-st x) 2)
 
   (defcong base-fsm-eval-equiv svex-envlists-equivalent (base-fsm-eval ins prev-st x) 3)
   
@@ -368,7 +368,7 @@
                                                (base-fsm-step (car ins) prev-st (base-fsm->nextstate x))
                                                x)))))
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-eval ins prev-st x) 1
+  (defcong svex-envlists-similar equal (base-fsm-eval ins prev-st x) 1
     :hints (("goal" :induct (base-fsm-eval-ins-cong-ind ins ins-equiv prev-st x)))))
 
 
@@ -451,7 +451,7 @@
                       (base-fsm-step-outs (car ins) initst svtv)
                       (base-fsm-step (car ins) initst svtv)))))
 
-  (defcong svex-envs-similar svex-envlists-equivalent (base-fsm-eval-states ins prev-st x.nextstate) 2)
+  (defcong svex-envs-similar equal (base-fsm-eval-states ins prev-st x.nextstate) 2)
 
   (defcong svex-alist-eval-equiv svex-envlists-equivalent (base-fsm-eval-states ins prev-st x.nextstate) 3)
   
@@ -462,7 +462,7 @@
                                          (base-fsm-step (car ins) prev-st x.nextstate)
                                          x.nextstate))))
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-eval-states ins prev-st x.nextstate) 1
+  (defcong svex-envlists-similar equal (base-fsm-eval-states ins prev-st x.nextstate) 1
     :hints (("goal" :induct (base-fsm-eval-ins-cong-ind ins ins-equiv prev-st x.nextstate)
              :expand ((:free (ins) (base-fsm-eval-states ins prev-st x.nextstate)))))))
 
@@ -486,7 +486,7 @@
                                       default-car nthcdr)
             :induct (list (nthcdr n signals) (nthcdr n x)))))
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (svex-envlist-extract keys envs) 2)
+  (defcong svex-envlists-similar equal (svex-envlist-extract keys envs) 2)
 
   (defret len-of-<fn>
     (equal (len new-envs) (len keys))))
@@ -530,11 +530,11 @@
     :hints(("Goal" :in-theory (enable base-fsm-run))))
 
 
-  (defcong svex-envs-similar svex-envlists-equivalent (base-fsm-run ins prev-st x signals) 2)
+  (defcong svex-envs-similar equal (base-fsm-run ins prev-st x signals) 2)
 
   (defcong base-fsm-eval-equiv svex-envlists-equivalent (base-fsm-run ins prev-st x signals) 3)
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-run ins prev-st x signals) 1)
+  (defcong svex-envlists-similar equal (base-fsm-run ins prev-st x signals) 1)
 
   (defret len-of-<fn>
     (equal (len outs) (len signals))))
@@ -610,11 +610,11 @@
     :hints(("Goal" :in-theory (enable base-fsm-run))))
 
 
-  (defcong svex-envs-similar svex-envlists-equivalent (base-fsm-run-states ins prev-st x.nextstate signals) 2)
+  (defcong svex-envs-similar equal (base-fsm-run-states ins prev-st x.nextstate signals) 2)
 
   (defcong svex-alist-eval-equiv svex-envlists-equivalent (base-fsm-run-states ins prev-st x.nextstate signals) 3)
 
-  (defcong svex-envlists-similar svex-envlists-equivalent (base-fsm-run-states ins prev-st x.nextstate signals) 1)
+  (defcong svex-envlists-similar equal (base-fsm-run-states ins prev-st x.nextstate signals) 1)
 
   (defret len-of-<fn>
     (equal (len outs) (len signals))))

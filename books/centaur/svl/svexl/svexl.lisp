@@ -30,7 +30,8 @@
 
 (fty::deftypes
     svexl-node
-    :prepwork ((local
+    :prepwork ((local (in-theory (disable acl2::apply$-badgep-properties)))
+               (local
                 (defthm integerp-implies-4vecp
                     (implies (integerp x)
                              (4vec-p x))
@@ -38,10 +39,10 @@
                            :in-theory (e/d (4vec-p) ())))))
                (local (defthm car-of-svar-when-consp
                           (implies (and (sv::svar-p x)
-                                        (consp x)
-                                        (syntaxp (quotep v)))
-                                   (equal (equal (car x) v)
-                                          (equal v :var)))
+                                        (consp x))
+                                   (and (equal (equal (car x) v)
+                                               (equal v :var))
+                                        (not (integerp (car x)))))
                         :hints(("Goal" :in-theory (enable sv::svar-p)))))
                (local (defthm 4vec-not-svar-p
                           (implies (sv::svar-p x)
@@ -62,26 +63,24 @@
                         :rule-classes ((:type-prescription :typed-term (car (4vec-fix x)))))))
     (fty::defflexsum
         svexl-node
-        (:var
-         :short "A variable, which represents a @(see 4vec)."
-         :cond (if (atom x)
-                   (or (stringp x)
-                       (and x (symbolp x)))
-                   (eq (car x) :var))
-         :fields ((name :acc-body x :type sv::svar-p))
-         :ctor-body name)
-      (:quote
-       :short "A ``quoted constant'' @(see 4vec), which represents itself."
+        (:quote
+         :short "A ``quoted constant'' @(see 4vec), which represents itself."
+         :cond (if (consp x)
+                   (integerp (car x))
+                 (or (integerp x) (not x)))
+         :fields ((val :acc-body x
+                       :type 4vec))
+         :ctor-body val)
+      (:var
+       :short "A variable, which represents a @(see 4vec)."
        :cond (or (atom x)
-                 (integerp (car x)))
-       :fields ((val :acc-body x
-                     :type 4vec))
-       :ctor-body val)
+                 (eq (car x) :var))
+       :fields ((name :acc-body x :type sv::svar-p))
+       :ctor-body name)
       (:node
-       :cond (and (consp x)
-                  (consp (cdr x))
-                  (not (cddr x))
-                  (eq (car x) ':node))
+       :cond (and (consp (cdr x))
+                  (eq (car x) ':node)
+                  (not (cddr x)))
        :fields ((node-id :acc-body (cadr x) :type natp))
        :ctor-body  (hons ':node (hons node-id nil)))
       (:call
@@ -749,16 +748,15 @@
    (and stable-under-simplificationp
         '(:expand ((svex-p x)))))
   :progn t
-  (cond ((if (atom x)
-             (or (stringp x) (and x (symbolp x)))
-             (eq (car x) :var))
-         :var)
-        ((or (atom x) (integerp (car x)))
+  (cond ((if (consp x)
+             (integerp (car x))
+           (or (integerp x) (not x)))
          :quote)
-        ((and (consp x)
-              (consp (cdr x))
-              (not (cddr x))
-              (eq (car x) ':node))
+        ((or (atom x) (eq (car x) :var))
+         :var)
+        ((and (consp (cdr x))
+              (eq (car x) ':node)
+              (not (cddr x)))
          :node)
         (t :call)))
 

@@ -436,6 +436,7 @@
 
 (define lit-collect-superxor ((lit litp)
                               top
+                              (negate bitp)
                               (limit natp)
                               (superxor lit-listp)
                               aignet-refcounts aignet)
@@ -448,18 +449,19 @@
                (rem-limit natp :rule-classes :type-prescription))
   (b* ((lit (lit-fix lit))
        (superxor (lit-list-fix superxor))
-       ((when (or (int= (lit-neg lit) 1)
+       ((when (or ;; (int= (lit-neg lit) 1)
                   (not (int= (id->type (lit-id lit) aignet) (gate-type)))
                   (int= (id->regp (lit-id lit) aignet) 0) ;; and
                   (and (not top) (< 1 (get-u32 (lit-id lit) aignet-refcounts)))
                   (zp limit)))
-        (mv (cons lit superxor)
+        (mv (cons (lit-negate-cond lit negate) superxor)
             (if (zp limit) 0 (1- limit))))
+       (negate (b-xor negate (lit-neg lit)))
        ((mv superxor limit)
         (lit-collect-superxor (gate-id->fanin0 (lit-id lit) aignet)
-                              nil limit superxor aignet-refcounts aignet)))
+                              nil negate limit superxor aignet-refcounts aignet)))
     (lit-collect-superxor (gate-id->fanin1 (lit-id lit) aignet)
-                          nil limit superxor aignet-refcounts aignet))
+                          nil 0 limit superxor aignet-refcounts aignet))
   ///
   ;; (defthm true-listp-of-collect-superxor
   ;;   (implies (true-listp superxor)
@@ -487,8 +489,9 @@
 
   (defret collect-superxor-correct
     (equal (aignet-eval-parity res invals regvals aignet)
-           (acl2::b-xor (lit-eval lit invals regvals aignet)
-                        (aignet-eval-parity superxor invals regvals aignet)))
+           (acl2::b-xor negate
+                        (acl2::b-xor (lit-eval lit invals regvals aignet)
+                                     (aignet-eval-parity superxor invals regvals aignet))))
     :hints (("goal" :induct <call>
              :do-not-induct t
              :in-theory (e/d (eval-xor-of-lits)
@@ -496,7 +499,7 @@
              :expand ((:free (top) <call>)))
             (and stable-under-simplificationp
                  '(:expand ((lit-eval lit invals regvals aignet)
-                            (aignet-eval-parity (cons lit superxor) invals regvals aignet)
+                            (:free (lit) (aignet-eval-parity (cons lit superxor) invals regvals aignet))
                             (id-eval (lit-id lit) invals regvals aignet))))))
 
   (defret true-listp-of-<fn>
@@ -522,27 +525,31 @@
              (< (lits-max-id-val
                  (mv-nth 0 (lit-collect-superxor
                             (mk-lit id 0)
-                            t limit nil aignet-refcounts aignet)))
+                            t negate limit nil aignet-refcounts aignet)))
                 (nfix id)))
     :hints (("goal" :expand ((:free (use-muxes)
                               (lit-collect-superxor
                                (mk-lit id 0)
-                               t limit nil aignet-refcounts aignet)))
+                               t negate limit nil aignet-refcounts aignet)))
              :use ((:instance lits-max-id-val-of-lit-collect-superxor
                     (lit (gate-id->fanin0 id aignet))
                     (top nil)
+                    (negate (bfix negate))
                     (superxor nil))
                    (:instance lits-max-id-val-of-lit-collect-superxor
                     (lit (gate-id->fanin1 id aignet))
                     (top nil)
+                    (negate 0)
                     (superxor (mv-nth 0 (lit-collect-superxor
                                           (gate-id->fanin0 id aignet)
-                                          nil limit nil aignet-refcounts aignet)))
+                                          nil (bfix negate) limit nil aignet-refcounts aignet)))
                     (limit  (mv-nth 1 (lit-collect-superxor
                                        (gate-id->fanin0 id aignet)
-                                       nil limit nil aignet-refcounts aignet)))))
+                                       nil (bfix negate) limit nil aignet-refcounts aignet)))))
              :in-theory (e/d () (lits-max-id-val-of-lit-collect-superxor
                                  lit-collect-superxor)))
             (and stable-under-simplificationp
                  '(:in-theory (enable id-is-mux))))
     :rule-classes (:rewrite :linear)))
+
+

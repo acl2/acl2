@@ -1372,7 +1372,13 @@
                     (lhbit-var var idx)))
     :hints(("Goal" :in-theory (enable lhatom-bitproj)
             :induct <call>
-            :expand ((:free (idx) (lhs-bitproj idx x)))))))
+            :expand ((:free (idx) (lhs-bitproj idx x))))))
+
+  (defret <fn>-<-width
+    (implies var-index
+             (< var-index (lhs-width x)))
+    :hints(("Goal" :in-theory (enable lhs-width)))
+    :rule-classes :linear))
 
 
 
@@ -1711,6 +1717,27 @@
     :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
                                       alist-keys))))
 
+  (defret <fn>-lookup-consp
+    (implies (and (lhbit-case lhbit :var)
+                  (no-duplicatesp-equal (alist-keys (svtv-name-lhs-map-fix x))))
+             (consp (cdr (hons-assoc-equal (lhbit-var->name lhbit) x))))
+    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
+                                      hons-assoc-equal
+                                      alist-keys)
+            :induct t)
+           (and stable-under-simplificationp
+                '(:expand ((lhs-var/idx-find var idx (cdr (car x))))))))
+
+  (defret <fn>-lookup-width
+    (implies (and (lhbit-case lhbit :var)
+                  (no-duplicatesp-equal (alist-keys (svtv-name-lhs-map-fix x))))
+             (< (lhbit-var->idx lhbit)
+                (lhs-width (cdr (hons-assoc-equal (lhbit-var->name lhbit) x)))))
+    :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
+                                      hons-assoc-equal
+                                      alist-keys)))
+    :rule-classes :linear)
+  
   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 

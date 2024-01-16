@@ -2146,10 +2146,19 @@ for each usertype is stored in the res field.</p>"
        ((mv warnings elabindex new-generates)
         (vl-generates-finish-unparam x.generates elabindex warnings config))
 
-       (elabindex (vl-elabindex-undo))
        (new-scopeitem-blob (change-vl-genblob scopeitem-blob :generates new-generates))
 
        (new-x (vl-genblob-rejoin-scopeitems new-scopeitem-blob new-non-scopeitem-blob))
+
+       ;; Elaborate the whole genblob one last time to absorb any
+       ;; side-elaborations such as function declarations that have had entries
+       ;; added to their function-maps.
+       ((wmv ?ok2 warnings new-x elabindex)
+        (vl-genblob-elaborate new-x elabindex :reclimit config.elab-limit))
+
+       (elabindex (vl-elabindex-undo))
+
+       
        ;; update the record for this genblob in the elabindex
        (elabindex (vl-elabindex-push new-x))
        (elabindex (vl-elabindex-undo)))
@@ -3043,11 +3052,11 @@ scopestacks.</p>"
         (vl-unparameterize-main-list top-sigs nil 1000 elabindex ledger))
 
        (new-x1 (change-vl-design x
-                                :warnings warnings
                                 :mods new-mods
                                 :interfaces new-ifaces
                                 :classes new-classes
-                                :packages new-packages))
+                                :packages new-packages
+                                ))
        ;; We've unparameterized the parts of the
        ;; mods/interfaces/classes/packages that could possibly be referenced
        ;; from another place.  Now we go through one last time and elaborate
@@ -3055,17 +3064,35 @@ scopestacks.</p>"
        ;; In particular, this is needed to resolve calls of parameterized
        ;; classes' static methods from module assigns/alwayses, etc.
        (elabindex (vl-elabindex-init new-x1))
+
+       
        ((mv final-mods elabindex) (vl-finish-unparameterized-modules new-mods elabindex))
        ((mv final-ifaces elabindex) (vl-finish-unparameterized-interfaces new-ifaces elabindex))
        ((mv final-classes elabindex) (vl-finish-unparameterized-classes new-classes elabindex))
-       (new-x (change-vl-design new-x1
+       
+
+       (new-x (change-vl-design x
                                 :mods final-mods
                                 :interfaces final-ifaces
-                                :classes final-classes)))
+                                :classes final-classes))
 
+              ;; Why do we call design-elaborate-aux before unparameterizing modules,
+       ;; interfaces, & packages?  This skips those fields, so we're really
+       ;; only elaborating design-level functions, tasks, variables, types,
+       ;; paramdecls (though these should already be done), udps, and
+       ;; dpiimports.  We could perhaps get into trouble here since these could
+       ;; depend on packages and package parameters.
+       ((wmv ?ok1 warnings new-x elabindex)
+        (vl-design-elaborate-aux new-x elabindex :reclimit elablimit))
+
+       ((mv ?ok warnings elabindex new-packages)
+        (vl-packagelist-elaborate (vl-design->packages new-x) elabindex warnings))
+       (final-x (change-vl-design new-x :packages new-packages
+                                  :warnings warnings)))
+    ;; (cw "final elabindex scopes: ~x0~%" (vl-elabindex->scopes))
     (fast-alist-free donelist)
     (vl-free-namedb (vl-unparam-ledger->ndb ledger))
     (fast-alist-free (vl-unparam-ledger->instkeymap ledger))
     (vl-scopestacks-free)
-    (mv (vl-recover-modules-lost-from-elaboration :pre x :post new-x)
+    (mv (vl-recover-modules-lost-from-elaboration :pre x :post final-x)
         elabindex)))

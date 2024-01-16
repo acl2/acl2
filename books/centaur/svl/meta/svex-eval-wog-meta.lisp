@@ -780,7 +780,9 @@ was ~st seconds."))
        svex-alist-eval$
        svexl-eval$
        svexl-eval$-wog
-       svexl-node-eval$-wog))))
+       svexl-node-eval$-wog
+
+       bits))))
 
 (local
  (svex-eval-lemma-tmpl
@@ -923,6 +925,15 @@ was ~st seconds."))
 ;; rp-evl-of-svex-eval-meta
 
 (local
+ (defthm svex-ev-wog-formula-checks-implies-svex-reduce-formula-checks
+   (implies (svex-ev-wog-formula-checks state)
+            (svex-reduce-formula-checks state))
+   :hints (("Goal"
+            :in-theory (e/d (svex-reduce-formula-checks
+                             svex-ev-wog-formula-checks)
+                            ())))))
+
+(local
  (svex-eval-lemma-tmpl
   (defret svex-alist-eval-of-svex-alist-reduce-w/-env-correct-less-general
     (implies (and (sv::svex-alist-p svex-alist)
@@ -931,7 +942,9 @@ was ~st seconds."))
                   (rp::eval-and-all context a)
                   (rp::falist-consistent-aux env env-term)
                   (equal (svex-reduce-config->width-extns config) nil)
-                  (equal (svex-reduce-config->integerp-extns config) nil))
+                  (equal (svex-reduce-config->integerp-extns config) nil)
+                  (rp-evl-meta-extract-global-facts)
+                  (svex-reduce-formula-checks state))
              (equal (svex-alist-eval res-alist (rp-evlt env-term a))
                     (svex-alist-eval svex-alist (rp-evlt env-term a))))
     :fn svex-alist-reduce-w/-env
@@ -952,7 +965,9 @@ was ~st seconds."))
                   (rp::eval-and-all context a)
                   (rp::falist-consistent-aux env env-term)
                   (equal (svex-reduce-config->width-extns config) nil)
-                  (equal (svex-reduce-config->integerp-extns config) nil))
+                  (equal (svex-reduce-config->integerp-extns config) nil)
+                  (rp-evl-meta-extract-global-facts)
+                  (svex-reduce-formula-checks state))
              (equal (svex-eval (svex-reduce-w/-env svex) (rp-evlt env-term a))
                     (svex-eval svex (rp-evlt env-term a))))
     :fn svex-reduce-w/-env

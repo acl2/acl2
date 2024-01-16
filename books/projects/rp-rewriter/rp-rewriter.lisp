@@ -47,6 +47,7 @@
 (include-book "aux-functions")
 (include-book "rp-state-functions")
 (include-book "eval-functions")
+(include-book "std/strings/strsubst" :dir :system)
 
 (local
  (include-book "proofs/local-lemmas"))
@@ -1017,21 +1018,23 @@ returns (mv rule rules-rest bindings rp-context)"
       (('hard-error ('quote ctx) ('quote str) alist)
        (progn$
         (rp-state-print-rules-used rp-state)
-        (hard-error ctx str (rp-rw-fix-hard-error-alist alist))))
+        (hard-error ctx
+                    (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
+                    (rp-rw-fix-hard-error-alist alist))))
       (('fmt-to-comment-window ('quote &) ('quote &)
                                ('quote &) ('quote &) ('quote &))
        ;; if all arguments are quoted, then executable counterpart will be
        ;; triggered anyways, so dont do anything.
        nil)
-      (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 &
-                                                             list)
+      (('fmt-to-comment-window ('quote str)
+                               ('acl2::pairlis2 & list)
                                ('quote col)
                                ('quote evisc)
                                ('quote print-base))
        (progn$
         ;;(cw "here1 ~p0 ~%" term)
         (fmt-to-comment-window
-         str
+         (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
          (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list context))
          col evisc print-base)))
       (('fmt-to-comment-window ('quote str) alist
@@ -1039,7 +1042,8 @@ returns (mv rule rules-rest bindings rp-context)"
        (progn$
         ;;(cw "here2 ~p0 ~%" term)
         (fmt-to-comment-window
-         str (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
+         (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
+         (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
       (& nil))))
 
 (local
@@ -2157,7 +2161,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           term))
       rp-state))
     ((or (eq (car term) 'quote)
-         (eq (car term) 'list)) ;; a list instance is created by a meta rule,
+         #|(eq (car term) 'list)|#) ;; a list instance is created by a meta rule,
      ;; do not try to rewrite it again.
      (mv term rp-state))
     ((should-not-rw dont-rw);; exit right away if said to not rewrite

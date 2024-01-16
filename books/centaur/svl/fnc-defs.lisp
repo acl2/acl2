@@ -230,3 +230,12 @@
       (equal lst nil)
       (and (bitp (car lst))
            (bit-listp (cdr lst)))))
+
+
+(defmacro if*-exec (x y z)
+  `(mbe :logic (if* ,x ,y ,z)
+        :exec (if ,x ,y ,z)))
+
+(defmacro and*-exec (&rest x)
+  `(mbe :logic (and* ,@x)
+        :exec (and ,@x)))
