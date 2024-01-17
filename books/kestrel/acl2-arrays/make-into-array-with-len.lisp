@@ -17,7 +17,7 @@
 
 ;; Makes the ALIST, whose keys must be naturals, into an array named
 ;; ARRAY-NAME, which will have length LEN.  LEN must exceed the largest key in
-;; ALIST.  If LEN is greater than the largest key, the resulting array will
+;; ALIST.  If LEN is greater than one more than the largest key, the resulting array will
 ;; contain some slack space (empty slots) for the array to grow.
 ;rename make-into-array-with-slack?
 ;todo: add an option to reuse an existing array if large enough?
