@@ -1,7 +1,7 @@
 ; A tool to make an evaluator for a set of functions.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,6 +16,7 @@
 ;; embedded dags and does not know how to evaluate itself.  Uses a count to
 ;; ensure termination.  Returns an error flag as well as the result.
 
+(include-book "kestrel/utilities/fixnums" :dir :system)
 (include-book "make-evaluator-common")
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system) ;for unquote-list
@@ -28,8 +29,6 @@
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 ;; TODO: Consider adding special handling for BOOLIF and BVIF.
-
-(defconst *max-fixnum* (+ -1 (expt 2 60)))
 
 ;; Recognize a list where each element is either a symbol (representing a
 ;; function) or a pair of symbols (representing a function and an "unguarded"

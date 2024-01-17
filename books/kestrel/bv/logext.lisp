@@ -571,7 +571,7 @@
                 (< 1 n))
            (equal (logext n (* 2 x))
                   (* 2 (logext (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (logext) ()))))
+  :hints (("Goal" :in-theory (enable logext))))
 
 (defthm logext-of-expt-of-one-less
   (implies (posp size)
@@ -586,7 +586,7 @@
                 (< i size))
            (equal (logext size (* (expt 2 i) x))
                   (* (expt 2 i) (logext (- size i) x))))
-  :hints (("Goal" :in-theory (e/d (logext) ()))))
+  :hints (("Goal" :in-theory (enable logext))))
 
 (defthm logext-when-low-bits-known
   (implies (and (equal (bvchop 31 x) free)

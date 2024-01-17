@@ -78,6 +78,7 @@
 (include-book "bvminus-rules")
 (include-book "bvuminus")
 (include-book "bvmult")
+(include-book "bvmult-rules")
 (include-book "bvmod")
 (include-book "bvdiv")
 (include-book "bvdiv-rules")
@@ -179,6 +180,8 @@
 
 (include-book "validation-stp")
 (include-book "validation-smt-lib")
+
+(include-book "rtl")
 
 ;; (include-book "tests") ; not including this one because it just contains tests
 

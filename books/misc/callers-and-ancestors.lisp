@@ -2,7 +2,7 @@
 ; Written by Matt Kaufmann, December, 2010
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; This book provides utilities to answer the followign queries (as requested by
+; This book provides utilities to answer the following queries (as requested by
 ; Warren Hunt) for a given function, fn.  BUT NOTE the following catches:
 ; encapsulated functions and built-in :program mode functions are all treated
 ; as primitives, i.e., as not calling any functions; and, attachments (see :DOC

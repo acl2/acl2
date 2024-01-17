@@ -48,7 +48,7 @@
                           (expt 2 size))
                       (+ 1 (logtail size x) (logtail size y))
                     (+ (logtail size x) (logtail size y)))))
-  :hints (("Goal" :use (:instance logtail-of-plus-helper)
+  :hints (("Goal" :use logtail-of-plus-helper
            :in-theory (e/d (bvplus expt-of-+) ( logtail-of-plus-helper
                                       ;anti-bvplus
                                       )))))

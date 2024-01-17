@@ -264,7 +264,7 @@
              0
            (- (expt 2 size) (bvchop size x))))
   :hints (("Goal" :use ((:instance bvchop-when-size-is-not-natp (i (- x)))
-                        (:instance bvchop-of-minus-helper))
+                        bvchop-of-minus-helper)
            :in-theory (disable bvchop-when-size-is-not-posp
                                bvchop-when-size-is-not-posp
                                expt))))
@@ -319,7 +319,7 @@
                 (integerp z))
            (equal (bvchop m (+ z (bvchop n y)))
                   (bvchop m (+ (ifix y) z))))
-  :hints (("Goal" :use (:instance bvchop-sum-drop-bvchop) :in-theory (disable bvchop-sum-drop-bvchop))))
+  :hints (("Goal" :use bvchop-sum-drop-bvchop :in-theory (disable bvchop-sum-drop-bvchop))))
 
 (defthm bvchop-of-expt-hack
   (equal (bvchop (+ -1 n) (expt 2 n))
@@ -490,7 +490,7 @@
                  (natp n))
            (equal (bvchop m (* y (bvchop n x)))
                   (bvchop m (* y x))))
-  :hints (("Goal" :use (:instance bvchop-times-cancel-better)
+  :hints (("Goal" :use bvchop-times-cancel-better
            :in-theory (disable bvchop-times-cancel-better))))
 
 (defthm bvchop-of-+-of-expt
@@ -744,7 +744,7 @@
            (implies (unsigned-byte-p size (* (bvchop size x) (bvchop size y)))
                     (equal (bvchop size (* x y))
                            (* (bvchop size x) (bvchop size y)))))
-  :hints (("Goal" :use ((:instance bvchop-of-*-of-bvchop)
+  :hints (("Goal" :use (bvchop-of-*-of-bvchop
                         (:instance bvchop-of-*-of-bvchop-arg2
                                    (x (bvchop size x))))
            :in-theory (disable bvchop-of-*-of-bvchop

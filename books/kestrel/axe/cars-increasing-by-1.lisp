@@ -75,3 +75,11 @@
   :rule-classes ((:linear :trigger-terms ((car (car (last rev-dag))))))
   :hints (("Goal" :in-theory (enable weak-dagp-aux
                                      cars-increasing-by-1))))
+
+(defthm cars-increasing-by-1-of-acons
+  (equal (cars-increasing-by-1 (acons nodenum expr dag))
+         (if (consp dag)
+             (and (equal (car (first dag)) (+ 1 nodenum))
+                  (cars-increasing-by-1 dag))
+           t))
+  :hints (("Goal" :in-theory (enable cars-increasing-by-1))))

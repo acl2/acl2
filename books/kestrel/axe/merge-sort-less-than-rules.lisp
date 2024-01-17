@@ -28,6 +28,8 @@
 
 (in-theory (disable mv-nth)) ; so the rules fire
 
+;todo: move a lot of this stuff to books/kestrel/typed-lists-light/rational-lists.lisp
+
 ;move
 (defthm all-<-of-+-of-1
   (implies (and (syntaxp (not (quotep y)))
@@ -95,7 +97,7 @@
                 (all-<=-all x acc))
            (all-<=-all x (merge-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<
-                                     revappend-lemma
+                                     revappend-becomes-append-of-reverse-list
                                      all-<=-all))))
 
 (defthm all-<=-of-merge-<-arg1
@@ -104,7 +106,7 @@
               (all-<= l2 x)
               (all-<= acc x)))
   :hints (("Goal" :in-theory (enable merge-<
-                                     ;;revappend-lemma
+                                     ;;revappend-becomes-append-of-reverse-list
                                      all-<=))))
 
 (defthm all-<=-all-of-merge-<-arg1
@@ -113,7 +115,7 @@
               (all-<=-all l2 x)
               (all-<=-all acc x)))
   :hints (("Goal" :in-theory (enable merge-<
-                                     ;;revappend-lemma
+                                     ;;revappend-becomes-append-of-reverse-list
                                      all-<=-all))))
 
 (defthm all-<=-all-of-merge-sort-<
@@ -213,7 +215,7 @@
                                      sortedp-<=
                                      SORTEDP-<=
                                      <=-all
-                                     revappend-lemma
+                                     revappend-becomes-append-of-reverse-list
                                      ))))
 
 (defthm sortedp-<=-of-merge-sort-<
@@ -226,7 +228,7 @@
                 (nat-listp l2)
                 (nat-listp acc))
            (nat-listp (merge-< l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable merge-< revappend-lemma))))
+  :hints (("Goal" :in-theory (enable merge-< revappend-becomes-append-of-reverse-list))))
 
 (defthm nat-listp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (nat-listp lst)
@@ -283,7 +285,7 @@
 (defthm all-natp-of-mv-nth-0-of-split-list-fast
   (implies (all-natp lst)
            (all-natp (mv-nth 0 (split-list-fast lst))))
-  :hints (("Goal" :in-theory (e/d (split-list-fast) ()))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
 
 (defthm all-natp-of-mv-nth-1-of-split-list-fast-aux
   (implies (all-natp lst)
@@ -313,7 +315,7 @@
                 (<=-all a acc))
            (<=-all a (merge-< x y acc)))
   :hints (("Goal" :in-theory (enable merge-< <=-all
-                                     revappend-lemma))))
+                                     revappend-becomes-append-of-reverse-list))))
 
 (defthm <=-all-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (<=-all a lst)
@@ -360,7 +362,7 @@
   (equal (ALL-NATP (REVAPPEND LST LST0))
          (AND (ALL-NATP LST) (ALL-NATP LST0)))
   :hints (("Goal" :in-theory (e/d (all-natp
-                                   revappend-lemma)
+                                   revappend-becomes-append-of-reverse-list)
                                   (natp)))))
 
 (defthm all-natp-of-merge-<
@@ -375,7 +377,7 @@
                 (eqlable-listp l2)
                 (eqlable-listp acc))
            (eqlable-listp (merge-< l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable merge-< revappend-lemma))))
+  :hints (("Goal" :in-theory (enable merge-< revappend-becomes-append-of-reverse-list))))
 
 (defthm eqlable-listp-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (eqlable-listp acc)
@@ -404,7 +406,7 @@
                 (true-listp lst))
            (eqlable-listp (merge-sort-< lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (merge-sort-<) ()))))
+           :in-theory (enable merge-sort-<))))
 
 (defthm eqlable-listp-when-all-natp
   (implies (and (all-natp x)

@@ -539,7 +539,7 @@
            (typed-io-listp (cdr (assoc-equal key readable-files)) typ))
   :hints (("Goal" :in-theory (enable readable-files-p member-equal assoc-equal))))
 
-
+;; todo: flesh out this list:
 
 ;move up?
 (defthm state-p1-of-update-open-input-channels
@@ -582,6 +582,12 @@
                   (written-files-p x)))
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   (true-listp)))))
+
+(defthm state-p-of-update-acl2-oracle
+  (implies (and (state-p state)
+                (true-listp x))
+           (state-p (update-acl2-oracle x state)))
+  :hints (("Goal" :in-theory (enable state-p))))
 
 ;state-p could call this
 (defund global-table-p (x)

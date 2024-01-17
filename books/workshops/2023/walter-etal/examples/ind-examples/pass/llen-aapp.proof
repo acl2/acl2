@@ -1,0 +1,138 @@
+(definec aapp (a :tl b :tl) :tl
+  (if (endp a)
+      b
+    (cons (first a) (aapp (rest a) b))))
+
+(definec llen2 (x :tl) :nat
+  (if (endp x)
+      0
+    (+ 1 (llen2 (rest x)))))
+
+
+
+Problem 65:
+(implies (and (tlp x)
+              (tlp y))
+         (equal (llen2 (aapp x y))
+                (+ (llen2 x) (llen2 y))))
+
+Context:
+C1. (tlp x) 
+C2. (tlp y)
+
+Proof by: Induction on (aapp x y)
+
+Induction Case 0:
+(implies (not (and (tlp x)
+                   (tlp y)))
+         (implies (and (tlp x)
+                       (tlp y))
+                  (equal (llen2 (aapp x y))
+                         (+ (llen2 x) (llen2 y)))))
+
+Exportation:
+(implies (and (tlp x) 
+              (tlp y)
+              (not (and (tlp x)
+                        (tlp y))))
+         (equal (llen2 (aapp x y))
+                (+ (llen2 x) (llen2 y))))
+
+Context:
+C3. (not (and (tlp x)
+              (tlp y)))
+
+Derived Context:
+D1. nil { C1, C2, C3 }
+
+QED
+
+Induction Case 1:
+(implies (endp x)
+         (implies (and (tlp x)
+                       (tlp y))
+                  (equal (llen2 (aapp x y))
+                         (+ (llen2 x) (llen2 y)))))
+
+Exportation:
+(implies (and (tlp x) 
+              (tlp y)
+              (endp x))
+         (equal (llen2 (aapp x y))
+                (+ (llen2 x) (llen2 y))))
+
+Context:
+C3. (endp x)
+
+Derived Context:
+D1. (equal x nil) { C1, C3 }
+
+Goal: (equal (llen2 (aapp x y))
+                (+ (llen2 x) (llen2 y)))
+
+Proof:
+(llen2 (aapp x y))
+== { Def aapp, D1 }
+(llen2 y)
+== { Arith }
+(+ 0 (llen2 y))
+== { Def llen2, D1 }
+(+ (llen2 x) (llen2 y))
+
+QED
+
+Induction Case 2:
+(implies (and (not (endp x))
+              (implies (and (tlp (cdr x))
+                            (tlp y))
+                       (equal (llen2 (aapp (cdr x) y))
+                              (+ (llen2 (cdr x)) (llen2 y)))))
+         (implies (and (tlp x)
+                       (tlp y))
+                  (equal (llen2 (aapp x y))
+                         (+ (llen2 x) (llen2 y)))))
+
+Exportation:
+(implies (and (tlp x) 
+              (tlp y)
+              (not (endp x))
+              (implies (and (tlp (cdr x))
+                            (tlp y))
+                       (equal (llen2 (aapp (cdr x) y))
+                              (+ (llen2 (cdr x)) (llen2 y)))))
+         (equal (llen2 (aapp x y))
+                (+ (llen2 x) (llen2 y))))
+
+Context:
+C3. (not (endp x))
+C4. (implies (and (tlp (cdr x))
+                  (tlp y))
+             (equal (llen2 (aapp (cdr x) y))
+                    (+ (llen2 (cdr x)) (llen2 y))))
+
+Derived Context:
+D1. (tlp (cdr x)) { C1, C3, Def tlp }
+D2. (equal (llen2 (aapp (cdr x) y))
+           (+ (llen2 (cdr x)) (llen2 y))) { D1, C2, C4, MP }
+
+Goal: (equal (llen2 (aapp x y))
+                (+ (llen2 x) (llen2 y)))
+
+Proof:
+(llen2 (aapp x y))
+== { Def aapp, C3 }
+(llen2 (cons (car x) (aapp (cdr x) y)))
+== { Def llen2, car-cdr axioms }
+(+ 1 (llen2 (aapp (cdr x) y)))
+== { D2 }
+(+ 1 (+ (llen2 (cdr x)) (llen2 y)))
+== { Arith }
+(+ (+ 1 (llen2 (cdr x))) (llen2 y))
+== { Def llen2, C3, car-cdr axioms }
+(+ (llen2 (cons (car x) (cdr x))) (llen2 y))
+== { C3, car-cdr axioms }
+(+ (llen2 x) (llen2 y))
+
+QED
+
+QED

@@ -1,7 +1,7 @@
 ; An if-then-else function over bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,10 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-(include-book "kestrel/booleans/booleans" :dir :system) ;todo: reduce
+(include-book "kestrel/booleans/bool-fix-def" :dir :system)
+(include-book "kestrel/utilities/myif" :dir :system)
 (local (include-book "unsigned-byte-p"))
+(local (include-book "kestrel/booleans/bool-fix" :dir :system))
 
 ;note that the test is a boolean, not a bit vector
 (defund bvif (size test thenpart elsepart)
@@ -443,3 +445,15 @@
            (equal (myif test x y)
                   (bvif ysize test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
+
+(defthmd bvif-of-if-constants-nil-nonnil
+  (implies (and (syntaxp (quotep k))
+                (not (equal nil k)))
+           (equal (bvif size (if test nil k) tp ep)
+                  (bvif size (not test) tp ep))))
+
+(defthmd bvif-of-if-constants-nonnil-nil
+  (implies (and (syntaxp (quotep k))
+                (not (equal nil k)))
+           (equal (bvif size (if test k nil) tp ep)
+                  (bvif size test tp ep))))

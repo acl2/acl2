@@ -134,18 +134,6 @@
                   (bvshl 32 x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
 
-;move to library
-;also conside n > size (easy)
-(defthm unsigned-byte-p-of-bvshl-gen
-  (implies (and ;(< n size)
-                (<= amt size)
-                (natp amt)
-                (unsigned-byte-p (- n amt) x)
-                (natp n)
-                (natp size))
-           (unsigned-byte-p n (bvshl size x amt)))
-  :hints (("Goal" :in-theory (enable bvshl))))
-
 ;these undo the shifting/masking changes
 (in-theory (disable bvand-of-expt
                     bvand-128-hack

@@ -1,0 +1,151 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up a calculational proof of (tri x y z)  in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/ewd12xx/EWD1221b.PDF
+
+ There are some notable differences from the source.
+i) I have introduced the function intersect, that takes four points on the|#
+#|Euclidean plane : a,b,c and d, and returns the intersection of lines|#
+#|connecting a to b and c to d. I found that using it simplified the|#
+#|proof. Dijkstra used the fact that 2 points can be used to produce a third|#
+#|collinear point, a fact which we got from the intersection lemma.
+
+ii) In the tri-concluder lemma, I got rid of the requirement that a!=b. In|#
+#|doing so, I generalized the lemma and simplified the proof considerably.
+|#
+
+(defstub tri (* * *) => *)
+
+(skip-proofs
+ (property tri-type (x y z :all)
+   (booleanp (tri x y z))
+   :rule-classes ((:type-prescription) (:rewrite))))
+
+;; Postulate
+(skip-proofs
+ (property tri-1 (a b c :all)
+           (== (tri a b c)
+               (tri b c a))))
+
+;; Postulate
+(skip-proofs
+ (property tri-2 (a b c :all)
+           (== (tri a b c)
+               (tri c b a))))
+
+;; Corollary, derived by rewriting the above 2 properties
+(property tri-3 (a b c :all)
+           (== (tri a b c)
+               (tri a c b)))
+
+(defstub col (* * *) => *)
+
+(skip-proofs
+ (property col-type (x y z :all)
+   (booleanp (col x y z))
+   :rule-classes ((:type-prescription) (:rewrite))))
+
+;; Postulate
+(skip-proofs
+ (property col-1 (a b c :all)
+           (== (col a b c)
+               (col b c a))))
+
+;; Postulate
+(skip-proofs
+ (property col-2 (a b c :all)
+           (== (col a b c)
+               (col c b a))))
+
+;; Corollary, derived by rewriting the above 2 properties
+(property col-3 (a b c :all)
+           (== (col a b c)
+               (col a c b)))
+
+(skip-proofs
+ (property tri-concluder (a b c d :all)
+           (=> (^ (col a b c)
+                  ;; (!= a b) Ankit: do we need this?
+                  (tri a c d))
+               (tri a b d))))
+
+(defstub col-new-point (* *) => *)
+
+;; We require that col-new-point produces another point collinear to the first two.
+(skip-proofs
+ (property col-new-point-collinear (a b :all)
+           (col a b (col-new-point a b))))
+
+
+(defstub intersect (* * * *) => *)
+
+(skip-proofs
+ (property intersect-point-col (a b c d :all)
+           (^ (col a b (intersect a b c d))
+              (col c d (intersect a b c d)))))
+
+(property (p q r s x y z :all)
+          :proofs? nil
+          (=> (^ (tri p q r)
+                 (tri q r s)
+                 (tri r s p)
+                 (tri s p q)
+                 ;; Dijkstra says that the following are solved by x,y and z.
+                 ;; in order to ease this proof attempt, I am simply plugging in x y and z
+                 (^ (col p q x) (col r s x))
+                 (^ (col p r y) (col q s y))
+                 (^ (col p s z) (col q r z)))
+              (tri x y z)))
+
+Conjecture 0:
+(=> (^ (tri p q r)
+       (tri q r s)
+       (tri r s p)
+       (tri s p q)
+       (col p q x)
+       (col r s x)
+       (col p r y)
+       (col q s y)
+       (col p s z)
+       (col q r z))
+    (tri x y z))
+
+Context:
+C1. (tri p q r)
+C2. (tri q r s)
+C3. (tri r s p)
+C4. (tri s p q)
+C5. (col p q x)
+C6. (col r s x)
+C7. (col p r y)
+C8. (col q s y)
+C9. (col p s z)
+C10. (col q r z)
+
+Derived Context:
+D1. (col p x q) { C5, Lemma col-3 }
+D2. (tri p x r) { D1, C1, Lemma tri-concluder ((a p) (b x) (c q) (d r)) }
+D3. (tri x r p) { D2, Lemma tri-1 ((a p) (b x) (c r)) }
+D4. (col x s r) { C6, Lemma col-2 ((a x) (b s) (c r)) }
+D5. (tri x s p) { D4, D3, Lemma tri-concluder ((a x) (b s) (c r) ( d p)) }
+D6. (tri p s x) { D5, Lemma tri-2 ((a p) (b s) (c x)) }
+D7. (col p z s) { C9, Lemma col-3 ((a p) (b s) (c z)) }
+D8. (tri p z x) { D7, D6, Lemma tri-concluder ((a p) (b z) (c s) (d x)) }
+D9. (tri z x p) { D8, Lemma tri-1 ((a p) (b z) (c x)) }
+D10. (tri z p x) { D9, Lemma tri-3 ((a z) (b x) (c p)) }
+D11. (^ (col x y (intersect x y z p))
+        (col z p (intersect x y z p)))
+{ Lemma intersect-point-col ((a x) (b y) (c z) (d p)) }
+D12. (col z (intersect x y z p) p) { D11, Lemma col-3 ((a z) (b p) (c (intersect  x y z p)))}
+D13. (tri z (intersect x y z p) x)
+{ D12, D10, Lemma tri-concluder ((a z) (b (intersect x y z p)) (c p) (d x)) }
+D14. (tri x (intersect x y z p) z) { D13, Lemma tri-2 ((a x) (b (intersect x y z p)) (c z)) }
+D15. (tri x y z) { D11, D14, Lemma tri-concluder ((a x) (b y) (c (intersect x y z p)) (d z)) }
+
+Goal: (tri x y z)
+
+QED

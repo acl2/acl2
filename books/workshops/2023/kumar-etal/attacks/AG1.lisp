@@ -1,7 +1,7 @@
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t
 
 (in-package "ACL2S")
-(ld "attack.lisp")
+(include-book "attack")
 
 (definec alltopics () :lot
   '(AGG BLOCKS SUB1 SUB2 SUB3))
@@ -267,6 +267,8 @@
 (check= t (twpp *eth-twp*))
 
 ;; ---------------------- ATTACK ------------------------------
+#|
+"Some Tests with different network configurations"
 
 ; 53.06 seconds realtime, 50.89 seconds runtime
 ; (67,770,610,624 bytes allocated).
@@ -353,3 +355,5 @@
 ;;      t t t t t t t t t t t t t t t t t t t t
 ;;      t t t t t t t t t t t t t t t t t t t t)
 ;; since not displaying hbm events
+
+|#

@@ -59,24 +59,26 @@
       (if (not book-existsp)
           (prog2$ (er hard? 'replay-book-fn "The book ~x0 does not exist." book-path)
                   (mv :book-does-not-exist nil state))
+        (prog2$
+          (cw "Replaying ~s0:~%" book-path)
         ;; We load the .port file mostly so that #. constants mentioned in the book are defined:
-        (let ((state (load-port-file-if-exists book-path-no-extension state)))
-          (mv-let (erp events state)
-            (read-objects-from-book book-path state)
-            (if erp
-                (mv erp nil state)
+          (let ((state (load-port-file-if-exists book-path-no-extension state)))
+            (mv-let (erp events state)
+              (read-objects-from-book book-path state)
+              (if erp
+                  (mv erp nil state)
               ;; We set the CBD so that the book is replayed in its own directory:
-              (mv-let (erp val state)
-                (set-cbd-fn dir state)
-                (declare (ignore val))
-                (if erp
-                    (mv erp nil state)
-                  (let ((state (widen-margins state)))
-                    (mv-let (erp state)
-                      (submit-and-time-events events print state)
-                      (let ((state (unwiden-margins state)))
+                (mv-let (erp val state)
+                  (set-cbd-fn dir state)
+                  (declare (ignore val))
+                  (if erp
+                      (mv erp nil state)
+                    (let ((state (widen-margins state)))
+                      (mv-let (erp state)
+                        (submit-and-time-events events print state)
+                        (let ((state (unwiden-margins state)))
                         ;; No error:
-                        (mv erp '(value-triple :replay-succeeded) state)))))))))))))
+                          (mv erp '(value-triple :replay-succeeded) state))))))))))))))
 
 ;; This has no effect on the world, because all the work is done in make-event
 ;; expansion and such changes do not persist.

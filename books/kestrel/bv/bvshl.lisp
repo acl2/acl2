@@ -12,7 +12,9 @@
 (in-package "ACL2")
 
 (include-book "bvcat-def")
+(include-book "slice-def")
 (local (include-book "bvcat"))
+(local (include-book "unsigned-byte-p"))
 
 ;often we will let this open to bvcat
 ;we expect (<= shift-amount width)
@@ -64,6 +66,26 @@
                 (<= amt size)
                 (natp size))
            (unsigned-byte-p size (bvshl size x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+(defthm unsigned-byte-p-of-bvshl-gen
+  (implies (and (<= size size2)
+                (<= amt size)
+                (natp amt)
+                (integerp size2)
+                (natp size))
+           (unsigned-byte-p size2 (bvshl size x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+;also consider n > size (easy)
+(defthm unsigned-byte-p-of-bvshl-other
+  (implies (and ;(< n size)
+                (<= amt size)
+                (natp amt)
+                (unsigned-byte-p (- n amt) x)
+                (natp n)
+                (natp size))
+           (unsigned-byte-p n (bvshl size x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
 
 ; a version that puts a bvchop around x to help us simplify stuff
@@ -147,4 +169,38 @@
                 (<= shift-amount 64))
            (equal (bvshl 64 x shift-amount)
                   (bvshl-cases-term 64)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+;gen the size
+(defthm equal-of-bvshl-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep k2)))
+                (natp amt)
+                (< amt 32))
+           (equal (equal k (bvshl 32 k2 amt))
+                  (and (unsigned-byte-p 32 k)
+                       (equal 0 (bvchop amt k))
+                       (equal (slice 31 amt k)
+                              (bvchop (- 32 amt) k2)))))
+  :hints (("Goal" :in-theory (e/d (bvshl)
+                                  (;bvcat-of-minus-becomes-bvshl
+                                   )))))
+
+;todo: gen, or change bvshl to always return a bv, or change the bvchop-identity rule to know about bvshl
+(defthm bvchop-of-bvshl-same
+  (implies (and (natp size)
+                (< amt size)
+                (natp amt))
+           (equal (bvchop size (bvshl size x amt))
+                  (bvshl size x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+;new!
+(defthm bvchop-of-bvshl
+  (implies (and (<= size1 size2)
+                (natp size1)
+                (natp size2)
+                (natp amt))
+           (equal (bvchop size1 (bvshl size2 x amt))
+                  (bvshl size1 x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))

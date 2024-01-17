@@ -23,6 +23,7 @@
 (include-book "definec" :ttags :all)
 (include-book "cons-size")
 (include-book "properties")
+(include-book "base-properties")
 (include-book "check-equal")
 
 (include-book "std/strings/top" :dir :system)

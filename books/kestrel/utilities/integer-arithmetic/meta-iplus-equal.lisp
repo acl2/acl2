@@ -82,7 +82,7 @@
 (defun cancel_iplus-equal (x)
   (declare (xargs :guard (pseudo-termp x)))
   (if (and (consp x)
-	   (eq (car x) 'equal))
+           (eq (car x) 'equal))
       (cond
        ((and (consp (cadr x))
              (eq (car (cadr x)) 'binary-i+)

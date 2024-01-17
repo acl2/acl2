@@ -1,7 +1,7 @@
 ; Recognizing a sorted list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,12 +25,24 @@
            (sortedp-<= (cdr x)))
   :hints (("Goal" :in-theory (enable sortedp-<=))))
 
-(defthmd <=-of-first-and-second-when-sortedp
+(defthmd <=-of-car-and-cadr-when-sortedp-<=
   (implies (and (sortedp-<= x)
                 (consp (cdr x)))
-           (<= (first x) (second x)))
+           (<= (car x) (cadr x)))
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthmd <=-of-car-and-cadr-when-sortedp-<=-linear
+  (implies (and (sortedp-<= x)
+                (consp (cdr x)))
+           (<= (car x) (cadr x)))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable sortedp-<=))))
 
 (defthm sortedp-<=-of-singleton
   (sortedp-<= (list x))
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthm sortedp-<=-when-not-consp-of-cdr
+  (implies (not (consp (cdr x)))
+           (sortedp-<= x))
   :hints (("Goal" :in-theory (enable sortedp-<=))))

@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -39,10 +39,9 @@
 (include-book "equivs")
 (include-book "rebuild-literals")
 (include-book "dag-array-printing")
-;(include-book "splitting")
-;(include-book "elim")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
+(include-book "kestrel/booleans/boolxor" :dir :system) ;since this book knows about boolxor
 (include-book "dag-size-sparse")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -178,35 +177,39 @@
 ;; Currently only 'equal and 'iff are supported as equivs.
 ;; No entries are needed here for IF, MYIF, or BOOLIF, because all Axe provers handle them specially.
 ;; We could drop BVIF except the simple provers do not (yet) handle it specially.
+;; This is a fast-alist.
 (defconst *equiv-alist*
-  (acons 'iff ; outer equiv that must be preserved
-         (acons 'not '(iff)
-                (acons 'iff '(iff iff)
-                       (acons 'implies '(iff iff)
-                              (acons 'bool-to-bit '(iff)
-                                     (acons 'bool-fix$inline '(iff)
+  (make-fast-alist
+   (acons 'iff ; outer equiv that must be preserved
+          (make-fast-alist
+           (acons 'not '(iff)
+                  (acons 'iff '(iff iff)
+                         (acons 'implies '(iff iff)
+                                (acons 'bool-to-bit '(iff)
+                                       (acons 'bool-fix$inline '(iff)
                                             ;; TODO: Remove this?  A BVIF in an IFF context is just T:
                                             ;; (acons 'bvif '(equal iff equal equal)
-                                            (acons 'boolor '(iff iff)
-                                                   (acons 'boolxor '(iff iff)
-                                                          (acons 'booland '(iff iff)
-                                                                 nil)))
+                                              (acons 'boolor '(iff iff)
+                                                     (acons 'boolxor '(iff iff)
+                                                            (acons 'booland '(iff iff)
+                                                                   nil)))
                                             ;;)
-                                            )))))
-         (acons 'equal ; outer equiv that must be preserved
+                                              ))))))
+          (acons 'equal ; outer equiv that must be preserved
                 ;; We only include things here for which we can do better than using
                 ;; an equiv of EQUAL for all arguments:
-                (acons 'not '(iff)
-                       (acons 'iff '(iff iff)
-                              (acons 'implies '(iff iff)
-                                     (acons 'bool-to-bit '(iff)
-                                            (acons 'bool-fix$inline '(iff)
-                                                   (acons 'bvif '(equal iff equal equal)
-                                                          (acons 'boolor '(iff iff)
-                                                                 (acons 'boolxor '(iff iff)
-                                                                        (acons 'booland '(iff iff)
-                                                                               nil)))))))))
-                nil)))
+                 (make-fast-alist
+                  (acons 'not '(iff)
+                         (acons 'iff '(iff iff)
+                                (acons 'implies '(iff iff)
+                                       (acons 'bool-to-bit '(iff)
+                                              (acons 'bool-fix$inline '(iff)
+                                                     (acons 'bvif '(equal iff equal equal)
+                                                            (acons 'boolor '(iff iff)
+                                                                   (acons 'boolxor '(iff iff)
+                                                                          (acons 'booland '(iff iff)
+                                                                                 nil))))))))))
+                 nil))))
 
 (thm
  (equiv-alistp *equiv-alist*))
@@ -756,7 +759,7 @@
 ;;            )
 ;;       (mv expr dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;     (if (variablep expr) ; BOZO this matches a nodenum too.  is that an error here?
-;;         (let ((possible-index (lookup-eq expr dag-variable-alist))) ;BOZO use hashing?
+;;         (let ((possible-index (lookup-in-dag-variable-alist expr dag-variable-alist))) ;BOZO use hashing?
 ;;           (if possible-index
 ;;               ;; if it's already present...
 ;;               (mv possible-index dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -767,7 +770,7 @@
 ;;                 dag-parent-array
 ;;                 dag-constant-alist
 ;;                 (if (not dont-add-permanently)
-;;                     (acons expr dag-len dag-variable-alist)
+;;                     (add-to-dag-variable-alist expr dag-len dag-variable-alist)
 ;;                   dag-variable-alist))))
 ;;       (if (all-consp (fargs expr)) ;; "constant" case
 ;;           (let ((possible-index (lookup-equal expr dag-constant-alist))) ;BOZO use hashing?
@@ -1405,49 +1408,67 @@
      (cw ")~%"))))
 
 ;; Prints as a term if that term would not be too big.
-(defund print-negated-literal-nicely (literal-nodenum dag-array-name dag-array dag-len)
+(defund print-negated-literal-nicely (literal-nodenum dag-array-name dag-array dag-len no-print-fns)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (natp literal-nodenum)
-                              (< literal-nodenum dag-len))))
-  (let ((term-size (nfix (size-of-node literal-nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
-    (if (< term-size 10000)
-        (let ((term (dag-to-term-aux-array dag-array-name dag-array literal-nodenum)))
-          (if (and (call-of 'not term)
-                   (consp (cdr term)))
-              ;; strip the not:
-              (cw "~x0~%" (farg1 term))
-            ;; add a not:
-            (cw "~x0~%" `(not ,term))))
-      (print-negated-literal literal-nodenum dag-array-name dag-array dag-len))))
+                              (< literal-nodenum dag-len)
+                              (symbol-listp no-print-fns))))
+  (let* ((expr (aref1 dag-array-name dag-array literal-nodenum))
+         (core-expr (if (and (consp expr)
+                             (eq 'not (ffn-symb expr))
+                             (consp (dargs expr))
+                             (not (consp (darg1 expr))) ; check for nodenum
+                             )
+                        (aref1 dag-array-name dag-array (darg1 expr))
+                      expr)))
+    (if (and (consp core-expr) (member-eq (ffn-symb core-expr) no-print-fns))
+        (cw "..~%") ; don't print
+      (let ((term-size (nfix (size-of-node literal-nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
+        (if (< term-size 10000)
+            (let ((term (dag-to-term-aux-array dag-array-name dag-array literal-nodenum)))
+              (if (and (call-of 'not term)
+                       (consp (cdr term)))
+                  ;; strip the not:
+                  (cw "~x0~%" (farg1 term))
+                ;; add a not:
+                (cw "~x0~%" `(not ,term))))
+          (print-negated-literal literal-nodenum dag-array-name dag-array dag-len))))))
 
-(defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len)
-  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (all-natp literal-nodenums)
-                              (true-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))))
-  (if (endp literal-nodenums)
-      nil
-    (progn$ (print-negated-literal-nicely (first literal-nodenums) dag-array-name dag-array dag-len)
-            (cw "~%")
-            (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len))))
-
-;recall that the case is the negation of all the literals
-;fixme similar name to print-negated-literal-list
-(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective print-as-clausesp)
+(defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len no-print-fns)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
-                              (booleanp print-as-clausesp))))
+                              (symbol-listp no-print-fns))))
+  (if (endp literal-nodenums)
+      nil
+    (progn$ (print-negated-literal-nicely (first literal-nodenums) dag-array-name dag-array dag-len no-print-fns)
+            (cw "~%")
+            (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len no-print-fns))))
+
+;recall that the case is the negation of all the literals
+;fixme similar name to print-negated-literal-list
+(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective print-as-clausesp
+                                                no-print-fns ; we don't print literals that are calls of these (after stripping nots)
+                                                )
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (all-natp literal-nodenums)
+                              (true-listp literal-nodenums)
+                              (all-< literal-nodenums dag-len)
+                              (booleanp print-as-clausesp)
+                              (symbol-listp no-print-fns))))
   (if print-as-clausesp
       (progn$ (cw "~s0 clause:~%(OR " case-adjective)
-             ;; warning: can blow up:
+              ;; warning: can blow up:
+              ;; todo: should this respect the no-print-fns?  maybe not, if this is for debugging
               (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
               (cw ")~%"))
     (progn$
-     (cw "(Negated lits (~x0) for ~s1 case:~%" (len literal-nodenums) case-adjective)
-     (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len)
-     (cw ")~%"))))
+      (cw "(Negated lits (~x0) for ~s1 case" (len literal-nodenums) case-adjective)
+      (and no-print-fns (cw " (NOTE: Not printing calls to ~x0)" no-print-fns))
+      (cw ":~%")
+      (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len no-print-fns)
+      (cw ")~%"))))
 
 (defthm <-of-+-1-of-maxelem
   (implies (and (all-< lst x)
@@ -1586,8 +1607,10 @@
   (and (symbol-alistp options)
        (subsetp-eq (strip-cars options) '(:no-splitp ;whether to split into cases
                                           :print-as-clausesp ;whether to print cases as clauses
+                                          :no-print-fns
                                           ))
-       (booleanp (lookup-equal :print-as-clausesp options))))
+       (booleanp (lookup-equal :print-as-clausesp options))
+       (symbol-listp (lookup-equal :no-print-fns options))))
 
 (defthm simple-prover-optionsp-forward-to-symbol-alistp
   (implies (simple-prover-optionsp options)
@@ -1599,6 +1622,18 @@
   (implies (simple-prover-optionsp options)
            (booleanp (lookup-equal :print-as-clausesp options)))
   :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-forward-to-symbol-list-of-lookup-equal-of-no-print-fns
+  (implies (simple-prover-optionsp options)
+           (symbol-listp (lookup-equal :no-print-fns options)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-of-acons-of-no-print-fns
+  (implies (simple-prover-optionsp options)
+           (equal (simple-prover-optionsp (acons :no-print-fns no-print-fns options))
+                  (symbol-listp no-print-fns)))
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 
 (defthm axe-tree-listp-of-wrap-all

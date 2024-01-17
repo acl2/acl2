@@ -1,7 +1,7 @@
 ; Rules about IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,25 +22,36 @@
 
 (defthmd if-of-t
   (equal (if t thenpart elsepart)
-         thenpart)
-  :hints (("Goal" :in-theory (enable if))))
+         thenpart))
 
 (defthmd if-when-non-nil-constant
   (implies (and (syntaxp (quotep test))
                 test)
            (equal (if test thenpart elsepart)
-                  thenpart))
-  :hints (("Goal" :in-theory (enable if))))
+                  thenpart)))
 
 (defthmd if-of-nil
   (equal (if nil thenpart elsepart)
-         elsepart)
-  :hints (("Goal" :in-theory (enable if))))
+         elsepart))
 
 (defthmd if-of-not
   (equal (if (not test) x y)
-         (if test y x))
-  :hints (("Goal" :in-theory (enable if))))
+         (if test y x)))
+
+(defthmd if-nil-t
+  (equal (if test nil t)
+         (not test)))
+
+(defthmd if-of-t-and-nil-when-booleanp
+  (implies (booleanp x)
+           (equal (if x t nil)
+                  x)))
+
+(defthm if-x-x-y-when-booleanp
+  (implies (and (syntaxp (not (quotep x))) ; avoid loops
+                (booleanp x))
+           (equal (if x x y)
+                  (if x t y))))
 
 ;; When rewriting an IF in an IFF context (e.g., when it appears in the test of
 ;; another IF), replace (if test t nil) with just the test.  This was needed
@@ -49,10 +60,9 @@
   (iff (if test t nil)
        test))
 
-(defthmd if-of-t-and-nil-when-booleanp
-  (implies (booleanp x)
-           (equal (if x t nil)
-                  x)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd equal-of-if-arg1
   (equal (equal (if test x y) z)
@@ -81,3 +91,20 @@
                   (if test
                       (equal z x)
                     (equal z y)))))
+
+;; Enable, for backchaining?  Will it even fire?
+(defthmd not-of-if
+  (equal (not (if test tp ep))
+         (if test (not tp) (not ep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd if-of-equal-and-t-and-not-equal-diff
+  (implies (not (equal v1 v2))
+           (equal (if (equal v1 x) t (not (equal v2 x)))
+                  (not (equal v2 x)))))
+
+(defthmd if-of-equal-and-nil-and-equal-diff
+  (implies (not (equal v1 v2))
+           (equal (if (equal v1 x) nil (equal v2 x))
+                  (equal v2 x))))

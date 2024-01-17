@@ -34,7 +34,7 @@
                                          0 ;initial dag-len
                                          (make-empty-array dag-parent-array-name 1000)
                                          nil  ;empty dag-constant-alist
-                                         nil  ;empty dag-variable-alist
+                                         (empty-dag-variable-alist)
                                          dag-array-name dag-parent-array-name
                                          ))
        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
@@ -137,7 +137,7 @@
                                     0 ;initial dag-len
                                     (make-empty-array dag-parent-array-name 1000)
                                     nil  ;empty dag-constant-alist
-                                    nil  ;empty dag-variable-alist
+                                    (empty-dag-variable-alist)
                                     dag-array-name dag-parent-array-name
                                     ))
 

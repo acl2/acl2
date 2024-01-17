@@ -1,0 +1,112 @@
+#|
+
+ Author: Pete Manolios
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD10xx/EWD1073.html
+
+
+
+ As next example we show how taking the maximum distributes over taking the minimum. Denoting the maximum of x and y by x↑y and their minimum by x↓y, the theorem to be proved is that for all x,y,z.
+
+ (5) 	x↑(y↓z)=(x↑y) ↓ (x↑z).
+
+ We use for the definition of ↑ and ↓ that for all a,b,w
+
+ (6) 	w ≥ a↑b     ≡    w≥a ∧ w≥b
+
+ (7) 	w ≥ a↓b    ≡    w≥a ∨ w≥b
+
+ and in view of the above we prove equality by using
+
+ (8) 	a = b     ≡    (∀w :: w≥a ≡ w≥b)
+
+ To demonstrate (5), we observe for any x,y,z,w
+
+ 	w ≥ x↑(y↓z)
+ = 	{ (6) with a,b := x,(y↓z) }
+ 	w ≥ x  ∧  w ≥ y↓z
+ = 	{ (7) with a,b := x,z }
+ 	w ≥ x  ∧  (w ≥ y  ∨  w ≥ z)
+ = 	{ predicate calculus, in particular: ∧ distributes over ∨}
+ 	(w ≥ x  ∧  w ≥ y)  ∨  (w ≥ x  ∧  w ≥ z)
+ = 	{ (6) with a,b := x,y and a,b := x,z}
+ 	w ≥ x↑y  ∨  w ≥ x↑z
+ = 	{ (7) with a,b := (x↑y),(x↑z) }
+ 	w  ≥  (x↑y)↓(x↑z) ,
+
+ which, in view of (8), proves (5).
+
+|#
+
+(encapsulate
+ ( ((up * *) => *)
+   ((dn * *) => *) )
+
+ (local 
+   (definec up (a b :rational) :rational
+     (if (> a b) a b)))
+
+ (local
+   (definec dn (a b :rational) :rational
+     (if (> a b) b a)))
+
+ (property up-rational (a b :rational)
+   (rationalp (up a b)))
+ 
+ (property dn-rational (a b :rational)
+   (rationalp (dn a b)))
+
+ (property >=-up (w a b :rational)
+   (== (>= w (up a b))
+       (^ (>= w a) (>= w b))))
+ 
+ (property >=-dn (w a b :rational)
+   (== (>= w (dn a b))
+       (v (>= w a) (>= w b)))))
+ 
+(property (w x y z :rational)
+  (== (>= w (up x (dn y z)))
+      (>= w (dn (up x y) (up x z)))))
+
+Conjecture ewd-1073-up-dn:
+(=> (^ (rationalp w)
+       (rationalp x)
+       (rationalp y)
+       (rationalp z))
+    (== (>= w (up x (dn y z)))
+        (>= w (dn (up x y) (up x z)))))
+
+Context:
+C1. (rationalp w)
+C2. (rationalp x)
+C3. (rationalp y)
+C4. (rationalp z)
+
+Derived Context:
+D1. (rationalp (dn y z)) { C3, C4, Lemma dn-rational ((a y) (b z)) }
+D2. (rationalp (up x y)) { C2, C3, Lemma up-rational ((a x) (b y)) }
+D3. (rationalp (up x z)) { C2, C4, Lemma up-rational ((a x) (b z)) }
+
+Goal: (== (>= w (up x (dn y z)))
+          (>= w (dn (up x y) (up x z))))
+
+Proof: 
+(>= w (up x (dn y z)))
+== { C1, C2, D1, Lemma >=-up ((a x) (b (dn y z))) }
+(^ (>= w x) (>= w (dn y z)))
+== { C1, C3, C4, Lemma >=-dn }
+(^ (>= w x) (v (>= w y) (>= w z)))
+== { PL }
+(v (^ (>= w x) (>= w y)) (^ (>= w x) (>= w z)))
+== { C2, C3, Lemma >=-up ((a x) (b y)) }
+(v (>= w (up x y)) (^ (>= w x) (>= w z)))
+== { C2, C4, Lemma >=-up ((a x) (b z)) }
+(v (>= w (up x y)) (>= w (up x z)))
+== { C1, D2, D3, Lemma >=-dn ((a (up x y)) (b (up x z))) }
+(>= w (dn (up x y) (up x z)))
+
+QED
+

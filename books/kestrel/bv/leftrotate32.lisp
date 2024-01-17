@@ -116,7 +116,7 @@
                 (natp amt))
            (equal (slice high low (leftrotate32 amt x))
                   (slice (- high amt) (- low amt) x)))
-  :hints (("Goal" :in-theory (e/d (leftrotate leftrotate32) ()))))
+  :hints (("Goal" :in-theory (enable leftrotate leftrotate32))))
 
 (defthmd bvchop-of-leftrotate32-both
   (implies (and (<= size 32)

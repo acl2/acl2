@@ -1,3 +1,7 @@
+; Copyright (C) 2016, ForrestHunt, Inc.
+; Written by Matt Kaufmann and J Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This file contains the events mentioned in the Examples section of the paper
 ; under development, ``Limited Second Order Functionality in a First Order
 ; Setting''.
@@ -189,7 +193,7 @@
 ; badge for russell and the fact:
 
 ;   (tamep-functionp (car args))
-;  --> 
+;  -->
 ;   (apply$-userfn 'russell args) = (russell (car args) (cadr args))
 
 ; So to use the warrant we must prove (tamep-functionp (car '(russell
@@ -352,7 +356,7 @@
   (implies (and (force (ok-fnp fn))
                 (all (collect lst fn) 'ACL2-NUMBERP))
            (equal (foldr lst `(LAMBDA (X Y)
-                                (IF (EQUAL Y 'NIL) 
+                                (IF (EQUAL Y 'NIL)
                                     (,fn X)
                                     (MAX (,fn X) Y)))
                          nil)

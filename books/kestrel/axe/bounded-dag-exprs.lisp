@@ -172,6 +172,18 @@
            (< (nth n (dargs expr)) nodenum))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp <-OF-NTH-WHEN-BOUNDED-DARG-LISTP))))
 
+;; Not tight.
+;; Disabled since hung on <
+(defthmd not-<-of-nth-of-dargs
+  (implies (and (bounded-dag-exprp nodenum expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (car expr)))
+                (not (consp (nth n (dargs expr)))))
+           (not (< nodenum (nth n (dargs expr)))))
+  :hints (("Goal" :use (:instance <-of-nth-of-dargs)
+           :in-theory (disable <-of-nth-of-dargs))))
+
 (defthm symbolp-of-car-when-bounded-dag-exprp
   (implies (bounded-dag-exprp nodenum expr) ;nodenum is a free var
            (symbolp (car expr)))

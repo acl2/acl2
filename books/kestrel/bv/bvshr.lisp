@@ -38,12 +38,20 @@
                   (bvchop width x)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-;; TODO: gen
 (defthm unsigned-byte-p-of-bvshr
   (implies (and (natp amt)
                 (<= amt size)
                 (integerp size))
            (unsigned-byte-p size (bvshr size x amt)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
+(defthm unsigned-byte-p-of-bvshr-gen
+  (implies (and (<= size size2)
+                (<= amt size)
+                (natp amt)
+                (integerp size2)
+                (integerp size))
+           (unsigned-byte-p size2 (bvshr size x amt)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
 (defthm bvchop-of-bvshr-same
@@ -53,7 +61,7 @@
                   (bvshr width x shift-amount)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-(defthm bvchop-of-bvshr
+(defthm bvchop-of-bvshr-becomes-slice
   (implies (and (integerp width)
                 (integerp shift-amount))
            (equal (bvchop n (bvshr width x shift-amount))
@@ -62,6 +70,19 @@
                           (slice (+ -1 n shift-amount) shift-amount x)
                           (slice (+ -1 width) shift-amount x))
                     0)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
+;yuck?
+;changes the width depending on the shift amount
+(defthmd bvchop-of-bvshr-new
+  (implies (and (< size1 size2)
+                (natp size1)
+                (natp size2)
+                (natp amt))
+           (equal (bvchop size1 (bvshr size2 x amt))
+                  (if (<= size1 (- size2 amt))
+                      (bvshr (+ size1 amt) x amt)
+                    (bvshr size2 x amt))))
   :hints (("Goal" :in-theory (enable bvshr))))
 
 (defthmd bvshr-rewrite-for-constant-shift-amount

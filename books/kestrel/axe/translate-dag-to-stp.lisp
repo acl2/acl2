@@ -71,6 +71,7 @@
 ;(include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system) ; for newline-string
 (include-book "kestrel/utilities/temp-dirs" :dir :system)
+(include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 ;(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
@@ -109,10 +110,10 @@
 ;;            (integerp (maxelem x)))
 ;;   :hints (("Goal" :in-theory (enable nat-listp maxelem))))
 
-(defthmd integer-listp-when-nat-listp
-  (implies (nat-listp x)
-           (integer-listp x))
-  :hints (("Goal" :in-theory (enable integer-listp))))
+;; (defthmd integer-listp-when-nat-listp
+;;   (implies (nat-listp x)
+;;            (integer-listp x))
+;;   :hints (("Goal" :in-theory (enable integer-listp))))
 
 (defthm nat-listp-forward-to-all-integerp
   (implies (nat-listp x)
@@ -141,12 +142,6 @@
 ;;                 (posp k))
 ;;            (consp x))
 ;;   :rule-classes :forward-chaining)
-
-(defthm integerp-of-if
-  (equal (integerp (if test tp ep))
-         (if test
-             (integerp tp)
-           (integerp ep))))
 
 (in-theory (disable (:e nat-to-string))) ;to avoid errors being printed in proofs
 
@@ -829,9 +824,7 @@
                               (nodenum-type-alistp nodenum-type-alist)
                               (symbolp dag-array-name)
                               (constant-array-infop constant-array-info))
-                  :guard-hints (("Goal" :in-theory (e/d ()
-                                                        ( ;;max
-                                                         natp))
+                  :guard-hints (("Goal" :in-theory (disable natp)
                                  :do-not '(generalize eliminate-destructors))))
            (ignore dag-len) ; only used in the guard
            )
@@ -2086,8 +2079,7 @@
 (defund make-stp-range-assertions (nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
-                                 :in-theory (e/d (axe-typep empty-typep list-typep most-general-typep)
-                                                 ())))))
+                                 :in-theory (enable axe-typep empty-typep list-typep most-general-typep)))))
   (if (endp nodenum-type-alist)
       nil
     (let* ((entry (first nodenum-type-alist))
@@ -2232,6 +2224,7 @@
                                  filename
                                  cut-nodenum-type-alist
                                  constant-array-info
+                                 print
                                  state)
   (declare (xargs :stobjs state
                   :guard (and (string-treep translated-query-core)
@@ -2244,9 +2237,9 @@
                               (stringp filename)
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (constant-array-infop constant-array-info)
-                              )))
+                              (print-levelp print))))
   (prog2$
-   (cw "  ~s0~%" filename)
+   (and (print-level-at-least-tp print) (cw "  ~s0~%" filename))
    (mv-let (translation constant-array-info opened-paren-count)
      (translate-nodes-to-stp nodenums-to-translate
                              dag-array-name
@@ -2279,6 +2272,7 @@
                                                filename
                                                cut-nodenum-type-alist
                                                constant-array-info
+                                               print
                                                state)))
          (w state))
   :hints (("Goal" :in-theory (e/d (write-stp-query-to-file) (w)))))
@@ -2310,7 +2304,7 @@
                           state)
   (declare (xargs :guard (and (stringp input-filename)
                               (stringp output-filename)
-                              ;;(booleanp print)
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep))
@@ -2325,7 +2319,7 @@
     (if (not (eql 0 status)) ;;todo: do we still need to do all these checks?
         (if (eql 143 status)
             ;;exit status 143 seems to indicate max-conflicts (why?!  perhaps it's 128+15 where 15 represents the TERM signal)
-            (prog2$ (cw "!! STP timed out !!")
+            (prog2$ (and print (cw "!! STP timed out !!")) ; todo: there is also a timeout case below
                     (mv *timedout* state))
           (if (eql 201 status)
               (progn$ (er hard? 'call-stp-on-file "!! ERROR: Unable to find STP (define an STP environment var or add its location to your path) !!")
@@ -2340,13 +2334,13 @@
                     (mv *error* state))
           ;; Check whether the output file contains "Valid."
           (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
-              (prog2$ (and print (cw "  STP said Valid."))
+              (prog2$ (and (print-level-at-least-tp print) (cw "  STP said Valid."))
                       (mv *valid* state))
             ;; Test whether chars end with "Invalid.", perhaps preceded by a printed counterexample.
             (if (and (<= 9 (len chars)) ;9 is the length of "Invalid." followed by newline - todo make a function 'char-list-ends-with'
                      (equal (nthcdr (- (len chars) 9) chars)
                             '(#\I #\n #\v #\a #\l #\i #\d #\. #\Newline))) ;;Look for "Invalid."
-                (b* ((- (and print (cw "  STP said Invalid.~%")))
+                (b* ((- (and (print-level-at-least-tp print) (cw "  STP said Invalid.~%")))
                      ;; Print the counterexample (TODO: What if it is huge?):
                      (counterexamplep-chars (butlast chars 9))
 ;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
@@ -2442,6 +2436,7 @@
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               ;;(consp nodenums-to-translate) ;think
                               (stringp base-filename)
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
@@ -2461,7 +2456,7 @@
         (maybe-make-temp-dir state))
        (base-filename (concatenate 'string temp-dir-name "/" base-filename))
        (base-filename (maybe-shorten-filename base-filename))
-       (- (and print (cw "(Calling STP ~s0 (max-conflicts ~x1):~%" extra-string max-conflicts)))
+       (- (and (print-level-at-least-tp print) (cw "(Calling STP ~s0 (max-conflicts ~x1):~%" extra-string max-conflicts)))
        (stp-input-filename (string-append base-filename ".cvc"))
        (stp-output-filename (string-append base-filename ".out"))
        ;;write the STP file...
@@ -2473,6 +2468,7 @@
                                  stp-input-filename
                                  cut-nodenum-type-alist
                                  constant-array-info
+                                 print
                                  state))
        ((when erp)
         (er hard? 'prove-query-with-stp "Unable to write the STP input file: ~s0 before calling STP." stp-input-filename)
@@ -2528,7 +2524,7 @@
        ;;           )
        ;;          (and print (cw ")")) ;matches "(Calling STP"
        ;;          (mv *error* state)))
-       (- (and print (cw ")~%"))) ;matches "(Calling STP"
+       (- (and (print-level-at-least-tp print) (cw ")~%"))) ;matches "(Calling STP"
        )
     ;;no error:
     (mv result state)))
@@ -2618,7 +2614,8 @@
                               (natp max-conflicts)
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (all-< (strip-cars cut-nodenum-type-alist) dag-len)
-                              (string-treep extra-asserts))
+                              (string-treep extra-asserts)
+                              (print-levelp print))
                   :stobjs state))
   (mv-let (translated-expr constant-array-info)
     (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)

@@ -52,6 +52,7 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 
@@ -95,13 +96,6 @@
             (equal (natp (+ (- x) y))
                    (<= x y)))
    :hints (("Goal" :in-theory (enable natp)))))
-
-(local
- (defthm integerp-of-if
-   (equal (integerp (if test tp ep))
-          (if test
-              (integerp tp)
-            (integerp ep)))))
 
 ;move
 ; can help when backchaining
@@ -1417,7 +1411,7 @@
            (new-dag-parent-array-name 'normalize-xors-new-parent-array)
            (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
            (new-dag-constant-alist nil)
-           (new-dag-variable-alist nil)
+           (new-dag-variable-alist (empty-dag-variable-alist))
            ;; indicates what each node in the old-dag becomes in the new-dag:
            (translation-array (make-empty-array 'translation-array old-dag-len)))
       (prog2$ (and print
@@ -1732,36 +1726,6 @@
 
 ;; (skip- proofs (verify-guards RESOLVE-REFS-TO-CONSTANTS2))
 
-;; (defun add-as-parent-for-nodes (parent children parent-array)
-;;   (if (endp children)
-;;       parent-array
-;;     (let* ((current-parents (aref1 'parent-array parent-array (car children)))
-;;            (new-parents (cons parent current-parents)))
-;;       (add-as-parent-for-nodes parent
-;;                                (cdr children)
-;;                                (aset1 'parent-array parent-array (car children) new-parents)))))
-
-;; (skip- proofs (verify-guards add-as-parent-for-nodes))
-
-;; (defun make-dag-parent-array-with-name (n len dag-array parent-array)
-;;   (declare (xargs :measure (+ 1 (nfix (- len n)))
-;;                   ))
-;;   (if (or (not (natp n))
-;;           (not (natp len))
-;;           (>= n len))
-;;       parent-array
-;;     (let ((expr (aref1 'dag-array dag-array n)))
-;;       (if (or (variablep expr)
-;;               (fquotep expr))
-;;           (make-dag-parent-array-with-name (+ 1 n) len dag-array parent-array)
-;;         (let* ((args (dargs expr))
-;;                (node-args (keep-non-quoteps-tail args nil)))
-;;           (make-dag-parent-array-with-name (+ 1 n)
-;;                              len
-;;                              dag-array
-;;                              (add-as-parent-for-nodes n node-args parent-array)))))))
-
-;; (skip- proofs (verify-guards make-dag-parent-array-with-name))
 
 ;; ;kill
 ;; (defun add-bitxor-nest-to-dag-array (leaves)

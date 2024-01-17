@@ -32,7 +32,7 @@
 ;; to later unassume the replacement of B, unless we've already unassumed the
 ;; replacement of A...  We could instead address this by a repeated lookup.
 
-;; See also node-replacement-array2.lisp.
+;; See also node-replacement-array3.lisp.
 
 (local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
                    assoc-equal
@@ -424,7 +424,7 @@
                   *nil*
                 *t* ; any non-nil constant is equivalent to t
                 )
-            res ; a replacement nodenum (this should be rare, but perhaps we just simplified something and replaced it with nodenum using the node-replament-array, and are now replacing again)
+            res ; a replacement nodenum (this should be rare, but perhaps we just simplified something and replaced it with nodenum using the node-replacement-array, and are now replacing again)
             ))))))
 
 (defthm dargp-of-apply-node-replacement-array-bool
@@ -486,6 +486,58 @@
                                   (index nodenum))
            :in-theory (e/d (apply-node-replacement-array-bool)
                            (type-of-aref1-when-bounded-node-replacement-arrayp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns DARG (indicating no replacement) or a new darg with to replace DARG.
+;; The result is equivalent to DARG under iff (but not necessarily equal), given the information in the node-replacement-array.
+;; This is just a wrapper that handles the quotep case.
+(defund apply-node-replacement-array-bool-to-darg (darg node-replacement-array node-replacement-count)
+  (declare (xargs :guard (and (dargp darg)
+                              (natp node-replacement-count)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (consp darg) ;; checks for quotep
+      darg ;; already a constant, so do not replace
+    (apply-node-replacement-array-bool darg node-replacement-array node-replacement-count)))
+
+(defthm dargp-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (dargp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
+;; Use consp as the normal form
+(defthm natp-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (equal (natp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count))
+                  (not (consp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count))))))
+
+(defthm dargp-less-than-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp-less-than darg bound) ; in case no replacement happens
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (dargp-less-than (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)
+                            bound))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
+(defthm <-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (not (consp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)))
+                (dargp-less-than darg bound) ; in case no replacement happens
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (< (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)
+              bound))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
 
 ;;;
 ;;; add-node-replacement-entry-and-maybe-expand
@@ -681,6 +733,7 @@
 ;; Turns ASSUMPTION into an alist mapping terms to replacement terms or *non-nil*.
 ;; Extends ACC.
 ;; TODO: What else should we handle here (ifs that represent conjunctions, negated disjunctions?
+;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
 (defun term-replacement-alist-for-assumption (assumption known-booleans acc)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-booleans)
@@ -696,7 +749,7 @@
         (quote ;can this happen?
          (prog2$ (cw "NOTE: term-replacement-alist-for-assumption is skipping constant assumption ~x0.~%" assumption)
                  acc))
-        (equal ;fixme consider more sophisticated tests to decide whether to turn around the assumption?
+        (equal ; todo: consider more sophisticated tests to decide whether to turn around the assumption?
          (let ((x (farg1 assumption))
                (y (farg2 assumption)))
            (if (and (quotep x) (quotep y))
