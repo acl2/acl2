@@ -668,3 +668,24 @@
          (ceiling-of-lg x))
   :hints (("Goal" :cases ((acl2-numberp x))
            :in-theory (enable ceiling-of-lg ceiling-of-lg-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun logext-unguarded (size i)
+  (declare (xargs :guard t))
+  (if (integerp size)
+      (if (not (posp size))
+          ;; unusual case:
+          (if (equal (getbit 0 (ifix i)) 0) 0 -1)
+        ;; usual case:
+        (logext size (ifix i)))
+    (if (not (acl2-numberp size))
+        ;; unusual case:
+        (if (equal (getbit 0 (ifix i)) 0) 0 -1)
+      ;; unusual case:
+      (if (equal 0 (if (integerp i) (getbit 0 i) 0)) 0 -1))))
+
+(defthm logext-unguarded-correct
+  (equal (logext-unguarded size i)
+         (logext size i))
+  :hints (("Goal" :in-theory (enable logext logext-unguarded))))
