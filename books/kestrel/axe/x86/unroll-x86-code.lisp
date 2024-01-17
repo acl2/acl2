@@ -125,7 +125,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
@@ -139,7 +139,8 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp memoizep)
-                              (natp total-steps))
+                              (natp total-steps)
+                              (member-eq rewriter '(:basic :legacy)))
                   :mode :program
                   :stobjs (state)))
   (if (zp steps-left)
@@ -152,19 +153,34 @@
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
+         (limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)) ; todo: pass around
          ((mv erp dag-or-quote state)
-          (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
-                          :exhaustivep t
-                          :rule-alist rule-alist
-                          :assumptions assumptions
-                          :monitor rules-to-monitor
-                          :use-internal-contextsp use-internal-contextsp
-                          ;; pass print, so we can cause rule hits to be printed:
-                          :print print ; :brief ;nil
-                          ;; :print-interval 10000 ;todo: pass in
-                          :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
-                          :memoizep memoizep
-                          :check-inputs nil))
+          (if (eq :legacy rewriter)
+              (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                              :exhaustivep t
+                              :rule-alist rule-alist
+                              :assumptions assumptions
+                              :monitor rules-to-monitor
+                              :use-internal-contextsp use-internal-contextsp
+                              ;; pass print, so we can cause rule hits to be printed:
+                              :print print ; :brief ;nil
+                              ;; :print-interval 10000 ;todo: pass in
+                              :limits limits
+                              :memoizep memoizep
+                              :check-inputs nil)
+            (mv-let (erp result)
+              (acl2::simplify-dag-basic dag
+                                        assumptions
+                                        nil ; interpreted-function-alist
+                                        limits
+                                        rule-alist
+                                        t ; count-hints ; todo: think about this
+                                        print
+                                        (acl2::known-booleans (w state))
+                                        rules-to-monitor
+                                        t ; normalize-xors
+                                        memoizep)
+              (mv erp result state))))
          ((when erp) (mv erp nil state))
          ((mv elapsed state) (acl2::real-time-since start-real-time state))
          (- (cw " This limited run took ")
@@ -241,7 +257,7 @@
                        state)))
               (repeatedly-run (- steps-left steps-for-this-iteration)
                               step-increment
-                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
+                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
                               total-steps
                               state))))))))
 
@@ -265,6 +281,7 @@
                              monitor
                              print
                              print-base
+                             rewriter
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
@@ -286,7 +303,8 @@
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
-                              (member print-base '(10 16)))
+                              (member print-base '(10 16))
+                              (member-eq rewriter '(:basic :legacy)))
                   :stobjs (state)
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
@@ -406,7 +424,7 @@
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil state))
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw " (Lifting took ")
@@ -506,7 +524,7 @@
         (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
           output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base state))
+          step-limit step-increment memoizep monitor print print-base :legacy state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
