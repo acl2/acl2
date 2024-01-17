@@ -684,12 +684,6 @@
   :hints (("Goal" :in-theory (e/d (getbit slice logtail acl2::expt-of-+ ifix bvchop)
                                   (acl2::bvchop-1-becomes-getbit)))))
 
-;gen and move
-(defthm evenp-of-bvchop
-  (equal (evenp (bvchop 32 x))
-         (equal 0 (getbit 0 x)))
-  :hints (("Goal" :in-theory (e/d (getbit slice bvchop evenp) (acl2::bvchop-1-becomes-getbit)))))
-
 ;; Shows that the division can't be too positive
 ;; todo: gen the 2 but watch for the one weird case
 (defthm not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
@@ -1205,6 +1199,7 @@
            (not (equal (+ negoffset (rsp x86)) text-offset)))
   :hints (("Goal" :in-theory (enable separate))))
 
+;could do it when either arg is constant?
 (defthm slice-of-bvand-of-constant
   (implies (and (syntaxp (and (quotep x)
                               (quotep high)
@@ -1219,15 +1214,15 @@
                          (slice high low x) ; gets computed
                          (slice high low y))))
   :hints (("Goal" :in-theory (e/d (bvand)
-                                  (acl2::logand-of-bvchop-becomes-bvand-alt ;loop
-                                   acl2::logand-of-bvchop-becomes-bvand ;loop
+                                  (;acl2::logand-of-bvchop-becomes-bvand-alt ;loop
+                                   ;acl2::logand-of-bvchop-becomes-bvand ;loop
                                    )))))
 
 (def-constant-opener x86isa::!prefixes->seg$inline)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: drop
+;todo: drop?
 (defthm bvchop-of-bool-to-bit
   (implies (posp n)
            (equal (bvchop n (bool-to-bit bool))

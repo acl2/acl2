@@ -66,13 +66,13 @@
 ;;            :in-theory (e/d (unsigned-byte-p bvcount)
 ;;                            (logcount-bound)))))
 
-(defthm evenp-of-bvchop
-  (implies (posp size)
-           (equal (evenp (bvchop size x))
-                  (equal 0 (getbit 0 x))))
-  :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit)
-                                  ( SLICE-BECOMES-GETBIT
-                                    BVCHOP-1-BECOMES-GETBIT)))))
+;; (defthm evenp-of-bvchop
+;;   (implies (posp size)
+;;            (equal (evenp (bvchop size x))
+;;                   (equal 0 (getbit 0 x))))
+;;   :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit)
+;;                                   ( SLICE-BECOMES-GETBIT
+;;                                     BVCHOP-1-BECOMES-GETBIT)))))
 
 (defthm bvcount-bound
   (implies (natp size)

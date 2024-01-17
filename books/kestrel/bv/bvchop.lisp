@@ -22,6 +22,7 @@
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/mod-and-expt"))
+(local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 
 ;drop?
 (in-theory (disable unsigned-byte-p))
@@ -839,3 +840,10 @@
                                   (s2 freesize)
                                   (s1 size))
            :in-theory (disable <-of-bvchop-and-bvchop-same))))
+
+(defthm evenp-of-bvchop
+  (implies (and (< 1 n)
+                (integerp n))
+           (equal (evenp (bvchop n x))
+                  (equal 0 (bvchop 1 x))))
+  :hints (("Goal" :in-theory (enable bvchop))))

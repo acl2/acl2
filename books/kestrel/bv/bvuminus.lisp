@@ -189,3 +189,11 @@
            :in-theory (e/d (bvuminus getbit)
                            (bvchop-1-becomes-getbit
                             slice-becomes-getbit)))))
+
+;can loop
+;restrict to constant width?
+(defthmd bvuminus-of-1-arg2
+  (implies (natp width)
+           (equal (bvuminus width 1)
+                  (- (expt 2 width) 1)))
+  :hints (("Goal" :in-theory (enable bvuminus))))

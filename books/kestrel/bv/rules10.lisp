@@ -165,7 +165,7 @@
                   (slice high low (bvmult (+ 1 high) x y))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-(defthm slice-of-+
+(defthmd slice-of-+
   (implies (and (natp high)
                 (natp low) ;drop?
                 (integerp x)
@@ -232,7 +232,6 @@
   :hints (("Goal" :in-theory (e/d (slice)
                                   (repeatbit
                                    bvchop-of-logtail-becomes-slice
-                                   slice-of-+
                                    logtail-of-plus)))))
 
 (defthm bvand-with-mask-basic-gen
@@ -250,7 +249,6 @@
 ;                                   bvcat-of-+-high
                                    ;exponents-add
  ;                                  bvcat-of-+-low ;looped
-                                   slice-of-+           ;looped
                                    bvand-of-+-arg3      ;looped
                                    bvand-of-+-arg2
                                    )))))
@@ -318,7 +316,7 @@
                                    )))))
 
 ;move to intro.lisp?
-(defthm logand-of-bvchop-becomes-bvand
+(defthmd logand-of-bvchop-becomes-bvand
   (implies (and (natp width)
                 (natp y)) ;gen
            (equal (LOGAND y (BVCHOP WIDTH x))
@@ -326,29 +324,14 @@
   :hints (("Goal" :use (:instance LOGAND-BECOMES-BVAND (size width) (x (BVCHOP WIDTH x)))
            :in-theory (disable LOGAND-BECOMES-BVAND))))
 
-(defthm logand-of-bvchop-becomes-bvand-alt
+;move to intro.lisp?
+(defthmd logand-of-bvchop-becomes-bvand-alt
   (implies (and (natp width)
                 (natp y)) ;gen
            (equal (LOGAND (BVCHOP WIDTH x) y)
                   (bvand width y x)))
   :hints (("Goal" :use (:instance LOGAND-BECOMES-BVAND (size width) (x (BVCHOP WIDTH x)))
            :in-theory (disable LOGAND-BECOMES-BVAND))))
-
-(defthm bvand-of-minus1
-  (IMPLIES (NATP width)
-           (EQUAL (BVAND width -1 X)
-                  (BVCHOP width X)))
-  :hints (("Goal" :in-theory (enable bvand))))
-
-;can loop
-(defthmd bvuminus-of-1-arg2
-  (implies (natp width)
-           (equal (bvuminus width 1)
-                  (- (expt 2 width) 1)))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus)))))
-
-(in-theory (disable slice-of-+)) ;todo
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
