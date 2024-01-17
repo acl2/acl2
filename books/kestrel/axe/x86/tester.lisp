@@ -275,7 +275,7 @@
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (booleanp position-independentp))
-                  :mode :program ; because of apply-tactic-prover and def-unrolled-fn-core
+                  :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
   (b* ((stack-slots (if (eq :auto stack-slots) 100 stack-slots))
        ;; Translate the assumptions supplied by the user:
@@ -328,7 +328,7 @@
        ;; Unroll the computation:
        ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
        ((mv erp result-dag-or-quotep & & state)
-        (def-unrolled-fn-core
+        (unroll-x86-code-core
           target
           parsed-executable
           assumptions

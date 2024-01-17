@@ -247,7 +247,7 @@
 
 ;; Returns (mv erp result-dag-or-quotep lifter-rules-used assumption-rules-used state).
 ;; This is also called by the formal unit tester.
-(defun def-unrolled-fn-core (target
+(defun unroll-x86-code-core (target
                              parsed-executable
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
@@ -297,18 +297,18 @@
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
                    (not (eq :pe-32 executable-type))))
-        (er hard? 'def-unrolled-fn-core "Starting from the :entry-point is currently only supported for PE-32 files.")
+        (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE-32 files.")
         (mv :bad-entry-point nil nil nil state))
        ((when (and (natp target)
                    (not (eq :pe-32 executable-type))))
-        (er hard? 'def-unrolled-fn-core "Starting from a numeric offset is currently only supported for PE-32 files.")
+        (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE-32 files.")
         (mv :bad-entry-point nil nil nil state))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
        ((when (and (not position-independentp)
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
-        (er hard? 'def-unrolled-fn-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
+        (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil state))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if suppress-assumptions
@@ -349,7 +349,7 @@
                                 ;;todo: add support for :elf-32
                                 (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                                         assumptions))))))))
-       (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
+       (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state)))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -503,7 +503,7 @@
        ((mv erp result-dag lifter-rules-used
             & ; assumption-rules-used
             state)
-        (def-unrolled-fn-core target parsed-executable
+        (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
           output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base state))
@@ -555,7 +555,7 @@
                                                                    '0 ;array depth (not very important)
                                                                    )))
                (function-body-untranslated (untranslate function-body nil (w state))) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
-               (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn-core (w state)))
+               (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
                 (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01" function-body nil)
