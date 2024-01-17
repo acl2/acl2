@@ -1962,7 +1962,7 @@
 (defun print-integers (lst end chan state)
 
 ; Lst is a list of integers.  Print each element of the list to the given
-; channel, followig each with a space.  If end is not nil, then print it with
+; channel, following each with a space.  If end is not nil, then print it with
 ; princ$ too.
 
   (cond ((endp lst)

@@ -1,6 +1,6 @@
 ; A utility to read-in a book using the appropriate package
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/file-io-light/read-object-from-file" :dir :system)
-(include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
+(include-book "kestrel/file-io-light/read-objects-from-file-with-pkg" :dir :system)
 
 ;; Read forms from FILENAME but require the first form to be an IN-PACKAGE form
 ;; used for interpreting symbols in the rest of the forms.  Returns (mv erp

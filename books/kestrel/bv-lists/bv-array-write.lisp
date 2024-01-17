@@ -64,7 +64,7 @@
 (defthm len-of-bv-array-write
   (equal (len (bv-array-write element-size len key val lst))
          (nfix len))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthm consp-of-bv-array-write
   (implies (natp len)
@@ -122,7 +122,7 @@
            (equal (bv-array-write element-size len index val data)
                   (bv-array-write element-size len 0 val data)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 ;;Do not remove.  This helps justify te correctness of the translation to STP.
 ;a write out of bounds has essentially no effect
@@ -132,7 +132,7 @@
                 (natp len))
            (equal (bv-array-write width len index value data)
                   (bvchop-list width (take len data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write))))
 
 ;; A bv-array-write to an array of length 1 always acts as if the index is 0,
 ;; The result does not depend on the original contents of the array,

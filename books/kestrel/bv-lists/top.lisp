@@ -1,7 +1,7 @@
 ; A library about lists of bit vectors.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -69,6 +69,7 @@
 (include-book "packbv-little-and-unpackbv-little")
 
 (include-book "packbvs")
+(include-book "packbvs-little")
 
 (include-book "bv-arrayp")
 (include-book "bv-array-read")
@@ -82,6 +83,8 @@
 (include-book "bv-array-conversions")
 (include-book "bv-array-conversions2")
 (include-book "bv-array-conversions-gen")
+
+(include-book "bv-array-read-chunk-little")
 
 (include-book "bvnth")
 

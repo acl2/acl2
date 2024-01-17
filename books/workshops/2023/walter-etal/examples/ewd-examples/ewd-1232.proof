@@ -1,0 +1,116 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD12xx/EWD1232.html
+
+
+My simplest theorem
+Theorem Any natural number that has a divisor greater than itself equals zero.
+Proof We observe for any natural n, d, q
+n = d∙q  ∧  d > n
+=        { Leibniz }
+n = d∙q  ∧  d > d∙q
+=        { d > 0 }
+n = d∙q  ∧  1 > q
+=        { q is natural }
+n = d∙q  ∧  q = 0
+⇒        { Leibniz }
+n = 0
+
+|#
+
+(property (n d q :nat)
+          (=> (^ (= n (* d q))
+                 (> d n))
+              (= n 0)))
+
+
+;; Following is an attempt at mimicking Dijkstra's proof steps exactly:
+
+
+
+#|
+Conjecture 1:
+(=> (^ (natp n)
+       (natp d)
+       (natp q))
+    (=> (^ (= n (* d q)) (> d n))
+        (= n 0)))
+
+Context:
+C1. (natp n)
+C2. (natp d)
+C3. (natp q)
+
+Goal:
+(=> (^ (= n (* d q)) (> d n))
+    (= n 0))
+
+Proof:
+(^ (= n (* d q)) (> d n))
+== { Obvious }
+(^ (= n (* d q)) (> d (* d q)))
+;; Counterexample found when testing step (EQUAL (^ (= N (* D Q)) (> D (* D Q)))
+;; (^ (= N (* D Q)) (> 1 Q)))
+;; (((Q 0) (N 0) (D 0)))
+;; What we are missing is the fact that d is a divisor, which by definition can
+;; not be 0. Note that this fact is implicit in Dijkstra's proof, where he
+;; says "for any natural n, d, q", but we need to add this as a hypothesis.
+== { Arith }
+(^ (= n (* d q)) (> 1 q))
+== { Obvious }
+(^ (= n (* d q)) (= 0 q))
+== { Obvious }
+(= n 0)
+
+QED
+|#
+
+;; From the previous exercise in comments, we learnt that a hypothesis (!= d 0)
+;; will be required for our proof. So, we change our proof accordingly:
+
+
+Conjecture 2:
+(=> (^ (natp n)
+       (natp d)
+       (natp q)
+       (!= d 0))
+    (=> (^ (= n (* d q)) (> d n))
+        (= n 0)))
+
+Exportation:
+(=> (^ (natp n)
+       (natp d)
+       (natp q)
+       (!= d 0)
+       (= n (* d q))
+       (> d n))
+    (= n 0))
+
+Context:
+C1. (natp n)
+C2. (natp d)
+C3. (natp q)
+C4. (!= d 0)
+C5. (= n (* d q))
+C6. (> d n)
+
+Derived Context:
+D1. (> d (* d q)) { C5, C6 }
+D2. (> 1 q) { D1, C4, Arith }
+D3. (= q 0) { D2 }
+
+Goal: (= n 0)
+
+Proof:
+n
+== { C5 }
+(* d q)
+== { D3, Arith }
+0
+
+QED

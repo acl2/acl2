@@ -130,7 +130,7 @@
 (defthm bvplus-of-bvuminus-same-alt
   (equal (bvplus size x (bvuminus size x))
          0)
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same)
+  :hints (("Goal" :use bvplus-of-bvuminus-same
            :in-theory (disable bvplus-of-bvuminus-same))))
 
 (defthm equal-of-bvuminus-and-bvchop-same
@@ -171,7 +171,7 @@
   (implies (natp size)
            (equal (bvplus size (bvuminus size x) (bvplus size x y))
                   (bvchop size y)))
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same-2)
+  :hints (("Goal" :use bvplus-of-bvuminus-same-2
            :in-theory (disable bvplus-of-bvuminus-same-2))))
 
 

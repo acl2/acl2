@@ -339,10 +339,10 @@
           (make-dag-parent-array-with-name-aux (+ 1 n) dag-array-name dag-array dag-parent-array-name dag-parent-array dag-len)
         ;;function call (add this node to the parent lists of all its children):
         (make-dag-parent-array-with-name-aux (+ 1 n) dag-array-name
-                               dag-array
-                               dag-parent-array-name
-                               (add-to-parents-of-atoms-with-name (dargs expr) n dag-parent-array-name dag-parent-array)
-                               dag-len)))))
+                                             dag-array
+                                             dag-parent-array-name
+                                             (add-to-parents-of-atoms-with-name (dargs expr) n dag-parent-array-name dag-parent-array)
+                                             dag-len)))))
 
 (defthm alen1-of-make-dag-parent-array-with-name-aux
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -377,9 +377,7 @@
                                         limit))
   :hints (("Goal" :in-theory (enable make-dag-parent-array-with-name-aux))))
 
-;;;
-;;; make-dag-parent-array-with-name
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This makes the shortest possible parent-array for dag-array, but its alen1 may not match the alen1 of the dag-array.
 (defund make-minimal-dag-parent-array-with-name (dag-len dag-array-name dag-array dag-parent-array-name)
@@ -427,9 +425,7 @@
                                dag-len))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
 
-;;;
-;;; make-dag-parent-array-with-name2
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This causes the alen1 of the result to match the alen1 of dag-array, which is often required.
 ;todo: make a simpler version that uses the default array names
@@ -467,13 +463,6 @@
                                         limit))
   :hints (("Goal" :cases ((equal dag-len 0))
            :in-theory (enable make-dag-parent-array-with-name2))))
-
-;move
-(defthm pseudo-dag-arrayp-forward-chaining-another-2
-  (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-           (integerp (alen1 dag-array-name dag-array)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
 (defthm bounded-dag-parent-arrayp-of-make-dag-parent-array-with-name2
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)

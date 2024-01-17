@@ -1,6 +1,6 @@
 ; Stress testing the Axe Prover and comparing it to ACL2
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,7 +35,7 @@
 ;; TODO: Arrange to return an indication of what happened, so a caller can throw an error if the 2 provers differ.
 (defun compare-axe-and-acl2-on-formula (formula state)
   (declare (xargs :stobjs state
-                  :mode :program ;; todo
+                  :mode :program ;; because of prove$ and other things
                   ))
   (b* (;; Try to prove FORMULA with ACL2:
        ((mv & acl2-provedp state)
@@ -52,9 +52,11 @@
          nil ; no ifns
          nil ; no-splitp
          nil ; don't print as clauses
+         nil ; don't elide any functions
          nil ; no monitored rules
          nil ; print
          nil ; :use hint
+         nil ; var-ordering
          state))
        (axe-provedp (not failedp)))
     (if (and acl2-provedp

@@ -1,0 +1,2 @@
+* TODO Bad error messages when missing multi-line comment closing character
+* TODO Error message for missing close paren should highlight the last successfully parsed token (or maybe the relevant open paren?)

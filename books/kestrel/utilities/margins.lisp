@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also widen-margins.lisp.
+
 (local (include-book "state"))
 
 (in-theory (disable set-fmt-hard-right-margin))

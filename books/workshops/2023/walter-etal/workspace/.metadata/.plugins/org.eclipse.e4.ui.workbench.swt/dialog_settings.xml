@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="ShowViewDialog">
+		<item key="ShowViewDialog.STORE_SELECTED_VIEW_ID" value="org.neu.acl2.handproof.ui.views.ProofCheckerOutputView"/>
+		<item key="DIALOG_X_ORIGIN" value="488"/>
+		<item key="DIALOG_Y_ORIGIN" value="142"/>
+		<item key="DIALOG_WIDTH" value="375"/>
+		<item key="DIALOG_HEIGHT" value="444"/>
+		<item key="DIALOG_FONT_NAME" value="1|Sans|10.0|0|GTK|1|"/>
+		<list key="ShowViewDialog.STORE_EXPANDED_CATEGORIES_ID">
+			<item value="Proof Checker"/>
+		</list>
+	</section>
+</section>

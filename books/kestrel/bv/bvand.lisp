@@ -67,7 +67,7 @@
   (equal (bvand size y (bvand size x z))
          (bvand size x (bvand size y z)))
   :hints (("Goal" :in-theory (disable bvand-associative)
-           :use ((:instance bvand-associative)
+           :use (bvand-associative
                  (:instance bvand-associative (x y) (y x))))))
 
 (defthmd bvand-commute-constant
@@ -98,8 +98,7 @@
 ;in case we don't have commutativity - drop, since we'll always commute??
 (defthmd bvand-of-0-arg3
   (equal (bvand size x 0)
-         0)
-  :hints (("Goal" :in-theory (enable))))
+         0))
 
 (defthm bvand-combine-constants
   (implies (syntaxp (and (quotep y) ;tested first to fail fast
@@ -140,7 +139,7 @@
                 (natp size)
                 (natp n))
            (unsigned-byte-p n (bvand size x y)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvand-simple)
+  :hints (("Goal" :use unsigned-byte-p-of-bvand-simple
            :in-theory (disable unsigned-byte-p-of-bvand-simple))))
 
 (defthm bvchop-of-bvand
@@ -214,7 +213,7 @@
 (defthm bvand-with-mask-basic-alt
   (equal (bvand size x (+ -1 (expt 2 size)))
          (bvchop size x))
-  :hints (("Goal" :use (:instance bvand-with-mask-basic)
+  :hints (("Goal" :use bvand-with-mask-basic
            :in-theory (disable bvand-with-mask-basic))))
 
 ;lets the sizes differ
@@ -270,7 +269,7 @@
                 (natp size))
            (equal (bvand size i mask)
                   (bvchop (integer-length mask) i)))
-  :hints (("Goal" :use (:instance bvand-with-mask-better-eric)
+  :hints (("Goal" :use bvand-with-mask-better-eric
            :in-theory (disable bvand-with-mask-better-eric
                                bvand-with-mask-better))))
 

@@ -11,7 +11,7 @@
 (in-package "ZKSEMAPHORE")
 
 ;todo: reduce:
-(include-book "kestrel/ethereum/semaphore/printing" :dir :system) ; so we can refer to the constants below
+(include-book "printing") ; so we can refer to the constants below
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system) ; for acl2::axe-bind-free
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for acl2::bind-bv-size-axe

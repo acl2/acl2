@@ -50,7 +50,7 @@
            (equal (+ k1 (bvcat highsize x lowsize k2))
                   (bvcat highsize x lowsize (+ k2 k1))))
   :hints (("Goal" :in-theory (disable plus-of-bvcat-fits-in-low-bits-core)
-           :use (:instance plus-of-bvcat-fits-in-low-bits-core))))
+           :use plus-of-bvcat-fits-in-low-bits-core)))
 
 (defthm bvplus-of-bvcat-fits-in-low-bits-core-negative-k1-helper
   (implies (and (<= 0 (+ k1 (bvchop lowsize k2)))
@@ -65,4 +65,4 @@
   :hints (("Goal" :in-theory (e/d (bvplus) (plus-of-bvcat-fits-in-low-bits-core-negative-k1
                                             BVCAT-OF-BVCHOP-LOW ;looped
                                             ))
-           :use (:instance plus-of-bvcat-fits-in-low-bits-core-negative-k1))))
+           :use plus-of-bvcat-fits-in-low-bits-core-negative-k1)))

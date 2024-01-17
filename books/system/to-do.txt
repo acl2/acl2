@@ -287,16 +287,6 @@ ERC>
 
 <><><><><><><><><><><><><><><><><><><><><><><><><>
 
-{{Make file-write-date$, delete-file$, and file-length$ sensitive to the cbd.}}
-
-Note: More ambitious would be to have the cbd be the OS-specified
-directory, and idea Keshav Kini put forward for consideration.  That
-is likely to be much more difficult, and it would also increase the
-lisp-specific code in the system.  So I (Matt) am not in favor of that
-approach, though it's intriguing.
-
-<><><><><><><><><><><><><><><><><><><><><><><><><>
-
 {{Fix handling of state result, in old-style signatures without state argument.}}
 
 Below is the relevant email thread (with a typo from Matt fixed by

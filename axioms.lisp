@@ -14150,6 +14150,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
     set-waterfall-parallelism-fn ; for #+acl2-par
     fix-stobj-array-type
+    fix-stobj-hash-table-type
+    fix-stobj-table-type
     set-gc-threshold$-fn
     certify-book-finish-complete
     chk-absstobj-invariants
@@ -16216,14 +16218,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  (verify-termination-boot-strap make-var-lst1))
 
 (verify-termination-boot-strap make-var-lst)
-
-(defthm true-listp-take
-
-; This rule was not needed until we added verify-termination-boot-strap for
-; first-n-ac and take.
-
-  (true-listp (take n l))
-  :rule-classes :type-prescription)
 
 (encapsulate
   ()
@@ -19645,7 +19639,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                            (chk-bad-lisp-object obj))
                        (mv nil obj state-state)))))))
     (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
-      (cond ((cdr entry)
+      (cond ((consp (cdr entry))
              (mv nil
                  (car (cdr entry))
                  (update-open-input-channels
@@ -20599,7 +20593,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (when (live-state-p state)
     (return-from
      brr-evisc-tuple-oracle-update
-     (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* state)))
+
+; By binding *wormholep* to nil below we prevent the f-put-global from being
+; undone when we exit the wormhole (if any) we're in when this assignment takes
+; place.  That would be problematic except for the fact that brr-evisc-tuple is
+; a ``true global'' (rather than a wormhole status ``local'' whose value is to
+; be restored upon exit) and should always have the same value as its mirror.
+
+     (let ((*wormholep* nil))
+       (f-put-global 'brr-evisc-tuple *wormhole-brr-evisc-tuple* state))))
   (mv-let (erp val state)
     (read-acl2-oracle state)
     (declare (ignore erp))

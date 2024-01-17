@@ -3886,7 +3886,7 @@ of :?, namely, (:? X).
         (CONS X (F0$1 (CDR (CDR X))))
       NIL)))
 
-; The large comment below provides some explanataion about the events
+; The large comment below provides some explanation about the events
 ; generated.  For simplicity we ignore wrappers (WITH-OUTPUT, ENCAPSULATE,
 ; PROGN, and LOCAL); of course, to see those you may simply change the call of
 ; simplify-defun above to the corresponding call of show-simplify-defun.

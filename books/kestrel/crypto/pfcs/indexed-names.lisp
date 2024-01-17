@@ -17,7 +17,10 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/std/strings/decimal-fty" :dir :system))
+(local (include-book "kestrel/std/strings/explode-implode-equalities" :dir :system))
+(local (include-book "kestrel/utilities/lists/append-theorems" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -59,8 +62,17 @@
   :short "Create an indexed name, from a base and an index."
   (str::cat base "_" (str::nat-to-dec-string i))
   ///
+
   (fty::deffixequiv iname
-    :args ((i natp))))
+    :args ((i natp)))
+
+  (defruled iname-not-equal-to-base
+    (implies (stringp base)
+             (not (equal (iname base i) base)))
+    :enable (string-append-lst
+             string-append
+             str::equal-of-implode-left-to-equal-of-explode-right
+             acl2::equal-of-append-and-left)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,7 +102,15 @@
      (defret consp-of-iname-list-rev
        (equal (consp names-rev)
               (> (nfix n) 0))
-       :hints (("Goal" :induct t :in-theory (enable nfix))))))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))
+
+     (defruled base-not-member-of-iname-list-rev
+       (implies (stringp base)
+                (not (member-equal base (iname-list-rev base n))))
+       :induct t
+       :do-not '(preprocess) ; otherwise it throws away the (stringp base) hyp
+       :enable (iname-list-rev
+                iname-not-equal-to-base))))
   ///
 
   (defret len-of-iname-list
@@ -102,7 +122,13 @@
            (> (nfix n) 0)))
 
   (in-theory (disable consp-of-iname-list
-                      consp-of-iname-list-rev)))
+                      consp-of-iname-list-rev))
+
+  (defruled base-not-member-of-iname-list
+    (implies (stringp base)
+             (not (member-equal base (iname-list base n))))
+    :use base-not-member-of-iname-list-rev
+    :enable iname-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

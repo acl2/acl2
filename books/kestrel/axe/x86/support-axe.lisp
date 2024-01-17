@@ -22,6 +22,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
+(include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/known-booleans" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
@@ -126,7 +127,7 @@
                 (assoc-equal n l))
            (equal (aref1 name l n)
                   (acl2::lookup-equal n l)))
-  :hints (("Goal" :in-theory (e/d (acl2::lookup-equal aref1) ()))))
+  :hints (("Goal" :in-theory (enable acl2::lookup-equal aref1))))
 
 (acl2::defopeners x86isa::64-bit-mode-two-byte-opcode-modr/m-p
                   :hyps ((syntaxp (quotep x86isa::opcode))
@@ -262,9 +263,30 @@
            :in-theory (disable set-flag-of-set-flag-diff)))
   :rule-classes nil)
 
+;; todo: packages on x
 (defthm x86isa::idiv-spec-64-trim-arg1-axe-all
   (implies (axe-syntaxp (acl2::term-should-be-trimmed-axe '128 acl2::x 'acl2::all acl2::dag-array))
            (equal (x86isa::idiv-spec-64 x y)
                   (x86isa::idiv-spec-64 (acl2::trim 128 acl2::x) y)))
   :hints (("Goal" :in-theory (e/d (acl2::trim x86isa::idiv-spec-64)
                                   nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthm run-until-stack-shorter-than-base-axe
+  (implies (and (axe-syntaxp (not (acl2::syntactic-call-of 'if x86 acl2::dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 acl2::dag-array))) ; may be needed someday
+                (stack-shorter-thanp old-rsp x86))
+           (equal (run-until-stack-shorter-than old-rsp x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-base))))
+
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthm run-until-stack-shorter-than-opener-axe
+  (implies (and (axe-syntaxp (not (acl2::syntactic-call-of 'if x86 acl2::dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 acl2::dag-array))) ; may be needed someday
+                (not (stack-shorter-thanp old-rsp x86)))
+           (equal (run-until-stack-shorter-than old-rsp x86)
+                  (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-opener))))

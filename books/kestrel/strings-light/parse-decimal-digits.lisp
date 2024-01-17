@@ -140,8 +140,7 @@
   (<= (len (mv-nth 1 (parse-decimal-number-from-chars chars)))
       (len chars))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (e/d (parse-decimal-number-from-chars)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable parse-decimal-number-from-chars))))
 
 (defthm true-listp-of-mv-nth-1-of-parse-decimal-number-from-chars
   (implies (true-listp chars)

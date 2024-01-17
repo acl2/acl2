@@ -1,3 +1,7 @@
+; Copyright (C) 2019, ForrestHunt, Inc.
+; Written by Matt Kaufmann and J Moore
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; This file contains the events mentioned in the Examples section of the paper
 ; under development, ``Limited Second Order Functionality in a First Order
 ; Setting''.

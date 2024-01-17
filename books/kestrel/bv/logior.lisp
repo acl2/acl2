@@ -118,7 +118,7 @@
 (defthm logior-commutative-2
   (equal (logior j i k)
          (logior i j k))
-  :hints (("Goal" :use ((:instance logior-associative)
+  :hints (("Goal" :use (logior-associative
                         (:instance logior-associative (i j) (j i)))
            :in-theory (disable logior-associative))))
 
@@ -296,7 +296,7 @@
                 (integerp j))
            (equal (logior i (logand i j) k)
                   (logior i k)))
-  :hints (("Goal" :use (:instance logior-of-logand-same-arg-1)
+  :hints (("Goal" :use logior-of-logand-same-arg-1
            :in-theory (disable logior-of-logand-same-arg-1))))
 
 (defthm logand-of-logior

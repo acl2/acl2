@@ -139,3 +139,15 @@
        (or (intersection-equal z x)
            (intersection-equal z y)))
   :hints (("Goal" :in-theory (enable revappend))))
+
+(local
+  (defthm member-equal-of-revappend-when-member-equal-arg2-iff
+    (implies (member-equal a y)
+             (member-equal a (revappend x y)))
+    :hints (("Goal" :in-theory (enable revappend member-equal)))))
+
+(defthm member-equal-of-revappend-iff
+  (iff (member-equal a (revappend x y))
+       (or (member-equal a x)
+           (member-equal a y)))
+  :hints (("Goal" :in-theory (enable revappend member-equal))))

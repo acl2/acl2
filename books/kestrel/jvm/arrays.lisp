@@ -1157,7 +1157,7 @@
            (not (memberp (nth 0 x) (cdr x)))))
 
 ;; (defthm clear-nth-of-array-contents-list
-;;   (implies  (and (<= 0 n)
+;;   (implies (and (<= 0 n)
 ;;                  (integerp n)
 ;;                  (no-duplicatesp-equal ads)
 ;;                  (< n (len ads)))

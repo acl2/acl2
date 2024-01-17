@@ -108,8 +108,7 @@
                 (< 1 p))
            (equal (equal 1 (add x y p))
                   (equal y (acl2::bitnot x))))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
+  :hints (("Goal" :in-theory (disable ACL2::BITP-BECOMES-UNSIGNED-BYTE-P))))
 
 (defthm equal-of-1-and-add-when-bitp-arg2
   (implies (and (bitp x)
@@ -118,9 +117,7 @@
                 (< 1 p))
            (equal (equal 1 (add y x p))
                   (equal y (acl2::bitnot x))))
-  :hints (("Goal" :in-theory (e/d ()
-                                  (ACL2::BITP-BECOMES-UNSIGNED-BYTE-P)))))
-
+  :hints (("Goal" :in-theory (disable ACL2::BITP-BECOMES-UNSIGNED-BYTE-P))))
 
 ;gen the 8
 ; Split off the sign bit (often not used?) and turn add into bvplus
@@ -680,14 +677,13 @@
 
 ;; (defthm equal-of-0-and-mul-of-add-of-1-and-neg-same-gen
 ;;   (implies (and ;(fep x prime)
-;;                 (primep prime))
+;;             (primep prime))
 ;;            (equal (equal 0 (mul x (add 1 (neg x prime) prime) prime))
 ;;                   (bitp (mod (ifix x) p))))
 ;;   :hints (("Goal" :use (:instance constrain-to-be-bit-correct)
-;;            :in-theory (e/d ()
-;;                            (constrain-to-be-bit-correct
-;;                             NEG-OF-* ;looped
-;;                             )))))
+;;            :in-theory (disable constrain-to-be-bit-correct
+;;                                NEG-OF-* ;looped
+;;                                ))))
 
 ;gen and move
 (local

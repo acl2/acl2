@@ -1,7 +1,7 @@
 ; Tools to rebuild DAGs while applying node translations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,65 +21,59 @@
 (include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local
- (defthm integerp-of-if
-  (equal (integerp (if x y z))
-         (if x
-             (integerp y)
-           (integerp z)))))
+;; (local
+;;  (defthm acl2-numberp-when-integerp
+;;    (implies (integerp x)
+;;             (acl2-numberp x))))
 
-(local
- (defthm acl2-numberp-when-integerp
-   (implies (integerp x)
-            (acl2-numberp x))))
+;; ;dup
+;; (defthmd natp-of-+-of-1-alt
+;;   (implies (integerp x)
+;;            (equal (natp (+ 1 x))
+;;                   (<= -1 x))))
+;
 
-;dup
-(defthmd natp-of-+-of-1-alt
-  (implies (integerp x)
-           (equal (natp (+ 1 x))
-                  (<= -1 x))))
+;; (local
+;;  (defthm <=-of-0-and-car-of-last-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (<= 0 (car (last x))))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm <=-of-0-and-car-of-last-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-           (<= 0 (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+;; (local
+;;  (defthm <-of--1-and-car-of-last-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (< -1 (car (last x))))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm <-of--1-and-car-of-last-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-           (< -1 (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
+;; (local
+;;  (defthm <-of-car-of-last-and--1-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;           (not (< (car (last x)) -1)))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm <-of-car-of-last-and--1-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-          (not  (< (car (last x)) -1)))
-  :hints (("Goal" :in-theory (enable last))))
+;; (local
+;;  (defthm integerp-of-car-of-last-when-all-natp
+;;   (implies (and (all-natp x)
+;;                 (consp x))
+;;            (integerp (car (last x))))
+;;   :hints (("Goal" :in-theory (enable last)))))
 
-(defthm integerp-of-car-of-last-when-all-natp
-  (implies (and (all-natp x)
-                (consp x))
-           (integerp (car (last x))))
-  :hints (("Goal" :in-theory (enable last))))
-
-(defthm nat-listp-when-all-natp
-  (implies (all-natp x)
-           (equal (nat-listp x)
-                  (true-listp x)))
-  :hints (("Goal" :in-theory (enable nat-listp all-natp))))
-
-(defthmd dargp-of-car-when-all-natp
-  (implies (all-natp x)
-           (equal (dargp (car x))
-                  (consp x))))
+;; (defthmd dargp-of-car-when-all-natp
+;;   (implies (all-natp x)
+;;            (equal (dargp (car x))
+;;                   (consp x))))
 
 (defthm all-<=-all-of-get-unexamined-nodenum-args
   (implies (and (all-<=-all (keep-atoms args) worklist)
@@ -134,11 +128,6 @@
                             all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp
                             ;;bounded-darg-listp-of-args-when-bounded-dag-exprp
                             )))))
-;dup
-(defthm all-<=-when-all-<
-  (implies (all-< x bound)
-           (all-<= x bound))
-  :hints (("Goal" :in-theory (enable all-< all-<=))))
 
 ;; Rebuilds all the nodes in WORKLIST, and their supporters, while performing the substitution indicated by TRANSLATION-ARRAY.
 ;; Returns (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
@@ -173,7 +162,7 @@
   (if (or (endp worklist)
           ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))
-                    (mbt (all-natp worklist))
+                    (mbt (nat-listp worklist))
                     (mbt (all-< worklist (alen1 'worklist-array worklist-array))))))
       (mv (erp-nil) translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (let ((nodenum (first worklist)))
@@ -239,11 +228,10 @@
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        (aset1 'worklist-array worklist-array nodenum :examined))))))))))))
 
-(verify-guards rebuild-nodes-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-< dargp-of-car-when-all-natp
-                                                                                      all-<=-when-all-<)
+(verify-guards rebuild-nodes-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-<
+                                                                  all-<=-when-all-<)
                                                                  (dargp
-                                                                  dargp-less-than
-                                                                  SORTEDP-<=)))))
+                                                                  dargp-less-than)))))
 
 (def-dag-builder-theorems
   (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array)

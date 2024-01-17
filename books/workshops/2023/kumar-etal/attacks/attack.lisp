@@ -1,7 +1,10 @@
-; cert-flags: ? t :ttags :all :skip-proofs-okp t
+;cert-flags: ? t :ttags :all :skip-proofs-okp t
 
 (in-package "ACL2S")
-(include-book "../top")
+(include-book "../higher-order")
+(include-book "../utils")
+(include-book "../network")
+(include-book "../graphs")
 
 ;; Event emission
 ;; I need skip-proofs because I can't prove:

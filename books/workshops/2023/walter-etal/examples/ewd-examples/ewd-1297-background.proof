@@ -1,0 +1,147 @@
+;; An example of how the proof checker was used to get a proof of the
+;; conjecture below in a way that was easier than trying to do this
+;; directly.
+
+(property L1 (a b :rational x :non-0-rational)
+  (== (= a b) (= (* x a) (* x b))))
+
+Conjecture mul:
+(=> (^ (rationalp a)
+       (non-0-rationalp b)
+       (rationalp c)
+       (non-0-rationalp d))
+    (== (= (/ a b) (/ c d))
+        (= (* a d) (* b c))))
+
+Context:
+C1. (rationalp a)
+C2. (non-0-rationalp b)
+C3. (rationalp c)
+C4. (non-0-rationalp d)
+
+Goal: (== (= (/ a b) (/ c d))
+          (= (* a d) (* b c)))
+
+Proof:
+(= (/ a b) (/ c d))
+== { Arith }
+(= (* b (/ a b)) (* b (/ c d)))
+== { Arith }
+(= a (* b (/ c d)))
+== { Lemma L1 ((x d) (b (* b (/ c d)))) }
+(= (* d a) (* d (* b (/ c d))))
+== { Arith }
+(= (* a d) (* b c) )
+
+QED
+
+#|
+
+(DEFINE-PC-MACRO INSTANTIATE (LEMMA-NAME &REST SUBSTITUTIONS)
+  (B* ((WRLD (W STATE)) (FORMULA (FORMULA LEMMA-NAME T WRLD)))
+      (VALUE
+       (CONS ':CLAIM
+             (CONS
+              (CONS 'LET
+                    (CONS SUBSTITUTIONS (CONS FORMULA 'NIL)))
+              (CONS ':HINTS
+                    (CONS
+                     (CONS
+                      (CONS '"Goal"
+                            (CONS ':INSTRUCTIONS
+                                  (CONS
+                                   (CONS ':PRO
+                                         (CONS ':DROP
+                                               (CONS
+                                                '(:EXPAND NIL)
+                                                (CONS
+                                                 (CONS ':PROVE
+                                                       (CONS
+                                                        ':HINTS
+                                                        (CONS
+                                                         (CONS
+                                                          (CONS
+                                                           '"Goal"
+                                                           (CONS
+                                                            ':BY
+                                                            (CONS
+                                                             (CONS
+                                                              ':INSTANCE
+                                                              (CONS
+                                                               LEMMA-NAME
+                                                               SUBSTITUTIONS))
+                                                             'NIL)))
+                                                          'NIL)
+                                                         'NIL)))
+                                                 'NIL))))
+                                   'NIL)))
+                      'NIL)
+                     'NIL)))))))
+
+(defthm
+  mul
+  (=> (^ (rationalp a)
+         (non-0-rationalp b)
+         (rationalp c)
+         (non-0-rationalp d))
+      (== (equal (* a (/ b)) (* c (/ d)))
+          (equal (* a d) (* b c))))
+;  :rule-classes nil
+  :hints
+  (("Goal"
+    :instructions
+    (:pro
+     (:claim (equal (= (/ a b) (/ c d))
+                    (= (* b (/ a b)) (* b (/ c d))))
+             :hints :none)
+     :cg
+     (:claim (and (not (equal b '0))
+                  (rationalp c)
+                  (rationalp d)
+                  (rationalp a)
+                  (rationalp b)
+                  (not (equal d '0)))
+             :do-not-flatten t)
+     (:finish :bash)
+     (:claim (equal (= (* b (/ a b)) (* b (/ c d)))
+                    (= a (* b (/ c d))))
+             :hints :none)
+     :cg
+     (:claim (and (not (equal b '0))
+                  (rationalp b)
+                  (not (equal d '0))
+                  (rationalp d)
+                  (rationalp a)
+                  (rationalp c))
+             :do-not-flatten t)
+     (:retain 6 1 2 3 4)
+     (:finish :bash)
+     (:claim (equal (= a (* b (/ c d)))
+                    (= (* d a) (* d (* b (/ c d)))))
+             :hints :none)
+     :cg
+     (:claim (and (rationalp a)
+                  (rationalp d)
+                  (rationalp c)
+                  (not (equal d '0))
+                  (rationalp b))
+             :do-not-flatten t)
+     (:retain 7 1 2 3 4)
+     (:instantiate l1 (x d)
+                   (b (* b (/ c d))))
+     (:finish :bash)
+     (:claim (equal (= (* d a) (* d (* b (/ c d))))
+                    (= (* a d) (* b c)))
+             :hints :none)
+     :cg
+     (:claim (and (not (equal d '0))
+                  (rationalp c)
+                  (rationalp d)
+                  (rationalp a)
+                  (rationalp b))
+             :do-not-flatten t)
+     (:retain 8 1 2 3 4)
+     (:finish :bash)
+     :demote (:finish (:s-prop))))))
+
+|#

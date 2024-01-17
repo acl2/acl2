@@ -32,27 +32,29 @@
 
 ;; What should we do about faults?
 ;; TODO: How to get defpun to work with a stobj?
-(defpun run-until-stack-shorter-than (target-rsp x86)
+(defpun run-until-stack-shorter-than (old-rsp x86)
   ;;  (declare (xargs :stobjs x86)) ;TODO: This didn't work
-  (if (stack-shorter-thanp target-rsp x86)
+  (if (stack-shorter-thanp old-rsp x86)
       x86
-    (run-until-stack-shorter-than target-rsp (x86-fetch-decode-execute x86))))
+    (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86))))
 
+;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-base
-  (implies (stack-shorter-thanp target-rsp x86)
-           (equal (run-until-stack-shorter-than target-rsp x86)
+  (implies (stack-shorter-thanp old-rsp x86)
+           (equal (run-until-stack-shorter-than old-rsp x86)
                   x86)))
 
+;; todo: restrict to when x86 is not an IF/MYIF
 (defthm run-until-stack-shorter-than-opener
-  (implies (not (stack-shorter-thanp target-rsp x86))
-           (equal (run-until-stack-shorter-than target-rsp x86)
-                  (run-until-stack-shorter-than target-rsp (x86-fetch-decode-execute x86)))))
+  (implies (not (stack-shorter-thanp old-rsp x86))
+           (equal (run-until-stack-shorter-than old-rsp x86)
+                  (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86)))))
 
 (defthm run-until-stack-shorter-than-of-if-arg2
-  (equal (x::run-until-stack-shorter-than target-rsp (if test x86a x86b))
+  (equal (run-until-stack-shorter-than old-rsp (if test x86a x86b))
          (if test
-             (x::run-until-stack-shorter-than target-rsp x86a)
-           (x::run-until-stack-shorter-than target-rsp x86b))))
+             (run-until-stack-shorter-than old-rsp x86a)
+           (run-until-stack-shorter-than old-rsp x86b))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

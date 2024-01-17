@@ -22,6 +22,7 @@
                                       (rule-lists 'nil) ;todo: improve by building some in and allowing :extra-rules and :remove-rules?
                                       (global-rules 'nil) ;; rules to be added to every rule-list
                                       (use 'nil)
+                                      (var-ordering 'nil)
                                       (interpreted-function-alist 'nil)
                                       (no-splitp 't) ; whether to prevent splitting into cases (note that we change the default here)
                                       (print-as-clausesp 'nil)
@@ -36,6 +37,7 @@
                       :rule-lists ,rule-lists
                       :global-rules ,global-rules
                       :use ,use
+                      :var-ordering ,var-ordering
                       :interpreted-function-alist ,interpreted-function-alist
                       :no-splitp ,no-splitp
                       :print-as-clausesp ,print-as-clausesp
@@ -51,6 +53,7 @@
          (rule-lists "A sequence of Axe rule sets, each of which is a list of rule names and/or calls of 0-ary functions that return lists of rule names.  These are applied one after the other.")
          (global-rules "Rules to add to every rule-list in the sequence")
          (use "Axe :use hints for the proof (satisfies axe-use-hintp)")
+         (var-ordering "Ordering on the vars, to restrict substitutions that express earlier vars in terms of later vars.  Not all vars need to be mentioned.")
          (interpreted-function-alist "An interpreted-function-alist to evaluate ground terms" ;todo: document
                                      )
          (no-splitp "Whether to split into cases") ;todo: switch it to :splitp? or :allow-splitting?  why is splitting not a tactic?!

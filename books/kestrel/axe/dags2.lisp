@@ -130,18 +130,6 @@
 
 (in-theory (disable mv-nth))
 
-(defthm weak-dagp-aux-of-acons
-  (implies (and (weak-dagp-aux dag)
-                (bounded-dag-exprp nodenum expr)
-                (<= (+ 1 (car (car dag))) nodenum)
-                (consp dag))
-           (equal (weak-dagp-aux (acons nodenum expr dag))
-                  (natp nodenum)))
-  :hints (("Goal" :expand ((weak-dagp-aux dag)
-                           (weak-dagp-aux (cons (cons nodenum expr)
-                                                dag)))
-           :in-theory (enable acons bounded-dag-exprp dag-exprp))))
-
 (defthm integerp-of-+-of-1-and-car-of-car-when-weak-dagp-aux
   (implies (weak-dagp-aux dag)
            (integerp (+ 1 (car (car dag)))))

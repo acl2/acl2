@@ -735,8 +735,8 @@ I don't need this?
                    '(:on :all :off (proof-builder proof-tree)
                          :summary-on :all :gag-mode nil)
                  '(:off :all :on (error comment)))
-             (test? ,prop)))
-           ;; (with-output :stack :pop (test? ,prop)))
+             (test? ,@args)))
+           ;; (with-output :stack :pop (test? ,@args)))
            (value-triple
             (cw "~|Form:  ( PROPERTY PASSED TESTING )~%")))))
        ((when name?)

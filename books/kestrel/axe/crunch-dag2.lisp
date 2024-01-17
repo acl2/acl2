@@ -30,6 +30,11 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+(local
+ (defthm true-listp-when-nat-listp
+   (implies (nat-listp x)
+            (true-listp x))))
+
 ;move
 (local
  ;; Kept disabled by default
@@ -113,7 +118,7 @@
                               (consp nodenums) ; so we can call maxelem
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))))
   (let* ((max-nodenum (maxelem nodenums))
-         (tag-array (tag-supporters-of-nodes-with-name nodenums dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
+         (tag-array (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))
          (translation-array (make-empty-array 'translation-array (+ 1 max-nodenum))))
     (mv-let (dag translation-array)
       (build-reduced-dag-with-name 0 max-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
@@ -453,11 +458,6 @@
   (true-listp (mv-nth 5 (crunch-dag-array2-with-indices dag-array-name dag-array dag-len dag-parent-array-name nodenums)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable crunch-dag-array2-with-indices))))
-
-(local
- (defthm true-listp-when-nat-listp
-   (implies (nat-listp x)
-            (true-listp x))))
 
 (defthm nat-listp-of-mv-nth-5-of-crunch-dag-array2-with-indices
   (implies (and (true-listp nodenums)

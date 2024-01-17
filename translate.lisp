@@ -1430,8 +1430,7 @@
 
 (defun do$-stobjs-out (arg-exprs)
 
-; Arg-exprs is the list of arguments of a do$ call made in a context where we
-; are tracking latches.
+; Arg-exprs is the list of arguments of a translated do$ call.
 
 ; Also see related function loop$-stobjs-out.
 
@@ -3343,16 +3342,6 @@
                "Implementation error: Unexpected call of raw-ev-fncall (the ~
                 world is not sufficiently close to (w state)).")))))
 
-(defmacro multiple-value-list? (form)
-
-; If form evaluates to two or more multiple values, then return the list of
-; those values.  But if form returns a single value, then return that value.
-
-  `(let ((lst (multiple-value-list ,form)))
-     (if (null (cdr lst))
-         (car lst)
-       lst)))
-
 (defun raw-ev-fncall (fn arg-values arg-exprs latches w user-stobj-alist
                          hard-error-returns-nilp aok)
 
@@ -3406,15 +3395,15 @@
                                  ~x0, which should be ~x1, is not."
                                 fn *1*fn))))
               (stobjs-out
-               (cond ((eq fn 'return-last)
+               (cond ((or (eq fn 'return-last)
+                          (eq fn 'do$))
 
-; Things can work out fine if we imagine that return-last returns a single
-; value: in the case of (return-last ... (mv ...)), the mv returns a list and
-; we just pass that along.
+; Things can work out fine if we imagine that return-last or do$ returns a
+; single value: e.g., in the case of (return-last ... (mv ...)), the mv returns
+; a list and we just pass that along.
 
                       '(nil))
                      (latches (actual-stobjs-out fn arg-exprs w))
-                     ((eq fn 'do$) 'ignore) ; special handling below
                      (t (stobjs-out fn w))))
               (val (catch-raw-ev-fncall
                     (chk-raw-ev-fncall fn w aok)
@@ -3429,18 +3418,7 @@
                     (prog1
                         (let ((*hard-error-returns-nilp*
                                hard-error-returns-nilp))
-                          (cond ((eq fn 'do$)
-
-; With the advent of do$ that doesn't have a well-defined stobjs-out, we avoid
-; considering the stobjs-out for do4 and instead, we run its *1* function and
-; see whether there are multiple values, forming a list of them if so.  We
-; could perhaps do the same thing for every fn, but rather than experiment with
-; that we consult stobjs-out in those cases, which might be more efficient
-; anyhow than forming the multiple-value-list when not necessary.
-
-                                 (multiple-value-list?
-                                  (apply applied-fn arg-values)))
-                                ((null (cdr stobjs-out))
+                          (cond ((null (cdr stobjs-out))
                                  (apply applied-fn arg-values))
                                 (t (multiple-value-list
                                     (apply applied-fn arg-values)))))

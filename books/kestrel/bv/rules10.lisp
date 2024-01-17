@@ -261,7 +261,7 @@
                 (integerp n))
            (equal (bvand size x (+ -1 (expt 2 n)))
                   (bvchop size x)))
-  :hints (("Goal" :use (:instance bvand-with-mask-basic-gen)
+  :hints (("Goal" :use bvand-with-mask-basic-gen
            :in-theory (disable bvand-with-mask-basic-gen))))
 
 ;drop in favor of a general trim rule?
@@ -339,12 +339,6 @@
            (EQUAL (BVAND width -1 X)
                   (BVCHOP width X)))
   :hints (("Goal" :in-theory (enable bvand))))
-
-(defthm bvand-of-lognot-arg3
-  (implies (natp width)
-           (equal (bvand width x (lognot y))
-                  (bvand width x (bvnot width y))))
-  :hints (("Goal" :in-theory (enable bvand bvnot))))
 
 ;can loop
 (defthmd bvuminus-of-1-arg2

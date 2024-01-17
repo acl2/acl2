@@ -1,7 +1,7 @@
 ; Finding likely facts to break down a proof
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,16 +28,10 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 
 (local (in-theory (e/d (true-listp-of-cdr-strong)
                        (true-listp-of-cdr))))
-
-(local
-   ;dup
- (defthm all-<=-when-all-<
-   (implies (all-< x bound)
-            (all-<= x bound))
-   :hints (("Goal" :in-theory (enable all-< all-<=)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,22 +44,22 @@
   (all-consp (array-to-alist array-name array len))
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
-(defthm nat-listp-of-strip-cars-of-of-array-to-alist-aux
+(defthm nat-listp-of-strip-cars-of-array-to-alist-aux
   (implies (nat-listp (strip-cars acc))
            (nat-listp (strip-cars (array-to-alist-aux n len array-name array acc))))
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
-(defthm nat-listp-of-strip-cars-of-of-array-to-alist
+(defthm nat-listp-of-strip-cars-of-array-to-alist
   (nat-listp (strip-cars (array-to-alist array-name array len)))
   :hints (("Goal" :in-theory (enable array-to-alist))))
 
-(defthm all-<-of-strip-cars-of-of-array-to-alist-aux
+(defthm all-<-of-strip-cars-of-array-to-alist-aux
   (implies (and (all-< (strip-cars acc) bound)
                 (<= len bound))
            (all-< (strip-cars (array-to-alist-aux n len array-name array acc)) bound))
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
 
-(defthm all-<-of-strip-cars-of-of-array-to-alist
+(defthm all-<-of-strip-cars-of-array-to-alist
   (implies (<= len bound)
            (all-< (strip-cars (array-to-alist array-name array len)) bound))
   :hints (("Goal" :in-theory (enable array-to-alist))))
@@ -155,6 +149,7 @@
 ;;returns (mv worklist worklist-extendedp) where nodenum-worklist has been extended by any args to compute (non quoteps not marked done)
 ;; and worklist-extendedp indicates whether there were any such args
 ;rename?
+;; Could combine with get-args-not-done-array?  But this one has the array name baked in.
 (defund add-args-not-done (dargs done-nodes-array worklist worklist-extendedp)
   (declare (xargs :guard (and (array1p 'done-nodes-array done-nodes-array)
                               (bounded-darg-listp dargs (alen1 'done-nodes-array done-nodes-array)))))
@@ -289,8 +284,8 @@
 
 ;; todo: put the merge-sort arg first
 ;; todo: pass in a list-pred (a kind of alist)?
-(defmergesort merge-lexorder-of-cdrs
-  merge-sort-lexorder-of-cdrs
+(defmergesort merge-sort-lexorder-of-cdrs
+  merge-lexorder-of-cdrs
   lexorder-of-cdrs
   consp)
 

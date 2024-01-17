@@ -12,6 +12,14 @@
 
 (in-package "ACL2")
 
+;; This is the legacy Axe Prover.  It uses rewriting, substitution, tuple
+;; elimination, and case splitting.
+
+;; See also tactic-prover.lisp.
+
+;; See also make-prover-simple.lisp and the new generated Axe Provers, such as
+;; prover-basic.lisp.
+
 ;todo: move all utility functions out to a book that does not use the trust tag
 ;todo: remove any mentions of sha1, md5, rc4, etc. in the file and other files in this dir.
 ;todo: implement backchain limits, polarities, improve handling of equivs
@@ -77,7 +85,7 @@
                            all-dargp-when-not-consp
                            )))
 
-(local (in-theory (enable natp-of-+-of-1-alt)))
+;(local (in-theory (enable natp-of-+-of-1-alt)))
 
 ;(in-theory (disable bag::count-of-cons)) ;why is this getting introduced?
 
@@ -461,8 +469,7 @@
                                            interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options count state)
    (declare (xargs :stobjs state
                    :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                               (true-listp stored-rules)
-                               (all-stored-axe-rulep stored-rules)
+                               (stored-axe-rule-listp stored-rules)
                                (rule-alistp rule-alist)
                                (bounded-darg-listp args-to-match dag-len)
                                (nat-listp nodenums-to-assume-false)
@@ -1785,7 +1792,7 @@
 
 ;print-max-conflicts-goalp ;fixme rename this, because now we are printing a failure that didn't time out.. fixme may print many failures b/f the 1st max-conflicts
 
-                                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" nil))
+                                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "this" nil nil))
                                        (cw ")~%")
                                        (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
                            (progn$
