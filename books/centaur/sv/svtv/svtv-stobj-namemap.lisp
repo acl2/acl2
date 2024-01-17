@@ -1,10 +1,5 @@
-; Centaur SV Hardware Verification Tutorial
-; Copyright (C) 2016 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; SV - Symbolic Vector Hardware Analysis Framework
+; Copyright (C) 2022 Intel Corporation
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -26,12 +21,13 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 ;
-; Original authors: Sol Swords <sswords@centtech.com>
+; Original author: Sol Swords <sol.swords@intel.com>
 
 
 (in-package "SV")
 
 (include-book "svtv-stobj-util")
+(include-book "std/strings/pretty-program" :dir :system)
 
 (define svtv-data-defnamemap-core ((design design-p)
                                    (user-names svtv-namemap-p)
@@ -116,11 +112,16 @@
 (define defnamemap-core ((design design-p)
                          names
                          svtv-data)
-  :returns (mv err (namemap svtv-name-lhs-map-p) new-svtv-data)
+  :returns (mv err
+               (namemap svtv-name-lhs-map-p)
+               (user-names svtv-namemap-p)
+               new-svtv-data)
   :guard (modalist-addr-p (design->modalist design))
   (b* (((mv err user-names) (defnamemap-user-names names))
-       ((when err) (mv err nil svtv-data)))
-    (svtv-data-defnamemap-core design user-names svtv-data)))
+       ((when err) (mv err nil user-names svtv-data))
+       ((mv err namemap svtv-data)
+        (svtv-data-defnamemap-core design user-names svtv-data)))
+    (mv err namemap user-names svtv-data)))
        
 
 (defun assigns-for-defnamemap-sigs (args typeargs env-args lookupfn signame)
@@ -136,9 +137,52 @@
           (assigns-for-defnamemap-sigs (cdr args) typeargs env-args lookupfn signame))))
 
 
+(define namemap-to-xml-aux ((user-names svtv-namemap-p)
+                            (namemap svtv-name-lhs-map-p)
+                            (printconf str::printconfig-p)
+                            (acc str::printtree-p))
+  :mode :program
+  (b* (((when (atom user-names)) acc)
+       ((unless (mbt (and (consp (car user-names))
+                          (svar-p (caar user-names)))))
+        (namemap-to-xml-aux (cdr user-names) namemap printconf acc))
+       ((cons sym str) (car user-names))
+       (lhs (cdr (hons-get sym namemap)))
+       (acc (str::pcat acc "<tr><td>"
+                       (str::html-encode-string str 8)
+                       "</td><td>"
+                       (str::pretty sym :config printconf)
+                       "</td><td>"
+                       (str::pretty lhs :config printconf)
+                       "</td></tr>" #\Newline)))
+    (namemap-to-xml-aux (cdr user-names) namemap printconf acc)))
+    
+
+(define namemap-to-xml ((user-names svtv-namemap-p)
+                        (namemap svtv-name-lhs-map-p)
+                        (pkg-sym symbolp))
+  :mode :program
+  (b* ((acc nil)
+       (acc (str::pcat acc "<table>" #\Newline
+                       "<tr><th>Verilog signal</th><th>SVTV name</th><th>LHS object</th></tr>"
+                       #\Newline))
+       (printconf (str::make-printconfig :flat-right-margin 60
+                                         :hard-right-margin 90
+                                         :home-package pkg-sym
+                                         :print-lowercase t))
+       ((acl2::with-fast namemap))
+       (acc (namemap-to-xml-aux user-names namemap printconf acc))
+       (acc (str::pcat acc "</table>" #\Newline)))
+    (str::printtree->str acc)))
+       
+       
+       
+   
+   
 
 
-(defun defnamemap-events (name namemap pkg-sym)
+(define defnamemap-events (name namemap user-namemap pkg-sym parents short long)
+  :mode :program
   (b* ((constname (intern-in-package-of-symbol
                    (concatenate 'string "*" (symbol-name name) "-NAMEMAP*")
                    pkg-sym))
@@ -147,9 +191,34 @@
                  pkg-sym))
        (bindername (intern-in-package-of-symbol
                     (concatenate 'string (symbol-name name) "-SIGS")
-                    pkg-sym)))
+                    pkg-sym))
+       (want-xdoc (or parents short long))
+       (short (cond ((stringp short) short)
+                    ((not short) "")
+                    (t (raise ":short must be a string"))))
+       (long (cond ((stringp long) long)
+                    ((not long) "")
+                    (t (raise ":long must be a string"))))
+       (long (if (not want-xdoc)
+                 long
+               (str::cat
+                "<p>This is a macro for a namemap defined by @(see sv::defnamemap).</p>"
+                "<p>Signal mapping:</p>"
+                (namemap-to-xml user-namemap namemap pkg-sym)
+                long))))
     `(progn (defconst ,constname
               ',(make-fast-alist namemap))
+            ,@(and want-xdoc
+                   `((defxdoc ,signame
+                       :parents ,parents
+                       :short ,short
+                       :long ,long)
+                     (defxdoc ,bindername
+                       :parents (,signame)
+                       :short ,(str::cat
+                                "B* binder for @(see "
+                                (symbol-name signame)
+                                ") environment lookups"))))
             (defmacro ,signame (name &optional overridetype)
               (prog2$ (and (not (member-eq overridetype '(nil :test :val)))
                            (er hard? ',signame "Bad overridetype: ~x0" overridetype))
@@ -160,6 +229,12 @@
                                   (lhs-change-override (cdr look) overridetype)
                                 (cdr look))))))
             (def-b*-binder ,bindername
+              ,@(and want-xdoc
+                     `(:parents (,signame)
+                       :short ,(str::cat
+                                "B* binder for @(see "
+                                (symbol-name signame)
+                                ") environment lookups")))
               :body
               #!acl2
               (b* (((mv args muxp typeargs) (cond ((member-eq :test args)
@@ -202,7 +277,10 @@
 
 
 
-(defun defnamemap-fn (name design names names-p pkg-sym stobj)
+(defun defnamemap-fn (name design names names-p pkg-sym
+                           short long parents
+                           stobj)
+  (declare (xargs :mode :program))
   ;; Recognize syntax for pre-evaluated names -- otherwise, evaluate.
   (b* ((names (if (or (eq names nil)
                       (and (consp names)
@@ -218,15 +296,22 @@
         (er hard? 'defnamemap "~x0 is required" :names))
        (pkg-sym (or pkg-sym name)))
     `(make-event
-      (b* (((mv err namemap ,stobj)
+      (b* (((mv err namemap user-names ,stobj)
             (defnamemap-core ,design ,names ,stobj))
            ((when err)
             (mv err nil state ,stobj))
-           (events (defnamemap-events ',name namemap ',pkg-sym)))
+           (events (defnamemap-events ',name namemap user-names ',pkg-sym ',parents ,short ,long)))
         (mv nil events state ,stobj)))))
 
-(defmacro defnamemap (name &key design (names 'nil names-p) pkg-sym (stobj 'svtv-data))
-  (defnamemap-fn name design names names-p pkg-sym stobj))
+(defmacro defnamemap (name &key
+                           design
+                           (names 'nil names-p)
+                           pkg-sym
+                           (stobj 'svtv-data)
+                           short long parents)
+  (defnamemap-fn name design names names-p pkg-sym
+    short long parents
+    stobj))
 
 
 (defxdoc defnamemap
