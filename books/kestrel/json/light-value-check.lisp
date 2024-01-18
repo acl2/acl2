@@ -16,13 +16,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Lightweight predicates on JSON ASTs.
+;; Lightweight predicates on JSON values.
 
 ;; The deftagsum predicates such as valuep are expensive, since they
 ;; validate the entire JSON structure.  After calling the predicate,
 ;; you have to do (eq :TAG (value-kind x)), making the check verbose
 ;; as well.  This file defines predicates that just check the top-level
-;; structure that can be used to decide how to recur when walking a JSON AST.
+;; structure that can be used to decide how to recur when walking a JSON value.
 
 ;; E.g., (and (valuep x) (eq :OBJECT (value-kind x)))
 ;;       ==> (top-jobjectp x)
