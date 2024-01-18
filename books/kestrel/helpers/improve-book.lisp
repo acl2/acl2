@@ -38,6 +38,7 @@
 (include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/utilities/all-included-books" :dir :system)
 (include-book "kestrel/utilities/extend-pathname-dollar" :dir :system)
+(include-book "kestrel/utilities/maybe-add-dot-lisp-extension" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/hints/remove-hints" :dir :system)
@@ -644,12 +645,7 @@
           ;; todo: do local incompat checking without include-books (or making them local) here?
           (improve-events-aux events initial-included-books print state)))
 
-;move
-(defund maybe-add-book-extension (book)
-  (declare (xargs :guard (stringp book)))
-  (if (string-ends-withp book ".lisp") ; tolerate existing .lisp extension
-      book
-    (concatenate 'string book ".lisp")))
+
 
 ;; Returns (mv erp forms full-book-path state).
 ;move
@@ -661,7 +657,7 @@
                                   (stringp dir)))
                   :mode :program ; todo
                   :stobjs state))
-  (let* ((file-name (maybe-add-book-extension bookname))
+  (let* ((file-name (maybe-add-dot-lisp-extension bookname))
          (full-book-path (extend-pathname$ (if (eq dir :cbd) "." dir) file-name state)))
     (mv-let (existsp state)
       (file-write-date$ full-book-path state)

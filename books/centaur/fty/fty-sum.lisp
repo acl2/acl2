@@ -92,7 +92,9 @@
     :default
     :doc
     :rule-classes
-    :reqfix))
+    :reqfix
+    :reqfix-vars
+    :shared))
 
 (define parse-flexprod-field
   ;; Note: NOT DEFPROD!  This is for an individual flexsum field,
@@ -134,9 +136,11 @@
                          :default (getarg :default nil kwd-alist)
                          :doc (getarg :doc "" kwd-alist)
                          :reqfix reqfix
+                         :reqfix-vars (getarg :reqfix-vars :all kwd-alist)
                          :rule-classes (let ((look (assoc :rule-classes kwd-alist)))
                                          (and look `(:rule-classes ,(cdr look))))
-                         :recp recp)))
+                         :recp recp
+                         :shared (getarg :shared nil kwd-alist))))
 
 (define parse-flexprod-fields (x type-name our-fixtypes fixtypes)
   (if (atom x)
@@ -702,13 +706,16 @@
 
 ;; ((fn (pfunc-fix (car x)))
 ;;  (args (ptermlist-fix (cdr x))))
-(defun flexprod-fields-typefix-bindings (fields)
+(defun flexprod-fields-typefix-bindings (fields names)
   (b* (((when (atom fields)) nil)
        ((flexprod-field x) (car fields)))
-    (cons `(,x.name ,(if x.fix
-                         `(,x.fix ,x.acc-body)
-                       x.acc-body))
-          (flexprod-fields-typefix-bindings (cdr fields)))))
+    (if (or (eq names :all)
+            (member-eq x.name names))
+        (cons `(,x.name ,(if x.fix
+                             `(,x.fix ,x.acc-body)
+                           x.acc-body))
+              (flexprod-fields-typefix-bindings (cdr fields) names))
+      (flexprod-fields-typefix-bindings (cdr fields) names))))
 
 (defun flexprod-fields-reqfix-bindings (fields)
   (b* (((when (atom fields)) nil)
@@ -725,7 +732,7 @@
 ;;              (cons fn args)))
 (defun flexsum-fix-prod-case (prod)
   (b* (((flexprod prod) prod)
-       (typefix-bindings (flexprod-fields-typefix-bindings prod.fields))
+       (typefix-bindings (flexprod-fields-typefix-bindings prod.fields :all))
        (reqfix-bindings (flexprod-fields-reqfix-bindings prod.fields)))
     (if typefix-bindings
         `(b* ,typefix-bindings
@@ -893,7 +900,7 @@
         :short ,short
         :long ,long
         ,@(and (member :acc prod.inline) `(:inline t))
-        :guard ,prod.guard
+        ,@(and (not x.shared) `(:guard ,prod.guard))
         :guard-hints (("goal"
                        :expand ((,sum.pred ,sum.xvar)
                                 . ,(and sum.kind `((,sum.kind ,sum.xvar))))))
@@ -908,14 +915,20 @@
                                 ;;         `(:hints (("goal" :in-theory (enable ,sum.kind))))))
                     `(x.name))
         :progn t
-        (mbe :logic ,(if (eq x.reqfix x.name)
-                         `(b* ((,sum.xvar (and ,prod.guard ,sum.xvar)))
-                            ,(if x.fix
-                                 `(,x.fix ,x.acc-body)
-                               x.acc-body))
-                       `(b* ((,sum.xvar (and ,prod.guard ,sum.xvar))
-                             . ,(flexprod-fields-typefix-bindings prod.fields))
-                          ,x.reqfix))
+        (mbe :logic ,(b* ((body (if (Eq x.reqfix x.name)
+                                    (if x.fix
+                                        `(,x.fix ,x.acc-body)
+                                      x.acc-body)
+                                  x.reqfix))
+                          (xvar-binding (and (not x.shared)
+                                             `((,sum.xvar (and ,prod.guard ,sum.xvar)))))
+                          (bindings (if (eq x.reqfix x.name)
+                                        xvar-binding
+                                      (append xvar-binding
+                                              (flexprod-fields-typefix-bindings prod.fields x.reqfix-vars)))))
+                       (if bindings
+                           `(b* ,bindings ,body)
+                         body))
              ;; (let* ((unfixbody (nice-and prod.guard x.acc-body))
              ;;                (body (if x.fix
              ;;                          `(,x.fix ,unfixbody)
@@ -932,6 +945,7 @@
                          :expand ((,sum.fix ,sum.xvar))))))
 
         ,@(and (not (eq prod.guard t))
+               (not x.shared)
                `((defthmd ,(intern-in-package-of-symbol (cat (symbol-name x.acc-name) "-WHEN-WRONG-KIND")
                                                         x.acc-name)
                    (implies (not ,prod.guard)
@@ -941,7 +955,7 @@
                                             `(,x.fix nil)
                                           nil)
                                       `(b* ((,sum.xvar nil)
-                                            . ,(flexprod-fields-typefix-bindings prod.fields))
+                                            . ,(flexprod-fields-typefix-bindings prod.fields x.reqfix-vars))
                                          ,x.reqfix))))
                    :hints(("Goal" :in-theory
                            (disable ,@(and sum.kind `(,sum.kind)))))))))

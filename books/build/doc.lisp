@@ -1200,7 +1200,8 @@ use.  For instance, if we want to certify @('foo.lisp') using
   :short "(Advanced) how to distribute ACL2 book building over a cluster
 of machines."
 
-  :long "<p>Warning: getting a cluster set up and running smoothly is a
+  :long (concatenate 'string
+                     "<p>Warning: getting a cluster set up and running smoothly is a
 significant undertaking.  Aside from hardware costs, it may take significant
 energy to install and administer the system, and you will need to learn how to
 effectively use the queuing system.  You'll probably also need to be ready to
@@ -1275,6 +1276,37 @@ distribute the jobs to your cluster.  A suitable command is one that:</p>
 redirection; we embed that into the command itself.</p>
 
 
+<h3>Setting environment variables visible to the queuing system</h3>
+
+<p>The build system scans books for lines containing the pattern</p>
+@({
+ ; cert-env: (varname1=value1, varname2, ...)
+ })
+
+<p>Each of these varname/value pairs are set in the environment before calling
+STARTJOB to build the book; these can therefore be set in such a way as to give
+information to the queuing system about how the book needs to be built.  If a
+varname is included without a corresponding value, the value defaults to 1.</p>
+
+<p>The build system also scan for some particular patterns to help define how
+much memory and time the book should need to be allocated. The following kinds
+of set-max-mem forms are recognized and used to generate the environment
+variable CERT_MAX_MEM:</p>
+
+@({
+ (" ;; note: string breaks here to prevent warnings about unsupported
+    ;; set-max-mem args when scanning this file
+                     "set-max-mem (expt 2 k))
+ (" "set-max-mem (* n (expt 2 30))) ;; N gigabytes
+ (" "set-max-mem (* (expt 2 30) n))
+ })
+
+<p>Additionally, the following pattern is scanned to set the environment variable CERT_MAX_TIME.
+Note this isn't a real ACL2 event, so it should occur in a comment:</p>
+@({ 
+ ; (set-max-time N)
+ })
+
 <h3>Support for NFS Lag</h3>
 
 <p>We originally found that our builds would often \"fail\" due to the
@@ -1293,7 +1325,7 @@ following scenario:</p>
 <p>To avoid this, @('cert.pl') now has special support for NFS lag.  We now use
 exit codes instead of files to determine success.  In cases where the exit code
 says the job completed successfully, we wait until @('A.cert') becomes visible
-to the head node before returning control to the Makefile.</p>")
+to the head node before returning control to the Makefile.</p>"))
 
 (xdoc::order-subtopics cert.pl
   (preliminaries certifying-simple-books pre-certify-book-commands

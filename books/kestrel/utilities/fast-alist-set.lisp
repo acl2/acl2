@@ -149,7 +149,7 @@
 ;; A set represented as a fast-alist. Elements in the set are bound to t.
 ;; Elements not in the set are either bound to nil or not bound to anything.
 (defund fast-alist-setp (set)
-  (declare (xargs :guard t ))
+  (declare (xargs :guard t))
   (if (atom set)
       (or ;; (null set)    ; neither a size nor a name
           (natp set)    ; size hint
@@ -502,7 +502,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (fast-alist-fork-redef) (STRIP-CARS CLEAR-KEYS-SIMPLE alistp)))))
 
 (defthm cdr-of-last-of-hons-acons
-  (Implies (true-listp alist) ; gen?
+  (implies (true-listp alist) ; gen?
            (equal (cdr (last (hons-acons key val alist)))
                   (cdr (last alist))))
   :hints (("Goal" :in-theory (enable hons-acons))))

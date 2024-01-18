@@ -44,6 +44,14 @@
 (defenum svar-overridetype-p
   ( nil :val :test 3 4 5 6 7))
 
+(fty::deflist svar-overridetypelist :elt-type svar-overridetype-p :true-listp t)
+
+(local
+ (defthm equal-of-svar-overridetype-fix
+   (implies (Equal (svar-overridetype-fix x) (svar-overridetype-fix y))
+            (svar-overridetype-equiv x y))
+   :rule-classes :forward-chaining))
+
 
 (defthmd svar-overridetype-fix-possibilities
   (or (not (svar-overridetype-fix x))
@@ -66,7 +74,30 @@
       ((nil) (eql bits 0))
       (:val (eql bits 1))
       (:test (eql bits 2))
-      (t (eql bits type)))))
+      (t (eql bits type))))
+  ///
+  
+
+  (defthmd svar-override-p-when-other
+    (implies (and (svar-override-p x type2)
+                  (not (svar-overridetype-equiv type1 type2)))
+             (not (svar-override-p x type1)))
+    :hints(("Goal" :in-theory (enable svar-override-p)))))
+
+(define svar-override-p* ((x svar-p)
+                          (types svar-overridetypelist-p))
+  (if (atom types)
+      nil
+    (or (svar-override-p x (car types))
+        (svar-override-p* x (cdr types))))
+  ///
+  (defthm svar-override-p*-when-svar-override-p
+    (implies (svar-override-p x type)
+             (iff (svar-override-p* x types)
+                  (member-equal (svar-overridetype-fix type)
+                                (svar-overridetypelist-fix types))))
+    :hints(("Goal" :in-theory (enable svar-overridetypelist-fix
+                                      svar-override-p-when-other)))))
 
 (define svarlist-override-p ((x svarlist-p)
                              (type svar-overridetype-p))
@@ -87,6 +118,68 @@
                                     (acl2::element-list-p (lambda (x) (svarlist-override-p x type))))
                          (x x) (y x-equiv)))
            :in-theory (enable svarlist-override-p)))))
+
+(define svarlist-override-p* ((x svarlist-p)
+                              (types svar-overridetypelist-p))
+  (if (atom x)
+      t
+    (and (svar-override-p* (car x) types)
+         (svarlist-override-p* (cdr x) types)))
+  ///
+  (defthm svarlist-override-p*-of-append
+    (iff (svarlist-override-p* (append x y) types)
+         (and (svarlist-override-p* x types)
+              (svarlist-override-p* y types))))
+
+  (defcong set-equiv equal (svarlist-override-p* x types) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (svar-override-p* x types)))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-override-p* x types))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-override-p*)))))
+
+
+(define svarlist-nonoverride-p ((x svarlist-p)
+                             (type svar-overridetype-p))
+  (if (atom x)
+      t
+    (and (not (svar-override-p (car x) type))
+         (svarlist-nonoverride-p (cdr x) type)))
+  ///
+  (defthm svarlist-nonoverride-p-of-append
+    (iff (svarlist-nonoverride-p (append x y) type)
+         (and (svarlist-nonoverride-p x type)
+              (svarlist-nonoverride-p y type))))
+
+  (defcong set-equiv equal (svarlist-nonoverride-p x type) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (not (svar-override-p x type))))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-nonoverride-p x type))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-nonoverride-p)))))
+
+(define svarlist-nonoverride-p* ((x svarlist-p)
+                              (types svar-overridetypelist-p))
+  (if (atom x)
+      t
+    (and (not (svar-override-p* (car x) types))
+         (svarlist-nonoverride-p* (cdr x) types)))
+  ///
+  (defthm svarlist-nonoverride-p*-of-append
+    (iff (svarlist-nonoverride-p* (append x y) types)
+         (and (svarlist-nonoverride-p* x types)
+              (svarlist-nonoverride-p* y types))))
+
+  (defcong set-equiv equal (svarlist-nonoverride-p* x types) 1
+  :hints (("goal" :use ((:instance (:functional-instance acl2::element-list-p-set-equiv-congruence
+                                    (acl2::element-p (lambda (x) (not (svar-override-p* x types))))
+                                    (acl2::element-list-final-cdr-p (lambda (x) t))
+                                    (acl2::element-list-p (lambda (x) (svarlist-nonoverride-p* x types))))
+                         (x x) (y x-equiv)))
+           :in-theory (enable svarlist-nonoverride-p*)))))
+  
 
 (define svar-change-override ((x svar-p)
                               (type svar-overridetype-p))
@@ -116,6 +209,15 @@
     :hints(("Goal" :in-theory (enable svar-override-p
                                       bitops::loghead-identity
                                       svar-overridetype-fix-possibilities))))
+
+  (defret svar-override-p*-of-<fn>
+    (iff (svar-override-p* new-x types)
+         (member-equal (svar-overridetype-fix type)
+                       (svar-overridetypelist-fix types)))
+    :hints(("Goal" :in-theory (e/d (svar-overridetypelist-fix
+                                    svar-override-p*)
+                                   (<fn>))
+            :induct (svar-overridetypelist-fix types))))
 
   (local (in-theory (disable bitops::logapp-of-i-0)))
 
@@ -739,12 +841,6 @@
                                              svarlist-fix
                                              equal-of-svar-change-override)
                    :induct t))))
-
-  (defthmd svar-override-p-when-other
-    (implies (and (svar-override-p x type2)
-                  (not (svar-overridetype-equiv type1 type2)))
-             (not (svar-override-p x type1)))
-    :hints(("Goal" :in-theory (enable svar-override-p))))
 
   (local (defret member-non-override-test-testvars-of-<fn>
            (implies (not (svar-override-p v :test))

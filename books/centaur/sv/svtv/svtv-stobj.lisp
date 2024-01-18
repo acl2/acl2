@@ -1366,6 +1366,18 @@
     (svtv-data$c->flatnorm-validp new-svtv-data)))
 
 
+(define svtv-data-namemap->lhsmap ((user-names svtv-namemap-p)
+                                   (svtv-data))
+  :guard (svtv-data->flatten-validp svtv-data)
+  :returns (mv errs (namemap svtv-name-lhs-map-p))
+  (b* ((design (svtv-data->design svtv-data)))
+    (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                (aliases (svtv-data->aliases svtv-data)))
+               (errs lhsmap)
+               (svtv-namemap->lhsmap user-names
+                                     (moddb-modname-get-index (design->top design) moddb)
+                                     moddb aliases)
+               (mv errs lhsmap))))
 
 (define svtv-data-compute-namemap (svtv-data)
   :returns (mv err new-svtv-data)
@@ -1374,23 +1386,20 @@
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable normalize-stobjs-of-svtv-design-flatten
                                           svtv-data$c-namemap-okp
-                                          svtv-data$c-flatten-okp))))
+                                          svtv-data$c-flatten-okp
+                                          svtv-data-namemap->lhsmap))))
   (time$
    (b* ((user-names (svtv-data->user-names svtv-data))
-        (design (svtv-data->design svtv-data)))
-     (stobj-let ((moddb (svtv-data->moddb svtv-data))
-                 (aliases (svtv-data->aliases svtv-data)))
-                (errs lhsmap)
-                (svtv-namemap->lhsmap user-names
-                                      (moddb-modname-get-index (design->top design) moddb)
-                                      moddb aliases)
-                (b* (((when errs)
-                      (mv (msg-list errs) svtv-data))
-                     (svtv-data (update-svtv-data->namemap lhsmap svtv-data))
-                     (svtv-data (update-svtv-data->namemap-validp t svtv-data)))
-                  (mv nil svtv-data))))
+        ((mv errs lhsmap) (svtv-data-namemap->lhsmap user-names svtv-data))
+        ((when errs)
+         (mv (msg-list errs) svtv-data))
+        (svtv-data (update-svtv-data->namemap lhsmap svtv-data))
+        (svtv-data (update-svtv-data->namemap-validp t svtv-data)))
+     (mv nil svtv-data))
+     
    :msg "; Svtv-data namemap: ~st seconds, ~sa bytes.~%")
   ///
+  (local (in-theory (enable svtv-data-namemap->lhsmap)))
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
                   (not (equal key :namemap))

@@ -20,6 +20,8 @@
 (include-book "unguarded-defuns")
 (include-book "make-evaluator-simple")
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
@@ -102,6 +104,7 @@
     (min min-unguarded)
     (max max-unguarded)
     (integer-length integer-length-unguarded)
+    (ceiling-of-lg ceiling-of-lg-unguarded)
     ;; (return-last return-last-unguarded) ;we don't want to execute this normally, because that would mean executing the eager-arg
     (width-of-widest-int width-of-widest-int-unguarded)
 
@@ -149,5 +152,5 @@
     (bv-array-read bv-array-read-unguarded)
     (bv-array-write bv-array-write-unguarded)))
 
-;; Makes the evaluator:
+;; Makes the evaluator (also checks that each alias given is equivalent to its function):
 (make-evaluator-simple basic *axe-evaluator-basic-fns-and-aliases*)

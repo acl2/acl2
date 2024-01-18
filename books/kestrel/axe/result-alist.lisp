@@ -162,6 +162,11 @@
            (nat-listp (get-unmapped-dargs dargs alist acc unmapped-foundp)))
   :hints (("Goal" :in-theory (enable get-unmapped-dargs bounded-node-result-alistp))))
 
+(defthm true-listp-of-get-unmapped-dargs
+  (implies (true-listp acc)
+           (true-listp (get-unmapped-dargs dargs alist acc unmapped-foundp)))
+  :hints (("Goal" :in-theory (enable get-unmapped-dargs bounded-node-result-alistp))))
+
 (defthm lookup-node-in-alist-when-not-get-unmapped-dargs
   (implies (and (not (get-unmapped-dargs dargs alist acc untagged-foundp)) ;all args are done
                 (member-equal darg dargs)

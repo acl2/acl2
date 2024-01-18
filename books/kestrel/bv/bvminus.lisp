@@ -180,7 +180,7 @@
                 (integerp y))
            (equal (bvminus size x (binary-+ x y))
                   (bvuminus size y)))
-  :hints (("Goal" :in-theory (enable bvplus bvuminus acl2::bvchop-of-sum-cases bvminus))))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))
 
 ;; gets rid of x
 (defthm bvminus-of-+-same-arg2-alt
@@ -188,4 +188,4 @@
                 (integerp y))
            (equal (bvminus size x (binary-+ y x))
                   (bvuminus size y)))
-  :hints (("Goal" :in-theory (enable bvplus bvuminus acl2::bvchop-of-sum-cases bvminus))))
+  :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))

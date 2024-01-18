@@ -285,7 +285,7 @@
 (defthm all-natp-of-mv-nth-0-of-split-list-fast
   (implies (all-natp lst)
            (all-natp (mv-nth 0 (split-list-fast lst))))
-  :hints (("Goal" :in-theory (e/d (split-list-fast) ()))))
+  :hints (("Goal" :in-theory (enable split-list-fast))))
 
 (defthm all-natp-of-mv-nth-1-of-split-list-fast-aux
   (implies (all-natp lst)
@@ -406,7 +406,7 @@
                 (true-listp lst))
            (eqlable-listp (merge-sort-< lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (merge-sort-<) ()))))
+           :in-theory (enable merge-sort-<))))
 
 (defthm eqlable-listp-when-all-natp
   (implies (and (all-natp x)

@@ -38,5 +38,6 @@
 (include-book "svtv-stobj-rewrite")
 (include-book "svtv-stobj-export")
 (include-book "svtv-stobj-pipeline-thm")
+(include-book "svtv-stobj-namemap")
 (include-book "svtv-generalize")
 (include-book "svtv-equiv-thm")

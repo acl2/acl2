@@ -1740,6 +1740,10 @@ event. </p>
 verifying a multiplier. It can be useful when setting some control signals or
 when assuming some simulation conditions. </li>
 
+<li> <b>:vacuity-check</b> is optional and should be nil (default) or t. When set to t,
+the program checks whether something in the assumptions / hypotheses (passed in :hyp)
+are contradictory. </li>
+
 <li> <b>:then-fgl</b>  is optional. To invoke FGL (calls a SAT solver) after
   rewriter finishes. FGL is configurable, for example, to call the desired SAT
   solver and/or perform AIG transforms. See below.  </li>
@@ -1756,7 +1760,11 @@ when assuming some simulation conditions. </li>
   fail to prove.</li>
 <li> <b>:print-message</b> is optional and should be a string if given. The
   program will also generate a proof summary file after it has run. Users may
-  pass a custom message through this argument that will appear in the proof summary file.</li>
+  pass a custom message through this argument that will appear in the proof
+  summary file.</li>
+
+
+
 </ul>
 
 <p>vescmul-verify will create a proof-summary file under the

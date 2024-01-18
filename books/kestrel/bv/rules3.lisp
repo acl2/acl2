@@ -1185,6 +1185,20 @@
 ;;; rotate rules involving bvashr
 ;;;
 
+;todo: more like this?
+(defthm bvor-of-bvshl-and-bvashr-same
+  (implies (and (equal size (+ amt1 amt2))
+                (equal (getbit (+ -1 size) x) 0) ; otherwise, the arithmetic shift copies this bit
+                ;; (unsigned-byte-p size x)
+                (< amt1 size) ; gen?
+                ;; (<= amt2 size) ; gen?
+                (natp amt1)
+                (natp amt2)
+                (posp size))
+           (equal (bvor size (bvshl size x amt1) (bvashr size x amt2))
+                  (leftrotate size amt1 x)))
+  :hints (("Goal" :in-theory (enable bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate slice-leibniz))))
+
 ;an idiom for rotating by 16 bits in a 32-bit field:
 ;gen!
 (defthm bvor-of-bvshl-and-bvashr
@@ -2295,16 +2309,6 @@
   (equal (equal (myif test y x) x)
          (myif test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
-
-(defthm boolif-of-myif-arg1
-  (equal (boolif test (myif test2 a b) c)
-         (boolif test (boolif test2 a b) c))
-  :hints (("Goal" :in-theory (enable boolif))))
-
-(defthm boolif-of-myif-arg2
-  (equal (boolif test c (myif test2 a b))
-         (boolif test c (boolif test2 a b)))
-  :hints (("Goal" :in-theory (enable boolif))))
 
 ;gen the 0?
 ;gen

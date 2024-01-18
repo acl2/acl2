@@ -1,7 +1,7 @@
 ; Functions to update a node-replacement-array (new version)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -96,8 +96,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv node-replacement-array node-replacement-count undo-pairs).  The first elemend of the undo-pairs must be undone first, and so on.
+;; Returns (mv node-replacement-array node-replacement-count undo-pairs).  The first element of the undo-pairs must be undone first, and so on.
 ;; The order of the undo-pairs returned may be crucial if we change the same array element twice (the array write that was done first needs to be undone last)
+;; See also term-replacement-alist-for-assumption.
 (defund update-node-replacement-array-for-assuming-possibly-negated-nodenums (possibly-negated-nodenums
                                                                               node-replacement-array node-replacement-count
                                                                               dag-array dag-len
@@ -131,6 +132,8 @@
       (if (consp pnn) ; check for (not <nodenum>)
           ;; Since we are assuming (not <nodenum>), we can set <nodenum> to be replaced with 'nil:
           (let* ((negated-nodenum (farg1 pnn))
+                 ;; We will have the array map negated-nodenum to *nil*.
+                 ;; Save the old value, for use when undoing:
                  (old-val (if (< negated-nodenum node-replacement-count)
                               (aref1 'node-replacement-array node-replacement-array negated-nodenum)
                             nil)))
@@ -144,11 +147,17 @@
         ;; pnn is a nodenum, so look at its expression:
         (let ((expr (aref1 'dag-array dag-array pnn)))
           (if (atom expr)
-              (prog2$ (cw "Warning: Variable assumption, ~x0, encountered.~%" expr) ;skip it
-                      (update-node-replacement-array-for-assuming-possibly-negated-nodenums (rest possibly-negated-nodenums)
-                                                                                            node-replacement-array node-replacement-count
-                                                                                            dag-array dag-len
-                                                                                            known-booleans undo-pairs-acc))
+              ;; We will have the array map pnn to *non-nil* (can't do better because a variable is not necessarily boolean).
+              ;; Save the old value, for use when undoing:
+              (let ((old-val (if (< pnn node-replacement-count)
+                                 (aref1 'node-replacement-array node-replacement-array pnn)
+                               nil)))
+                (mv-let (node-replacement-array node-replacement-count)
+                  (add-node-replacement-entry-and-maybe-expand pnn *non-nil* node-replacement-array node-replacement-count)
+                  (update-node-replacement-array-for-assuming-possibly-negated-nodenums (rest possibly-negated-nodenums)
+                                                                                        node-replacement-array node-replacement-count
+                                                                                        dag-array dag-len
+                                                                                        known-booleans (acons pnn old-val undo-pairs-acc))))
             (if (quotep expr)
                 (prog2$ (cw "Warning: Quotep assumption, ~x0, encountered.~%" expr) ;skip it
                         (update-node-replacement-array-for-assuming-possibly-negated-nodenums (rest possibly-negated-nodenums)
@@ -174,7 +183,8 @@
                             (mv pnn *t*) ; todo: maybe consider also adding the reverse equality, but that would mean adding nodes
                             ))))
                     ;; Now replace the chosen NODENUM with the chosen REPLACEMENT:
-                    (let ((old-val (if (< nodenum node-replacement-count)
+                    (let (;; Save the old value, for use when undoing:
+                          (old-val (if (< nodenum node-replacement-count)
                                        (aref1 'node-replacement-array node-replacement-array nodenum)
                                      nil)))
                       (mv-let (node-replacement-array node-replacement-count)
@@ -183,6 +193,7 @@
                                                                                               node-replacement-array node-replacement-count
                                                                                               dag-array dag-len known-booleans
                                                                                               (acons nodenum old-val undo-pairs-acc)))))
+                ;; TODO: Consider adding support for NOT, BOOLAND, etc. -- or perhaps they cannot appear as exprs for the possibly-negated-nodenums that we create.
                 ;; usual case (not a call of equal):
                 (if (member-eq (ffn-symb expr) known-booleans)
                     ;; Since we are assuming <nodenum> and it's boolean, we can set it to be replaced with 't:
@@ -275,6 +286,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This extracts conjuncts from NODENUM.
 ;; TODO: Consider optimizing by doing things more directly
 ;; Returns (mv node-replacement-array node-replacement-count undo-pairs).
 (defund update-node-replacement-array-for-assuming-node (nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)
@@ -365,6 +377,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This extracts (negated) disjuncts from NODENUM.
 ;; TODO: Consider optimizing by doing things more directly
 ;; Returns (mv node-replacement-array node-replacement-count undo-pairs).
 (defund update-node-replacement-array-for-assuming-negation-of-node (nodenum node-replacement-array node-replacement-count dag-array dag-len known-booleans)

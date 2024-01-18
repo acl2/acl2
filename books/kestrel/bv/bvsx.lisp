@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -139,8 +139,14 @@
                       0))))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+;rename
 (defthm bvsx-of-0
   (equal (bvsx new-size old-size 0)
+         0)
+  :hints (("Goal" :in-theory (enable bvsx bvcat))))
+
+(defthm bvsx-of-0-arg1
+  (equal (bvsx 0 old-size val)
          0)
   :hints (("Goal" :in-theory (enable bvsx bvcat))))
 
@@ -239,3 +245,11 @@
            (equal (equal 0 (bvsx size old-size x))
                   (equal 0 (bvchop old-size x))))
   :hints (("Goal" :in-theory (enable bvsx getbit-when-equal-of-constant-and-bvchop))))
+
+;gen
+(defthm bvcat-of-if-becomes-bvsx-64-64
+  (equal (bvcat 64 (if (equal 1 (getbit 63 x)) 18446744073709551615 0) 64 x)
+         (bvsx 128 64 x))
+  :hints (("Goal" :in-theory (enable
+                              bvsx ;todo
+                              ))))

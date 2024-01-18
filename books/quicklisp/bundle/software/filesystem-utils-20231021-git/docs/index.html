@@ -1,0 +1,159 @@
+<!DOCTYPE html> <html lang="EN"> <head> <meta charset="utf-8"> <title>Filesystem Utils</title> <style>html body{margin:0 auto 0 auto;padding:20px;max-width:1024px;font-family:sans-serif;font-size:14pt;overflow-y:scroll;}html body a{text-decoration:none;}html body a[href]{color:#0055AA;}html body a[href]:hover{color:#0088EE;}html body pre{background:#FAFAFA;border:1px solid #DDDDDD;padding:0.75em;overflow-x:auto;}html body pre >code a[href]{color:#223388;}article.project h1{font-size:1.7em;}article.project h1,article.project h2,article.project h3,article.project h4,article.project h5,article.project h6{margin:0.2em 0 0.1em 0;text-indent:1em;}article.project >header{text-align:center;}article.project >header img.logo{display:block;margin:auto;max-height:170px;}article.project >header h1{display:inline-block;text-indent:0;font-size:2.5em;}article.project >header .version{vertical-align:bottom;}article.project >header .languages{margin-top:-0.5em;text-transform:capitalize;}article.project >header .description{margin:0;}article.project >header .pages{margin-top:0.5em;font-size:1.2em;text-transform:capitalize;}article.project >header .pages a{display:inline-block;padding:0 0.2em;}article.project >section{margin:1em 0 1em 0;}article.project #index >ul{list-style:none;margin:0;padding:0;}article.project .row label{display:inline-block;min-width:8em;}article.project #system .row{display:flex;}article.project #system #dependencies{display:inline;margin:0;padding:0;}article.project #system #dependencies li{display:inline;padding:0 0.2em;}article.definition{margin:1em 0 0 0;}article.definition >header h1,article.definition >header h2,article.definition >header h3,article.definition >header h4,article.definition >header h5,article.definition >header h6{text-indent:0;display:inline-block;}article.definition >header ul{display:inline-block;list-style:none;margin:0;padding:0;}article.definition >header ul li{display:inline-block;padding:0 0.2em 0 0;}article.definition >header .visibility{display:none;}article.definition >header .visibility,article.definition >header .type{text-transform:lowercase;}article.definition >header .source-link{visibility:hidden;float:right;}article.definition >header .source-link:after{visibility:visible;content:"[SRC]";}article.definition .docstring{margin:0 0 0 1em;}article.definition .docstring pre{font-size:0.8em;white-space:pre-wrap;}.definition.package >header ul.nicknames{display:inline-block;list-style:none;margin:0;padding:0 0 0 1em;}.definition.package >header ul.nicknames li{display:inline;}.definition.package >header ul.nicknames:before{content:"(";}.definition.package >header ul.nicknames:after{content:")";}.definition.package ul.definitions{margin:0;list-style:none;padding:0 0 0 0.5em;}.definition.callable >header .name:before,.definition.type >header .name:before{content:"(";font-weight:normal;}.definition.callable >header .arguments:after,.definition.type >header .arguments:after{content:")";}.definition.callable >header .arguments .arguments:before,.definition.type >header .arguments .arguments:before{content:"(";}.definition.callable >header .arguments .argument,.definition.type >header .arguments .argument{padding:0;}.definition.callable >header .arguments .argument.lambda-list-keyword,.definition.type >header .arguments .argument.lambda-list-keyword{color:#991155;}.definition li>mark{background:none;border-left:0.3em solid #0088EE;padding-left:0.3em;display:block;} </style> </head> <body> <article class="project"> <header>   <h1>filesystem utils</h1>   <span class="version">1.0.0</span>    <p class="description">A collection of utilities for filesystem interaction.</p>   </header> <section id="documentation"><h2 id="about_filesystem-utils">About Filesystem-Utils</h2> <p>This is an extension library to pathname-utils, to allow dealing with common problems with filesystems, such as listing files, probing file types, determining default directories, etc.</p> <h2 id="how_to">How To</h2> <p>Since this is a purely utility/toolkit library, simply having a look at the symbol index should give you the best idea of what is offered.</p> <h2 id="also_see">Also See</h2> <ul> <li><a href="https://shinmera.github.io/pathname-utils">pathname-utils</a> For pathname manipulation functions</li> <li><a href="https://shinmera.github.io/file-attributes">file-attributes</a> For extra information on files available on the filesystem</li> </ul> </section>   <section id="system"> <h2>System Information</h2>  <div class="row"> <label for="version">Version:</label> <a id="version">1.0.0</a> </div>   <div class="row"> <label for="dependencies">Dependencies:</label> <ul id="dependencies"><li><a class="external">trivial-features</a></li><li><a class="external" href="https://Shinmera.github.io/pathname-utils/">pathname-utils</a></li><li><a class="external" href="https://Shinmera.github.io/documentation-utils/">documentation-utils</a></li><li><a class="external">sb-posix</a></li></ul> </div>   <div class="row"> <label for="author">Author:</label> <a id="author" href="mailto:shinmera@tymoon.eu">Nicolas Hafner</a> </div>   <div class="row"> <label for="license">License:</label> <a id="license" href="https://github.com/Shinmera/filesystem-utils/blob/master/LICENSE">zlib</a> </div>   <div class="row"> <label for="homepage">Homepage:</label> <a id="homepage" href="https://Shinmera.github.io/filesystem-utils/">https://Shinmera.github.io/filesystem-utils/</a> </div>   <div class="row"> <label for="sources">Sources:</label> <a id="sources" href="https://github.com/Shinmera/filesystem-utils.git">https://github.com/Shinmera/filesystem-utils.git</a> </div>  </section>    <section id="index"> <h2>Definition Index</h2> <ul> <li> <article class="definition package" id="PACKAGE ORG.SHIRAKUMO.FILESYSTEM-UTILS"> <header> <h3> <a href="#PACKAGE%20ORG.SHIRAKUMO.FILESYSTEM-UTILS">ORG.SHIRAKUMO.FILESYSTEM-UTILS</a> </h3> <ul class="nicknames"></ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> <ul class="definitions"> <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:COPY-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ACOPY-FILE">COPY-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>    <li class="argument">TO</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">REPLACE</li>    <li class="argument">SKIP-ROOT</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L258">Source</a>  </header> <div class="docstring"><pre>Copies the file from FILE to TO.
+
+REPLACE may be one of:
+  - NIL       Never replaces the destination, and instead skips it.
+  - T         Always replaces the destination.
+  - :IF-NEWER Only replaces the destination if the source has a more
+              recent FILE-WRITE-DATE.
+
+When FILE is a directory, all children are copied to the target. If
+SKIP-ROOT is NIL, then the directory-name of FILE is replicated as the
+root of all contents within TO. Otherwise, the contents of FILE are
+copied directly to TO.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:CREATE-SYMBOLIC-LINK"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ACREATE-SYMBOLIC-LINK">CREATE-SYMBOLIC-LINK</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">LINK-FILE</li>    <li class="argument">DESTINATION-FILE</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L237">Source</a>  </header> <div class="docstring"><pre>Attempts to create a symbolic link file at LINK-FILE, pointing to DESTINATION-FILE.
+
+This may signal an error for a variety of reasons:
+- The filesystem does not support symbolic links
+- The implementation does not support creating symbolic links
+- The implementation is not permitted to create symbolic links
+- The target filesystem cannot be pointed to</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:CURRENT-DIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ACURRENT-DIRECTORY">CURRENT-DIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L71">Source</a>  </header> <div class="docstring"><pre>Accesses the &quot;current working directory&quot;.
+
+Note that setting this directory is not multithreading safe, as the
+directory is global to the process.
+
+See <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AWITH-CURRENT-DIRECTORY" class="xref">WITH-CURRENT-DIRECTORY</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:(SETF CURRENT-DIRECTORY)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3A%28SETF%20CURRENT-DIRECTORY%29">(SETF CURRENT-DIRECTORY)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">NEW</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L87">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:DIRECTORY*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY%2A">DIRECTORY*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">DIRECTORY</li>    <li class="argument lambda-list-keyword">&amp;REST</li>    <li class="argument">ARGS</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument lambda-list-keyword">&amp;ALLOW-OTHER-KEYS</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L137">Source</a>  </header> <div class="docstring"><pre>Lists files matching the wild DIRECTORY pathname.
+
+Like CL:DIRECTORY, but tries *not* to resolve any symlinks of the
+listing, returning direct descendants of the directory root.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:DIRECTORY-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY-P">DIRECTORY-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L207">Source</a>  </header> <div class="docstring"><pre>Returns T if the given pathname points to a directory.
+
+This differs from PATHNAME-UTILS:DIRECTORY-P in the following way:
+If the pathname is not a directory pathname and instead points to a
+file, but the file is actually a directory file, this function still
+returns T.
+
+See <a href="https://Shinmera.github.io/pathname-utils/#FUNCTION%20PATHNAME-UTILS%3ADIRECTORY-P" class="xref">PATHNAME-UTILS:DIRECTORY-P</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:ENSURE-DELETED"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AENSURE-DELETED">ENSURE-DELETED</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L117">Source</a>  </header> <div class="docstring"><pre>Deletes the given file if it still exists.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AFILE-EXISTS-P" class="xref">FILE-EXISTS-P</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:FILE-EXISTS-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AFILE-EXISTS-P">FILE-EXISTS-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L128">Source</a>  </header> <div class="docstring"><pre>Returns the truename of the file if it exists.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:FILE-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AFILE-P">FILE-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L218">Source</a>  </header> <div class="docstring"><pre>Returns T if the given pathname points to a regular file.
+
+This differs from PATHNAME-UTILS:FILE-P in the following way:
+If the pathname is a file pathname, but points to a file that is not a
+regular file (and thus a directory, device, or other type of file
+node), then this function returns NIL.
+
+See <a href="https://Shinmera.github.io/pathname-utils/#FUNCTION%20PATHNAME-UTILS%3AFILE-P" class="xref">PATHNAME-UTILS:FILE-P</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:LIST-CONTENTS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ALIST-CONTENTS">LIST-CONTENTS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">DIRECTORY</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L147">Source</a>  </header> <div class="docstring"><pre>Lists all files and directories within DIRECTORY.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY%2A" class="xref">DIRECTORY*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:LIST-DEVICES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ALIST-DEVICES">LIST-DEVICES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument lambda-list-keyword">&amp;OPTIONAL</li>    <li class="argument">HOST</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L180">Source</a>  </header> <div class="docstring"><pre>Lists all known pathname devices.
+
+The HOST may be given as a hint for devices to list under the given
+host. The implementation may disregard this hint, however.
+
+This may return NIL if the implementation cannot enumerate the devices.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:LIST-DIRECTORIES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ALIST-DIRECTORIES">LIST-DIRECTORIES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">DIRECTORY</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L155">Source</a>  </header> <div class="docstring"><pre>Lists all directories within DIRECTORY.
+
+This excludes any files that don't denote directories, and
+specifically returns them as directory pathnames.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY%2A" class="xref">DIRECTORY*</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY-P" class="xref">DIRECTORY-P</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:LIST-FILES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ALIST-FILES">LIST-FILES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">DIRECTORY</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L150">Source</a>  </header> <div class="docstring"><pre>Lists all files within DIRECTORY.
+
+This excludes any subdirectories.
+Note that non-regular files are still included in this listing,
+meaning that not all returned files are necessarily FILE-P.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY%2A" class="xref">DIRECTORY*</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY-P" class="xref">DIRECTORY-P</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:LIST-HOSTS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ALIST-HOSTS">LIST-HOSTS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L176">Source</a>  </header> <div class="docstring"><pre>List all known pathname hosts.
+
+This may return NIL if the implementation cannot enumerate the hosts.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:MAKE-TEMPORARY-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AMAKE-TEMPORARY-FILE">MAKE-TEMPORARY-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">NAME</li>    <li class="argument">TYPE</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L55">Source</a>  </header> <div class="docstring"><pre>Create a path to a temporary file.
+
+If you pass NAME, it is up to you to ensure that the path can be
+re-used if it exists already. Otherwise, the file is guaranteed to not
+exist yet.
+
+The file will always be in the system's temporary directory.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ATEMPORARY-DIRECTORY" class="xref">TEMPORARY-DIRECTORY</a>
+See <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AWITH-TEMPORARY-FILE" class="xref">WITH-TEMPORARY-FILE</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:RENAME-FILE*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ARENAME-FILE%2A">RENAME-FILE*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>    <li class="argument">TO</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L247">Source</a>  </header> <div class="docstring"><pre>Renames FILE to TO, overwriting TO if it exists.
+
+Like RENAME-FILE on most implementations, but ensures the destination
+is overwritten if it exists.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:RESOLVE-SYMBOLIC-LINKS"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ARESOLVE-SYMBOLIC-LINKS">RESOLVE-SYMBOLIC-LINKS</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L195">Source</a>  </header> <div class="docstring"><pre>Resolve symbolic links in the pathname as much as possible.
+
+This does nothing for paths that are not absolute, physical pathnames.
+For absolute, physical pathnames it attempts to resolve all symbolic
+links or relative components in the pathname to arrive at a canonical
+pathname for the file.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:RUNTIME-DIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ARUNTIME-DIRECTORY">RUNTIME-DIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L10">Source</a>  </header> <div class="docstring"><pre>Returns the directory the executable was spawned from.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:SYMBOLIC-LINK-P"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ASYMBOLIC-LINK-P">SYMBOLIC-LINK-P</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L227">Source</a>  </header> <div class="docstring"><pre>Returns T if the given pathname points to a symbolic link file.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AFILE-P" class="xref">FILE-P</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ADIRECTORY-P" class="xref">DIRECTORY-P</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ACREATE-SYMBOLIC-LINK" class="xref">CREATE-SYMBOLIC-LINK</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:TEMPORARY-DIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ATEMPORARY-DIRECTORY">TEMPORARY-DIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L46">Source</a>  </header> <div class="docstring"><pre>Returns the directory for temporary files.
+
+Note: This makes no guarantee about the &quot;temporary-ness&quot; of the
+files. They may be cleared out after a reboot, after the lisp process
+terminates, or only at the user's discretion. If you crate temporary
+files within this directory, you should delete them after they're no
+longer needed.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AMAKE-TEMPORARY-FILE" class="xref">MAKE-TEMPORARY-FILE</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:TRUENAME*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ATRUENAME%2A">TRUENAME*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATHNAME</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L121">Source</a>  </header> <div class="docstring"><pre>Like TRUENAME but ensures that it works on directory files as well on every implementation.</pre></div> </article> </li>  <li> <article class="definition macro callable" id="MACRO-FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:WITH-CURRENT-DIRECTORY"> <header> <span class="visibility">EXTERNAL</span> <span class="type">MACRO</span> <h4 class="name"> <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AWITH-CURRENT-DIRECTORY">WITH-CURRENT-DIRECTORY</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <ul class="arguments"> <li class="argument">DIRECTORY</li> </ul>    <li class="argument lambda-list-keyword">&amp;BODY</li>    <li class="argument">BODY</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L114">Source</a>  </header> <div class="docstring"><pre>Execute body while the current working directory is changed.
+
+This guarantees the following invariant: the value of
+CURRENT-DIRECTORY is the same before entering BODY as it is after BODY
+exits for any reason. the value of CURRENT-DIRECTORY is equivalent to
+the passed DIRECTORY when BODY begins execution.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3ACURRENT-DIRECTORY" class="xref">CURRENT-DIRECTORY</a></pre></div> </article> </li>  <li> <article class="definition macro callable" id="MACRO-FUNCTION ORG.SHIRAKUMO.FILESYSTEM-UTILS:WITH-TEMPORARY-FILE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">MACRO</span> <h4 class="name"> <a href="#MACRO-FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AWITH-TEMPORARY-FILE">WITH-TEMPORARY-FILE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <ul class="arguments"> <li class="argument">PATH</li>  <li class="argument lambda-list-keyword">&amp;REST</li>  <li class="argument">ARGS</li> </ul>    <li class="argument lambda-list-keyword">&amp;BODY</li>    <li class="argument">BODY</li>  </ul>  <a class="source-link" href="https://github.com/Shinmera/filesystem-utils/blob/master/toolkit.lisp#L68">Source</a>  </header> <div class="docstring"><pre>Execute BODY with a temporary file pathname bout to PATH.
+
+ARGS are passed on to MAKE-TEMPORARY-FILE.
+The file is automatically deleted when BODY exits for any reason.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AMAKE-TEMPORARY-FILE" class="xref">MAKE-TEMPORARY-FILE</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILESYSTEM-UTILS%3AENSURE-DELETED" class="xref">ENSURE-DELETED</a></pre></div> </article> </li> </ul> </article> </li> </ul> </section>  </article> <script>window.addEventListener("DOMContentLoaded", function(){
+    var unmarkElement = function(el){
+        if(el.tagName === "mark" || el.tagName === "MARK"){
+            [].forEach.call(el.childNodes, function(child){
+                el.parentNode.insertBefore(child, el);
+            });
+            el.parentNode.removeChild(el);
+        }else if(el.parentNode.tagName === "mark"){
+            return unmarkElement(el.parentNode);
+        }
+        return null;
+    }
+
+    var unmarkAll = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("mark"), unmarkElement);
+    }
+    
+    var markElement = function(el){
+        if(el.parentNode.tagName === "mark" || el.parentNode.tagName === "MARK"){
+            return el.parentNode;
+        } else {
+            unmarkAll();
+            var marked = document.createElement("mark");
+            el.parentNode.insertBefore(marked, el);
+            marked.appendChild(el);
+            return marked;
+        }
+    }
+
+    var markFragmented = function(){
+        if(window.location.hash){
+            var el = document.getElementById(decodeURIComponent(window.location.hash.substr(1)));
+            if(el) markElement(el);
+        }
+    }
+
+    var registerXrefLink = function(link){
+        var el = document.getElementById(decodeURIComponent(link.getAttribute("href").substr(1)));
+        if(el){
+            link.addEventListener("click", function(){
+                markElement(el);
+            });
+        }
+    }
+
+    var registerXrefLinks = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("a.xref"), registerXrefLink);
+    }
+
+    markFragmented();
+    registerXrefLinks();
+}); </script> </body> </html> 

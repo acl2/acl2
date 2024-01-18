@@ -155,7 +155,9 @@
                 (integerp k))
            (equal (bv-array-read element-size len (bvmult index-width k index) data)
                   ;; The call to every-nth gets evaluated:
-                  (bv-array-read element-size (/ len k) index (every-nth k data))))
+                  (bv-array-read element-size (/ len k)
+                                 index ; consider ghis instead: (bvchop (- index-width (lg k)) index)
+                                 (every-nth k data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvmult unsigned-byte-p))))
 
 ;drop the other one?

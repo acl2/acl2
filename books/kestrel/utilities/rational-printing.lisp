@@ -50,13 +50,14 @@
 ;; Prints VAL, rounded to the hundredths place.
 ;; Returns nil.
 (defund print-to-hundredths (val)
-  (declare (xargs :guard (and (rationalp val)
-                              (<= 0 val))))
-  (let* ((val (round-to-hundredths val))
+  (declare (xargs :guard (rationalp val)))
+  (let* ((sign (if (< val 0) "-" ""))
+         (val (abs val))
+         (val (round-to-hundredths val))
          (integer-part (floor val 1))
          (fraction-part (- val integer-part))
          (tenths (floor (* fraction-part 10) 1))
          (fraction-part-no-tenths (- fraction-part (/ tenths 10)))
          (hundredths (floor (* fraction-part-no-tenths 100) 1)))
     ;; Hoping that using ~c here prevents any newlines:
-    (cw "~c0.~c1~c2" (cons integer-part (natural-length-decimal integer-part)) (cons tenths 1) (cons hundredths 1))))
+    (cw "~s0~c1.~c2~c3" sign (cons integer-part (natural-length-decimal integer-part)) (cons tenths 1) (cons hundredths 1))))

@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -53,7 +53,7 @@
             booleanp-of-boolif
             booleanp-of-boolor
             booleanp-of-booland
-            booleanp-of-bool-fix ;new
+            booleanp-of-bool-fix-rewrite ;new
             booleanp-of-consp ;move to list rules? ;i guess we are opening atom and endp
             booleanp-of-<
             booleanp-of-unsigned-byte-p
@@ -115,9 +115,16 @@
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
     boolif-of-not-same-arg3-alt
+    boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
     ;; Rules about equal:
     equal-of-t-when-booleanp-arg1
-    equal-of-t-when-booleanp-arg2))
+    equal-of-t-when-booleanp-arg2
+    ;; Rules about iff (or should we open iff, perhaps to expose and equality of bool-fixes)?:
+    iff-of-constant-arg1
+    iff-of-constant-arg2
+    iff-same
+    iff-bool-fix-arg1
+    iff-bool-fix-arg2))
 
 ;some of these may be necessary for case-splitting in the dag prover to work right
 (defun boolean-rules ()
@@ -131,13 +138,9 @@
      ;; todo: think about these: sometimes we prefer boolif:
      boolif-when-quotep-arg2 ; introduces boolor, or booland of not
      boolif-when-quotep-arg3 ; introduces boolor of not, or booland
-     boolif-x-x-y ; introduces boolor
-     boolif-x-y-x ; introduces booland
-
-     ;; Rules about iff (or should we open iff)?
-     ;; todo: move these to boolean-rules-safe
-     iff-of-constant-arg1
-     iff-of-constant-arg2)))
+     boolif-x-x-y-becomes-boolor ; introduces boolor
+     boolif-x-y-x-becomes-booland ; introduces booland
+     )))
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
@@ -165,7 +168,7 @@
             myif-of-t
             myif-of-constant-when-not-nil
             myif-nil-t
-            myif-t-nil
+            myif-of-t-and-nil-when-booleanp
             myif-same-branches
             myif-same-test
             myif-same-test2
@@ -174,13 +177,16 @@
             if-of-t
             if-of-nil
             if-same-branches
+            not-of-if
 
             fix-when-acl2-numberp
             acl2-numberp-of-+
             acl2-numberp-of-fix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
+
             double-rewrite
+            return-last
 
             not-stringp-of-cons)
           (mv-nth-rules)
@@ -363,6 +369,9 @@
     unsigned-byte-p-of-rightrotate
     unsigned-byte-p-of-rightrotate32
     unsigned-byte-p-of-bv-array-read-gen ;todo name
+    unsigned-byte-p-of-bvshl-gen
+    unsigned-byte-p-of-bvshr-gen
+    unsigned-byte-p-of-bvashr-gen
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
@@ -467,6 +476,48 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     ))
 
+;; TODO: Consider also the analogous rules about getbit?
+(defun bv-function-of-bvchop-rules ()
+  (declare (xargs :guard t))
+  '(;; TODO: add all other rules like this!:
+    bvnot-of-bvchop
+    bvand-of-bvchop-1 ; rename
+    bvand-of-bvchop-2 ; rename
+    bvor-of-bvchop-arg2 ;newly added: are other similar rules missing?
+    bvor-of-bvchop-arg3
+    bvxor-of-bvchop-1 ; rename
+    bvxor-of-bvchop-2 ; rename
+    bvplus-of-bvchop-arg2 ;gen?
+    bvplus-of-bvchop-arg3 ;gen?
+    bvminus-of-bvchop-arg2
+    bvminus-of-bvchop-arg3
+    bvuminus-of-bvchop-arg2
+    bvif-of-bvchop-arg3 ;mon feb 28 12:18:59 2011
+    bvif-of-bvchop-arg4 ;mon feb 28 12:19:01 2011
+    bitand-of-bvchop-arg1
+    bitand-of-bvchop-arg2
+    bitor-of-bvchop-arg1
+    bitor-of-bvchop-arg2
+    bitxor-of-bvchop-arg1
+    bitxor-of-bvchop-arg2
+    bvcat-of-bvchop-high
+    bvcat-of-bvchop-low
+    bvshl-of-bvchop  ;gen?
+    bvshr-of-bvchop  ;gen?
+    bvashr-of-bvchop ;gen?
+    leftrotate32-of-bvchop-arg2
+    leftrotate32-of-bvchop-5            ;new ;gen!
+    sbvlt-of-bvchop-arg2
+    sbvlt-of-bvchop-arg3
+    bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017 ; todo: other rule
+    bvchop-of-bvchop
+    getbit-of-bvchop
+    slice-of-bvchop-low-gen
+    slice-of-bvchop-too-high
+    ;;todo: bvcat rules
+    ))
+
+
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))
@@ -475,6 +526,7 @@
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
+   (bv-function-of-bvchop-rules)
    '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
@@ -503,7 +555,7 @@
      ;; getbit-of-leftrotate32-high
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
-     leftrotate32-of-bvchop-arg2
+
      ;; rightrotate32-trim-amt-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
      ;;opening rotates (by constant amounts) in sha1 caused problems with trimming the same term to lots of different sizes
@@ -511,7 +563,6 @@
      ;; leftrotate-open-when-constant-shift-amount
      ;; rightrotate-open-when-constant-shift-amount ;bozo just go to leftrotate
      bvchop-of-leftrotate32-does-nothing ;drop since we have bvchop-identity-axe?
-     leftrotate32-of-bvchop-5            ;new ;gen!
      leftrotate32-of-leftrotate32
      leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it)
      ;;leftrotate-becomes-leftrotate64
@@ -523,8 +574,6 @@
      equal-of-constant-when-sbvlt ; rename
      equal-constant-when-not-sbvlt ; rename
      not-sbvlt-same
-     sbvlt-of-bvchop-arg2
-     sbvlt-of-bvchop-arg3
      sbvlt-transitive-1-a ;these are new
      sbvlt-transitive-2-a
      sbvlt-transitive-1-b
@@ -611,8 +660,11 @@
      bvshr-of-0-arg2
      bvshr-of-0-arg3
 
-     bvashr-of-0-arg2 ; todo: rules for arg1 and arg3?
+     bvashr-of-0-arg1
+     bvashr-of-0-arg2
+     bvashr-of-0-arg3
 
+     bvshl-of-0-arg1
      bvshl-of-0-arg2
      bvshl-of-0-arg3
 
@@ -673,7 +725,6 @@
      bvif-when-size-is-not-positive ;bvif-of-0-arg1
      bvlt-when-not-posp-arg1
      ;; Rules about size=0:
-     bvshl-of-0-arg1
      bvcat-of-0-arg1
      bvcat-of-0-arg3
 
@@ -699,36 +750,10 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvsx2          ;new
-     bvchop-of-bvshr            ;new, introduces slice ; todo: remove?? with bvshr we can split into cases easily.
+     bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
-     ;; TODO: add all other rules like this!:
-     bvif-of-bvchop-arg3 ;mon feb 28 12:18:59 2011
-     bvif-of-bvchop-arg4 ;mon feb 28 12:19:01 2011
-     bvand-of-bvchop-1
-     bvand-of-bvchop-2
-     bvor-of-bvchop-arg2 ;newly added: are other similar rules missing?
-     bvor-of-bvchop-arg3
-     bvxor-of-bvchop-1
-     bvxor-of-bvchop-2
-     bitand-of-bvchop-arg1
-     bitand-of-bvchop-arg2
-     bitor-of-bvchop-arg1
-     bitor-of-bvchop-arg2
-     bitxor-of-bvchop-arg1
-     bitxor-of-bvchop-arg2
-     bvplus-of-bvchop-arg2 ;gen?
-     bvplus-of-bvchop-arg3 ;gen?
-     bvminus-of-bvchop-arg2
-     bvminus-of-bvchop-arg3
-     bvnot-of-bvchop
-     bvuminus-of-bvchop-arg2
-     bvcat-of-bvchop-high
-     bvcat-of-bvchop-low
-     bvshl-of-bvchop ;gen?
-     bvshr-of-bvchop ;gen?
-     bvashr-of-bvchop ;gen?
      ;; TODO: More like this:
      bvcat-of-getbit-arg2
      bvcat-of-getbit-arg4
@@ -792,7 +817,6 @@
 ;BVCHOP-OF-BVOR-does-nothing ;see bvchop-identity-axe
 ;            bvchop-of-getbit ;see bvchop-identity-axe
 
-     bvchop-of-bvchop
      bvchop-of-bvcat-cases
      bvchop-of-0-arg1
      bvchop-1-becomes-getbit
@@ -840,7 +864,6 @@
      ;; bvsx base cases?
      ;; introduce-bvsx-25-7 ;fixme yuck
 
-     bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
@@ -911,7 +934,7 @@
      getbit-of-bitor-all-cases ;covered by the too-high and identity rules if n is a constant
      getbit-of-bitand-all-cases ;covered by the too-high and identity rules if n is a constant
      ;; getbit-of-bvchop-too-high ; covered by getbit-too-high-is-0-bind-free-axe
-     getbit-of-bvchop
+
 
      slice-out-of-order ;trying the real version
      slice-too-high-is-0-bind-free-axe
@@ -919,7 +942,6 @@
      slice-becomes-getbit
      slice-becomes-bvchop
      slice-of-slice-gen-better
-     slice-of-bvchop-low-gen
 ;            slice-of-bvcat-hack-gen-better-case-1 ;trying the real versions
 ;           slice-of-bvcat-hack-gen-better-case-2
 ;          slice-of-bvcat-hack-gen-better-case-3
@@ -2052,8 +2074,8 @@
 
 ;equal-of-myif-arg2 ;trying without this..
      plus-of-bvplus-of-minus1
-     boolif-of-myif-arg1
      boolif-of-myif-arg2
+     boolif-of-myif-arg3
 
      ;;           not-of-booland ;trying without this? new4
 
@@ -2423,7 +2445,7 @@
 
      equal-of-0-and-bitxor
      equal-of-bool-to-bit-split
-     iff ;causes a split
+     iff ;causes a split (todo: consider opening iff to equal of bool-fixes)
      bvlt-of-bvplus-of-bvuminus
 ;                               bvlt-of-bvplus-of-bvuminus-alt ;tue feb 23 00:54:24 2010
      bvlt-of-bvplus-same

@@ -31,10 +31,14 @@
 
 ;            x86isa::jcc/cmovcc/setcc-spec ;case dispatch ;;disabling this to produce better results
 
-            x86isa::gpr-or-spec-1$inline
-            x86isa::gpr-or-spec-2$inline
-            x86isa::gpr-or-spec-4$inline
-            x86isa::gpr-or-spec-8$inline
+            ;x86isa::gpr-or-spec-1$inline
+            ;x86isa::gpr-or-spec-2$inline
+            ;x86isa::gpr-or-spec-4$inline
+            ;x86isa::gpr-or-spec-8$inline
+            x86isa::GPR-OR-SPEC-1-redef
+            x86isa::GPR-OR-SPEC-2-redef
+            x86isa::GPR-OR-SPEC-4-redef
+            x86isa::GPR-OR-SPEC-8-redef
 
             x86isa::gpr-and-spec-1$inline
             x86isa::gpr-and-spec-2$inline
@@ -61,10 +65,15 @@
             x86isa::gpr-xor-spec-8$inline
 
             x86isa::shr-spec$inline ;; dispatches based on size
-            x86isa::shr-spec-8
-            x86isa::shr-spec-16
-            x86isa::shr-spec-32
-            x86isa::shr-spec-64
+            ;; x86isa::shr-spec-8
+            ;; x86isa::shr-spec-16
+            ;; x86isa::shr-spec-32
+            ;; x86isa::shr-spec-64
+            x86isa::shr-spec-8-redef
+            x86isa::shr-spec-16-redef
+            x86isa::shr-spec-32-redef
+            x86isa::shr-spec-64-redef
+            acl2::bvshr-rewrite-for-constant-shift-amount ; puts in slice, since we don't translate bvshr to stp
 
             x86isa::rol-spec$inline ;; dispatches based on size
             x86isa::rol-spec-8
@@ -73,11 +82,24 @@
             x86isa::rol-spec-64
 
             x86isa::sal/shl-spec$inline ;; dispatches based on size
-            x86isa::sal/shl-spec-8
-            x86isa::sal/shl-spec-16
-            x86isa::sal/shl-spec-32
-            x86isa::sal/shl-spec-64
+            ;; x86isa::sal/shl-spec-8
+            ;; x86isa::sal/shl-spec-16
+            ;; x86isa::sal/shl-spec-32
+            ;; x86isa::sal/shl-spec-64
+            x86isa::sal/shl-spec-8-redef
+            x86isa::sal/shl-spec-16-redef
+            x86isa::sal/shl-spec-32-redef
+            x86isa::sal/shl-spec-64-redef
+            ;; ACL2::BVSHL-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT ; todo: consider this since we don't translate bvshl to stp
 
+            ;; unsigned multiply
+            x86isa::mul-spec$inline ;; dispatches based on size
+            x86isa::mul-spec-8
+            x86isa::mul-spec-16
+            x86isa::mul-spec-32
+            x86isa::mul-spec-64
+
+            ;; signed multiply
             x86isa::imul-spec$inline ;; dispatches based on size
             x86isa::imul-spec-8
             x86isa::imul-spec-16
@@ -92,8 +114,12 @@
             x86isa::idiv-spec-64-trim-arg1-axe-all
 
             x86isa::sar-spec$inline
-            x86isa::sar-spec-32-nice ;x86isa::sar-spec-32
-            x86isa::sar-spec-64-nice ;x86isa::sar-spec-32
+            ;x86isa::sar-spec-32-nice
+            ;x86isa::sar-spec-64-nice
+            x86isa::sar-spec-8-redef
+            x86isa::sar-spec-16-redef
+            x86isa::sar-spec-32-redef
+            x86isa::sar-spec-64-redef
 
             ;; These recharacterize divide in terms of bvops:
             x86isa::mv-nth-0-of-div-spec-8
@@ -196,7 +222,13 @@
     read-of-write-same
     read-of-write-disjoint
     read-of-write-disjoint2
-    program-at-of-write))
+    program-at-of-write
+    ;; todo: uncomment these but first organize rules:
+    ;;write-of-write-same
+    ;;write-of-write-of-write-same
+    ;;write-of-write-of-write-of-write-same
+    ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
+    ))
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
@@ -579,25 +611,29 @@
     acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
     acl2::bvplus-recollapse ;rename
-    )))
 
-;not used?
-(defun canonical-address-rules ()
-  '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
-    x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
-    ;;not-member-p-canonical-address-listp-when-disjoint-p ;free vars? looped? ;why?
-    ;;not-member-p-canonical-address-listp-when-disjoint-p-alt ;free vars? looped? ;why?
-    ;;not-member-p-when-disjoint-p ;todo: make an alt version
-    x86isa::canonical-address-listp-of-cdr
-    x86isa::cdr-create-canonical-address-list
-    x86isa::car-create-canonical-address-list
-    x86isa::canonical-address-p-of-i48
-    x86isa::i48-when-canonical-address-p))
+    ;; this is needed to handle a divide:
+    acl2::bvcat-of-if-becomes-bvsx-64-64
+    acl2::bvlt-of-bvplus-1-cancel
+    acl2::bvlt-of-bvplus-1-cancel-alt)))
+
+;; ;not used?
+;; (defun canonical-address-rules ()
+;;   '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
+;;     x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
+;;     ;;not-member-p-canonical-address-listp-when-disjoint-p ;free vars? looped? ;why?
+;;     ;;not-member-p-canonical-address-listp-when-disjoint-p-alt ;free vars? looped? ;why?
+;;     ;;not-member-p-when-disjoint-p ;todo: make an alt version
+;;     x86isa::canonical-address-listp-of-cdr
+;;     x86isa::cdr-create-canonical-address-list
+;;     x86isa::car-create-canonical-address-list
+;;     x86isa::canonical-address-p-of-i48
+;;     x86isa::i48-when-canonical-address-p))
 
 ;; These are about if but are not 'if lifting' rules.
 (defun if-rules ()
-  '(x86isa::if-x-nil-t
-    x86isa::if-of-not
+  '(acl2::if-nil-t
+    acl2::if-of-not
     x86isa::if-of-if-same-arg2
     x86isa::if-of-if-arg3-same
     ))
@@ -614,13 +650,11 @@
    x86isa::+-of-if-arg2
    acl2::nth-of-if-arg1
    x86isa::cons-of-if-when-constants
-   x86isa::one-byte-opcode-execute-of-if-arg1
-   x86isa::if-of-one-byte-opcode-execute-of-if-arg2 ;do we need this?
-   x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
+   ;; x86isa::one-byte-opcode-execute-of-if-arg1 ; drop?
+   ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg2 ;do we need this?
+   ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
    x86isa::<-of-if-arg2                              ;could be dangerous
-   x86isa::logext-of-if-arg2
-   run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits:
-   ))
+   x86isa::logext-of-if-arg2))
 
 (defun simple-opener-rules ()
   '(x86isa::n08p$inline ;just unsigned-byte-p
@@ -731,7 +765,7 @@
     ))
 
 (defun get-prefixes-openers ()
-  (declare (xargs :guard t ))
+  (declare (xargs :guard t))
   '(x86isa::get-prefixes-base-1
     x86isa::get-prefixes-base-2
     x86isa::get-prefixes-base-3
@@ -801,22 +835,104 @@
     mxcsrbits->daz-of-mv-nth-2-of-sse-cmp
     mxcsrbits->dm-of-mv-nth-2-of-sse-cmp
     mxcsrbits->im-of-mv-nth-2-of-sse-cmp
-    sse-cmp-of-bvchop-arg2-32
-    sse-cmp-of-bvchop-arg3-32
-    sse-cmp-of-bvchop-arg4-32
+    sse-cmp-of-bvchop-arg2
+    sse-cmp-of-bvchop-arg3
+    sse-cmp-of-bvchop-arg4
     unsigned-byte-p-of-mv-nth-1-of-sse-cmp-32
     integerp-of-mv-nth-2-of-sse-cmp
-    mv-nth-1-of-sse-cmp-of-sse-cmp
+    mv-nth-1-of-sse-cmp-of-mv-nth-2-of-sse-cmp
     sse-cmp-of-op-ucomi-same
     x86isa::sse-cmp-base ; when operation and operands are constant
+    unsigned-byte-p-of-mv-nth-1-of-sse-cmp-of-OP-UCOMI
+    ;; todo: some of these may be more general than just float rules:
+    jb-condition-of-bv-if-1-0-1
+    jb-condition-of-bv-if-1-1-0
+    jnb-condition-of-bv-if-1-0-1
+    jnb-condition-of-bv-if-1-1-0
+    acl2::bool-fix-of-myif
+    boolif-of-myif-arg1-true ; drop
+    equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe ;equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
+    equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+    equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+    not-equal-of-7-and-mv-nth-1-of-sse-cmp
+
+    unsigned-byte-p-32-of-!MXCSRBITS->IE
+    unsigned-byte-p-32-of-!MXCSRBITS->DE
+    integerp-of-!MXCSRBITS->DE
+    integerp-of-!MXCSRBITS->IE
+    integerp-of-xr-mxcsr
+    MXCSRBITS->IM-of-!MXCSRBITS->IE
+    MXCSRBITS->IM-of-!MXCSRBITS->DE
+    MXCSRBITS->DM-of-!MXCSRBITS->DE
+    MXCSRBITS->DM-of-!MXCSRBITS->IE
+    MXCSRBITS->DAZ-of-!MXCSRBITS->DE
+    MXCSRBITS->DAZ-of-!MXCSRBITS->IE
+    X86ISA::MXCSRBITS->IM-of-if
+    X86ISA::MXCSRBITS->DM-of-if
+    X86ISA::MXCSRBITS->Daz-of-if
+    sse-daz-of-nil
+    X86ISA::N32P-XR-MXCSR
+    ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
+    x86isa::dp-sse-cmp ; scary?
     ))
+
 ;; Try to introduce is-nan as soon as possible:
 (table axe-rule-priorities-table 'is-nan-intro -1)
+
+(defund symbolic-execution-rules ()
+  (declare (xargs :guard t))
+  '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
+    run-until-stack-shorter-than-opener-axe ; not for IFs
+    run-until-stack-shorter-than-base-axe ; not for IFs
+    stack-shorter-thanp
+    run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ))
+
+(defun separate-rules ()
+  (declare (xargs :guard t))
+  '(x86isa::separate-normalize-r-w-x-1
+    x86isa::separate-normalize-r-w-x-2
+    x86isa::not-separate-self
+    x86isa::separate-of-plus
+    x86isa::separate-of-plus-alt
+    x86isa::separate-below-and-above
+    x86isa::separate-below-and-above-alt
+    x86isa::separate-lemma-1
+    x86isa::separate-lemma-1-alt
+    x86isa::separate-lemma-1b
+    x86isa::separate-lemma-1b-alt
+    x86isa::separate-lemma-2b
+    x86isa::separate-lemma-2b-alt
+    x86isa::separate-lemma-3
+    x86isa::separate-lemma-3-alt
+    x86isa::separate-of-if-arg3
+    x86isa::separate-of-if-arg6
+    x86isa::separate-below-and-above-offset
+    x86isa::separate-below-and-above-offset-alt
+    x86isa::separate-same-lemma-1
+    x86isa::separate-same-lemma-1-alt
+    x86isa::separate-from-separate-lemma-1
+    x86isa::separate-from-separate-lemma-1b
+    x86isa::separate-from-separate-lemma-1c
+    x86isa::separate-from-separate-lemma-1d
+    x86isa::separate-from-separate-lemma-1-alt
+    x86isa::separate-from-separate-lemma-1b-alt
+    x86isa::separate-from-separate-lemma-1c-alt
+    x86isa::separate-from-separate-lemma-1d-alt
+    ;; these 2 may subsume much of the stuff above:
+    x86isa::separate-when-separate
+    x86isa::separate-when-separate-alt
+    ;; these may be expensive but seem necessary in some cases
+    ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
+    ;;x86isa::not-equal-when-separate
+    ;;x86isa::not-equal-when-separate-alt
+    ))
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
-  (append (acl2::base-rules)
+  (append (symbolic-execution-rules)
+          (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
           ;; trying these, though they are not yet as clean as they could be:
@@ -831,6 +947,7 @@
           (if-rules)
           (decoding-and-dispatch-rules)
           (get-prefixes-openers)
+          (separate-rules)
           (x86-type-rules)
           (x86-bv-rules)
           (acl2::array-reduction-rules)
@@ -911,54 +1028,10 @@
             x86isa::app-view-of-xw
             app-view-of-set-flag
 
-            x86isa::separate-normalize-r-w-x-1
-            x86isa::separate-normalize-r-w-x-2
-            x86isa::not-separate-self
-            x86isa::separate-of-plus
-            x86isa::separate-of-plus-alt
-            x86isa::separate-below-and-above
-            x86isa::separate-below-and-above-alt
-            x86isa::separate-lemma-1
-            x86isa::separate-lemma-1-alt
-            x86isa::separate-lemma-1b
-            x86isa::separate-lemma-1b-alt
-            x86isa::separate-lemma-2b
-            x86isa::separate-lemma-2b-alt
-            x86isa::separate-lemma-3
-            x86isa::separate-lemma-3-alt
-            x86isa::separate-of-if-arg3
-            x86isa::separate-of-if-arg6
-            x86isa::separate-below-and-above-offset
-            x86isa::separate-below-and-above-offset-alt
-            x86isa::separate-same-lemma-1
-            x86isa::separate-same-lemma-1-alt
-            x86isa::separate-from-separate-lemma-1
-            x86isa::separate-from-separate-lemma-1b
-            x86isa::separate-from-separate-lemma-1c
-            x86isa::separate-from-separate-lemma-1d
-            x86isa::separate-from-separate-lemma-1-alt
-            x86isa::separate-from-separate-lemma-1b-alt
-            x86isa::separate-from-separate-lemma-1c-alt
-            x86isa::separate-from-separate-lemma-1d-alt
-            ;; these 2 may subsume much of the stuff above:
-            x86isa::separate-when-separate
-            x86isa::separate-when-separate-alt
-            ;; these may be expensive but seem necessary in some cases
-            ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
-            ;x86isa::not-equal-when-separate
-            ;x86isa::not-equal-when-separate-alt
-
             x86isa::rb-wb-equal
             x86isa::rb-of-if-arg2
 
 ;            x86isa::set-flag-of-mv-nth-1-of-wb
-
-            return-last
-            ;; symbolic execution (perhaps separate these out):
-            run-until-return
-            run-until-stack-shorter-than-opener
-            run-until-stack-shorter-than-base
-            stack-shorter-thanp
 
             ;; x86-fetch-decode-execute-opener ; this had binding hyps
             ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
@@ -1356,6 +1429,10 @@
             X86ISA::!MS$a
 
             acl2::bv-array-read-shorten-axe
+            acl2::integerp-of-if-strong
+
+            x86isa::feature-flags-constant-opener  ; move
+
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -1373,8 +1450,9 @@
 (defun assumption-simplification-rules ()
   (append
    '(standard-state-assumption
-     standard-assumptions-core-64
      standard-state-assumption-32
+     standard-assumptions-core-64
+     standard-state-assumption-64
      standard-assumptions-mach-o-64
      standard-assumptions-elf-64
      standard-assumptions-pe-64
@@ -1467,15 +1545,16 @@
      x86isa::fix-of-xr-rgf-4)
    (acl2::lookup-rules)))
 
+;move?
 (defun myif-rules ()
   (append '(acl2::myif-same-branches ;add to lifter-rules?
-            acl2::myif-t-nil
+            acl2::myif-of-t-and-nil-when-booleanp
             acl2::myif-nil-t
             ;; acl2::boolif-of-nil-and-t ;redundant?
             )
           (acl2::boolean-rules)
-          ;; '(acl2::boolif-x-x-y
-          ;; acl2::boolif-x-y-x
+          ;; '(acl2::boolif-x-x-y-becomes-boolor
+          ;; acl2::boolif-x-y-x-becomes-booland
           ;; acl2::boolif-same-branches
           ;; acl2::boolif-when-quotep-arg1
           ;; acl2::boolif-when-quotep-arg2
@@ -1744,9 +1823,8 @@
     x86isa::mv-nth-0-rb-xw-rip
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
-    integerp-of-if
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
-    x86isa::if-x-x-y
+    acl2::if-x-x-y-when-booleanp
 ;    mv-nth-0-of-ea-to-la ; introduces eff-addrs-okp
 
     eff-addr-okp-of-set-flag
@@ -2770,6 +2848,7 @@
     ctri-of-set-rsp
     ctri-of-set-rbp
     ctri-of-set-undef
+    ctri-of-!rflags
 
     rax-of-write
     rbx-of-write
@@ -3148,6 +3227,10 @@
 ;; Try this rule first
 (table axe-rule-priorities-table 'read-of-write-disjoint -1)
 
+;; Wait to try this rule until the read is cleaned up by removing irrelevant inner sets
+(table acl2::axe-rule-priorities-table 'read-when-program-at-gen 1)
+
+
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
 (defun low-level-rules-32 ()
@@ -3325,7 +3408,7 @@
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed
             acl2::fix-when-acl2-numberp
-            acl2-numberp-of--
+            acl2::acl2-numberp-of--
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;RFLAGSBITS->AF-of-myif
@@ -3387,9 +3470,9 @@
             READ-OF-WRITE-BOTH-SIZE-1
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
-            <-of-+-and-+-arg3-and-arg1
-            equal-of-bvshl-and-constant
-            bvchop-of-bvshl-same
+            acl2::<-of-+-cancel-3-1
+            acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
+            acl2::bvchop-of-bvshl-same ; move?
             acl2::equal-of-myif-arg1-safe
             acl2::equal-of-myif-arg2-safe
             write-of-write-same
@@ -3414,8 +3497,8 @@
             ;bvxor-of-lognot-arg3
             acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
-            bvif-of-if-constants-nil-nonnil
-            bvif-of-if-constants-nonnil-nil
+            acl2::bvif-of-if-constants-nil-nonnil
+            acl2::bvif-of-if-constants-nonnil-nil
             acl2::bvminus-of-0-arg3
             acl2::bvif-same-branches
             acl2::equal-of-1-and-bitand
@@ -3469,7 +3552,7 @@
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
             ;;xr-of-!rflags-irrel
-            X86ISA::IF-X-X-Y
+            acl2::IF-X-X-Y-when-booleanp
             ;; ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP
             ACL2::EQUAL-OF-IF-ARG1-WHEN-QUOTEP
             ACL2::EQUAL-OF-IF-ARG2-WHEN-QUOTEP
@@ -3479,26 +3562,9 @@
             X86ISA::FP-to-rat-CONSTANT-OPENER
             RTL::BIAS-CONSTANT-OPENER
             RTL::expw-CONSTANT-OPENER
-            unsigned-byte-p-32-of-!MXCSRBITS->IE
-            unsigned-byte-p-32-of-!MXCSRBITS->DE
             ACL2::BVCHOP-OF-IF
-            integerp-of-!MXCSRBITS->DE
-            integerp-of-!MXCSRBITS->IE
-            integerp-of-xr-mxcsr
             ifix-of-if
-            MXCSRBITS->IM-of-!MXCSRBITS->IE
-            MXCSRBITS->IM-of-!MXCSRBITS->DE
-            MXCSRBITS->DM-of-!MXCSRBITS->DE
-            MXCSRBITS->DM-of-!MXCSRBITS->IE
-            MXCSRBITS->DAZ-of-!MXCSRBITS->DE
-            MXCSRBITS->DAZ-of-!MXCSRBITS->IE
-            X86ISA::MXCSRBITS->IM-of-if
-            X86ISA::MXCSRBITS->DM-of-if
-            X86ISA::MXCSRBITS->Daz-of-if
-            sse-daz-of-nil
-            X86ISA::N32P-XR-MXCSR
-            ;X86ISA::SSE-CMP ; scary
-            x86isa::dp-sse-cmp
+
             app-view-of-if
             program-at-of-if
             x86p-of-if
@@ -3517,17 +3583,12 @@
             ;x86isa::if-of-sub-zf-spec32-arg2
             ACL2::BFIX-WHEN-BITP
             ;;stuff related to flags changes:
-            x86isa::GPR-SUB-SPEC-1-alt-def
-            x86isa::GPR-SUB-SPEC-2-alt-def
-            x86isa::GPR-SUB-SPEC-4-alt-def
-            x86isa::GPR-SUB-SPEC-8-alt-def
 
             bvchop-of-sub-zf-spec32
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
 
             logand-of-1-arg2
-            acl2::integerp-of-if
             acl2::ifix-does-nothing
             of-spec-of-logext-32
             ACL2::LOGXOR-BVCHOP-BVCHOP        ; introduce bvxor
@@ -3580,8 +3641,6 @@
             ctri-of-xw-irrel
             ctri-of-write
             ctri-of-set-flag
-            X86ISA::FEATURE-FLAGS-opener
-            X86ISA::FEATURE-FLAGS-base
             eql
             integerp-of-ctri
             X86ISA::XMMI-SIZE$inline ;trying
@@ -3667,7 +3726,7 @@
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
-            ;; ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
             ;bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
@@ -3738,7 +3797,7 @@
             ACL2::SIGNED-BYTE-P-OF-BVIF
             ACL2::LOGEXT-IDENTITY
             ACL2::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-ONE-LESS
-            ;ACL2::BOOLIF-X-X-Y ; introduces boolor
+            ;ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG
             boolor-becomes-boolif
             ;bvlt-hack-1-gen
@@ -3753,6 +3812,8 @@
             jnp-condition
             jz-condition
             jnz-condition)
+          (separate-rules) ; I am seeing some read-over-write reasoning persist into the proof stage
+          (float-rules) ; I need booleanp-of-isnan, at least
           (extra-tester-rules)
           (lifter-rules64-new) ; overkill?
           (acl2::base-rules)

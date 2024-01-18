@@ -892,7 +892,7 @@
 ; only used in an irrelevant arg of return-last.
 
 (must-fail
- (defthm my-natp-test0 
+ (defthm my-natp-test0
   (implies (and (natp y)
                 (natp z))
            (equal (ev$ '(return-last 'progn
@@ -1574,7 +1574,7 @@
 ; Repeating an experiment shown above, but on a different laptop:
 #|
 ACL2 !>(time$ (do-loop-counting-up 1 1000000))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 57.72 seconds realtime, 57.71 seconds runtime
 ; (4,080,550,752 bytes allocated).
 (FROM 1 TO 1000000 IS 999999 STEPS)
@@ -1583,7 +1583,7 @@ ACL2 !>(verify-guards do-loop-counting-up)
 Prover steps counted:  400639
  DO-LOOP-COUNTING-UP
 ACL2 !>(time$ (do-loop-counting-up 1 1000000))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 0.00 seconds realtime, 0.00 seconds runtime
 ; (144 bytes allocated).
 (FROM 1 TO 1000000 IS 999999 STEPS)
@@ -1592,7 +1592,7 @@ ACL2 !>
 ; And now repeating that experiment for the new version.
 #|
 ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 67.41 seconds realtime, 67.39 seconds runtime
 ; (4,688,677,328 bytes allocated).
 ((FROM 1 TO 1000000
@@ -1603,7 +1603,7 @@ ACL2 !>(verify-guards do-loop-counting-up-mv)
 Prover steps counted:  634086
  DO-LOOP-COUNTING-UP-MV
 ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 0.01 seconds realtime, 0.01 seconds runtime
 ; (256 bytes allocated).
 ((FROM 1 TO 1000000
@@ -2711,3 +2711,26 @@ scope containing (SETQ ANS ANS2).
          finally
          (return lst))
   '(1 A C)))
+
+; See the comment below about a failure based on the following defun.
+(defun v8-5-problem-loop (lst)
+  (declare (xargs :guard t))
+  (loop$ with temp = lst
+         with  ans of-type rational = 0
+         do
+         :values (nil nil)
+         (cond ((atom temp) (return (mv ans temp)))
+               (t (progn (setq ans (+  (rfix (car temp)) ans))
+                         (setq temp (cdr temp)))))))
+
+(assert-event (mv-let (x y)
+                  (v8-5-problem-loop '(3 1/2 4 . a))
+                (and (= x 15/2)
+                     (eq y 'a))))
+
+; The following failed in ACL2 8.5.
+(thm (mv-let (x y)
+         (v8-5-problem-loop '(3 1/2 4 . a))
+       (and (= x 15/2)
+            (eq y 'a)))
+     :hints (("Goal" :do-not '(preprocess))))

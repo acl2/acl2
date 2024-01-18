@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -231,10 +231,8 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize y k)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (
-;                                                  <-of-bvmult-hack ;bozo
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
+                                  (<-of-bvplus-becomes-bvlt-arg1
+                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
@@ -264,8 +262,7 @@
                         (:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize))))
            :in-theory (disable ;LOGTAIL-LESSP
                        <-of-logtail-arg1
-                       bvchop-plus-times-expt-logtail)
-           )))
+                       bvchop-plus-times-expt-logtail))))
 
 (defthm logapp-less-than-alt
   (implies (and (natp lowsize)
@@ -341,10 +338,8 @@
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize k y)))))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (
-;                                                  <-of-bvmult-hack ;bozo
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
+                                  (<-of-bvplus-becomes-bvlt-arg1
+                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
 ;dangerous since we have a rule to take out the bvchop
 (defthmd bvlt-of-bvcat-trim-gen

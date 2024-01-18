@@ -543,7 +543,7 @@
                                  ;; extra-rules, to add to default set:
                                  (append (formal-unit-tester-extra-lifting-rules)
                                          extra-rules)
-                                 ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning):
+                                 ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
                                  (append '(MYIF-BECOMES-BOOLIF-T-ARG1
                                            MYIF-BECOMES-BOOLIF-T-ARG2
                                            MYIF-BECOMES-BOOLIF-NIL-ARG1

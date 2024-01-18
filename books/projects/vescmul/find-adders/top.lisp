@@ -69,6 +69,22 @@
                   sv::svex-kind)
                  ((:e tau-system)))))
 
+
+(rp::Def-rp-rule 4vec-p-of-FA/ha-S/c-CHAIN
+  (and (sv::4vec-p (rp::fa-s-chain x y z))
+       (sv::4vec-p (rp::fa-c-chain m x y z))
+       (sv::4vec-p (rp::ha-s-chain y z))
+       (sv::4vec-p (rp::ha-c-chain y z))
+       (sv::4vec-p (rp::ha+1-c-chain y z))
+       (sv::4vec-p (RP::HA+1-S-CHAIN m y z)))
+  :hints (("Goal"
+           :in-theory (e/d (rp::ha+1-c-chain
+                            RP::HA+1-S-CHAIN
+                            rp::ha-c-chain
+                            rp::ha-s-chain
+                            rp::fa-c-chain
+                            rp::fa-s-chain) ()))))
+
 (defines svex-has-bitxor-0
   (define svex-has-bitxor-0 ((x sv::svex-p))
     :measure (sv::svex-count x)
@@ -298,7 +314,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                                    :adder-type 'ha-c))
                     ((mv svex-alist &)
                      (careful-search-from-counterpart-svex-alist svex-alist exploded-args-and-args-alist
-                                                            :adder-type 'ha-c))
+                                                                 :adder-type 'ha-c))
                     (- (fast-alist-free exploded-args-and-args-alist))
 
                     (exploded-args-and-args-alist (process-fa/ha-c-chain-pattern-args
@@ -307,7 +323,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                                    :adder-type 'ha+1-c))
                     ((mv svex-alist &)
                      (careful-search-from-counterpart-svex-alist svex-alist exploded-args-and-args-alist
-                                                            :adder-type 'ha+1-c))
+                                                                 :adder-type 'ha+1-c))
                     (- (fast-alist-free exploded-args-and-args-alist)))
                  svex-alist)))
          ((Unless (or (not careful-look-for-ha-c)
@@ -374,7 +390,6 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
          ;;(- (design_res-broken svex-alist "before simplify-to-find-fa-c-patterns-alist"))
 
          (new-svex-alist (simplify-to-find-fa-c-patterns-alist svex-alist :strength 0))
-         
 
          ;;(- (design_res-broken new-svex-alist "after simplify-to-find-fa-c-patterns-alist"))
 
@@ -539,7 +554,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
     :gag-mode nil
     (rp::def-formula-checks
       find-adders-in-svex-formula-checks-small
-      (binary-or binary-? binary-not binary-xor binary-and s-spec c-spec)
+      (int-vector-adder-lst-w/carry binary-or binary-? binary-not binary-xor binary-and s-spec c-spec)
       :warranted-fns
       (ha-c-chain
        ha-s-chain
@@ -547,6 +562,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
        fa-s-chain
        full-adder
        half-adder
+       int-vector-adder
        ha+1-c-chain
        ha+1-s-chain)))
 
@@ -557,6 +573,15 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
          ;; certification time instead of adding all those svex-eval functions.
          )))
 
+(local
+ (defthm find-adders-in-svex-formula-checks-implies-svex-reduce-formula-checks
+   (implies (find-adders-in-svex-formula-checks state)
+            (svl::svex-reduce-formula-checks state))
+   :hints (("Goal"
+            :in-theory (e/d (find-adders-in-svex-formula-checks
+                             svl::svex-reduce-formula-checks
+                             svl::svex-ev-wog-formula-checks)
+                            ())))))
 
 (make-event
  (b* ((w '((apply$-warrant-ha-c-chain)
@@ -566,7 +591,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
            (apply$-warrant-ha-s-chain)
            (apply$-warrant-fa-s-chain)
            (apply$-warrant-full-adder)
-           (apply$-warrant-half-adder))))
+           (apply$-warrant-half-adder)
+           (apply$-warrant-int-vector-adder))))
    `(define check-context-for-adder-warrants ((context rp-term-listp))
       :returns valid
       (subsetp-equal ',w context)
@@ -623,6 +649,14 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
   (define rewrite-adders-in-svex-alist ((term)
                                         (context rp-term-listp))
     :returns (mv res-term res-dont-rw)
+    :guard-hints (("goal"
+                   :case-split-limitations (0 1)
+                   :in-theory (e/d ()
+                                   (default-cdr
+                                     default-car
+                                     ex-from-rp
+                                     (:type-prescription rp-term-listp)
+                                     (:type-prescription acl2::binary-or*)))))
     :guard-debug t
     (time$
      (case-match term
@@ -666,7 +700,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                  svex-alist)
                :msg "---- svl::svex-alist-reduce-w/-env took ~st seconds (real-time), or ~sc seconds ~
   (cpu-time), and ~sa bytes allocated.~%~%"))
-                           
+
              (- (acl2::sneaky-save 'orig-svex-alist svex-alist))
              ;;  (- (time-tracker :rewrite-adders-in-svex :stop))
              ;;             (- (time-tracker :rewrite-adders-in-svex :print?
@@ -784,7 +818,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
 
              ;;(- (design_res-broken svex-alist "after remove-ha-pairs-under-gates-alist"))
 
-             (disable-search (and*-exec (not (aggressive-find-adders-in-svex)) 
+             (disable-search (and*-exec (not (aggressive-find-adders-in-svex))
                                         (equal new-svex-alist svex-alist)
                                         (not (adders-under-gates?-alist new-svex-alist))))
              (- (and disable-search
@@ -826,7 +860,6 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                                                              :skip-vector-adder t))))
                   (mv new-svex-alist (equal svex-alist new-svex-alist)))))
 
-            
              ((mv svex-alist not-changed?)
               (if (or* disable-search not-changed?) (mv svex-alist t)
                 (b* ((- (cw "---- ~%--- Previous half-adder search (1) made some changes. Let's look for full-adders again.~%"))
@@ -885,7 +918,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
              (svex-alist (if disable-search svex-alist
                            (svl::svex-alist-simplify-bitand/or/xor svex-alist)))
              ;; prob unnecessary
-            
+
              (svex-alist (if disable-search svex-alist
                            (remove-ha-pairs-under-gates-alist svex-alist :wrap-with-id t)))
              (svex-alist (if disable-search svex-alist
@@ -898,6 +931,9 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
              (svex-alist (if (merge-fa-chains)
                              (merge-fa-s-c-chains-alist svex-alist)
                            svex-alist))
+
+             ;; clean up partsels around plus'es and convert them to the int-vector-adder function.
+             (svex-alist (remove-partsels-around-plus-alist svex-alist))
 
              (- (time-tracker :rewrite-adders-in-svex :stop))
              (- (time-tracker :rewrite-adders-in-svex :print?
@@ -961,10 +997,10 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
      (create-regular-eval-lemma sv::svex-alist-eval 2  find-adders-in-svex-formula-checks))
 
     (local
-     (create-regular-eval-lemma svl::SVEXL-ALIST-EVAL$ 2 find-adders-in-svex-formula-checks))
+     (create-regular-eval-lemma svl::svexl-alist-eval$ 2 find-adders-in-svex-formula-checks))
 
     (local
-     (create-regular-eval-lemma MAKE-FAST-ALIST 1 find-adders-in-svex-formula-checks))
+     (create-regular-eval-lemma make-fast-alist 1 find-adders-in-svex-formula-checks))
 
     (local
      (defthm rp-evlt-of-quoted
@@ -1007,8 +1043,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                      (equal (car x) 'falist))
                 (equal (rp-evlt x a)
                        (rp-evlt (caddr x) a)))
-       :hints (("Goal"
-                :expand ((RP-TERMP X))
+       :hints (("goal"
+                :expand ((rp-termp x))
                 :in-theory (e/d (rp-termp falist-consistent)
                                 ())))))
 
@@ -1026,26 +1062,27 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                          (rp-termp term))
                     (rp-termp res-term)))
       :fn rewrite-adders-in-svex-alist
-      :hints (("Goal"
+      :hints (("goal"
+               :case-split-limitations (1 2)
                :expand ((rp-termp term)
                         (:free (fn args)
                                (valid-sc (cons fn args) a))
-                        (RP-TERM-LISTP (CDR TERM))
-                        (RP-TERM-LISTP (CDDR TERM)))
+                        (rp-term-listp (cdr term))
+                        (rp-term-listp (cddr term)))
                :in-theory (e/d* (or*
-                                 RP-TERM-LISTP
+                                 rp-term-listp
                                  rp-evlt-of-ex-from-rp-reverse
                                  regular-eval-lemmas-with-ex-from-rp
                                  regular-eval-lemmas
                                  ;;is-rp
-                                 ;;FALIST-CONSISTENT
+                                 ;;falist-consistent
                                  ;;is-if
                                  svl::svexl-alist-eval$-correct-reverse)
                                 (rp-evlt-of-ex-from-rp
                                  rp-trans-is-term-when-list-is-absent
                                  ex-from-rp
                                  is-rp
-                                 RP-EVL-OF-VARIABLE
+                                 rp-evl-of-variable
                                  rp-trans
                                  ;;rp::rp-term-listp
                                  rp::falist-consistent-aux
@@ -1101,7 +1138,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
       (implies (and valid
                     (valid-sc args-term a))
                (valid-sc-subterms res-args a))
-      :hints (("Goal"
+      :hints (("goal"
                :in-theory (e/d (is-rp is-if is-equals) ()))))
 
     (defret true-listp-of-<fn>
@@ -1134,15 +1171,15 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
          )))
 
     (local
-     (defthm BINARY-FNC-P-implies
-       (implies (and (BINARY-FNC-P term)
+     (defthm binary-fnc-p-implies
+       (implies (and (binary-fnc-p term)
                      (rp-evl-meta-extract-global-facts)
                      (find-adders-in-svex-formula-checks state))
                 (and (bitp (rp-evlt term a))))
        :hints (("goal"
 
-                :in-theory (e/d* (REGULAR-EVAL-LEMMAS
-                                  BINARY-FNC-P)
+                :in-theory (e/d* (regular-eval-lemmas
+                                  binary-fnc-p)
                                  (bitp))))))
 
     (defret <fn>-is-all-bitp
@@ -1154,7 +1191,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                (and (bit-listp (rp-evlt args-term a))
                     (bit-listp (rp-evlt-lst res-args a))))
       :rule-classes (:rewrite :forward-chaining)
-      :hints (("Goal"
+      :hints (("goal"
                :in-theory (e/d (bit-listp
                                 is-rp
                                 is-if
@@ -1162,16 +1199,16 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                                ())))))
 
   ;; (apply$-of-adder-fncs-meta-aux `(cons (rp 'bitp x) (cons '1 (cons (rp 'bitp y) '(1)))))
-  ;; = (((RP 'BITP X) '1 (RP 'BITP Y) '1) T T)
+  ;; = (((rp 'bitp x) '1 (rp 'bitp y) '1) t t)
 
   (define apply$-of-adder-fncs-meta (term
                                      (context true-listp))
     :returns (mv (res rp-termp :hyp (rp-termp term)
-                      :hints (("Goal"
+                      :hints (("goal"
                                :expand ((:free (rest) (is-rp (cons 'rp rest))))
                                :use ((:instance rp-term-listp-of-apply$-of-adder-fncs-meta-aux.res-args
-                                                (args-term (CADR (CADDR TERM)))))
-                               :in-theory (e/d (RP-TERM-LISTP)
+                                                (args-term (cadr (caddr term)))))
+                               :in-theory (e/d (rp-term-listp)
                                                (rp-term-listp-of-apply$-of-adder-fncs-meta-aux.res-args)))))
                  dont-rw)
     (case-match term
@@ -1182,7 +1219,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                          (str::cat "APPLY$-WARRANT-" (symbol-name fnc))
                          fnc)))
             ((unless (member-equal warrant context))
-             (mv term (raise "A necessary warrant is not found in the context: ~p0 ~%" warrant)))
+             (mv term (raise "a necessary warrant is not found in the context: ~p0 ~%" warrant)))
             ((mv args-lst all-bitp valid)
              (apply$-of-adder-fncs-meta-aux args))
             ((unless valid)
@@ -1235,7 +1272,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                  (or (eq fnc 'ha-c-chain)
                      (eq fnc 'ha+1-c-chain)
                      (eq fnc 'ha-s-chain)
-                     (eq fnc 'half-adder)))
+                     (eq fnc 'half-adder)
+                     (eq fnc 'int-vector-adder)))
            (mv `(,fnc ,(first args-lst)
                       ,(second args-lst))
                `(nil t t t)))
@@ -1262,6 +1300,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
          (create-regular-eval-lemma fa-s-chain 3 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma full-adder 3 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma half-adder 2 find-adders-in-svex-formula-checks)
+         (create-regular-eval-lemma int-vector-adder 2 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma ha+1-c-chain 2 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma fa-c-chain 4 find-adders-in-svex-formula-checks)
          (create-regular-eval-lemma ha-c-chain 2 find-adders-in-svex-formula-checks)
@@ -1281,7 +1320,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                    '(-1 . 0))
             (equal (sv::4vec-bitxor x '(-1 . 0))
                    '(-1 . 0)))
-       :hints (("Goal"
+       :hints (("goal"
                 :in-theory (e/d (sv::4vec-bitxor) ())))))
 
     #|(local
@@ -1290,7 +1329,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
     '(-1 . 0))
     (equal (sv::4vec-bitand x '(-1 . 0))
     '(-1 . 0)))
-    :hints (("Goal"
+    :hints (("goal"
     :in-theory (e/d (sv::4vec-bitand) ())))))|#
 
     ;; (local
@@ -1299,13 +1338,13 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
     ;;           (cdr (rp-evlt-lst x a)))))
 
     (local
-     (defthm RP-EVLT-LST-when-atom-and-cddr
+     (defthm rp-evlt-lst-when-atom-and-cddr
        (implies (consp (cdr x))
                 (equal (car (rp-evlt-lst (cddr x) a))
                        (rp-evlt (caddr x) a)))))
 
     (local
-     (defthm RP-EVLT-LST-when-atom-and-cdr
+     (defthm rp-evlt-lst-when-atom-and-cdr
        (implies (consp x)
                 (equal (car (rp-evlt-lst (cdr x) a))
                        (rp-evlt (cadr x) a)))))
@@ -1314,7 +1353,7 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
      (defthm consp-of-rp-evlt-lst
        (equal (consp (rp-evlt-lst lst a))
               (consp lst))
-       :hints (("Goal"
+       :hints (("goal"
                 :induct (len lst)
                 :in-theory (e/d (rp-trans-lst) ())))))
 
@@ -1377,6 +1416,19 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                    (half-adder x y)))
        :hints (("Goal"
                 :in-theory (e/d (half-adder) ())))))
+
+    (local
+     (defthm int-vector-adder-of-4vec-fix
+       (and (equal (int-vector-adder (sv::4vec-fix x) y)
+                   (int-vector-adder x y))
+            (equal (int-vector-adder x (sv::4vec-fix y))
+                   (int-vector-adder x y)))
+       :hints (("Goal"
+                :in-theory (e/d (sv::4vec-fix
+                                 SV::4VEC
+                                 ifix
+                                 int-vector-adder)
+                                ())))))
 
     (local
      (defthm ha+1-s-CHAIN-of-4vec-fix

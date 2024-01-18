@@ -34,7 +34,6 @@
 (include-book "bvmult")
 (include-book "bvmod")
 (include-book "bvuminus")
-;(include-book "kestrel/booleans/booleans" :dir :system) ;why included here? maybe to get bool-to-bit...
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
 (include-book "bv-syntax")
 (include-book "leftrotate")
@@ -50,6 +49,9 @@
 (include-book "bvshl")
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
+(include-book "kestrel/booleans/boolxor" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "bitxnor")
 (include-book "slice2")
 (include-book "sbvlt-rules")
@@ -6027,6 +6029,22 @@
                 (unsigned-byte-p size const)
                 (integerp size))
            (equal (bvlt size const x)
+                  (equal free (bvchop size x))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (<-of-bvplus-becomes-bvlt-arg1
+                                          <-of-bvplus-becomes-bvlt-arg2
+                                          BVLT-OF-PLUS-ARG1
+                                          )))))
+
+(defthm bvlt-when-not-bvlt-one-less
+  (implies (and (syntaxp (quotep const))
+                (not (bvlt size x free))
+                (syntaxp (quotep free))
+                (equal free (+ -1 const))
+                (unsigned-byte-p size free)
+                (unsigned-byte-p size const)
+;                (posp const) ; ?
+                (integerp size))
+           (equal (bvlt size x const)
                   (equal free (bvchop size x))))
   :hints (("Goal" :in-theory (e/d (bvlt) (<-of-bvplus-becomes-bvlt-arg1
                                           <-of-bvplus-becomes-bvlt-arg2

@@ -7772,8 +7772,7 @@
 (defthm sweep-info-arrayp-of-tag-probably-equal-node-set
   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
                 (nat-listp smaller-nodes-from-this-set)
-                (true-listp node-set)
-                (all-natp node-set)
+                (nat-listp node-set)
                 (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
            (sweep-info-arrayp 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array)))
   :hints (("Goal" :in-theory (enable tag-probably-equal-node-set))))
@@ -7781,8 +7780,7 @@
 (defthm alen1-arrayp-of-tag-probably-equal-node-set
   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
                 (nat-listp smaller-nodes-from-this-set)
-                (true-listp node-set)
-                (all-natp node-set)
+                (nat-listp node-set)
                 (all-< node-set (alen1 'sweep-info-array sweep-info-array)))
            (equal (alen1 'sweep-info-array (tag-probably-equal-node-set node-set smaller-nodes-from-this-set sweep-info-array))
                   (alen1 'sweep-info-array sweep-info-array)))
@@ -11694,7 +11692,7 @@
   (< (car x) (car y)))
 
 ;merge-car-< and merge-sort-car-< are newly defined in ACl2 5.0? just use them?
-(defmergesort merge-car-<-2 merge-sort-car-<-2 car-< consp-with-rationalp-car)
+(defmergesort merge-sort-car-<-2 merge-car-<-2 car-< consp-with-rationalp-car)
 
 ;recently removed this from the main mutual recursion:
 ;returns (mv erp new-runes unchanged-runes new-fns analyzed-function-table rand state result-array-stobj)

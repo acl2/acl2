@@ -21,6 +21,7 @@
 (include-book "../alists-light/lookup-eq-lst")
 (include-book "dag-array-printing2")
 (include-book "merge-less-than-and-remove-dups")
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -50,9 +51,7 @@
                         nth
                         nat-listp))))
 
-
-
-
+(local (in-theory (enable integerp-when-natp <=-of-0-when-natp)))
 
 (defthm dargp-less-than-of-cadr-of-car-when-bounded-darg-listp-of-strip-cadrs
   (implies (and (bounded-darg-listp (strip-cadrs x) bound)
@@ -132,13 +131,6 @@
            (equal (largest-non-quotep x)
                   -1))
   :hints (("Goal" :in-theory (enable largest-non-quotep all-consp))))
-
-(local
- (defthm integerp-of-if
-   (equal (integerp (if test tp ep))
-          (if test
-              (integerp tp)
-            (integerp ep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -930,7 +922,7 @@
                                                   consp-when-subst-candidatep
                                                   consp-of-cdr-when-subst-candidatep
                                                   natp-of-cadr-when-subst-candidatep
-                                                  <=-of-0-when-0-natp
+                                                  <=-of-0-when-natp
                                                   rational-listp-when-nat-listp
                                                   all-rationalp-when-all-natp)
                                                  (natp))))))

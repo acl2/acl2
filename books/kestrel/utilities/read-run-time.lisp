@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+(in-theory (disable read-run-time))
+
 (defthm rationalp-of-mv-nth-0-of-read-run-time
   (rationalp (mv-nth 0 (read-run-time state)))
   :rule-classes :type-prescription
@@ -19,3 +21,9 @@
   (implies (state-p state)
            (state-p (mv-nth 1 (read-run-time state))))
   :hints (("Goal" :in-theory (enable read-run-time))))
+
+(defthm w-of-mv-nth-1-of-read-run-time
+  (equal (w (mv-nth 1 (read-run-time state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-run-time
+                                     update-acl2-oracle))))

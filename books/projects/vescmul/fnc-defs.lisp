@@ -1387,6 +1387,25 @@ term
 (DEFMACRO hons-LIST (&REST ARGS)
   (hons-list-macro-fn ARGS))
 
+(define int-vector-adder (x y)
+  :verify-guards nil
+  (+ (ifix (sv::4vec-fix x))
+     (ifix (sv::4vec-fix y)))
+  ///
+  (defwarrant-rp int-vector-adder))
+
+(define int-vector-adder-lst (lst)
+  :verify-guards nil
+  (if (atom lst)
+      0
+    (int-vector-adder (car lst)
+                      (int-vector-adder-lst (cdr lst)))))
+
+(define int-vector-adder-lst-w/carry (lst carry)
+  :verify-guards nil
+  (int-vector-adder carry
+                    (int-vector-adder-lst lst)))
+
 (encapsulate
   nil
 
@@ -1458,6 +1477,9 @@ term
        svl::bits
 
        and-times-list
+
+       int-vector-adder-lst
+       int-vector-adder-lst-w/carry
 
        ))))
 

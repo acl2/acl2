@@ -262,10 +262,20 @@
   :hints(("Goal" :in-theory (enable sv::4vec->lower))))
 
 (def-fgl-rewrite equal-of-4vec
-  #!sv (equal (equal (4vec upper lower) x)
-              (and (4vec-p x)
-                   (equal (4vec->upper x) (fgl::int upper))
-                   (equal (4vec->lower x) (fgl::int lower)))))
+  #!sv
+  (implies (syntaxp (fgl::fgl-object-case x
+                      :g-concrete t
+                      :g-cons t
+                      :g-integer t
+                      :g-apply (eq x.fn '4vec)
+                      :otherwise nil))
+           ;; Note: without the syntaxp hyp, this ruins the use of
+           ;; unsigned-4vec-p-fgl; we want the equation of the variable with
+           ;; the decomposed 4vec form to be stored as an equivalence, not rewrite with this rule.
+           (equal (equal (4vec upper lower) x)
+                  (and (4vec-p x)
+                       (equal (4vec->upper x) (fgl::int upper))
+                       (equal (4vec->lower x) (fgl::int lower))))))
 
 (def-fgl-rewrite integerp-of-4vec
   (equal (integerp (sv::4vec x y))
@@ -433,3 +443,46 @@
   :assign (hons-acons k val x)
   :assigned-var x
   :ruletype :property)
+
+
+#!sv
+(defsection unsigned-4vec-p
+  (local (in-theory (enable unsigned-4vec-p)))
+
+  (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+  (local (defthm minus-minus
+           (Equal (- (- x)) (fix x))))
+  
+  (local (defthm unsigned-byte-p-when-not-natp
+           (implies (not (natp n))
+                    (not (unsigned-byte-p n x)))
+           :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
+  (local (defthm unsigned-byte-p-when-equal-loghead
+           (implies (and (equal x (loghead n y))
+                         (natp n))
+                    (unsigned-byte-p n x))))
+  
+  (fgl::def-fgl-rewrite unsigned-4vec-p-fgl
+    (equal (unsigned-4vec-p n x)
+           (and (natp n)
+                (equal x (4vec (loghead n (4vec->upper x))
+                                   (loghead n (4vec->lower x))))
+                t))
+    :hints(("Goal" :in-theory (disable unsigned-byte-p loghead))))
+
+  (local (defthm unsigned-byte-p-in-terms-of-logtail
+           (implies (and (natp n) (integerp x))
+                    (equal (unsigned-byte-p n x)
+                           (equal (logtail n x) 0)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+  
+  (defthmd unsigned-4vec-p-in-terms-of-4vec-rsh
+    (equal (unsigned-4vec-p n x)
+           (and (natp n) (4vec-p x)
+                (equal (4vec-rsh (2vec n) x) 0)))
+    :hints(("Goal" :in-theory (e/d (4vec-rsh
+                                    4vec-shift-core)
+                                   (unsigned-byte-p)))))
+  
+  (fgl::disable-definition unsigned-4vec-p))

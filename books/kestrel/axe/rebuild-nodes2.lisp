@@ -571,7 +571,8 @@
   :hints (("Goal" :in-theory (enable rebuild-literals-with-substitution2))))
 
 (local (in-theory (enable all-integerp-when-all-natp
-                          natp-of-+-of-1-alt))) ;for the call of def-dag-builder-theorems just below
+                          ;natp-of-+-of-1-alt
+                          ))) ;for the call of def-dag-builder-theorems just below
 
 (local (in-theory (disable natp)))
 

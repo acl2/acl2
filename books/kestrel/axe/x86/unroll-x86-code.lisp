@@ -46,6 +46,10 @@
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "kestrel/utilities/print-levels" :dir :system)
+(include-book "kestrel/utilities/if" :dir :system)
+(include-book "kestrel/utilities/if-rules" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+(include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
@@ -60,6 +64,8 @@
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
+(include-book "kestrel/utilities/real-time-since" :dir :system)
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
 (acl2::ensure-rules-known (lifter-rules32))
 (acl2::ensure-rules-known (lifter-rules32-new))
@@ -117,14 +123,13 @@
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
-;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
-;; erp result-dag-or-quotep state).
-;; TODO: Handle returning a quotep?
-(defun repeatedly-run (steps-left step-increment dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
+;; reduced to 0, or a loop or an unsupported instruction is detected.
+;; Returns (mv erp result-dag-or-quotep state).
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
-                              (symbol-listp rules)
+                              (acl2::rule-alistp rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules-to-monitor)
                               (booleanp use-internal-contextsp)
@@ -141,6 +146,8 @@
       (mv (erp-nil) dag state)
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
+         (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
+         ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
          (old-dag dag)
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
@@ -148,7 +155,7 @@
          ((mv erp dag-or-quote state)
           (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
                           :exhaustivep t
-                          :rules rules ; todo: don't make the rule-alist each time
+                          :rule-alist rule-alist
                           :assumptions assumptions
                           :monitor rules-to-monitor
                           :use-internal-contextsp use-internal-contextsp
@@ -159,14 +166,18 @@
                           :memoizep memoizep
                           :check-inputs nil))
          ((when erp) (mv erp nil state))
-         ((when (quotep dag-or-quote))
-          (mv (erp-nil) dag-or-quote state))
-         ;; (- (and print (progn$ (cw "(DAG after stepping:~%")
-         ;;                       (cw "~X01" dag nil)
-         ;;                       (cw ")~%"))))
-         (dag dag-or-quote)
+         ((mv elapsed state) (acl2::real-time-since start-real-time state))
+         (- (cw " This limited run took ")
+            (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+            (cw "s.)~%")) ; matches "(Running"
+         ((when (quotep dag-or-quote)) (mv (erp-nil) dag-or-quote state))
+         (- (and ;print ;(acl2::print-level-at-least-tp print)
+                 (progn$ (cw "(DAG after this limited run:~%")
+                         (cw "~X01" dag-or-quote nil)
+                         (cw ")~%"))))
+         (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t state))
+         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag t print state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
@@ -174,27 +185,31 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
-         ((mv erp dag state)
+         ;; TODO: Maybe don't prune if the run has completed?
+         ((mv erp dag-or-quotep state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
                                            nil ; assumptions
-                                           rules
+                                           :none
+                                           rule-alist
                                            nil ; interpreted-fns
                                            rules-to-monitor
                                            t ;call-stp
                                            print
                                            state))
          ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep) ; it wasn't a quotep
          ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).
+         ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
          (dag-fns (acl2::dag-fns dag)))
       (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
-          (prog2$ (cw "Note: The run has completed.~%")
+          (prog2$ (cw "(The run has completed.)~%")
                   (mv (erp-nil) dag state))
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
@@ -204,31 +219,41 @@
                       (mv (erp-nil) dag state))
             (let* ((total-steps (+ steps-for-this-iteration total-steps))
                    (state ;; Print as a term unless it would be huge:
-                    (if (< (acl2::dag-or-quotep-size dag) 1000)
-                        (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
-                             (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                        (set-print-base-radix print-base state)
-                                      state))
-                             (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
-                             (state (set-print-base-radix 10 state)) ;make event sets it to 10
-                             (- (cw ")~%")))
-                          state)
-                      (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
-                           (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                      (set-print-base-radix print-base state)
-                                    state))
-                           (- (cw "~X01" dag nil))
-                           (state (set-print-base-radix 10 state))
-                           (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
-                           (- (cw ")~%")))
-                        state))))
+                     (if (acl2::print-level-at-least-tp print)
+                         (if (< (acl2::dag-or-quotep-size dag) 1000)
+                             (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
+                                  (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                             (set-print-base-radix print-base state)
+                                           state))
+                                  (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
+                                  (state (set-print-base-radix 10 state)) ;make event sets it to 10
+                                  (- (cw ")~%")))
+                               state)
+                           (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
+                                (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                           (set-print-base-radix print-base state)
+                                         state))
+                                (- (cw "~X01" dag nil))
+                                (state (set-print-base-radix 10 state))
+                                (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
+                                (- (cw ")~%")))
+                             state))
+                       state)))
               (repeatedly-run (- steps-left steps-for-this-iteration)
                               step-increment
-                              dag rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
+                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
                               total-steps
                               state))))))))
 
-;; Returns (mv erp result-dag-or-quotep rules-used assumption-rules-used state).
+(defconst *lifter-rules32-all*
+  (append (lifter-rules32)
+          (lifter-rules32-new)))
+
+(defconst *lifter-rules64-all*
+  (append (lifter-rules64)
+          (lifter-rules64-new)))
+
+;; Returns (mv erp result-dag-or-quotep lifter-rules-used assumption-rules-used state).
 (defun def-unrolled-fn-core (target
                              parsed-executable
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
@@ -271,10 +296,11 @@
                               (member print-base '(10 16)))
                   :stobjs (state)
                   :mode :program))
-  (b* ((- (cw "Lifting ~s0.~%" target)) ;todo: print the executable name
+  (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (acl2::ensure-x86 parsed-executable))
-       (- (cw "(Executable type: ~x0.)~%" executable-type))
+       (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
                    (not (eq :pe-32 executable-type))))
@@ -333,16 +359,7 @@
        (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
-       (lifter-rules (if (member-eq executable-type *executable-types32*)
-                         (append (lifter-rules32)
-                                 (lifter-rules32-new))
-                       (append (lifter-rules64)
-                               (lifter-rules64-new))))
-       (rules (append extra-rules lifter-rules)) ; todo: use union?
-       (- (let ((non-existent-remove-rules (set-difference-eq remove-rules rules)))
-            (and non-existent-remove-rules
-                 (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
-       (rules (set-difference-eq rules remove-rules))
+       ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
@@ -366,29 +383,49 @@
         (acl2::simplify-terms-repeatedly
          assumptions
          assumption-rule-alist
-         rules-to-monitor
+         rules-to-monitor ; do we want to monitor here?  What if some rules are not incldued?
          nil ; don't memoize (avoids time spent making empty-memoizations)
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
-       (- (cw "Done simplifying assumptions)~%"))
+       ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
+       (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
+          (acl2::print-to-hundredths assumption-simp-elapsed)
+          (cw "s.)~%"))
+       (- (cw " Done simplifying assumptions)~%"))
        (- (and print (cw "(Simplified assumptions: ~x0)~%" assumptions)))
        ;; Prepare for symbolic execution:
        (term-to-simulate '(run-until-return x86))
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
+       ;; TODO: Just call simplify-term here?
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
-
        ;; Do the symbolic execution:
-       ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate rules assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
+       (lifter-rules (if 32-bitp *lifter-rules32-all* *lifter-rules64-all*))
+       (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
+       (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
+            (and non-existent-remove-rules
+                 (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
+       (lifter-rules (set-difference-eq lifter-rules remove-rules))
+       ((mv erp lifter-rule-alist)
+        (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil state))
+       ((mv erp result-dag-or-quotep state)
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
+       ((when erp) (mv erp nil nil nil state))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw " (Lifting took ")
+          (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+          (cw "s.)~%"))
        (- (if (quotep result-dag-or-quotep)
-              (cw "(Unrolling/lifting produced the constant ~x0.)~%" result-dag-or-quotep)
-            (acl2::print-dag-info result-dag-or-quotep 'result t))))
-    (mv (erp-nil) result-dag-or-quotep rules assumption-rules state)))
+              (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
+            (progn$ (cw " Lifting produced a dag:~%")
+                    (acl2::print-dag-info result-dag-or-quotep 'result t)
+                    (cw ")~%") ; matches (Lifting...
+                    ))))
+    (mv (erp-nil) result-dag-or-quotep lifter-rules assumption-rules state)))
 
 ;; Returns (mv erp event state)
 (defun def-unrolled-fn (lifted-name
@@ -470,7 +507,7 @@
                                       t))
                                 position-independent))
        ;; Lift the function to obtain the DAG:
-       ((mv erp result-dag rules-used
+       ((mv erp result-dag lifter-rules-used
             & ; assumption-rules-used
             state)
         (def-unrolled-fn-core target parsed-executable
@@ -560,7 +597,7 @@
                                 :hints ,(if restrict-theory
                                             `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
                                                                    )))
-                                          `(("Goal" :in-theory (enable ,@rules-used
+                                          `(("Goal" :in-theory (enable ,@lifter-rules-used
                                                                        ;; ,@assumption-rules-used ; todo consider this
                                                                        ))))
                                 :otf-flg t))

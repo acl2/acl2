@@ -188,7 +188,7 @@
 (defthm take-unguarded-correct
   (equal (take-unguarded n lst)
          (take n lst))
-  :hints (("Goal" :in-theory (e/d (take-unguarded take) ()))))
+  :hints (("Goal" :in-theory (enable take-unguarded take))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,7 +403,7 @@
 (defthm bitand-unguarded-correct
   (equal (bitand-unguarded x y)
          (bitand x y))
-  :hints (("Goal" :in-theory (e/d (bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer) ()))))
+  :hints (("Goal" :in-theory (enable bitand-unguarded bitand bvand getbit-when-val-is-not-an-integer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -511,7 +511,7 @@
 (defthm bvcat-unguarded-correct
   (equal (bvcat-unguarded highsize highval lowsize lowval)
          (bvcat highsize highval lowsize lowval))
-  :hints (("Goal" :in-theory (e/d (bvcat bvcat-unguarded) ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvcat-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -654,3 +654,17 @@
   (equal (bvashr-unguarded width x shift-amount)
          (bvashr width x shift-amount))
   :hints (("Goal" :in-theory (enable bvashr bvashr-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund ceiling-of-lg-unguarded (x)
+  (declare (xargs :guard t))
+  (if (integerp x)
+      (ceiling-of-lg x)
+    0))
+
+(defthm ceiling-of-lg-unguarded-correct
+  (equal (ceiling-of-lg-unguarded x)
+         (ceiling-of-lg x))
+  :hints (("Goal" :cases ((acl2-numberp x))
+           :in-theory (enable ceiling-of-lg ceiling-of-lg-unguarded))))

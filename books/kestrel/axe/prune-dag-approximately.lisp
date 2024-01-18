@@ -12,17 +12,28 @@
 
 ;; This utility tries to resolve IF/MYIF/BOOLIF/BVIF tests in the dag, using STP and the contexts of the nodes.
 
-;; TODO: Flesh this out
+;; TODO: Add the ability to rewrite tests when pruning.
 
 (include-book "prove-with-stp")
 (include-book "rewriter-basic")
 (include-book "dag-size-fast")
+(include-book "basic-rules")
+(include-book "rule-lists") ; for unsigned-byte-p-forced-rules
+(include-book "bv-rules-axe") ; for bvchop-identity-axe
+(include-book "kestrel/booleans/booleans" :dir :system) ; for MYIF-OF-BOOL-FIX-ARG1
+(include-book "kestrel/bv/rules" :dir :system) ; todo: reduce, for the unsigned-byte-p-forced rules
+(include-book "kestrel/bv/sbvrem" :dir :system)
+(include-book "kestrel/bv/sbvdiv" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system) ; for rules mentioned below
 (include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)
+(include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove (since this book knows about boolif)
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove (since this book knows about bool-fix$inline)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (local (include-book "cars-decreasing-by-1"))
+(local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -43,50 +54,51 @@
 
 ;move:
 
-;; Checks that DAG is a true-list of pairs of the form (<nodenum> . <bounded-dag-expr>).
-(defund bounded-weak-dagp-aux (dag bound)
-  (declare (xargs :guard (natp bound)))
-  (if (atom dag)
-      (null dag)
-    (let ((entry (car dag)))
-      (and (consp entry)
-           (let* ((nodenum (car entry))
-                  (expr (cdr entry)))
-             (and (natp nodenum)
-                  (< nodenum bound)
-                  (bounded-dag-exprp nodenum expr)
-                  (bounded-weak-dagp-aux (cdr dag) bound)))))))
+;; ;; Checks that DAG is a true-list of pairs of the form (<nodenum> . <bounded-dag-expr>).
+;; (defund bounded-weak-dagp-aux (dag bound)
+;;   (declare (xargs :guard (natp bound)))
+;;   (if (atom dag)
+;;       (null dag)
+;;     (let ((entry (car dag)))
+;;       (and (consp entry)
+;;            (let* ((nodenum (car entry))
+;;                   (expr (cdr entry)))
+;;              (and (natp nodenum)
+;;                   (< nodenum bound)
+;;                   (bounded-dag-exprp nodenum expr)
+;;                   (bounded-weak-dagp-aux (cdr dag) bound)))))))
 
-(defthm weak-dagp-aux-when-bounded-weak-dagp-aux
-  (implies (bounded-weak-dagp-aux dag bound) ; free var
-           (weak-dagp-aux dag))
-  :hints (("Goal" :in-theory (enable bounded-weak-dagp-aux
-                                     weak-dagp-aux))))
+;; (defthm weak-dagp-aux-when-bounded-weak-dagp-aux
+;;   (implies (bounded-weak-dagp-aux dag bound) ; free var
+;;            (weak-dagp-aux dag))
+;;   :hints (("Goal" :in-theory (enable bounded-weak-dagp-aux
+;;                                      weak-dagp-aux))))
 
-(defthm bounded-weak-dagp-aux-of-cdr
-  (implies (bounded-weak-dagp-aux dag bound)
-           (bounded-weak-dagp-aux (cdr dag) bound))
-  :hints (("Goal" :in-theory (enable bounded-weak-dagp-aux))))
+;; (defthm bounded-weak-dagp-aux-of-cdr
+;;   (implies (bounded-weak-dagp-aux dag bound)
+;;            (bounded-weak-dagp-aux (cdr dag) bound))
+;;   :hints (("Goal" :in-theory (enable bounded-weak-dagp-aux))))
 
-(defthm bounded-weak-dagp-aux-forward-to-alistp
-  (implies (bounded-weak-dagp-aux dag bound)
-           (alistp dag))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-weak-dagp-aux alistp))))
+;; (defthm bounded-weak-dagp-aux-forward-to-alistp
+;;   (implies (bounded-weak-dagp-aux dag bound)
+;;            (alistp dag))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable bounded-weak-dagp-aux alistp))))
 
-(defthm bounded-weak-dagp-aux-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag n)
-                (< n bound)
-                (natp n)
-                (natp bound))
-           (bounded-weak-dagp-aux dag bound))
-  :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-weak-dagp-aux))))
+;; (defthm bounded-weak-dagp-aux-when-pseudo-dagp-aux
+;;   (implies (and (pseudo-dagp-aux dag n)
+;;                 (< n bound)
+;;                 (natp n)
+;;                 (natp bound))
+;;            (bounded-weak-dagp-aux dag bound))
+;;   :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-weak-dagp-aux))))
 
-(defthm bounded-weak-dagp-aux-of-len-when-pseudo-dagp
-  (implies (pseudo-dagp dag)
-           (bounded-weak-dagp-aux dag (len dag)))
-  :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux bounded-weak-dagp-aux))))
+;; (defthm bounded-weak-dagp-aux-of-len-when-pseudo-dagp
+;;   (implies (pseudo-dagp dag)
+;;            (bounded-weak-dagp-aux dag (len dag)))
+;;   :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux bounded-weak-dagp-aux))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; When the test of an IF or MYIF can be resolved, the IF/MYIF can be replaced
 ;; by a call of ID around either its then-branch or its else-branch.  This
@@ -94,6 +106,44 @@
 ;; numbering.  The calls to ID can be removed by a subsequent call of the
 ;; rewriter.  TODO: Do better?
 (defun id (x) x)
+
+(defund prune-dag-post-rewrite-rules ()
+  (declare (xargs :guard t))
+  (append
+  '(id
+    bool-fix-when-booleanp ; todo: add more booleanp rules, or even pass them in?
+    bool-fix-of-bool-fix
+    boolif-of-bool-fix-arg1
+    boolif-of-bool-fix-arg2
+    boolif-of-bool-fix-arg3
+    if-of-bool-fix-arg1
+    myif-of-bool-fix-arg1
+    bvif-of-bool-fix
+    not-of-bool-fix
+    boolor-of-bool-fix-arg1
+    boolor-of-bool-fix-arg2
+    booland-of-bool-fix-arg1
+    booland-of-bool-fix-arg2
+    booleanp-of-bool-fix-rewrite
+    if-same-branches
+    if-when-non-nil-constant
+    if-of-nil
+    ;; if-of-not ; maybe
+    if-of-t-and-nil-when-booleanp ; or bool-fix it
+    myif-same-branches
+    myif-of-nil
+    myif-of-constant-when-not-nil
+    myif-nil-t
+    myif-of-t-and-nil-when-booleanp
+    ;; todo: more rules?
+    bvchop-identity-axe
+    )
+  (unsigned-byte-p-forced-rules)
+  ;; todo: add rules like bvif-of-bvchop-arg3 (make a rule-list for them)
+  ;; (bv-function-of-bvchop-rules) ;; hmmm, maybe we should pass in these rules?
+  ))
+
+(ensure-rules-known (prune-dag-post-rewrite-rules))
 
 ;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.
 ;; TODO: Also use rewriting?  See also try-to-resolve-test.
@@ -117,7 +167,7 @@
                                        (< nodenum-or-quotep dag-len)))
                               (bounded-possibly-negated-nodenumsp assumptions dag-len)
                               (stringp base-filename)
-                              ;; print
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts)))
                   :stobjs state))
@@ -126,9 +176,9 @@
             (mv (erp-nil) :true state)
           (mv (erp-nil) :false state)))
        (nodenum nodenum-or-quotep)
-       (- (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions)))
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions))))
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
-       (- (cw "(Attempting to prove test true with STP:~%"))
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test true with STP:~%")))
        ((mv true-result state)
         (prove-node-implication-with-stp assumptions
                                          nodenum
@@ -141,10 +191,10 @@
         (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* true-result)) ;; STP proved the test
-        (prog2$ (cw "STP proved the test true.))~%")
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test true.))~%"))
                 (mv (erp-nil) :true state)))
-       (- (cw "STP failed to prove the test true.)~%"))
-       (- (cw "(Attempting to prove test false with STP:~%"))
+       (- (and (print-level-at-least-tp print) (cw "STP failed to prove the test true.)~%")))
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test false with STP:~%")))
        ((mv false-result state)
         (prove-node-implication-with-stp assumptions
                                          `(not ,nodenum)
@@ -157,9 +207,9 @@
         (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
-        (prog2$ (cw "STP proved the test false.))~%")
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test false.))~%"))
                 (mv (erp-nil) :false state))))
-    (prog2$ (cw "STP did not resolve the test.))~%")
+    (prog2$ (and (print-level-at-least-tp print) (cw "STP did not resolve the test.))~%"))
             (mv (erp-nil) :unknown state))))
 
 (defthm w-of-mv-nth-2-of-try-to-resolve-node-with-stp
@@ -184,6 +234,8 @@
 (thm (implies (not test) (equal (myif test x y) (id y))))
 (thm (implies test (equal (boolif test x y) (bool-fix$inline x))))
 (thm (implies (not test) (equal (boolif test x y) (bool-fix$inline y))))
+(thm (implies test (equal (bvif size test x y) (bvchop size x))))
+(thm (implies (not test) (equal (bvif size test x y) (bvchop size y))))
 
 ;; Returns (mv erp dag state).
 (defund prune-dag-approximately-aux (dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
@@ -196,7 +248,7 @@
                               (<= (len dag) dag-len)
                               ;; (bounded-weak-dagp-aux dag dag-len)
                               (bounded-context-arrayp 'context-array context-array dag-len dag-len)
-                              ;; print
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (weak-dagp-aux dag-acc) ; ignores the order
@@ -222,7 +274,7 @@
           (case fn
             ;; quoted constant (nothing to do):
             (quote (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))
-            ((if myif)
+            ((if myif) ; (if/myif test then-branch else-branch)
              (b* (((when (not (consp (cdr (cdr (dargs expr))))))
                    (mv :bad-if-arity nil state))
                   ;; Get the context for this IF/MYIF node (note that its test node may appear in other contexts too):
@@ -252,7 +304,7 @@
                             ;; Could not resolve the test:
                             expr))))
                (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
-            ((boolif)
+            ((boolif) ; (boolif test then-branch else-branch)
              (b* (((when (not (consp (cdr (cdr (dargs expr))))))
                    (mv :bad-boolif-arity nil state))
                   ;; Get the context for this BOOLIF node (note that its test node may appear in other contexts too):
@@ -283,7 +335,37 @@
                             ;; Could not resolve the test:
                             expr))))
                (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
-            ;; todo: add support for bvif?
+            ((bvif) ; (bvif size test then-branch else-branch)
+             (b* (((when (not (consp (cdddr (dargs expr)))))
+                   (mv :bad-bvif-arity nil state))
+                  ;; Get the context for this BVIF node (note that its test node may appear in other contexts too):
+                  (context (aref1 'context-array context-array nodenum))
+                  ((when (eq (false-context) context))
+                   (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
+                   (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(bvchop ,(darg1 expr) ,(darg3 expr)) dag-acc) state))
+                  ;; Try to resolve the BVIF test:
+                  ((mv erp result state)
+                   ;; TODO: What if the test is among the context assumptions?
+                   ;; TODO: Should we use any rewriting here?
+                   (try-to-resolve-node-with-stp (darg2 expr) ; the test of the BVIF
+                                                 context      ; the assumptions
+                                                 dag-array dag-len dag-parent-array
+                                                 "PRUNE" ; todo: improve?
+                                                 print
+                                                 max-conflicts
+                                                 state))
+                  ((when erp) (mv erp nil state))
+                  ;; Even if we can resolve the test, we have to keep the
+                  ;; chopping.  This also ensures the node is still legal
+                  ;; (not a naked nodenum) and preserves the node numbering
+                  ;; (calls to bvchop will later be removed by rewriting):
+                  (expr (if (eq result :true)
+                            `(bvchop ,(darg1 expr) ,(darg3 expr)) ; the BVIF is equal to the bvchop of its then-branch
+                          (if (eq result :false)
+                              `(bvchop ,(darg1 expr) ,(darg4 expr)) ; the BVIF is equal to the bvchop of its else-branch
+                            ;; Could not resolve the test:
+                            expr))))
+               (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
             (t
              (prune-dag-approximately-aux (rest dag) dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state))))))))
 
@@ -399,38 +481,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund prune-dag-helper-rules ()
-  (declare (xargs :guard t))
-  '(id
-    bool-fix-when-booleanp ; todo: add more booleanp rules, or even pass them in?
-    bool-fix-of-bool-fix
-    boolif-of-bool-fix-arg1
-    boolif-of-bool-fix-arg2
-    boolif-of-bool-fix-arg3
-    if-of-bool-fix-arg1
-    myif-of-bool-fix-arg1
-    bvif-of-bool-fix
-    not-of-bool-fix
-    boolor-of-bool-fix-arg1
-    boolor-of-bool-fix-arg2
-    booland-of-bool-fix-arg1
-    booland-of-bool-fix-arg2
-    booleanp-of-bool-fix
-    if-same-branches
-    if-when-non-nil-constant
-    if-of-nil
-    ;; if-of-not ; maybe
-    if-of-t-and-nil-when-booleanp ; or bool-fix it
-    myif-same-branches
-    myif-of-nil
-    myif-of-constant-when-not-nil
-    myif-nil-t
-    myif-t-nil
-    ;; todo: more rules?
-    ))
-
-(ensure-rules-known (prune-dag-helper-rules))
-
 ;; Returns (mv erp dag-or-quotep state).
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
 ;; todo: may need multiple passes, but watch for loops!
@@ -441,6 +491,7 @@
                                  ;; monitored-rules
                                  ;;call-stp
                                  check-fnsp ; whether to check for prunable functions
+                                 print
                                  state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) 2147483646)
@@ -451,6 +502,7 @@
                               ;; (or (booleanp call-stp)
                               ;;     (natp call-stp))
                               (booleanp check-fnsp)
+                              (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))
                   :stobjs state))
@@ -459,13 +511,14 @@
         (cw "(Note: No pruning to do.)~%")
         (mv nil dag state))
        (- (cw "(Pruning DAG with approximate contexts:~%"))
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (context-array (make-full-context-array-for-dag dag))
        (dag-array (make-into-array 'dag-array dag))
        (dag-len (+ 1 (top-nodenum-of-dag dag)))
        (dag-parent-array (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array))
        ((mv erp dag state)
         (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array
-                                     t         ;todo print
+                                     print
                                      60000     ;todo max-conflicts
                                      nil       ; dag-acc
                                      state))
@@ -476,7 +529,7 @@
        ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
        ;; Similarly, try to get rid of calls of BOOL-FIX$INLINE that got introduced.
        ;; And try to propagate successful resolution of tests upward in the DAG.
-       ((mv erp rule-alist) (make-rule-alist (prune-dag-helper-rules)
+       ((mv erp rule-alist) (make-rule-alist (prune-dag-post-rewrite-rules)
                                              (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp dag-or-quotep) (simplify-dag-basic dag
@@ -492,15 +545,19 @@
                                                    nil ; memoize
                                                    ))
        ((when erp) (mv erp nil state))
-       (- (cw "Done pruning DAG.)~%")))
+       ((mv elapsed state) (real-time-since start-real-time state))
+       (- (cw "Done pruning DAG (")
+          (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
+          (cw "s.))~%")))
     (mv (erp-nil) dag-or-quotep state)))
 
 ;; Returns (mv erp dag-or-quotep state).
-(defund maybe-prune-dag-approximately (prune-branches dag state)
+(defund maybe-prune-dag-approximately (prune-branches dag print state)
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
                               (<= (len dag) 2147483646)
+                              (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* (((when (not prune-branches))
@@ -518,4 +575,5 @@
     ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune:
     (prune-dag-approximately dag
                              nil ; we already know there are prunable ops
+                             print
                              state)))

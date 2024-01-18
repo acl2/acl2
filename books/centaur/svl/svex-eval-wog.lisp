@@ -42,14 +42,13 @@
    (and stable-under-simplificationp
         '(:expand ((svex-p x)))))
   :progn t
-  (cond ((if (atom x)
-             (or (stringp x)
-                 (and x (symbolp x)))
-           (eq (car x) :var))
-         :var)
-        ((or (atom x)
-             (integerp (car x)))
+  (cond ((if (consp x)
+             (integerp (car x))
+           (or (integerp x) (not x)))
          :quote)
+        ((or (atom x)
+             (eq (car x) :var))
+         :var)
         (t :call)))
 
 (def-rp-rule :disabled-for-acl2 t

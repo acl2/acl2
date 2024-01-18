@@ -53,6 +53,7 @@
      (if (and (consp output-indicator)
               (eq :register-bool (first output-indicator)))
          ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
+         ;; TODO: Should we chop to a single bit?
          `(acl2::bvchop '8 (xr ':rgf ',(second output-indicator) ,term-to-simulate))
        (if (and (consp output-indicator)
                 (eq :mem32 (first output-indicator)))

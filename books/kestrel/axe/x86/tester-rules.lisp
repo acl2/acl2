@@ -102,10 +102,10 @@
            (equal (< 15 (* x 4))
                   (< 3 x))))
 
-(defthmd <-of-floor-when-<
-  (implies (and (< x y)
-                (rationalp x))
-           (< (floor x 1) y)))
+;; (defthmd <-of-floor-when-<
+;;   (implies (and (< x y)
+;;                 (rationalp x))
+;;            (< (floor x 1) y)))
 
 (defthm <-of-*-when-constant-integers
   (implies (and (syntaxp (and (quotep k1)
@@ -130,42 +130,6 @@
 (defthmd rationalp-when-integerp
   (implies (integerp x)
            (rationalp x)))
-
-(defthmd acl2-numberp-of--
-  (acl2-numberp (- x)))
-
-(defthm x86isa::canonical-address-p-between-special5
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset))
-                (<= (+ k x) k2)
-                (natp k)
-                (natp x)
-                (natp k2))
-           ;; ex (BINARY-+ '192 (BINARY-+ TEXT-OFFSET (ASH (BVCHOP '32 (RDI X86)) '2)))
-           (canonical-address-p (+ k text-offset x))))
-
-(DEFTHM X86ISA::CANONICAL-ADDRESS-P-BETWEEN-SPECIAL5-alt
-  (IMPLIES (AND (CANONICAL-ADDRESS-P TEXT-OFFSET)
-                (CANONICAL-ADDRESS-P (+ K2 TEXT-OFFSET))
-                (<= (+ K X) K2)
-                (NATP K)
-                (NATP X)
-                (NATP K2))
-           (CANONICAL-ADDRESS-P (+ K X TEXT-OFFSET))))
-
-(defthm x86isa::canonical-address-p-between-special6
-  (implies (and (canonical-address-p (+ k1 base))
-                (syntaxp (quotep k1))
-                (canonical-address-p (+ k2 base))
-                (syntaxp (quotep k2))
-                (< k1 k2) ; break symmetry
-                (<= k1 (+ x1 x2))
-                (<= (+ x1 x2) k2)
-                (integerp k1)
-                (integerp x1)
-                (integerp x2)
-                (integerp k2))
-           (canonical-address-p (+ x1 x2 base))))
 
 ;gen!
 (defthm acl2::bvsx-when-bvlt
@@ -217,7 +181,7 @@
                 (posp k))
            (equal (acl2::boolif (bvlt 16 x k) t else)
                   (acl2::boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
-  :hints (("Goal" :in-theory (enable acl2::boolor
+  :hints (("Goal" :in-theory (enable acl2::boolor boolif
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
                                      ))))
@@ -236,32 +200,9 @@
                                      acl2::bvchop-of-sum-cases
                                      ))))
 
-;todo: gen, or change bvshl to always return a bv, or change the bvchop-identity rule to know about bvshl
-(defthm bvchop-of-bvshl-same
-  (implies (and (natp size)
-                (< amt size)
-                (natp amt))
-           (equal (bvchop size (acl2::bvshl size x amt))
-                  (acl2::bvshl size x amt)))
-  :hints (("Goal" :in-theory (enable acl2::bvshl))))
-
 (theory-invariant (incompatible (:rewrite bvcat-of-minus-becomes-bvshl)
                                 (:definition acl2::bvshl )))
 
-
-(defthm equal-of-bvshl-and-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep k2)))
-                (natp amt)
-                (< amt 32))
-           (equal (equal k (acl2::bvshl 32 k2 amt))
-                  (and (unsigned-byte-p 32 k)
-                       (equal 0 (bvchop amt k))
-                       (equal (slice 31 amt k)
-                              (bvchop (- 32 amt) k2)))))
-  :hints (("Goal" :in-theory (e/d (acl2::bvshl)
-                                  (;bvcat-of-minus-becomes-bvshl
-                                   )))))
 
 ;; (defthm not-equal-of-0-and-bvshl-of-1
 ;;   (implies (and (natp amt)
@@ -391,22 +332,6 @@
 
 (acl2::def-constant-opener X86ISA::!PREFIXES->REP$inline)
 (acl2::def-constant-opener X86ISA::PREFIXES->REP$INLINE)
-
-(defthm ctri-of-xw-irrel
-  (implies (not (equal :ctr fld))
-           (equal (CTRI i (xw fld index val x86))
-                  (CTRI i x86)))
-  :hints (("Goal" :in-theory (enable CTRI))))
-
-(defthm ctri-of-write
-  (equal (CTRI i (write n base-addr val x86))
-         (CTRI i x86))
-  :hints (("Goal" :in-theory (enable CTRI))))
-
-(defthm ctri-of-set-flag
-  (equal (CTRI i (set-flag flag val x86))
-         (CTRI i x86))
-  :hints (("Goal" :in-theory (enable CTRI))))
 
 (defthm X86ISA::FEATURE-FLAGS-opener
   (implies (consp features)
@@ -582,70 +507,6 @@
   (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
          (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
 
-(defthm sse-daz-of-nil
-  (equal (X86ISA::SSE-DAZ kind exp frac nil)
-         (mv kind exp frac))
-  :hints (("Goal" :in-theory (enable X86ISA::SSE-DAZ))))
-
-(defthm X86ISA::MXCSRBITS->IM-of-if
-  (equal (X86ISA::MXCSRBITS->IM (if test x86 x86_2))
-         (if test (X86ISA::MXCSRBITS->IM x86) (X86ISA::MXCSRBITS->IM x86_2))))
-
-(defthm X86ISA::MXCSRBITS->DM-of-if
-  (equal (X86ISA::MXCSRBITS->DM (if test x86 x86_2))
-         (if test (X86ISA::MXCSRBITS->DM x86) (X86ISA::MXCSRBITS->DM x86_2))))
-
-(defthm X86ISA::MXCSRBITS->DAZ-of-if
-  (equal (X86ISA::MXCSRBITS->DAZ (if test x86 x86_2))
-         (if test (X86ISA::MXCSRBITS->DAZ x86) (X86ISA::MXCSRBITS->DAZ x86_2))))
-
-;todo: more like this, or look at how this is proved
-(defthm MXCSRBITS->IM-of-!MXCSRBITS->IE
-  (equal (X86ISA::MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->IM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->IM-of-!MXCSRBITS->DE
-  (equal (X86ISA::MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->IM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DM-of-!MXCSRBITS->DE
-  (equal (X86ISA::MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DM-of-!MXCSRBITS->IE
-  (equal (X86ISA::MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DM$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DAZ-of-!MXCSRBITS->IE
-  (equal (X86ISA::MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DAZ$INLINE mxcsr)))
-
-(defthm MXCSRBITS->DAZ-of-!MXCSRBITS->DE
-  (equal (X86ISA::MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
-         (X86ISA::MXCSRBITS->DAZ$INLINE mxcsr)))
-
-(defthm integerp-of-xr-mxcsr
-  (INTEGERP (XR :MXCSR NIL X86)))
-
-(defthm integerp-of-!MXCSRBITS->IE
-  (integerp (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
-
-(defthm unsigned-byte-p-32-of-!MXCSRBITS->IE
-  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
-
-(defthm unsigned-byte-p-32-of-!MXCSRBITS->DE
-  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
-
-(defthm integerp-of-!MXCSRBITS->DE
-  (integerp (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
-
-
-(acl2::def-constant-opener X86ISA::FP-DECODE)
-(acl2::def-constant-opener X86ISA::FP-TO-RAT)
-(acl2::def-constant-opener rtl::bias)
-(acl2::def-constant-opener rtl::expw)
-(acl2::def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
-
 ;; should not be needed
 (defthm xr-of-!rflags-irrel
   (implies (not (equal fld :rflags))
@@ -660,21 +521,7 @@
   (equal (X86ISA::!RFLAGS v (if test x86_1 x86_2))
          (if test (X86ISA::!RFLAGS v x86_1) (X86ISA::!RFLAGS v x86_2))))
 
-
-
-(defthm <-of-fp-to-rat
-  (implies (and (natp frac)
-                (natp exp)
-                (not (equal 0 exp))
-                (natp frac-width)
-                (equal 8 exp-width) ; todo: gen
-                )
-           (equal (< (X86ISA::FP-TO-RAT SIGN EXP frac BIAS EXP-WIDTH FRAC-WIDTH) 0)
-                  (and (not (equal 0 sign))
-                       (if (equal 0 exp)
-                           (not (equal 0 FRAC))
-                         (<= exp (x86isa::fp-max-finite-exp exp-width))))))
-  :hints (("Goal" :in-theory (enable X86ISA::FP-TO-RAT))))
+(acl2::def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
 
 ;; (thm
 ;;  (IMPLIES (AND (< J 0)
@@ -887,7 +734,8 @@
 ;; since we can get better context info from boolif than from boolor?
 (defthmd boolor-becomes-boolif
   (equal (acl2::boolor x y)
-         (acl2::boolif x t y)))
+         (acl2::boolif x t y))
+  :hints (("Goal" :in-theory (enable boolif))))
 
 (theory-invariant (incompatible (:rewrite ACL2::BOOLIF-WHEN-QUOTEP-ARG2) (:rewrite boolor-becomes-boolif)))
 
@@ -1017,10 +865,12 @@
 
 ;todo: why is !rflags remaining in some examples like test_popcount_32_one_bit?
 
+;move
 (defthm boolif-same-arg1-arg2
   (implies (syntaxp (not (quotep x))) ; avoids loop when x='t, this hyp is supported by Axe
            (equal (acl2::boolif x x y)
-                  (acl2::boolif x t y))))
+                  (acl2::boolif x t y)))
+  :hints (("Goal" :in-theory (enable boolif))))
 
 ;; (thm
 ;;  (implies (and (PROGRAM-AT (BINARY-+ '304 TEXT-OFFSET) '(0 0 0 0 1 0 0 0 2 0 0 0 3 0 0 0) X86)
@@ -1179,122 +1029,10 @@
                        (+ k2 (rsp x86)))))
   :hints (("Goal" :in-theory (enable separate))))
 
-;rename?
-(defthm <-of-+-and-+-arg3-and-arg1
-  (equal (< (+ x (+ y z)) z)
-         (< (+ x y) 0)))
-
-(defthm write-of-write-byte-included
-  (implies (and ;; ad2 is in the interval [ad1,ad1+n):
-            (< (bvminus 48 ad2 ad1) n)
-            (integerp ad1)
-            (integerp ad2)
-            (natp n))
-           (equal (write n ad1 val (write-byte ad2 byte x86))
-                  (write n ad1 val x86)))
-  :hints (("Goal" :in-theory (enable write
-                                     acl2::bvchop-of-sum-cases
-                                     bvminus))))
-
-(defthm write-of-write-byte-not-included
-  (implies (and ;; ad2 is NOT in the interval [ad1,ad1+n):
-            (not (< (bvminus 48 ad2 ad1) n))
-            (integerp ad1)
-            (integerp ad2)
-            (natp n))
-           (equal (write n ad1 val (write-byte ad2 byte x86))
-                  (write-byte ad2 byte (write n ad1 val x86))))
-  :hints (("Goal" :in-theory (enable write
-                                     acl2::bvchop-of-sum-cases
-                                     bvminus))))
-
-(defthm write-of-write-byte
-  (implies (and (integerp ad1)
-                (integerp ad2)
-                (natp n))
-           (equal (write n ad1 val (write-byte ad2 byte x86))
-                  (if (< (bvminus 48 ad2 ad1) n)
-                      ;; ad2 is in the interval [ad,ad+n).
-                      (write n ad1 val x86)
-                    (write-byte ad2 byte (write n ad1 val x86))))))
-
-;todo: gen
-(defthm write-of-write-of-write-same
-  (implies (and (integerp addr)
-                (integerp addr2)
-                (natp n)
-                (natp n2)
-                (unsigned-byte-p 48 n) ; drop? but first change the write-of-write-same
-                )
-           (equal (write n addr val3 (write n2 addr2 val2 (write n addr val1 x86)))
-                  (write n addr val3 (write n2 addr2 val2 x86))))
-  :hints (("Goal" :expand (write n2 addr2 val2 (write n addr val1 x86))
-           :in-theory (enable write)
-           :do-not '(generalize eliminate-destructors)
-           :induct (write n2 addr2 val2 x86))))
-
-;todo: gen
-(defthm write-of-write-of-write-of-write-same
-  (implies (and (integerp addr)
-                (integerp addr2)
-                (integerp addr3)
-                (natp n)
-                (natp n2)
-                (natp n3)
-                (unsigned-byte-p 48 n) ; drop? but first change the write-of-write-same
-                )
-           (equal (write n addr val4 (write n3 addr3 val3 (write n2 addr2 val2 (write n addr val1 x86))))
-                  (write n addr val4 (write n3 addr3 val3 (write n2 addr2 val2 x86)))))
-  :hints (("Goal" :use ((:instance write-of-write-of-write-same
-                                   (val3 val4)
-                                   (n2 n3)
-                                   (addr2 addr3)
-                                   (val2 val3)
-                                   (val1 val4)
-                                   (x86 (write n2 addr2 val2 (write n addr val1 x86))))
-                        (:instance write-of-write-of-write-same
-                                   (val3 val4)
-                                   (n2 n3)
-                                   (addr2 addr3)
-                                   (val2 val3)
-                                   (val1 val4)
-                                   (x86 (write n2 addr2 val2 x86)))
-                        (:instance write-of-write-of-write-same
-                                   (val3 val4)))
-           :in-theory (disable write-of-write-of-write-same write))))
-
-;; ;; write of write, with 3 intervening writes
-;; ;todo: gen
-;; (defthm write-of-write-of-write-of-write-of-write-same
-;;   (implies (and (integerp addr)
-;;                 (integerp addr2)
-;;                 (integerp addr3)
-;;                 (integerp addr4)
-;;                 (natp n)
-;;                 (natp n2)
-;;                 (natp n3)
-;;                 (natp n4)
-;;                 (unsigned-byte-p 48 n) ; drop? but first change the write-of-write-same
-;;                 )
-;;            (equal (write n addr val5 (write n4 addr4 val4 (write n3 addr3 val3 (write n2 addr2 val2 (write n addr val1 x86)))))
-;;                   (write n addr val5 (write n4 addr4 val4 (write n3 addr3 val3 (write n2 addr2 val2 x86))))))
-;;   :hints (("Goal" :use ((:instance write-of-write-of-write-same
-;;                                    (val3 val4)
-;;                                    (n2 n3)
-;;                                    (addr2 addr3)
-;;                                    (val2 val3)
-;;                                    (val1 val4)
-;;                                    (x86 (write n2 addr2 val2 (write n addr val1 x86))))
-;;                         (:instance write-of-write-of-write-same
-;;                                    (val3 val4)
-;;                                    (n2 n3)
-;;                                    (addr2 addr3)
-;;                                    (val2 val3)
-;;                                    (val1 val4)
-;;                                    (x86 (write n2 addr2 val2 x86)))
-;;                         (:instance write-of-write-of-write-same
-;;                                    (val3 val4)))
-;;            :in-theory (disable write-of-write-of-write-same write))))
+;used by the tester
+(defthm acl2::<-of-+-cancel-3-1
+  (equal (< (+ y (+ z x)) x)
+         (< (+ y z) 0)))
 
 (defthm bvminus-of-+-of-1-same
   (implies (integerp x)
@@ -1424,35 +1162,6 @@
 ;;                            distributivity
 ;;                            )))))
 
-
-;move
-;; todo: gen the 1?
-(defthm read-of-write-included-1
-  (implies (and (bvlt 48 (bvminus 48 addr1 addr2) n)
-                (integerp addr1)
-                (integerp addr2)
-                (unsigned-byte-p 48 n))
-           (equal (read 1 addr1 (write n addr2 val x86))
-                  (slice (+ 7 (* 8 (bvminus 48 addr1 addr2)))
-                         (* 8 (bvminus 48 addr1 addr2))
-                         val)))
-  :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases))))
-
-;; todo: gen the 1?
-(defthm read-of-write-1-both
-  (implies (and (integerp addr1)
-                (integerp addr2)
-                (natp n)
-                (unsigned-byte-p 48 n))
-           (equal (read 1 addr1 (write n addr2 val x86))
-                  (if (bvlt 48 (bvminus 48 addr1 addr2) n)
-                      (slice (+ 7 (* 8 (bvminus 48 addr1 addr2)))
-                             (* 8 (bvminus 48 addr1 addr2))
-                             val)
-                    (read 1 addr1 x86))))
-  :hints (("Goal" :in-theory (disable read write))))
-
 (defthmd bvminus-of-+-arg2
   (implies (and (integerp x1)
                 (integerp x2))
@@ -1514,61 +1223,9 @@
                                    acl2::logand-of-bvchop-becomes-bvand ;loop
                                    )))))
 
-;;todo: or use a trim-like scheme for stuff like this
-(defthm bvand-of-lognot-arg2
-  (equal (bvand size (lognot x) y)
-         (bvand size (bvnot size x) y))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm bvand-of-lognot-arg3
-  (equal (bvand size x (lognot y))
-         (bvand size x (bvnot size y)))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm bvxor-of-lognot-arg2
-  (equal (bvxor size (lognot x) y)
-         (bvxor size (bvnot size x) y))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm bvxor-of-lognot-arg3
-  (equal (bvxor size x (lognot y))
-         (bvxor size x (bvnot size y)))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm acl2::bvchop-of-lognot
-  (equal (bvchop size (lognot x))
-         (bvnot size x))
-  :hints (("Goal" :in-theory (enable bvnot))))
-
 (def-constant-opener x86isa::!prefixes->seg$inline)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm bvif-of-if-constants-nil-nonnil
-  (implies (and (syntaxp (quotep k))
-                (not (equal nil k)))
-           (equal (bvif size (if test nil k) tp ep)
-                  (bvif size (not test) tp ep))))
-
-(defthm bvif-of-if-constants-nonnil-nil
-  (implies (and (syntaxp (quotep k))
-                (not (equal nil k)))
-           (equal (bvif size (if test k nil) tp ep)
-                  (bvif size test tp ep))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm boolif-of-boolif-of-t-and-nil
-  (equal (boolif (boolif x t y) x nil)
-         (acl2::bool-fix x)))
-
-;; This reduces one mention of X and only increases the mentions of nil
-(defthm boolif-combine-1
-  (equal (boolif (boolif x z1 z2) (boolif x z3 z4) nil)
-         (boolif x
-                 (boolif z1 z3 nil)
-                 (boolif z2 z4 nil)))
-  :hints (("Goal" :in-theory (enable boolif))))
 
 ;todo: drop
 (defthm bvchop-of-bool-to-bit
