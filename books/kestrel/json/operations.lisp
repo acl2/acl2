@@ -98,12 +98,12 @@
     (cond ((endp values) (prog2$ (raise "The JSON object ~x0 ~
                                          has no member with name ~x1."
                                         object name)
-                                 (ec-call (value-fix :irrelevant))))
+                                 (irr-value)))
           ((= (len values) 1) (car values))
           (t (prog2$ (raise "The JSON object ~x0 ~
                              has multiple members with name ~x1."
                             object name)
-                     (ec-call (value-fix :irrelevant)))))))
+                     (irr-value))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
