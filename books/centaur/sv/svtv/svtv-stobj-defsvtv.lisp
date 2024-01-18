@@ -323,10 +323,10 @@
 
 (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
   (implies (and (svtv-data$ap svtv-data)
-                ;; (svtv-data$c->base-fsm-validp svtv-data)
+                ;; (svtv-data$c->fsm-validp svtv-data)
                 (svtv-data$c->cycle-fsm-validp svtv-data))
-           (equal (svex-alist-keys (base-fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))
-                  (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
+           (equal (svex-alist-keys (fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))
+                  (svex-alist-keys (fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
   :hints(("Goal" :in-theory (enable svtv-data$ap))))
 
 
@@ -509,7 +509,7 @@
         (mv err nil svtv-data))
 
        (namemap (svtv-data->namemap svtv-data))
-       (statevars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+       (statevars (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data))))
        (pipeline-setup (defsvtv-compute-pipeline-setup
                          outs+ x.inputs x.overrides x.initial-state-vars statevars namemap)))
     (mv nil pipeline-setup svtv-data))
@@ -517,7 +517,7 @@
   (defret initst-keys-of-<fn>
     (implies (not err)
              (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
-                    (svex-alist-keys (base-fsm->nextstate
+                    (svex-alist-keys (fsm->nextstate
                                       (svtv-data->phase-fsm new-svtv-data))))))
 
   (defret validp-of-<fn>
@@ -558,7 +558,7 @@
        ((when err)
         (mv err nil svtv-data))
        ((defsvtv-args x))
-       (st-vars  (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+       (st-vars  (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data))))
        (bad-clocks (intersection-equal x.clocks st-vars))
        ((when bad-clocks)
         (mv (msg "Clocks cannot include previous-state variables -- ~x0~%" bad-clocks)

@@ -65,10 +65,10 @@
            :hints (("goal" :in-theory (enable (counter-phase-data)
                                               (svtv-data-obj->phase-fsm))))))
   
-  (defthm base-fsm-p-of-<fn>
-    (base-fsm-p (counter-phase-fsm))
+  (defthm fsm-p-of-<fn>
+    (fsm-p (counter-phase-fsm))
     :hints (("goal" :in-theory '(counter-phase-fsm-is-data-fsm
-                                 base-fsm-p-of-svtv-data-obj->phase-fsm)))))
+                                 fsm-p-of-svtv-data-obj->phase-fsm)))))
 
 (defsvtv$ counter-invar0-run
   :design *sv-design*

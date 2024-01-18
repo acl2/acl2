@@ -70,10 +70,10 @@
                            (keys (overridekey-syntaxcheck-data->keys data))
                            (values (overridekey-syntaxcheck-data->values data))))))))
 
-(define base-fsm-override-syntax-check ((x base-fsm-p)
+(define fsm-override-syntax-check ((x fsm-p)
                                         (keys svarlist-p))
   :returns (bad-keys svarlist-p)
-  (b* (((base-fsm x)))
+  (b* (((fsm x)))
     (acl2::with-fast-alist x.values
       (b* ((syntaxcheck-data (make-overridekey-syntaxcheck-data :keys keys
                                                                 :values x.values))
@@ -142,25 +142,25 @@
   
   
   (defret <fn>-correct
-    (base-fsm-overridekey-transparent-p
+    (fsm-overridekey-transparent-p
      x (set-difference-equal (svarlist-change-override keys nil)
                              bad-keys))
-    :hints(("Goal" :in-theory (e/d (base-fsm-overridekey-transparent-p)
+    :hints(("Goal" :in-theory (e/d (fsm-overridekey-transparent-p)
                                    (overridekeys-transparent-p-when-svexlist-overridekeys-syntax-check))
             :use ((:instance overridekeys-transparent-p-when-svexlist-overridekeys-syntax-check
-                   (x (svex-alist-vals (base-fsm->values x)))
+                   (x (svex-alist-vals (fsm->values x)))
                    (data (overridekey-syntaxcheck-data
                           (set-difference-equal (svarlist-change-override keys nil)
                                                 (svarlist-change-override
-                                                 (base-fsm-override-syntax-check x keys) nil))
-                          (base-fsm->values x))))
+                                                 (fsm-override-syntax-check x keys) nil))
+                          (fsm->values x))))
                   (:instance overridekeys-transparent-p-when-svexlist-overridekeys-syntax-check
-                   (x (svex-alist-vals (base-fsm->nextstate x)))
+                   (x (svex-alist-vals (fsm->nextstate x)))
                    (data (overridekey-syntaxcheck-data
                           (set-difference-equal (svarlist-change-override keys nil)
                                                 (svarlist-change-override
-                                                 (base-fsm-override-syntax-check x keys) nil))
-                          (base-fsm->values x))))))))
+                                                 (fsm-override-syntax-check x keys) nil))
+                          (fsm->values x))))))))
 
   (local (defthm set-diff-nil
            (set-equiv (set-difference-equal x nil) x)
@@ -168,7 +168,7 @@
   
   (defret <fn>-correct-when-no-bad-keys
     (implies (not bad-keys)
-             (base-fsm-overridekey-transparent-p
+             (fsm-overridekey-transparent-p
               x keys))
     :hints (("goal" :use <fn>-correct
              :in-theory (disable <fn>-correct <fn>))))
@@ -180,11 +180,11 @@
   (defret <fn>-subsetp-of-keys
     (subsetp-equal bad-keys (svarlist-change-override keys nil))
     :hints (("goal" :use ((:instance svexlist-override-syntax-check-subsetp-of-keys
-                           (data (overridekey-syntaxcheck-data keys (base-fsm->values x)))
-                           (x (svex-alist-vals (base-fsm->values x))))
+                           (data (overridekey-syntaxcheck-data keys (fsm->values x)))
+                           (x (svex-alist-vals (fsm->values x))))
                           (:instance svexlist-override-syntax-check-subsetp-of-keys
-                           (data (overridekey-syntaxcheck-data keys (base-fsm->values x)))
-                           (x (svex-alist-vals (base-fsm->nextstate x)))))))))
+                           (data (overridekey-syntaxcheck-data keys (fsm->values x)))
+                           (x (svex-alist-vals (fsm->nextstate x)))))))))
 
 
 
@@ -348,11 +348,11 @@
 
 
 
-(define base-fsm-override-semantic-check-on-env ((x base-fsm-p)
+(define fsm-override-semantic-check-on-env ((x fsm-p)
                                                  (keys svarlist-p)
                                                  (env svex-env-p))
   :returns (ok)
-  (b* (((base-fsm x))
+  (b* (((fsm x))
 
        ;; Create the substitution for the equivalence check
        (subst (make-fast-alist (svarlist-overridekeys-semantic-check-subst keys x.values))))
@@ -378,9 +378,9 @@
                   (len (svex-alist-fix x)))
            :hints(("Goal" :in-theory (enable svex-alist-fix svex-alist-eval)))))
 
-  (fgl::def-fgl-rewrite base-fsm-override-semantic-check-on-env-fgl-2
-    (equal (base-fsm-override-semantic-check-on-env x keys env)
-           (b* (((base-fsm x))
+  (fgl::def-fgl-rewrite fsm-override-semantic-check-on-env-fgl-2
+    (equal (fsm-override-semantic-check-on-env x keys env)
+           (b* (((fsm x))
                 ;; Create the substitution for the equivalence check
                 (subst (make-fast-alist (svarlist-overridekeys-semantic-check-subst keys x.values)))
                 (app (append x.nextstate x.values))
@@ -389,16 +389,16 @@
 
 
 
-(defchoose base-fsm-override-semantic-check-badguy (env) (x keys)
-  (not (base-fsm-override-semantic-check-on-env x keys env)))
+(defchoose fsm-override-semantic-check-badguy (env) (x keys)
+  (not (fsm-override-semantic-check-on-env x keys env)))
   
   
 
 
-(define base-fsm-override-semantic-check ((x base-fsm-p)
+(define fsm-override-semantic-check ((x fsm-p)
                                           (keys svarlist-p))
   :returns (ok)
-  (b* (((base-fsm x))
+  (b* (((fsm x))
 
        ;; Create the substitution for the equivalence check
        (subst (make-fast-alist (svarlist-overridekeys-semantic-check-subst keys x.values))))
@@ -422,62 +422,62 @@
                          (take (len x) y2)))
            :hints(("Goal" :in-theory (enable pairlis$ take)))))
   
-  (defthmd base-fsm-override-semantic-check-in-terms-of-badguy
-    (equal (base-fsm-override-semantic-check x keys)
-           (base-fsm-override-semantic-check-on-env
+  (defthmd fsm-override-semantic-check-in-terms-of-badguy
+    (equal (fsm-override-semantic-check x keys)
+           (fsm-override-semantic-check-on-env
             x keys
-            (base-fsm-override-semantic-check-badguy x keys)))
-    :hints(("Goal" :in-theory (e/d (base-fsm-override-semantic-check-on-env
+            (fsm-override-semantic-check-badguy x keys)))
+    :hints(("Goal" :in-theory (e/d (fsm-override-semantic-check-on-env
                                     svex-alist-eval-equiv!!)
                                    (SVEX-ALIST-EVAL-OF-SVEX-COMPOSE))
             :do-not-induct t)
            (and stable-under-simplificationp
                 (b* ((lit (assoc 'svexlist-eval-equiv clause))
                      (witness `(svexlist-eval-equiv-witness . ,(cdr lit))))
-                  `(:use ((:instance base-fsm-override-semantic-check-badguy
+                  `(:use ((:instance fsm-override-semantic-check-badguy
                            (env ,witness)))
                     :expand (,lit)))))
     :rule-classes ((:definition :install-body nil))
     :otf-flg t)
 
-  (defthm base-fsm-override-semantic-check-implies-on-env
-    (implies (base-fsm-override-semantic-check x keys)
-             (base-fsm-override-semantic-check-on-env x keys env))
-    :hints(("Goal" :in-theory (enable base-fsm-override-semantic-check-on-env))))
+  (defthm fsm-override-semantic-check-implies-on-env
+    (implies (fsm-override-semantic-check x keys)
+             (fsm-override-semantic-check-on-env x keys env))
+    :hints(("Goal" :in-theory (enable fsm-override-semantic-check-on-env))))
 
-  (defret base-fsm-overridekey-transparent-p-when-<fn>
-    (b* (((base-fsm x)))
+  (defret fsm-overridekey-transparent-p-when-<fn>
+    (b* (((fsm x)))
       (implies (and ok
                     (svarlist-override-okp (svex-alist-vars x.values))
                     (svarlist-override-okp (svex-alist-vars x.nextstate)))
-               (base-fsm-overridekey-transparent-p x keys)))
-    :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p)))))
+               (fsm-overridekey-transparent-p x keys)))
+    :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p)))))
 
 
-(define base-fsm-override-smart-check-on-env ((x base-fsm-p)
+(define fsm-override-smart-check-on-env ((x fsm-p)
                                               (keys svarlist-p)
                                               (env svex-env-p))
 
-  (b* (((base-fsm x))
+  (b* (((fsm x))
        ((unless (svarlist-override-okp (svexlist-collect-vars (append (svex-alist-vals x.values)
                                                                       (svex-alist-vals x.nextstate)))))
         (cw "Vars didn't satisfy svarlist-override-okp~%"))
-       (bad-keys (base-fsm-override-syntax-check x keys))
+       (bad-keys (fsm-override-syntax-check x keys))
        ((unless bad-keys) t))
     (cw "The following keys failed the override syntax check: ~x0~%" bad-keys)
-    (base-fsm-override-semantic-check-on-env x bad-keys env)))
+    (fsm-override-semantic-check-on-env x bad-keys env)))
 
        
        
-(defchoose base-fsm-override-smart-check-badguy (env) (x keys)
-  (not (base-fsm-override-smart-check-on-env x keys env)))
+(defchoose fsm-override-smart-check-badguy (env) (x keys)
+  (not (fsm-override-smart-check-on-env x keys env)))
 
 
-(defthm base-fsm-overridekey-transparent-p-by-decomp
-  (implies (and (base-fsm-overridekey-transparent-p x keys1)
-                (base-fsm-overridekey-transparent-p x keys2))
-           (base-fsm-overridekey-transparent-p x (append keys1 keys2)))
-  :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p))))
+(defthm fsm-overridekey-transparent-p-by-decomp
+  (implies (and (fsm-overridekey-transparent-p x keys1)
+                (fsm-overridekey-transparent-p x keys2))
+           (fsm-overridekey-transparent-p x (append keys1 keys2)))
+  :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p))))
 
 
 (local
@@ -492,39 +492,39 @@
 
 
 
-(define base-fsm-override-smart-check ((x base-fsm-p)
+(define fsm-override-smart-check ((x fsm-p)
                                        (keys svarlist-p))
   :returns (ok)
-  (b* (((base-fsm x))
+  (b* (((fsm x))
        ((unless (svarlist-override-okp (svexlist-collect-vars (append (svex-alist-vals x.values)
                                                                       (svex-alist-vals x.nextstate)))))
         (cw "Vars didn't satisfy svarlist-override-okp~%"))
-       (bad-keys (base-fsm-override-syntax-check x keys))
+       (bad-keys (fsm-override-syntax-check x keys))
        ((unless bad-keys) t))
     (cw "The following keys failed the override syntax check: ~x0~%" bad-keys)
-    (base-fsm-override-semantic-check x bad-keys))
+    (fsm-override-semantic-check x bad-keys))
   ///
-  (defthmd base-fsm-override-smart-check-in-terms-of-badguy
-    (equal (base-fsm-override-smart-check x keys)
-           (base-fsm-override-smart-check-on-env
+  (defthmd fsm-override-smart-check-in-terms-of-badguy
+    (equal (fsm-override-smart-check x keys)
+           (fsm-override-smart-check-on-env
             x keys
-            (base-fsm-override-smart-check-badguy x keys)))
-    :hints(("Goal" :in-theory (enable base-fsm-override-smart-check-on-env)
-            :cases ((base-fsm-override-smart-check x keys))
+            (fsm-override-smart-check-badguy x keys)))
+    :hints(("Goal" :in-theory (enable fsm-override-smart-check-on-env)
+            :cases ((fsm-override-smart-check x keys))
             :do-not-induct t)
            (and stable-under-simplificationp
-                (b* ((lit (assoc 'base-fsm-override-semantic-check clause)))
-                  `(:expand ((:with base-fsm-override-semantic-check-in-terms-of-badguy ,lit))
-                    :use ((:instance base-fsm-override-smart-check-badguy
-                           (env (base-fsm-override-semantic-check-badguy . ,(cdr lit)))))))))
+                (b* ((lit (assoc 'fsm-override-semantic-check clause)))
+                  `(:expand ((:with fsm-override-semantic-check-in-terms-of-badguy ,lit))
+                    :use ((:instance fsm-override-smart-check-badguy
+                           (env (fsm-override-semantic-check-badguy . ,(cdr lit)))))))))
     :rule-classes ((:definition :install-body nil))
     :otf-flg t)
 
 
-  (defthm base-fsm-override-smart-check-implies-on-env
-    (implies (base-fsm-override-smart-check x keys)
-             (base-fsm-override-smart-check-on-env x keys env))
-    :hints(("Goal" :in-theory (enable base-fsm-override-smart-check-on-env))))
+  (defthm fsm-override-smart-check-implies-on-env
+    (implies (fsm-override-smart-check x keys)
+             (fsm-override-smart-check-on-env x keys env))
+    :hints(("Goal" :in-theory (enable fsm-override-smart-check-on-env))))
 
 
   (defthm append-set-difference-of-subset
@@ -534,20 +534,20 @@
     :hints(("Goal" :in-theory (enable acl2::set-unequal-witness-rw))))
 
   
-  (defret base-fsm-overridekey-transparent-p-when-<fn>
-    (b* (((base-fsm x)))
+  (defret fsm-overridekey-transparent-p-when-<fn>
+    (b* (((fsm x)))
       (implies ok
-               (base-fsm-overridekey-transparent-p x keys)))
+               (fsm-overridekey-transparent-p x keys)))
     :hints(("Goal" :in-theory (e/d (svexlist-vars-of-svex-alist-vals)
-                                   (base-fsm-overridekey-transparent-p-by-decomp))
-            :use ((:instance base-fsm-overridekey-transparent-p-by-decomp
+                                   (fsm-overridekey-transparent-p-by-decomp))
+            :use ((:instance fsm-overridekey-transparent-p-by-decomp
                    (keys1 (set-difference-equal (svarlist-change-override keys nil)
-                                                (base-fsm-override-syntax-check x keys)))
-                   (keys2 (base-fsm-override-syntax-check x keys)))
-                  (:instance base-fsm-overridekey-transparent-p-by-decomp
+                                                (fsm-override-syntax-check x keys)))
+                   (keys2 (fsm-override-syntax-check x keys)))
+                  (:instance fsm-overridekey-transparent-p-by-decomp
                    (keys1 (set-difference-equal (svarlist-change-override keys nil)
-                                                (base-fsm-override-syntax-check x keys)))
-                   (keys2 (base-fsm-override-syntax-check x keys))))))))
+                                                (fsm-override-syntax-check x keys)))
+                   (keys2 (fsm-override-syntax-check x keys))))))))
 
 
 
@@ -555,13 +555,13 @@
 
 
 
-(define base-fsm-overridekey-transparent-p-by-assumptions-collect-args (fsm-term clause)
+(define fsm-overridekey-transparent-p-by-assumptions-collect-args (fsm-term clause)
   (b* (((when (atom clause)) nil)
        (lit (car clause)))
     (case-match lit
-      (('not ('base-fsm-overridekey-transparent-p !fsm-term arg))
-       (cons arg (base-fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (cdr clause))))
-      (& (base-fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (cdr clause))))))
+      (('not ('fsm-overridekey-transparent-p !fsm-term arg))
+       (cons arg (fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (cdr clause))))
+      (& (fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (cdr clause))))))
 
 (define nest-binary-appends (lst)
   
@@ -572,19 +572,19 @@
       `(binary-append ,(car lst)
                       ,(nest-binary-appends (cdr lst))))))
 
-(define base-fsm-overridekey-transparent-p-by-assumptions-bind-free (fsm-term mfc state)
+(define fsm-overridekey-transparent-p-by-assumptions-bind-free (fsm-term mfc state)
   (declare (ignore state)
            (xargs :stobjs state))
-  (let ((args (base-fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (mfc-clause mfc))))
+  (let ((args (fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (mfc-clause mfc))))
     `((args . ,(nest-binary-appends args)))))
     
 
 
-(defthm base-fsm-overridekey-transparent-p-when-subsetp
-  (implies (and (base-fsm-overridekey-transparent-p fsm keys1)
+(defthm fsm-overridekey-transparent-p-when-subsetp
+  (implies (and (fsm-overridekey-transparent-p fsm keys1)
                 (subsetp-equal (svarlist-fix keys2) (svarlist-fix keys1)))
-           (base-fsm-overridekey-transparent-p fsm keys2))
-  :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p))))
+           (fsm-overridekey-transparent-p fsm keys2))
+  :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p))))
 
 
 (defthm overridekeys-envs-agree-of-nil
@@ -598,9 +598,9 @@
                         (overridekeys nil)
                         (v (svex-envs-similar-witness impl-env spec-env))))))))
                         
-(defthm base-fsm-overridekey-transparent-p-of-empty-keys
-  (base-fsm-overridekey-transparent-p fsm nil)
-  :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p
+(defthm fsm-overridekey-transparent-p-of-empty-keys
+  (fsm-overridekey-transparent-p fsm nil)
+  :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p
                                     svex-alist-overridekey-transparent-p))))
 
 (encapsulate nil
@@ -612,13 +612,13 @@
            (subsetp-equal (set-difference-equal keys args) keys)
            :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
 
-  (defthm base-fsm-overridekey-transparent-p-by-assumptions
-    ;; when rewriting a base-fsm-overridekey-transparent-p positive literal
+  (defthm fsm-overridekey-transparent-p-by-assumptions
+    ;; when rewriting a fsm-overridekey-transparent-p positive literal
     ;; (conclusion), look for (negative literals? existing theorems?), form the
     ;; append of all their arguments, and rewrite to the set-difference of our
     ;; argument and theirs.
-    (implies (and (acl2::rewriting-positive-literal `(base-fsm-overridekey-transparent-p ,fsm ,keys))
-                  (bind-free (base-fsm-overridekey-transparent-p-by-assumptions-bind-free
+    (implies (and (acl2::rewriting-positive-literal `(fsm-overridekey-transparent-p ,fsm ,keys))
+                  (bind-free (fsm-overridekey-transparent-p-by-assumptions-bind-free
                               fsm mfc state)
                              (args))
                   (equal args-val (force-execute (svarlist-fix args)))
@@ -629,14 +629,14 @@
                    ;; definition), then we want to open it.
                   (implies keys-val args-val)
                   (equal remaining (force-execute (acl2::hons-set-diff keys-val args-val)))
-                  (base-fsm-overridekey-transparent-p fsm args))
-             (equal (base-fsm-overridekey-transparent-p fsm keys)
-                    (base-fsm-overridekey-transparent-p fsm remaining)))
+                  (fsm-overridekey-transparent-p fsm args))
+             (equal (fsm-overridekey-transparent-p fsm keys)
+                    (fsm-overridekey-transparent-p fsm remaining)))
     :hints(("Goal" :in-theory (e/d (force-execute)
-                                   (base-fsm-overridekey-transparent-p-by-decomp))
+                                   (fsm-overridekey-transparent-p-by-decomp))
             :do-not-induct t
-            :cases ((base-fsm-overridekey-transparent-p fsm keys))
-            :use ((:instance base-fsm-overridekey-transparent-p-by-decomp
+            :cases ((fsm-overridekey-transparent-p fsm keys))
+            :use ((:instance fsm-overridekey-transparent-p-by-decomp
                    (keys1 args) (keys2 (set-difference-equal (svarlist-fix keys) (svarlist-fix args))) (x fsm)))))))
 
 (defun def-override-transparent-collect-thms-and-keys
@@ -696,7 +696,7 @@
        
        
             (fgl::def-fgl-thm tmp-def-override-transparent-smart-check-fgl
-              (base-fsm-override-smart-check-on-env <fsm> (tmp-override-transparent-keys) env)))
+              (fsm-override-smart-check-on-env <fsm> (tmp-override-transparent-keys) env)))
 
            (:@ (not :fgl-semantic-check)
             (defthmd def-override-transparent-open-fsm
@@ -712,23 +712,23 @@
               :hints (("goal" :in-theory '(force-execute)))))
            
            (defthm tmp-def-override-transparent-smart-check
-             (base-fsm-overridekey-transparent-p <fsm> (tmp-override-transparent-keys))
+             (fsm-overridekey-transparent-p <fsm> (tmp-override-transparent-keys))
              (:@ :fgl-semantic-check
-              :hints(("Goal" :in-theory '(base-fsm-override-smart-check-in-terms-of-badguy
+              :hints(("Goal" :in-theory '(fsm-override-smart-check-in-terms-of-badguy
                                           tmp-def-override-transparent-smart-check-fgl
-                                          base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check))))
+                                          fsm-overridekey-transparent-p-when-fsm-override-smart-check))))
              (:@ (not :fgl-semantic-check)
               :hints (("goal" :in-theory '(def-override-transparent-open-fsm
                                             cmr::force-execute-force-execute
-                                            base-fsm-overridekey-transparent-p-when-base-fsm-override-smart-check
+                                            fsm-overridekey-transparent-p-when-fsm-override-smart-check
                                             (tmp-override-transparent-keys)
-                                            (base-fsm-override-smart-check)))))))))
+                                            (fsm-override-smart-check)))))))))
 
        (defthm <name>
-         (base-fsm-overridekey-transparent-p <fsm> <keys>)
-         :hints (("goal" :in-theory '(base-fsm-overridekey-transparent-p-by-assumptions
-                                      base-fsm-overridekey-transparent-p-by-decomp
-                                      base-fsm-overridekey-transparent-p-of-empty-keys
+         (fsm-overridekey-transparent-p <fsm> <keys>)
+         :hints (("goal" :in-theory '(fsm-overridekey-transparent-p-by-assumptions
+                                      fsm-overridekey-transparent-p-by-decomp
+                                      fsm-overridekey-transparent-p-of-empty-keys
                                       cmr::force-execute-force-execute)
                   :use <instances>)))
 
@@ -801,19 +801,19 @@ provided, a semantic check using FGL and equivalence checking.</p>
 (local
  (progn
    (defund my-fsm ()
-     (base-fsm nil nil))
+     (fsm nil nil))
 
    (defund my-keys1 () '(a b c))
 
-   (def-override-transparent base-fsm-transparent1 :fsm (my-fsm) :keys (my-keys1))
+   (def-override-transparent fsm-transparent1 :fsm (my-fsm) :keys (my-keys1))
    
        
    (defund my-keys2 () '(d b c))
 
-   (def-override-transparent base-fsm-transparent2 :fsm (my-fsm) :keys (my-keys2))
+   (def-override-transparent fsm-transparent2 :fsm (my-fsm) :keys (my-keys2))
 
 
    (defund my-keys3 () '(a b c d))
 
-   (def-override-transparent base-fsm-transparent3 :fsm (my-fsm) :keys (my-keys3))))
+   (def-override-transparent fsm-transparent3 :fsm (my-fsm) :keys (my-keys3))))
 

@@ -230,7 +230,7 @@
 ;; the point in separating out all the envs etc.
 
 ;; Our version of the crux ought to be a theorem establishing
-;; overridekeys-envlist-ok on the svtv-fsm-to-base-fsm-inputs (single phase
+;; overridekeys-envlist-ok on the svtv-fsm-to-fsm-inputs (single phase
 ;; version being overridekeys-envs-ok on svtv-fsm-phase-inputs) given
 ;; syntax-check/svtv-override-triplemap-envs-ok.
 
@@ -472,10 +472,10 @@
                   0)
            :hints(("Goal" :in-theory (enable 4vec-bit-index)))))
 
-  (defthm 4vec-bit-index-of-lhs-eval-zero
-    (equal (4vec-bit-index n (lhs-eval-zero x env))
+  (defthm 4vec-bit-index-of-lhs-eval-zx
+    (equal (4vec-bit-index n (lhs-eval-zx x env))
            (lhbit-eval-zero (lhs-bitproj n x) env))
-    :hints(("Goal" :in-theory (enable lhs-eval-zero lhs-bitproj lhatom-bitproj lhatom-eval-zero)))))
+    :hints(("Goal" :in-theory (enable lhs-eval-zx lhs-bitproj lhatom-bitproj lhatom-eval-zero)))))
 
 
 
@@ -494,7 +494,7 @@
   (equal (svex-env-lookup v (svtv-name-lhs-map-eval namemap env))
          (b* ((look (hons-assoc-equal (svar-fix v) namemap)))
            (if look
-               (lhs-eval-zero (cdr look) env)
+               (lhs-eval-zx (cdr look) env)
              (4vec-x))))
   :hints(("Goal" :in-theory (enable svtv-name-lhs-map-eval svex-env-lookup))))
 
@@ -829,8 +829,8 @@
                    ;; (svex-alist-monotonic-p val-alist)
                    )
               (4vec-muxtest-subsetp
-               (lhs-eval-zero (cdr (hons-assoc-equal testvar (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env))
-               (lhs-eval-zero (cdr (hons-assoc-equal testvar (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env))))
+               (lhs-eval-zx (cdr (hons-assoc-equal testvar (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env))
+               (lhs-eval-zx (cdr (hons-assoc-equal testvar (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env))))
      :hints(("Goal" :in-theory (enable 4vec-muxtest-subsetp-by-badbit))
             (and stable-under-simplificationp
                  (let ((call (acl2::find-call-lst '4vec-muxtest-subsetp-badbit clause)))
@@ -888,9 +888,9 @@
                        (svar-override-p v :val))
                    )
               (4vec-override-mux-<<=
-               (lhs-eval-zero (cdr (hons-assoc-equal (svar-change-override v nil) (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env))
+               (lhs-eval-zx (cdr (hons-assoc-equal (svar-change-override v nil) (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env))
                (lhs-eval-x (cdr (hons-assoc-equal (svar-change-override v nil) (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval val-alist pipe-env))
-               (lhs-eval-zero (cdr (hons-assoc-equal (svar-change-override v nil) (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env))
+               (lhs-eval-zx (cdr (hons-assoc-equal (svar-change-override v nil) (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env))
                (lhs-eval-x (cdr (hons-assoc-equal (svar-change-override v nil) (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval val-alist spec-env))
                (svex-env-lookup (svar-change-override v nil) (nth phase ref-envs))))
      :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=-by-badbit) :do-not-induct t)
@@ -1024,8 +1024,8 @@
                    (svtv-override-triplemap-overridekeys-ok triplemap namemap overridekeys)
                    )
               (equal (4vec-1mask-equiv
-                      (lhs-eval-zero (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env))
-                      (lhs-eval-zero (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env)))
+                      (lhs-eval-zx (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env))
+                      (lhs-eval-zx (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env)))
                      t))
      :hints(("Goal" :in-theory (enable 4vec-1mask-equiv-by-badbit) :do-not-induct t)
             (and stable-under-simplificationp
@@ -1088,8 +1088,8 @@
                    (svar-override-p v nil)
                    (svar-p v)
                    (svtv-override-triplemap-overridekeys-ok triplemap namemap overridekeys)
-                   (4vec-1mask-equiv spec-test (lhs-eval-zero (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env)))
-                   (4vec-1mask-equiv pipe-test (lhs-eval-zero (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env)))
+                   (4vec-1mask-equiv spec-test (lhs-eval-zx (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist spec-env)))
+                   (4vec-1mask-equiv pipe-test (lhs-eval-zx (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval test-alist pipe-env)))
                    )
               (4vec-<<= (4vec-bit?! pipe-test
                                     (lhs-eval-x (cdr (hons-assoc-equal v (mv-nth 1 (svtv-name-lhs-map-inverse namemap)))) (svex-alist-eval val-alist pipe-env))
@@ -1127,9 +1127,9 @@
                          (:instance svtv-override-triplemap-key-check-when-svtv-override-triplemap-syntax-check
                           (key (lhbit-var->name (svtv-name-lhs-map-var/idx-find v badbit namemap))))))))))
 
-  (local (defthm equal-lhs-eval-zero-by-badbit
-           (implies (and (syntaxp (and (consp a) (eq (car a) 'lhs-eval-zero)
-                                       (consp b) (eq (car b) 'lhs-eval-zero)))
+  (local (defthm equal-lhs-eval-zx-by-badbit
+           (implies (and (syntaxp (and (consp a) (eq (car a) 'lhs-eval-zx)
+                                       (consp b) (eq (car b) 'lhs-eval-zx)))
                          (acl2::rewriting-positive-literal `(equal ,a ,b))
                          (4vec-p a)
                          (4vec-p b))
@@ -1346,11 +1346,11 @@
                   (svex-alistlist-check-monotonic in-alists)
                   (<= (len test-alists) (len in-alists)))
              (overridekeys-envlists-ok overridekeys
-                                        (svtv-fsm-to-base-fsm-inputs (svex-alistlist-eval in-alists pipe-env)
+                                        (svtv-fsm-to-fsm-inputs (svex-alistlist-eval in-alists pipe-env)
                                                                      (svex-alistlist-eval val-alists pipe-env)
                                                                      (svex-alistlist-eval test-alists pipe-env)
                                                                      namemap)
-                                        (svtv-fsm-to-base-fsm-inputs (svex-alistlist-eval in-alists spec-env)
+                                        (svtv-fsm-to-fsm-inputs (svex-alistlist-eval in-alists spec-env)
                                                                      (svex-alistlist-eval val-alists spec-env)
                                                                      (svex-alistlist-eval test-alists  spec-env)
                                                                      namemap)
@@ -1365,7 +1365,7 @@
                                        svtv-override-triplemaplist-refvar-keys-subsetp
                                        svex-alistlist-check-monotonic
                                        overridekeys-envlists-ok
-                                       svtv-fsm-to-base-fsm-inputs
+                                       svtv-fsm-to-fsm-inputs
                                        svex-alistlist-eval
                                        nthcdr)
              :induct (ind phase in-alists test-alists val-alists triplemaps)
@@ -1589,11 +1589,11 @@
                   (svex-alistlist-check-monotonic in-alists)
                   (<= (len test-alists) (len in-alists)))
              (overridekeys-envlists-ok overridekeys
-                                        (svtv-fsm-to-base-fsm-inputs (svex-alistlist-eval in-alists pipe-env)
+                                        (svtv-fsm-to-fsm-inputs (svex-alistlist-eval in-alists pipe-env)
                                                                      (svex-alistlist-eval val-alists pipe-env)
                                                                      (svex-alistlist-eval test-alists pipe-env)
                                                                      namemap)
-                                        (svtv-fsm-to-base-fsm-inputs (svex-alistlist-eval in-alists spec-env)
+                                        (svtv-fsm-to-fsm-inputs (svex-alistlist-eval in-alists spec-env)
                                                                      (svex-alistlist-eval val-alists spec-env)
                                                                      (svex-alistlist-eval test-alists  spec-env)
                                                                      namemap)
@@ -1694,7 +1694,7 @@
                   (probes spec.probes)
                   (outvars (svtv-probealist-outvars spec.probes))
                   (my-in-alists (take (len outvars) in-alists))
-                  ((base-fsm spec.fsm)))
+                  ((fsm spec.fsm)))
                (and (svtv-override-triplemaplist-syntax-check
                      test-alists val-alists probes triplemaps)
                     (equal (svex-alist-keys-list test-alists) (svex-alist-keys-list val-alists))
@@ -1772,10 +1772,10 @@
            (4vec-<<= (lhs-eval lhs x) (lhs-eval lhs y)))
   :hints(("Goal" :in-theory (enable lhs-eval lhatom-eval lhrange-eval))))
 
-(defthm lhs-eval-zero-monotonic
+(defthm lhs-eval-zx-monotonic
   (implies (svex-env-<<= x y)
-           (4vec-<<= (lhs-eval-zero lhs x) (lhs-eval-zero lhs y)))
-  :hints(("Goal" :in-theory (enable lhs-eval-zero lhatom-eval-zero))))
+           (4vec-<<= (lhs-eval-zx lhs x) (lhs-eval-zx lhs y)))
+  :hints(("Goal" :in-theory (enable lhs-eval-zx lhatom-eval-zero))))
 
 
 (defthm svtv-name-lhs-map-eval-monotonic
@@ -1917,8 +1917,8 @@
                                   (spec svtv-spec-p))
   (b* (((svtv-spec impl))
        ((svtv-spec spec))
-       ((base-fsm impl.fsm))
-       ((base-fsm spec.fsm)))
+       ((fsm impl.fsm))
+       ((fsm spec.fsm)))
     (and (svtv-spec-equiv impl (change-svtv-spec spec :fsm impl.fsm))
          (equal (svex-alist-keys spec.fsm.nextstate)
                 (svex-alist-keys impl.fsm.nextstate))))
@@ -1956,9 +1956,9 @@
          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
          (impl-run (svtv-spec-run spec pipe-env)))
       (implies (and (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
-                    (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
-                    (base-fsm-ovmonotonic spec.fsm)
-                    (base-fsm-ovcongruent spec.fsm)
+                    (fsm-overridekey-transparent-p spec.fsm overridekeys)
+                    (fsm-ovmonotonic spec.fsm)
+                    (fsm-ovcongruent spec.fsm)
 
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                     (svex-env-<<= (svex-env-extract (svex-alistlist-vars in-alists) pipe-env)
@@ -1973,22 +1973,22 @@
 
   (local (defthm svex-alist-keys-of-nextstate-under-svtv-spec-stimulus-equiv
            (implies (svtv-spec-stimulus-equiv x y)
-                    (equal (SVEX-ALIST-KEYS (BASE-FSM->NEXTSTATE (SVTV-SPEC->FSM x)))
-                           (SVEX-ALIST-KEYS (BASE-FSM->NEXTSTATE (SVTV-SPEC->FSM y)))))
+                    (equal (SVEX-ALIST-KEYS (fsm->NEXTSTATE (SVTV-SPEC->FSM x)))
+                           (SVEX-ALIST-KEYS (fsm->NEXTSTATE (SVTV-SPEC->FSM y)))))
            :hints (("goal" :in-theory (enable svtv-spec-stimulus-equiv)))
            :rule-classes (:congruence
                           (:rewrite :corollary
                            (implies (svtv-spec-stimulus-equiv x y)
-                                    (equal (equal (SVEX-ALIST-KEYS (BASE-FSM->NEXTSTATE (SVTV-SPEC->FSM x)))
-                                                  (SVEX-ALIST-KEYS (BASE-FSM->NEXTSTATE (SVTV-SPEC->FSM y))))
+                                    (equal (equal (SVEX-ALIST-KEYS (fsm->NEXTSTATE (SVTV-SPEC->FSM x)))
+                                                  (SVEX-ALIST-KEYS (fsm->NEXTSTATE (SVTV-SPEC->FSM y))))
                                            t))))))
 
   ;; (local (defthm intersectp-params-nextate-when-svtv-spec-override-syntax-checks
   ;;          (implies (and (svtv-spec-override-syntax-checks impl overridekeys triplemaps)
   ;;                        (svtv-spec-stimulus-equiv impl spec))
   ;;                   (and (not (intersectp-equal (svarlist-fix)
-  ;;                                               (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec)))))
-  ;;                        (svarlist-override-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))) nil)))
+  ;;                                               (svex-alist-keys (fsm->nextstate (svtv-spec->fsm spec)))))
+  ;;                        (svarlist-override-p (svex-alist-keys (fsm->nextstate (svtv-spec->fsm spec))) nil)))
   ;;          :hints(("Goal" :in-theory (enable svtv-spec-stimulus-equiv
   ;;                                            svtv-spec-override-syntax-checks)))))
   
@@ -1999,12 +1999,12 @@
          (spec-run (svtv-spec-run spec spec-env :base-ins base-ins :initst spec-initst))
          (impl-run (svtv-spec-run impl pipe-env)))
       (implies (and (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
-                    (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
-                    (base-fsm-ovmonotonic spec.fsm)
-                    (base-fsm-ovmonotonic impl.fsm)
-                    (base-fsm-ovcongruent spec.fsm)
-                    (base-fsm-ovcongruent impl.fsm)
-                    (base-fsm-<<= impl.fsm spec.fsm)
+                    (fsm-overridekey-transparent-p spec.fsm overridekeys)
+                    (fsm-ovmonotonic spec.fsm)
+                    (fsm-ovmonotonic impl.fsm)
+                    (fsm-ovcongruent spec.fsm)
+                    (fsm-ovcongruent impl.fsm)
+                    (fsm-<<= impl.fsm spec.fsm)
                     (svtv-spec-stimulus-equiv impl spec)
                     
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)

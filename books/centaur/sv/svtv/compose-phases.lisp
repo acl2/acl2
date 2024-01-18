@@ -223,42 +223,42 @@
                                              svex-env-boundp-iff-member-alist-keys
                                              svex-env-lookup-when-not-boundp)))))
 
-  (local (defun nth-of-base-fsm-eval-ind (n ins st fsm)
+  (local (defun nth-of-fsm-eval-ind (n ins st fsm)
          (if (zp n)
              (list ins st fsm)
-           (nth-of-base-fsm-eval-ind (1- n) (cdr ins)
-                                     (base-fsm-step (car ins) st fsm)
+           (nth-of-fsm-eval-ind (1- n) (cdr ins)
+                                     (fsm-step (car ins) st fsm)
                                      fsm))))
 
-  (local (defthm base-fsm-final-state-of-take-n+1
+  (local (defthm fsm-final-state-of-take-n+1
            (implies (and (posp n)
-                         ;; (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate x)))
+                         ;; (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate x)))
                          )
                     (svex-envs-equivalent
-                     (base-fsm-final-state (take n ins) prev-st x)
-                     (base-fsm-step (nth (1- n) ins)
-                                    (base-fsm-final-state (take (1- n) ins) prev-st x)
+                     (fsm-final-state (take n ins) prev-st x)
+                     (fsm-step (nth (1- n) ins)
+                                    (fsm-final-state (take (1- n) ins) prev-st x)
                                     x)))
-           :hints(("Goal" :in-theory (e/d (take nth base-fsm-final-state)
+           :hints(("Goal" :in-theory (e/d (take nth fsm-final-state)
                                           (acl2::take-of-too-many
                                            acl2::take-when-atom))
-                   :induct (nth-of-base-fsm-eval-ind n ins prev-st x)
+                   :induct (nth-of-fsm-eval-ind n ins prev-st x)
                    :expand ((take 1 ins)))
                   (and stable-under-simplificationp
-                       '(:in-theory (enable base-fsm-step))))))
+                       '(:in-theory (enable fsm-step))))))
 
   
   (defret eval-of-<fn>
     (svex-envs-equivalent (svex-alist-eval compose env)
-                          (base-fsm-final-state (take phase (svex-alistlist-eval inputs env))
+                          (fsm-final-state (take phase (svex-alistlist-eval inputs env))
                                                 (svex-alist-eval initst env)
                                                 nextstate))
     :hints (("goal" :induct <call>
              :expand ((take phase inputs)
-                      (:free (initst) (base-fsm-final-state nil initst nextstate))))
+                      (:free (initst) (fsm-final-state nil initst nextstate))))
                   (and stable-under-simplificationp
-                       '(:in-theory (enable base-fsm-step
-                                            base-fsm-step-env))))))
+                       '(:in-theory (enable fsm-step
+                                            fsm-step-env))))))
                          
 
 ;; (define svex-alist-eval-multistate-unroll ((x svex-alist-p)

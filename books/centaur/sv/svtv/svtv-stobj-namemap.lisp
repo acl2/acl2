@@ -244,7 +244,7 @@
                                                       ((member-eq :mux args)
                                                        (mv (remove-eq :mux args) t '(:val)))
                                                       (t (mv args nil nil))))
-                   (lookupfn (if muxp 'sv::lhs-overridemux-eval-zero 'sv::lhs-eval-zero))
+                   (lookupfn (if muxp 'sv::lhs-overridemux-eval-zero 'sv::lhs-eval-zx))
                    ((mv pre-bindings env-args rest)
                     (b* ((rest rest-expr)
                          (env-arg (car forms))
@@ -396,15 +396,15 @@ svtv-data) stobj, as it would be by (for example) a prior @(see defsvtv$) or
 @(see defcycle) event.</p>
 
 <p>Since the signal names map to LHS objects, the values extracted for them
-from the environment are computed with @(see lhs-eval-zero).  This zero-extends
+from the environment are computed with @(see lhs-eval-zx).  This zero-extends
 the value of the signal at its width.  The following is a possible expansion for the B* binding:</p>
 
 @({
  (b* (((myname-sigs baz3 (my-src src2)) env))
    (list baz3 my-src))
  -->
- (let* ((baz3 (lhs-eval-zero '((5 :VAR (\"foo\" \"bar\" 3 . \"baz\") . 0)) env))
-        (my-src (lhs-eval-zero '((64 \"src_data\" . 64)) env)))
+ (let* ((baz3 (lhs-eval-zx '((5 :VAR (\"foo\" \"bar\" 3 . \"baz\") . 0)) env))
+        (my-src (lhs-eval-zx '((64 \"src_data\" . 64)) env)))
    (list baz3 my-src))
  })
 

@@ -95,7 +95,7 @@
 ;;                 (svex-alist-eval (svex-alist-extract vars x) y))
 ;;          :hints(("Goal" :in-theory (enable svex-env-extract svex-alist-extract)))))
 
-(define base-fsm-run-compile-phase ((phase natp)
+(define fsm-run-compile-phase ((phase natp)
                                     (outvars svarlist-p)
                                     (out-values svex-alist-p)
                                     (data svtv-composedata-p))
@@ -121,7 +121,7 @@
                                         (svex-alist-eval out-values
 
                                                          (APPEND
-                                                          (BASE-FSM-FINAL-STATE
+                                                          (fsm-FINAL-STATE
                                                            (TAKE PHASE
                                                                  (SVEX-ALISTLIST-EVAL (SVTV-PRECOMPOSE-DATA->INPUT-SUBSTS PREDATA)
                                                                                       ENV))
@@ -170,11 +170,11 @@
 ;;      :fn svexlist-eval-unroll-multienv)
 ;;    :mutual-recursion svex-eval-unroll-multienv))
             
-(defthm alist-keys-of-base-fsm-final-state
-  (equal (alist-keys (base-fsm-final-state ins initst nextstate))
+(defthm alist-keys-of-fsm-final-state
+  (equal (alist-keys (fsm-final-state ins initst nextstate))
          (svex-alist-keys nextstate))
-  :hints(("Goal" :in-theory (enable base-fsm-final-state
-                                    base-fsm-step))))
+  :hints(("Goal" :in-theory (enable fsm-final-state
+                                    fsm-step))))
                      
 (local
  (encapsulate nil
@@ -190,15 +190,15 @@
                  '(:in-theory (enable svex-env-lookup svex-env-boundp)))))))
 
 
-(define base-fsm-run-compile-phases ((phase natp)
+(define fsm-run-compile-phases ((phase natp)
                                      (outvars svarlist-list-p)
                                      (out-values svex-alist-p)
                                      (data svtv-composedata-p))
   :returns (out-alists svex-alistlist-p)
   (if (atom outvars)
       nil
-    (cons (base-fsm-run-compile-phase phase (car outvars) out-values data)
-          (base-fsm-run-compile-phases (1+ (lnfix phase)) (cdr outvars) out-values data)))
+    (cons (fsm-run-compile-phase phase (car outvars) out-values data)
+          (fsm-run-compile-phases (1+ (lnfix phase)) (cdr outvars) out-values data)))
   ///
 
   (local (include-book "std/lists/nth" :dir :system))
@@ -235,27 +235,27 @@
              (equal (svex-alistlist-eval out-alists env)
                     (b* (((svtv-composedata data)))
                       (nthcdr phase
-                              (base-fsm-run (svex-alistlist-eval predata.input-substs env)
+                              (fsm-run (svex-alistlist-eval predata.input-substs env)
                                             (svex-alist-eval predata.initst env)
-                                            (make-base-fsm :nextstate predata.nextstate
+                                            (make-fsm :nextstate predata.nextstate
                                                            :values out-values)
                                             (append (repeat phase nil) outvars))))))
-    :hints(("Goal" :in-theory (e/d (base-fsm-run
+    :hints(("Goal" :in-theory (e/d (fsm-run
                                     ;; svex-envlist-extract
-                                    ;; base-fsm-eval-is-svex-eval-unroll-multienv
-                                    nth-of-base-fsm-eval
-                                    base-fsm-step-outs
-                                    base-fsm-step-env
+                                    ;; fsm-eval-is-svex-eval-unroll-multienv
+                                    nth-of-fsm-eval
+                                    fsm-step-outs
+                                    fsm-step-env
                                     )
-                                   (car-of-base-fsm-eval
-                                    cdr-of-base-fsm-eval
-                                    base-fsm-eval-of-cons
+                                   (car-of-fsm-eval
+                                    cdr-of-fsm-eval
+                                    fsm-eval-of-cons
                                     acl2::take-of-too-many
-                                    nthcdr-of-base-fsm-eval-is-base-fsm-eval
+                                    nthcdr-of-fsm-eval-is-fsm-eval
                                     take))
             :expand ((svex-alist-eval nil env)
                      (:free (n a b) (nth n (cons a b)))
-                     ;; (:free (x ins initst fsm) (base-fsm-eval (take (+ 1 x) ins) initst fsm))
+                     ;; (:free (x ins initst fsm) (fsm-eval (take (+ 1 x) ins) initst fsm))
                      (:free (x) (svex-envlist-extract outvars x)))
             :induct  <call>))))
 
@@ -263,18 +263,18 @@
 
 (local (in-theory (disable hons-dups-p)))  
 
-(define base-fsm-run-compile ((ins svex-alistlist-p)
+(define fsm-run-compile ((ins svex-alistlist-p)
                               (prev-st svex-alist-p)
-                              (x base-fsm-p)
+                              (x fsm-p)
                               (signals svarlist-list-p)
                               (precomp-inputs svarlist-p)
                               (simp svex-simpconfig-p))
-  :guard (b* ((st-vars (svex-alist-keys (base-fsm->nextstate x))))
+  :guard (b* ((st-vars (svex-alist-keys (fsm->nextstate x))))
            (and (equal (svex-alist-keys prev-st) st-vars)
                 (not (acl2::hons-dups-p st-vars))
                 (not (acl2::hons-intersect-p precomp-inputs st-vars))))
   :returns (out-alists svex-alistlist-p)
-  (b* (((base-fsm x))
+  (b* (((fsm x))
        ((acl2::with-fast x.nextstate x.values prev-st))
        (composedata
         (svtv-precompose-phases (len signals)
@@ -287,7 +287,7 @@
                                  (mbe :logic (acl2::hons-set-diff (svarlist-fix precomp-inputs)
                                                                   (svex-alist-keys x.nextstate))
                                       :exec precomp-inputs))))
-       (ans (base-fsm-run-compile-phases 0 signals x.values composedata)))
+       (ans (fsm-run-compile-phases 0 signals x.values composedata)))
     (fast-alistlist-clean ins)
     (clear-memoize-table 'svex-compose-svtv-phases-call)
     (clear-memoize-table 'svtv-precompose-inputs-compose)
@@ -299,7 +299,7 @@
   
   (defret svex-alistlist-eval-of-<fn>
     (equal (svex-alistlist-eval out-alists env)
-           (base-fsm-run (svex-alistlist-eval ins env)
+           (fsm-run (svex-alistlist-eval ins env)
                          (svex-alist-eval prev-st env)
                          x
                          signals))))
@@ -357,12 +357,12 @@
                 (not (acl2::hons-intersect-p precomp-inputs st-vars))))
   :guard-hints (("goal" :in-theory (enable svtv-fsm->renamed-fsm)))
   :returns (out-alists svex-alistlist-p)
-  (b* ((input-substs (svtv-fsm-to-base-fsm-inputsubsts
+  (b* ((input-substs (svtv-fsm-to-fsm-inputsubsts
                       (take (len outvars) ins)
                       override-vals override-tests
                       (svtv-fsm->namemap x)))
        ((svtv-fsm x)))
-    (base-fsm-run-compile input-substs prev-st x.renamed-fsm outvars precomp-inputs simp))
+    (fsm-run-compile input-substs prev-st x.renamed-fsm outvars precomp-inputs simp))
   ///
 
   (local (defthm take-of-svex-alistlist-eval
@@ -382,7 +382,7 @@
             outvars
             :override-vals (svex-alistlist-eval override-vals env)
             :override-tests (svex-alistlist-eval override-tests env)))
-    :hints(("Goal" :in-theory (enable svtv-fsm-run-is-base-fsm-run))))
+    :hints(("Goal" :in-theory (enable svtv-fsm-run-is-fsm-run))))
 
   (defret eval-lookup-of-<fn>
     (equal (svex-eval (svex-lookup var (nth n out-alists)) env)
@@ -470,10 +470,10 @@
          (list ins override-vals override-tests)
        (take-of-in-envs-ind (1- n) (cdr ins) (cdr override-vals) (cdr override-tests)))))
 
-  (defthm take-of-svtv-fsm-to-base-fsm-inputs
-           (equal (take n (svtv-fsm-to-base-fsm-inputs (take n ins) override-vals override-tests x))
-                  (svtv-fsm-to-base-fsm-inputs (take n ins) override-vals override-tests x))
-           :hints(("Goal" :in-theory (e/d (svtv-fsm-to-base-fsm-inputs)
+  (defthm take-of-svtv-fsm-to-fsm-inputs
+           (equal (take n (svtv-fsm-to-fsm-inputs (take n ins) override-vals override-tests x))
+                  (svtv-fsm-to-fsm-inputs (take n ins) override-vals override-tests x))
+           :hints(("Goal" :in-theory (e/d (svtv-fsm-to-fsm-inputs)
                                           (acl2::take-of-too-many
                                            acl2::take-when-atom))
                    :induct (take-of-in-envs-ind n ins override-vals override-tests)))))
@@ -490,7 +490,7 @@
               (initst-eval (svex-alist-eval initst env))
               (probe-look (hons-assoc-equal (svar-fix name) (svtv-probealist-fix probes)))
               ((svtv-probe probe) (cdr probe-look))
-              (ins (svtv-fsm-to-base-fsm-inputs
+              (ins (svtv-fsm-to-fsm-inputs
                     (take (len (svtv-probealist-outvars probes)) inputs-eval)
                     (svex-alistlist-eval override-vals env)
                     (svex-alistlist-eval override-tests env)
@@ -498,7 +498,7 @@
            (if probe-look
                (svex-env-lookup
                 probe.signal
-                (nth probe.time (base-fsm-run
+                (nth probe.time (fsm-run
                                  ins initst-eval
                                  (svtv-fsm->renamed-fsm fsm)
                                  (svtv-probealist-outvars probes))))

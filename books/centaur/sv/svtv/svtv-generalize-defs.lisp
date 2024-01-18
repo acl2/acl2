@@ -106,7 +106,7 @@
        (probes spec.probes)
        (outvars (svtv-probealist-outvars spec.probes))
        (my-in-alists (take (len outvars) in-alists))
-       ((base-fsm spec.fsm)))
+       ((fsm spec.fsm)))
     (and (svtv-override-triplemaplist-syntax-check
           test-alists val-alists probes triplemaps)
          (equal (svex-alist-keys-list test-alists) (svex-alist-keys-list val-alists))

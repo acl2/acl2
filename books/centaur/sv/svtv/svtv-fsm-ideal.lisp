@@ -1427,7 +1427,7 @@
 
 
 (define flatnorm->ideal-fsm ((x flatnorm-res-p))
-  :returns (fsm base-fsm-p)
+  :returns (fsm fsm-p)
   :non-executable t
   :parents (least-fixpoint)
   :short "Returns the fixpoint FSM derived from the assignment network and state updates (delays) given by the input."
@@ -1435,7 +1435,7 @@
               (not (hons-dups-p (svex-alist-keys (flatnorm-res->assigns x)))))
   (b* (((flatnorm-res x))
        (values (svex-alist-least-fixpoint x.assigns)))
-    (make-base-fsm :values values :nextstate (svex-alist-compose x.delays values)))
+    (make-fsm :values values :nextstate (svex-alist-compose x.delays values)))
   ///
 
   ;; (local (defthmd svex-alist-compose-is-pairlis$
@@ -1476,16 +1476,16 @@
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-vars x.delays) nil))
-               (base-fsm-overridekey-transparent-p override-fsm overridekeys)))
-    :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p
+               (fsm-overridekey-transparent-p override-fsm overridekeys)))
+    :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p
                                       flatnorm-add-overrides))))
 
   (defthm flatnorm->ideal-fsm-overrides->>=-phase-fsm-composition-values
     (b* (((flatnorm-res x))
          (override-keys (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
          (override-flatnorm (flatnorm-add-overrides x override-keys))
-         ((base-fsm ideal-fsm) (flatnorm->ideal-fsm override-flatnorm))
-         ((base-fsm approx-fsm)))
+         ((fsm ideal-fsm) (flatnorm->ideal-fsm override-flatnorm))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
 
                     (svex-alist-monotonic-on-vars (svex-alist-keys x.assigns) x.assigns)
@@ -1510,7 +1510,7 @@
                           (svarlist-to-override-triples
                            (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))))
                       (svex-alist-compose x.assigns (svar-override-triplelist->override-alist triples))))
-                   (comp (base-fsm->values approx-fsm)))))))
+                   (comp (fsm->values approx-fsm)))))))
 
 
   (local (defthm fast-alist-clean-under-svex-alist-eval-equiv
@@ -1564,9 +1564,9 @@
                                              svex-lookup-when-not-member-keys)))))
 
   (local (defthm svex-alist-<<=-of-nextstate-when-equiv
-           (implies (svex-alist-eval-equiv! (base-fsm->nextstate x)
+           (implies (svex-alist-eval-equiv! (fsm->nextstate x)
                                             (svex-alist-compose a b))
-                    (iff (svex-alist-<<=  (base-fsm->nextstate x) y)
+                    (iff (svex-alist-<<=  (fsm->nextstate x) y)
                          (svex-alist-<<= (svex-alist-compose a b) y)))))
 
   (defthm flatnorm->ideal-fsm-overrides->>=-phase-fsm-composition-nextstate
@@ -1574,8 +1574,8 @@
          (overridekeys
            (svtv-assigns-override-vars x.assigns (phase-fsm-config->override-config config)))
          (override-flatnorm (flatnorm-add-overrides x overridekeys))
-         ((base-fsm ideal-fsm) (flatnorm->ideal-fsm override-flatnorm))
-         ((base-fsm approx-fsm)))
+         ((fsm ideal-fsm) (flatnorm->ideal-fsm override-flatnorm))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
 
                     (svex-alist-monotonic-on-vars (svex-alist-keys x.assigns) x.assigns)
@@ -1623,8 +1623,8 @@
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
                     (svarlist-override-p (svex-alist-vars x.delays) nil))
-               (base-fsm-<<= approx-fsm ideal-fsm)))
-    :hints(("Goal" :in-theory (e/d (base-fsm-<<=)
+               (fsm-<<= approx-fsm ideal-fsm)))
+    :hints(("Goal" :in-theory (e/d (fsm-<<=)
                                    (flatnorm->ideal-fsm)))))
 
 
@@ -1653,7 +1653,7 @@
   
   (defthm phase-fsm-composition-ovmonotonic-values
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm)))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
@@ -1713,7 +1713,7 @@
   
   (defthm phase-fsm-composition-ovcongruent-values
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm)))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil))
@@ -1755,7 +1755,7 @@
   
   (defthm phase-fsm-composition-ovmonotonic-nextstate
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm)))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svex-alist-monotonic-p x.delays)
@@ -1810,7 +1810,7 @@
   
   (defthm phase-fsm-composition-ovcongruent-nextstate
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm)))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
@@ -1827,7 +1827,7 @@
 
   (defthm phase-fsm-composition-ovmonotonic
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm)))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svex-alist-monotonic-p x.assigns)
                     (svex-alist-monotonic-p x.delays)
@@ -1835,19 +1835,19 @@
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
                     (svarlist-override-p (svex-alist-vars x.delays) nil)
                     (svarlist-override-p (svex-alist-keys x.delays) nil))
-               (base-fsm-ovmonotonic approx-fsm)))
-    :hints(("Goal" :in-theory (enable base-fsm-ovmonotonic))))
+               (fsm-ovmonotonic approx-fsm)))
+    :hints(("Goal" :in-theory (enable fsm-ovmonotonic))))
 
   (defthm phase-fsm-composition-ovcongruent
     (b* (((flatnorm-res x))
-         ((base-fsm approx-fsm)))
+         ((fsm approx-fsm)))
       (implies (and (phase-fsm-composition-p approx-fsm x config)
                     (svarlist-override-p (svex-alist-vars x.assigns) nil)
                     (svarlist-override-p (svex-alist-keys x.assigns) nil)
                     (svarlist-override-p (svex-alist-vars x.delays) nil)
                     (svarlist-override-p (svex-alist-keys x.delays) nil))
-               (base-fsm-ovcongruent approx-fsm)))
-    :hints(("Goal" :in-theory (enable base-fsm-ovcongruent))))
+               (fsm-ovcongruent approx-fsm)))
+    :hints(("Goal" :in-theory (enable fsm-ovcongruent))))
 
     (defthm flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition
       (b* (((flatnorm-res x))
@@ -1871,7 +1871,7 @@
                       (svarlist-override-p (svex-alist-keys x.assigns) nil)
                       (svarlist-override-p (svex-alist-vars x.delays) nil)
                       (svarlist-override-p (svex-alist-keys x.delays) nil))
-                 (base-fsm-ovmonotonic override-fsm)))
+                 (fsm-ovmonotonic override-fsm)))
       :hints (("goal" :in-theory (disable flatnorm->ideal-fsm
                                           flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)
                :use flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)))
@@ -1885,13 +1885,13 @@
                       (svarlist-override-p (svex-alist-keys x.assigns) nil)
                       (svarlist-override-p (svex-alist-vars x.delays) nil)
                       (svarlist-override-p (svex-alist-keys x.delays) nil))
-                 (base-fsm-ovcongruent override-fsm)))
+                 (fsm-ovcongruent override-fsm)))
       :hints (("goal" :in-theory (disable flatnorm->ideal-fsm
                                           flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)
                :use flatnorm->ideal-fsm-with-overrides-is-phase-fsm-composition)))
 
     (defret alist-keys-of-<fn>
-    (b* (((base-fsm fsm))
+    (b* (((fsm fsm))
          ((flatnorm-res x)))
       (and (equal (svex-alist-keys fsm.values) (svex-alist-keys x.assigns))
            (equal (svex-alist-keys fsm.nextstate) (svex-alist-keys x.delays))))))
@@ -1953,25 +1953,25 @@
     (implies (and (phase-fsm-composition-p approx-fsm flat config)
                   (modalist-addr-p (design->modalist x))
                   (design-flatten-okp x))
-             (base-fsm-ovmonotonic
+             (fsm-ovmonotonic
               approx-fsm)))
-  :hints(("Goal" :in-theory (enable base-fsm-ovmonotonic))))
+  :hints(("Goal" :in-theory (enable fsm-ovmonotonic))))
 
 (defthm phase-fsm-composition-ovcongruent-of-design->flatnorm
   (b* (((flatnorm-res flat) (design->flatnorm x)))
     (implies (and (phase-fsm-composition-p approx-fsm flat config)
                   (modalist-addr-p (design->modalist x))
                   (design-flatten-okp x))
-             (base-fsm-ovcongruent
+             (fsm-ovcongruent
               approx-fsm)))
-  :hints(("Goal" :in-theory (enable base-fsm-ovcongruent))))
+  :hints(("Goal" :in-theory (enable fsm-ovcongruent))))
 
 
 (define design->ideal-fsm ((x design-p)
                            (config phase-fsm-config-p))
   :guard (and (modalist-addr-p (design->modalist x))
               (design-flatten-okp x))
-  :returns (ideal-fsm base-fsm-p)
+  :returns (ideal-fsm fsm-p)
   (b* (((flatnorm-res flatnorm) (design->flatnorm x)))
     (flatnorm->ideal-fsm
      (flatnorm-add-overrides
@@ -1985,7 +1985,7 @@
                                    (phase-fsm-config->override-config config))))
       (implies (and (modalist-addr-p (design->modalist x))
                     (design-flatten-okp x))
-               (base-fsm-overridekey-transparent-p ideal-fsm overridekeys))))
+               (fsm-overridekey-transparent-p ideal-fsm overridekeys))))
 
 
   (defret <fn>->>=-phase-fsm-composition
@@ -1993,7 +1993,7 @@
       (implies (and (phase-fsm-composition-p approx-fsm flat config)
                     (modalist-addr-p (design->modalist x))
                     (design-flatten-okp x))
-               (base-fsm-<<= approx-fsm ideal-fsm))))
+               (fsm-<<= approx-fsm ideal-fsm))))
 
   (defret <fn>-is-phase-fsm-composition
     (phase-fsm-composition-p ideal-fsm (design->flatnorm x) config))
@@ -2002,16 +2002,16 @@
     (b* (((flatnorm-res flat) (design->flatnorm x)))
       (implies (and (modalist-addr-p (design->modalist x))
                     (design-flatten-okp x))
-               (base-fsm-ovmonotonic ideal-fsm))))
+               (fsm-ovmonotonic ideal-fsm))))
 
   (defret <fn>-ovcongruent
     (b* (((flatnorm-res flat) (design->flatnorm x)))
       (implies (and (modalist-addr-p (design->modalist x))
                     (design-flatten-okp x))
-               (base-fsm-ovcongruent ideal-fsm))))
+               (fsm-ovcongruent ideal-fsm))))
   
   (defret alist-keys-of-<fn>
-    (b* (((base-fsm ideal-fsm))
+    (b* (((fsm ideal-fsm))
          ((flatnorm-res flat) (design->flatnorm x)))
       (and (equal (svex-alist-keys ideal-fsm.values) (svex-alist-keys flat.assigns))
            (equal (svex-alist-keys ideal-fsm.nextstate) (svex-alist-keys flat.delays))))))

@@ -288,7 +288,7 @@
             (mv nil ,stobj)))
          ((when err)
           (mv err nil state ,stobj))
-         (fsm (make-svtv-fsm :base-fsm (svtv-data->cycle-fsm svtv-data)
+         (fsm (make-svtv-fsm :fsm (svtv-data->cycle-fsm svtv-data)
                              :namemap (svtv-data->namemap svtv-data))))
       (mv nil
           `(with-output :off (event)
