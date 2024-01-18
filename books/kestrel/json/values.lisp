@@ -11,6 +11,7 @@
 (in-package "JSON")
 
 (include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -107,3 +108,17 @@
   value
   :short "Fixtype of optional JSON values."
   :pred value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-value
+  :short "An irrelevant value."
+  :type valuep
+  :body (value-null))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-member
+  :short "An irrelevant member."
+  :type memberp
+  :body (make-member :name "" :value (irr-value)))
