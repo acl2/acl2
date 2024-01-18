@@ -1,10 +1,10 @@
 ; JSON Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,12 +30,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (abnf::defgrammar *grammar-rules*
-  :short "The JSON grammar rules from RFC 7159."
+  :short "The JSON grammar rules from RFC 8259."
   :long
   (xdoc::topstring
    (xdoc::p
     "The file @('grammar.abnf') contains the grammar rules,
-     copied and pasted from RFC 7159.
+     copied and pasted from RFC 8259.
      The ABNF grammar parser and abstractor are used
      to build an ACL2 representation of the JSON grammar rules,
      excluding the referenced ABNF core rules.")
