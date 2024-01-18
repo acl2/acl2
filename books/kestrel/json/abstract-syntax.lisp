@@ -134,6 +134,7 @@
   :prepwork
   ((define object-member-values-aux ((name stringp) (members member-listp))
      :returns (values value-listp)
+     :parents nil
      (cond ((endp members) nil)
            ((equal name (member->name (car members)))
             (cons (member->value (car members))
