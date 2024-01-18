@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
-  :parents (concrete-syntax)
+  :parents (syntax)
   :short "The ABNF grammar of JSON."
   :order-subtopics t
   :default-parent t)
