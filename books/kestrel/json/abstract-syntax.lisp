@@ -30,8 +30,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftypes values
-  :short "Fixtypes of JSON values."
+(fty::deftypes value/valuelist/member/memberlist
+  :short "Fixtypes of JSON
+          values, lists of values, members, and lists of members."
   :long
   (xdoc::topstring
    (xdoc::p
