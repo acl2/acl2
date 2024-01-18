@@ -14,7 +14,7 @@
 (include-book "values")
 (include-book "operations")
 (include-book "parser-output-to-values")
-(include-book "light-ast-check")
+(include-book "light-value-check")
 (include-book "json-bstar")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -13,7 +13,7 @@
 (include-book "std/strings/suffixp" :dir :system)
 
 (include-book "values")
-(include-book "light-ast-check")
+(include-book "light-value-check")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
