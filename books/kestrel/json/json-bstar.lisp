@@ -84,7 +84,7 @@ and the details on the pattern variables.
 
 ;; JSON pattern S-expression syntax
 
-;; JSON null, true, and false patterns are the same as our JSON AST
+;; JSON null, true, and false patterns are the same as our JSON value
 ;; representation:
 ;;   (:NULL)
 ;;   (:TRUE)
@@ -108,7 +108,7 @@ and the details on the pattern variables.
 ;; (:ARRAY . array-elements)
 ;;   * array-elements is a list of zero or more array element patterns,
 ;;     and is the cdr of the array pattern.
-;;     Note, this is a different shape from the JSON AST representation,
+;;     Note, this is a different shape from the JSON value representation,
 ;;     where the array element list is the cadr of the array object.
 ;;   * array-elements is 0 or more elements, the last of which can be
 ;;     an optional patvar-multiple.
@@ -116,7 +116,7 @@ and the details on the pattern variables.
 ;; (:OBJECT . object-members)
 ;;   * object-members is a list of zero or more member patterns,
 ;;     the last of which can be an optional patvar-multiple
-;;   * Note, this is a different shape from the JSON AST representation.
+;;   * Note, this is a different shape from the JSON value representation.
 ;;   * IMPORTANT NOTE: the member patterns are matched against the
 ;;     form in the same order.  Even though JSON objects are usually
 ;;     used as dictionaries with unordered keys, there does exist an order,
@@ -128,7 +128,7 @@ and the details on the pattern variables.
 ;;   will be bound to the tail when pattern matching.
 ;;   See also *JPAT-ANY-TAIL*.
 ;; (:MEMBER name/patvar-single value-pattern/patvar-single)
-;;   * Note, this is a different shape from the JSON AST representation.
+;;   * Note, this is a different shape from the JSON value representation.
 ;;   * name is a literal string.  It matches a literal string in the form
 ;;     (not a value of kind :STRING).
 ;;
