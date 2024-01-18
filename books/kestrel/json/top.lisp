@@ -13,7 +13,7 @@
 (include-book "concrete-syntax")
 (include-book "values")
 (include-book "operations")
-(include-book "parser-output-to-abstract-syntax")
+(include-book "parser-output-to-values")
 (include-book "light-ast-check")
 (include-book "json-bstar")
 
