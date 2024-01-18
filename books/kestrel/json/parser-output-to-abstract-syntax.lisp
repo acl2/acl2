@@ -1,10 +1,10 @@
 ; JSON Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -14,22 +14,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parser-output-to-abstract-syntax
+(defxdoc+ parser-output-to-values
   :parents (json)
   :short "A translator
-          from the JSON parser's output to the JSON abstract syntax."
+          from the JSON parser's output to our model of JSON values."
   :long
   (xdoc::topstring
    (xdoc::p
     "The JSON parser in @('kestrel/json-parser/')
-     produces output (parsed and abstracted JSON) in a form
-     that is slightly different from the "
-    (xdoc::seetopic "abstract-syntax" "JSON abstract syntax")
+     produces output that is slightly different from the "
+    (xdoc::seetopic "values" "the JSON values")
     " formalized in this JSON library;
      in particular, the parser's output is not a fixtype.")
    (xdoc::p
     "Thus, here we provide a translator
-     from the parser's output to the JSON abstract syntax.
+     from the parser's output to the JSON values.
      Since at the time that this translator was first written
      the parser did not include a type (i.e. recognizer) for its output,
      the translator is defined over all possible ACL2 values,

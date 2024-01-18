@@ -16,13 +16,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax
+(defxdoc+ values
   :parents (json)
-  :short "An abstract syntax of JSON."
+  :short "JSON values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define fixtypes for an abstract syntax of JSON.
+    "We define fixtypes for JSON values.
      This is just a first version;
      we plan to make this more rich and precise."))
   :order-subtopics t
@@ -49,7 +49,7 @@
      where a member consists of a name and a value.
      For now we use ACL2 strings for the names, which are ISO-8859-1;
      JSON allows Unicode here,
-     so we may generalize this aspect of our JSON abstract syntax in the future.
+     so we may generalize this aspect of our JSON values in the future.
      Despite the recommendation of avoiding members with the same name,
      such duplications are not strictly illegal in JSON:
      this is why we use a list of members,

@@ -22,13 +22,13 @@
   (xdoc::topstring
    (xdoc::p
     "As mentioned in @(tsee values),
-     our abstract syntax does not assume or enforce that JSON objects
+     our model of JSON values does not assume or enforce that JSON objects
      have members with unique names.
      Accordingly, given a member name,
      there may be 0, 1, or more values associated with that name.
      This function returns the list of such values,
      in the order in which they occur in the object;
-     member order is captured and significant in our JSON abstract syntax.")
+     member order is captured and significant in our JSON values.")
    (xdoc::p
     "Note that if the JSON object has two duplicate members
      (meaning not just the same name, but also the same value),
