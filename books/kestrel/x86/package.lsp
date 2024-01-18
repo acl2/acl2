@@ -323,6 +323,7 @@
     list-rules
     core-rules-bv
     amazing-rules-bv
+    set-axe-rule-priority
 
     memberp
 

@@ -1483,10 +1483,10 @@
             )))
 
 ;These should only be tried if the usual rules don't apply (constants are rare):
-(table axe-rule-priorities-table 'jvm::pc-opener 1)
-(table axe-rule-priorities-table 'jvm::locals-opener 1)
-(table axe-rule-priorities-table 'jvm::stack-opener 1)
-(table axe-rule-priorities-table 'jvm::method-designator-opener 1)
+(set-axe-rule-priority jvm::pc-opener 1)
+(set-axe-rule-priority jvm::locals-opener 1)
+(set-axe-rule-priority jvm::stack-opener 1)
+(set-axe-rule-priority jvm::method-designator-opener 1)
 
 ;; (defun program-equivalence-rules ()
 ;;   (declare (xargs :guard t))
@@ -1548,21 +1548,21 @@
 ;;
 
 ;this one is going to fire a lot when we walk down a big heap with get-field-of-set-field
-(table axe-rule-priorities-table 'equal-nth-new-ad-rewrite -10)
-(table axe-rule-priorities-table 'get-field-of-set-field-diff-1 -10)
+(set-axe-rule-priority equal-nth-new-ad-rewrite -10)
+(set-axe-rule-priority get-field-of-set-field-diff-1 -10)
 
 ;try the opener(s) before the base rule:
 ;try the myif rules first...
-(table axe-rule-priorities-table 'run-until-return-from-stack-height-of-myif-axe-split-1 -13)
-(table axe-rule-priorities-table 'run-until-return-from-stack-height-of-myif-axe-split-2 -13)
-(table axe-rule-priorities-table 'run-until-return-from-stack-height-of-myif-axe -12)
-;(table axe-rule-priorities-table 'run-until-return-from-stack-height-of-myif-axe-alt -12)
-;(table axe-rule-priorities-table 'run-until-return-from-stack-height-opener-fast-print -11)
-(table axe-rule-priorities-table 'run-until-return-from-stack-height-opener-fast-axe -10)
-(table axe-rule-priorities-table 'run-until-return-from-stack-height-opener-axe -10)
-(table axe-rule-priorities-table 'run-until-return-from-stack-height-base-axe -9)
+(set-axe-rule-priority run-until-return-from-stack-height-of-myif-axe-split-1 -13)
+(set-axe-rule-priority run-until-return-from-stack-height-of-myif-axe-split-2 -13)
+(set-axe-rule-priority run-until-return-from-stack-height-of-myif-axe -12)
+;(set-axe-rule-priority run-until-return-from-stack-height-of-myif-axe-alt -12)
+;(set-axe-rule-priority run-until-return-from-stack-height-opener-fast-print -11)
+(set-axe-rule-priority run-until-return-from-stack-height-opener-fast-axe -10)
+(set-axe-rule-priority run-until-return-from-stack-height-opener-axe -10)
+(set-axe-rule-priority run-until-return-from-stack-height-base-axe -9)
 
-(table axe-rule-priorities-table 'jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -13)
-(table axe-rule-priorities-table 'jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -12)
-(table axe-rule-priorities-table 'jvm::call-stack-size-of-push-frame-of-push-frame -11)
-(table axe-rule-priorities-table 'jvm::call-stack-size-of-push-frame -10)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -13)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -12)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame -11)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame -10)

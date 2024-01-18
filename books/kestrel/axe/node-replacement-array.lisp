@@ -753,20 +753,25 @@
          (let ((x (farg1 assumption))
                (y (farg2 assumption)))
            (if (and (quotep x) (quotep y))
-               (prog2$ (cw "NOTE: term-replacement-alist-for-assumption is skipping unusual assumption ~x0.~%" assumption)
+               (prog2$ (if (equal (unquote x) (unquote y))
+                           (cw "NOTE: Skipping vacuous assumption ~x0.~%" assumption)
+                         (cw "WARNING: Skipping contradictory assumption ~x0.~%" assumption))
                        acc)
              (if (quotep x)
-                 (acons y x acc) ; replace y with x since x is a constant
+                 (acons y x acc) ; replace y with x since x is a constant and y is not
                (if (quotep y)
-                   (acons x y acc) ; replace x with y since y is a constant
-                 ;; We're being conservative here and not replacing either term with the other in general (TODO: consider when one is a subterm of the other)
-                 ;; We'll add the fact that the equality oriented either way it true
-                 ;; TODO: Consider not being conservative, since these are assumptions from the user, which can be taken to be directed equalities
-                 (acons assumption *t*
-                        (acons `(equal ,y ,x) *t*
-                               acc)))))))
+                   (acons x y acc) ; replace x with y since y is a constant and x is not
+                 ;; Neither is a constant, so replace x with y (we interpret the assumption as a directed equality):
+                 (acons x y acc)
+                 ;; Old behavior (todo: add an option to put this back, if the assumptions might have unexoected forms):
+                 ;; ;; We're being conservative here and not replacing either term with the other in general (TODO: consider when one is a subterm of the other)
+                 ;; ;; We add the fact that the equality oriented either way is true.
+                 ;; ;; TODO: Consider not being conservative, since these are assumptions from the user, which can be taken to be directed equalities
+                 ;; (acons assumption *t*
+                 ;;        (acons `(equal ,y ,x) *t*
+                 ;;               acc))
+                 )))))
         (not ;; (not x) becomes the pair (x . 'nil) ;; the case above for 'equal above handles the (equal x nil) phrasing for nots.
-         ;; TODO: If x is a call of EQUAL, add pairs for both orientations?  or handle that later?
          (acons (farg1 assumption) *nil* acc))
         (booland ;; TODO: Other ways of stripping conjuncts!
          (and (consp (cdr (fargs assumption))) ;for termination

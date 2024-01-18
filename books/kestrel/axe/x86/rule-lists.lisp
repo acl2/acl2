@@ -1,7 +1,7 @@
 ; Rule Lists used by the x86 Axe tools
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "kestrel/axe/rule-lists" :dir :system)
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
+(include-book "../priorities")
 
 (include-book "projects/x86isa/machine/instructions/top" :dir :system) ;needed to get the full ruleset instruction-decoding-and-spec-rules
 
@@ -893,7 +894,7 @@
     ))
 
 ;; Try to introduce is-nan as soon as possible:
-(table axe-rule-priorities-table 'is-nan-intro -1)
+(set-axe-rule-priority is-nan-intro -1)
 
 (defund symbolic-execution-rules ()
   (declare (xargs :guard t))
@@ -1454,11 +1455,11 @@
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
-(table axe-rule-priorities-table 'acl2::bvplus-of-+-combine-constants -1)
+(set-axe-rule-priority acl2::bvplus-of-+-combine-constants -1)
 
 ;; Not needed?:
-;; (table axe-rule-priorities-table 'x86isa::separate-when-separate -1)
-;; (table axe-rule-priorities-table 'x86isa::separate-when-separate-alt -1)
+;; (set-axe-rule-priority x86isa::separate-when-separate -1)
+;; (set-axe-rule-priority x86isa::separate-when-separate-alt -1)
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 
@@ -3257,10 +3258,10 @@
           (lifter-rules64-new)))
 
 ;; Try this rule first
-(table axe-rule-priorities-table 'read-of-write-disjoint -1)
+(set-axe-rule-priority read-of-write-disjoint -1)
 
 ;; Wait to try this rule until the read is cleaned up by removing irrelevant inner sets
-(table acl2::axe-rule-priorities-table 'read-when-program-at-gen 1)
+(set-axe-rule-priority read-when-program-at-gen 1)
 
 
 ;; These rules expand operations on effective addresses, exposing the
