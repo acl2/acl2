@@ -11,7 +11,7 @@
 (in-package "JSON")
 
 (include-book "concrete-syntax")
-(include-book "abstract-syntax")
+(include-book "values")
 (include-book "operations")
 (include-book "parser-output-to-abstract-syntax")
 (include-book "light-ast-check")

@@ -1,6 +1,6 @@
 ; JSON Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,7 @@
 
 (include-book "std/strings/suffixp" :dir :system)
 
-(include-book "abstract-syntax")
+(include-book "values")
 (include-book "light-ast-check")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,7 +43,7 @@
 ;;   books/kestrel/json-parser/parse-json.lisp
 
 ;; For the JSON Fixtype definitions we are using here, see
-;;   books/kestrel/json/abstract-syntax.lisp
+;;   books/kestrel/json/values.lisp
 
 #||
 Here is a simplified ABNF for JSON without pattern matching:

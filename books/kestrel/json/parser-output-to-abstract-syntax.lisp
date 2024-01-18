@@ -10,7 +10,7 @@
 
 (in-package "JSON")
 
-(include-book "abstract-syntax")
+(include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
