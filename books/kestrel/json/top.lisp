@@ -10,7 +10,7 @@
 
 (in-package "JSON")
 
-(include-book "concrete-syntax")
+(include-book "syntax")
 (include-book "values")
 (include-book "operations")
 (include-book "parser-output-to-values")
