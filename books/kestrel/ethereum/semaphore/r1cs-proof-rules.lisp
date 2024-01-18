@@ -15,6 +15,7 @@
 (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system) ; for acl2::axe-bind-free
 (include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for acl2::bind-bv-size-axe
+(include-book "kestrel/axe/priorities" :dir :system)
 (local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 (local (include-book "kestrel/prime-fields/bv-rules" :dir :system))
 (include-book "kestrel/crypto/r1cs/gadgets/xor-rules" :dir :system)
@@ -281,7 +282,7 @@
                        (mul *-2^32-neg* y p)
                        p))))
 
-(table acl2::axe-rule-priorities-table 'mul-of-add-constant-special-alt 1) ;try this late
+(acl2::set-axe-rule-priority mul-of-add-constant-special-alt 1) ;try this late
 
 (defthm bitp-of-mul-of-1/2^32
   (implies (and                               ;(posp p)
