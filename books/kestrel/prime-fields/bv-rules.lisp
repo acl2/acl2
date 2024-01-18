@@ -21,6 +21,7 @@
 (include-book "../bv/bitnot")
 (include-book "../bv/bvcat")
 (include-book "../bv/bvplus")
+(include-book "kestrel/axe/priorities" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -198,7 +199,7 @@
 
 ;; Try these rules after most rules (which have priority 0), since they have free vars:
 ;; todo: wrap this command into a nice wrapper that prevents accidentally giving the wrong table name:
-(table acl2::axe-rule-priorities-table 'acl2::bitp-when-bit-listp-and-memberp 1)
+(acl2::set-axe-rule-priority acl2::bitp-when-bit-listp-and-memberp 1)
 
 ;; todo: floating point gadgets?  strings (dan boneh alligator..)
 
@@ -223,7 +224,7 @@
   :hints (("Goal" :in-theory (enable add ACL2::BVPLUS))))
 
 ;todo: uncomment:
-;(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-34 1) ;try this late
+;(acl2::set-axe-rule-priority add-becomes-bvplus-34 1) ;try this late
 
 (defthmd add-becomes-bvplus-33-extra
   (implies (and (unsigned-byte-p 32 x)
@@ -243,7 +244,7 @@
                   (add (acl2::bvplus 34 x y) extra p)))
   :hints (("Goal" :in-theory (enable add acl2::bvplus))))
 
-(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-34-extra 1) ;try this late
+(acl2::set-axe-rule-priority add-becomes-bvplus-34-extra 1) ;try this late
 
 (defthmd add-becomes-bvplus-35
   (implies (and (unsigned-byte-p 34 x)
@@ -254,7 +255,7 @@
                   (acl2::bvplus 35 x y)))
   :hints (("Goal" :in-theory (enable add acl2::bvplus))))
 
-(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-35 2) ;try this late
+(acl2::set-axe-rule-priority add-becomes-bvplus-35 2) ;try this late
 
 (defthmd add-becomes-bvplus-36
   (implies (and (unsigned-byte-p 35 x)
@@ -265,7 +266,7 @@
                   (acl2::bvplus 36 x y)))
   :hints (("Goal" :in-theory (enable add acl2::bvplus))))
 
-(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-36 3) ;try this late
+(acl2::set-axe-rule-priority add-becomes-bvplus-36 3) ;try this late
 
 ;; requires the first addend to be a bvplus33, so we don't use this when we could go to a 33 bit sum
 (DEFTHMd ADD-BECOMES-BVPLUS-34-special
@@ -279,7 +280,7 @@
            :in-theory (disable ADD-BECOMES-BVPLUS-34))))
 
 ;; try this relatively late, so we get a chance to try add-becomes-bvplus-33 first:
-(table acl2::axe-rule-priorities-table 'add-becomes-bvplus-34 1)
+(acl2::set-axe-rule-priority add-becomes-bvplus-34 1)
 
 ;; ;; Turns add into a 32-bit sum (even if N is smaller than 31).
 ;; (defthmd getbit-of-add-becomes-getbit-of-bvplus-32
