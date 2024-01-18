@@ -61,9 +61,9 @@
    (xdoc::p
     "We model numbers as rationals,
      which suffices to represent the value of all JSON numbers,
-     but it abstracts away some information from the JSON text.
+     but it abstracts away some information from the JSON syntax.
      Thus, in the future we may change our model of numbers
-     to preserve more information from the JSON text.")
+     to preserve more information from the JSON syntax.")
    (xdoc::p
     "We model strings as ACL2 strings, similarly to object member names.
      The remarks made above, about ISO-8859-1 vs. Unicode,
