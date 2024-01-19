@@ -280,6 +280,9 @@
 
 ;; ----------------------------------------------------------------------
 
+;; Yahya Sohail added the code below so as to convert the memory contents
+;; into/from a list-base representation.
+
 ;; Get the contents of the entire memory as a linear list --- suitable
 ;; for use by tools that are used to defstobj's logic representation
 ;; of an array.
@@ -366,16 +369,126 @@
 
 ;; ----------------------------------------------------------------------
 
-;; (local
-;;  (define init-mem-region ((n :type (unsigned-byte 50))
-;;                           (val :type (unsigned-byte 8))
-;;                           (mem memp))
-;;    :prepwork ((local (in-theory (e/d (unsigned-byte-p) ()))))
-;;    (if (zp n)
-;;        mem
-;;      (b* ((val (the (unsigned-byte 8) (if (< val #xFE) (1+ val) 0)))
-;;           (mem (write-mem n val mem)))
-;;        (init-mem-region (the (unsigned-byte 50) (1- n)) val mem)))))
+; Test functions -- added by WAHJr.  December, 2023.
+
+(define init-mem-region ((n   :type (unsigned-byte 50))
+                         (val :type (unsigned-byte 8))
+                         (mem memp))
+  :prepwork ((local (in-theory (e/d (unsigned-byte-p) ()))))
+  (if (zp n)
+      mem
+    (b* ((val (the (unsigned-byte 8) (if (< val #xFE) (1+ val) 0)))
+         (mem (write-mem n val mem)))
+      (init-mem-region (the (unsigned-byte 50) (1- n)) val mem))))
+
+
+(encapsulate
+ ()
+
+ (local (include-book "arithmetic-5/top" :dir :system))
+
+ (local
+  (defun ind-hint-2 (x y)
+    (if (or (zp x) (zp y))
+        42
+      (ind-hint-2 (floor x 2) (floor y 2)))))
+
+ (defthm logxor-greater-or-equal-to-zero
+   ;; (NATP (LOGXOR x y))
+   (implies (and (natp x) (natp y))
+            (and (integerp (logxor x y))
+                 (<= 0 (logxor x y))
+                 ;; (integerp (logxor y x))
+                 ;; (<= 0 (logxor y x))
+                 ))
+
+   :hints (("Goal" :induct (ind-hint-2 x y)))
+   :rule-classes :type-prescription)
+
+ (local
+  (defun ind-hint-3 (x y n)
+    (if (or (zp x) (zp y) (zp n))
+        42
+      (ind-hint-3 (floor x 2) (floor y 2) (+ -1 n)))))
+
+ (local
+  (defthm break-logxor-apart
+    (implies (and (natp x)
+                  (natp y))
+             (equal (logxor x y)
+                    (+ (* 2 (logxor (floor x 2)
+                                    (floor y 2)))
+                       (logxor (mod x 2)
+                               (mod y 2)))))
+    :rule-classes nil))
+
+ ;; This next rule would be a weird rewrite rule because of the (EXPT
+ ;; 2 N) in the conclusion.  As a linear rule, then entire conclusion
+ ;; doesn't need to match.
+
+ (local
+  (defthm logxor-<=-expt-2-to-n
+      (implies (and (natp x) (natp y)
+                    (< x (expt 2 n))
+                    (< y (expt 2 n)))
+               (< (logxor x y) (expt 2 n)))
+
+    :hints (("Goal" :induct (ind-hint-3 x y n))
+            ("Subgoal *1/2.6'4'" :use ((:instance break-logxor-apart)))
+            ("Subgoal *1/2.10'4'" :use ((:instance break-logxor-apart)))
+            )
+    :rule-classes :linear))
+
+ ;; Yahya notes that the "ihs-extensions.lisp" book provides a better (or, at
+ ;; least, supported) method for doing the kind of thing this code does
+ ;; crudely.
+
+  (defthm logxor-two-bytes
+      (implies (and (natp x)
+                    (< x 256)
+                    (natp y)
+                    (< y 256))
+               (and (<= 0 (logxor x y))
+                    (< (logxor x y) 256)))
+    :hints
+    (("Goal"
+      :use ((:instance logxor-<=-expt-2-to-n
+                       (x x) (y y) (n 8))))))
+  )
+
+(encapsulate
+ ()
+ (local
+  (defthm integerp-read-mem
+    (integerp (read-mem addr mem))
+    :rule-classes :type-prescription
+    :hints
+    (("Goal" :use ((:instance unsigned-byte-p-8-read-mem
+                              (addr addr) (mem mem)))
+             :in-theory (e/d () (unsigned-byte-p-8-read-mem))))))
+ (local
+  (defthm in-range-read-mem
+    (and (<= 0 (read-mem addr mem))
+         (< (read-mem addr mem) 256))
+    :rule-classes :linear
+    :hints
+    (("Goal" :use ((:instance unsigned-byte-p-8-read-mem
+                              (addr addr) (mem mem)))
+             :in-theory (e/d () (unsigned-byte-p-8-read-mem))))))
+
+ (define xor-mem-region ((n   :type (unsigned-byte 50))
+                         (sum :type (unsigned-byte 8))
+                         (mem memp))
+   :prepwork ((local (in-theory (e/d (unsigned-byte-p) (logxor)))))
+   (if (mbe :logic (zp n)
+            :exec (= n 0))
+       mem
+     (b* ((val (the (unsigned-byte 8) (read-mem n mem)))
+          (xor-sum (logxor (the (unsigned-byte 8) val)
+                           (the (unsigned-byte 8) sum))))
+       (xor-mem-region (the (unsigned-byte 50) (1- n))
+                       (the (unsigned-byte  8) xor-sum)
+                       mem)))))
 
 ;; (profile 'good-mem$cp)
 ;; (profile 'good-level1p)
@@ -384,8 +497,12 @@
 ;; (profile 'write-mem$c)
 
 ;; (time$ (init-mem-region (1- (expt 2 20)) 0 mem))
+;; (time$ (init-mem-region (1- (expt 2 30)) 0 mem))
 
 ;; (memsum)
+
+;; (time$ (xor-mem-region (1- (expt 2 20)) 0 mem))
+;; (time$ (xor-mem-region (1- (expt 2 30)) 0 mem))
 
 ;; ----------------------------------------------------------------------
 
