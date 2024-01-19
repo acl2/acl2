@@ -80,7 +80,7 @@
   (if (eql (id->regp n aignet) 1)
       ;; xor
       (b* (((mv children ?limit)
-            (lit-collect-superxor (make-lit n 0) t 1000 nil refcounts aignet)))
+            (lit-collect-superxor (make-lit n 0) t 0 1000 nil refcounts aignet)))
         children)
     (b* (((mv children ?limit)
           (lit-collect-supergate (make-lit n 0) t nil 1000 nil refcounts aignet)))
@@ -107,7 +107,7 @@
   (defret lits-max-id-val-of-<fn>-weak
     (<= (lits-max-id-val super) (nfix n))
     :hints (("Goal" :use ((:instance lits-max-id-val-of-lit-collect-superxor
-                           (lit (make-lit n 0)) (top t) (limit 1000)
+                           (lit (make-lit n 0)) (top t) (negate 0) (limit 1000)
                            (superxor nil) (aignet-refcounts refcounts))
                           (:instance lits-max-id-val-of-supergate
                            (lit (make-lit n 0)) (top t) (use-muxes nil) (limit 1000)
@@ -379,23 +379,30 @@
 
      (in-theory (disable acl2::nth-when-too-large-cheap))))
 
+  ;; (local (defthm b-xor-of-equal-b-not
+  ;;          (implies (equal x (b-not (b-xor b c)))
+  ;;                   (equal (b-xor a x)
+  ;;                          (b-not (b-xor a (b-xor b c)))))))
+
   (defret eval-parity-toggle-of-lit-collect-superxor
     (implies (and (ids-multiply-referenced toggles aignet-refcounts)
                   ;; (or (not top)
                   ;;     (not (member-equal (lit->var lit) (acl2::nat-list-fix toggles))))
                   )
              (equal (aignet-eval-parity-toggle res toggles invals regvals aignet)
-                    (acl2::b-xor 
-                     (bool->bit (and top
-                                     (equal (lit->neg lit) 0)
-                                     (posp limit)
-                                     (equal (stype (car (lookup-id (lit->var lit) aignet))) :xor)
-                                     (aignet-litp lit aignet)
-                                     (member-equal (lit->var lit)
-                                                   (acl2::nat-list-fix toggles))))
-                     (acl2::b-xor
-                      (lit-eval-toggle lit toggles invals regvals aignet)
-                      (aignet-eval-parity-toggle superxor toggles invals regvals aignet)))))
+                    (acl2::b-xor
+                     negate
+                     (acl2::b-xor 
+                      (bool->bit (and top
+                                      ;; (equal (lit->neg lit) 0)
+                                      (posp limit)
+                                      (equal (stype (car (lookup-id (lit->var lit) aignet))) :xor)
+                                      (aignet-litp lit aignet)
+                                      (member-equal (lit->var lit)
+                                                    (acl2::nat-list-fix toggles))))
+                      (acl2::b-xor
+                       (lit-eval-toggle lit toggles invals regvals aignet)
+                       (aignet-eval-parity-toggle superxor toggles invals regvals aignet))))))
     :hints (("goal" :induct <call>
              :do-not-induct t
              :in-theory (e/d (eval-xor-of-lits-toggle
@@ -405,6 +412,7 @@
              :expand ((:free (top use-muxes) <call>)))
             (and stable-under-simplificationp
                  '(:expand ((lit-eval-toggle lit toggles invals regvals aignet)
+                            (lit-eval-toggle (lit-negate-cond lit negate) toggles invals regvals aignet)
                             (id-eval-toggle (lit-id lit) toggles invals regvals aignet)
                             (:free (a b)
                              (aignet-eval-parity-toggle (cons a b) toggles invals regvals aignet))))))

@@ -68,43 +68,25 @@
   (append
    (loop$ for x from 0 to 123 collect
           (str::cat "module UB7_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5,X6,X7);
-     wire car1,car2,sum1,sum2,car3;
-     // make it look like a group of full-adders:
-     assign {car1,sum1} = (X1+X2+X3);
-     assign {car2,sum2} = (X5+X6+X7);
-     assign {car3,S3} = (X4+sum1+sum2);
-     assign {S1,S2} = car1+car2+car3;
+     assign {S1,S2,S3} = X1+X2+X3+X4+X5+X6+X7;
 endmodule
 "))
    (loop$ for x from 0 to 123 collect
           (str::cat "module UB6_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5,X6);
-     wire car1,car2,sum1,sum2,car3;
-     // make it look like a group of full-adders:
-     assign {car1,sum1} = (X1+X2+X3);
-     assign {car2,sum2} = (X4+X5+X6);
-     assign {car3,S3} = (sum1+sum2);
-     assign {S1,S2} = car1+car2+car3;
+     assign {S1,S2,S3} = X1+X2+X3+X4+X5+X6;
 endmodule
 "))
 
    (loop$ for x from 0 to 123 collect
           (str::cat "module UB5_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4,X5);
      wire car1,car2,sum1,sum2,car3;
-     // make it look like a group of full-adders:
-     assign {car1,sum1} = (X1+X2+X3);
-     assign {car2,sum2} = (X4+X5);
-     assign {car3,S3} = (sum1+sum2);
-     assign {S1,S2} = car1+car2+car3;
+     assign {S1,S2,S3} = X1+X2+X3+X4+X5;
 endmodule
 "))
 
    (loop$ for x from 0 to 123 collect
           (str::cat "module UB4_3C" (str::intstr x) " (output S1, S2, S3, input X1,X2,X3,X4);
-     wire car1,car2,sum1,sum2,car3;
-     // make it look like a group of full-adders:
-     assign {car1,sum1} = (X1+X2+X3);
-     assign {car3,S3} = (sum1+X4);
-     assign {S1,S2} = car1+car3;
+     assign {S1,S2,S3} = X1+X2+X3+X4;
 endmodule
 ")))))
 

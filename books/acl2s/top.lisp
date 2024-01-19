@@ -40,7 +40,36 @@
 ; (include-book "projects/smtlink/examples/basictypes" :dir :system :ttags :all)
 (include-book "acl2s/interface/top" :dir :system)
 (include-book "acl2s/interface/acl2s-utils/top" :dir :system)
+
+;; This mimics what we do when we create an ACL2s executable.
 (acl2::acl2s-common-settings)
+
+(acl2s-defaults :set verbosity-level 1)
+
+(value-triple (time-tracker nil)) ; turn off tau time messages
+
+(set-inhibit-warnings! "Invariant-risk" "theory")
+
+;; Prevent theory events from stacking up if a book is LDed many times:
+(set-in-theory-redundant-okp t)
+
+;; Make guard violations more readable
+;(set-print-gv-defaults :conjunct t :substitute t)
+
+;; Show more info when :monitoring rules:
+;(set-brr-evisc-tuple nil state)
+
+;; Make everything print as lower case:
+;(set-print-case :downcase state)
+(make-event (er-progn
+             (let ((state (set-print-case :downcase state)))
+               (mv nil nil state))
+             (set-print-gv-defaults :conjunct t :substitute t)
+             (set-brr-evisc-tuple nil state)
+             (value '(value-triple :invisible)))
+            :expansion? (value-triple :invisible)
+            :on-behalf-of :quiet!
+            :save-event-data t)
 
 #|
 

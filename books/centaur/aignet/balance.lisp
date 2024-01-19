@@ -1007,6 +1007,10 @@
                   (not (equal (stype-fix stype) (xor-stype))))
              (equal (stype-count stype new-aignet2) (stype-count stype aignet2)))))
 
+
+
+
+
 (define aignet-balance-build-superxor ((lits lit-listp)
                                        (config balance-config-p)
                                        (levels)
@@ -1134,7 +1138,7 @@
          ((balance-config config))
          ((mv supergate &)
           (if xorp
-              (lit-collect-superxor (make-lit node 0) t config.supergate-limit nil refcounts aignet)
+              (lit-collect-superxor (make-lit node 0) t 0 config.supergate-limit nil refcounts aignet)
             (lit-collect-supergate (make-lit node 0) t nil config.supergate-limit nil refcounts aignet)))
          ((mv copy-lits mark copy levels aignet2 strash)
           (aignet-balance-list-rec supergate config aignet mark copy refcounts levels aignet2 strash))

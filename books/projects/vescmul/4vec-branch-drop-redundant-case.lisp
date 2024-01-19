@@ -217,6 +217,8 @@
        ;;sv::4vec-fix
        svl::Bits
        and-times-list
+
+       int-vector-adder-lst-w/carry
        ))))
 
 

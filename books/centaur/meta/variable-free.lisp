@@ -115,3 +115,10 @@
 
 (defmacro def-force-execute (thmname fn-or-fns &key equiv)
   (def-force-execute-fn thmname fn-or-fns equiv))
+
+
+(define force-execute (x) x
+  ///
+  (in-theory (disable (:t force-execute))))
+
+(cmr::def-force-execute force-execute-force-execute force-execute)

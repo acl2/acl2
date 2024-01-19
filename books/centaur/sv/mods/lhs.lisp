@@ -1948,196 +1948,28 @@ the order given (LSBs-first).</p>")
            (append (svex-vars (driver->value x))
                    (driverlist-vars y)))))
 
-(defalist netassigns :key-type svar :val-type driverlist
-  ///
-  (defthm netassigns-p-of-hons-remove-assoc
-    (implies (netassigns-p x)
-             (netassigns-p (acl2::hons-remove-assoc k x)))
-    :hints(("Goal" :in-theory (enable netassigns-p acl2::hons-remove-assoc))))
-  (defthm netassigns-p-of-fast-alist-clean
-    (implies (netassigns-p x)
-             (netassigns-p (fast-alist-clean x)))
-    :hints(("Goal" :in-theory (e/d (acl2::fast-alist-clean-by-remove-assoc)
-                                   (acl2::fast-alist-clean))))))
 
-(define netassigns-vars ((x netassigns-p))
-  :measure (len (netassigns-fix x))
-  :returns (vars svarlist-p)
-  (b* ((x (netassigns-fix x))
-       ((when (atom x)) nil))
-    (cons (caar x)
-          (append (driverlist-vars (cdar x))
-                  (netassigns-vars (cdr x)))))
-  ///
-  (defthm netassigns-vars-of-acons
-    (equal (netassigns-vars (cons (cons a b) c))
-           (cons (svar-fix a)
-                 (append (driverlist-vars b)
-                         (netassigns-vars c)))))
+(defsection drivestrength-sort
+  (acl2::defsort drivestrength-sort
+    :prefix drivestrength
+    :comparablep driver-p
+    :comparable-listp driverlist-p
+    :compare< (lambda (x y) (< (driver->strength y) (driver->strength x))))
 
-  (defthm netassigns-vars-of-append
-    (equal (netassigns-vars (append a b))
-           (append (netassigns-vars a)
-                   (netassigns-vars b)))
-  :hints(("Goal" :in-theory (enable netassigns-vars netassigns-fix append)
-          :induct (netassigns-vars a)
-          :expand ((:free (a b) (netassigns-vars (cons a b)))
-                   (append a b)))))
+  (deffixequiv drivestrength-ordered-p
+    :hints(("Goal" :in-theory (enable drivestrength-ordered-p)))
+    :args ((x driverlist)))
 
-  (defthm member-lookup-in-netassigns
-    (implies (and (not (member v (netassigns-vars x)))
-                  (netassigns-p x))
-             (not (member v (driverlist-vars (cdr (hons-assoc-equal name x))))))
-    :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+  (defthm vars-of-drivestrength-insert
+    (implies (and (not (member v (driverlist-vars x)))
+                  (not (member v (svex-vars (driver->value elt)))))
+             (not (member v (driverlist-vars (drivestrength-insert elt x)))))
+    :hints(("Goal" :in-theory (enable drivestrength-insert))))
 
-  (defthm netassign-vars-of-remove-assoc
-    (implies (and (not (member v (netassigns-vars x)))
-                  (netassigns-p x))
-             (not (member v (netassigns-vars (acl2::hons-remove-assoc k x)))))
-    :hints(("Goal" :in-theory (enable acl2::hons-remove-assoc))))
-
-  (defthm netassign-vars-of-fast-alist-clean
-    (implies (and (not (member v (netassigns-vars x)))
-                  (netassigns-p x))
-             (not (member v (netassigns-vars (fast-alist-clean x)))))
-    :hints(("Goal" :in-theory (e/d (acl2::fast-alist-clean-by-remove-assoc)
-                                   (acl2::fast-alist-clean))))))
-
-
-(define assign->netassigns ((lhs lhs-p) (offset natp) (dr driver-p)
-                            (acc netassigns-p "accumulator"))
-  :parents (svex-compilation)
-  :short "Turns an assignment (possibly to parts of wires) into several assignments
-          to whole wires."
-  :long "
-
-<p>For example, suppose we have the following Verilog code:</p>
-
-@({
- wire [10:0] a;
- wire [8:1] b;
- wire [3:2] c;
- wire [12:0] foo;
- assign { a[8:3], b[5:1] c } = foo;
- })
-
-<p>We would turn this assignment into three separate assignments, essentially
-like this:</p>
-
-@({
- assign a = { 2'bz, foo[12:7], 3'bz };
- assign b = { 3'bz, foo[6:2] };
- assign c = foo[1:0];
- })
-
-<p>The representation in SVEX is a bit different than the Verilog notation
-suggests: we don't know each variable's width and we don't have a part-select
-operator -- instead, on the left-hand side, we have an @(see lhs) structure
-forming the concatenation, and on the right-hand side use shifts concatenations
-to emulate part-selecting from the RHS expression.  So a more accurate view
-would be as follows, where @('a[3+:6]') is meant to represent an @(see lhatom)
-of width 6 and right-shift 3; @('inf') is used to signify an infinite-width
-constant; and @('{ ... , 2'foo }') signifies concatenating the @('...') with 2
-bits of @('foo'):</p>
-
-@({
- assign { a[3+:6], b[1+:5], c[2+:2] } = foo;
- })
-<p>becomes</p>
-@({
- assign c = { 'z, 2'foo };
- assign b = { 'z, 5'(foo >> 2) };
- assign a = { 'z, 6'(foo >> 7), 3'bz };
- })"
-  :returns (assigns netassigns-p)
-  :measure (len lhs)
-  (b* (((mv first rest) (lhs-decomp lhs))
-       (acc (netassigns-fix acc))
-       ((unless first) acc)
-       ((lhrange first) first)
-       (offset (lnfix offset))
-       ((driver dr))
-       ((when (eq (lhatom-kind first.atom) :z))
-        (assign->netassigns rest (+ offset first.w) dr acc))
-       ((lhatom-var first.atom))
-       (new-driver (change-driver
-                    dr :value (svex-concat first.atom.rsh
-                                           (svex-z)
-                                           (svex-concat first.w
-                                                        (svex-rsh offset dr.value)
-                                                        (svex-z)))))
-       (rest-drivers (cdr (hons-get first.atom.name acc)))
-       (acc (hons-acons first.atom.name (cons new-driver rest-drivers) acc)))
-    (assign->netassigns rest (+ offset first.w) dr acc))
-  ///
-  (deffixequiv assign->netassigns)
-
-  (defthm vars-of-assign->netassigns
-    (implies (and (not (member v (lhs-vars lhs)))
-                  (not (member v (svex-vars (driver->value dr))))
-                  (not (member v (netassigns-vars acc))))
-             (not (member v (netassigns-vars (assign->netassigns lhs offset dr acc)))))
-    :hints (("goal" :induct (assign->netassigns lhs offset dr acc)
-             :expand ((lhs-vars lhs))
-             :in-theory (enable svex-alist-vars lhatom-vars))))
-  
-  
-  (defthm hons-assoc-equal-of-assign->netassigns
-    (implies (and (not (member v (lhs-vars lhs)))
-                  (not (hons-assoc-equal v (netassigns-fix acc))))
-             (not (hons-assoc-equal v (assign->netassigns lhs offset dr acc))))
-    :hints (("goal" :induct (assign->netassigns lhs offset dr acc)
-             :expand ((lhs-vars lhs))
-             :in-theory (enable svex-alist-vars lhatom-vars)))))
-
-(define assigns->netassigns-aux ((x assigns-p) (acc netassigns-p))
-  :measure (len (assigns-fix x))
-  :returns (netassigns netassigns-p)
-  (b* ((x (assigns-fix x))
-       (acc (netassigns-fix acc))
-       ((when (atom x)) acc))
-    (assigns->netassigns-aux (cdr x)
-                             (assign->netassigns (caar x) 0 (cdar x) acc)))
-  ///
-  (defthm vars-of-assigns->netassigns-aux
-    (implies (and (not (member v (assigns-vars x)))
-                  (not (member v (netassigns-vars acc))))
-             (not (member v (netassigns-vars (assigns->netassigns-aux x acc)))))
-    :hints (("goal" :induct (assigns->netassigns-aux x acc)
-             :expand ((assigns-vars x)))))
-  
-
-  (defthm hons-assoc-equal-of-assigns->netassigns-aux
-    (implies (and (not (member v (assigns-vars x)))
-                  (not (hons-assoc-equal v (netassigns-fix acc))))
-             (not (hons-assoc-equal v (assigns->netassigns-aux x acc))))
-    :hints (("goal" :induct (assigns->netassigns-aux x acc)
-             :expand ((assigns-vars x))))))
-
-(define assigns->netassigns ((x assigns-p))
-  :returns (netassigns netassigns-p)
-  (fast-alist-free (fast-alist-clean (assigns->netassigns-aux x nil)))
-  ///
-  (defthm vars-of-assigns->netassigns
-    (implies (not (member v (assigns-vars x)))
-             (not (member v (netassigns-vars (assigns->netassigns x)))))
-    :hints(("Goal" :in-theory (disable fast-alist-clean))))
-
-  (defthm hons-assoc-equal-of-assigns->netassigns
-    (implies (not (member v (assigns-vars x)))
-             (not (hons-assoc-equal v (assigns->netassigns x))))))
-
-
-
-(acl2::defsort drivestrength-sort
-  :prefix drivestrength
-  :comparablep driver-p
-  :comparable-listp driverlist-p
-  :compare< (lambda (x y) (< (driver->strength y) (driver->strength x))))
-
-(deffixequiv drivestrength-ordered-p
-  :hints(("Goal" :in-theory (enable drivestrength-ordered-p)))
-  :args ((x driverlist)))
+  (defthm vars-of-drivestrength-insertsort
+    (implies (not (member v (driverlist-vars x)))
+             (not (member v (driverlist-vars (drivestrength-insertsort x)))))
+    :hints(("Goal" :in-theory (enable drivestrength-insertsort)))))
 
 (define svexlist-resolve ((x svexlist-p))
   :returns (res svex-p)
@@ -2219,65 +2051,6 @@ bits of @('foo'):</p>
   (defthm vars-of-driverlist->svex
     (implies (not (member v (driverlist-vars x)))
              (not (member v (svex-vars (driverlist->svex x)))))))
-
-
-
-
-(define netassigns->resolves-nrev ((x netassigns-p) (nrev))
-  :measure (len (netassigns-fix x))
-  (b* ((x (netassigns-fix x))
-       ((when (atom x)) (acl2::nrev-fix nrev))
-       ((cons name drivers) (car x))
-       (value (driverlist->svex (drivestrength-sort (driverlist-fix drivers))))
-       (nrev (acl2::nrev-push (cons name value) nrev)))
-    (netassigns->resolves-nrev (cdr x) nrev)))
-
-
-(define netassigns->resolves ((x netassigns-p))
-  :measure (len (netassigns-fix x))
-  :returns (assigns svex-alist-p)
-  :verify-guards nil
-  (mbe :logic
-       (b* ((x (netassigns-fix x))
-            ((when (atom x)) nil)
-            ((cons name drivers) (car x))
-            (value (driverlist->svex (drivestrength-sort (driverlist-fix drivers)))))
-         (cons (cons name value)
-               (netassigns->resolves (cdr x))))
-       :exec
-       (if (atom x)
-           nil
-         (acl2::with-local-nrev
-           (netassigns->resolves-nrev x acl2::nrev))))
-  ///
-  (local (defthm netassigns->resolves-nrev-elim
-           (equal (netassigns->resolves-nrev x nrev)
-                  (append nrev (netassigns->resolves x)))
-           :hints(("Goal" :in-theory (enable netassigns->resolves-nrev)))))
-
-  (verify-guards netassigns->resolves)
-
-  (defthm vars-of-drivestrength-insert
-    (implies (and (not (member v (driverlist-vars x)))
-                  (not (member v (svex-vars (driver->value elt)))))
-             (not (member v (driverlist-vars (drivestrength-insert elt x)))))
-    :hints(("Goal" :in-theory (enable drivestrength-insert))))
-
-  (defthm vars-of-drivestrength-insertsort
-    (implies (not (member v (driverlist-vars x)))
-             (not (member v (driverlist-vars (drivestrength-insertsort x)))))
-    :hints(("Goal" :in-theory (enable drivestrength-insertsort))))
-
-  (defthm vars-of-netassigns->resolves
-    (implies (not (member v (netassigns-vars x)))
-             (and (not (member v (svex-alist-keys (netassigns->resolves x))))
-                  (not (member v (svex-alist-vars (netassigns->resolves x))))))
-    :hints(("Goal" :in-theory (enable netassigns-vars svex-alist-vars svex-alist-keys))))
-
-  (defret svex-lookup-under-iff-of-<fn>
-    (iff (svex-lookup v assigns)
-         (hons-assoc-equal (svar-fix v) (netassigns-fix x)))
-    :hints(("Goal" :in-theory (enable netassigns-fix svex-lookup)))))
 
 
 ;; (define svar-indexedp ((x svar-p))

@@ -303,6 +303,7 @@ sub scan_source_file
     my $ifdef_level = 0;
     my $ifdef_skipping_level = 0;
     my %defines = ();
+    my $envpairs = [];
     foreach my $event (@$events) {
 	my $type = shift @$event;
 	if ($type eq ifdef_event) {
@@ -343,11 +344,13 @@ sub scan_source_file
 			$image = $pair->[1];
 		    }
 		}
+	    } elsif ($type eq cert_env_event) {
+		$envpairs = $event->[0];
 	    }
 	}
     }
 
-     return ( $max_mem, $max_time, \@includes, \@pbs, $image );
+     return ( $max_mem, $max_time, \@includes, \@pbs, $image, $envpairs );
 }
 
 
@@ -581,7 +584,7 @@ my $acl2file = (-f "$file.acl2") ? "$file.acl2"
     : (-f "cert.acl2")  ? "cert.acl2"
     : "";
 
-my ($max_mem, $max_time, $includes, $book_pbs, $book_image) = scan_source_file("$file.lisp");
+my ($max_mem, $max_time, $includes, $book_pbs, $book_image, $env_pairs) = scan_source_file("$file.lisp");
 my ($acl2_max_mem, $acl2_max_time, $acl2_includes, $acl2_pbs, $acl2_image)
     = $acl2file ? scan_source_file($acl2file) : (0, 0, [], [], 0);
 
@@ -591,6 +594,10 @@ $max_time = $max_time || 240;
 $ENV{"CERT_MAX_MEM"} = $max_mem;
 $ENV{"CERT_MAX_TIME"} = $max_time;
 $ENV{"CERT_GOALFILE"} = $goal;
+foreach my $envpair (@$env_pairs) {
+    $ENV{$envpair->[0]} = $envpair->[1];
+}
+
 
 # Override ACL2 per the image file, as appropriate.
 my $acl2 = $book_image;

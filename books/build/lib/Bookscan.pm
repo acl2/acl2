@@ -43,6 +43,7 @@ depends_on_event
 depends_rec_event
 loads_event
 cert_param_event
+cert_env_event
 ld_event
 ifdef_event
 endif_event
@@ -68,6 +69,7 @@ sub depends_on_event () { return 'depends-on'; }
 sub depends_rec_event () { return 'depends-rec'; }
 sub loads_event () { return 'loads'; }
 sub cert_param_event () { return 'cert_param'; }
+sub cert_env_event () { return 'cert_env'; }
 sub ld_event () { return 'ld'; }
 sub ifdef_event () { return 'ifdef'; }
 sub endif_event () { return 'endif'; }
@@ -329,6 +331,20 @@ sub scan_cert_param {
     return 0;
 }
 
+sub scan_cert_env {
+    my ($base,$the_line) = @_;
+
+    my $regexp = "cert[-_]env[\\s]*:?[\\s]*\\(?([^)]*)\\)?";
+    my @match = $the_line =~ m/$regexp/;
+    if (@match) {
+	debug_print_event($base, ["cert_env", \@match]);
+	my $pairs = parse_params($match[0]);
+	return [cert_env_event, $pairs];
+    }
+    return 0;
+}
+
+
 
 sub scan_ld {
     my ($base,$the_line) = @_;
@@ -458,6 +474,7 @@ sub scan_src {
 	    } else {
 		my $event = scan_include_book($fname, $the_line, $islocal)
 		    || scan_cert_param($fname, $the_line)
+		    || scan_cert_env($fname, $the_line)
 		    || scan_depends_on($fname, $the_line)
 		    || scan_depends_rec($fname, $the_line)
 		    || scan_ifdef($fname, $the_line)
@@ -502,6 +519,7 @@ sub scan_src_run {
 	    } else {
 		my $event = scan_include_book($fname, $the_line)
 		    || scan_cert_param($fname, $the_line)
+		    || scan_cert_env($fname, $the_line)
 		    || scan_max_mem($fname, $the_line)
 		    || scan_max_time($fname, $the_line)
 		    || scan_ifdef($fname, $the_line)

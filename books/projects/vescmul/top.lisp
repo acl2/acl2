@@ -433,6 +433,7 @@
                                 (read-from-file 'nil)
                                 (keep-going 'nil)
                                 (print-message 'nil)
+                                (vacuity-check 'nil)
                                 (pkg)
                                 )
   :mode :program
@@ -504,7 +505,8 @@
                         (b* (((sv::svassocs ,@ignorable-outs)
                               ,simulate-call))
                           ,',concl))
-
+               ,@(if ,only-fgl nil `(:vacuity-check ,',vacuity-check)) 
+               
                ,@(and cases `(:cases ,cases))))
             ;;)
 
@@ -565,6 +567,7 @@
                                (keep-going 'nil)
                                (print-message 'nil)
                                (pkg)
+                               (vacuity-check 'nil)
                                )
   `(make-event
     `(with-output
@@ -582,6 +585,7 @@
                            :read-from-file ,read-from-file
                            :keep-going ',keep-going
                            :print-message ',print-message
+                           :vacuity-check ',vacuity-check
                            :pkg (or ',pkg (symbol-package-name ',name))))))
 
 ;; (parse-and-create-svtv :file "demo/DT_SB4_HC_64_64_multgen.sv"
