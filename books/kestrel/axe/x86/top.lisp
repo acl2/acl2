@@ -19,4 +19,9 @@
 (include-book "lifter")
 (include-book "tester")
 
+(include-book "evaluator-x86")
+(include-book "syntaxp-evaluator-x86")
+(include-book "bind-free-evaluator-x86")
+(include-book "rewriter-x86")
+
 ;; (include-book "examples/top") ; not including examples in top.lisp files

@@ -276,7 +276,7 @@
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (booleanp position-independentp)
-                              (member-eq rewriter '(:basic :legacy)))
+                              (member-eq rewriter '(:x86 :legacy)))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
   (b* ((stack-slots (if (eq :auto stack-slots) 100 stack-slots))
@@ -509,7 +509,7 @@
                                   (eq :auto stack-slots))
                               (member-eq position-independent '(t nil :auto))
                               (member-eq expected-result '(:pass :fail :any))
-                              (member-eq rewriter '(:basic :legacy)))
+                              (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs state))
   (b* (((mv erp parsed-executable state)
@@ -630,7 +630,7 @@
                               (booleanp position-independentp)
                               (string-listp expected-failures)
                               (alistp result-alist)
-                              (member-eq rewriter '(:basic :legacy)))
+                              (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
@@ -697,7 +697,7 @@
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
                               (string-listp expected-failures))
-                          (member-eq rewriter '(:basic :legacy)))
+                          (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))

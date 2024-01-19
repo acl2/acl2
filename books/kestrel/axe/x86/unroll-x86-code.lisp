@@ -140,7 +140,7 @@
                               (member print-base '(10 16))
                               (booleanp memoizep)
                               (natp total-steps)
-                              (member-eq rewriter '(:basic :legacy)))
+                              (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs (state)))
   (if (zp steps-left)
@@ -304,7 +304,7 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
-                              (member-eq rewriter '(:basic :legacy)))
+                              (member-eq rewriter '(:x86 :legacy)))
                   :stobjs (state)
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
