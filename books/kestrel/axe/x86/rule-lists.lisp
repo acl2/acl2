@@ -1451,6 +1451,7 @@
 
             x86isa::feature-flags-constant-opener  ; move
 
+            acl2::lookup-becomes-lookup-equal ; or try just executing lookup itself
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
