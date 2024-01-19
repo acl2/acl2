@@ -96,7 +96,7 @@
        ((when erp) (mv erp nil state))
        ((mv erp magic-number) (parse-executable-magic-number bytes filename))
        ((when erp) (mv erp nil state))
-       ((when (not (eq magic-number *elf-magic-number*)))
+       ((when (not (= magic-number *elf-magic-number*)))
         (er hard? 'parse-elf "File ~x0 does not appear to be an ELF file." filename)
         (mv t nil state)))
     (mv nil ;no error
