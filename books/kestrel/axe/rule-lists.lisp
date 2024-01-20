@@ -20,6 +20,7 @@
 
 (include-book "make-axe-rules") ;todo: do we actually want to make the axe-rules here or not?
 (include-book "kestrel/sequences/defmap" :dir :system) ;for map-runes (TODO: rename that)
+(include-book "priorities")
 
 (include-book "kestrel/lists-light/true-list-fix" :dir :system) ;to ensure we have these rules -- todo
 
@@ -3815,122 +3816,122 @@
 ;;
 
 ;; Want these to fire before commutativity:
-(table axe-rule-priorities-table 'booland-of-constant-arg1 -1)
-(table axe-rule-priorities-table 'booland-of-constant-arg2 -1)
+(set-axe-rule-priority booland-of-constant-arg1 -1)
+(set-axe-rule-priority booland-of-constant-arg2 -1)
 
 ;try this before bv-array-read-of-bv-array-write-both-better-work-hard, since this one has only a single work-hard
 ;would like a way to NOT try the both version if this one fails
-(table axe-rule-priorities-table 'bv-array-read-of-bv-array-write-same-better-work-hard -1)
+(set-axe-rule-priority bv-array-read-of-bv-array-write-same-better-work-hard -1)
 
-(table axe-rule-priorities-table 'natp-when-unsigned-byte-p 1) ;should be tried after the ones for the specific operators
+(set-axe-rule-priority natp-when-unsigned-byte-p 1) ;should be tried after the ones for the specific operators
 
 ;this one introduces a bvchop-list which usually has no effect, so try it last:
-(table axe-rule-priorities-table 'bv-array-write-of-bv-array-write-diff-constant-indices-gen 1)
+(set-axe-rule-priority bv-array-write-of-bv-array-write-diff-constant-indices-gen 1)
 
 ;Wed Feb 24 16:04:04 2010
 ;this is cheap, so let's try it first
-(table axe-rule-priorities-table '<-becomes-bvlt-axe-both -1)
-(table axe-rule-priorities-table '<-becomes-bvlt-axe-2 -1)
-(table axe-rule-priorities-table '<-becomes-bvlt-axe-3 -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-both -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-2 -1)
+(set-axe-rule-priority <-becomes-bvlt-axe-3 -1)
 
 ;;rules about if (or should we go straight to myif and have all the rules be about that?!):
 
-(table axe-rule-priorities-table 'if-of-t -1)
-(table axe-rule-priorities-table 'if-of-nil -1)
-(table axe-rule-priorities-table 'if-same-branches -1)
+(set-axe-rule-priority if-of-t -1)
+(set-axe-rule-priority if-of-nil -1)
+(set-axe-rule-priority if-same-branches -1)
 
 ;want this to fire before the more general rules about boolif of constants:
-(table axe-rule-priorities-table 'boolif-of-nil-and-t -1)
+(set-axe-rule-priority boolif-of-nil-and-t -1)
 
-(table axe-rule-priorities-table 'BVLT-SELF -1) ;may fix a loop on (BVLT '32 (BVUMINUS '32 x) (BVUMINUS '32 x)) ??
+(set-axe-rule-priority BVLT-SELF -1) ;may fix a loop on (BVLT '32 (BVUMINUS '32 x) (BVUMINUS '32 x)) ??
 
-(table axe-rule-priorities-table 'equal-same -1) ;new
+(set-axe-rule-priority equal-same -1) ;new
 
 ;Associativity should fire first, so we always have bitxor nests that are associated to the right:
-(table axe-rule-priorities-table 'bitxor-associative -10)
+(set-axe-rule-priority bitxor-associative -10)
 
-(table axe-rule-priorities-table 'nth-of-cons-constant-version -1) ;this hits a lot in some proofs, so let's check it first
-(table axe-rule-priorities-table 'mv-nth-of-cons-alt -1)
+(set-axe-rule-priority nth-of-cons-constant-version -1) ;this hits a lot in some proofs, so let's check it first
+(set-axe-rule-priority mv-nth-of-cons-alt -1)
 
 ;bit-blasting should be the last thing we try (otherwise we may try to bit-blast (bvchop 8 <bit-blasted-8-bit-thing>)
-(table axe-rule-priorities-table 'bvchop-blast 10)
-(table axe-rule-priorities-table 'bvxor-blast 10)
+(set-axe-rule-priority bvchop-blast 10)
+(set-axe-rule-priority bvxor-blast 10)
 ;new:
-(table axe-rule-priorities-table 'bvor-blast 10)
-(table axe-rule-priorities-table 'bvand-blast 10)
-(table axe-rule-priorities-table 'bvnot-blast 10)
-(table axe-rule-priorities-table 'bvcat-blast-high 10)
-(table axe-rule-priorities-table 'slice-blast 10)
-(table axe-rule-priorities-table 'bvif-blast 10)
-(table axe-rule-priorities-table 'bvcat-blast-low 10)
+(set-axe-rule-priority bvor-blast 10)
+(set-axe-rule-priority bvand-blast 10)
+(set-axe-rule-priority bvnot-blast 10)
+(set-axe-rule-priority bvcat-blast-high 10)
+(set-axe-rule-priority slice-blast 10)
+(set-axe-rule-priority bvif-blast 10)
+(set-axe-rule-priority bvcat-blast-low 10)
 
 
 ;saw some sort of loop regarding adding to both sides. maybe these will help:
-(table axe-rule-priorities-table 'bvplus-of-bvuminus-same -1)
-(table axe-rule-priorities-table 'bvplus-of-bvuminus-same-alt -1)
-(table axe-rule-priorities-table 'bvplus-of-bvuminus-same-2 -1)
-(table axe-rule-priorities-table 'bvplus-of-bvuminus-same-2-alt -1)
+(set-axe-rule-priority bvplus-of-bvuminus-same -1)
+(set-axe-rule-priority bvplus-of-bvuminus-same-alt -1)
+(set-axe-rule-priority bvplus-of-bvuminus-same-2 -1)
+(set-axe-rule-priority bvplus-of-bvuminus-same-2-alt -1)
 
-(table axe-rule-priorities-table 'bvplus-becomes-ripple-carry-adder 10)
+(set-axe-rule-priority bvplus-becomes-ripple-carry-adder 10)
 ;new:
-(table axe-rule-priorities-table 'blast-bvmult-into-bvplus-constant-version-arg2 10)
-(table axe-rule-priorities-table 'blast-bvmult-into-bvplus-constant-version-arg1 10)
+(set-axe-rule-priority blast-bvmult-into-bvplus-constant-version-arg2 10)
+(set-axe-rule-priority blast-bvmult-into-bvplus-constant-version-arg1 10)
 
-(table axe-rule-priorities-table 'unsigned-byte-p-of-0-arg1 -1) ;want this to fire early (may help prevent loops involving natp??)
+(set-axe-rule-priority unsigned-byte-p-of-0-arg1 -1) ;want this to fire early (may help prevent loops involving natp??)
 
-(table axe-rule-priorities-table 'trim-of-0-arg1 -1) ;want this to fire first
+(set-axe-rule-priority trim-of-0-arg1 -1) ;want this to fire first
 
-(table axe-rule-priorities-table '+-combine-constants -1) ;must happen before commutativity
+(set-axe-rule-priority +-combine-constants -1) ;must happen before commutativity
 
 ;the printing rule fires first if it's on..
-;(table axe-rule-priorities-table 'do-inst-becomes-do-inst-3-with-print -10) ;deprecated - really? no, seems to be used when we have an if-nest of states
-;(table axe-rule-priorities-table 'do-inst-becomes-do-inst-3 -9)
+;(set-axe-rule-priority do-inst-becomes-do-inst-3-with-print -10) ;deprecated - really? no, seems to be used when we have an if-nest of states
+;(set-axe-rule-priority do-inst-becomes-do-inst-3 -9)
 
 
 ;this seems crucial for some examples
-(table axe-rule-priorities-table 'bvchop-of-bvcat-cases -1) ;this must fire before bvchop-identity
+(set-axe-rule-priority bvchop-of-bvcat-cases -1) ;this must fire before bvchop-identity
 
 ;BOZO more like this!
 ;or have the trim rules use a special bvchop for which we don't have bvchop-identity - we do that now!!
  ;these must happen before bvchop-identity to prevent loops: we might add the bvchop around a term that looks big, but then bvchop-identity might drop it if the term is known to be a usb some other way
-(table axe-rule-priorities-table 'bvchop-of-bvplus -1)
-(table axe-rule-priorities-table 'bvchop-of-bvminus -1)
-(table axe-rule-priorities-table 'bvchop-of-bvmult -1)
-(table axe-rule-priorities-table 'bvchop-of-bvxor -1)
-(table axe-rule-priorities-table 'bvchop-of-bvor -1)
-(table axe-rule-priorities-table 'bvchop-of-bvand -1)
-(table axe-rule-priorities-table 'bvchop-of-bvif -1)
-(table axe-rule-priorities-table 'bvchop-of-bv-array-read -1)
-(table axe-rule-priorities-table 'bvchop-of-bitand -1)
-(table axe-rule-priorities-table 'bvchop-of-bitor -1)
-(table axe-rule-priorities-table 'bvchop-of-bitxor -1)
-;; (table axe-rule-priorities-table 'bvchop-of-bvnth -1)
-(table axe-rule-priorities-table 'bvchop-of-bvnot -1)
-(table axe-rule-priorities-table 'bvchop-of-bvsx -1)
-(table axe-rule-priorities-table 'bvchop-of-bvuminus -1)
+(set-axe-rule-priority bvchop-of-bvplus -1)
+(set-axe-rule-priority bvchop-of-bvminus -1)
+(set-axe-rule-priority bvchop-of-bvmult -1)
+(set-axe-rule-priority bvchop-of-bvxor -1)
+(set-axe-rule-priority bvchop-of-bvor -1)
+(set-axe-rule-priority bvchop-of-bvand -1)
+(set-axe-rule-priority bvchop-of-bvif -1)
+(set-axe-rule-priority bvchop-of-bv-array-read -1)
+(set-axe-rule-priority bvchop-of-bitand -1)
+(set-axe-rule-priority bvchop-of-bitor -1)
+(set-axe-rule-priority bvchop-of-bitxor -1)
+;; (set-axe-rule-priority bvchop-of-bvnth -1)
+(set-axe-rule-priority bvchop-of-bvnot -1)
+(set-axe-rule-priority bvchop-of-bvsx -1)
+(set-axe-rule-priority bvchop-of-bvuminus -1)
 
-(table axe-rule-priorities-table 'bv-array-read-of-bv-array-write 1) ;try this only if we fail to prove the indices are in bounds
+(set-axe-rule-priority bv-array-read-of-bv-array-write 1) ;try this only if we fail to prove the indices are in bounds
 
-(table axe-rule-priorities-table 'bvxor-combine-constants -11) ;do this before assoc  (really, why?)
+(set-axe-rule-priority bvxor-combine-constants -11) ;do this before assoc  (really, why?)
 
 ;want this to fire late (after the rule for write of write with the same index, for example)
-(table axe-rule-priorities-table 'bv-array-write-does-nothing 10)
+(set-axe-rule-priority bv-array-write-does-nothing 10)
 
-(table axe-rule-priorities-table 'bvplus-trim-arg2-axe -3) ;we should trim before commuting the nest
-(table axe-rule-priorities-table 'bvplus-trim-arg3-axe -3) ;we should trim before commuting the nest
-(table axe-rule-priorities-table 'bvplus-associative -1) ;trying with this before the commutative rules
+(set-axe-rule-priority bvplus-trim-arg2-axe -3) ;we should trim before commuting the nest
+(set-axe-rule-priority bvplus-trim-arg3-axe -3) ;we should trim before commuting the nest
+(set-axe-rule-priority bvplus-associative -1) ;trying with this before the commutative rules
 
 ;new:
-(table axe-rule-priorities-table 'bvchop-identity-axe -1/2)
-(table axe-rule-priorities-table 'getbit-identity-axe -1/2)
+(set-axe-rule-priority bvchop-identity-axe -1/2)
+(set-axe-rule-priority getbit-identity-axe -1/2)
 
 ;bozo more like this?
-(table axe-rule-priorities-table 'bvchop-of-bvand -1) ;happens before bvchop-identity to prevent loops?
+(set-axe-rule-priority bvchop-of-bvand -1) ;happens before bvchop-identity to prevent loops?
 
 ;these should happen before bv-array-read-of-bv-array-write-tighten:
-(table axe-rule-priorities-table 'bv-array-read-of-bv-array-write-diff-safe -10)
-(table axe-rule-priorities-table 'bv-array-read-of-bv-array-write-diff-safe-gen -10) ;thu mar 25 04:05:09 2010
-(table axe-rule-priorities-table 'bv-array-read-of-bv-array-write-same-gen -10)
+(set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe -10)
+(set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe-gen -10) ;thu mar 25 04:05:09 2010
+(set-axe-rule-priority bv-array-read-of-bv-array-write-same-gen -10)
 
 ;; (defconst *super-rules*
 ;;   '(

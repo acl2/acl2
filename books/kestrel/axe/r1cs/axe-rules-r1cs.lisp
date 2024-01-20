@@ -17,6 +17,7 @@
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system) ;for syntactic-variablep
 (include-book "axe-syntax-functions-r1cs")
+(include-book "kestrel/axe/priorities" :dir :system)
 (include-book "kestrel/lists-light/append-with-key" :dir :system)
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system)) ;for member-equal-of-cons
@@ -57,7 +58,7 @@
   :hints (("Goal" :in-theory (enable fe-listp))))
 
 ;; Try this after most rules, since it requires searching through assumptions:
-(table acl2::axe-rule-priorities-table 'pfield::fep-when-fe-listp-and-memberp 1)
+(acl2::set-axe-rule-priority pfield::fep-when-fe-listp-and-memberp 1)
 
 (defun pfield::fe-listp-rules-axe ()
   '(pfield::fep-when-fe-listp-and-memberp

@@ -18,6 +18,7 @@
 (include-book "bvxor")
 (include-book "rotate")
 (include-book "trim")
+(include-book "kestrel/axe/priorities" :dir :system) ; unfortunate?
 (local (include-book "rules"))
 
 ;; todo: only trim leftrotate is the amt is constant?
@@ -110,9 +111,9 @@
            (bitp x)))
 
 ;; Try these rules late, since they require searching through hyps:
-(table axe-rule-priorities-table 'bitp-when-equal-of-getbit-1 1)
-(table axe-rule-priorities-table 'bitp-when-equal-of-getbit-2 1)
-(table axe-rule-priorities-table 'bitp-when-equal-of-bitxor-1 1)
-(table axe-rule-priorities-table 'bitp-when-equal-of-bitxor-2 1)
-(table axe-rule-priorities-table 'bitp-when-equal-1 1)
-(table axe-rule-priorities-table 'bitp-when-equal-2 1)
+(set-axe-rule-priority bitp-when-equal-of-getbit-1 1)
+(set-axe-rule-priority bitp-when-equal-of-getbit-2 1)
+(set-axe-rule-priority bitp-when-equal-of-bitxor-1 1)
+(set-axe-rule-priority bitp-when-equal-of-bitxor-2 1)
+(set-axe-rule-priority bitp-when-equal-1 1)
+(set-axe-rule-priority bitp-when-equal-2 1)

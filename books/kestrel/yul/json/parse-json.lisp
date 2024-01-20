@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 (in-package "YUL")
 
 (include-book "kestrel/json-parser/parse-json-file" :dir :system)
-(include-book "kestrel/json/parser-output-to-abstract-syntax" :dir :system)
+(include-book "kestrel/json/parser-output-to-values" :dir :system)
 (include-book "kestrel/json/json-bstar" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -34,7 +34,7 @@
 ;; It would be good to work out why and see if there is a better way to handle them.
 
 (in-theory (enable json::value-kind
-                   ;; all the light-ast-check functions used by json::pattern
+                   ;; all the light-value-check functions used by json::pattern
                    json::jnullp json::jtruep json::jfalsep
                    json::jstringp json::jnumberp
                    json::top-jarrayp json::top-jobjectp
@@ -110,7 +110,7 @@
        ;; empty string, the error flag is NOT set.  The caller must handle this
        ;; possibility.
        ((when erp) (mv t '("" . "") state))
-       ;; convert s-expression json abstract syntax to fty typed json abstract syntax
+       ;; convert s-expression json abstract syntax to fty typed json values
        ((mv erp tj) (json::parsed-to-value j))
        ((when erp) (mv t '("" . "") state))
        ;; pick out the ir components

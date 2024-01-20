@@ -1,35 +1,34 @@
 ; JSON Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "JSON")
 
-(include-book "abstract-syntax")
+(include-book "values")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ parser-output-to-abstract-syntax
+(defxdoc+ parser-output-to-values
   :parents (json)
   :short "A translator
-          from the JSON parser's output to the JSON abstract syntax."
+          from the JSON parser's output to our model of JSON values."
   :long
   (xdoc::topstring
    (xdoc::p
     "The JSON parser in @('kestrel/json-parser/')
-     produces output (parsed and abstracted JSON) in a form
-     that is slightly different from the "
-    (xdoc::seetopic "abstract-syntax" "JSON abstract syntax")
+     produces output that is slightly different from the "
+    (xdoc::seetopic "values" "the JSON values")
     " formalized in this JSON library;
      in particular, the parser's output is not a fixtype.")
    (xdoc::p
     "Thus, here we provide a translator
-     from the parser's output to the JSON abstract syntax.
+     from the parser's output to the JSON values.
      Since at the time that this translator was first written
      the parser did not include a type (i.e. recognizer) for its output,
      the translator is defined over all possible ACL2 values,
@@ -39,20 +38,6 @@
      so we plan to improve this translator to take them into account."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define value-irrelevant ()
-  :returns (value valuep)
-  :short "An irrelevant JSON value."
-  (with-guard-checking :none (ec-call (value-fix :irrelevant))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define member-irrelevant ()
-  :returns (member memberp)
-  :short "An irrelevant JSON member."
-  (with-guard-checking :none (ec-call (member-fix :irrelevant))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,17 +59,17 @@
                        (null (cddr x)))
                   (b* (((mv erp members) (parsed-to-member-list (cadr x))))
                     (if erp
-                        (mv erp (value-irrelevant))
+                        (mv erp (irr-value))
                       (mv nil (value-object members)))))
                  ((and (eq (car x) :array)
                        (consp (cdr x))
                        (null (cddr x)))
                   (b* (((mv erp values) (parsed-to-value-list (cadr x))))
                     (if erp
-                        (mv erp (value-irrelevant))
+                        (mv erp (irr-value))
                       (mv nil (value-array values)))))
-                 (t (mv t (value-irrelevant)))))
-          (t (mv t (value-irrelevant)))))
+                 (t (mv t (irr-value)))))
+          (t (mv t (irr-value)))))
 
   (define parsed-to-value-list (x)
     :returns (mv (erp booleanp)
@@ -105,9 +90,9 @@
              (stringp (car x)))
         (b* (((mv erp value) (parsed-to-value (cdr x))))
           (if erp
-              (mv erp (member-irrelevant))
+              (mv erp (irr-member))
             (mv nil (member (car x) value))))
-      (mv t (member-irrelevant))))
+      (mv t (irr-member))))
 
   (define parsed-to-member-list (x)
     :returns (mv (erp booleanp)
