@@ -879,3 +879,35 @@
            (equal (bvlt size x (bvplus size 1 x))
                   (not (equal (bvchop size x) (+ -1 (expt 2 size))))))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;figure out how to restrict this case right
+(defthm bvlt-when-bvlt-reverse
+  (implies (and (bvlt size free x) ;free var helps restrict this rule to the case we care about?
+                (equal free y))
+           (not (bvlt size x y)))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;add a bvlt and bvlt imply bvlt rule?
+
+;this looped before i put in the fakefree stuff (which is because the dag prover doesn have backchain limits)
+(defthm bvlt-when-not-bvlt
+  (implies (and (NOT (BVLT fakefreesize free x))
+                (equal fakefreesize size) ;gross?
+                (bvlt fakefreesize2 free k)
+                (equal fakefreesize2 size) ;gross?
+                )
+           (equal (BVLT size x k)
+                  t))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     ))))
+
+;what other rules are missing?
+(defthm bvlt-false-when-bvlt
+  (implies (and (bvlt size free x)
+                (bvle size k free))
+           (equal (bvlt size x k)
+                  nil))
+  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
+                                  ()))))

@@ -3948,15 +3948,6 @@
            (integerp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-;figure out how to restrict this case right
-(defthm bvlt-when-bvlt-reverse
-  (implies (and (bvlt size free x) ;free var helps restrict this rule to the case we care about?
-                (equal free y))
-           (not (bvlt size x y)))
-  :hints (("Goal" :in-theory (enable bvlt))))
-
-;add a bvlt and bvlt imply bvlt rule?
-
 (defthm boolor-of-bvlt-of-constant-and-bvlt-of-constant
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)
@@ -4066,18 +4057,6 @@
                       (not (bvlt size x k2))
                     (not (bvlt size x k1)))))
   :hints (("Goal" :in-theory (enable bvlt))))
-
-;this looped before i put in the fakefree stuff (which is because the dag prover doesn have backchain limits)
-(defthm bvlt-when-not-bvlt
-  (implies (and (NOT (BVLT fakefreesize free x))
-                (equal fakefreesize size) ;gross?
-                (bvlt fakefreesize2 free k)
-                (equal fakefreesize2 size) ;gross?
-                )
-           (equal (BVLT size x k)
-                  t))
-  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
-                                     ))))
 
 ;more like these? e.g., ones with just 2 conjuncts, bvlt versions, signed versions?
 (defthm booland-combine-adjacent-bvles

@@ -3636,17 +3636,6 @@
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
-;what other rules are missing?
-(defthm bvlt-false-when-bvlt
-  (implies (and (bvlt size free x)
-                (bvle size k free))
-           (equal (bvlt size x k)
-                  nil))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-                                  (
-                                                  <-of-bvplus-becomes-bvlt-arg1
-                                                  <-of-bvplus-becomes-bvlt-arg2)))))
-
 (defthm bvplus-minus-4-tighten-29
   (implies (and (unsigned-byte-p 3 x) ;use bind-free
                 (equal 29 size)
