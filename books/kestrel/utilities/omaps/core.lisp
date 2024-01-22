@@ -1029,7 +1029,12 @@
   (defruled in-values-when-in
     (implies (equal (in a m)
                     (cons a b))
-             (set::in b (values m)))))
+             (set::in b (values m))))
+
+  (defrule value-of-update-when-not-in
+    (implies (not (consp (in key map)))
+             (equal (values (update key val map))
+                    (set::insert val (values map))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1172,3 +1177,13 @@
      will be in the resulting omap."))
   (cond ((endp keys) nil)
         (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection omap-induction2
+  :short "Induction on two omaps, applying @(tsee tail) to both."
+
+  (defun omap-induction2 (map1 map2)
+    (cond ((empty map1) nil)
+          ((empty map2) nil)
+          (t (omap-induction2 (tail map1) (tail map2))))))

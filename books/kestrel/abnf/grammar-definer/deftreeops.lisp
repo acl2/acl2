@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -405,7 +405,7 @@
     (xdoc::li
      "A generated term over the branches of the tree
       (where the tree matches the rule name)
-      that discriminates the alternative among the other alternatives.
+      that discriminates the alternative among the possible alternatives.
       This is @('nil') if the rule has just one alternative.")
     (xdoc::li
      "The name of the generated function
@@ -415,7 +415,7 @@
       the list of lists of trees that match the alternative.")
     (xdoc::li
      "The name of the generated theorem saying that
-      if a list of lists of tree matches the alternative of the rule
+      if a list of lists of trees matches the alternative of the rule
       then its length is the length of the alternative
       and each list of trees in the list matches the corresponding repetition.")
     (xdoc::li
@@ -476,7 +476,7 @@
      "The name of the generated function
       that takes as input a tree that matches the rule name
       and returns as output a positive integer
-      indicating the alternative matches by the branches of the tree.")
+      indicating the alternative matched by the branches of the tree.")
     (xdoc::li
      "The information about the alternatives that define the rule name.")))
   ((nonleaf-thm acl2::symbol)
@@ -501,10 +501,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-rep-fns+thms+info ((rep repetitionp)
-                                          (i posp)
-                                          (rulename-upstring acl2::stringp)
-                                          (prefix acl2::symbolp))
+(define deftreeops-gen-rep-fns+thms+info
+  ((rep repetitionp)
+   (i posp "Indentifies the alternative, starting from 1.")
+   (rulename-upstring acl2::stringp "Rulename normalized in uppercase.")
+   (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (info deftreeops-rep-infop))
   :short "Generate the functions and theorems and information for
@@ -562,7 +563,8 @@
                                                (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (infos deftreeops-rep-info-listp))
-  :short "Lift @(tsee deftreeops-gen-rep-fns+thms+info) to lists."
+  :short "Lift @(tsee deftreeops-gen-rep-fns+thms+info) to
+          lists of repetitions, i.e. to concatenations."
   (b* (((when (endp conc)) (mv nil nil))
        ((mv events info)
         (deftreeops-gen-rep-fns+thms+info
@@ -641,7 +643,8 @@
   :guard (equal (len discriminant-terms) (len alt))
   :returns (mv (events pseudo-event-form-listp)
                (infos deftreeops-alt-info-listp))
-  :short "Lift @(tsee deftreeops-gen-alt-fns+thms+info) to lists."
+  :short "Lift @(tsee deftreeops-gen-alt-fns+thms+info)
+          to lists of concatenations, i.e. to alternatives."
   (deftreeops-gen-alt-fns+thms+info-list-aux
     alt 1 discriminant-terms rulename-upstring prefix)
 
@@ -695,7 +698,7 @@
     "For now we only support alternations
      each of whose alternatives are singleton concatenations
      where each such concatenation consists of
-     a repetition with range 1,
+     a repetition with range 1
      whose element is a rule name."))
   (b* (((when (and (consp alt)
                    (endp (cdr alt))))
