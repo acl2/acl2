@@ -146,6 +146,9 @@
     x86isa::n
     x86isa::n2
 
+    ;formals that appear in BV theorems:
+    size
+
     x86isa::!app-view
     x86isa::init-x86-state-64
     x86isa::rgfi
