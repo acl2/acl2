@@ -56,8 +56,7 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm booleanp-of-bvlt
-  (equal (booleanp (bvlt size x y))
-         t))
+  (booleanp (bvlt size x y)))
 
 ;rename
 (defthm bvlt-self
@@ -156,16 +155,14 @@
 (defthmd bvlt-transitive-core-1
   (implies (and (bvlt size x free)
                 (not (bvlt size y free)))
-           (equal (bvlt size x y)
-                  t))
+           (bvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; x<=free and free<y imply x<y
 (defthmd bvlt-transitive-core-2
   (implies (and (not (bvlt size free x))
                 (bvlt size free y))
-           (equal (bvlt size x y)
-                  t))
+           (bvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;fixme what about rules to turn a bvlt into nil?
@@ -175,8 +172,7 @@
                 (not (bvlt size y free))
                 (syntaxp (quotep free))
                 (bvlt size k free))
-           (equal (bvlt size k y)
-                  t))
+           (bvlt size k y))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
 (defthm bvlt-transitive-2-a
@@ -185,8 +181,7 @@
                 (bvlt size free y)
                 (syntaxp (quotep free))
                 (not (bvlt size free k)))
-           (equal (bvlt size k y)
-                  t))
+           (bvlt size k y))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
 
 (defthm bvlt-transitive-1-b
@@ -195,8 +190,7 @@
                 (bvlt size x free)
                 (syntaxp (quotep free))
                 (not (bvlt size k free)))
-           (equal (bvlt size x k)
-                  t))
+           (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
 (defthm bvlt-transitive-2-b
@@ -205,8 +199,7 @@
                 (not (bvlt size free x))
                 (syntaxp (quotep free))
                 (bvlt size free k))
-           (equal (bvlt size x k)
-                  t))
+           (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
 
 ;fixme make a version with a strict < as a hyp (can then weaken the other hyp by 1? what about overflow?)
@@ -316,8 +309,8 @@
 ;; (defthm bvlt-transitive-free2
 ;;   (implies (and (bvlt size free x)
 ;;                 (bvle size y free))
-;;            (equal (bvlt size y x)
-;;                   t))
+;;            (bvlt size y x)
+;;                   )
 ;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-of-1
@@ -419,8 +412,7 @@
 ;wont match?
 (defthm bvlt-of-max-when-bvlt
   (implies (bvlt size x free)
-           (equal (bvlt size x (+ -1 (expt 2 size)))
-                  t))
+           (bvlt size x (+ -1 (expt 2 size))))
   :hints (("Goal" :use (:instance bvlt-transitive-core-1 (free free) (y (+ -1 (expt 2 size))))
            :in-theory (e/d (zp)
                            (;BVLT-OF-PLUS-ARG2
@@ -691,8 +683,8 @@
 ;;                 (bvlt size k free)
 ;;                 (natp bigsize)
 ;;                 (natp size))
-;;            (equal (bvlt size x k)
-;;                   nil))
+;;            (not (bvlt size x k)
+;;                   ))
 ;;   :hints (("Goal"
 ;;            :use (:instance <-of-bvchop-and-bvchop-same (s2 bigsize) (s1 size))
 ;;            :in-theory (e/d (bvlt) (<-of-bvchop-and-bvchop-same)))))
@@ -898,8 +890,7 @@
                 (bvlt fakefreesize2 free k)
                 (equal fakefreesize2 size) ;gross?
                 )
-           (equal (BVLT size x k)
-                  t))
+           (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
                                      ))))
 
@@ -907,7 +898,6 @@
 (defthm bvlt-false-when-bvlt
   (implies (and (bvlt size free x)
                 (bvle size k free))
-           (equal (bvlt size x k)
-                  nil))
+           (not (bvlt size x k)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
                                   ()))))
