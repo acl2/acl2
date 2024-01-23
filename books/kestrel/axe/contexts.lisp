@@ -1,7 +1,7 @@
 ; Computing contexts from overarching DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -131,6 +131,23 @@
                 (natp bound))
            (bounded-contextp context bound))
   :hints (("Goal" :in-theory (enable bounded-contextp))))
+
+(defthm bounded-contextp-of-negate-possibly-negated-nodenums
+  (implies (bounded-possibly-negated-nodenumsp possibly-negated-nodenums bound)
+           (bounded-contextp (negate-possibly-negated-nodenums possibly-negated-nodenums) bound))
+  :hints (("Goal" :in-theory (enable bounded-contextp negate-possibly-negated-nodenums))))
+
+(defthm bounded-contextp-when-bounded-axe-disjunctionp
+  (implies (and (bounded-axe-disjunctionp item bound)
+                (not (quotep item)))
+           (bounded-contextp item bound))
+  :hints (("Goal" :in-theory (enable bounded-contextp bounded-axe-disjunctionp))))
+
+(defthm bounded-contextp-when-bounded-axe-conjunctionp
+  (implies (and (bounded-axe-conjunctionp item bound)
+                (not (quotep item)))
+           (bounded-contextp item bound))
+  :hints (("Goal" :in-theory (enable bounded-contextp bounded-axe-conjunctionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,6 +610,17 @@
            (contextp (context-representing-node nodenum dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable context-representing-node))))
 
+(defthm bounded-contextp-of-context-representing-node
+  (implies (and (natp nodenum)
+                (< nodenum dag-len)
+                (< nodenum bound)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (natp bound))
+           (bounded-contextp (context-representing-node nodenum dag-array-name dag-array dag-len) bound))
+  :hints (("Goal" :in-theory (enable contextp context-representing-node))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;returns a contextp that is boolean-equivalent to the negation of NODENUM
 (defund context-representing-negation-of-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
                                                dag-array-name
@@ -619,8 +647,24 @@
            (contextp (context-representing-negation-of-node nodenum dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable contextp context-representing-negation-of-node))))
 
+(defthm bounded-contextp-of-context-representing-negation-of-node
+  (implies (and (natp nodenum)
+                (< nodenum dag-len)
+                (< nodenum bound)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (natp bound))
+           (bounded-contextp (context-representing-negation-of-node nodenum dag-array-name dag-array dag-len) bound))
+  :hints (("Goal" :in-theory (enable contextp context-representing-negation-of-node))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A context-array maps nodenums to their contexts.
 ;todo: this failed when contextp was enabled
 (def-typed-acl2-array context-arrayp (contextp val))
+
+(def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :extra-vars (bound) :extra-guards ((natp bound)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund get-context-via-parent (nodenum parent-nodenum dag-array-name dag-array dag-len context-array)
   (declare (xargs :guard (and (natp nodenum)
@@ -635,7 +679,7 @@
     (if (variablep parent-expr)
         (hard-error 'get-context-via-parent "parent should not be a variable" nil)
       (let ((parent-fn (ffn-symb parent-expr)))
-        (if (and (or (eq 'if parent-fn) ;;(if/myif/boolif test thenpart elsepart)
+        (if (and (or (eq 'if parent-fn) ; (if/myif/boolif test thenpart elsepart)
                      (eq 'myif parent-fn)
                      (eq 'boolif parent-fn))
                  (= 3 (len (dargs parent-expr)))
@@ -689,6 +733,20 @@
   :hints (("Goal" :in-theory (enable get-context-via-parent
                                      cadr-becomes-nth-of-1 car-becomes-nth-of-0))))
 
+(defthm bounded-contextp-of-get-context-via-parent
+  (implies (and (natp nodenum)
+                (natp parent-nodenum)
+                (< nodenum parent-nodenum)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (bounded-context-arrayp 'context-array context-array dag-len bound)
+                (< parent-nodenum dag-len)
+                (natp bound)
+                (< parent-nodenum bound))
+           (bounded-contextp (get-context-via-parent nodenum parent-nodenum dag-array-name dag-array dag-len context-array) bound))
+  :hints (("Goal" :in-theory (enable get-context-via-parent))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;todo: pull out lemmas proved by induction (about all-> ?)
 (defund disjoin-contexts-of-parents (parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far)
   (declare (xargs :guard (and (natp nodenum)
@@ -716,6 +774,20 @@
                 (context-arrayp 'context-array context-array dag-len)
                 (contextp context-so-far))
            (contextp (disjoin-contexts-of-parents parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far)))
+  :hints (("Goal" :in-theory (e/d (disjoin-contexts-of-parents) (pseudo-dag-arrayp)))))
+
+(defthm bounded-contextp-of-disjoin-contexts-of-parents
+  (implies (and (natp nodenum)
+                (all-natp parent-nodenums)
+                (true-listp parent-nodenums)
+                (all-> parent-nodenums nodenum)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (all-< parent-nodenums dag-len)
+                (all-< parent-nodenums bound)
+                (bounded-context-arrayp 'context-array context-array dag-len bound)
+                (bounded-contextp context-so-far bound)
+                (natp bound))
+           (bounded-contextp (disjoin-contexts-of-parents parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far) bound))
   :hints (("Goal" :in-theory (e/d (disjoin-contexts-of-parents) (pseudo-dag-arrayp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -756,6 +828,22 @@
                 (all-< parent-nodenums dag-len)
                 (context-arrayp 'context-array context-array dag-len))
            (context-arrayp 'context-array (set-context-of-nodenum nodenum parent-nodenums dag-array-name dag-array dag-len context-array) len))
+  :hints (("Goal" :in-theory (enable set-context-of-nodenum))))
+
+(defthm bounded-context-arrayp-of-set-context-of-nodenum
+  (implies (and (bounded-context-arrayp 'context-array context-array dag-len bound)
+                (natp nodenum)
+                ;(< nodenum len)
+                (all-natp parent-nodenums)
+                (true-listp parent-nodenums)
+                (all-> parent-nodenums nodenum)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (< nodenum dag-len)
+                (all-< parent-nodenums dag-len)
+                (all-< parent-nodenums bound)
+                ;(context-arrayp 'context-array context-array dag-len)
+                (natp bound))
+           (bounded-context-arrayp 'context-array (set-context-of-nodenum nodenum parent-nodenums dag-array-name dag-array dag-len context-array) dag-len bound))
   :hints (("Goal" :in-theory (enable set-context-of-nodenum))))
 
 (defthm array1p-of-set-context-of-nodenum
@@ -823,6 +911,25 @@
                 (< nodenum dag-len))
            (context-arrayp 'context-array (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array) dag-len))
   :hints (("Goal" :in-theory (enable make-full-context-array-aux len-when-pseudo-dagp))))
+
+(defthm bounded-context-arrayp-of-make-full-context-array-aux
+  (implies (and (integerp nodenum)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (dag-parent-arrayp 'dag-parent-array dag-parent-array)
+                (bounded-context-arrayp 'context-array context-array dag-len bound)
+                ;; not necesarly equal:
+                (<= dag-len (alen1 'dag-parent-array dag-parent-array))
+                (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                (<= dag-len bound)
+                (< nodenum dag-len)
+                (natp bound))
+           (bounded-context-arrayp 'context-array
+                                   (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
+                                   dag-len
+                                   bound))
+  :hints (("Goal" :in-theory (enable make-full-context-array-aux
+                                     len-when-pseudo-dagp
+                                     ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -901,6 +1008,25 @@
                 (<= (len dag) 2147483646))
            (context-arrayp 'context-array (make-full-context-array-for-dag dag) (+ 1 (top-nodenum-of-dag dag))))
   :hints (("Goal" :in-theory (enable make-full-context-array-for-dag))))
+
+(defthm bounded-context-arrayp-of-make-full-context-array-for-dag
+  (implies (and (pseudo-dagp dag)
+                (<= (len dag) 2147483646)
+                (<= (len dag) bound)
+                (natp bound))
+           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) (len dag) bound))
+  :hints (("Goal" :in-theory (enable make-full-context-array-for-dag))))
+
+(defthm bounded-context-arrayp-of-make-full-context-array-for-dag-gen
+  (implies (and (pseudo-dagp dag)
+                (<= (len dag) 2147483646)
+                (<= (len dag) bound)
+                (natp bound)
+                (<= len (len dag))
+                (natp len))
+           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) len bound))
+  :hints (("Goal" :use (:instance bounded-context-arrayp-of-make-full-context-array-for-dag)
+           :in-theory (disable bounded-context-arrayp-of-make-full-context-array-for-dag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -983,121 +1109,3 @@
 ;;                     (print-array2 'context-array context-array dag-len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :extra-vars (bound) :extra-guards ((natp bound)))
-
-(defthm bounded-contextp-of-negate-possibly-negated-nodenums
-  (implies (bounded-possibly-negated-nodenumsp possibly-negated-nodenums bound)
-           (bounded-contextp (negate-possibly-negated-nodenums possibly-negated-nodenums) bound))
-  :hints (("Goal" :in-theory (enable bounded-contextp negate-possibly-negated-nodenums))))
-
-(defthm bounded-contextp-when-bounded-axe-disjunctionp
-  (implies (and (bounded-axe-disjunctionp item bound)
-                (not (quotep item)))
-           (bounded-contextp item bound))
-  :hints (("Goal" :in-theory (enable bounded-contextp bounded-axe-disjunctionp))))
-
-(defthm bounded-contextp-when-bounded-axe-conjunctionp
-  (implies (and (bounded-axe-conjunctionp item bound)
-                (not (quotep item)))
-           (bounded-contextp item bound))
-  :hints (("Goal" :in-theory (enable bounded-contextp bounded-axe-conjunctionp))))
-
-(defthm bounded-contextp-of-context-representing-negation-of-node
-  (implies (and (natp nodenum)
-                (< nodenum dag-len)
-                (< nodenum bound)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (natp bound))
-           (bounded-contextp (context-representing-negation-of-node nodenum dag-array-name dag-array dag-len) bound))
-  :hints (("Goal" :in-theory (enable contextp context-representing-negation-of-node))))
-
-(defthm bounded-contextp-of-context-representing-node
-  (implies (and (natp nodenum)
-                (< nodenum dag-len)
-                (< nodenum bound)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (natp bound))
-           (bounded-contextp (context-representing-node nodenum dag-array-name dag-array dag-len) bound))
-  :hints (("Goal" :in-theory (enable contextp context-representing-node))))
-
-(defthm bounded-contextp-of-get-context-via-parent
-  (implies (and (natp nodenum)
-                (natp parent-nodenum)
-                (< nodenum parent-nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (bounded-context-arrayp 'context-array context-array dag-len bound)
-                (< parent-nodenum dag-len)
-                (natp bound)
-                (< parent-nodenum bound))
-           (bounded-contextp (get-context-via-parent nodenum parent-nodenum dag-array-name dag-array dag-len context-array) bound))
-  :hints (("Goal" :in-theory (enable get-context-via-parent))))
-
-(defthm bounded-contextp-of-disjoin-contexts-of-parents
-  (implies (and (natp nodenum)
-                (all-natp parent-nodenums)
-                (true-listp parent-nodenums)
-                (all-> parent-nodenums nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (all-< parent-nodenums dag-len)
-                (all-< parent-nodenums bound)
-                (bounded-context-arrayp 'context-array context-array dag-len bound)
-                (bounded-contextp context-so-far bound)
-                (natp bound))
-           (bounded-contextp (disjoin-contexts-of-parents parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far) bound))
-  :hints (("Goal" :in-theory (e/d (disjoin-contexts-of-parents) (pseudo-dag-arrayp)))))
-
-(defthm bounded-context-arrayp-of-set-context-of-nodenum
-  (implies (and (bounded-context-arrayp 'context-array context-array dag-len bound)
-                (natp nodenum)
-                ;(< nodenum len)
-                (all-natp parent-nodenums)
-                (true-listp parent-nodenums)
-                (all-> parent-nodenums nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< nodenum dag-len)
-                (all-< parent-nodenums dag-len)
-                (all-< parent-nodenums bound)
-                ;(context-arrayp 'context-array context-array dag-len)
-                (natp bound))
-           (bounded-context-arrayp 'context-array (set-context-of-nodenum nodenum parent-nodenums dag-array-name dag-array dag-len context-array) dag-len bound))
-  :hints (("Goal" :in-theory (enable set-context-of-nodenum))))
-
-(defthm bounded-context-arrayp-of-make-full-context-array-aux
-  (implies (and (integerp nodenum)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (dag-parent-arrayp 'dag-parent-array dag-parent-array)
-                (bounded-context-arrayp 'context-array context-array dag-len bound)
-                ;; not necesarly equal:
-                (<= dag-len (alen1 'dag-parent-array dag-parent-array))
-                (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                (<= dag-len bound)
-                (< nodenum dag-len)
-                (natp bound))
-           (bounded-context-arrayp 'context-array
-                                   (make-full-context-array-aux nodenum dag-array-name dag-array dag-len dag-parent-array context-array)
-                                   dag-len
-                                   bound))
-  :hints (("Goal" :in-theory (enable make-full-context-array-aux
-                                     len-when-pseudo-dagp
-                                     ))))
-
-(defthm bounded-context-arrayp-of-make-full-context-array
-  (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
-                (<= (len dag) bound)
-                (natp bound))
-           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) (len dag) bound))
-  :hints (("Goal" :in-theory (enable make-full-context-array-for-dag
-                                     ))))
-
-(defthm bounded-context-arrayp-of-make-full-context-array-gen
-  (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
-                (<= (len dag) bound)
-                (natp bound)
-                (<= len (len dag))
-                (natp len))
-           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) len bound))
-  :hints (("Goal" :use (:instance bounded-context-arrayp-of-make-full-context-array)
-           :in-theory (disable bounded-context-arrayp-of-make-full-context-array))))
