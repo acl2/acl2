@@ -585,11 +585,8 @@
                            (axe-conjunctionp-of-get-axe-conjunction-from-dag-item
                             possibly-negated-nodenumsp-when-axe-conjunctionp)))))
 
-;returns a contextp that is boolean-equivalent to NODENUM
-(defund context-representing-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
-                                   dag-array-name
-                                   dag-array
-                                   dag-len)
+;; Returns a contextp that is boolean-equivalent to NODENUM.
+(defund context-representing-node (nodenum dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len))
@@ -621,11 +618,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns a contextp that is boolean-equivalent to the negation of NODENUM
-(defund context-representing-negation-of-node (nodenum ;allow a quotep? might just work (then the caller could do less checking?)
-                                               dag-array-name
-                                               dag-array
-                                               dag-len)
+;; Returns a contextp that is boolean-equivalent to the negation of NODENUM.
+(defund context-representing-negation-of-node (nodenum dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len))
@@ -683,7 +677,7 @@
                      (eq 'myif parent-fn)
                      (eq 'boolif parent-fn))
                  (= 3 (len (dargs parent-expr)))
-                 (atom (darg1 parent-expr))) ;makes sure the test is a nodenum ;ffixme should we handle constants?  no, because we should never build an if with a constant test?  what if such a term arises from putting in a constant when merging? ;drop this now?
+                 (atom (darg1 parent-expr))) ;makes sure the test is a nodenum (constants are rare and give no real contextual information)
             (if (and (eql nodenum (darg2 parent-expr))
                      (not (eql nodenum (darg1 parent-expr)))
                      (not (eql nodenum (darg3 parent-expr))))
@@ -699,9 +693,9 @@
                                     parent-context)
                 ;;nodenum is the test or appears in more than one argument (should be rare), so we don't add anything to the context:
                 parent-context))
-          (if (and (eq 'bvif parent-fn) ;(bvif size test thenpart elsepart)
+          (if (and (eq 'bvif parent-fn) ; (bvif size test thenpart elsepart)
                    (= 4 (len (dargs parent-expr)))
-                   (atom (darg2 parent-expr))) ;makes sure the test is a nodenum ;drop?
+                   (atom (darg2 parent-expr))) ;makes sure the test is a nodenum (constants are rare and give no real contextual information)
               (if (and (eql nodenum (darg3 parent-expr))
                        (not (eql nodenum (darg1 parent-expr)))
                        (not (eql nodenum (darg2 parent-expr)))
@@ -717,9 +711,9 @@
                     ;;(negate-and-conjoin-to-context (darg2 parent-expr) parent-context dag-array-name dag-array)
                     (conjoin-contexts (context-representing-negation-of-node (darg2 parent-expr) dag-array-name dag-array dag-len)
                                       parent-context)
-                  ;;otherwise (nodenum is the test or size or appears more than once), we don't add anything to the context:
+                  ;; nodenum is the test or size or appears more than once, so we don't add anything to the context:
                   parent-context))
-            ;;it's not an ITE:
+            ;;it's not any kind of IF:
             parent-context))))))
 
 (defthm contextp-of-get-context-via-parent
