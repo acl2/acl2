@@ -1,7 +1,7 @@
 ; Expressions that can appear in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -224,17 +224,24 @@
   :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-all-dargp)
                                   (myquotep)))))
 
+; n need not be in bounds, because nil is eqlable
+(defthm eqlablep-of-nth-when-all-dargp
+  (implies (and (all-dargp dargs)
+                (natp n))
+           (equal (eqlablep (nth n dargs))
+                  (not (consp (nth n dargs)))))
+  :hints (("Goal" :in-theory (enable nth))))
+
+; n need not be in bounds, because nil is eqlable
 (defthm eqlablep-of-nth-of-dargs
   (implies (and (dag-exprp expr)
-                (< n (len (dargs expr)))
+                ;; (consp expr) ; not a var
+                ;; (< n (len (dargs expr)))
                 (natp n)
-                (not (equal 'quote (car expr)))
-;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
-                )
+                (not (equal 'quote (car expr))))
            (equal (eqlablep (nth n (dargs expr)))
                   (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-all-dargp)
-                                  (myquotep)))))
+  :hints (("Goal" :in-theory (disable nth))))
 
 (defthm dargp-of-nth-of-dargs
   (implies (and (dag-exprp expr)
