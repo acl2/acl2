@@ -194,15 +194,9 @@
                                                    )))))
 
 
-(defthm expt-hack
-  (implies (integerp n)
-           (equal (* 2 (expt 2 (+ -1 n)))
-                  (expt 2 n)))
-  :hints (("Goal" :in-theory (enable expt))))
-
-(defthm zbp-times-2
-  (equal (zbp (* 2 x))
-         (not (equal x 1/2))))
+;; (defthm zbp-times-2
+;;   (equal (zbp (* 2 x))
+;;          (not (equal x 1/2))))
 
 (local (in-theory (disable FLOOR-MINUS-ERIC-BETTER)))
 
