@@ -109,6 +109,10 @@
   (bounded-contextp nil bound)
   :hints (("Goal" :in-theory (enable bounded-contextp))))
 
+(defthm bounded-contextp-of-false
+  (bounded-contextp :false bound)
+  :hints (("Goal" :in-theory (enable bounded-contextp))))
+
 (defthm contextp-when-bounded-contextp
   (implies (bounded-contextp context bound)
            (contextp context))
@@ -337,6 +341,12 @@
            (contextp (conjoin-contexts-aux context1 context2)))
   :hints (("Goal" :in-theory (enable conjoin-contexts-aux))))
 
+(defthm bounded-contextp-of-conjoin-contexts-aux
+  (implies (and (bounded-possibly-negated-nodenumsp context1 bound)
+                (bounded-possibly-negated-nodenumsp context2 bound))
+           (bounded-contextp (conjoin-contexts-aux context1 context2) bound))
+  :hints (("Goal" :in-theory (enable bounded-contextp conjoin-contexts-aux))))
+
 ;; Computes a context equivalent to the conjunction of CONTEXT1 and CONTEXT2.
 ;; This doesn't look up the nodenums in the contexts and so may miss some
 ;; simplifications (e.g., if we know (or x y) and then learn (not x)).
@@ -354,6 +364,12 @@
                 (contextp context2))
            (contextp (conjoin-contexts context1 context2)))
   :hints (("Goal" :in-theory (enable conjoin-contexts))))
+
+(defthm bounded-contextp-of-conjoin-contexts
+  (implies (and (bounded-contextp context1 bound)
+                (bounded-contextp context2 bound))
+           (bounded-contextp (conjoin-contexts context1 context2) bound))
+  :hints (("Goal" :in-theory (enable bounded-contextp conjoin-contexts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,6 +391,12 @@
                 (contextp context2))
            (contextp (disjoin-contexts context1 context2)))
   :hints (("Goal" :in-theory (enable disjoin-contexts CONTEXTP))))
+
+(defthm bounded-contextp-of-disjoin-contexts
+  (implies (and (bounded-contextp context1 bound)
+                (bounded-contextp context2 bound))
+           (bounded-contextp (disjoin-contexts context1 context2) bound))
+  :hints (("Goal" :in-theory (enable disjoin-contexts bounded-contextp))))
 
 ;; ;allow us to pass in a quotep?
 ;; ;fixme what if the expr at nodenum-to-negate is a not?  should have a rule to just reverse the if (but will rules have been applied? what if substitution put in the not?)
@@ -963,28 +985,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :extra-vars (bound) :extra-guards ((natp bound)))
-
-(defthm bounded-contextp-of-false
-  (bounded-contextp :false bound)
-  :hints (("Goal" :in-theory (enable bounded-contextp))))
-
-(defthm bounded-contextp-of-disjoin-contexts
-  (implies (and (bounded-contextp context1 bound)
-                (bounded-contextp context2 bound))
-           (bounded-contextp (disjoin-contexts context1 context2) bound))
-  :hints (("Goal" :in-theory (enable disjoin-contexts bounded-contextp))))
-
-(defthm bounded-contextp-of-conjoin-contexts-aux
-  (implies (and (bounded-possibly-negated-nodenumsp context1 bound)
-                (bounded-possibly-negated-nodenumsp context2 bound))
-           (bounded-contextp (conjoin-contexts-aux context1 context2) bound))
-  :hints (("Goal" :in-theory (enable bounded-contextp conjoin-contexts-aux))))
-
-(defthm bounded-contextp-of-conjoin-contexts
-  (implies (and (bounded-contextp context1 bound)
-                (bounded-contextp context2 bound))
-           (bounded-contextp (conjoin-contexts context1 context2) bound))
-  :hints (("Goal" :in-theory (enable bounded-contextp conjoin-contexts))))
 
 (defthm bounded-contextp-of-negate-possibly-negated-nodenums
   (implies (bounded-possibly-negated-nodenumsp possibly-negated-nodenums bound)
