@@ -19,6 +19,7 @@
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "std/alists/assoc" :dir :system)
 (include-book "std/typed-alists/string-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
 
@@ -240,38 +241,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod deftreeops-table-value
+  :short "Fixtype of values of the table of @(tsee deftreeops) calls."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of the alist from rule names to rule name information.
+     We put it into a one-component product type for future extensibility,
+     and also so that we can define the option type based on this."))
+  ((rulename-info-alist deftreeops-rulename-info-alist))
+  :pred deftreeops-table-valuep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption deftreeops-table-value-option
+  deftreeops-table-value
+  :short "Fixtype of optional values of the table of @(tsee deftreeops) calls."
+  :pred deftreeops-table-value-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection deftreeops-table-definition
   :short "Definition of the table of @(tsee deftreeops) calls."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use the calls themselves as keys,
-     and nothing (i.e. @('nil')) as values.
-     We only need to check if
-     a call has already been successfully made or not;
-     the table is like a set of calls."))
+    "We use the calls themselves as keys"))
 
   (table deftreeops-table nil nil
     :guard (and (pseudo-event-formp acl2::key)
-                (null acl2::val))))
+                (deftreeops-table-valuep acl2::val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define deftreeops-table-lookup ((call pseudo-event-formp) (wrld plist-worldp))
-  :returns (yes/no booleanp)
+  :returns (info? deftreeops-table-value-optionp)
   :short "Look up a @(tsee deftreeops) call in the table."
   :long
   (xdoc::topstring
    (xdoc::p
     "Returns a boolean, saying whether the call is in the table or not."))
-  (consp (assoc-equal call (table-alist+ 'deftreeops-table wrld))))
+  (b* ((info? (cdr (assoc-equal call (table-alist+ 'deftreeops-table wrld)))))
+    (and (deftreeops-table-valuep info?)
+         info?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-table-add ((call pseudo-event-formp))
+(define deftreeops-table-add ((call pseudo-event-formp)
+                              (info deftreeops-table-valuep))
   :returns (event pseudo-event-formp)
   :short "Event to record a @(tsee deftreeops) call in the table."
-  `(table deftreeops-table ',call nil))
+  `(table deftreeops-table ',call ',info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1028,14 +1048,14 @@
 
 (define deftreeops-gen-everything ((grammar acl2::symbolp)
                                    (rules rulelistp)
-                                   (prefix acl2::symbolp))
+                                   (prefix acl2::symbolp)
+                                   (call pseudo-event-formp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
   (b* ((matchers (deftreeops-gen-matchers grammar prefix))
-       ((mv rulename-events
-            & ; rulename-info
-        )
+       ((mv rulename-events rulename-info)
         (deftreeops-gen-all-rulenames-fns+thms+info rules prefix))
+       (table-value (deftreeops-table-value rulename-info))
        (event `(defsection ,(add-suffix grammar "-TREE-OPERATIONS")
                  :parents (,grammar)
                  :short ,(str::cat
@@ -1043,7 +1063,8 @@
                           (str::downcase-string (symbol-name grammar))
                           ").")
                  ,@matchers
-                 ,@rulename-events)))
+                 ,@rulename-events
+                 ,(deftreeops-table-add call table-value))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1058,7 +1079,7 @@
        ((when (deftreeops-table-lookup call wrld))
         (retok '(value-triple :redundant)))
        ((erp grammar rules prefix) (deftreeops-process-inputs args wrld)))
-    (retok (deftreeops-gen-everything grammar rules prefix))))
+    (retok (deftreeops-gen-everything grammar rules prefix call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
