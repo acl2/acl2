@@ -284,6 +284,16 @@
                               ;;POSSIBLY-NEGATED-NODENUMP
                               ))))
 
+(defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-when-not-consp
+  (implies (not (consp possibly-negated-nodenums))
+           (equal (update-node-replacement-array-for-assuming-possibly-negated-nodenums possibly-negated-nodenums
+                                                                                        node-replacement-array node-replacement-count
+                                                                                        dag-array dag-len
+                                                                                        known-booleans
+                                                                                        undo-pairs-acc)
+                  (mv node-replacement-array node-replacement-count undo-pairs-acc)))
+  :hints (("Goal" :in-theory (enable update-node-replacement-array-for-assuming-possibly-negated-nodenums))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This extracts conjuncts from NODENUM.

@@ -19,6 +19,7 @@
 (include-book "kestrel/bv/bvif" :dir :system) ;since this book deals with bvif specially (do not remove)
 (include-book "kestrel/booleans/boolif" :dir :system) ;since this book deals with boolif specially (do not remove)
 (include-book "kestrel/utilities/myif" :dir :system) ;since this book deals with myif specially (do not remove)
+(include-book "refine-assumptions") ; todo.  for all-dag-function-call-exprp
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "numeric-lists"))
@@ -656,6 +657,7 @@
 ;todo: this failed when contextp was enabled
 (def-typed-acl2-array context-arrayp (contextp val))
 
+;; Recognizes and array whose values are bounded contexts (contexts contaning nodenums less than BOUND).
 (def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :extra-vars (bound) :extra-guards ((natp bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -799,7 +801,7 @@
                               (context-arrayp 'context-array context-array dag-len))
                   :guard-hints (("Goal" :in-theory (enable all-> cadr-becomes-nth-of-1 car-becomes-nth-of-0 context-arrayp)))))
   (if (endp parent-nodenums)
-      (prog2$ (cw "!! nodenum ~x0 is an orphan" nodenum)
+      (prog2$ (cw "!! nodenum ~x0 is an orphan !!~%" nodenum)
               (aset1 'context-array context-array nodenum (false-context)))
     (let* ((context-via-first-parent (get-context-via-parent nodenum (first parent-nodenums) dag-array-name dag-array dag-len context-array)) ;could start here with a context of (false-context)? and eliminate the check above
            (context (disjoin-contexts-of-parents (rest parent-nodenums) nodenum dag-array-name dag-array dag-len context-array context-via-first-parent)))
@@ -1075,11 +1077,19 @@
     ;; it's of the form (not <nodenum>), so it is already a suitable expr
     context-item))
 
+(defthm dag-function-call-exprp-of-context-item-to-maybe-expr
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (bounded-possibly-negated-nodenump context-item dag-len)
+                (context-item-to-maybe-expr context-item dag-array dag-len) ; since it is a maybe-...
+                )
+           (dag-function-call-exprp (context-item-to-maybe-expr context-item dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable context-item-to-maybe-expr bounded-possibly-negated-nodenump))))
+
 ;;Turns a context into exprs that are function calls applied to nodenums /
 ;;quoteps.  Items in the context that map to variables or constants are dropped (todo: so rename this).
 (defund context-to-exprs (context ; a possibly-negated-nodenumsp
-                         dag-array
-                         dag-len)
+                          dag-array
+                          dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-possibly-negated-nodenumsp context dag-len))))
   (if (endp context)
@@ -1089,6 +1099,17 @@
       (if maybe-expr
           (cons maybe-expr (context-to-exprs (rest context) dag-array dag-len))
         (context-to-exprs (rest context) dag-array dag-len)))))
+
+(defthm context-to-exprs-of-nil
+  (equal (context-to-exprs nil dag-array dag-len)
+         nil)
+  :hints (("Goal" :in-theory (enable context-to-exprs))))
+
+(defthm all-dag-function-call-exprp-of-context-to-exprs
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (bounded-possibly-negated-nodenumsp context dag-len))
+           (all-dag-function-call-exprp (context-to-exprs context dag-array dag-len)))
+  :hints (("Goal" :in-theory (e/d (context-to-exprs) (dag-function-call-exprp-redef)))))
 
 ;; ;; Returns nil but prints.
 ;; (defun print-contexts (dag-lst)
@@ -1103,3 +1124,57 @@
 ;;                     (print-array2 'context-array context-array dag-len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm eqlablep-when-natp
+    (implies (natp x)
+             (eqlablep x))))
+
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
+
+(defund dag-expr-gives-rise-to-contextp (expr)
+  (declare (xargs :guard (dag-exprp expr)
+                  :guard-hints (("Goal" :in-theory (enable CONSP-OF-CDR)))
+                  ))
+  (and (consp expr) ; not a var
+       (let ((fn (ffn-symb expr)))
+         (case fn
+           ((if myif boolif) ; (if/myif/boolif test thenpart elsepart)
+            (and (consp (rest (rest (dargs expr))))
+                 (let ((test (darg1 expr))
+                       (then (darg2 expr))
+                       (else (darg3 expr)))
+                   (and (atom test) ; test must not be constant
+                        (or (and (atom then)
+                                 (not (eql then test))
+                                 (not (eql then else)))
+                            (and (atom else)
+                                 (not (eql else test))
+                                 (not (eql else then))
+                                 ))))))
+           (bvif ; (bvif size test thenpart elsepart)
+             (and (consp (rest (rest (rest (dargs expr)))))
+                  (let ((size (darg1 expr))
+                        (test (darg2 expr))
+                        (then (darg3 expr))
+                        (else (darg4 expr)))
+                    (and (atom test) ; test must not be constant
+                         (or (and (atom then)
+                                  (not (eql then test))
+                                  (not (eql then size))
+                                  (not (eql then else)))
+                             (and (atom else)
+                                  (not (eql else test))
+                                  (not (eql else size))
+                                  (not (eql else then))
+                                  ))))))
+           (otherwise nil)))))
+
+;; Checks whether an internal-context array built for DAG will have anything non-trivial in it
+;; If this is false, we can skip building a context array.
+(defund dag-has-internal-contextsp (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (if (endp dag)
+      nil
+    (or (dag-expr-gives-rise-to-contextp (cdr (first dag)))
+        (dag-has-internal-contextsp (rest dag)))))
