@@ -1,7 +1,7 @@
 ; A recognizer for alists that can be made into ACL2 arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,19 +12,26 @@
 
 (in-package "ACL2")
 
-;guard for an alist that we can convert to an array
-;this one doesn't allow :header:
-;fixme just use BOUNDED-INTEGER-ALISTP?  that one is a bit inefficient in that it does (INTEGERP N) over and over..
+;todo: make local
+(defthm alistp-of-cdr
+  ;; [Jared] changed variable from lst to x for std/alists compatibility
+  (implies (alistp x)
+           (alistp (cdr x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes an alist mapping indices to values (suitable for conversion to an array).
+;; Unlike BOUNDED-INTEGER-ALISTP, this one doesn't allow an entry to be :header.
+;; todo: remve the p from natp in the name.
 (defund bounded-natp-alistp (l n)
   (declare (xargs :guard (rationalp n)))
-  (cond ((atom l) t;(null l)
-         ) ;separate out the null test?
-        (t (and (consp (car l))
-                (let ((key (caar l)))
-                  (and (natp key)
-                       ;;(integerp n) don't retest this each time
-                       (< key n)
-                       (bounded-natp-alistp (cdr l) n)))))))
+  (if (atom l)
+      t ; todo: (null l)
+    (and (consp (car l))
+         (let ((key (caar l)))
+           (and (natp key)
+                (< key n)
+                (bounded-natp-alistp (cdr l) n))))))
 
 (defthm bounded-natp-alistp-monotone
   (implies (and (bounded-natp-alistp alist y)
@@ -76,7 +83,6 @@
            (alistp alist))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp alistp))))
 
-
 (defthm bounded-integer-alistp-when-bounded-natp-alistp
   (implies (and (natp n)
                 (bounded-natp-alistp alist n))
@@ -84,14 +90,28 @@
                   (true-listp alist)))
   :hints (("Goal" :in-theory (enable bounded-natp-alistp bounded-integer-alistp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund natp-alistp (l)
   (declare (xargs :guard t))
-  (cond ((atom l) t ;(null l)
-         )          ;separate out the null test?
-        (t (and (consp (car l))
-                (let ((key (caar l)))
-                  (and (natp key)
-                       (natp-alistp (cdr l))))))))
+  (if (atom l)
+      t ; todo: (null l)
+    (and (consp (car l))
+         (let ((key (caar l)))
+           (and (natp key)
+                (natp-alistp (cdr l)))))))
+
+(defthm natp-alistp-of-cdr
+  (implies (natp-alistp lst)
+           (natp-alistp (cdr lst)))
+  :hints (("Goal" :in-theory (enable natp-alistp))))
+
+(defthm natp-alistp-when-bounded-natp-alistp
+  (implies (bounded-natp-alistp alist free)
+           (natp-alistp alist))
+  :hints (("Goal" :in-theory (enable bounded-natp-alistp natp-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund max-key (alist max-so-far)
   (declare (xargs :guard (and (true-listp alist)
@@ -109,21 +129,6 @@
            (equal (max-key alist max-so-far)
                   max-so-far))
   :hints (("Goal" :in-theory (enable max-key))))
-
-(defthm alistp-of-cdr
-  ;; [Jared] changed variable from lst to x for std/alists compatibility
-  (implies (alistp x)
-           (alistp (cdr x))))
-
-(defthm natp-alistp-of-cdr
-  (implies (natp-alistp lst)
-           (natp-alistp (cdr lst)))
-  :hints (("Goal" :in-theory (enable natp-alistp))))
-
-(defthm natp-alistp-when-bounded-natp-alistp
-  (implies (bounded-natp-alistp alist free)
-           (natp-alistp alist))
-  :hints (("Goal" :in-theory (enable bounded-natp-alistp natp-alistp))))
 
 (defthm natp-of-max-key
   (implies (and (natp-alistp alist)
@@ -161,7 +166,9 @@
   :hints (("Goal" :in-theory (enable max-key)
            :expand ((NATP-ALISTP ALIST)))))
 
-;fixme use bounded-natp-alistp?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: use bounded-natp-alistp?
 (defthm bounded-integer-alistp-of-+-of-1-and-max-key
   (implies (and (natp-alistp alist)
                 (true-listp alist)
@@ -169,7 +176,7 @@
            (bounded-integer-alistp alist (+ 1 (max-key alist max-so-far))))
   :hints (("Goal" :in-theory (enable natp-alistp bounded-integer-alistp max-key))))
 
-;fixme use bounded-natp-alistp?
+;todo: use bounded-natp-alistp?
 (defthm bounded-integer-alistp-of-+-of-1-and-max-key-0
   (implies (and (natp-alistp alist)
                 (true-listp alist)

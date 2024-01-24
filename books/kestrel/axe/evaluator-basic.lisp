@@ -96,6 +96,7 @@
     (symbol-package-name symbol-package-name-unguarded) ; primitive
     unsigned-byte-p
     unsigned-byte-p-forced
+    signed-byte-p ; unguarded
     fix
     ifix
     nfix
@@ -107,6 +108,8 @@
     (ceiling-of-lg ceiling-of-lg-unguarded)
     ;; (return-last return-last-unguarded) ;we don't want to execute this normally, because that would mean executing the eager-arg
     (width-of-widest-int width-of-widest-int-unguarded)
+
+    (logext logext-unguarded)
 
     ;; bv functions:
 

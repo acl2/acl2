@@ -1,7 +1,7 @@
 ; A function to read from an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -113,8 +113,7 @@
                   (BV-ARRAY-READ element-size (+ -1 len) (+ -1 index) b)))
   :hints (("Goal"
            :cases ((equal index (+ -1 len)))
-           :in-theory (enable ;LIST::NTH-OF-CONS
-                       bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg))))
+           :in-theory (enable bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg))))
 
 (defthm bv-array-read-of-cons-base
   (implies (and (natp len)
@@ -122,8 +121,7 @@
                 )
            (equal (BV-ARRAY-READ element-size len 0 (cons a b))
                   (bvchop element-size a)))
-  :hints (("Goal" :in-theory (enable ;LIST::NTH-OF-CONS
-                              BVCHOP-WHEN-I-IS-NOT-AN-INTEGER bv-array-read))))
+  :hints (("Goal" :in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER bv-array-read))))
 
 (defthm bv-array-read-of-cons-both
   (implies (and (syntaxp (not (and (quotep a)  ;prevent application to a constant array
@@ -203,8 +201,7 @@
   :hints (("Goal"
 ;           :cases ((natp n))
            :in-theory (e/d (bv-array-read natp)
-                           (;list::nth-of-cons
-                            )))))
+                           ()))))
 
 (defthm bvchop-of-bv-array-read-same
   (equal (bvchop element-size (bv-array-read element-size len index data))
@@ -212,8 +209,7 @@
   :hints (("Goal"
 ;           :cases ((natp n))
            :in-theory (e/d (bv-array-read natp)
-                           (;list::nth-of-cons
-                            )))))
+                           ()))))
 
 ;gross because it mixes theories?
 ;fixme could make an append operator with length params for two arrays..

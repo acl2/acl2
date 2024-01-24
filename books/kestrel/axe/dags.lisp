@@ -820,8 +820,6 @@
 ;;                   (consp (nth n (dargs expr)))))
 ;;   :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-all-dargp))))
 
-
-
 (defthmd len-when-pseudo-dagp
   (implies (and (pseudo-dagp dag)
                 (consp dag))
@@ -1134,6 +1132,9 @@
                   (+ -1 (len dag))))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+(theory-invariant (incompatible (:rewrite car-of-car-when-pseudo-dagp)
+                                (:rewrite len-when-pseudo-dagp)))
+
 (defthmd car-of-car-when-pseudo-dagp-cheap
   (implies (pseudo-dagp dag)
            (equal (car (car dag))
@@ -1421,9 +1422,7 @@
 
 ;may subsume stuff above
 (defthmd car-of-nth-when-pseudo-dagp
-  (implies (and (pseudo-dagp dag)
-;                (natp n)
-                (natp curr))
+  (implies (pseudo-dagp dag)
            (equal (car (nth n dag))
                   (if (< (nfix n) (+ 1 (car (car dag))))
                       (+ -1 (len dag) (- (nfix n)))

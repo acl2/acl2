@@ -45,6 +45,7 @@
 (include-book "../dag-info")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
+(include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
@@ -125,7 +126,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
@@ -139,7 +140,8 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp memoizep)
-                              (natp total-steps))
+                              (natp total-steps)
+                              (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs (state)))
   (if (zp steps-left)
@@ -152,19 +154,34 @@
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
+         (limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)) ; todo: pass around
          ((mv erp dag-or-quote state)
-          (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
-                          :exhaustivep t
-                          :rule-alist rule-alist
-                          :assumptions assumptions
-                          :monitor rules-to-monitor
-                          :use-internal-contextsp use-internal-contextsp
-                          ;; pass print, so we can cause rule hits to be printed:
-                          :print print ; :brief ;nil
-                          ;; :print-interval 10000 ;todo: pass in
-                          :limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)
-                          :memoizep memoizep
-                          :check-inputs nil))
+          (if (eq :legacy rewriter)
+              (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                              :exhaustivep t
+                              :rule-alist rule-alist
+                              :assumptions assumptions
+                              :monitor rules-to-monitor
+                              :use-internal-contextsp use-internal-contextsp
+                              ;; pass print, so we can cause rule hits to be printed:
+                              :print print ; :brief ;nil
+                              ;; :print-interval 10000 ;todo: pass in
+                              :limits limits
+                              :memoizep memoizep
+                              :check-inputs nil)
+            (mv-let (erp result)
+              (acl2::simplify-dag-x86 dag
+                                        assumptions
+                                        nil ; interpreted-function-alist
+                                        limits
+                                        rule-alist
+                                        t ; count-hints ; todo: think about this
+                                        print
+                                        (acl2::known-booleans (w state))
+                                        rules-to-monitor
+                                        t ; normalize-xors
+                                        memoizep)
+              (mv erp result state))))
          ((when erp) (mv erp nil state))
          ((mv elapsed state) (acl2::real-time-since start-real-time state))
          (- (cw " This limited run took ")
@@ -241,20 +258,13 @@
                        state)))
               (repeatedly-run (- steps-left steps-for-this-iteration)
                               step-increment
-                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep
+                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
                               total-steps
                               state))))))))
 
-(defconst *lifter-rules32-all*
-  (append (lifter-rules32)
-          (lifter-rules32-new)))
-
-(defconst *lifter-rules64-all*
-  (append (lifter-rules64)
-          (lifter-rules64-new)))
-
 ;; Returns (mv erp result-dag-or-quotep lifter-rules-used assumption-rules-used state).
-(defun def-unrolled-fn-core (target
+;; This is also called by the formal unit tester.
+(defun unroll-x86-code-core (target
                              parsed-executable
                              assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
@@ -272,6 +282,7 @@
                              monitor
                              print
                              print-base
+                             rewriter
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
@@ -293,7 +304,8 @@
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
-                              (member print-base '(10 16)))
+                              (member print-base '(10 16))
+                              (member-eq rewriter '(:x86 :legacy)))
                   :stobjs (state)
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
@@ -304,18 +316,18 @@
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
                    (not (eq :pe-32 executable-type))))
-        (er hard? 'def-unrolled-fn-core "Starting from the :entry-point is currently only supported for PE-32 files.")
+        (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE-32 files.")
         (mv :bad-entry-point nil nil nil state))
        ((when (and (natp target)
                    (not (eq :pe-32 executable-type))))
-        (er hard? 'def-unrolled-fn-core "Starting from a numeric offset is currently only supported for PE-32 files.")
+        (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE-32 files.")
         (mv :bad-entry-point nil nil nil state))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
        ((when (and (not position-independentp)
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
-        (er hard? 'def-unrolled-fn-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
+        (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil state))
        ;; assumptions (these get simplified below to put them into normal form):
        (assumptions (if suppress-assumptions
@@ -356,7 +368,7 @@
                                 ;;todo: add support for :elf-32
                                 (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                                         assumptions))))))))
-       (assumptions (acl2::translate-terms assumptions 'def-unrolled-fn-core (w state)))
+       (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state)))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
        (- (cw "(Simplifying assumptions...~%"))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -403,7 +415,7 @@
        ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
        ((when erp) (mv erp nil nil nil state))
        ;; Do the symbolic execution:
-       (lifter-rules (if 32-bitp *lifter-rules32-all* *lifter-rules64-all*))
+       (lifter-rules (if 32-bitp (lifter-rules32-all) (lifter-rules64-all)))
        (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
             (and non-existent-remove-rules
@@ -413,7 +425,7 @@
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil state))
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw " (Lifting took ")
@@ -510,10 +522,10 @@
        ((mv erp result-dag lifter-rules-used
             & ; assumption-rules-used
             state)
-        (def-unrolled-fn-core target parsed-executable
+        (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
           output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base state))
+          step-limit step-increment memoizep monitor print print-base :legacy state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -562,7 +574,7 @@
                                                                    '0 ;array depth (not very important)
                                                                    )))
                (function-body-untranslated (untranslate function-body nil (w state))) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
-               (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn-core (w state)))
+               (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
                 (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01" function-body nil)
