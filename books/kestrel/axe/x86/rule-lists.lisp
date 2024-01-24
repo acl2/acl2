@@ -1093,7 +1093,7 @@
 
             part-install-width-low-becomes-bvcat-axe
             x86isa::car-create-canonical-address-list
-            ;;canonical-address-p-between ;this is involved in loops (other rules backchain from < to canonical-addressp but this does the reverse)
+            ;;canonical-address-p-between ;this is involved in loops (other rules backchain from < to canonical-address-p but this does the reverse)
             ;;will axe try all free variable matches?
             x86isa::canonical-address-p-between-special1
             x86isa::canonical-address-p-between-special2
