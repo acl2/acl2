@@ -372,7 +372,7 @@
                     integerp-of-rsp))
           step-limit
           step-increment
-          t ; memoizep
+          t ; memoizep (nil allows internal contexts)
           rules-to-monitor
           print
           10 ; print-base (todo: consider 16)
