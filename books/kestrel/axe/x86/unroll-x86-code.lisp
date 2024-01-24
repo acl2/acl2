@@ -45,6 +45,7 @@
 (include-book "../dag-info")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
+(include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
@@ -169,7 +170,7 @@
                               :memoizep memoizep
                               :check-inputs nil)
             (mv-let (erp result)
-              (acl2::simplify-dag-basic dag
+              (acl2::simplify-dag-x86 dag
                                         assumptions
                                         nil ; interpreted-function-alist
                                         limits
