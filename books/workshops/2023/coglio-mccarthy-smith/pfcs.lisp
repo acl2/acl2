@@ -1,11 +1,11 @@
 ; Examples of Compositional Verification of PFCS Gadgets
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Aleo Systems Inc. (https://www.aleo.org)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Authors: Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (mccarthy@kestrel.edu)
 ;          Eric Smith (eric.smith@kestrel.edu)
 
@@ -13,10 +13,10 @@
 
 (in-package "ZKPAPER")
 
-(include-book "kestrel/crypto/pfcs/convenience-constructors" :dir :system)
-(include-book "kestrel/crypto/pfcs/indexed-names" :dir :system)
-(include-book "kestrel/crypto/pfcs/lifting" :dir :system)
 (include-book "kestrel/utilities/typed-lists/bit-listp" :dir :system)
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
+(include-book "projects/pfcs/indexed-names" :dir :system)
+(include-book "projects/pfcs/lifting" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
