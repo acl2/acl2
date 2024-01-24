@@ -504,7 +504,7 @@
 (define deftreeops-gen-rep-fns+thms+info
   ((rep repetitionp)
    (i posp "Indentifies the alternative, starting from 1.")
-   (rulename-upstring acl2::stringp "Rulename normalized in uppercase.")
+   (rulename-upstring acl2::stringp "Rule name normalized in uppercase.")
    (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (info deftreeops-rep-infop))
@@ -744,22 +744,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-rulename-fns+thms+info ((rulename rulenamep)
-                                               (alt alternationp)
-                                               (prefix acl2::symbolp))
+(define deftreeops-gen-rulename-fns+thms+info
+  ((rulename rulenamep)
+   (alt alternationp "All the alternatives that define the rule name,
+                      obtained via @(tsee lookup-rulename).")
+   (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (info deftreeops-rulename-infop))
   :short "Generate the functions and theorems and information for a rule name."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "We generate these for each rule name, not for each rule.
-     Because of the possibility of incremental rules in ABNF,
-     a grammar may have multiple rules with the same rule name on the left,
-     each of which contributes one or more alternatives.
-     This ACL2 function takes as input the rule name
-     and the alternation from all the rules,
-     obtained via @(tsee lookup-rulename).")
    (xdoc::p
     "For now we only generate some of the events and information,
      namely the first four theorems in @(tsee deftreeops-rulename-info)."))
@@ -849,8 +843,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-fns+thms+info ((rules rulelistp)
-                                      (prefix acl2::symbolp))
+(define deftreeops-gen-rulename-fns+thms+info-list ((rules rulelistp)
+                                                    (prefix acl2::symbolp))
+  :returns (mv (events pseudo-event-form-listp)
+               (info deftreeops-rulename-info-alistp))
+  :short "Generate the functions and theorems and information
+          for all the rule names defined in a list of rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This essentially lifts @(tsee deftreeops-gen-rulename-fns+thms+info)
+     to lists, but the input is a list of rules,
+     from which we obtain the list of rule names defined by the rules.
+     We generate the functions and theorems and information for each rule name,
+     not for each rule:
+     because of the possibility of incremental rules in ABNF,
+     a grammar may have multiple rules with the same rule name on the left,
+     each of which contributes one or more alternatives.
+     We iterate through the rules,
+     keeping track of which rule names have been processed,
+     so that we process each defined rule name exactly once."))
+  (deftreeops-gen-rulename-fns+thms+info-list-aux rules nil prefix)
+
+  :prepwork
+  ((define deftreeops-gen-rulename-fns+thms+info-list-aux
+     ((rules rulelistp)
+      (done rulename-listp)
+      (prefix acl2::symbolp))
+     :returns (mv (events pseudo-event-form-listp)
+                  (info deftreeops-rulename-info-alistp))
+     (b* (((when (endp rules)) (mv nil nil))
+          (rule (car rules))
+          (rulename (rule->name rule))
+          ((when (member-equal rulename done))
+           (deftreeops-gen-rulename-fns+thms+info-list-aux
+             (cdr rules) done prefix))
+          (alt (lookup-rulename rulename rules))
+          ((mv events info)
+           (deftreeops-gen-rulename-fns+thms+info rulename alt prefix))
+          ((mv more-events more-info)
+           (deftreeops-gen-rulename-fns+thms+info-list-aux
+             (cdr rules) (cons rulename done) prefix)))
+       (mv (append events more-events)
+           (acons rulename info more-info)))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-all-rulenames-fns+thms+info ((rules rulelistp)
+                                                    (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (info deftreeops-rulename-info-alistp))
   :short "Generate the functions and theorems and information
@@ -858,31 +899,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We iterate through the rules,
-     but we keep track of which rule names have been processed,
-     so that we process each defined rule name exactly once."))
-  (deftreeops-gen-fns+thms+info-aux rules nil prefix)
-
-  :prepwork
-  ((define deftreeops-gen-fns+thms+info-aux ((rules rulelistp)
-                                             (done rulename-listp)
-                                             (prefix acl2::symbolp))
-     :returns (mv (events pseudo-event-form-listp)
-                  (info deftreeops-rulename-info-alistp))
-     (b* (((when (endp rules)) (mv nil nil))
-          (rule (car rules))
-          (rulename (rule->name rule))
-          ((when (member-equal rulename done))
-           (deftreeops-gen-fns+thms+info-aux (cdr rules) done prefix))
-          (alt (lookup-rulename rulename rules))
-          ((mv events info)
-           (deftreeops-gen-rulename-fns+thms+info rulename alt prefix))
-          ((mv more-events more-info)
-           (deftreeops-gen-fns+thms+info-aux
-             (cdr rules) (cons rulename done) prefix)))
-       (mv (append events more-events)
-           (acons rulename info more-info)))
-     :verify-guards :after-returns)))
+    "This just calls @(tsee deftreeops-gen-rulename-fns+thms+info-list) for now,
+     but it will be extended to operate in two passes in the future,
+     which is needed to generate additional functions and theorems."))
+  (deftreeops-gen-rulename-fns+thms+info-list rules prefix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -895,7 +915,7 @@
        ((mv rulename-events
             & ; rulename-info
         )
-        (deftreeops-gen-fns+thms+info rules prefix))
+        (deftreeops-gen-all-rulenames-fns+thms+info rules prefix))
        (event `(defsection ,(add-suffix grammar "-TREE-OPERATIONS")
                  :parents (,grammar)
                  :short ,(str::cat
