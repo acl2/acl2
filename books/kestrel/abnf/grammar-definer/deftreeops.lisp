@@ -42,7 +42,23 @@
 
   (xdoc::evmac-topic-implementation-item-input "grammar")
 
-  (xdoc::evmac-topic-implementation-item-input "prefix")))
+  (xdoc::evmac-topic-implementation-item-input "prefix"))
+
+ :additional
+
+ ((xdoc::p
+   "The generation of the functions and theorems happens in two passes.
+    In the first pass, we go through all the rule names defined by the rules,
+    and generate some functions and theorems for each rule name
+    that only depend on the rules that define the rule name and not others
+    (i.e. those functions and theorems can be generated
+    for each rule name independently from the others).
+    In the second pass, we go again through all the rule names defined by rules,
+    and generate more functions and theorems
+    that may depend on functions and theorems for other rule names,
+    generated during the first pass.
+    The passes are indicated by @('pass1') and @('pass2') suffixes
+    in the function names of the implementation.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -744,16 +760,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-rulename-fns+thms+info
+(define deftreeops-gen-rulename-fns+thms+info-pass1
   ((rulename rulenamep)
-   (alt alternationp "All the alternatives that define the rule name,
-                      obtained via @(tsee lookup-rulename).")
+   (alt alternationp "All the alternatives that define @('rulename').")
    (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (info deftreeops-rulename-infop))
-  :short "Generate the functions and theorems and information for a rule name."
+  :short "Generate the functions and theorems and information for a rule name
+          (first pass; see @(tsee deftreeops-implementation))."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "We return an incomplete @(tsee deftreeops-rulename-infop),
+     which is completed by the second pass.")
    (xdoc::p
     "For now we only generate some of the events and information,
      namely the first four theorems in @(tsee deftreeops-rulename-info)."))
@@ -806,7 +825,7 @@
             :use ,nonleaf-thm)
           (defruled ,alt-disj-thm
             (implies (,alt-matchp cstss ,alt-string)
-                     (or ,@(deftreeops-gen-rulename-fns+thms+info-aux
+                     (or ,@(deftreeops-gen-rulename-fns+thms+info-pass1-aux
                              alt conc-matchp)))
             :do-not '(preprocess)
             :in-theory
@@ -830,7 +849,7 @@
     (mv (append events more-events) info))
 
   :prepwork
-  ((define deftreeops-gen-rulename-fns+thms+info-aux
+  ((define deftreeops-gen-rulename-fns+thms+info-pass1-aux
      ((alt alternationp) (conc-matchp acl2::symbolp))
      :returns (disjuncts true-listp)
      :parents nil
@@ -838,17 +857,19 @@
            (t (cons `(,conc-matchp
                       cstss
                       ,(pretty-print-concatenation (car alt)))
-                    (deftreeops-gen-rulename-fns+thms+info-aux
+                    (deftreeops-gen-rulename-fns+thms+info-pass1-aux
                       (cdr alt) conc-matchp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define deftreeops-gen-rulename-fns+thms+info-list ((rules rulelistp)
-                                                    (prefix acl2::symbolp))
+(define deftreeops-gen-rulename-fns+thms+info-pass1-list
+  ((rules rulelistp)
+   (prefix acl2::symbolp))
   :returns (mv (events pseudo-event-form-listp)
                (info deftreeops-rulename-info-alistp))
   :short "Generate the functions and theorems and information
-          for all the rule names defined in a list of rules."
+          for all the rule names defined in a list of rules
+          (first pass; see @(tsee deftreeops-implementation))."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -863,10 +884,10 @@
      We iterate through the rules,
      keeping track of which rule names have been processed,
      so that we process each defined rule name exactly once."))
-  (deftreeops-gen-rulename-fns+thms+info-list-aux rules nil prefix)
+  (deftreeops-gen-rulename-fns+thms+info-pass1-list-aux rules nil prefix)
 
   :prepwork
-  ((define deftreeops-gen-rulename-fns+thms+info-list-aux
+  ((define deftreeops-gen-rulename-fns+thms+info-pass1-list-aux
      ((rules rulelistp)
       (done rulename-listp)
       (prefix acl2::symbolp))
@@ -876,14 +897,96 @@
           (rule (car rules))
           (rulename (rule->name rule))
           ((when (member-equal rulename done))
-           (deftreeops-gen-rulename-fns+thms+info-list-aux
+           (deftreeops-gen-rulename-fns+thms+info-pass1-list-aux
              (cdr rules) done prefix))
           (alt (lookup-rulename rulename rules))
           ((mv events info)
-           (deftreeops-gen-rulename-fns+thms+info rulename alt prefix))
+           (deftreeops-gen-rulename-fns+thms+info-pass1 rulename alt prefix))
           ((mv more-events more-info)
-           (deftreeops-gen-rulename-fns+thms+info-list-aux
+           (deftreeops-gen-rulename-fns+thms+info-pass1-list-aux
              (cdr rules) (cons rulename done) prefix)))
+       (mv (append events more-events)
+           (acons rulename info more-info)))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-rulename-fns+thms+info-pass2
+  ((rulename rulenamep)
+   (alt alternationp "All the alternatives that define @('rulename').")
+   (prefix acl2::symbolp)
+   (infos deftreeops-rulename-info-alistp))
+  :returns (mv (events pseudo-event-form-listp)
+               (info deftreeops-rulename-infop))
+  :short "Generate the functions and theorems and information for a rule name
+          (second pass; see @(tsee deftreeops-implementation))."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Compared to @(tsee deftreeops-gen-rulename-fns+thms+info-pass1),
+     this function also takes as argument the alist @('infos'),
+     which is calculated by
+     @(tsee deftreeops-gen-rulename-fns+thms+info-pass1-list)
+     during the first pass.")
+   (xdoc::p
+    "This function does nothing for now,
+     but we will move and add code here soon.
+     The code will make use of the @('infos') alist,
+     which is why there are two passes,
+     as expoained in @(tsee deftreeops-implementation)."))
+  (declare (ignore alt prefix)) ; temporary
+  (b* ((info (cdr (assoc-equal rulename infos)))
+       ((unless info)
+        (raise "Internal error: rule name ~x0 not in alist ~x1." rulename infos)
+        (mv nil (ec-call (deftreeops-rulename-info-fix :irrelevant)))))
+    (mv nil (deftreeops-rulename-info-fix info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define deftreeops-gen-rulename-fns+thms+info-pass2-list
+  ((rules rulelistp)
+   (prefix acl2::symbolp)
+   (infos deftreeops-rulename-info-alistp))
+  :returns (mv (events pseudo-event-form-listp)
+               (new-infos deftreeops-rulename-info-alistp))
+  :short "Generate the functions and theorems and information
+          for all the rule names defined in a list of rules
+          (second pass; see @(tsee deftreeops-implementation))."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to
+     @(tsee deftreeops-gen-rulename-fns+thms+info-pass2-list),
+     but it also takes as input the alist @('infos') calculated by
+     @(tsee deftreeops-gen-rulename-fns+thms+info-pass1-list)
+     during the first pass.
+     That alist has incomplete information about the rule names,
+     i.e. it only contains the information for the first pass.
+     Here the information is completed with the one for the second pass,
+     so an updated alist is built and returned."))
+  (deftreeops-gen-rulename-fns+thms+info-pass2-list-aux rules nil prefix infos)
+
+  :prepwork
+  ((define deftreeops-gen-rulename-fns+thms+info-pass2-list-aux
+     ((rules rulelistp)
+      (done rulename-listp)
+      (prefix acl2::symbolp)
+      (infos deftreeops-rulename-info-alistp))
+     :returns (mv (events pseudo-event-form-listp)
+                  (new-infos deftreeops-rulename-info-alistp))
+     (b* (((when (endp rules)) (mv nil nil))
+          (rule (car rules))
+          (rulename (rule->name rule))
+          ((when (member-equal rulename done))
+           (deftreeops-gen-rulename-fns+thms+info-pass2-list-aux
+             (cdr rules) done prefix infos))
+          (alt (lookup-rulename rulename rules))
+          ((mv events info)
+           (deftreeops-gen-rulename-fns+thms+info-pass2
+             rulename alt prefix infos))
+          ((mv more-events more-info)
+           (deftreeops-gen-rulename-fns+thms+info-pass2-list-aux
+             (cdr rules) (cons rulename done) prefix infos)))
        (mv (append events more-events)
            (acons rulename info more-info)))
      :verify-guards :after-returns)))
@@ -896,13 +999,13 @@
                (info deftreeops-rulename-info-alistp))
   :short "Generate the functions and theorems and information
           for all the rule names defined in a grammar."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This just calls @(tsee deftreeops-gen-rulename-fns+thms+info-list) for now,
-     but it will be extended to operate in two passes in the future,
-     which is needed to generate additional functions and theorems."))
-  (deftreeops-gen-rulename-fns+thms+info-list rules prefix))
+  (b* (((mv events preliminary-infos)
+        (deftreeops-gen-rulename-fns+thms+info-pass1-list
+          rules prefix))
+       ((mv more-events final-infos)
+        (deftreeops-gen-rulename-fns+thms+info-pass2-list
+          rules prefix preliminary-infos)))
+    (mv (append events more-events) final-infos)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
