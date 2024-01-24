@@ -32,6 +32,7 @@
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/examples/ringosc")
             :endif)
+     (include-book "pfcs/top")
 
 
 
