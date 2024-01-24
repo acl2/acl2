@@ -504,7 +504,7 @@
                               (booleanp check-fnsp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
-                  :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))
+                  :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp)))
                   :stobjs state))
   (b* ((prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t))
        ((when (not prunep))
@@ -523,9 +523,12 @@
                                      nil       ; dag-acc
                                      state))
        ((when erp) (mv erp nil state))
-       ;; Ensure we can do the array-based simp below:
-       ((when (>= (top-nodenum-of-dag dag) 2147483646))
-        (mv :dag-too-big nil state))
+       ;; Ensure we can continue with the processing below:
+       ((when (> (top-nodenum-of-dag dag) 2147483645)) (mv :dag-too-big nil state))
+       ;; There may be orphan nodes if some pruning was done:
+       (dag-or-quotep (drop-non-supporters dag))
+       ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
+       (dag dag-or-quotep) ; it's not a quotep
        ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
        ;; Similarly, try to get rid of calls of BOOL-FIX$INLINE that got introduced.
        ;; And try to propagate successful resolution of tests upward in the DAG.
