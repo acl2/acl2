@@ -910,7 +910,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This essentially lifts @(tsee deftreeops-gen-rulename-fns+thms+info)
+    "This essentially lifts @(tsee deftreeops-gen-rulename-fns+thms+info-pass1)
      to lists, but the input is a list of rules,
      from which we obtain the list of rule names defined by the rules.
      We generate the functions and theorems and information for each rule name,
