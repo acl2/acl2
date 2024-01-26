@@ -174,6 +174,7 @@
     x86isa::wml16
     x86isa::wml32
     x86isa::wml64           ;shilpi leaves this enabled, but this is big!
+    x86isa::wml128
     x86isa::wml-size$inline ;shilpi leaves this enabled
 
     x86isa::wiml08
@@ -1329,6 +1330,8 @@
             jb-condition-of-sub-cf-spec16
             jb-condition-of-sub-cf-spec32
             jb-condition-of-sub-cf-spec64
+            jb-condition-of-cf-spec32
+            jb-condition-of-cf-spec64
             jnb-condition-of-sub-cf-spec8
             jnb-condition-of-sub-cf-spec16
             jnb-condition-of-sub-cf-spec32
@@ -1357,6 +1360,8 @@
             jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
             jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
             jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
+            jo-condition-of-of-spec32
+            jo-condition-of-of-spec64
             jz-condition-of-zf-spec
             jz-condition-of-sub-zf-spec8
             jz-condition-of-sub-zf-spec16
