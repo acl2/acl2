@@ -1225,6 +1225,20 @@
                                      x86isa::sub-cf-spec64
                                      bvlt))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;nice
+(defthm jb-condition-of-cf-spec32
+  (equal (jb-condition (cf-spec32 x))
+         (not (unsigned-byte-p 32 x)))
+  :hints (("Goal" :in-theory (enable cf-spec32 jb-condition))))
+
+;nice
+(defthm jb-condition-of-cf-spec64
+  (equal (jb-condition (cf-spec64 x))
+         (not (unsigned-byte-p 64 x)))
+  :hints (("Goal" :in-theory (enable cf-spec64 jb-condition))))
+
 (defthm jb-condition-of-bv-if-1-0-1
   (equal (jb-condition (bvif 1 test 0 1))
          (not test))
@@ -1443,6 +1457,19 @@
            (equal (jo-condition (x86isa::sub-of-spec8 dst src))
                   (not (signed-byte-p 8 (- (logext 8 dst) (logext 8 src))))))
   :hints (("Goal" :in-theory (enable jo-condition x86isa::sub-of-spec8 x86isa::of-spec8))))
+
+;nice
+(defthm jo-condition-of-of-spec32
+  (equal (jo-condition (of-spec32 x))
+         (not (signed-byte-p 32 x)))
+  :hints (("Goal" :in-theory (enable of-spec32 jo-condition))))
+
+;nice
+(defthm jo-condition-of-of-spec64
+  (equal (jo-condition (of-spec64 x))
+         (not (signed-byte-p 64 x)))
+  :hints (("Goal" :in-theory (enable of-spec64 jo-condition))))
+
 
 ;; todo: add jo rules for other sizes.
 
