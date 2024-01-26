@@ -3656,7 +3656,7 @@
              slice-tighten-top-free
              bvmult-of-bvplus-hack2
              bvmult-of-slice-tighten
-             plus-becomes-bvplus-dag
+             +-becomes-bvplus-axe
              bvmult-of-bvplus-hack
              bvmult-of-bvmult-hack
              <-lemma-for-known-operators2

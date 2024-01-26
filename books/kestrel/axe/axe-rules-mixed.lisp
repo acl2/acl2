@@ -217,8 +217,7 @@
                   t))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED))))
 
-
-(defthmd plus-becomes-bvplus-dag
+(defthmd +-becomes-bvplus-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
