@@ -241,7 +241,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an (mv erp passedp time state).
-;; TODO: Add redundancy checking
+;; TODO: Add redundancy checking -- where?
+;; Parsing of the executable is done outside this function (so we don't do it more than once).
 (defun test-function-core (function-name-string
                            parsed-executable
                            param-names ; todo: can we somehow get these from the executable?
