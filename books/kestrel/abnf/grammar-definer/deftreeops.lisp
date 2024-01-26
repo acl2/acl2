@@ -870,11 +870,6 @@
               ,conc-matchp
               tree-list-list-match-alternation-p-when-atom-alternation
               tree-list-list-match-alternation-p-of-cons-alternation))))
-       ((mv okp terms) (deftreeops-gen-discriminant-terms alt))
-       (terms (if okp terms (repeat (len alt) nil)))
-       ((mv more-events alt-infos)
-        (deftreeops-gen-alt-fns+thms+info-list
-          alt terms rulename-upstring prefix))
        (info (make-deftreeops-rulename-info
               :nonleaf-thm nonleaf-thm
               :rulename-thm rulename-thm
@@ -882,8 +877,8 @@
               :alt-disj-thm alt-disj-thm
               :alt-equiv-thm nil
               :check-alt-fn nil
-              :alt-infos alt-infos)))
-    (mv (append events more-events) info))
+              :alt-infos nil)))
+    (mv events info))
 
   :prepwork
   ((define deftreeops-gen-rulename-fns+thms+info-pass1-aux
@@ -966,17 +961,21 @@
      @(tsee deftreeops-gen-rulename-fns+thms+info-pass1-list)
      during the first pass.")
    (xdoc::p
-    "This function does nothing for now,
-     but we will move and add code here soon.
-     The code will make use of the @('infos') alist,
-     which is why there are two passes,
-     as expoained in @(tsee deftreeops-implementation)."))
-  (declare (ignore alt prefix)) ; temporary
+    "Here we generate the functions and theorems
+     for the alternatives that define the rule name.
+     We extend the incomplete rule name information structures."))
   (b* ((info (cdr (assoc-equal rulename infos)))
        ((unless info)
         (raise "Internal error: rule name ~x0 not in alist ~x1." rulename infos)
-        (mv nil (ec-call (deftreeops-rulename-info-fix :irrelevant)))))
-    (mv nil (deftreeops-rulename-info-fix info))))
+        (mv nil (ec-call (deftreeops-rulename-info-fix :irrelevant))))
+       ((mv okp terms) (deftreeops-gen-discriminant-terms alt))
+       (terms (if okp terms (repeat (len alt) nil)))
+       (rulename-string (rulename->get rulename))
+       (rulename-upstring (str::upcase-string rulename-string))
+       ((mv events alt-infos) (deftreeops-gen-alt-fns+thms+info-list
+                                alt terms rulename-upstring prefix))
+       (info (change-deftreeops-rulename-info info :alt-infos alt-infos)))
+    (mv events info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
