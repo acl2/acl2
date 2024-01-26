@@ -104,7 +104,7 @@
         state)))
 
 ;; Returns an error triple
-(defun elf-info (filename state)
+(defun elf-info-fn (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state
                   :verify-guards nil
@@ -114,7 +114,14 @@
        ((when erp) (mv erp nil state))
        (sections (lookup-eq-safe :sections parsed-elf))
        (section-names (strip-cars sections))
-       (info (acons :section-names section-names nil))
+       (info nil)
+       (info (acons :section-names section-names info))
+       (info (acons :symbol-table (lookup-eq-safe :symbol-table parsed-elf) info))
+       (info (acons :section-header-table (lookup-eq-safe :section-header-table parsed-elf) info))
+       ;(info (acons :sections sections info))
        ;; todo: extract more info, like section sizes
        )
     (mv nil info state)))
+
+(defmacro elf-info (filename)
+  `(elf-info-fn ,filename state))
