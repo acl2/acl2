@@ -1,10 +1,10 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -830,7 +830,7 @@
    (xdoc::p
     "The topic lists the names used for arguments and results of functions,
      along with brief descriptions of the names.
-     This listing consists of bullets  in an unordered list.
+     This listing consists of bullets in an unordered list.
      The @(':items') argument must be a list of XDOC trees,
      each of which is wrapped into an @(tsee xdoc::li),
      and the so-wrapped items are put into an @(tsee xdoc::ul).")
@@ -842,8 +842,14 @@
    (xdoc::p
     "If there are no items, the list is omitted altogether.")
    (xdoc::p
-    "This macro also provide a @(':default-parent') option,
+    "This macro also provides a @(':default-parent') option,
      which is @('nil') by default and is passed to @(tsee defxdoc+).")
+   (xdoc::p
+    "This macro also provides a @(':additional') option,
+     which must be a list of XDOC trees (@('nil') by default),
+     which is added at the end of the @(tsee defxdoc+),
+     to provide additional information about
+     the implementation being documented.")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -853,14 +859,17 @@
           (t (cons `(xdoc::li ,(car items))
                    (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
 
-  (defmacro xdoc::evmac-topic-implementation (macro &key items default-parent)
+  (defmacro xdoc::evmac-topic-implementation (macro &key
+                                                    items
+                                                    default-parent
+                                                    additional)
     (declare (xargs :guard (symbolp macro)))
     (b* ((macro-name (string-downcase (symbol-name macro)))
          (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
          (this-topic (add-suffix macro "-IMPLEMENTATION"))
          (parent-topic macro)
          (short (concatenate 'string "Implementation of " macro-ref "."))
-         (long (and items
+         (long (and (or items additional)
                     `(xdoc::topstring
                       (xdoc::p
                        "The implementation functions have arguments and results
@@ -873,7 +882,8 @@
                        "Implementation functions' arguments and results
                         that are not listed above
                         are described in, or clear from,
-                        those functions' documentation.")))))
+                        those functions' documentation.")
+                      ,@additional))))
       `(defxdoc+ ,this-topic
          :parents (,parent-topic)
          :short ,short
