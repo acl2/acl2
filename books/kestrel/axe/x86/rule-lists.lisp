@@ -897,6 +897,16 @@
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
 
+
+;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
+(set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
+
+;; Careful, this one broke things by introducing bvplus into esp expressions.  So we added bvchop-of-+-of-esp-becomes-+-of-esp.
+;; Ensures that rules targetting things like (bvchop 32 (+ x y)) have a chance to fire first.
+;; Or we could recharactetize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
+(set-axe-rule-priority acl2::bvchop-identity 1)
+
+
 (defund symbolic-execution-rules ()
   (declare (xargs :guard t))
   '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
@@ -1457,6 +1467,9 @@
             x86isa::feature-flags-constant-opener  ; move
 
             acl2::lookup-becomes-lookup-equal ; or try just executing lookup itself
+
+            ;; Can help resolve overflow conditions in Rust code:
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -1809,6 +1822,8 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
+    bvchop-of-+-of-esp-becomes-+-of-esp ; new, let's us drop the bvchop
+    ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
 
     xr-of-write-byte-to-segment
@@ -3576,6 +3591,7 @@
             acl2::bvif-of-logext-1
             acl2::bvif-of-logext-2
             equal-of-bvif-safe2
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )
           (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
           (acl2::booleanp-rules)
