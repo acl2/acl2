@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,8 +46,7 @@
    (xdoc::p
     "The URI grammar rules are well-formed.")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output."))
+    "We keep this constant unexpanded in output."))
   :file "uri.abnf"
   :untranslate t
   :well-formed t)
@@ -73,8 +72,7 @@
      curly braces, and
      vertical bar.")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output."))
+    "We keep this constant unexpanded in output."))
   (plug-rules *uri-grammar-rules*
               *core-rules*)
   ///
@@ -101,7 +99,15 @@
                                              (char-code #\^)
                                              (char-code #\{)
                                              (char-code #\|)
-                                             (char-code #\}))))))
+                                             (char-code #\})))))
+
+  (defrule abnf-core-rules-in-*all-uri-grammar-rules*
+    (implies (member-equal core-rule *core-rules*)
+             (iff (member-equal core-rule *all-uri-grammar-rules*)
+                  (member-equal core-rule (list *rule_ALPHA*
+                                                *rule_DIGIT*
+                                                *rule_HEXDIG*))))
+    :rule-classes nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

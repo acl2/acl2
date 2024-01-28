@@ -1,12 +1,12 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2023 BAE Systems
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 BAE Systems
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors: Letitia Li (letitia.li@baesystems.com)
-;          Alessandro Coglio (coglio@kestrel.edu)
+;          Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -46,8 +46,7 @@
    (xdoc::p
     "The PDF grammar rules are well-formed and closed.")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output."))
+    "We keep this constant unexpanded in output."))
   :file "pdf.abnf"
   :untranslate t
   :well-formed t
