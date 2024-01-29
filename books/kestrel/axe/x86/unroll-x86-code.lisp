@@ -122,6 +122,44 @@
       ;; no special treatment:
       monitor)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move this util
+
+(defun print-list-item-elided (item firstp fns-to-elide)
+  (declare (xargs :guard (symbol-listp fns-to-elide)))
+  (if (and (consp item)
+           (member-eq (ffn-symb item) fns-to-elide))
+      ;; eliding:
+      ;; todo: allow eliding some args but not others?
+      (if firstp ; leading paren but not leading space
+          (cw "((~x0 ...)~%" (ffn-symb item))
+        (cw " (~x0 ...)~%" (ffn-symb item)))
+    ;; not eliding:
+    (if firstp ; no leading space
+        (cw "(~y0" item)
+      (cw " ~y0" item))))
+
+;doesn't stack overflow when printing a large list
+(defun print-list-elided-aux (lst fns-to-elide)
+  (declare (xargs :guard (and (true-listp lst)
+                              (symbol-listp fns-to-elide))))
+  (if (atom lst)
+      nil
+    (prog2$ (print-list-item-elided (first lst) nil fns-to-elide)
+            (print-list-elided-aux (rest lst) fns-to-elide))))
+
+(defun print-list-elided (lst fns-to-elide)
+  (declare (xargs :guard (and (true-listp lst)
+                              (symbol-listp fns-to-elide))))
+  (if (consp lst)
+      (prog2$ (print-list-item-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
+              (prog2$ (print-list-elided-aux (rest lst) fns-to-elide)
+                      (cw ")")))
+    (cw "nil") ; or could do ()
+    ))
+
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -369,7 +407,11 @@
                                 (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                                         assumptions))))))))
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state)))
-       (- (and (acl2::print-level-at-least-tp print) (cw "(Unsimplified assumptions: ~x0)~%" assumptions)))
+       (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
+                                                             (print-list-elided assumptions '(standard-assumptions-elf-64
+                                                                                              standard-assumptions-mach-o-64
+                                                                                              standard-assumptions-pe-64)) ; todo: more?
+                                                             (cw ")~%"))))
        (- (cw "(Simplifying assumptions...~%"))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (32-bitp (member-eq executable-type *executable-types32*))
