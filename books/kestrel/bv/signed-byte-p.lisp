@@ -87,3 +87,11 @@
   (implies (unsigned-byte-p 31 x)
            (signed-byte-p 32 (+ -1 x)))
   :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p))))
+
+(defthm signed-byte-p-of-plus-constant
+  (implies (and (syntaxp (quotep k))
+                (natp k)
+                (< x (- 2147483648 k))
+                (signed-byte-p 32 x))
+           (signed-byte-p 32 (+ k x)))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
