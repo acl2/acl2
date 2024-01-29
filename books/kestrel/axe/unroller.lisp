@@ -24,7 +24,6 @@
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ; for rename-fn
 (include-book "kestrel/utilities/pack" :dir :system)
-(include-book "kestrel/utilities/printing" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "letify-term-via-dag") ;; TODO: Try using something from kestrel-acl2/transformations/letify
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
