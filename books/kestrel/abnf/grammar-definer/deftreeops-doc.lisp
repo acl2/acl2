@@ -197,7 +197,7 @@
     (xdoc::desc
      "@('<prefix>-alt-equivs-when-<rulename>')"
      (xdoc::p
-      "For each rule name defined in the grammar,
+      "For each rule name defined in the grammar by two or more alternatives,
        a theorem stating equivalences between
        (i) the branches (of a tree matching the rule name)
        matching each alternative that defines the rule name and
@@ -205,8 +205,6 @@
        that discriminates among the alternatives;
        there is an equivalence for each alternative,
        and the theorem consists of the conjunction of the equivalences.
-       This theorem is not generated if
-       the rule name is defined by just one alternative.
        For now we only generate this theorem
        when each alternative is
        a singleton concatenation of
