@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,7 +69,11 @@
      (xdoc::p
       "This must be a symbol that is a named constant
        whose value is a grammar, i.e. a value of type @(tsee rulelist).
-       It could be a grammar introduced by @(tsee defgrammar)."))
+       It could be a grammar introduced by @(tsee defgrammar).")
+     (xdoc::p
+      "The grammar must be "
+      (xdoc::seetopic "closure" "closed")
+      "."))
 
     (xdoc::desc
      "@(':prefix') &mdash; no default"

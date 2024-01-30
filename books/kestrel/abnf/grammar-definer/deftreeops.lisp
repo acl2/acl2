@@ -13,6 +13,7 @@
 (include-book "../grammar-parser/executable")
 (include-book "../grammar-printer/executable")
 (include-book "../notation/syntax-abstraction")
+(include-book "../operations/closure")
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/std/system/constant-namep" :dir :system)
@@ -319,7 +320,10 @@
                      (consp rules)))
         (reterr (msg "The *GRAMMAR* input is the name of a constant, ~
                       but its value ~x0 is not a non-empty ABNF grammar."
-                     rules))))
+                     rules)))
+       ((unless (rulelist-closedp rules))
+        (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
+                      but the grammar is not closed."))))
     (retok grammar rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
