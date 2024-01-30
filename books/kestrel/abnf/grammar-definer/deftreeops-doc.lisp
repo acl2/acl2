@@ -211,6 +211,22 @@
        a singleton repetition of a rulename element."))
 
     (xdoc::desc
+     "@('<prefix>-<rulename>-alt?')"
+     (xdoc::p
+      "For each rule name defined in the garmmar by two or more alternatives,
+       a function that, given a tree matching the rule name,
+       returns a positive integer
+       indicating the alternative matched by the tree,
+       in the order in which the alternative appears in the grammar,
+       starting from 1 for the first alternative.
+       If a rule name is defined by multiple rules
+       (the first one non-incremental, the other ones incremental),
+       the order of the alternatives
+       indicated by the integer returned by this function
+       is lexicographic, based first on the order of the rules
+       and then on the order of the alternatives within each rule."))
+
+    (xdoc::desc
      "@('<prefix>-match-alt<i>-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar,
