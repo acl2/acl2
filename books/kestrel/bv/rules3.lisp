@@ -1214,8 +1214,7 @@
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (leftrotate size amt1 x)))
   :hints (("Goal" :in-theory (e/d (bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate)
-                                  (;+-becomes-bvplus-hack
-                                   )))))
+                                  ()))))
 
 (defthm bvor-of-bvashr-and-bvshl
   (implies (and (equal size (+ amt1 amt2))
@@ -2133,7 +2132,7 @@
            (equal (bvplus '31 '1 x)
                   (bvplus 5 1 x)))
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
-                                            |+-BECOMES-BVPLUS-HACK|)))))
+                                            )))))
 
 
 
@@ -2195,7 +2194,7 @@
            :in-theory (e/d (logext logapp bvchop-of-sum-cases slice ;getbit
                                    REPEATBIT
                                    posp
-                                   ) (BVCAT-OF-GETBIT-AND-X-ADJACENT bvplus-recollapse anti-slice +-becomes-bvplus-hack
+                                   ) (BVCAT-OF-GETBIT-AND-X-ADJACENT bvplus-recollapse anti-slice
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    BVCAT-OF-GETBIT-AND-X-ADJACENT
@@ -2245,7 +2244,7 @@
                     (getbit 31 x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bvchop-of-sum-cases
                                         bvchop-32-split-hack
-                                        ) (anti-slice bvplus-recollapse +-becomes-bvplus-hack BVCAT-OF-GETBIT-AND-X-ADJACENT
+                                        ) (anti-slice bvplus-recollapse BVCAT-OF-GETBIT-AND-X-ADJACENT
                                                       BVCHOP-1-OF-PLUS
                                         BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
 
@@ -2343,9 +2342,6 @@
   (implies (not (equal 0 (bvchop 2 x)))
            (equal (equal (bvmult 5 4 y) x)
                   nil)))
-
-(local (in-theory (disable +-becomes-bvplus-hack)))
-
 
 ;gen!
 ;gen the bvchop to any usb8

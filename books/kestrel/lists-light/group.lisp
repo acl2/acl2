@@ -544,7 +544,7 @@
                                                   y))
                                   (group n (nthcdr (- n (mod (len x) n))
                                                    y)))))))
-  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;+-BECOMES-BVPLUS-HACK
+  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                                                           MOD-TYPE
                                                                           MOD-bounded-by-modulus
                                                                           floor-bounded-by-/
@@ -567,7 +567,7 @@
                                                   y))
                                   (group n (nthcdr (- n (mod (len x) n))
                                                    y)))))))
-  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;+-BECOMES-BVPLUS-HACK
+  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                                                           MOD-TYPE
                                                                           MOD-bounded-by-modulus
                                                                           floor-bounded-by-/

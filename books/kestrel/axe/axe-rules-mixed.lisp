@@ -124,22 +124,22 @@
            :use (:instance <-becomes-bvlt))))
 
 
-;gen the 1
-(defthmd +-becomes-bvplus-when-bv-dag
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x)
-                (natp xsize))
-           (equal (+ 1 x)
-                  (bvplus (+ 1 xsize) 1 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus
-                                   UNSIGNED-BYTE-P-FORCED)
-                                  (anti-bvplus
-                                   ;GETBIT-OF-+
-                                   BVLT-OF-PLUS-ARG1
-                                   BVLT-OF-PLUS-ARG2
-                                   PLUS-BECOMES-BVPLUS
-                                   <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
-                                   )))))
+;; ;gen the 1
+;; (defthmd +-becomes-bvplus-when-bv-dag
+;;   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+;;                 (unsigned-byte-p-forced xsize x)
+;;                 (natp xsize))
+;;            (equal (+ 1 x)
+;;                   (bvplus (+ 1 xsize) 1 x)))
+;;   :hints (("Goal" :in-theory (e/d (bvplus
+;;                                    UNSIGNED-BYTE-P-FORCED)
+;;                                   (anti-bvplus
+;;                                    ;GETBIT-OF-+
+;;                                    BVLT-OF-PLUS-ARG1
+;;                                    BVLT-OF-PLUS-ARG2
+;;                                    PLUS-BECOMES-BVPLUS
+;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
+;;                                    )))))
 
 (DEFTHMd BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-NO-SPLIT-dag
   (IMPLIES (AND (syntaxp (QUOTEP SIZE))

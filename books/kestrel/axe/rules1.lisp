@@ -2218,8 +2218,6 @@
 
 ;(in-theory (disable CDR-OF-TAKE-BECOMES-SUBRANGE)) ;drop?
 
-;(local (in-theory (disable +-becomes-bvplus-hack))) ;drop?
-
 ;gen!
 ;; (defthm nth2-of-bv-array-write
 ;;   (implies (and (natp index)

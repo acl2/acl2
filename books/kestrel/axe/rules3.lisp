@@ -205,7 +205,7 @@
                 (natp free))
            (equal (bvplus size 1 x)
                   (bvplus (+ 1 free) 1 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus ;+-BECOMES-BVPLUS-HACK ;looped
+  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
                                                         )))))
 
 
@@ -260,8 +260,6 @@
             (equal (sbvlt 32 x *minus-1*)
                    (not (equal (bvchop 32 x) *minus-1*))))
    :hints (("Goal" :in-theory (enable sbvlt))))
-
-(in-theory (disable |+-BECOMES-BVPLUS-HACK|))
 
 ;gen
 (defthm bvmult-of-4
@@ -449,8 +447,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvplus bvuminus ;bvminus
 ;;                                    ;bvchop-of-sum-cases
 ;;                                    ) ( bvminus-becomes-bvplus-of-bvuminus anti-bvplus )))))
-
-(in-theory (disable +-becomes-bvplus-hack))
 
 (defthm sbvlt-cancel-hack2
   (implies (integerp x)
@@ -8579,7 +8575,6 @@
                                   (
                                    anti-bvplus GETBIT-OF-+
                                    SLICE-OF-+
-                                   ;+-BECOMES-BVPLUS-HACK-GEN
                                    getbit-of-+
                                    plus-becomes-bvplus-free
                                    bvlt-of-plus-arg1
@@ -8679,7 +8674,6 @@
                                    anti-bvplus GETBIT-OF-+
                                    SLICE-OF-+
                                    BVPLUS-OF-PLUS-ARG3
-;+-BECOMES-BVPLUS-HACK-GEN
                                    getbit-of-+
                                    plus-becomes-bvplus-free
                                    bvlt-of-plus-arg1
@@ -8800,7 +8794,6 @@
                                                  (anti-bvplus GETBIT-OF-+
                                                   SLICE-OF-+
                                                   BVPLUS-OF-PLUS-ARG3
-;+-BECOMES-BVPLUS-HACK-GEN
                                                   getbit-of-+ +-OF-MINUS-1-AND-BV2
                                                   BVLT-OF-*-ARG3
                                                   plus-becomes-bvplus-free
@@ -8837,7 +8830,6 @@
                                    anti-bvplus GETBIT-OF-+
                                    SLICE-OF-+
                                    BVPLUS-OF-PLUS-ARG3
-  ;+-BECOMES-BVPLUS-HACK-GEN
                                    getbit-of-+
                                    plus-becomes-bvplus-free
                                    bvlt-of-plus-arg1
@@ -8939,7 +8931,6 @@
                                     anti-bvplus GETBIT-OF-+
                                     SLICE-OF-+
                                     BVPLUS-OF-PLUS-ARG3
-;+-BECOMES-BVPLUS-HACK-GEN
                                     getbit-of-+
                                     plus-becomes-bvplus-free
                                     bvlt-of-plus-arg1
@@ -9138,7 +9129,6 @@
                             unsigned-byte-p-when-bound
                             anti-bvplus getbit-of-+
                             slice-of-+
-;+-BECOMES-BVPLUS-HACK-GEN
                             bvplus-of-plus-arg3
                             +-of-minus-1-and-bv2
                             plus-becomes-bvplus-free
@@ -9174,7 +9164,6 @@
                                   (                                   unsigned-byte-p-when-bound
                                    anti-bvplus getbit-of-+
                                    slice-of-+
-;+-BECOMES-BVPLUS-HACK-GEN
                                    bvplus-of-plus-arg3
                                    +-of-minus-1-and-bv2
                                    plus-becomes-bvplus-free
@@ -9659,7 +9648,7 @@
                             bvchop-when-top-bit-1
                             UNSIGNED-BYTE-P-FROM-BOUNDS)
                            (BVCHOP-OF-MINUS
-                            PLUS-BECOMES-BVPLUS-FREE ;+-BECOMES-BVPLUS-HACK-GEN
+                            PLUS-BECOMES-BVPLUS-FREE
                             PLUS-OF-MINUS-3-BV-5
                                                      bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                                       TIMES-4-OF-SLICE-BECOMES-LOGAPP
@@ -9703,7 +9692,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (PLUS-BECOMES-BVPLUS-FREE ;+-BECOMES-BVPLUS-HACK-GEN
+                           (PLUS-BECOMES-BVPLUS-FREE
                             PLUS-OF-MINUS-3-BV-5 MINUS-BECOMES-BV-2
                                                      bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                                       TIMES-4-OF-SLICE-BECOMES-LOGAPP
@@ -9749,7 +9738,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -9793,7 +9782,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -9842,7 +9831,7 @@
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
                            (
-                            bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                            bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                              times-4-of-slice-becomes-logapp
                             bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -9886,7 +9875,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -9926,7 +9915,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -9972,7 +9961,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           ( bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           ( bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                           PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10017,7 +10006,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10065,7 +10054,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10106,7 +10095,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10145,7 +10134,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10205,7 +10194,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10352,7 +10341,7 @@
                             bvcat logapp)
                            (;sbvlt-rewrite
                             BVCHOP-IDENTITY-CHEAP
-                            bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                            bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                             PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                              TIMES-4-OF-SLICE-BECOMES-LOGAPP
                             BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10423,7 +10412,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT ;+-BECOMES-BVPLUS-HACK-GEN
+                           (bvchop-of-* BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
                                          BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
@@ -10487,20 +10476,21 @@
            :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 
-(defthmd +-becomes-bvplus-hack-gen
-  (implies (and (unsigned-byte-p freesize x)
-                (natp freesize) ;drop?
-                )
-           (equal (binary-+ 1 x)
-                  (bvplus (+ 1 freesize) 1 x)))
-  :hints
-  (("Goal" :in-theory (e/d (bvplus)
-                           (anti-bvplus bvplus-opener
-                                        GETBIT-OF-+
-                                        BVPLUS-OF-PLUS-ARG3
-                                        bvlt-of-plus-arg1
-                                        bvlt-of-plus-arg2
-                                        plus-becomes-bvplus)))))
+;; ;rename
+;; (defthmd +-becomes-bvplus-hack-gen
+;;   (implies (and (unsigned-byte-p freesize x)
+;;                 (natp freesize) ;drop?
+;;                 )
+;;            (equal (+ 1 x)
+;;                   (bvplus (+ 1 freesize) 1 x)))
+;;   :hints
+;;   (("Goal" :in-theory (e/d (bvplus)
+;;                            (anti-bvplus bvplus-opener
+;;                                         GETBIT-OF-+
+;;                                         BVPLUS-OF-PLUS-ARG3
+;;                                         bvlt-of-plus-arg1
+;;                                         bvlt-of-plus-arg2
+;;                                         plus-becomes-bvplus)))))
 
 (defthm sha1-lemma-8
   (implies (and (not (bvlt 31 x11 x8))
@@ -10521,7 +10511,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -10557,7 +10547,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -10597,7 +10587,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -10639,7 +10629,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -10700,7 +10690,7 @@
                            (anti-slice
                             MOD-OF-EXPT-OF-2
                             mod-of-expt-of-2-constant-version
-                            bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                            bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                             plus-becomes-bvplus-free plus-of-minus-3-bv-5
                              times-4-of-slice-becomes-logapp
                             bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -10780,7 +10770,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -10824,7 +10814,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult ;+-becomes-bvplus-hack-gen
+                           (bvchop-of-* bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
                                          bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
