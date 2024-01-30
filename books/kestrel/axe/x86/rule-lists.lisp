@@ -3482,9 +3482,6 @@
             not-sbvlt-of-sbvdiv-and-minus-constant-32-64
             not-bvlt-of-constant-and-bvdiv-64-128
             not-bvlt-of-constant-and-bvdiv-32-64
-            ACL2::BVDIV-SAME
-            ACL2::SBVDIV-SAME
-            ACL2::SBVDIV-OF-1-ARG3
             ACL2::BVSX-OF-BVSX
             ACL2::SLICE-OF-BVSX-HIGH
             bvcat-of-repeatbit-of-getbit-of-bvsx-same

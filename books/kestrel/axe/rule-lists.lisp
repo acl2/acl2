@@ -967,7 +967,16 @@
      bvplus-of-bvuminus-same
      bvplus-of-bvuminus-same-alt
      bvplus-of-bvuminus-same-2
-     bvplus-of-bvuminus-same-2-alt)))
+     bvplus-of-bvuminus-same-2-alt
+
+     bvdiv-of-0-arg2
+     bvdiv-of-0-arg3 ; unusual case
+     bvdiv-of-1-arg3
+     bvdiv-same
+     sbvdiv-of-0-arg1
+     sbvdiv-of-0-arg2 ; unusual casae
+     sbvdiv-of-1-arg3
+     sbvdiv-same)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
