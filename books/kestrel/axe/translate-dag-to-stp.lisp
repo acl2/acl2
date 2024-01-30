@@ -1577,17 +1577,18 @@
                    constant-array-info))
            (mv (erp-t) nil constant-array-info)))
         (bvsx ;; (bvsx new-size old-size val)
-         ;; fixme, do I need to add a bracket expression at the end of this?
          (if (and (= 3 (len (dargs expr)))
                   (darg-quoted-natp (darg1 expr)) ;can this be 0?
                   (darg-quoted-posp (darg2 expr))
+                  (<= (unquote (darg2 expr)) (unquote (darg1 expr)))
                   (bv-arg-okp (darg3 expr)))
              (mv (erp-nil)
                  (list*
                   "BVSX("
                   (translate-bv-arg (darg3 expr) (unquote (darg2 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
-                  ;;fffixme chop here!?
-                  ", "
+                  "["
+                  (nat-to-string-debug (+ -1 (unquote (darg2 expr))))
+                  ":0],"
                   (nat-to-string-debug (unquote (darg1 expr)))
                   ")")
                  constant-array-info)
