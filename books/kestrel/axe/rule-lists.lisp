@@ -3214,7 +3214,7 @@
              rationalp-when-bv-operator
              acl2-numberp-when-bv-operator
 
-             +-becomes-bvplus-hack-gen
+             ;; +-becomes-bvplus-hack-gen
 ;group-of-append-new ;too aggressive? ;Fri May 21 07:20:55 2010
              append-associative ;move
 
@@ -3665,7 +3665,7 @@
 
              cdr-of-group2
              cdr-of-group
-             +-becomes-bvplus-when-bv-dag
+             ;; +-becomes-bvplus-when-bv-dag
              natp-of-*
              *-of-1/64-when-multiple
              integerp-of-*-of-1/64

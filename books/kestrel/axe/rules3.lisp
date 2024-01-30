@@ -10476,21 +10476,21 @@
            :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 
-;rename
-(defthmd +-becomes-bvplus-hack-gen
-  (implies (and (unsigned-byte-p freesize x)
-                (natp freesize) ;drop?
-                )
-           (equal (+ 1 x)
-                  (bvplus (+ 1 freesize) 1 x)))
-  :hints
-  (("Goal" :in-theory (e/d (bvplus)
-                           (anti-bvplus bvplus-opener
-                                        GETBIT-OF-+
-                                        BVPLUS-OF-PLUS-ARG3
-                                        bvlt-of-plus-arg1
-                                        bvlt-of-plus-arg2
-                                        plus-becomes-bvplus)))))
+;; ;rename
+;; (defthmd +-becomes-bvplus-hack-gen
+;;   (implies (and (unsigned-byte-p freesize x)
+;;                 (natp freesize) ;drop?
+;;                 )
+;;            (equal (+ 1 x)
+;;                   (bvplus (+ 1 freesize) 1 x)))
+;;   :hints
+;;   (("Goal" :in-theory (e/d (bvplus)
+;;                            (anti-bvplus bvplus-opener
+;;                                         GETBIT-OF-+
+;;                                         BVPLUS-OF-PLUS-ARG3
+;;                                         bvlt-of-plus-arg1
+;;                                         bvlt-of-plus-arg2
+;;                                         plus-becomes-bvplus)))))
 
 (defthm sha1-lemma-8
   (implies (and (not (bvlt 31 x11 x8))
