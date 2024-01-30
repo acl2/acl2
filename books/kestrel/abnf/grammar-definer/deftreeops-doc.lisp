@@ -224,7 +224,8 @@
        the order of the alternatives
        indicated by the integer returned by this function
        is lexicographic, based first on the order of the rules
-       and then on the order of the alternatives within each rule."))
+       and then on the order of the alternatives within each rule.
+       The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
      "@('<prefix>-match-alt<i>-<rulename>')"
