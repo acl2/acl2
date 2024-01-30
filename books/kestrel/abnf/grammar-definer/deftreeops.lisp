@@ -994,13 +994,13 @@
        (rulename-upstring (str::upcase-string rulename-string))
        ((mv events alt-infos) (deftreeops-gen-alt-fns+thms+info-list
                                 alt terms rulename-upstring prefix))
-       (alt-equiv-thm? (and okp (> (len alt) 1)))
+       (two-or-more-alts-p (and okp (> (len alt) 1)))
        (alt-equiv-thm
-        (and alt-equiv-thm?
+        (and two-or-more-alts-p
              (packn-pos (list prefix '-alt-equivs-when- rulename-upstring)
                         prefix)))
        ((mv conjuncts lemma-instances)
-        (if alt-equiv-thm?
+        (if two-or-more-alts-p
             (b* (((unless (equal (len alt-infos) (len alt)))
                   (raise "Internal error: ~x0 and ~x1 have different lengths."
                          alt-infos alt)
@@ -1010,7 +1010,7 @@
           (mv nil nil)))
        (more-events
         `(,@(and
-             alt-equiv-thm?
+             two-or-more-alts-p
              `((defruled ,alt-equiv-thm
                  (implies (,matchp cst ,rulename-string)
                           (and ,@conjuncts))
