@@ -11,7 +11,9 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ;drop?
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 (in-theory (disable signed-byte-p))
 
@@ -109,3 +111,13 @@
            (equal (signed-byte-p size (+ x y))
                   (posp size)))
   :hints (("Goal" :in-theory (enable signed-byte-p expt-of-+))))
+
+(defthmd signed-byte-p-in-terms-of-floor
+  (equal (signed-byte-p size x)
+         (and (integerp x)
+              (posp size)
+              (equal (floor x (expt 2 (+ -1 size)))
+                     (if (< x 0)
+                         -1
+                       0))))
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
