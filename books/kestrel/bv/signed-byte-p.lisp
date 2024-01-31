@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function signed-byte-p
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ;drop
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ;drop?
 
 (in-theory (disable signed-byte-p))
 
@@ -95,3 +95,17 @@
                 (signed-byte-p 32 x))
            (signed-byte-p 32 (+ k x)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm signed-byte-p-forward-arg1
+  (implies (signed-byte-p size y)
+           (and (integerp size)
+                (< 0 size)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable signed-byte-p))))
+
+(defthm signed-byte-p-of-+
+  (implies (and (signed-byte-p (+ -1 size) x)
+                (signed-byte-p (+ -1 size) y))
+           (equal (signed-byte-p size (+ x y))
+                  (posp size)))
+  :hints (("Goal" :in-theory (enable signed-byte-p expt-of-+))))
