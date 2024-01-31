@@ -876,10 +876,10 @@
     x86isa::sse-cmp-base ; when operation and operands are constant
     unsigned-byte-p-of-mv-nth-1-of-sse-cmp-of-OP-UCOMI
     ;; todo: some of these may be more general than just float rules:
-    jb-condition-of-bv-if-1-0-1
-    jb-condition-of-bv-if-1-1-0
-    jnb-condition-of-bv-if-1-0-1
-    jnb-condition-of-bv-if-1-1-0
+    jb-condition-of-bvif-1-0-1
+    jb-condition-of-bvif-1-1-0
+    jnb-condition-of-bvif-1-0-1
+    jnb-condition-of-bvif-1-1-0
     acl2::bool-fix-of-myif
     boolif-of-myif-arg1-true ; drop
     equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe ;equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
