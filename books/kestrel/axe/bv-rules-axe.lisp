@@ -2299,6 +2299,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd getbit-convert-arg1-to-bv-axe
+  (implies (and (< 0 n) ;if n=0 it's already being trimmed by the getbit (BOZO make sure we can simplify such cases..)
+                (axe-syntaxp (term-should-be-converted-to-bvp x 'nil dag-array))
+                (integerp n))
+           (equal (getbit n x)
+                  (getbit n (trim (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only needed for Axe.  TODO: Add such rules for all bvs?  Or do they already exist?
 (defthmd bvuminus-less-than-true
   (implies (and (syntaxp (quotep k))
