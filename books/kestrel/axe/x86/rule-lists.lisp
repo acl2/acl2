@@ -591,6 +591,8 @@
     x86isa::integerp-of-sub-zf-spec32
     x86isa::integerp-of-sub-zf-spec64
 
+    x86isa::n01p-cf-spec64 ; targets unsigned-byte-p-of-cf-spec64
+
     integerp-of-cf-spec64
 
     ;;todo: not x86-specific
