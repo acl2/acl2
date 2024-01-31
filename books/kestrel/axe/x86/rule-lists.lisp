@@ -108,8 +108,10 @@
             x86isa::imul-spec-32
             x86isa::imul-spec-64
 
-            x86isa::gpr-add-spec-8$inline
+            x86isa::gpr-add-spec-1$inline
+            x86isa::gpr-add-spec-2$inline
             x86isa::gpr-add-spec-4$inline
+            x86isa::gpr-add-spec-8$inline
 
             x86isa::idiv-spec$inline
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
@@ -611,6 +613,14 @@
     x86isa::n08-to-i08$inline ;this is just logext
     x86isa::slice-of-part-install-width-low
     x86isa::bvchop-of-part-install-width-low-becomes-bvcat
+    x86isa::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
+    part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
+
+    acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
+
+    acl2::bvdiv-of-1-arg3
+    acl2::bvdiv-of-bvchop-arg2-same
+    acl2::bvdiv-of-bvchop-arg3-same
 
     ;;todo: try core-runes-bv:
     acl2::slice-of-slice-gen-better ;figure out which bv rules to include
@@ -903,7 +913,7 @@
 
 ;; Careful, this one broke things by introducing bvplus into esp expressions.  So we added bvchop-of-+-of-esp-becomes-+-of-esp.
 ;; Ensures that rules targetting things like (bvchop 32 (+ x y)) have a chance to fire first.
-;; Or we could recharactetize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
+;; Or we could recharacterize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
 (set-axe-rule-priority acl2::bvchop-identity 1)
 
 
@@ -1100,9 +1110,6 @@
             x86isa::combine-bytes-when-singleton
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
-
-
-            part-install-width-low-becomes-bvcat-axe
             x86isa::car-create-canonical-address-list
             ;;canonical-address-p-between ;this is involved in loops (other rules backchain from < to canonical-address-p but this does the reverse)
             ;;will axe try all free variable matches?
@@ -3763,7 +3770,9 @@
             acl2::bvand-of-bvchop-1 ;rename
             acl2::bvand-of-bvchop-2 ;rename
             ACL2::BVCHOP-OF-MINUS-BECOMES-BVUMINUS ; todo: or re-characterize the subl instruction
+            ACL2::BVPLUS-OF-PLUS-ARG2 ; todo: drop once we characterize long negation?
             ACL2::BVPLUS-OF-PLUS-ARG3 ; todo: drop once we characterize long negation?
+            acl2::integerp-when-unsigned-byte-p-free ; needed for the BVPLUS-OF-PLUS rules.
             ACL2::BVUMINUS-OF-+
             X86ISA::INTEGERP-OF-XR-RGF
             ACL2::NATP-OF-+-OF-- ; trying, or simplify (NATP (BINARY-+ '32 (UNARY-- (BVCHOP '5 x))))
