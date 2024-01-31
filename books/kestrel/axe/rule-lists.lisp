@@ -263,7 +263,7 @@
     bvmult-of-bvcat-low-arg3
     bvminus-of-bvcat-low-arg2
     bvminus-of-bvcat-low-arg3
-    bvuminus-of-bvcat-low
+    bvuminus-of-bvcat-low ; todo: also rules for bitnot and bvnot?
     bvif-of-bvcat-low-arg3
     bvif-of-bvcat-low-arg4
     bitand-of-bvsx-low-arg1
@@ -750,7 +750,6 @@
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
-     bvchop-of-bvsx2          ;new
      bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
@@ -857,6 +856,8 @@
      sbvlt-of-bvplus-of-1       ;Sun Oct 26 16:32:17 2014
 
      ;; rules about bvsx:
+     bvchop-of-bvsx-low          ;new
+     ; slice-of-bvsx-high ; introduces repeatbit..
      equal-of-0-and-bvsx ;Wed Oct 14 13:28:17 2015
      equal-of-bvsx-and-bvsx
      bvsx-too-high-axe
@@ -864,7 +865,7 @@
      getbit-of-bvsx
      ;; bvsx base cases?
      ;; introduce-bvsx-25-7 ;fixme yuck
-
+     bvsx-of-bvsx
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
