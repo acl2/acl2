@@ -3548,10 +3548,6 @@
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
             acl2::bvchop-of-bvshr-same
-            ;bvand-of-lognot-arg2
-            ;bvand-of-lognot-arg3
-            ;bvxor-of-lognot-arg2
-            ;bvxor-of-lognot-arg3
             acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
