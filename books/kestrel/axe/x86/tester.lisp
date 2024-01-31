@@ -162,17 +162,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund make-register-replacement-assumptions (param-names register-names)
-  (declare (xargs :guard (and (symbol-listp param-names)
-                              (symbol-listp register-names))))
-  (if (or (endp param-names)
-          (endp register-names) ; additional params will be on the stack
-          )
-      nil
-    (let ((register-name (first register-names))
-          (param-name (first param-names)))
-      (cons `(equal (,register-name x86) ,param-name)
-            (make-register-replacement-assumptions (rest param-names) (rest register-names))))))
+;; Makes assumptions that replace calls of the REGISTER-FUNCTIONS, such as (RDI X86),
+;; with the given VARS.
+;; We make the register variables be usb64s, and we assert that the registers
+;; contain their signed forms.  (Note that the registers are signed; see rule X86ISA::I64P-XR-RGF.)
+;; Returns (mv replacement-assumptions type-assumptions).
+(defund make-register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (symbol-listp register-functions))))
+  (if (or (endp register-functions) ; additional params will be on the stack
+          (endp vars))
+      (mv replacement-assumptions-acc type-assumptions-acc)
+    (let ((register-name (first register-functions))
+          (var (first vars)))
+      (make-register-replacement-assumptions64 (rest register-functions)
+                                               (rest vars)
+                                               (cons `(equal (,register-name x86) (logext '64 ,var)) replacement-assumptions-acc)
+                                               (cons `(unsigned-byte-p '64 ,var) type-assumptions-acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -280,11 +286,15 @@
                               (member-eq rewriter '(:x86 :legacy)))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
-  (b* ((stack-slots (if (eq :auto stack-slots) 100 stack-slots))
+  (b* ((- (acl2::ensure-x86 parsed-executable))
+       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (32-bitp (member-eq executable-type *executable-types32*))
+
+       (stack-slots (if (eq :auto stack-slots) 100 stack-slots))
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
-       (- (acl2::ensure-x86 parsed-executable))
+
+
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "(Testing ~x0.~%" function-name-string))
        ;; Check the param names, if any:
@@ -294,19 +304,18 @@
                             (not (member-eq 'x86 param-names))))))
         (cw "ERROR: Bad param names: ~x0." param-names)
         (mv (erp-t) nil nil state))
+       ;; todo: consider also the microsoft calling convention:
+       (register-names64 '(rdi rsi rdx rcx r8 r9)) ; see the x86-64 calling convention ; todo: what about xmm0-xmm7? param-names should be a map, or separate for float and non-float.
+       (param-names (if (eq :none param-names)
+                        register-names64 ; todo: how to tell how many will be needed?
+                      param-names))
        ;; These serve to introduce vars for the 6 registers that may contain params (todo: confirm this)
        ;; TODO: Consider the implications if the replacement may be incomplete.
        ;; TODO: Add more of these?  What about registers that hold floats, etc.?
-       (register-assumptions (if (eq param-names :none)
-                                 ;; We make the register variables be usb64s (todo: add those assumptions), and we assert that the registers
-                                 ;; contain their signed forms:
-                                 `((equal (rdi x86) (logext 64 rdi))
-                                   (equal (rsi x86) (logext 64 rsi))
-                                   (equal (rdx x86) (logext 64 rdx))
-                                   (equal (rcx x86) (logext 64 rcx))
-                                   (equal (r8 x86) (logext 64 r8))
-                                   (equal (r9 x86) (logext 64 r9)))
-                               (make-register-replacement-assumptions param-names '(rdi rsi rdx rcx r8 r9))))
+       ((mv register-replacement-assumptions register-type-assumptions)
+        (if 32-bitp ;todo: add support for this in 32-bit mode, or is the calling convention too different?
+            (mv nil nil)
+          (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
        (assumptions `(,@user-assumptions
                       ;; these help with floating point code:
                       (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
@@ -319,13 +328,14 @@
                       (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ;
-                      ;; todo: build this into def-unrolled:
-                      ,@register-assumptions
+                      ;; todo: build this stuff into def-unrolled:
+                      ,@register-replacement-assumptions
+                      ,@register-type-assumptions
                       ;; todo: build this into def-unrolled:
                       ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
                       ))
        (target function-name-string)
-       (32-bitp (member-eq executable-type *executable-types32*))
+
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
@@ -430,7 +440,8 @@
         (acl2::apply-tactic-prover result-dag
                                    ;; tests ;a natp indicating how many tests to run
                                    tactics
-                                   nil ; assumptions ; TODO: We may need separateness assumptions!
+                                   ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
+                                   register-type-assumptions ;TODO: We may need separateness assumptions!
                                    t   ; simplify-assumptions
                                    ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                                    print

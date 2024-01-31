@@ -542,7 +542,7 @@
                                                    rule-alist
                                                    nil ; count-hits
                                                    nil ; print
-                                                   nil ; known-booleans
+                                                   (acl2::known-booleans (w state))
                                                    nil ; monitored-symbols
                                                    nil ; normalize-xors
                                                    nil ; memoize
