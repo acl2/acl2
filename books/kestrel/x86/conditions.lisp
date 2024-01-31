@@ -1834,3 +1834,18 @@
          (and (not cf-bool)
               (equal 0 zf)))
   :hints (("Goal" :in-theory (enable jnbe-condition))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm integerp-of-cf-spec64
+  (integerp (x86isa::cf-spec64 raw-result)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; maybe ok because it reduces the CF-SPEC64 call to a constant
+;; maybe open CF-SPEC64 when it's an arg to bvplus
+(defthm cf-spec64-when-unsigned-byte-p
+  (implies (unsigned-byte-p 64 raw-result)
+           (equal (x86isa::cf-spec64 raw-result)
+                  0))
+  :hints (("Goal" :in-theory (enable x86isa::cf-spec64))))

@@ -591,6 +591,7 @@
     x86isa::integerp-of-sub-zf-spec32
     x86isa::integerp-of-sub-zf-spec64
 
+    integerp-of-cf-spec64
 
     ;;todo: not x86-specific
     acl2::integerp-of-logext
@@ -1341,6 +1342,8 @@
             read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
             read-in-terms-of-nth-and-pos-eric-8-bytes
+
+            cf-spec64-when-unsigned-byte-p
 
             ;; nice rules: fixme: add the rest!
             jb-condition-of-sub-cf-spec8
