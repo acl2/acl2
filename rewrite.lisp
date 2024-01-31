@@ -13062,16 +13062,6 @@ its attachment is ignored during proofs"))))
                           failure-reason-lstxx))
                unify-substxx ttreexx allpxx rw-cache-alist-newxx)))
 
-(defun set-difference-assoc-eq (lst alist)
-  (declare (xargs :guard (and (true-listp lst)
-                              (alistp alist)
-                              (or (symbol-listp lst)
-                                  (symbol-alistp alist)))))
-  (cond ((endp lst) nil)
-        ((assoc-eq (car lst) alist)
-         (set-difference-assoc-eq (cdr lst) alist))
-        (t (cons (car lst) (set-difference-assoc-eq (cdr lst) alist)))))
-
 (defun extend-unify-subst (alist unify-subst)
 
 ; We attempt to keep all terms in quote-normal form, which explains the use of

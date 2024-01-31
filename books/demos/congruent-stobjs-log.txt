@@ -458,11 +458,11 @@ ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST1 ST2)
                               (MV ST1 ST2)))
 
 
-ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  It is illegal to invoke
-SWAP-ST1-ST2 here because of a signature mismatch.  This function call
-returns a result of shape (MV ST2 ST1) where a result of shape (MV ST1 ST2)
-is required.  Note:  this error occurred in the context 
-(SWAP-ST1-ST2 ST1 ST2).
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  The bound variable list
+(ST1 ST2) from an MV-LET expression has been found not to be compatible
+with the ``types'' (each a stobj name or an indicator of a non-stobj
+object) computed for them, (ST2 ST1).  Note:  this error occurred in
+the context (MV-LET (ST1 ST2) (SWAP-ST1-ST2 ST1 ST2) (MV ST1 ST2)).
 
 
 Summary
@@ -474,12 +474,11 @@ ACL2 !>>(MUST-NOT-TRANSLATE (MV-LET (ST2 ST1)
                               (MV ST1 ST2)))
 
 
-ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  It is illegal to invoke
-SWAP-ST1-ST2 here because of a signature mismatch.  This function call
-returns a result of shape (MV ST1 ST2) (after accounting for the replacement
-of some input stobjs by congruent stobjs) where a result of shape 
-(MV ST2 ST1) is required.  Note:  this error occurred in the context
-(SWAP-ST1-ST2 ST2 ST1).
+ACL2 Error [Translate] in MUST-NOT-TRANSLATE:  The bound variable list
+(ST2 ST1) from an MV-LET expression has been found not to be compatible
+with the ``types'' (each a stobj name or an indicator of a non-stobj
+object) computed for them, (ST1 ST2).  Note:  this error occurred in
+the context (MV-LET (ST2 ST1) (SWAP-ST1-ST2 ST2 ST1) (MV ST1 ST2)).
 
 
 Summary

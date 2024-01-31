@@ -550,11 +550,11 @@
 (defun pseudo-internal-signaturep (insig)
   (case-match insig
     ((fn formals stobjs-in stobjs-out)
-     (and (pseudo-function-symbolp fn nil)   ; should be a fn name
-          (pseudo-arglistp formals)          ; should be distinct vars
-          (symbol-listp stobjs-in)           ; both stobjs-in and -out should be
-          (symbol-listp stobjs-out)          ;       lists of stobj names or nil,
-          (equal (len formals) (len stobjs-in)))) ;  consistent with formals
+     (and (pseudo-function-symbolp fn nil) ; should be a fn name
+          (pseudo-arglistp formals)        ; should be distinct vars
+          (symbol-listp stobjs-in)         ; stobjs-in and -out should be lists
+          (symbol-listp stobjs-out)        ;   of stobj names, nil, or :df,
+          (equal (len formals) (len stobjs-in)))) ; consistent with formals
     (& nil)))
 
 (defun pseudo-internal-signature-listp (x)
@@ -1699,7 +1699,7 @@
 ;-----------------------------------------------------------------
 ; ELIMINATE-DESTRUCTORS-RULES
 
-; This contains a single elim-rule:
+; This contains a list of elim-rules, each of this sort:
 ; (defrec elim-rule
 ;   (((nume . crucial-position) . (destructor-term . destructor-terms))
 ;    (hyps . equiv)
@@ -3039,11 +3039,15 @@
                                   "Violation of the command blocks invariant, ~
                                    specifically that every block contain at ~
                                    least one EVENT-LANDMARK, was detected at ~
-                                   triple ~x0."
-                                  pos))
+                                   triple ~x0.  The preceding ~
+                                   command-landmark, (with no event-landmark ~
+                                   found between that one and the one at ~
+                                   position ~x0) is:~|~x1"
+                                  pos
+                                  no-event-landmark-yetp))
                      (t (good-command-blocksp1 (+ 1 pos)
                                                t
-                                               t
+                                               (car w)
                                                (cdr w)))))
                    ((and (eq sym 'command-index)
                          (eq prop 'global-value))

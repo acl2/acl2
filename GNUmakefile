@@ -235,7 +235,8 @@ sources := axioms.lisp memoize.lisp hons.lisp\
            other-processes.lisp induct.lisp prove.lisp\
            proof-builder-a.lisp history-management.lisp defuns.lisp\
            defthm.lisp other-events.lisp ld.lisp proof-builder-b.lisp\
-           proof-builder-pkg.lisp apply-raw.lisp interface-raw.lisp\
+           proof-builder-pkg.lisp float-a.lisp float-b.lisp float-raw.lisp\
+           apply-raw.lisp interface-raw.lisp\
            serialize.lisp serialize-raw.lisp\
            defpkgs.lisp\
            apply-prim.lisp apply-constraints.lisp apply.lisp

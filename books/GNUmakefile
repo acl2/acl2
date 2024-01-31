@@ -574,7 +574,6 @@ OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 # ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
 
 SLOW_BOOKS := \
-  books/misc/check-acl2-exports.cert \
   coi/defung/defung-stress-long.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
