@@ -6413,10 +6413,10 @@
 ;expensive?
 ;may want to disable for code proofs
 (defthm signed-byte-p-when-top-bit-0
-  (implies (and (equal 0 (getbit (+ -1 n) k))
-                (natp n))
+  (implies (equal 0 (getbit (+ -1 n) k))
            (equal (signed-byte-p n k)
-                  (unsigned-byte-p (+ -1 n) k)))
+                  (and (unsigned-byte-p (+ -1 n) k)
+                       (natp n))))
   :hints (("Goal" :in-theory (e/d (signed-byte-p getbit slice bvchop-of-logtail logtail bvchop UNSIGNED-BYTE-P)
                                   (MOD-OF-EXPT-OF-2
                                    slice-becomes-getbit bvchop-1-becomes-getbit
