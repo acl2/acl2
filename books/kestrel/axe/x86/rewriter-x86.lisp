@@ -22,6 +22,22 @@
                            reverse-removal ; introduces REV (not our normal form)
                            )))
 
+;; these slow down the proofs below:
+(local (in-theory (disable x86isa::unsigned-byte-p-when-sib-p
+                           bigmem::nth-pgp
+                           acl2::true-listp-of-car-when-true-list-listp
+                           x86isa::member-p-pos-value ; hung in part on len (seems bad)
+                           x86isa::n08p-element-of-byte-listp
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-MODR/M-P
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-VEX3-BYTE2-P
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-VEX3-BYTE1-P
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-VEX2-BYTE1-P
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE3-P
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE2-P
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE1-P
+                           X86ISA::UNSIGNED-BYTE-P-WHEN-8BITS-P
+                           ACL2::ACL2-NUMBERP-OF-CAR-WHEN-ACL2-NUMBER-LISTP)))
+
 ;; Create the "x86" rewriter.  Here, "x86" refers to the set of functions to
 ;; evaluate and to the sets of axe-syntaxp and axe-bind-free functions that the
 ;; rewriter "knows" about.  To understand what gets generated, see

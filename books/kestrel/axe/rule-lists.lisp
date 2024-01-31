@@ -470,6 +470,7 @@
     bvor-convert-arg3-to-bv-axe
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
+    getbit-convert-arg1-to-bv-axe ; todo: more!
     trim-of-logand-becomes-bvand
     trim-of-logior-becomes-bvor
     trim-of-logxor-becomes-bvxor
