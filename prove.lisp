@@ -1176,7 +1176,7 @@
 ; are not stobjs and the st_ik are all stobjs.  Since we want to rule out
 ; stobjs, we therefore check that stobjs-out is (nil) or (nil nil).
 
-     (not (all-nils stobjs-out))
+     (not (all-nils-or-dfs stobjs-out))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table
                                       (w state))))))
@@ -5592,7 +5592,7 @@
   form)
 
 #+(and acl2-par (not acl2-loop-only))
-(defparameter *acl2p-starting-proof-time* 0.0d0)
+(defparameter *acl2p-starting-proof-time* 0.0D0)
 
 #+acl2-par
 (defun waterfall1-wrapper@par-before (cl-id state)

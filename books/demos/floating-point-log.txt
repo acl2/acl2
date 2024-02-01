@@ -1,0 +1,5681 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>7/2
+7/2
+ACL2 !>>6980579422424269/2251799813685248
+6980579422424269/2251799813685248
+ACL2 !>>(ASSERT-EVENT (EQUAL 7/2 7/2))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (NOT (EQUAL 6980579422424269/2251799813685248
+                                  31/10)))
+ :PASSED
+ACL2 !>>34
+34
+ACL2 !>>12345000
+12345000
+ACL2 !>>12345000
+12345000
+ACL2 !>>100000000000000007629769841091887003294964970946560
+100000000000000007629769841091887003294964970946560
+ACL2 !>>(ASSERT-EVENT
+             (EQUAL 100000000000000007629769841091887003294964970946560
+                    100000000000000007629769841091887003294964970946560))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT
+             (NOT (EQUAL 100000000000000007629769841091887003294964970946560
+                         (EXPT 10 50))))
+ :PASSED
+ACL2 !>>
+
+ACL2 Error in ACL2-INTERFACE:  A floating-point input, which CLTL displays
+as 3.1, has been encountered.  To permit floating-point input, which
+ACL2 treats as a rational number, use the prefix #d or #D; see :DOC
+df).
+
+ACL2 !>>(DFP 1/4)
+T
+ACL2 !>>(DFP 1/4)
+T
+ACL2 !>>(DFP 1/3)
+NIL
+ACL2 !>>(DFP 'ABC)
+NIL
+ACL2 !>>(TO-DF 1/4)
+#d0.25
+ACL2 !>>(TO-DF 1/3)
+#d0.3333333333333333
+ACL2 !>>(FROM-DF (TO-DF 1/4))
+1/4
+ACL2 !>>(FROM-DF (TO-DF 1/4))
+1/4
+ACL2 !>>(FROM-DF (TO-DF 1/3))
+6004799503160661/18014398509481984
+ACL2 !>>(FROM-DF 1/4)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form 1/4 represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context (FROM-DF 1/4).
+
+ACL2 !>>(FROM-DF 1/4)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form 1/4 represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context (FROM-DF 1/4).
+
+ACL2 !>>(THM (EQUAL (FROM-DF 1/4) 1/4))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FROM-DF))
+
+Proof succeeded.
+ACL2 !>>(TO-DFP 1/4)
+1/4
+ACL2 !>>(TO-DFP 1/3)
+6004799503160661/18014398509481984
+ACL2 !>>(TO-DF 31/10)
+#d3.1
+ACL2 !>>(TO-DFP 31/10)
+6980579422424269/2251799813685248
+ACL2 !>>:ARGS TO-DF
+
+Function         TO-DF
+Formals:         (X)
+Signature:       (TO-DF *)
+                 => :DF
+Guard:           (RATIONALP X)
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            (RATIONALP (TO-DF X))
+Badge:           (APPLY$-BADGE 1 1 . T)
+Warrant:         built-in
+
+ TO-DF
+ACL2 !>>:ARGS TO-DFP
+
+Function         TO-DFP
+Formals:         (X)
+Signature:       (TO-DFP *)
+                 => *
+Guard:           (RATIONALP X)
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            (RATIONALP (TO-DFP X))
+Badge:           (APPLY$-BADGE 1 1 . T)
+Warrant:         built-in
+
+ TO-DFP
+ACL2 !>>(ASSERT-EVENT (EQUAL 6980579422424269/2251799813685248
+                             6980579422424269/2251799813685248))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL 6980579422424269/2251799813685248
+                             (TO-DFP 6980579422424269/2251799813685248)))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (NOT (EQUAL (TO-DFP 31/10) 31/10)))
+ :PASSED
+ACL2 !>>(TO-DF 6980579422424269/2251799813685248)
+#d3.1
+ACL2 !>>(TO-DF 31/10)
+#d3.1
+ACL2 !>>(ASSERT-EVENT (DF= (TO-DF 6980579422424269/2251799813685248)
+                           (TO-DF 31/10)))
+ :PASSED
+ACL2 !>>(TO-DF 3100000)
+#d3100000.0
+ACL2 !>>(TO-DF 31000000)
+#d3.1E+7
+ACL2 !>>(TO-DF 1152921504606847/1152921504606846976)
+#d0.001
+ACL2 !>>(TO-DF 7378697629483821/73786976294838206464)
+#d1.0E-4
+ACL2 !>>
+
+ACL2 Error in ACL2-INTERFACE:  A floating-point input, which CLTL displays
+as 0.001, has been encountered.  To permit floating-point input, which
+ACL2 treats as a rational number, use the prefix #d or #D; see :DOC
+df).
+
+ACL2 !>>(ASSERT-EVENT (DFP 3100000))
+ :PASSED
+ACL2 !>>(VALUE (TO-DF 1/4))
+ #d0.25
+ACL2 !>>(VALUE-TRIPLE (TO-DF 1/4))
+
+
+ACL2 Error in VALUE-TRIPLE:  Expected an ordinary (non-stobj, non-
+df) value, but got a single :DF value.
+
+ACL2 !>>(VALUE-TRIPLE (TO-DF 1/4)
+                      :STOBJS-OUT '(:DF))
+ 1/4
+ACL2 !>>(VALUE-TRIPLE (TO-DF 1/4)
+                      :STOBJS-OUT :AUTO)
+ 1/4
+ACL2 !>>(DF+ 1/2 1/2)
+#d1.0
+ACL2 !>>(DF+ 1/2 1/2)
+#d1.0
+ACL2 !>>(DF+ (TO-DF 1/2) (TO-DF 1/2))
+#d1.0
+ACL2 !>>(DF+ (TO-DF 1/2) (TO-DF 1/2))
+#d1.0
+ACL2 !>>(DF+ 3602879701896397/36028797018963968
+             3602879701896397/18014398509481984
+             5404319552844595/18014398509481984)
+#d0.6
+ACL2 !>>(DF+ 3602879701896397/36028797018963968
+             (DF+ 3602879701896397/18014398509481984
+                  5404319552844595/18014398509481984))
+#d0.6
+ACL2 !>>(DF+ (DF+ 3602879701896397/36028797018963968
+                  3602879701896397/18014398509481984)
+             5404319552844595/18014398509481984)
+#d0.6000000000000001
+ACL2 !>>(ASSERT-EVENT
+             (NOT (DF= (DF+ 3602879701896397/36028797018963968
+                            (DF+ 3602879701896397/18014398509481984
+                                 5404319552844595/18014398509481984))
+                       (DF+ (DF+ 3602879701896397/36028797018963968
+                                 3602879701896397/18014398509481984)
+                            5404319552844595/18014398509481984))))
+ :PASSED
+ACL2 !>>(DF+ 1/4 1/3)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form 1/3 represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context 
+(BINARY-DF+ (TO-DF 1/4) 1/3).
+
+ACL2 !>>(TRANS '(DF+ 1/4 1/2))
+
+(BINARY-DF+ (TO-DF '1/4) (TO-DF '1/2))
+
+=> :DF
+
+ACL2 !>>(TRANS '(DF+ 1/4 X))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form X represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context 
+(BINARY-DF+ (TO-DF 1/4) X).
+
+
+
+ACL2 Error in TRANS:  :Trans has failed.  Consider trying :trans! instead;
+see :DOC trans!.
+
+ACL2 !>>(TRANS '(DF+ 1/4 (TO-DF X)))
+
+(BINARY-DF+ (TO-DF '1/4) (TO-DF X))
+
+=> :DF
+
+ACL2 !>>(DEFMACRO IDENTITY-MACRO (X) X)
+
+Summary
+Form:  ( DEFMACRO IDENTITY-MACRO ...)
+Rules: NIL
+ IDENTITY-MACRO
+ACL2 !>>(DF+ (IDENTITY-MACRO 1/4) 1/2)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form 1/4 represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context (IDENTITY-MACRO 1/4).
+
+ACL2 !>>(DF+ (IDENTITY-MACRO (TO-DF 1/4)) 1/2)
+#d0.75
+ACL2 !>>(LET ((X 3602879701896397/36028797018963968)
+              (Y 3602879701896397/18014398509481984)
+              (Z 5404319552844595/18014398509481984))
+          (NOT (EQUAL (DF+ (DF+ X Y) Z)
+                      (DF+ X (DF+ Y Z)))))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  It is illegal to invoke BINARY-DF+
+here because of a signature mismatch.  This function call returns a
+result of shape :DF where a result of shape * is required.  Note: 
+this error occurred in the context (BINARY-DF+ (DF+ X Y) Z).
+
+ACL2 !>>(LET ((X 3602879701896397/36028797018963968)
+              (Y 3602879701896397/18014398509481984)
+              (Z 5404319552844595/18014398509481984))
+          (DECLARE (TYPE DOUBLE-FLOAT X Y Z))
+          (NOT (EQUAL (DF+ (DF+ X Y) Z)
+                      (DF+ X (DF+ Y Z)))))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form 
+3602879701896397/36028797018963968 represents an ordinary object, but
+it is being used where a form representing a :DF was expected.  See
+:DOC df.  Note:  this error occurred in the context 
+(LET ((X 3602879701896397/36028797018963968)
+      (Y 3602879701896397/18014398509481984)
+      (Z 5404319552844595/18014398509481984))
+  (DECLARE (TYPE DOUBLE-FLOAT X Y Z))
+  (NOT (EQUAL (DF+ (DF+ X Y) Z)
+              (DF+ X (DF+ Y Z))))).
+
+
+ACL2 !>>(LET ((X (TO-DF 3602879701896397/36028797018963968))
+              (Y (TO-DF 3602879701896397/18014398509481984))
+              (Z (TO-DF 5404319552844595/18014398509481984)))
+          (NOT (EQUAL (DF+ (DF+ X Y) Z)
+                      (DF+ X (DF+ Y Z)))))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  It is illegal to invoke BINARY-DF+
+here because of a signature mismatch.  This function call returns a
+result of shape :DF where a result of shape * is required.  Note: 
+this error occurred in the context (BINARY-DF+ (DF+ X Y) Z).
+
+ACL2 !>>(ASSERT-EVENT (LET ((X (TO-DF 3602879701896397/36028797018963968))
+                            (Y (TO-DF 3602879701896397/18014398509481984))
+                            (Z (TO-DF 5404319552844595/18014398509481984)))
+                        (NOT (EQUAL (FROM-DF (DF+ (DF+ X Y) Z))
+                                    (FROM-DF (DF+ X (DF+ Y Z)))))))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (LET ((X (TO-DF 3602879701896397/36028797018963968))
+                            (Y (TO-DF 3602879701896397/18014398509481984))
+                            (Z (TO-DF 5404319552844595/18014398509481984)))
+                        (NOT (DF= (DF+ (DF+ X Y) Z)
+                                  (DF+ X (DF+ Y Z))))))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT
+             (LET ((X 3602879701896397/36028797018963968)
+                   (Y 3602879701896397/18014398509481984)
+                   (Z 5404319552844595/18014398509481984))
+               (NOT (EQUAL (FROM-DF (DF+ (DF+ (TO-DF X) (TO-DF Y))
+                                         (TO-DF Z)))
+                           (FROM-DF (DF+ (TO-DF X)
+                                         (DF+ (TO-DF Y) (TO-DF Z))))))))
+ :PASSED
+ACL2 !>>(THM (LET ((X 3602879701896397/36028797018963968)
+                   (Y 3602879701896397/18014398509481984)
+                   (Z 5404319552844595/18014398509481984))
+               (NOT (EQUAL (DF+ (DF+ X Y) Z)
+                           (DF+ X (DF+ Y Z))))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART BINARY-DF+)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART NOT))
+
+Proof succeeded.
+ACL2 !>>(DF+ 3602879701896397/36028797018963968
+             3602879701896397/18014398509481984
+             5404319552844595/18014398509481984)
+#d0.6
+ACL2 !>>(DF+ (DF+ 3602879701896397/36028797018963968
+                  3602879701896397/18014398509481984)
+             5404319552844595/18014398509481984)
+#d0.6000000000000001
+ACL2 !>>(TRANS '(DF+ 3602879701896397/36028797018963968
+                     3602879701896397/18014398509481984
+                     5404319552844595/18014398509481984))
+
+(BINARY-DF+ (TO-DF '3602879701896397/36028797018963968)
+            (BINARY-DF+ (TO-DF '3602879701896397/18014398509481984)
+                        (TO-DF '5404319552844595/18014398509481984)))
+
+=> :DF
+
+ACL2 !>>(ASSERT-EVENT (AND (DFP 3602879701896397/36028797018963968)
+                           (DFP 3602879701896397/18014398509481984)
+                           (DFP 5404319552844595/18014398509481984)
+                           (DFP 6980579422424269/2251799813685248)))
+ :PASSED
+ACL2 !>>(DEFMACRO DFP* (&REST RST)
+          (CONS 'AND
+                (PAIRLIS-X1 'DFP (PAIRLIS$ RST NIL))))
+
+Summary
+Form:  ( DEFMACRO DFP* ...)
+Rules: NIL
+ DFP*
+ACL2 !>>(ASSERT-EVENT (DFP* 3602879701896397/36028797018963968
+                            3602879701896397/18014398509481984
+                            5404319552844595/18014398509481984
+                            6980579422424269/2251799813685248))
+ :PASSED
+ACL2 !>>(THM (IMPLIES (DFP* X Y Z)
+                      (EQUAL (DF+ (DF+ X Y) Z)
+                             (DF+ X (DF+ Y Z)))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES (AND (DFP X) (DFP Y) (DFP Z))
+         (EQUAL (DF-ROUND (+ Z (DF-ROUND (+ X Y))))
+                (DF-ROUND (+ X (DF-ROUND (+ Y Z))))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF+)
+        (:REWRITE COMMUTATIVITY-OF-+))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(IMPLIES (AND (DFP X) (DFP Y) (DFP Z))
+         (EQUAL (DF-ROUND (+ Z (DF-ROUND (+ X Y))))
+                (DF-ROUND (+ X (DF-ROUND (+ Y Z))))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ASSERT-EVENT (LET ((R (TO-DFP 1/3)))
+                        (AND (DFP R)
+                             (EQUAL R 6004799503160661/18014398509481984))))
+ :PASSED
+ACL2 !>>(THM (LET ((R1 (TO-DF 1/3)) (R2 (TO-DFP 1/3)))
+               (AND (DFP* R1 R2)
+                    (EQUAL R1 R2)
+                    (EQUAL R1
+                           6004799503160661/18014398509481984))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART DFP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART TO-DFP))
+
+Proof succeeded.
+ACL2 !>>(ASSERT-EVENT (EQUAL (TO-DF 1/2) 1/2))
+
+
+ACL2 Error [Translate] in ASSERT-EVENT:  It is illegal to invoke TO-DF
+here because of a signature mismatch.  This function call returns a
+result of shape :DF where a result of shape * is required.  Note: 
+this error occurred in the context (TO-DF 1/2).
+
+ACL2 !>>(ASSERT-EVENT (EQUAL (FROM-DF (TO-DF 1/2)) 1/2))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (TO-DFP 1/2) 1/2))
+ :PASSED
+ACL2 !>>(THM (EQUAL (TO-DF 1/2) 1/2))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(ASSERT-EVENT (DFP (TO-DF 1/3)))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (DFP (TO-DFP 1/3)))
+ :PASSED
+ACL2 !>>ACL2 !>>0
+0
+ACL2 !>>(TO-DF 0)
+#d0.0
+ACL2 !>>(DEFMACRO A-E (X &KEY HINTS)
+         (CONS
+          'WITH-OUTPUT
+          (CONS
+           ':OFF
+           (CONS
+            ':ALL
+            (CONS
+             ':GAG-MODE
+             (CONS
+              'NIL
+              (CONS
+               (CONS
+                'PROGN
+                (CONS
+                   (CONS 'ASSERT-EVENT (CONS X 'NIL))
+                   (CONS (CONS 'THM
+                               (CONS X
+                                     (AND HINTS
+                                          (CONS ':HINTS (CONS HINTS 'NIL)))))
+                         '((VALUE-TRIPLE :SUCCESS)))))
+               'NIL)))))))
+
+Summary
+Form:  ( DEFMACRO A-E ...)
+Rules: NIL
+ A-E
+ACL2 !>>(DEFCONST *DF{1/3}* (TO-DFP 1/3))
+
+Summary
+Form:  ( DEFCONST *DF{1/3}* ...)
+Rules: NIL
+ *DF{1/3}*
+ACL2 !>>*DF{1/3}*
+6004799503160661/18014398509481984
+ACL2 !>>(DFP *DF{1/3}*)
+T
+ACL2 !>>:PE FROM-DF
+ V     -6425  (DEFUN FROM-DF (X)
+                (DECLARE (XARGS :GUARD (DFP X) :MODE :LOGIC))
+                X)
+ACL2 !>>:PE TO-DFP
+ V     -6424  (DEFUN TO-DFP (X)
+                (DECLARE (XARGS :GUARD (RATIONALP X)
+                                :MODE :LOGIC))
+                (FROM-DF (TO-DF X)))
+ACL2 !>>(TO-DF 1/3)
+#d0.3333333333333333
+ACL2 !>>(THM (EQUAL *DF{1/3}* (TO-DF 1/3)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(EQUAL *DF{1/3}*
+               6004799503160661/18014398509481984)
+T
+ACL2 !>>(TO-DF 1/3)
+#d0.3333333333333333
+ACL2 !>>(FROM-DF (TO-DF 1/3))
+6004799503160661/18014398509481984
+ACL2 !>>(TO-DFP 1/3)
+6004799503160661/18014398509481984
+ACL2 !>>(THM (EQUAL (TO-DF 1/3)
+                    6004799503160661/18014398509481984))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(DF-RATIONALIZE (TO-DF 1/3))
+1/3
+ACL2 !>>:PE RIZE
+ V       -67  (DEFUN RIZE (X)
+                (DECLARE (TYPE RATIONAL X))
+                (DF-RATIONALIZE (TO-DF X)))
+
+Additional events for the logical name RIZE:
+ PV    -1675  (DEFUN RIZE (X)
+                (DECLARE (TYPE RATIONAL X))
+                (DF-RATIONALIZE (TO-DF X)))
+ACL2 !>>(RIZE 1/3)
+1/3
+ACL2 !>>*DF{1/3}*
+6004799503160661/18014398509481984
+ACL2 !>>(RIZE *DF{1/3}*)
+1/3
+ACL2 !>>(A-E (EQUAL (TO-DFP (RIZE *DF{1/3}*))
+                    *DF{1/3}*))
+ :SUCCESS
+ACL2 !>>:PE TO-DFP-OF-RIZE
+         -66  (DEFTHM TO-DFP-OF-RIZE
+                (IMPLIES (DFP X)
+                         (EQUAL (TO-DFP (RIZE X)) X)))
+ACL2 !>>(A-E (AND (NOT (DFP 1/3))
+                  (DFP *DF{1/3}*)
+                  (NOT (EQUAL 1/3 *DF{1/3}*))))
+ :SUCCESS
+ACL2 !>>:PE DFP
+ V d   -6426  (DEFUN DFP (X)
+                (DECLARE (XARGS :GUARD T :MODE :LOGIC))
+                (AND (RATIONALP X) (= (TO-DF X) X)))
+ACL2 !>>:PE DFP-TO-DF
+         -97  (DEFTHM DFP-TO-DF (DFP (TO-DF X)))
+ACL2 !>>(A-E (EQUAL (DFP 1/4) T))
+ :SUCCESS
+ACL2 !>>(A-E (EQUAL (DFP 1/3) NIL))
+ :SUCCESS
+ACL2 !>>(A-E (EQUAL (DFP (TO-DF 1/3)) T))
+ :SUCCESS
+ACL2 !>>(THM (EQUAL (TO-DF 'ABC) 0))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Proof succeeded.
+ACL2 !>>:PE *DF-PI*
+          -5  (DEFCONST *DF-PI* (FROM-DF (DF-PI)))
+ACL2 !>>(DEFCONST *2PI* (* 2 *DF-PI*))
+
+Summary
+Form:  ( DEFCONST *2PI* ...)
+Rules: NIL
+ *2PI*
+ACL2 !>>(DEFUN-INLINE DF-2PI NIL
+          (DF* 2 (DF-PI)))
+
+
+ACL2 !>>>(DEFMACRO DF-2PI NIL
+           (LIST 'DF-2PI$INLINE))
+
+Summary
+Form:  ( DEFMACRO DF-2PI ...)
+Rules: NIL
+DF-2PI
+
+
+ACL2 !>>>(ADD-MACRO-FN DF-2PI DF-2PI$INLINE)
+
+
+ACL2 !>>>(ADD-MACRO-ALIAS DF-2PI DF-2PI$INLINE)
+
+Summary
+Form:  ( TABLE MACRO-ALIASES-TABLE ...)
+Rules: NIL
+MACRO-ALIASES-TABLE
+
+
+ACL2 !>>>(TABLE UNTRANS-TABLE
+           'DF-2PI$INLINE
+           '(DF-2PI))
+
+Summary
+Form:  ( TABLE UNTRANS-TABLE ...)
+Rules: NIL
+UNTRANS-TABLE
+
+Summary
+Form:  ( PROGN (ADD-MACRO-ALIAS ... DF-2PI$INLINE) ...)
+Rules: NIL
+UNTRANS-TABLE
+
+
+ACL2 !>>>(DEFUN DF-2PI$INLINE NIL
+           (DF* 2 (DF-PI)))
+
+Since DF-2PI$INLINE is non-recursive, its admission is trivial.  We
+observe that the type of DF-2PI$INLINE is described by the theorem
+(RATIONALP (DF-2PI)).  We used the :type-prescription rule BINARY-DF*.
+
+(DF-2PI$INLINE) => :DF.
+
+Summary
+Form:  ( DEFUN DF-2PI$INLINE ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF*))
+DF-2PI$INLINE
+
+Summary
+Form:  ( PROGN (DEFMACRO DF-2PI ...) ...)
+Rules: NIL
+ DF-2PI$INLINE
+ACL2 !>>:PE DF-2PI
+
+Note that macro DF-2PI is a macro alias for the function DF-2PI$INLINE;
+so we print event information for each in turn.
+
+Printing event information for DF-2PI:
+           7:x(DEFUN-INLINE DF-2PI NIL ...)
+              \
+>              (DEFMACRO DF-2PI NIL
+                 (LIST 'DF-2PI$INLINE))
+
+Printing event information for DF-2PI$INLINE:
+           7:x(DEFUN-INLINE DF-2PI NIL ...)
+              \
+>L             (DEFUN DF-2PI$INLINE NIL
+                 (DF* 2 (DF-PI)))
+ACL2 !>>:ARGS DF-2PI$INLINE
+
+Function         DF-2PI$INLINE
+Formals:         NIL
+Signature:       (DF-2PI$INLINE)
+                 => :DF
+Guard:           T
+Guards Verified: NIL
+Defun-Mode:      :logic
+Type:            (RATIONALP (DF-2PI))
+Badge:           none
+Warrant:         none
+
+ DF-2PI$INLINE
+ACL2 !>>(A-E (EQUAL *2PI* (FROM-DF (DF-2PI))))
+ :SUCCESS
+ACL2 !>>*2PI*
+884279719003555/140737488355328
+ACL2 !>>(DF-2PI)
+#d6.283185307179586
+ACL2 !>>(RIZE *2PI*)
+411557987/65501488
+ACL2 !>>(A-E (EQUAL (TO-DFP *2PI*)
+                    (TO-DFP (RIZE *2PI*))))
+ :SUCCESS
+ACL2 !>>(TO-DF *2PI*)
+#d6.283185307179586
+ACL2 !>>(ASSERT-EVENT (EQUAL (TO-DFP (RIZE *2PI*)) *2PI*))
+ :PASSED
+ACL2 !>>(THM (EQUAL (TO-DF (RIZE *2PI*)) *2PI*))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART RIZE)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(DF-SIN (DF-2PI))
+#d-2.4492935982947064E-16
+ACL2 !>>(DF-RATIONALIZE (DF-SIN (DF-2PI)))
+-1/4082809838298842
+ACL2 !>>(DFP (DF-SIN (DF-2PI)))
+T
+ACL2 !>>(DF-SIN *2PI*)
+#d-2.4492935982947064E-16
+ACL2 !>>:PE DF-SIN
+
+Note that macro DF-SIN is a macro alias for the function DF-SIN-FN;
+so we print event information for each in turn.
+
+Printing event information for DF-SIN:
+   d   -1677  (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
+              \
+>              (DEFMACRO DF-SIN (X)
+                 (CONS 'DF-SIN-FN
+                       (TO-DF?-ARGS (LIST X))))
+
+Printing event information for DF-SIN-FN:
+   d     -71  (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
+              \
+>V d           (DEFUN DF-SIN-FN (X)
+                 (DECLARE (TYPE DOUBLE-FLOAT X))
+                 (DECLARE (XARGS :GUARD T))
+                 (TO-DF (NON-EXEC (CONSTRAINED-DF-SIN-FN X))))
+
+Additional events for the logical name DF-SIN-FN:
+   d   -1677  (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
+              \
+>PVd           (DEFUN DF-SIN-FN (X)
+                 (DECLARE (TYPE DOUBLE-FLOAT X))
+                 (DECLARE (XARGS :GUARD T))
+                 (TO-DF (NON-EXEC (CONSTRAINED-DF-SIN-FN X))))
+ACL2 !>>(TRANS '(TO-DF *2PI*))
+
+(TO-DF '884279719003555/140737488355328)
+
+=> :DF
+
+ACL2 !>>(A-E (NOT (DFP (/ *DF-PI* 6))))
+ :SUCCESS
+ACL2 !>>(A-E (EQUAL (TO-DFP (/ *DF-PI* 6))
+                    (FROM-DF (DF/ *DF-PI* 6))))
+ :SUCCESS
+ACL2 !>>(DEFCONST *PI/6* (TO-DFP (/ *DF-PI* 6)))
+
+Summary
+Form:  ( DEFCONST *PI/6* ...)
+Rules: NIL
+ *PI/6*
+ACL2 !>>(DF-SIN *PI/6*)
+#d0.49999999999999994
+ACL2 !>>(DF-RATIONALIZE (DF-SIN *PI/6*))
+3002399751580331/6004799503160663
+ACL2 !>>(ASSERT-EVENT (LET ((X (DF-RATIONALIZE (DF-SIN *PI/6*))))
+                        (EQUAL (DENOMINATOR X)
+                               (1+ (* 2 (NUMERATOR X))))))
+ :PASSED
+ACL2 !>>(DF-SQRT 2)
+#d1.4142135623730951
+ACL2 !>>(DF* (DF-SQRT 2) (DF-SQRT 2))
+#d2.0000000000000004
+ACL2 !>>(A-E (EQUAL (- (FROM-DF (DF* (DF-SQRT 2) (DF-SQRT 2)))
+                       (/ 2251799813685248))
+                    2))
+ :SUCCESS
+ACL2 !>>(TO-DF #C(0 1))
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(TO-DF X), which is (RATIONALP X), is violated by the arguments in
+the call (TO-DF #C(0 1)).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(DEFUN F0 (X)
+          (DECLARE (XARGS :VERIFY-GUARDS NIL)
+                   (TYPE DOUBLE-FLOAT X))
+          (DF- X))
+
+Since F0 is non-recursive, its admission is trivial.  We observe that
+the type of F0 is described by the theorem (RATIONALP (F0 X)).  We
+used the :type-prescription rule UNARY-DF-.
+
+(F0 :DF) => :DF.
+
+Summary
+Form:  ( DEFUN F0 ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+ F0
+ACL2 !>>:ARGS F0
+
+Function         F0
+Formals:         (X)
+Signature:       (F0 :DF)
+                 => :DF
+Guard:           (DFP X)
+Guards Verified: NIL
+Defun-Mode:      :logic
+Type:            (RATIONALP (F0 X))
+Badge:           none
+Warrant:         none
+
+ F0
+ACL2 !>>(F0 3)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form 3 represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context (F0 3).
+
+ACL2 !>>(F0 3)
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form 3 represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context (F0 3).
+
+ACL2 !>>(F0 (TO-DF 3))
+#d-3.0
+ACL2 !>>(DEFUN-DF F1 (X)
+                  (DECLARE (XARGS :VERIFY-GUARDS NIL))
+                  (DF- X))
+
+Since F1-FN is non-recursive, its admission is trivial.  We observe
+that the type of F1-FN is described by the theorem (RATIONALP (F1-FN X)).
+We used the :type-prescription rule UNARY-DF-.
+
+(F1-FN :DF) => :DF.
+
+Summary
+Form:  ( DEFUN F1-FN ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+ F1
+ACL2 !>>(F1 3)
+#d-3.0
+ACL2 !>>(F1 (TO-DF 3))
+#d-3.0
+ACL2 !>>:TRANS* T (F1 3)
+
+Iteration 1 produces (by expansion):
+(F1-FN (TO-DF 3))
+----------
+
+Iteration 2 produces (by translation):
+(F1-FN (TO-DF '3))
+----------
+ACL2 !>>(TRANS '(F1 X))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form X represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context (F1-FN X).
+
+
+
+ACL2 Error in TRANS:  :Trans has failed.  Consider trying :trans! instead;
+see :DOC trans!.
+
+ACL2 !>>(TRANS '(F1 (TO-DF X)))
+
+(F1-FN (TO-DF X))
+
+=> :DF
+
+ACL2 !>>(SET-RAW-MODE-ON!)
+(DEFTTAG :RAW-MODE-HACK)
+(SET-RAW-MODE-ON STATE)
+ACL2 P>>(VALUES (MACROEXPAND '(F1 3)))
+(F1-FN (TO-DF 3))
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(ASSERT-EVENT (EQUAL (F1 3) -3))
+
+
+ACL2 Error [Translate] in ASSERT-EVENT:  It is illegal to invoke F1-FN
+here because of a signature mismatch.  This function call returns a
+result of shape :DF where a result of shape * is required.  Note: 
+this error occurred in the context (F1-FN (TO-DF 3)).
+
+ACL2 !>>(DF= (F1 3) -3)
+T
+ACL2 !>>(THM (EQUAL (F1 3) -3))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART F1-FN)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(ASSERT-EVENT (EQUAL (FROM-DF (F1 3)) -3))
+ :PASSED
+ACL2 !>>(VERIFY-GUARDS F1)
+
+
+ACL2 Error in ( VERIFY-GUARDS F1):  F1 is not a function symbol or
+a theorem name in the current ACL2 world.  Note that F1 is a macro-
+alias for F1-FN.  Consider calling verify-guards with argument F1-FN
+instead, or use verify-guards+.  See :DOC verify-guards, see :DOC verify-
+guards+, and see :DOC macro-aliases-table.
+
+
+Summary
+Form:  ( VERIFY-GUARDS F1)
+Rules: NIL
+
+ACL2 Error [Failure] in ( VERIFY-GUARDS F1):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(VERIFY-GUARDS+ F1)
+
+ACL2 Observation in VERIFY-GUARDS+:  Attempting to verify guards for
+F1-FN.
+
+Computing the guard conjecture for F1-FN....
+
+The guard conjecture for F1-FN is trivial to prove.  F1-FN is compliant
+with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS F1-FN)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (LET* ...) ...)
+Rules: NIL
+ F1-FN
+ACL2 !>>(THM (EQUAL (F1 3) -3))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART F1-FN)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(ASSERT-EVENT (EQUAL (FROM-DF (F1 3)) -3))
+ :PASSED
+ACL2 !>>(DEFUN-DF F2 (X)
+                  (DECLARE (XARGS :VERIFY-GUARDS NIL))
+                  (FROM-DF (DF- X)))
+
+Since F2-FN is non-recursive, its admission is trivial.  We observe
+that the type of F2-FN is described by the theorem (RATIONALP (F2-FN X)).
+We used the :type-prescription rule UNARY-DF-.
+
+(F2-FN :DF) => *.
+
+Summary
+Form:  ( DEFUN F2-FN ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+ F2
+ACL2 !>>:PE F2
+
+Note that macro F2 is a macro alias for the function F2-FN; so we print
+event information for each in turn.
+
+Printing event information for F2:
+          13:x(DEFUN-DF F2 (X) ...)
+              \
+>              (DEFMACRO F2 (X)
+                 (CONS 'F2-FN (TO-DF?-ARGS (LIST X))))
+
+Printing event information for F2-FN:
+          13:x(DEFUN-DF F2 (X) ...)
+              \
+>L             (DEFUN F2-FN (X)
+                 (DECLARE (TYPE DOUBLE-FLOAT X))
+                 (DECLARE (XARGS :VERIFY-GUARDS NIL))
+                 (FROM-DF (DF- X)))
+ACL2 !>>:ARGS F2-FN
+
+Function         F2-FN
+Formals:         (X)
+Signature:       (F2-FN :DF)
+                 => *
+Guard:           (DFP X)
+Guards Verified: NIL
+Defun-Mode:      :logic
+Type:            (RATIONALP (F2 X))
+Badge:           none
+Warrant:         none
+
+ F2-FN
+ACL2 !>>(A-E (EQUAL (F2 3) -3))
+ :SUCCESS
+ACL2 !>>(A-E (EQUAL (F2 3) -3))
+ :SUCCESS
+ACL2 !>>(VERIFY-GUARDS F2-FN)
+
+Computing the guard conjecture for F2-FN....
+
+The guard conjecture for F2-FN is trivial to prove.  F2-FN is compliant
+with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS F2-FN)
+Rules: NIL
+ F2-FN
+ACL2 !>>(A-E (EQUAL (F2 3) -3))
+ :SUCCESS
+ACL2 !>>(A-E (EQUAL (F2 3) -3))
+ :SUCCESS
+ACL2 !>>(DEFUN F3 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (DF- (TO-DF X)))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (RATIONALP (F3 X)).  We
+used the :type-prescription rule UNARY-DF-.
+
+(F3 *) => :DF.
+
+Computing the guard conjecture for F3....
+
+The guard conjecture for F3 is trivial to prove.  F3 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+ F3
+ACL2 !>>:ARGS F3
+
+Function         F3
+Formals:         (X)
+Signature:       (F3 *)
+                 => :DF
+Guard:           (RATIONALP X)
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            (RATIONALP (F3 X))
+Badge:           none
+Warrant:         none
+
+ F3
+ACL2 !>>(F3 30000000)
+#d-3.0E+7
+ACL2 !>>(THM (EQUAL (F3 30000000) -30000000))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART F3))
+
+Proof succeeded.
+ACL2 !>>(DEFUN F4 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (FROM-DF (DF- (TO-DF X))))
+
+Since F4 is non-recursive, its admission is trivial.  We observe that
+the type of F4 is described by the theorem (RATIONALP (F4 X)).  We
+used the :type-prescription rule UNARY-DF-.
+
+Computing the guard conjecture for F4....
+
+The guard conjecture for F4 is trivial to prove.  F4 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F4 ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+ F4
+ACL2 !>>(A-E (EQUAL (F4 3) -3))
+ :SUCCESS
+ACL2 !>>(DEFUN F5 (X Y Z)
+          (DECLARE (XARGS :GUARD (DFP* X Y Z)
+                          :VERIFY-GUARDS NIL))
+          (FROM-DF (LET ((X (TO-DF X))
+                         (Y (TO-DF Y))
+                         (Z (TO-DF Z)))
+                     (DF* (DF+ X Y Z) 2 5))))
+
+Since F5 is non-recursive, its admission is trivial.  We observe that
+the type of F5 is described by the theorem (RATIONALP (F5 X Y Z)).
+We used the :type-prescription rule BINARY-DF*.
+
+Summary
+Form:  ( DEFUN F5 ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF*))
+ F5
+ACL2 !>>(A-E (EQUAL (F5 1/4 1/2 3/4) 15))
+ :SUCCESS
+ACL2 !>>(VERIFY-GUARDS+ F5)
+
+ACL2 Observation in VERIFY-GUARDS+:  Attempting to verify guards for
+F5.
+
+Computing the guard conjecture for F5....
+
+The guard conjecture for F5 is trivial to prove, given the :compound-
+recognizer rule DFP-IMPLIES-RATIONALP.  F5 is compliant with Common
+Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS F5)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP))
+
+Summary
+Form:  ( MAKE-EVENT (LET* ...) ...)
+Rules: NIL
+ F5
+ACL2 !>>(A-E (EQUAL (F5 1/4 1/2 3/4) 15))
+ :SUCCESS
+ACL2 !>>(DEFUN BAD (X)
+          (DECLARE (TYPE DOUBLE-FLOAT X)
+                   (TYPE RATIONAL X))
+          X)
+
+
+ACL2 Error [Translate] in ( DEFUN BAD ...):  The form X represents
+a :DF, but it is being used where a form representing an ordinary object
+was expected.  See :DOC df.  Note:  this error occurred in the context
+(RATIONALP X).
+
+
+Summary
+Form:  ( DEFUN BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN G (X)
+          (IF (CONSP X)
+              (LET ((Y (G (CDR X))))
+                (DF+ (TO-DF (CAR X)) Y))
+            (DF0)))
+
+
+ACL2 Error [Translate] in ( DEFUN G ...):  It is illegal to invoke
+BINARY-DF+ here because of a signature mismatch.  This function call
+returns a result of shape :DF where a result of shape * is required.
+Note:  this error occurred in the context (BINARY-DF+ (TO-DF (CAR X)) Y).
+
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN G ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN G0 (X)
+          (IF (CONSP X)
+              (LET ((Y (G0 (CDR X))))
+                (DECLARE (TYPE DOUBLE-FLOAT Y))
+                (DF+ (TO-DF (CAR X)) Y))
+            (DF0)))
+
+The admission of G0 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of G0 is described by the
+theorem (RATIONALP (G0 X)).  We used the :type-prescription rule BINARY-DF+.
+
+(G0 *) => :DF.
+
+Summary
+Form:  ( DEFUN G0 ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+ G0
+ACL2 !>>(DEFUN G1 (X)
+          (IF (CONSP X)
+              (LET ((Y (THE DOUBLE-FLOAT (G1 (CDR X)))))
+                (DF+ (TO-DF (CAR X)) Y))
+            (DF0)))
+
+The admission of G1 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of G1 is described by the
+theorem (RATIONALP (G1 X)).  We used the :type-prescription rule BINARY-DF+.
+
+(G1 *) => :DF.
+
+Summary
+Form:  ( DEFUN G1 ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+ G1
+ACL2 !>>(DEFUN G2 (X)
+          (IF (ATOM X)
+              (DF0)
+            (LET ((Y (G2 (CDR X))))
+              (DF+ (TO-DF (CAR X)) Y))))
+
+The admission of G2 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of G2 is described by the
+theorem (RATIONALP (G2 X)).  We used the :type-prescription rule BINARY-DF+.
+
+(G2 *) => :DF.
+
+Summary
+Form:  ( DEFUN G2 ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+ G2
+ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-OUT 'G0 (W STATE))
+                                  '(:DF))
+                           (EQUAL (STOBJS-OUT 'G1 (W STATE))
+                                  '(:DF))
+                           (EQUAL (STOBJS-OUT 'G2 (W STATE))
+                                  '(:DF))))
+ :PASSED
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (DF- (TO-DF X))))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  The argument (DF- (TO-DF X))
+is illegal for EC-CALL, because DF- is a macro, not a function symbol.
+A call of EC-CALL must only be made on an argument of the form (FN
+...), where FN is a known function symbol of the current ACL2 world
+not belonging to the list that is the value of the constant 
+*EC-CALL-BAD-OPS*, or is a macro expanding in a certain direct way
+(as with defun-inline) to a call of FN$INLINE (i.e., the result of
+adding suffix "$INLINE" to the symbol-name of FN).  See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
+term (UNARY-DF- (TO-DF X)) requires a suitable :DFS keyword argument.
+See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS '(NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
+term (UNARY-DF- (TO-DF X)) requires a suitable :DFS keyword argument.
+See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS (T)))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
+term (UNARY-DF- (TO-DF X)) has a :DFS argument that is not of the form
+(QUOTE lst), hence is illegal.  See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS '(T NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
+term (UNARY-DF- (TO-DF X)) requires a suitable :DFS keyword argument.
+See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS '(T)))
+
+Since F6 is non-recursive, its admission is trivial.  We observe that
+the type of F6 is described by the theorem (RATIONALP (F6 X)).  We
+used the :type-prescription rule UNARY-DF-.
+
+(F6 *) => :DF.
+
+Computing the guard conjecture for F6....
+
+The guard conjecture for F6 is trivial to prove.  F6 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+ F6
+ACL2 !>>(F6 7/2)
+#d-3.5
+ACL2 !>>(SET-RAW-MODE-ON!)
+(DEFTTAG :RAW-MODE-HACK)
+(SET-RAW-MODE-ON STATE)
+ACL2 P>>(F6 7/2)
+[Note:  Printing non-ACL2 result.]
+-3.5
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(DEFUN F6-IDEAL (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)
+                          :VERIFY-GUARDS NIL))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS '(T)))
+
+Since F6-IDEAL is non-recursive, its admission is trivial.  We observe
+that the type of F6-IDEAL is described by the theorem 
+(RATIONALP (F6-IDEAL X)).  We used the :type-prescription rule UNARY-DF-.
+
+(F6-IDEAL *) => :DF.
+
+Summary
+Form:  ( DEFUN F6-IDEAL ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+ F6-IDEAL
+ACL2 !>>(F6-IDEAL 7/2)
+#d-3.5
+ACL2 !>>(DEFUN F6-PROG (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)
+                          :MODE :PROGRAM))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS '(T)))
+
+Summary
+Form:  ( DEFUN F6-PROG ...)
+Rules: NIL
+ F6-PROG
+ACL2 !>>(F6-PROG 7/2)
+#d-3.5
+ACL2 !>>(DEFUN F7 (X)
+          (DECLARE (XARGS :MODE :PROGRAM))
+          (MV (F6 X) (F6-IDEAL X) (F6-PROG X)))
+
+Summary
+Form:  ( DEFUN F7 ...)
+Rules: NIL
+ F7
+ACL2 !>>(F7 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 !>>(DEFUN F8 (X)
+          (DECLARE (XARGS :MODE :PROGRAM))
+          (EC-CALL (F7 X) :DFS '(T T T)))
+
+Summary
+Form:  ( DEFUN F8 ...)
+Rules: NIL
+ F8
+ACL2 !>>(F8 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 !>>(SET-RAW-MODE-ON!)
+(DEFTTAG :RAW-MODE-HACK)
+(SET-RAW-MODE-ON STATE)
+ACL2 P>>(F8 7/2)
+[Note:  Printing non-ACL2 result.]
+(-3.5
+ -3.5
+ -3.5)
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(DEFUN F9 (X)
+          (DECLARE (XARGS :MODE :PROGRAM
+                          :GUARD (RATIONALP X)))
+          (MV-LET (A B C) (F8 X) (DF+ A B C)))
+
+Summary
+Form:  ( DEFUN F9 ...)
+Rules: NIL
+ F9
+ACL2 !>>(F9 7/2)
+#d-10.5
+ACL2 !>>(VERIFY-TERMINATION F6-PROG)
+
+Since F6-PROG is non-recursive, its admission is trivial.  We observe
+that the type of F6-PROG is described by the theorem (RATIONALP (F6-PROG X)).
+We used the :type-prescription rule UNARY-DF-.
+
+(F6-PROG *) => :DF.
+
+Computing the guard conjecture for F6-PROG....
+
+The guard conjecture for F6-PROG is trivial to prove.  F6-PROG is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F6-PROG ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+
+Summary
+Form:  ( MAKE-EVENT (VERIFY-TERMINATION-FN ...))
+Rules: NIL
+ F6-PROG
+ACL2 !>>(VERIFY-TERMINATION F7)
+
+Since F7 is non-recursive, its admission is trivial.  We observe that
+the type of F7 is described by the theorem 
+(AND (CONSP (F7 X)) (TRUE-LISTP (F7 X))).  We used primitive type reasoning.
+
+(F7 *) => (MV :DF :DF :DF).
+
+Summary
+Form:  ( DEFUN F7 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+
+Summary
+Form:  ( MAKE-EVENT (VERIFY-TERMINATION-FN ...))
+Rules: NIL
+ F7
+ACL2 !>>(VERIFY-TERMINATION F8)
+
+Since F8 is non-recursive, its admission is trivial.  We observe that
+the type of F8 is described by the theorem 
+(AND (CONSP (F8 X)) (TRUE-LISTP (F8 X))).  We used the :type-prescription
+rule F7.
+
+(F8 *) => (MV :DF :DF :DF).
+
+Summary
+Form:  ( DEFUN F8 ...)
+Rules: ((:TYPE-PRESCRIPTION F7))
+
+Summary
+Form:  ( MAKE-EVENT (VERIFY-TERMINATION-FN ...))
+Rules: NIL
+ F8
+ACL2 !>>(VERIFY-TERMINATION F9 (DECLARE (XARGS :VERIFY-GUARDS NIL)))
+
+Since F9 is non-recursive, its admission is trivial.  We observe that
+the type of F9 is described by the theorem (RATIONALP (F9 X)).  We
+used the :type-prescription rule BINARY-DF+.
+
+(F9 *) => :DF.
+
+Summary
+Form:  ( DEFUN F9 ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+
+Summary
+Form:  ( MAKE-EVENT (VERIFY-TERMINATION-FN ...))
+Rules: NIL
+ F9
+ACL2 !>>(F9 7/2)
+#d-10.5
+ACL2 !>>(DEFUN F8-LOGIC (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (F7 X) :DFS (T T T)))
+
+
+ACL2 Error [Translate] in ( DEFUN F8-LOGIC ...):  A use of EC-CALL
+on the term (F7 X) has a :DFS argument that is not of the form (QUOTE
+lst), hence is illegal.  See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F8-LOGIC ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F8-LOGIC ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F8-LOGIC (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (F7 X) :DFS '(T T T)))
+
+Since F8-LOGIC is non-recursive, its admission is trivial.  We observe
+that the type of F8-LOGIC is described by the theorem 
+(AND (CONSP (F8-LOGIC X)) (TRUE-LISTP (F8-LOGIC X))).  We used the
+:type-prescription rule F7.
+
+(F8-LOGIC *) => (MV :DF :DF :DF).
+
+Computing the guard conjecture for F8-LOGIC....
+
+The guard conjecture for F8-LOGIC is trivial to prove.  F8-LOGIC is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN F8-LOGIC ...)
+Rules: ((:TYPE-PRESCRIPTION F7))
+ F8-LOGIC
+ACL2 !>>(F8-LOGIC 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 !>>(DEFUN F9-LOGIC (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (MV-LET (A B C)
+                  (F8-LOGIC X)
+            (DF+ A B C)))
+
+Since F9-LOGIC is non-recursive, its admission is trivial.  We observe
+that the type of F9-LOGIC is described by the theorem 
+(RATIONALP (F9-LOGIC X)).  We used the :type-prescription rule BINARY-DF+.
+
+(F9-LOGIC *) => :DF.
+
+Computing the guard conjecture for F9-LOGIC....
+
+The guard conjecture for F9-LOGIC is trivial to prove.  F9-LOGIC is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN F9-LOGIC ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+ F9-LOGIC
+ACL2 !>>(F9-LOGIC 7/2)
+#d-10.5
+ACL2 !>>(SET-GUARD-CHECKING NIL)
+
+Masking guard violations but still checking guards except for self-
+recursive calls.  To avoid guard checking entirely, :SET-GUARD-CHECKING
+:NONE.  See :DOC set-guard-checking.
+
+ACL2 >>(F7 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 >>(F8 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 >>(F9 7/2)
+#d-10.5
+ACL2 >>(F8-LOGIC 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 >>(F9-LOGIC 7/2)
+#d-10.5
+ACL2 >>(SET-GUARD-CHECKING :ALL)
+
+Turning guard checking on, value :ALL.
+
+ACL2 !>>(F7 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 !>>(F8 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 !>>(F9 7/2)
+#d-10.5
+ACL2 !>>(F8-LOGIC 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 !>>(F9-LOGIC 7/2)
+#d-10.5
+ACL2 !>>(SET-GUARD-CHECKING :NONE)
+
+Turning off guard checking entirely.  To allow execution in raw Lisp
+for functions with guards other than T, while continuing to mask guard
+violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+
+ACL2 >>(F7 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 >>(F8 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 >>(F9 7/2)
+#d-10.5
+ACL2 >>(F8-LOGIC 7/2)
+(#d-3.5 #d-3.5 #d-3.5)
+ACL2 >>(F9-LOGIC 7/2)
+#d-10.5
+ACL2 >>(SET-GUARD-CHECKING T)
+
+Turning guard checking on, value T.
+
+ACL2 !>>(THM (DFP (TO-DF X)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:REWRITE DFP-TO-DF))
+
+Proof succeeded.
+ACL2 !>>(THM (EQUAL (DFP X)
+                    (AND (RATIONALP X)
+                         (EQUAL (TO-DF X) X))))
+Subgoal 2
+Subgoal 2.2
+Subgoal 2.2'
+Subgoal 2.2''
+Subgoal 2.1
+Subgoal 1
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION HIDE)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING DFP-IMPLIES-TO-DF-IS-IDENTITY)
+        (:REWRITE DFP-TO-DF)
+        (:TYPE-PRESCRIPTION DFP))
+
+Proof succeeded.
+ACL2 !>>(THM (DFP (DF+ X Y Z)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF+)
+        (:REWRITE DFP-DF-ROUND))
+
+Proof succeeded.
+ACL2 !>>(THM (DFP (DF- X)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION UNARY-DF-)
+        (:REWRITE DFP-DF-ROUND))
+
+Proof succeeded.
+ACL2 !>>(THM (DFP (DF/ X Y)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF/)
+        (:REWRITE DFP-DF-ROUND))
+
+Proof succeeded.
+ACL2 !>>(THM (EQUAL (DF+ 'APPLE 3) 0))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+NIL
+
+A goal of NIL, Goal'', has been generated!  Obviously, the proof attempt
+has failed.
+
+])
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF+)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART DFP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:REWRITE DF-ROUND-IS-IDENTITY-FOR-DFP))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level
+    before generating a goal of NIL (see :DOC nil-goal): ***
+
+Goal''
+NIL
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM (EQUAL (DF/ X 0) 0))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (DF-ROUND (* 0 X)) 0)
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF/)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART UNARY-/)
+        (:REWRITE COMMUTATIVITY-OF-*))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (DF-ROUND (* 0 X)) 0)
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM (IMPLIES (DFP X)
+                      (EQUAL (TO-DF (FROM-DF X)) X)))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION FROM-DF)
+        (:FORWARD-CHAINING DFP-IMPLIES-TO-DF-IS-IDENTITY))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (DFP X)
+                      (EQUAL (TO-DF (DF-RATIONALIZE X)) X)))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE TO-DF-OF-DF-RATIONALIZE))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (DFP* X Y)
+                      (EQUAL (DF+ X Y) (DF+ Y X))))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF+)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE COMMUTATIVITY-OF-+))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (DFP* X Y Z)
+                      (EQUAL (DF+ X Y Z) (DF+ (DF+ X Y) Z))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES (AND (DFP X) (DFP Y) (DFP Z))
+         (EQUAL (DF-ROUND (+ X (DF-ROUND (+ Y Z))))
+                (DF-ROUND (+ Z (DF-ROUND (+ X Y))))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF+)
+        (:REWRITE COMMUTATIVITY-OF-+))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(IMPLIES (AND (DFP X) (DFP Y) (DFP Z))
+         (EQUAL (DF-ROUND (+ X (DF-ROUND (+ Y Z))))
+                (DF-ROUND (+ Z (DF-ROUND (+ X Y))))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM (IMPLIES (AND (DFP X) (NOT (EQUAL X 0)))
+                      (EQUAL (DF/ X X) 1)))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION BINARY-DF/)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART DFP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:REWRITE DF-ROUND-IS-IDENTITY-FOR-DFP)
+        (:REWRITE INVERSE-OF-*))
+
+Proof succeeded.
+ACL2 !>>(ASSERT-EVENT (NOT (EQUAL (DF-RATIONALIZE (DF/ 1 3))
+                                  (FROM-DF (DF/ 1 3)))))
+ :PASSED
+ACL2 !>>(THM (LET ((X (FROM-DF (DF/ 1 3))))
+               (NOT (IMPLIES (RATIONALP X)
+                             (EQUAL X (DF-RATIONALIZE (TO-DF X)))))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART BINARY-DF/)
+        (:EXECUTABLE-COUNTERPART DF-RATIONALIZE)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FROM-DF)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART RATIONALP)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (RATIONALP X)
+                      (EQUAL X (DF-RATIONALIZE (TO-DF X)))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: NIL
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal
+(IMPLIES (RATIONALP X)
+         (EQUAL X (DF-RATIONALIZE (TO-DF X))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM (LET ((X (FROM-DF (DF/ 1 3))))
+               (NOT (IMPLIES (RATIONALP X)
+                             (EQUAL X (RIZE (TO-DFP X)))))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART BINARY-DF/)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FROM-DF)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART RATIONALP)
+        (:EXECUTABLE-COUNTERPART RIZE)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART TO-DFP))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (RATIONALP X)
+                      (EQUAL X (RIZE (TO-DFP X)))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (RATIONALP X)
+         (EQUAL X (DF-RATIONALIZE (TO-DF X))))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION RIZE)
+        (:DEFINITION TO-DFP)
+        (:REWRITE TO-DF-IDEMPOTENT))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal'
+(IMPLIES (RATIONALP X)
+         (EQUAL X (DF-RATIONALIZE (TO-DF X))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(THM (IMPLIES (DFP* X Y)
+                      (OR (DF< X Y) (DF< Y X) (DF= X Y))))
+Goal'
+Goal''
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION DF<-FN)
+        (:DEFINITION DF=-FN)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+
+Proof succeeded.
+ACL2 !>>(DF+ 3602879701896397/36028797018963968
+             3602879701896397/18014398509481984
+             5404319552844595/18014398509481984)
+#d0.6
+ACL2 !>>(DF+ 5404319552844595/18014398509481984
+             3602879701896397/18014398509481984
+             3602879701896397/36028797018963968)
+#d0.6000000000000001
+ACL2 !>>(THM (EQUAL (DF+ X Y Z) (DF+ Z Y X)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (DF-ROUND (+ X (DF-ROUND (+ Y Z))))
+       (DF-ROUND (+ Z (DF-ROUND (+ X Y)))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF+)
+        (:REWRITE COMMUTATIVITY-OF-+))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint at the top level: ***
+
+Goal''
+(EQUAL (DF-ROUND (+ X (DF-ROUND (+ Y Z))))
+       (DF-ROUND (+ Z (DF-ROUND (+ X Y)))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(INCLUDE-BOOK "kestrel/utilities/checkpoints"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "kestrel/utilities/checkpoints" ...)
+Rules: NIL
+ (:SYSTEM . "kestrel/utilities/checkpoints.lisp")
+ACL2 !>>(ASSERT-EVENT
+         (EQUAL
+             (CHECKPOINT-LIST T STATE)
+             '(((EQUAL (DF-ROUND (BINARY-+ X (DF-ROUND (BINARY-+ Y Z))))
+                       (DF-ROUND (BINARY-+ Z (DF-ROUND (BINARY-+ X Y)))))))))
+ :PASSED
+ACL2 !>>(THM (DF= (DF+ X 'BAD) (DF+ X 0)))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION BINARY-DF+)
+        (:DEFINITION DF=-FN)
+        (:DEFINITION FIX)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DEFAULT-+-2)
+        (:REWRITE UNICITY-OF-0))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (DFP X) (DF= (DF+ X 'BAD) X)))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION BINARY-DF+)
+        (:DEFINITION DF=-FN)
+        (:DEFINITION FIX)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DEFAULT-+-2)
+        (:REWRITE DF-ROUND-IS-IDENTITY-FOR-DFP))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (DFP X)
+                      (DF= (DF+ X (DF- X)) 0)))
+Goal'
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION BINARY-DF+)
+        (:DEFINITION DF=-FN)
+        (:DEFINITION UNARY-DF-)
+        (:EXECUTABLE-COUNTERPART DFP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:REWRITE DF-ROUND-IS-IDENTITY-FOR-DFP)
+        (:REWRITE DFP-MINUS)
+        (:REWRITE INVERSE-OF-+))
+
+Proof succeeded.
+ACL2 !>>(DEFSTOBJ ST1
+          (ACCUM :TYPE DOUBLE-FLOAT :INITIALLY 0))
+
+Summary
+Form:  ( DEFSTOBJ ST1 ...)
+Rules: NIL
+ ST1
+ACL2 !>>(ASSERT-EVENT (DF= (ACCUM ST1) 0))
+ :PASSED
+ACL2 !>>(UPDATE-ACCUM (TO-DF 3) ST1)
+<st1>
+ACL2 !>>(ASSERT-EVENT (DF= (ACCUM ST1) 3))
+ :PASSED
+ACL2 !>>(DEFSTOBJ ST2
+          (HT :TYPE (HASH-TABLE EQL 70 DOUBLE-FLOAT)
+              :INITIALLY 0))
+
+Summary
+Form:  ( DEFSTOBJ ST2 ...)
+Rules: NIL
+ ST2
+ACL2 !>>(DEFUN F10 (KEY ST2)
+          (DECLARE (XARGS :STOBJS ST2
+                          :GUARD (EQLABLEP KEY)))
+          (HT-GET KEY ST2))
+
+Since F10 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F10.
+
+(F10 * ST2) => :DF.
+
+Computing the guard conjecture for F10....
+
+The guard conjecture for F10 is trivial to prove.  F10 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F10 ...)
+Rules: NIL
+ F10
+ACL2 !>>(ASSERT-EVENT (DF= (F10 'A ST2) 0))
+ :PASSED
+ACL2 !>>(HT-PUT 'B (TO-DF 1/3) ST2)
+<st2>
+ACL2 !>>(ASSERT-EVENT (DF= (F10 'A ST2) 0))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (DF= (F10 'B ST2) (TO-DF 1/3)))
+ :PASSED
+ACL2 !>>(DEFSTOBJ ST3
+          (AR :TYPE (ARRAY DOUBLE-FLOAT (8))
+              :INITIALLY 0))
+
+Summary
+Form:  ( DEFSTOBJ ST3 ...)
+Rules: NIL
+ ST3
+ACL2 !>>(DEFUN LOAD-AR (I MAX LST ST3)
+          (DECLARE (XARGS :STOBJS ST3
+                          :GUARD (AND (RATIONAL-LISTP LST)
+                                      (NATP I)
+                                      (= (+ I (LENGTH LST)) (AR-LENGTH ST3))
+                                      (INTEGERP MAX)
+                                      (<= I MAX)
+                                      (<= MAX (AR-LENGTH ST3)))
+                          :MEASURE (NFIX (- (AR-LENGTH ST3) I))))
+          (IF (MBT (AND (NATP I)
+                        (INTEGERP MAX)
+                        (<= I MAX)
+                        (<= MAX (AR-LENGTH ST3))
+                        (RATIONAL-LISTP LST)))
+              (IF (< I MAX)
+                  (LET ((ST3 (UPDATE-ARI I (TO-DF (CAR LST)) ST3)))
+                    (LOAD-AR (1+ I) MAX (CDR LST) ST3))
+                ST3)
+            ST3))
+
+For the admission of LOAD-AR we will use the relation O< (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(NFIX (+ (AR-LENGTH ST3) (- I))).  The non-trivial part of the measure
+conjecture is
+
+Goal
+(AND (O-P (NFIX (+ (AR-LENGTH ST3) (- I))))
+     (IMPLIES (AND (AND (NATP I)
+                        (INTEGERP MAX)
+                        (<= I MAX)
+                        (<= MAX (AR-LENGTH ST3))
+                        (RATIONAL-LISTP LST))
+                   (< I MAX))
+              (O< (NFIX (+ (AR-LENGTH (UPDATE-ARI I (TO-DF (CAR LST)) ST3))
+                           (- (+ 1 I))))
+                  (NFIX (+ (AR-LENGTH ST3) (- I)))))).
+Subgoal 2
+Subgoal 1
+
+Splitter note (see :DOC splitter) for Subgoal 1 (3 subgoals).
+  if-intro: ((:DEFINITION NFIX) (:DEFINITION O<))
+
+Subgoal 1.3
+Subgoal 1.2
+Subgoal 1.1
+
+Q.E.D.
+
+That completes the proof of the measure theorem for LOAD-AR.  Thus,
+we admit this function under the principle of definition.  We observe
+that the type of LOAD-AR is described by the theorem 
+(OR (CONSP (LOAD-AR I MAX LST ST3)) (EQUAL (LOAD-AR I MAX LST ST3) ST3)).
+We used the :type-prescription rule UPDATE-ARI.
+
+(LOAD-AR * * * ST3) => ST3.
+
+Computing the guard conjecture for LOAD-AR....
+
+The non-trivial part of the guard conjecture for LOAD-AR, given the
+:compound-recognizer rule NATP-COMPOUND-RECOGNIZER, primitive type
+reasoning, the :forward-chaining rules 
+ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP and 
+RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP and the :type-prescription
+rules ACL2-NUMBER-LISTP, AR-LENGTH, LENGTH and RATIONAL-LISTP, is
+
+Goal
+(AND (IMPLIES (AND (<= MAX (AR-LENGTH ST3))
+                   (<= I MAX)
+                   (INTEGERP MAX)
+                   (EQUAL (+ I (LENGTH LST))
+                          (AR-LENGTH ST3))
+                   (NATP I)
+                   (RATIONAL-LISTP LST)
+                   (ST3P ST3)
+                   (AND (NATP I)
+                        (INTEGERP MAX)
+                        (<= I MAX)
+                        (<= MAX (AR-LENGTH ST3))
+                        (RATIONAL-LISTP LST))
+                   (< I MAX))
+              (RATIONALP (CAR LST)))
+     (IMPLIES (AND (<= MAX (AR-LENGTH ST3))
+                   (<= I MAX)
+                   (INTEGERP MAX)
+                   (EQUAL (+ I (LENGTH LST))
+                          (AR-LENGTH ST3))
+                   (NATP I)
+                   (RATIONAL-LISTP LST)
+                   (ST3P ST3)
+                   (AND (NATP I)
+                        (INTEGERP MAX)
+                        (<= I MAX)
+                        (<= MAX (AR-LENGTH ST3))
+                        (RATIONAL-LISTP LST))
+                   (< I MAX))
+              (LET ((ST3 (UPDATE-ARI I (TO-DF (CAR LST)) ST3)))
+                (AND (ACL2-NUMBERP I)
+                     (OR (CONSP LST) (EQUAL LST NIL))
+                     (RATIONAL-LISTP (CDR LST))
+                     (<= (+ 1 I) MAX)
+                     (= (+ (+ 1 I) (LENGTH (CDR LST)))
+                        (AR-LENGTH ST3))
+                     (NATP (+ 1 I))
+                     (<= MAX (AR-LENGTH ST3))
+                     (INTEGERP MAX))))
+     (IMPLIES (AND (<= MAX (AR-LENGTH ST3))
+                   (<= I MAX)
+                   (INTEGERP MAX)
+                   (EQUAL (+ I (LENGTH LST))
+                          (AR-LENGTH ST3))
+                   (NATP I)
+                   (RATIONAL-LISTP LST)
+                   (ST3P ST3)
+                   (AND (NATP I)
+                        (INTEGERP MAX)
+                        (<= I MAX)
+                        (<= MAX (AR-LENGTH ST3))
+                        (RATIONAL-LISTP LST))
+                   (< I MAX))
+              (< I (AR-LENGTH ST3)))).
+Subgoal 2
+Subgoal 2'
+Subgoal 1
+
+Splitter note (see :DOC splitter) for Subgoal 1 (3 subgoals).
+  if-intro: ((:DEFINITION NOT) (:DEFINITION NTH))
+
+Subgoal 1.3
+Subgoal 1.2
+
+Splitter note (see :DOC splitter) for Subgoal 1.2 (2 subgoals).
+  if-intro: ((:DEFINITION LEN)
+             (:DEFINITION RATIONAL-LISTP))
+
+Subgoal 1.2.2
+Subgoal 1.2.1
+Subgoal 1.1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for LOAD-AR.  LOAD-AR
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN LOAD-AR ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION =)
+        (:DEFINITION AR-LENGTH)
+        (:DEFINITION LEN)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O-P)
+        (:DEFINITION O<)
+        (:DEFINITION RATIONAL-LISTP)
+        (:DEFINITION ST3P)
+        (:DEFINITION SYNP)
+        (:DEFINITION UPDATE-ARI)
+        (:DEFINITION UPDATE-NTH-ARRAY)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART RATIONAL-LISTP)
+        (:EXECUTABLE-COUNTERPART RATIONALP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
+        (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
+        (:TYPE-PRESCRIPTION AR-LENGTH)
+        (:TYPE-PRESCRIPTION LEN)
+        (:TYPE-PRESCRIPTION LENGTH)
+        (:TYPE-PRESCRIPTION RATIONAL-LISTP)
+        (:TYPE-PRESCRIPTION UPDATE-ARI))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION LEN)
+             (:DEFINITION NFIX)
+             (:DEFINITION NOT)
+             (:DEFINITION NTH)
+             (:DEFINITION O<)
+             (:DEFINITION RATIONAL-LISTP))
+ LOAD-AR
+ACL2 !>>(LOAD-AR 0 8 (LIST 3 0 *DF-PI* 3/4 -2/3 5 -6 7)
+                 ST3)
+<st3>
+ACL2 !>>(ASSERT-EVENT (AND (= (FROM-DF (ARI 2 ST3)) *DF-PI*)
+                           (= (FROM-DF (ARI 6 ST3)) -6)
+                           (DF= (ARI 6 ST3) -6)
+                           (DF< (ARI 0 ST3) 5)))
+ :PASSED
+ACL2 !>>(THM (LET ((ST3 (LOAD-AR 0 8 (LIST 3 0 *DF-PI* 3/4 -2/3 5 -6 7)
+                                 ST3)))
+               (AND (= (FROM-DF (ARI 2 ST3)) *DF-PI*)
+                    (= (FROM-DF (ARI 6 ST3)) -6)
+                    (DF= (ARI 6 ST3) -6)
+                    (DF< (ARI 0 ST3) 5)))
+             :HINTS (("Goal" :EXPAND (:FREE (I MAX LST ST3)
+                                            (LOAD-AR I MAX LST ST3)))))
+Subgoal 3
+Subgoal 2
+Subgoal 1
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION =)
+        (:DEFINITION AR-LENGTH)
+        (:DEFINITION ARI)
+        (:DEFINITION DF<-FN)
+        (:DEFINITION DF=-FN)
+        (:DEFINITION FROM-DF)
+        (:DEFINITION LOAD-AR)
+        (:DEFINITION NTH)
+        (:DEFINITION UPDATE-ARI)
+        (:DEFINITION UPDATE-NTH)
+        (:DEFINITION UPDATE-NTH-ARRAY)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART RATIONAL-LISTP)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE NTH-ADD1))
+
+Proof succeeded.
+ACL2 !>>(DEFTHM DFP-NTH-ARP
+          (IMPLIES (AND (ARP AR) (NATP I) (< I (LEN AR)))
+                   (DFP (NTH I AR))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (AND (ARP AR)
+              (INTEGERP I)
+              (<= 0 I)
+              (< I (LEN AR)))
+         (DFP (NTH I AR)))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (NTH I AR).
+
+This suggestion was produced using the :induction rules ARP, LEN and
+NTH.  If we let (:P AR I) denote *1 above then the induction scheme
+we'll use is
+(AND (IMPLIES (AND (NOT (ENDP AR))
+                   (NOT (ZP I))
+                   (:P (CDR AR) (+ -1 I)))
+              (:P AR I))
+     (IMPLIES (AND (NOT (ENDP AR)) (ZP I))
+              (:P AR I))
+     (IMPLIES (ENDP AR) (:P AR I))).
+This induction is justified by the same argument used to admit NTH.
+Note, however, that the unmeasured variable AR is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+seven nontautological subgoals.
+Subgoal *1/7
+Subgoal *1/7'
+Subgoal *1/6
+Subgoal *1/6'
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal' is COMPLETED!
+
+Q.E.D.
+
+The storage of DFP-NTH-ARP depends upon the :compound-recognizer rule
+DFP-IMPLIES-RATIONALP and the :type-prescription rule DFP.
+
+Summary
+Form:  ( DEFTHM DFP-NTH-ARP ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ARP)
+        (:DEFINITION ENDP)
+        (:DEFINITION LEN)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ARP)
+        (:INDUCTION LEN)
+        (:INDUCTION NTH)
+        (:TYPE-PRESCRIPTION DFP)
+        (:TYPE-PRESCRIPTION LEN))
+ DFP-NTH-ARP
+ACL2 !>>(DEFUN SCALAR-MULTIPLY-AR (I MULT ST3)
+          (DECLARE (XARGS :STOBJS ST3
+                          :GUARD (AND (NATP I) (<= I 8)))
+                   (TYPE DOUBLE-FLOAT MULT))
+          (COND ((ZP I) ST3)
+                (T (LET* ((I (1- I))
+                          (OLD (ARI I ST3))
+                          (ST3 (UPDATE-ARI I (DF* MULT OLD) ST3)))
+                     (DECLARE (TYPE DOUBLE-FLOAT OLD))
+                     (SCALAR-MULTIPLY-AR I MULT ST3)))))
+
+The admission of SCALAR-MULTIPLY-AR is trivial, using the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT I).  We observe that the type of 
+SCALAR-MULTIPLY-AR is described by the theorem 
+(OR (CONSP (SCALAR-MULTIPLY-AR I MULT ST3))
+    (EQUAL (SCALAR-MULTIPLY-AR I MULT ST3)
+           ST3)).
+We used the :type-prescription rule UPDATE-ARI.
+
+(SCALAR-MULTIPLY-AR * :DF ST3) => ST3.
+
+Computing the guard conjecture for SCALAR-MULTIPLY-AR....
+
+The non-trivial part of the guard conjecture for SCALAR-MULTIPLY-AR,
+given the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
+ZP-COMPOUND-RECOGNIZER and primitive type reasoning, is
+
+Goal
+(IMPLIES (AND (DFP MULT)
+              (<= I 8)
+              (NATP I)
+              (ST3P ST3)
+              (NOT (ZP I)))
+         (LET ((I (+ -1 I)))
+           (AND (INTEGERP I)
+                (< I (AR-LENGTH ST3))
+                (<= 0 I)
+                (LET ((OLD (ARI I ST3)))
+                  (AND (DFP OLD)
+                       (INTEGERP I)
+                       (< I (AR-LENGTH ST3))
+                       (<= 0 I)
+                       (NATP I)
+                       (<= I 8)))))).
+Goal'
+Goal''
+
+Q.E.D.
+
+That completes the proof of the guard theorem for SCALAR-MULTIPLY-AR.
+SCALAR-MULTIPLY-AR is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN SCALAR-MULTIPLY-AR ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION AR-LENGTH)
+        (:DEFINITION ARI)
+        (:DEFINITION LENGTH)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION ST3P)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART NTH)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DFP-NTH-ARP)
+        (:TYPE-PRESCRIPTION ARP)
+        (:TYPE-PRESCRIPTION UPDATE-ARI))
+ SCALAR-MULTIPLY-AR
+ACL2 !>>(DEFUN SCALAR-MULTIPLY-AR-EXAMPLE (ST3)
+          (DECLARE (XARGS :STOBJS ST3))
+          (SCALAR-MULTIPLY-AR 4 (TO-DF 4) ST3))
+
+Since SCALAR-MULTIPLY-AR-EXAMPLE is non-recursive, its admission is
+trivial.  We observe that the type of SCALAR-MULTIPLY-AR-EXAMPLE is
+described by the theorem 
+(OR (CONSP (SCALAR-MULTIPLY-AR-EXAMPLE ST3))
+    (EQUAL (SCALAR-MULTIPLY-AR-EXAMPLE ST3)
+           ST3)).
+We used the :type-prescription rule SCALAR-MULTIPLY-AR.
+
+(SCALAR-MULTIPLY-AR-EXAMPLE ST3) => ST3.
+
+Computing the guard conjecture for SCALAR-MULTIPLY-AR-EXAMPLE....
+
+The guard conjecture for SCALAR-MULTIPLY-AR-EXAMPLE is trivial to prove,
+given the :executable-counterpart of NATP.  SCALAR-MULTIPLY-AR-EXAMPLE
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN SCALAR-MULTIPLY-AR-EXAMPLE ...)
+Rules: ((:EXECUTABLE-COUNTERPART NATP)
+        (:TYPE-PRESCRIPTION SCALAR-MULTIPLY-AR))
+ SCALAR-MULTIPLY-AR-EXAMPLE
+ACL2 !>>(LOAD-AR 0 8 (LIST 3 0 *DF-PI* 3/4 -2/3 5 -6 7)
+                 ST3)
+<st3>
+ACL2 !>>(SCALAR-MULTIPLY-AR-EXAMPLE ST3)
+<st3>
+ACL2 !>>(ASSERT-EVENT (AND (= (FROM-DF (ARI 2 ST3)) (* 4 *DF-PI*))
+                           (= (FROM-DF (ARI 6 ST3)) -6)
+                           (DF= (ARI 6 ST3) -6)
+                           (DF< (ARI 0 ST3) 20)))
+ :PASSED
+ACL2 !>>(LOAD-AR 0 8 (LIST 3 0 *DF-PI* 3/4 -2/3 5 -6 7)
+                 ST3)
+<st3>
+ACL2 !>>(SCALAR-MULTIPLY-AR 8 (TO-DF 4) ST3)
+<st3>
+ACL2 !>>(ASSERT-EVENT (AND (= (FROM-DF (ARI 2 ST3)) (* 4 *DF-PI*))
+                           (= (FROM-DF (ARI 6 ST3)) -24)
+                           (DF= (ARI 6 ST3) (TO-DF -24))
+                           (DF< (ARI 0 ST3) (TO-DF 20))))
+ :PASSED
+ACL2 !>>(DEFSTOBJ ST-B-X
+          (B :TYPE (ARRAY DOUBLE-FLOAT (10))
+             :INITIALLY 0)
+          (X :TYPE (ARRAY DOUBLE-FLOAT (10))
+             :INITIALLY 0))
+
+Summary
+Form:  ( DEFSTOBJ ST-B-X ...)
+Rules: NIL
+ ST-B-X
+ACL2 !>>(DEFUN ST-B-X-FN (I ST-B-X)
+          (DECLARE (XARGS :STOBJS (ST-B-X) :MODE :PROGRAM)
+                   (TYPE (UNSIGNED-BYTE 30) I))
+          (LET* ((B (DF1))
+                 (ST-B-X (UPDATE-XI I (DF- B (DF1)) ST-B-X)))
+            ST-B-X))
+
+Summary
+Form:  ( DEFUN ST-B-X-FN ...)
+Rules: NIL
+ ST-B-X-FN
+ACL2 !>>(ST-B-X-FN 2 ST-B-X)
+
+ACL2 Warning [Invariant-risk] in ST-B-X-FN:  Invariant-risk has been
+detected for a call of function ST-B-X-FN (as possibly leading to an
+ill-guarded call of UPDATE-XI); see :DOC invariant-risk.
+
+<st-b-x>
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ (:SYSTEM . "projects/apply/top.lisp")
+ACL2 !>>(DEFWARRANT UPDATE-ARI)
+
+
+UPDATE-ARI is now warranted by APPLY$-WARRANT-UPDATE-ARI, with badge
+(APPLY$-BADGE 3 1 . T).
+
+ :WARRANTED
+ACL2 !>>(DEFTHM ARP-UPDATE-NTH
+          (IMPLIES (AND (ARP AR)
+                        (NATP I)
+                        (< I (LEN AR))
+                        (DFP VAL))
+                   (ARP (UPDATE-NTH I VAL AR))))
+Goal'
+
+([ A key checkpoint:
+
+Goal'
+(IMPLIES (AND (ARP AR)
+              (INTEGERP I)
+              (<= 0 I)
+              (< I (LEN AR))
+              (DFP VAL))
+         (ARP (UPDATE-NTH I VAL AR)))
+
+*1 (Goal') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by (UPDATE-NTH I VAL AR).
+
+This suggestion was produced using the :induction rules ARP, LEN and
+UPDATE-NTH.  If we let (:P AR I VAL) denote *1 above then the induction
+scheme we'll use is
+(AND (IMPLIES (AND (NOT (ZP I))
+                   (:P (CDR AR) (+ -1 I) VAL))
+              (:P AR I VAL))
+     (IMPLIES (ZP I) (:P AR I VAL))).
+This induction is justified by the same argument used to admit UPDATE-NTH.
+Note, however, that the unmeasured variable AR is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+six nontautological subgoals.
+Subgoal *1/6
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal' is COMPLETED!
+
+Q.E.D.
+
+The storage of ARP-UPDATE-NTH depends upon the :type-prescription rule
+ARP.
+
+Summary
+Form:  ( DEFTHM ARP-UPDATE-NTH ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ARP)
+        (:DEFINITION LEN)
+        (:DEFINITION NATP)
+        (:DEFINITION UPDATE-NTH)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ARP)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION ARP)
+        (:INDUCTION LEN)
+        (:INDUCTION UPDATE-NTH)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:TYPE-PRESCRIPTION ARP)
+        (:TYPE-PRESCRIPTION LEN))
+ ARP-UPDATE-NTH
+ACL2 !>>(DEFUN LOAD-AR-LOOP (LST ST3)
+          (DECLARE (XARGS :STOBJS ST3
+                          :GUARD (AND (RATIONAL-LISTP LST)
+                                      (<= (LENGTH LST) (AR-LENGTH ST3)))))
+          (LOOP$ WITH
+                 I = 0 WITH TMP = LST DO :VALUES (ST3)
+                 :MEASURE (LEN TMP)
+                 :GUARD
+                 (AND (RATIONAL-LISTP TMP)
+                      (ST3P ST3)
+                      (NATP I)
+                      (<= (+ I (LEN TMP)) (AR-LENGTH ST3)))
+                 (IF (ATOM TMP)
+                     (RETURN ST3)
+                   (PROGN (SETQ ST3
+                                (UPDATE-ARI I (TO-DF (CAR TMP)) ST3))
+                          (SETQ TMP (CDR TMP))
+                          (SETQ I (1+ I))))))
+
+Since LOAD-AR-LOOP is non-recursive, its admission is trivial.  We
+could deduce no constraints on the type of LOAD-AR-LOOP.
+
+(LOAD-AR-LOOP * ST3) => ST3.
+
+Computing the guard conjecture for LOAD-AR-LOOP....
+
+The non-trivial part of the guard conjecture for LOAD-AR-LOOP, given
+the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER, the :executable-
+counterparts of APPLY$-GUARD and CONS, primitive type reasoning, the
+:forward-chaining rules ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP and
+RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP and the :type-prescription
+rules ACL2-NUMBER-LISTP, AR-LENGTH, ASSOC-EQ-SAFE, DO-BODY-GUARD-WRAPPER,
+LEN, LENGTH and RATIONAL-LISTP, is
+
+Goal
+(AND
+ (IMPLIES
+  (APPLY$-WARRANT-UPDATE-ARI)
+  (LET
+   ((TRIPLE
+     (TRUE-LIST-FIX
+      (APPLY$
+       (LAMBDA$ (ALIST)
+        (DECLARE
+         (XARGS
+          :GUARD
+          (DO-BODY-GUARD-WRAPPER
+           (AND
+              (ALISTP ALIST)
+              (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+              (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+              (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+              (NOT (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                      (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))))))))
+        (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+              (TMP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+              (ST3 (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
+         (DECLARE (IGNORABLE I TMP ST3))
+         (IF (ATOM TMP)
+             (CONS ':RETURN
+                   (CONS ST3
+                         (CONS (CONS (CONS 'I I)
+                                     (CONS (CONS 'TMP TMP)
+                                           (CONS (CONS 'ST3 ST3) 'NIL)))
+                               'NIL)))
+          ((LAMBDA (ST3 I TMP)
+            ((LAMBDA (TMP ST3 I)
+              (CONS 'NIL
+                    (CONS 'NIL
+                          (CONS ((LAMBDA (I ST3 TMP)
+                                   (CONS (CONS 'I I)
+                                         (CONS (CONS 'TMP TMP)
+                                               (CONS (CONS 'ST3 ST3) 'NIL))))
+                                 (BINARY-+ '1 I)
+                                 ST3 TMP)
+                                'NIL))))
+             (CDR TMP)
+             ST3 I))
+           (UPDATE-ARI I (TO-DF (CAR TMP)) ST3)
+           I TMP))))
+       (LIST ALIST)))))
+   (LET ((EXIT-FLG (CAR TRIPLE))
+         (NEW-ALIST (CADDR TRIPLE)))
+    (IMPLIES
+     (DO-BODY-GUARD-WRAPPER
+          (AND (ALISTP ALIST)
+               (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+               (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+               (<= (+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                      (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))
+                   (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))))
+     (CASE EXIT-FLG
+      ((NIL)
+       (AND
+        (DO-BODY-GUARD-WRAPPER
+             (AND (ALISTP NEW-ALIST)
+                  (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP NEW-ALIST)))
+                  (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 NEW-ALIST)))
+                  (NATP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))
+                  (<= (+ (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST))
+                         (LEN (CDR (ASSOC-EQ-SAFE 'TMP NEW-ALIST))))
+                      (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 NEW-ALIST))))))
+        (L<
+         (LEX-FIX
+          (APPLY$
+           (LAMBDA$ (ALIST)
+            (DECLARE
+             (XARGS
+              :GUARD
+              (DO-BODY-GUARD-WRAPPER
+               (AND
+                (ALISTP ALIST)
+                (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (NOT
+                   (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                      (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))))))))
+            (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                  (TMP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                  (ST3 (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
+              (DECLARE (IGNORABLE I TMP ST3))
+              (LEN TMP)))
+           (LIST NEW-ALIST)))
+         (LEX-FIX
+          (APPLY$
+           (LAMBDA$ (ALIST)
+            (DECLARE
+             (XARGS
+              :GUARD
+              (DO-BODY-GUARD-WRAPPER
+               (AND
+                (ALISTP ALIST)
+                (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (NOT
+                   (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                      (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))))))))
+            (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                  (TMP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                  (ST3 (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
+              (DECLARE (IGNORABLE I TMP ST3))
+              (LEN TMP)))
+           (LIST ALIST))))))
+      (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER (ALISTP NEW-ALIST)))
+      (OTHERWISE T))))))
+ (IMPLIES
+   (AND (APPLY$-WARRANT-UPDATE-ARI)
+        (ST3P ST3)
+        (RATIONAL-LISTP LST)
+        (<= (LENGTH LST) (AR-LENGTH ST3)))
+   (DO-BODY-GUARD-WRAPPER
+        (AND (ALISTP (LIST '(I . 0)
+                           (CONS 'TMP LST)
+                           (CONS 'ST3 ST3)))
+             (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP
+                                                 (LIST '(I . 0)
+                                                       (CONS 'TMP LST)
+                                                       (CONS 'ST3 ST3)))))
+             (ST3P (CDR (ASSOC-EQ-SAFE 'ST3
+                                       (LIST '(I . 0)
+                                             (CONS 'TMP LST)
+                                             (CONS 'ST3 ST3)))))
+             (NATP (CDR (ASSOC-EQ-SAFE 'I
+                                       (LIST '(I . 0)
+                                             (CONS 'TMP LST)
+                                             (CONS 'ST3 ST3)))))
+             (<= (+ (CDR (ASSOC-EQ-SAFE 'I
+                                        (LIST '(I . 0)
+                                              (CONS 'TMP LST)
+                                              (CONS 'ST3 ST3))))
+                    (LEN (CDR (ASSOC-EQ-SAFE 'TMP
+                                             (LIST '(I . 0)
+                                                   (CONS 'TMP LST)
+                                                   (CONS 'ST3 ST3))))))
+                 (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3
+                                                (LIST '(I . 0)
+                                                      (CONS 'TMP LST)
+                                                      (CONS 'ST3 ST3)))))))))
+ (IMPLIES (AND (<= (+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                      (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))
+                   (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
+               (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+               (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+               (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+               (ALISTP ALIST))
+          (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (TMP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                (ST3 (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
+            (AND (OR (ATOM TMP)
+                     (CONSP TMP)
+                     (EQUAL TMP NIL))
+                 (OR (ATOM TMP) (RATIONALP (CAR TMP)))
+                 (OR (ATOM TMP) (ST3P ST3))
+                 (OR (ATOM TMP) (DFP (TO-DF (CAR TMP))))
+                 (OR (ATOM TMP) (<= 0 I))
+                 (OR (ATOM TMP) (INTEGERP I))
+                 (OR (ATOM TMP) (< I (AR-LENGTH ST3)))
+                 (OR (ATOM TMP)
+                     (AND (OR (CONSP TMP) (EQUAL TMP NIL))
+                          (ACL2-NUMBERP I))))))).
+Subgoal 3
+
+Splitter note (see :DOC splitter) for Subgoal 3 (3 subgoals).
+  if-intro: ((:DEFINITION ATOM) (:DEFINITION NTH))
+
+Subgoal 3.3
+Subgoal 3.2
+
+Splitter note (see :DOC splitter) for Subgoal 3.2 (4 subgoals).
+  if-intro: ((:DEFINITION MAX)
+             (:DEFINITION NATP)
+             (:DEFINITION NOT)
+             (:DEFINITION RATIONAL-LISTP)
+             (:DEFINITION ST3P)
+             (:REWRITE EQUAL-LEN-1))
+
+Subgoal 3.2.4
+Subgoal 3.2.3
+Subgoal 3.2.2
+Subgoal 3.2.1
+Subgoal 3.1
+Subgoal 2
+Subgoal 1
+
+Splitter note (see :DOC splitter) for Subgoal 1 (2 subgoals).
+  if-intro: ((:DEFINITION ATOM)
+             (:DEFINITION NOT)
+             (:REWRITE EQUAL-LEN-1))
+
+Subgoal 1.2
+Subgoal 1.1
+Subgoal 1.1'
+Subgoal 1.1''
+
+Q.E.D.
+
+That completes the proof of the guard theorem for LOAD-AR-LOOP.  LOAD-AR-LOOP
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN LOAD-AR-LOOP ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ALISTP)
+        (:DEFINITION AR-LENGTH)
+        (:DEFINITION ATOM)
+        (:DEFINITION DO-BODY-GUARD-WRAPPER)
+        (:DEFINITION FIX)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LENGTH)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION MAX)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RATIONAL-LISTP)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION ST3P)
+        (:DEFINITION SYNP)
+        (:DEFINITION TRUE-LISTP)
+        (:DEFINITION UPDATE-ARI)
+        (:DEFINITION UPDATE-NTH)
+        (:DEFINITION UPDATE-NTH-ARRAY)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALISTP)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART LENGTH)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
+        (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
+        (:REWRITE APPLY$-UPDATE-ARI)
+        (:REWRITE ARP-UPDATE-NTH)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DEFAULT-CDR)
+        (:REWRITE DFP-TO-DF)
+        (:REWRITE EQUAL-LEN-0)
+        (:REWRITE EQUAL-LEN-1)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE LEN-UPDATE-NTH)
+        (:REWRITE NTH-0-CONS)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0)
+        (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
+        (:TYPE-PRESCRIPTION AR-LENGTH)
+        (:TYPE-PRESCRIPTION ARP)
+        (:TYPE-PRESCRIPTION ASSOC-EQ-SAFE)
+        (:TYPE-PRESCRIPTION DO-BODY-GUARD-WRAPPER)
+        (:TYPE-PRESCRIPTION LEN)
+        (:TYPE-PRESCRIPTION LENGTH)
+        (:TYPE-PRESCRIPTION RATIONAL-LISTP))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ATOM)
+             (:DEFINITION MAX)
+             (:DEFINITION NATP)
+             (:DEFINITION NOT)
+             (:DEFINITION NTH)
+             (:DEFINITION RATIONAL-LISTP)
+             (:DEFINITION ST3P)
+             (:REWRITE EQUAL-LEN-1))
+ LOAD-AR-LOOP
+ACL2 !>>(LOAD-AR-LOOP (LIST 10 11 12 13 14 15 16 17)
+                      ST3)
+<st3>
+ACL2 !>>(ASSERT-EVENT (AND (= (FROM-DF (ARI 2 ST3)) 12)
+                           (= (FROM-DF (ARI 6 ST3)) 16)
+                           (DF= (ARI 6 ST3) 16)
+                           (DF< (ARI 0 ST3) 11)))
+ :PASSED
+ACL2 !>>(DEFUN F11 (LST)
+          (DECLARE (XARGS :GUARD (RATIONAL-LISTP LST)))
+          (LOOP$ WITH TEMP = LST WITH
+                 ANS OF-TYPE DOUBLE-FLOAT = (TO-DF 0)
+                 DO :VALUES (:DF)
+                 :GUARD (RATIONAL-LISTP TEMP)
+                 (COND ((ENDP TEMP) (RETURN ANS))
+                       (T (PROGN (SETQ ANS (DF+ (TO-DF (CAR TEMP)) ANS))
+                                 (SETQ TEMP (CDR TEMP)))))))
+
+Since F11 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F11.
+
+(F11 *) => :DF.
+
+Computing the guard conjecture for F11....
+
+The non-trivial part of the guard conjecture for F11, given the :executable-
+counterparts of APPLY$-GUARD, CONS and TO-DF, primitive type reasoning
+and the :type-prescription rules ASSOC-EQ-SAFE and DO-BODY-GUARD-WRAPPER,
+is
+
+Goal
+(AND
+ (LET
+  ((TRIPLE
+    (TRUE-LIST-FIX
+     (APPLY$
+      (LAMBDA$ (ALIST)
+       (DECLARE
+        (XARGS
+             :GUARD
+             (DO-BODY-GUARD-WRAPPER
+                  (AND (ALISTP ALIST)
+                       (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))))
+       (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+             (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+         (DECLARE (IGNORABLE TEMP ANS))
+         (IF (ENDP TEMP)
+             (CONS ':RETURN
+                   (CONS ANS
+                         (CONS (CONS (CONS 'TEMP TEMP)
+                                     (CONS (CONS 'ANS ANS) 'NIL))
+                               'NIL)))
+           ((LAMBDA (ANS TEMP)
+              (RETURN-LAST
+                   'PROGN
+                   (CHECK-DCL-GUARDIAN
+                        (DFP ANS)
+                        '(SETQ ANS
+                               (THE DOUBLE-FLOAT
+                                    (BINARY-DF+ (TO-DF (CAR TEMP)) ANS))))
+                   (CONS 'NIL
+                         (CONS 'NIL
+                               (CONS ((LAMBDA (TEMP ANS)
+                                        (CONS (CONS 'TEMP TEMP)
+                                              (CONS (CONS 'ANS ANS) 'NIL)))
+                                      (CDR TEMP)
+                                      ANS)
+                                     'NIL)))))
+            (BINARY-DF+ (TO-DF (CAR TEMP)) ANS)
+            TEMP))))
+      (LIST ALIST)))))
+  (LET ((EXIT-FLG (CAR TRIPLE))
+        (NEW-ALIST (CADDR TRIPLE)))
+   (IMPLIES
+    (DO-BODY-GUARD-WRAPPER
+         (AND (ALISTP ALIST)
+              (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+              (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))
+    (CASE EXIT-FLG
+     ((NIL)
+      (AND
+       (DO-BODY-GUARD-WRAPPER
+            (AND (ALISTP NEW-ALIST)
+                 (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))
+                 (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP NEW-ALIST)))))
+       (L<
+        (LEX-FIX
+         (APPLY$
+          (LAMBDA$ (ALIST)
+           (DECLARE
+            (XARGS
+             :GUARD
+             (DO-BODY-GUARD-WRAPPER
+                  (AND (ALISTP ALIST)
+                       (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))))
+           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                 (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+             (DECLARE (IGNORABLE TEMP ANS))
+             (ACL2-COUNT TEMP)))
+          (LIST NEW-ALIST)))
+        (LEX-FIX
+         (APPLY$
+          (LAMBDA$ (ALIST)
+           (DECLARE
+            (XARGS
+             :GUARD
+             (DO-BODY-GUARD-WRAPPER
+                  (AND (ALISTP ALIST)
+                       (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))))
+           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                 (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+             (DECLARE (IGNORABLE TEMP ANS))
+             (ACL2-COUNT TEMP)))
+          (LIST ALIST))))))
+     (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER
+                        (AND (ALISTP NEW-ALIST)
+                             (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST))))))
+     (OTHERWISE T)))))
+ (IMPLIES
+   (RATIONAL-LISTP LST)
+   (DO-BODY-GUARD-WRAPPER
+        (AND (ALISTP (CONS (CONS 'TEMP LST) '((ANS . 0))))
+             (DFP (CDR (ASSOC-EQ-SAFE 'ANS
+                                      (CONS (CONS 'TEMP LST) '((ANS . 0))))))
+             (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP
+                                                 (CONS (CONS 'TEMP LST)
+                                                       '((ANS . 0)))))))))
+ (IMPLIES
+  (AND
+   (DO-BODY-GUARD-WRAPPER (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))))
+   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+   (ALISTP ALIST))
+  (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+        (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+    (AND (OR (CONSP TEMP) (EQ TEMP NIL))
+         (OR (ENDP TEMP)
+             (CONSP TEMP)
+             (EQUAL TEMP NIL))
+         (OR (ENDP TEMP) (RATIONALP (CAR TEMP)))
+         (OR (ENDP TEMP)
+             (DFP (TO-DF (CAR TEMP))))
+         (OR (ENDP TEMP) (DFP ANS))
+         (OR (ENDP TEMP)
+             (LET ((ANS (DF+ (TO-DF (CAR TEMP)) ANS)))
+               (AND (DFP ANS)
+                    (OR (CONSP TEMP)
+                        (EQUAL TEMP NIL))))))))).
+Subgoal 3
+
+Splitter note (see :DOC splitter) for Subgoal 3 (2 subgoals).
+  if-intro: ((:DEFINITION ENDP))
+
+Subgoal 3.2
+
+Splitter note (see :DOC splitter) for Subgoal 3.2 (4 subgoals).
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX)
+             (:DEFINITION RATIONAL-LISTP))
+
+Subgoal 3.2.4
+Subgoal 3.2.3
+Subgoal 3.2.2
+Subgoal 3.2.1
+Subgoal 3.1
+Subgoal 2
+Subgoal 1
+Subgoal 1'
+
+Q.E.D.
+
+That completes the proof of the guard theorem for F11.  F11 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F11 ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION ALISTP)
+        (:DEFINITION BINARY-DF+)
+        (:DEFINITION DO-BODY-GUARD-WRAPPER)
+        (:DEFINITION ENDP)
+        (:DEFINITION EQ)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RATIONAL-LISTP)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALISTP)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CHECK-DCL-GUARDIAN)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART DFP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
+        (:FORWARD-CHAINING RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DFP-DF-ROUND)
+        (:REWRITE DFP-TO-DF)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:TYPE-PRESCRIPTION ACL2-COUNT)
+        (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
+        (:TYPE-PRESCRIPTION ASSOC-EQ-SAFE)
+        (:TYPE-PRESCRIPTION DO-BODY-GUARD-WRAPPER)
+        (:TYPE-PRESCRIPTION RATIONAL-LISTP)
+        (:TYPE-PRESCRIPTION RATIONALP-DF-ROUND))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION ENDP)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX)
+             (:DEFINITION RATIONAL-LISTP))
+ F11
+ACL2 !>>(ASSERT-EVENT (DF= (F11 '(3 1/2 4)) 15/2))
+ :PASSED
+ACL2 !>>(DEFUN F12 (LST)
+          (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+          (LOOP$
+               WITH TEMP = LST WITH
+               ANS OF-TYPE DOUBLE-FLOAT = (TO-DF 0)
+               DO :VALUES (:DF NIL)
+               (COND ((ATOM TEMP) (RETURN (MV ANS TEMP)))
+                     (T (PROGN (SETQ ANS (DF+ (TO-DF (RFIX (CAR TEMP))) ANS))
+                               (SETQ TEMP (CDR TEMP)))))))
+
+Since F12 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F12.
+
+(F12 *) => (MV :DF *).
+
+Summary
+Form:  ( DEFUN F12 ...)
+Rules: NIL
+ F12
+ACL2 !>>(ASSERT-EVENT (MV-LET (X Y)
+                              (F12 '(3 1/2 4 . A))
+                        (AND (DF= X 15/2) (EQ Y 'A))))
+ :PASSED
+ACL2 !>>(THM (MV-LET (X Y)
+                     (F12 '(3 1/2 4 . A))
+               (AND (DF= X 15/2) (EQ Y 'A))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART DF=-FN)
+        (:EXECUTABLE-COUNTERPART EQ)
+        (:EXECUTABLE-COUNTERPART F12)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:EXECUTABLE-COUNTERPART MV-NTH)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(VERIFY-GUARDS F12)
+
+Computing the guard conjecture for F12....
+
+The non-trivial part of the guard conjecture for F12, given the :executable-
+counterparts of APPLY$-GUARD, CONS and TO-DF, primitive type reasoning
+and the :type-prescription rules ASSOC-EQ-SAFE and DO-BODY-GUARD-WRAPPER,
+is
+
+Goal
+(AND
+ (DO-BODY-GUARD-WRAPPER
+      (AND (ALISTP (CONS (CONS 'TEMP LST) '((ANS . 0))))
+           (DFP (CDR (ASSOC-EQ-SAFE 'ANS
+                                    (CONS (CONS 'TEMP LST)
+                                          '((ANS . 0))))))))
+ (LET
+  ((TRIPLE
+    (TRUE-LIST-FIX
+     (APPLY$
+      (LAMBDA$ (ALIST)
+       (DECLARE
+           (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                              (AND (ALISTP ALIST)
+                                   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+       (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+             (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+         (DECLARE (IGNORABLE TEMP ANS))
+         (IF (ATOM TEMP)
+             (CONS ':RETURN
+                   (CONS (CONS ANS (CONS TEMP 'NIL))
+                         (CONS (CONS (CONS 'TEMP TEMP)
+                                     (CONS (CONS 'ANS ANS) 'NIL))
+                               'NIL)))
+           ((LAMBDA (ANS TEMP)
+              (RETURN-LAST
+                   'PROGN
+                   (CHECK-DCL-GUARDIAN
+                        (DFP ANS)
+                        '(SETQ ANS
+                               (THE DOUBLE-FLOAT
+                                    (BINARY-DF+ (TO-DF (RFIX (CAR TEMP)))
+                                                ANS))))
+                   (CONS 'NIL
+                         (CONS 'NIL
+                               (CONS ((LAMBDA (TEMP ANS)
+                                        (CONS (CONS 'TEMP TEMP)
+                                              (CONS (CONS 'ANS ANS) 'NIL)))
+                                      (CDR TEMP)
+                                      ANS)
+                                     'NIL)))))
+            (BINARY-DF+ (TO-DF (RFIX (CAR TEMP)))
+                        ANS)
+            TEMP))))
+      (LIST ALIST)))))
+  (LET ((EXIT-FLG (CAR TRIPLE))
+        (NEW-ALIST (CADDR TRIPLE)))
+   (IMPLIES
+    (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))
+    (CASE EXIT-FLG
+     ((NIL)
+      (AND
+       (DO-BODY-GUARD-WRAPPER
+            (AND (ALISTP NEW-ALIST)
+                 (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))))
+       (L<
+        (LEX-FIX
+         (APPLY$
+          (LAMBDA$ (ALIST)
+           (DECLARE
+             (XARGS
+                  :GUARD (DO-BODY-GUARD-WRAPPER
+                              (AND (ALISTP ALIST)
+                                   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                 (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+             (DECLARE (IGNORABLE TEMP ANS))
+             (ACL2-COUNT TEMP)))
+          (LIST NEW-ALIST)))
+        (LEX-FIX
+         (APPLY$
+          (LAMBDA$ (ALIST)
+           (DECLARE
+             (XARGS
+                  :GUARD (DO-BODY-GUARD-WRAPPER
+                              (AND (ALISTP ALIST)
+                                   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                 (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+             (DECLARE (IGNORABLE TEMP ANS))
+             (ACL2-COUNT TEMP)))
+          (LIST ALIST))))))
+     (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER
+                        (AND (ALISTP NEW-ALIST)
+                             (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST))))))
+     (OTHERWISE T)))))
+ (IMPLIES (AND (DO-BODY-GUARD-WRAPPER (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+               (ALISTP ALIST))
+          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+            (AND (OR (ATOM TEMP)
+                     (CONSP TEMP)
+                     (EQUAL TEMP NIL))
+                 (OR (ATOM TEMP)
+                     (RATIONALP (RFIX (CAR TEMP))))
+                 (OR (ATOM TEMP)
+                     (DFP (TO-DF (RFIX (CAR TEMP)))))
+                 (OR (ATOM TEMP) (DFP ANS))
+                 (OR (ATOM TEMP)
+                     (LET ((ANS (DF+ (TO-DF (RFIX (CAR TEMP))) ANS)))
+                       (AND (DFP ANS)
+                            (OR (CONSP TEMP)
+                                (EQUAL TEMP NIL))))))))).
+Subgoal 4
+Subgoal 3
+Subgoal 2
+
+Splitter note (see :DOC splitter) for Subgoal 2 (3 subgoals).
+  if-intro: ((:DEFINITION ATOM) (:DEFINITION RFIX))
+
+Subgoal 2.3
+Subgoal 2.2
+Subgoal 2.2'
+
+Splitter note (see :DOC splitter) for Subgoal 2.2' (4 subgoals).
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal 2.2.4
+Subgoal 2.2.3
+Subgoal 2.2.2
+Subgoal 2.2.1
+Subgoal 2.1
+Subgoal 2.1'
+
+Splitter note (see :DOC splitter) for Subgoal 2.1' (2 subgoals).
+  if-intro: ((:DEFINITION FIX))
+
+Subgoal 2.1.2
+Subgoal 2.1.2'
+Subgoal 2.1.1
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for F12.  F12 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS F12)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION ALISTP)
+        (:DEFINITION ATOM)
+        (:DEFINITION BINARY-DF+)
+        (:DEFINITION CHECK-DCL-GUARDIAN)
+        (:DEFINITION DO-BODY-GUARD-WRAPPER)
+        (:DEFINITION FIX)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION RFIX)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALISTP)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART DFP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DF-ROUND-IS-IDENTITY-FOR-DFP)
+        (:REWRITE DFP-DF-ROUND)
+        (:REWRITE DFP-TO-DF)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0)
+        (:TYPE-PRESCRIPTION ACL2-COUNT)
+        (:TYPE-PRESCRIPTION ASSOC-EQ-SAFE)
+        (:TYPE-PRESCRIPTION DO-BODY-GUARD-WRAPPER)
+        (:TYPE-PRESCRIPTION RATIONALP-DF-ROUND))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION ATOM)
+             (:DEFINITION FIX)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX)
+             (:DEFINITION RFIX))
+ F12
+ACL2 !>>(ASSERT-EVENT (MV-LET (X Y)
+                              (F12 '(3 1/2 4 . A))
+                        (AND (DF= X 15/2) (EQ Y 'A))))
+ :PASSED
+ACL2 !>>(THM (MV-LET (X Y)
+                     (F12 '(3 1/2 4 . A))
+               (AND (DF= X 15/2) (EQ Y 'A))))
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:EXECUTABLE-COUNTERPART DF=-FN)
+        (:EXECUTABLE-COUNTERPART EQ)
+        (:EXECUTABLE-COUNTERPART F12)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:EXECUTABLE-COUNTERPART MV-NTH)
+        (:EXECUTABLE-COUNTERPART TO-DF))
+
+Proof succeeded.
+ACL2 !>>(DEFSTOBJ ST4
+          (FLD4 :TYPE DOUBLE-FLOAT :INITIALLY 0))
+
+Summary
+Form:  ( DEFSTOBJ ST4 ...)
+Rules: NIL
+ ST4
+ACL2 !>>(DEFWARRANT FLD4)
+
+
+FLD4 is now warranted by APPLY$-WARRANT-FLD4, with badge 
+(APPLY$-BADGE 1 1 . T).
+
+ :WARRANTED
+ACL2 !>>(DEFUN MEASURE-NOT-DECREASING (ST4)
+          (DECLARE (XARGS :STOBJS (ST4)
+                          :VERIFY-GUARDS NIL))
+          (LOOP$ WITH X = 5
+                 WITH AC OF-TYPE DOUBLE-FLOAT = (TO-DF 0)
+                 DO :MEASURE (ACL2-COUNT X)
+                 :VALUES (:DF)
+                 (IF (ZP X)
+                     (RETURN AC)
+                   (SETQ AC (DF+ AC (FLD4 ST4))))))
+
+Since MEASURE-NOT-DECREASING is non-recursive, its admission is trivial.
+We could deduce no constraints on the type of MEASURE-NOT-DECREASING.
+
+(MEASURE-NOT-DECREASING ST4) => :DF.
+
+Summary
+Form:  ( DEFUN MEASURE-NOT-DECREASING ...)
+Rules: NIL
+ MEASURE-NOT-DECREASING
+ACL2 !>>(MEASURE-NOT-DECREASING ST4)
+
+
+HARD ACL2 ERROR in DO$:  The measure, (ACL2-COUNT X), used in the do
+loop$ statement
+(LOOP$ WITH X = 5
+       WITH AC OF-TYPE DOUBLE-FLOAT = (TO-DF 0)
+       DO :MEASURE (ACL2-COUNT X)
+       :VALUES (:DF)
+       (IF (ZP X)
+           (RETURN AC)
+         (SETQ AC (DF+ AC (FLD4 ST4)))))
+
+failed to decrease!  Recall that do$ tracks the values of do loop$
+variables in an alist.  The measure is computed using the values in
+the alist from before and after execution of the body.  We cannot print
+the values of double floats and live stobjs, if any are found in the
+alist, because they are raw Lisp objects, not ACL2 objects.  Before
+execution of the do body the alist was
+((X . 5) (AC . 0) (ST4 . "<st4>")).
+After the execution of the do body the alist was
+((X . 5) (AC . 0) (ST4 . "<st4>")).
+Before the execution of the body the measure was
+5.
+After the execution of the body the measure was
+5.
+
+Logically, in this situation the do$ returns the value of a term whose
+output signature is (:DF), where the value of any component of type
+:df is #d0.0 and the value of any stobj component is the last latched
+value of that stobj.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(LET ((W (TO-DF 7)))
+          (LOOP$ FOR V FROM
+                 1 TO 3 SUM (FROM-DF (DF+ W (TO-DF V)))))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  The form W represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context 
+(BINARY-DF+ W (TO-DF V)).
+
+ACL2 !>>(ASSERT-EVENT (EQUAL (LET ((V (TO-DF 7)))
+                               (CONS (LOOP$ FOR V FROM 1 TO 3 SUM V)
+                                     (FROM-DF V)))
+                             '(6 . 7)))
+ :PASSED
+ACL2 !>>(DEFSTOBJ ST5 (ST4A :TYPE ST4))
+
+Summary
+Form:  ( DEFSTOBJ ST5 ...)
+Rules: NIL
+ ST5
+ACL2 !>>(DEFUN SET-FLD4 (X ST5)
+          (DECLARE (XARGS :STOBJS ST5))
+          (DECLARE (TYPE DOUBLE-FLOAT X))
+          (STOBJ-LET ((ST4 (ST4A ST5) UPDATE-ST4A))
+                     (ST4)
+                     (UPDATE-FLD4 X ST4)
+                     ST5))
+
+Since SET-FLD4 is non-recursive, its admission is trivial.  We observe
+that the type of SET-FLD4 is described by the theorem 
+(CONSP (SET-FLD4 X ST5)).  We used the :type-prescription rule UPDATE-ST4A.
+
+(SET-FLD4 :DF ST5) => ST5.
+
+Computing the guard conjecture for SET-FLD4....
+
+The guard conjecture for SET-FLD4 is trivial to prove.  SET-FLD4 is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN SET-FLD4 ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE-ST4A))
+ SET-FLD4
+ACL2 !>>(DEFUN GET-FLD4 (ST5)
+          (DECLARE (XARGS :STOBJS ST5))
+          (STOBJ-LET ((ST4 (ST4A ST5)))
+                     (VAL)
+                     (FLD4 ST4)
+                     VAL))
+
+Since GET-FLD4 is non-recursive, its admission is trivial.  We could
+deduce no constraints on the type of GET-FLD4.
+
+(GET-FLD4 ST5) => :DF.
+
+Computing the guard conjecture for GET-FLD4....
+
+The guard conjecture for GET-FLD4 is trivial to prove.  GET-FLD4 is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN GET-FLD4 ...)
+Rules: NIL
+ GET-FLD4
+ACL2 !>>(ASSERT-EVENT (DF= (GET-FLD4 ST5) 0))
+ :PASSED
+ACL2 !>>(SET-FLD4 (TO-DF 7) ST5)
+<st5>
+ACL2 !>>(ASSERT-EVENT (DF= (GET-FLD4 ST5) 7))
+ :PASSED
+ACL2 !>>(DEFUN F0 (X)
+          (DECLARE (XARGS :VERIFY-GUARDS NIL)
+                   (TYPE DOUBLE-FLOAT X))
+          (DF- X))
+
+The event ( DEFUN F0 ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN F0 ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+The event ( INCLUDE-BOOK "projects/apply/top" ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(DEFWARRANT F0)
+
+
+F0 is now warranted by APPLY$-WARRANT-F0, with badge (APPLY$-BADGE 1 1 . T).
+
+ :WARRANTED
+ACL2 !>>(ASSERT-EVENT (EQUAL (APPLY$ 'F0 (LIST 1/4)) -1/4))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (APPLY$ 'F0 (LIST 1/4)) -1/4))
+ :PASSED
+ACL2 !>>(APPLY$ 'F0 (LIST 1/3))
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(F0 X), which is (DFP X), is violated by the arguments in the call
+(F0 1/3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(WITH-GUARD-CHECKING NIL (APPLY$ 'F0 (LIST 1/3)))
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  ACL2 cannot ev the call of non-
+executable function DF-ROUND on argument list:
+
+(-1/3)
+
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(VERIFY-GUARDS F0)
+
+Computing the guard conjecture for F0....
+
+The guard conjecture for F0 is trivial to prove.  F0 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS F0)
+Rules: NIL
+ F0
+ACL2 !>>(ASSERT-EVENT (EQUAL (APPLY$ 'F0 (LIST 1/4)) -1/4))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (APPLY$ 'F0 (LIST 1/4)) -1/4))
+ :PASSED
+ACL2 !>>(APPLY$ 'F0 (LIST 1/3))
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(F0 X), which is (DFP X), is violated by the arguments in the call
+(F0 1/3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(WITH-GUARD-CHECKING NIL (APPLY$ 'F0 (LIST 1/3)))
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  ACL2 cannot ev the call of non-
+executable function DF-ROUND on argument list:
+
+(-1/3)
+
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(ER-PROGN (SET-TRACE-CO (STANDARD-CO STATE) STATE)
+                  (VALUE NIL))
+ NIL
+ACL2 !>>(TRACE$ F0)
+ ((F0))
+ACL2 !>>(F0 (TO-DF 3))
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+#d-3.0
+ACL2 !>>(APPLY$ 'F0 (LIST 3))
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+-3
+ACL2 !>>(APPLY$ '(LAMBDA (Y) (F0 Y)) (LIST 3))
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+-3
+ACL2 !>>(APPLY$ (LAMBDA$ (Y) (F0 Y)) (LIST 3))
+
+
+ACL2 Error [Translate] in TOP-LEVEL:  It is illegal to invoke F0 here
+because of a signature mismatch.  This function call returns a result
+of shape :DF where a result of shape * is required.  Note:  this error
+occurred in the context (F0 Y).
+
+ACL2 !>>(UNTRACE$ F0)
+ (F0)
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+The event ( INCLUDE-BOOK "projects/apply/top" ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(DEFUN$ F0 (X)
+                (DECLARE (TYPE DOUBLE-FLOAT X))
+                (DF- X))
+
+
+ACL2 !>>>(DEFUN F0 (X)
+           (DECLARE (TYPE DOUBLE-FLOAT X))
+           (DF- X))
+
+The event ( DEFUN F0 ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN F0 ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(DEFWARRANT F0)
+:REDUNDANT
+
+Summary
+Form:  ( PROGN (DEFUN F0 ...) ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(DEFUN$ APPLY$-QUOTE-F0
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ 'F0 (LIST 3)))
+
+
+ACL2 !>>>(DEFUN APPLY$-QUOTE-F0 NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ 'F0 (LIST 3)))
+
+Since APPLY$-QUOTE-F0 is non-recursive, its admission is trivial. 
+We could deduce no constraints on the type of APPLY$-QUOTE-F0.
+
+Computing the guard conjecture for APPLY$-QUOTE-F0....
+
+The guard conjecture for APPLY$-QUOTE-F0 is trivial to prove, given
+the :executable-counterpart of APPLY$-GUARD.  APPLY$-QUOTE-F0 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN APPLY$-QUOTE-F0 ...)
+Rules: ((:EXECUTABLE-COUNTERPART APPLY$-GUARD))
+APPLY$-QUOTE-F0
+
+
+ACL2 !>>>(DEFWARRANT APPLY$-QUOTE-F0)
+
+
+APPLY$-QUOTE-F0 is now warranted by APPLY$-WARRANT-APPLY$-QUOTE-F0,
+with badge (APPLY$-BADGE 0 1 . T).
+
+:WARRANTED
+
+Summary
+Form:  ( PROGN (DEFUN APPLY$-QUOTE-F0 ...) ...)
+Rules: NIL
+ :WARRANTED
+ACL2 !>>(TRACE$ F0)
+ ((F0))
+ACL2 !>>(APPLY$-QUOTE-F0)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+-3
+ACL2 !>>(DEFUN LOOP$-APPLY$-QUOTE-F0 NIL
+          (DECLARE (XARGS :GUARD T))
+          (LOOP$ FOR I
+                 FROM 1 TO 3 COLLECT (APPLY$-QUOTE-F0)))
+
+Since LOOP$-APPLY$-QUOTE-F0 is non-recursive, its admission is trivial.
+We observe that the type of LOOP$-APPLY$-QUOTE-F0 is described by the
+theorem (TRUE-LISTP (LOOP$-APPLY$-QUOTE-F0)).  We used the :type-prescription
+rule COLLECT$.
+
+Computing the guard conjecture for LOOP$-APPLY$-QUOTE-F0....
+
+The guard conjecture for LOOP$-APPLY$-QUOTE-F0 is trivial to prove,
+given the :executable-counterpart of APPLY$-GUARD and the :type-prescription
+rule FROM-TO-BY.  LOOP$-APPLY$-QUOTE-F0 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN LOOP$-APPLY$-QUOTE-F0 ...)
+Rules: ((:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:TYPE-PRESCRIPTION COLLECT$)
+        (:TYPE-PRESCRIPTION FROM-TO-BY))
+ LOOP$-APPLY$-QUOTE-F0
+ACL2 !>>(LOOP$-APPLY$-QUOTE-F0)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+(-3 -3 -3)
+ACL2 !>>(DEFUN DO-LOOP$-ON-F0 NIL
+          (DECLARE (XARGS :GUARD T))
+          (LOOP$ WITH
+                 ANS OF-TYPE DOUBLE-FLOAT = (TO-DF 2)
+                 WITH I OF-TYPE (INTEGER 0 *)
+                 = 3 DO :VALUES (:DF)
+                 (COND ((ZP I) (RETURN ANS))
+                       (T (PROGN (SETQ I (1- I))
+                                 (SETQ ANS (DF* (F0 ANS) ANS)))))))
+
+Since DO-LOOP$-ON-F0 is non-recursive, its admission is trivial.  We
+could deduce no constraints on the type of DO-LOOP$-ON-F0.
+
+(DO-LOOP$-ON-F0) => :DF.
+
+Computing the guard conjecture for DO-LOOP$-ON-F0....
+
+The non-trivial part of the guard conjecture for DO-LOOP$-ON-F0, given
+the :executable-counterparts of <, ALISTP, APPLY$-GUARD, ASSOC-EQ-SAFE,
+CDR, CONS, DFP, DO-BODY-GUARD-WRAPPER, INTEGERP, NOT and TO-DF, primitive
+type reasoning and the :type-prescription rules ASSOC-EQ-SAFE and 
+DO-BODY-GUARD-WRAPPER, is
+
+Goal
+(AND
+ (IMPLIES
+  (APPLY$-WARRANT-F0)
+  (LET
+   ((TRIPLE
+     (TRUE-LIST-FIX
+      (APPLY$
+       (LAMBDA$ (ALIST)
+        (DECLARE
+         (XARGS
+             :GUARD (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP ALIST)
+                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                              (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                  (NOT (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) '0))
+                                'NIL)))))
+        (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+              (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+         (DECLARE (IGNORABLE ANS I))
+         (IF (ZP I)
+             (CONS ':RETURN
+                   (CONS ANS
+                         (CONS (CONS (CONS 'ANS ANS)
+                                     (CONS (CONS 'I I) 'NIL))
+                               'NIL)))
+          ((LAMBDA (I ANS)
+            (RETURN-LAST
+             'PROGN
+             (CHECK-DCL-GUARDIAN
+                  (IF (INTEGERP I) (NOT (< I '0)) 'NIL)
+                  '(SETQ I (THE (INTEGER 0 *) (BINARY-+ '-1 I))))
+             (CONS
+              'NIL
+              (CONS
+               'NIL
+               (CONS
+                ((LAMBDA (ANS I)
+                   (RETURN-LAST 'PROGN
+                                (CHECK-DCL-GUARDIAN
+                                     (DFP ANS)
+                                     '(SETQ ANS
+                                            (THE DOUBLE-FLOAT
+                                                 (BINARY-DF* (F0 ANS) ANS))))
+                                (CONS (CONS 'ANS ANS)
+                                      (CONS (CONS 'I I) 'NIL))))
+                 (BINARY-DF* (F0 ANS) ANS)
+                 I)
+                'NIL)))))
+           (BINARY-+ '-1 I)
+           ANS))))
+       (LIST ALIST)))))
+   (LET ((EXIT-FLG (CAR TRIPLE))
+         (NEW-ALIST (CADDR TRIPLE)))
+    (IMPLIES
+     (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                 (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                 (<= 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
+     (CASE EXIT-FLG
+      ((NIL)
+       (AND
+        (DO-BODY-GUARD-WRAPPER
+             (AND (ALISTP NEW-ALIST)
+                  (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))
+                  (INTEGERP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))
+                  (<= 0 (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))))
+        (L<
+         (LEX-FIX
+          (APPLY$
+           (LAMBDA$ (ALIST)
+            (DECLARE
+             (XARGS :GUARD
+                    (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP ALIST)
+                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                              (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                  (NOT (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) '0))
+                                'NIL)))))
+            (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                  (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+              (DECLARE (IGNORABLE ANS I))
+              (ACL2-COUNT I)))
+           (LIST NEW-ALIST)))
+         (LEX-FIX
+          (APPLY$
+           (LAMBDA$ (ALIST)
+            (DECLARE
+             (XARGS :GUARD
+                    (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP ALIST)
+                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                              (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                  (NOT (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) '0))
+                                'NIL)))))
+            (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                  (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+              (DECLARE (IGNORABLE ANS I))
+              (ACL2-COUNT I)))
+           (LIST ALIST))))))
+      (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP NEW-ALIST)
+                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))
+                              (INTEGERP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))
+                              (<= 0 (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST))))))
+      (OTHERWISE T))))))
+ (IMPLIES (AND (<= 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+               (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+               (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+               (ALISTP ALIST))
+          (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+            (AND (INTEGERP I)
+                 (<= 0 I)
+                 (OR (ZP I) (ACL2-NUMBERP I))
+                 (OR (ZP I)
+                     (LET ((I (+ -1 I)))
+                       (AND (AND (INTEGERP I) (<= 0 I))
+                            (DFP (F0 ANS))
+                            (DFP ANS)
+                            (LET ((ANS (DF* (F0 ANS) ANS)))
+                              (DFP ANS))))))))).
+Subgoal 2
+
+Splitter note (see :DOC splitter) for Subgoal 2 (2 subgoals).
+  if-intro: ((:DEFINITION NOT) (:REWRITE ZP-OPEN))
+
+Subgoal 2.2
+Subgoal 2.2'
+Subgoal 2.1
+Subgoal 1
+
+Q.E.D.
+
+That completes the proof of the guard theorem for DO-LOOP$-ON-F0. 
+DO-LOOP$-ON-F0 is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN DO-LOOP$-ON-F0 ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION ALISTP)
+        (:DEFINITION BINARY-DF*)
+        (:DEFINITION DO-BODY-GUARD-WRAPPER)
+        (:DEFINITION F0)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION SYNP)
+        (:DEFINITION UNARY-DF-)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ALISTP)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CHECK-DCL-GUARDIAN)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART DFP)
+        (:EXECUTABLE-COUNTERPART DO-BODY-GUARD-WRAPPER)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE APPLY$-F0)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE DFP-DF-ROUND)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE ZP-OPEN)
+        (:TYPE-PRESCRIPTION ASSOC-EQ-SAFE)
+        (:TYPE-PRESCRIPTION DFP)
+        (:TYPE-PRESCRIPTION DO-BODY-GUARD-WRAPPER)
+        (:TYPE-PRESCRIPTION RATIONALP-DF-ROUND))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION NOT) (:REWRITE ZP-OPEN))
+ DO-LOOP$-ON-F0
+ACL2 !>>(DO-LOOP$-ON-F0)
+1> (F0 2.0)
+<1 (F0 -2.0)
+1> (F0 -4.0)
+<1 (F0 4.0)
+1> (F0 -16.0)
+<1 (F0 16.0)
+#d-256.0
+ACL2 !>>(DEFUN$ APPLY$-F0-IN-LAMBDA
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ '(LAMBDA (Y)
+                           (DECLARE (XARGS :GUARD (DFP Y) :SPLIT-TYPES T)
+                                    (TYPE DOUBLE-FLOAT Y))
+                           (F0 Y))
+                        (LIST 3)))
+
+
+ACL2 !>>>(DEFUN APPLY$-F0-IN-LAMBDA NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ '(LAMBDA (Y)
+                      (DECLARE (XARGS :GUARD (DFP Y) :SPLIT-TYPES T)
+                               (TYPE DOUBLE-FLOAT Y))
+                      (F0 Y))
+                   (LIST 3)))
+
+Since APPLY$-F0-IN-LAMBDA is non-recursive, its admission is trivial.
+We could deduce no constraints on the type of APPLY$-F0-IN-LAMBDA.
+
+Computing the guard conjecture for APPLY$-F0-IN-LAMBDA....
+
+The guard conjecture for APPLY$-F0-IN-LAMBDA is trivial to prove, given
+the :executable-counterpart of APPLY$-GUARD.  APPLY$-F0-IN-LAMBDA is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN APPLY$-F0-IN-LAMBDA ...)
+Rules: ((:EXECUTABLE-COUNTERPART APPLY$-GUARD))
+APPLY$-F0-IN-LAMBDA
+
+
+ACL2 !>>>(DEFWARRANT APPLY$-F0-IN-LAMBDA)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+
+
+APPLY$-F0-IN-LAMBDA is now warranted by APPLY$-WARRANT-APPLY$-F0-IN-LAMBDA,
+with badge (APPLY$-BADGE 0 1 . T).
+
+:WARRANTED
+
+Summary
+Form:  ( PROGN (DEFUN APPLY$-F0-IN-LAMBDA ...) ...)
+Rules: NIL
+ :WARRANTED
+ACL2 !>>(APPLY$-F0-IN-LAMBDA)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+-3
+ACL2 !>>(ENCAPSULATE (((F13 :DF) => *))
+          (LOCAL (DEFUN F13 (X)
+                   (DECLARE (TYPE DOUBLE-FLOAT X))
+                   (FROM-DF X)))
+          (DEFTHM DFP-F13
+            (IMPLIES (DFP X) (DFP (F13 X)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F13 (X)
+                  (DECLARE (TYPE DOUBLE-FLOAT X))
+                  (FROM-DF X)))
+
+Since F13 is non-recursive, its admission is trivial.  We observe that
+the type of F13 is described by the theorem (EQUAL (F13 X) X).  
+
+(F13 :DF) => *.
+
+Computing the guard conjecture for F13....
+
+The guard conjecture for F13 is trivial to prove.  F13 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F13 ...)
+Rules: NIL
+F13
+
+
+ACL2 !>>>(DEFTHM DFP-F13
+           (IMPLIES (DFP X) (DFP (F13 X))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM DFP-F13 ...):  A :REWRITE rule generated
+from DFP-F13 will be triggered only by terms containing the function
+symbol F13, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+Q.E.D.
+
+The storage of DFP-F13 depends upon the :compound-recognizer rule 
+DFP-IMPLIES-RATIONALP and the :type-prescription rule DFP.
+
+Summary
+Form:  ( DEFTHM DFP-F13 ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION F13)
+        (:TYPE-PRESCRIPTION DFP))
+Warnings:  Non-rec
+DFP-F13
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function F13:
+
+(IMPLIES (DFP X) (DFP (F13 X)))
+
+(F13 :DF) => *.
+
+Summary
+Form:  ( ENCAPSULATE (((F13 :DF ...) ...) ...) ...)
+Rules: NIL
+Warnings:  Non-rec
+ F13
+ACL2 !>>(ENCAPSULATE (((F14 :DF) => :DF))
+          (LOCAL (DEFUN F14 (X)
+                   (DECLARE (TYPE DOUBLE-FLOAT X))
+                   (DF- X)))
+          (DEFTHM DFP-F14
+            (IMPLIES (DFP X) (DFP (F14 X)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F14 (X)
+                  (DECLARE (TYPE DOUBLE-FLOAT X))
+                  (DF- X)))
+
+Since F14 is non-recursive, its admission is trivial.  We observe that
+the type of F14 is described by the theorem (RATIONALP (F14 X)).  We
+used the :type-prescription rule UNARY-DF-.
+
+(F14 :DF) => :DF.
+
+Computing the guard conjecture for F14....
+
+The guard conjecture for F14 is trivial to prove.  F14 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F14 ...)
+Rules: ((:TYPE-PRESCRIPTION UNARY-DF-))
+F14
+
+
+ACL2 !>>>(DEFTHM DFP-F14
+           (IMPLIES (DFP X) (DFP (F14 X))))
+
+ACL2 Warning [Non-rec] in ( DEFTHM DFP-F14 ...):  A :REWRITE rule generated
+from DFP-F14 will be triggered only by terms containing the function
+symbol F14, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+Q.E.D.
+
+The storage of DFP-F14 depends upon the :compound-recognizer rule 
+DFP-IMPLIES-RATIONALP and the :type-prescription rule DFP.
+
+Summary
+Form:  ( DEFTHM DFP-F14 ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION F14)
+        (:DEFINITION UNARY-DF-)
+        (:EXECUTABLE-COUNTERPART IF)
+        (:REWRITE DFP-DF-ROUND)
+        (:TYPE-PRESCRIPTION DFP))
+Warnings:  Non-rec
+DFP-F14
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function F14:
+
+(IMPLIES (DFP X) (DFP (F14 X)))
+
+(F14 :DF) => :DF.
+
+Summary
+Form:  ( ENCAPSULATE (((F14 :DF ...) ...) ...) ...)
+Rules: NIL
+Warnings:  Non-rec
+ F14
+ACL2 !>>(ENCAPSULATE (((F15 *) => :DF))
+          (LOCAL (DEFUN F15 (X)
+                   (DECLARE (IGNORE X))
+                   (TO-DF 0)))
+          (DEFTHM DFP-F15 (DFP (F15 X))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F15 (X)
+                  (DECLARE (IGNORE X))
+                  (TO-DF 0)))
+
+Since F15 is non-recursive, its admission is trivial.  We observe that
+the type of F15 is described by the theorem (EQUAL (F15 X) 0).  
+
+(F15 *) => :DF.
+
+Summary
+Form:  ( DEFUN F15 ...)
+Rules: NIL
+F15
+
+
+ACL2 !>>>(DEFTHM DFP-F15 (DFP (F15 X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM DFP-F15 ...):  A :REWRITE rule generated
+from DFP-F15 will be triggered only by terms containing the function
+symbol F15, which has a non-recursive definition.  Unless this definition
+is disabled, this rule is unlikely ever to be used.
+
+
+Q.E.D.
+
+The storage of DFP-F15 depends upon the :compound-recognizer rule 
+DFP-IMPLIES-RATIONALP and the :type-prescription rule DFP.
+
+Summary
+Form:  ( DEFTHM DFP-F15 ...)
+Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
+        (:DEFINITION F15)
+        (:EXECUTABLE-COUNTERPART DFP)
+        (:TYPE-PRESCRIPTION DFP))
+Warnings:  Non-rec
+DFP-F15
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function F15:
+
+(DFP (F15 X))
+
+(F15 *) => :DF.
+
+Summary
+Form:  ( ENCAPSULATE (((F15 * ...) ...) ...) ...)
+Rules: NIL
+Warnings:  Non-rec
+ F15
+ACL2 !>>(ENCAPSULATE (((F16 *)
+                       => :DF
+                       :FORMALS (X)
+                       :GUARD (RATIONALP X)))
+          (LOCAL (DEFUN F16 (X)
+                   (DECLARE (IGNORE X))
+                   (TO-DF 0))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(LOCAL (DEFUN F16 (X)
+                  (DECLARE (IGNORE X))
+                  (TO-DF 0)))
+
+Since F16 is non-recursive, its admission is trivial.  We observe that
+the type of F16 is described by the theorem (EQUAL (F16 X) 0).  
+
+(F16 *) => :DF.
+
+Summary
+Form:  ( DEFUN F16 ...)
+Rules: NIL
+F16
+
+End of Encapsulated Event.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+(F16 *) => :DF.
+
+Summary
+Form:  ( ENCAPSULATE (((F16 * ...) ...) ...) ...)
+Rules: NIL
+ F16
+ACL2 !>>(DEFSTUB F17 (*) => :DF)
+
+Summary
+Form:  (DEFSTUB F17 ...)
+Rules: NIL
+ F17
+ACL2 !>>(ARGS 'F17)
+
+Function         F17
+Formals:         (X1)
+Signature:       (F17 *)
+                 => :DF
+Guard:           T
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            built-in (or unrestricted)
+Badge:           none
+Warrant:         none
+
+ F17
+ACL2 !>>(DEFSTUB F18 (:DF) => :DF)
+
+Summary
+Form:  (DEFSTUB F18 ...)
+Rules: NIL
+ F18
+ACL2 !>>(ARGS 'F18)
+
+Function         F18
+Formals:         (X1)
+Signature:       (F18 :DF)
+                 => :DF
+Guard:           (DFP X1)
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            built-in (or unrestricted)
+Badge:           none
+Warrant:         none
+
+ F18
+ACL2 !>>(DEFSTUB F19 (:DF) => (MV :DF :DF))
+
+Summary
+Form:  (DEFSTUB F19 ...)
+Rules: NIL
+ F19
+ACL2 !>>(ARGS 'F19)
+
+Function         F19
+Formals:         (X1)
+Signature:       (F19 :DF)
+                 => (MV :DF :DF)
+Guard:           (DFP X1)
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            built-in (or unrestricted)
+Badge:           none
+Warrant:         none
+Constraint:      (TRUE-LISTP (F19 X1))
+
+ F19
+ACL2 !>>(DEFSTUB F20 (:DF) => *)
+
+Summary
+Form:  (DEFSTUB F20 ...)
+Rules: NIL
+ F20
+ACL2 !>>(ARGS 'F20)
+
+Function         F20
+Formals:         (X1)
+Signature:       (F20 :DF)
+                 => *
+Guard:           (DFP X1)
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            built-in (or unrestricted)
+Badge:           none
+Warrant:         none
+
+ F20
+ACL2 !>>(DEFSTUB F21 (:DF ST1 * :DF)
+                 => (MV * * ST1 :DF))
+
+Summary
+Form:  (DEFSTUB F21 ...)
+Rules: NIL
+ F21
+ACL2 !>>(ARGS 'F21)
+
+Function         F21
+Formals:         (X1 ST1 X3 X4)
+Signature:       (F21 :DF ST1 * :DF)
+                 => (MV * * ST1 :DF)
+Guard:           (AND (ST1P ST1) (DFP X1) (DFP X4))
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            built-in (or unrestricted)
+Badge:           none
+Warrant:         none
+Constraint:      (TRUE-LISTP (F21 X1 ST1 X3 X4))
+
+ F21
+ACL2 !>>(DEFSTUB F22 (X) T :DFS (X))
+
+Summary
+Form:  (DEFSTUB F22 ...)
+Rules: NIL
+ F22
+ACL2 !>>(ARGS 'F22)
+
+Function         F22
+Formals:         (X)
+Signature:       (F22 :DF)
+                 => *
+Guard:           (DFP X)
+Guards Verified: T
+Defun-Mode:      :logic
+Type:            built-in (or unrestricted)
+Badge:           none
+Warrant:         none
+
+ F22
+ACL2 !>>(DEFSTUB BAD (X ST1)
+                 T
+                 :STOBJS ST1
+                 :DFS (X ST1))
+
+
+ACL2 Error in (DEFSTUB BAD ...):  The formal ST1 of function BAD is
+declared both with xargs :STOBJS and with a double-float type declaration.
+But a formal cannot name both a stobj and a df.
+
+
+Summary
+Form:  (DEFSTUB BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in (DEFSTUB BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F23A NIL
+          (DECLARE (XARGS :GUARD T))
+          T)
+
+Since F23A is non-recursive, its admission is trivial.  We observe
+that the type of F23A is described by the theorem (EQUAL (F23A) T).
+
+Computing the guard conjecture for F23A....
+
+The guard conjecture for F23A is trivial to prove.  F23A is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F23A ...)
+Rules: NIL
+ F23A
+ACL2 !>>(DEFUN F23 (X Y)
+          (DECLARE (TYPE DOUBLE-FLOAT X Y))
+          (PROG2$ (F23A) (DF+ X Y)))
+
+Since F23 is non-recursive, its admission is trivial.  We observe that
+the type of F23 is described by the theorem (RATIONALP (F23 X Y)).
+We used the :type-prescription rule BINARY-DF+.
+
+(F23 :DF :DF) => :DF.
+
+Computing the guard conjecture for F23....
+
+The guard conjecture for F23 is trivial to prove.  F23 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F23 ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+ F23
+ACL2 !>>(TRACE$ F23A)
+ ((F23A))
+ACL2 !>>(MEMOIZE 'F23)
+ F23
+ACL2 !>>(F23 (TO-DF 3) (TO-DF 4))
+1> (F23A)
+<1 (F23A T)
+#d7.0
+ACL2 !>>(F23 (TO-DF 3) (TO-DF 4))
+#d7.0
+ACL2 !>>(F23 (TO-DF 3) (TO-DF 4))
+#d7.0
+ACL2 !>>(UNMEMOIZE 'F23)
+
+
+ACL2 !>>>(TABLE MEMOIZE-TABLE
+           (DEREF-MACRO-NAME 'F23
+                             (MACRO-ALIASES WORLD))
+           NIL)
+
+
+ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'F23
+                                         (MACRO-ALIASES (W STATE))))
+ F23
+ACL2 !>>(MEMOIZE 'F23 :CONDITION '(DF< X Y))
+ F23
+ACL2 !>>(F23 (TO-DF 3) (TO-DF 4))
+1> (F23A)
+<1 (F23A T)
+#d7.0
+ACL2 !>>(F23 (TO-DF 3) (TO-DF 4))
+#d7.0
+ACL2 !>>(F23 (TO-DF 3) (TO-DF 4))
+#d7.0
+ACL2 !>>(F23 (TO-DF 4) (TO-DF 3))
+1> (F23A)
+<1 (F23A T)
+#d7.0
+ACL2 !>>(F23 (TO-DF 4) (TO-DF 3))
+1> (F23A)
+<1 (F23A T)
+#d7.0
+ACL2 !>>(DEFUN-SK F24 (X)
+          (DECLARE (XARGS :DFS (X)))
+          (EXISTS (Y) (DF< X (TO-DF Y))))
+
+Summary
+Form:  (DEFUN-SK F24 ...)
+Rules: NIL
+ F24
+ACL2 !>>(DEFUN-SK F25 (X)
+          (DECLARE (XARGS :DFS (X)))
+          (EXISTS (Y) (DF< X Y)))
+
+Summary
+Form:  (DEFUN-SK F25 ...)
+Rules: NIL
+ F25
+ACL2 !>>(DEFUN-SK F25-BAD (X)
+          (DECLARE (XARGS :DFS (X) :NON-EXECUTABLE NIL))
+          (EXISTS (Y) (DF< X Y)))
+
+
+ACL2 Error [Translate] in (DEFUN-SK F25-BAD ...):  The form Y represents
+an ordinary object, but it is being used where a form representing
+a :DF was expected.  See :DOC df.  Note:  this error occurred in the
+context (DF<-FN X Y).
+
+
+Summary
+Form:  (DEFUN-SK F25-BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in (DEFUN-SK F25-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN-SK F24-EXECUTABLE (X)
+          (DECLARE (XARGS :DFS (X) :NON-EXECUTABLE NIL))
+          (EXISTS (Y) (DF< X (TO-DF Y))))
+
+Summary
+Form:  (DEFUN-SK F24-EXECUTABLE ...)
+Rules: NIL
+ F24-EXECUTABLE
+ACL2 !>>(DEFUN COLLATZ-1-LIMIT (N LIMIT)
+          (DECLARE (XARGS :GUARD (NATP LIMIT)
+                          :MEASURE (ACL2-COUNT LIMIT))
+                   (TYPE DOUBLE-FLOAT N))
+          (IF (ZP LIMIT)
+              (PROG2$ (ER HARD? 'COLLATZ-1-LIMIT
+                          "Limit exceeded!")
+                      0)
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (DF= N 1)
+                  0
+                (1+ (COLLATZ-1-LIMIT (IF (LET ((K (DF-RATIONALIZE N)))
+                                           (AND (INTEGERP K) (EVENP K)))
+                                         (DF/ N 2)
+                                       (DF+ 1 (DF* 3 N)))
+                                     LIMIT))))))
+
+The admission of COLLATZ-1-LIMIT is trivial, using the relation O<
+(which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT LIMIT).  We observe that the type of 
+COLLATZ-1-LIMIT is described by the theorem 
+(AND (INTEGERP (COLLATZ-1-LIMIT N LIMIT)) (<= 0 (COLLATZ-1-LIMIT N LIMIT))).
+We used primitive type reasoning.
+
+(COLLATZ-1-LIMIT :DF *) => *.
+
+Computing the guard conjecture for COLLATZ-1-LIMIT....
+
+The guard conjecture for COLLATZ-1-LIMIT is trivial to prove, given
+the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
+ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of = and NOT,
+primitive type reasoning and the :type-prescription rule COLLATZ-1-LIMIT.
+COLLATZ-1-LIMIT is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ-1-LIMIT ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:EXECUTABLE-COUNTERPART =)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION COLLATZ-1-LIMIT))
+ COLLATZ-1-LIMIT
+ACL2 !>>(MEMOIZE-PARTIAL COLLATZ-1)
+
+
+ACL2 !>>>(MAKE-EVENT
+          (ER-PROGN
+             (MEMOIZE-PARTIAL-BASIC-CHECKS
+                  '((COLLATZ-1 COLLATZ-1-LIMIT COLLATZ-1-LIMIT-CHANGE
+                               COLLATZ-1-LIMIT-STABLE))
+                  'MEMOIZE-PARTIAL
+                  STATE)
+             (MV-LET (MSG DEFS TABLE-EVENT)
+                     (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
+                          '((COLLATZ-1 COLLATZ-1-LIMIT COLLATZ-1-LIMIT-CHANGE
+                                       COLLATZ-1-LIMIT-STABLE))
+                          (W STATE))
+               (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
+                     (T (VALUE (CONS 'PROGN
+                                     (APPEND DEFS (LIST TABLE-EVENT))))))))
+          :ON-BEHALF-OF :QUIET!)
+
+
+ACL2 !>>>(DEFCHOOSE COLLATZ-1-LIMIT-CHANGE (LARGE)
+                                           (N LIMIT)
+           (AND (NATP LARGE)
+                (<= LIMIT LARGE)
+                (NOT (EQUAL (COLLATZ-1-LIMIT N LIMIT)
+                            (COLLATZ-1-LIMIT N LARGE)))))
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-1-LIMIT-CHANGE ...)
+Rules: NIL
+COLLATZ-1-LIMIT-CHANGE
+
+
+ACL2 !>>>(DEFCHOOSE COLLATZ-1-LIMIT-STABLE (LIMIT)
+                                           (N)
+          (AND (NATP LIMIT)
+               (EQUAL (COLLATZ-1-LIMIT N LIMIT)
+                      (COLLATZ-1-LIMIT N (COLLATZ-1-LIMIT-CHANGE N LIMIT)))))
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-1-LIMIT-STABLE ...)
+Rules: NIL
+COLLATZ-1-LIMIT-STABLE
+
+
+ACL2 !>>>(DEFUN COLLATZ-1 (N)
+           (DECLARE (TYPE DOUBLE-FLOAT N)
+                    (XARGS :GUARD
+                           (LET ((LIMIT 0))
+                             (DECLARE (IGNORABLE LIMIT))
+                             (NATP LIMIT))))
+           (COLLATZ-1-LIMIT N
+                            (NFIX (NON-EXEC (COLLATZ-1-LIMIT-STABLE N)))))
+
+Since COLLATZ-1 is non-recursive, its admission is trivial.  We observe
+that the type of COLLATZ-1 is described by the theorem 
+(AND (INTEGERP (COLLATZ-1 N)) (<= 0 (COLLATZ-1 N))).  We used the :type-
+prescription rule COLLATZ-1-LIMIT.
+
+(COLLATZ-1 :DF) => *.
+
+Computing the guard conjecture for COLLATZ-1....
+
+The guard conjecture for COLLATZ-1 is trivial to prove, given the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER, the :executable-counterpart
+of NOT and the :type-prescription rule NFIX.  COLLATZ-1 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ-1 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:TYPE-PRESCRIPTION COLLATZ-1-LIMIT)
+        (:TYPE-PRESCRIPTION NFIX))
+COLLATZ-1
+
+
+ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE
+          'COLLATZ-1-LIMIT
+          '((COLLATZ-1
+             COLLATZ-1-LIMIT COLLATZ-1-LIMIT-CHANGE
+             COLLATZ-1-LIMIT-STABLE
+             (DEFUN COLLATZ-1 (N)
+              (DECLARE (IGNORABLE N))
+              (DECLARE (TYPE DOUBLE-FLOAT N))
+              (FLET
+                 ((COLLATZ-1-LIMIT (N LIMIT)
+                                   (DECLARE (IGNORE LIMIT))
+                                   (COLLATZ-1 N)))
+                 (DECLARE (INLINE COLLATZ-1-LIMIT))
+                 (LET ((LIMIT 0))
+                   (DECLARE (IGNORABLE LIMIT))
+                   (IF (DF= N 1)
+                       0
+                     (1+ (COLLATZ-1-LIMIT (IF (LET ((K (DF-RATIONALIZE N)))
+                                                (AND (INTEGERP K) (EVENP K)))
+                                              (DF/ N 2)
+                                            (DF+ 1 (DF* 3 N)))
+                                          LIMIT)))))))))
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( PROGN (DEFCHOOSE COLLATZ-1-LIMIT-CHANGE ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+
+ACL2 !>>>(MEMOIZE 'COLLATZ-1
+                  :TOTAL 'COLLATZ-1-LIMIT)
+COLLATZ-1
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ COLLATZ-1
+ACL2 !>>(COLLATZ-1 (TO-DF 6))
+8
+ACL2 !>>(ASSERT-EVENT (= (COLLATZ-1 (TO-DF 6)) 8))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (= (COLLATZ-1 (TO-DF 10)) 6))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (= (COLLATZ-1 (TO-DF 100)) 25))
+ :PASSED
+ACL2 !>>(DEFUN COLLATZ-2-LIMIT (N LIMIT)
+          (DECLARE (XARGS :GUARD (NATP LIMIT)
+                          :MEASURE (ACL2-COUNT LIMIT))
+                   (TYPE DOUBLE-FLOAT N))
+          (IF (ZP LIMIT)
+              (PROG2$ (ER HARD? 'COLLATZ-2-LIMIT
+                          "Limit exceeded!")
+                      (DF0))
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (DF= N 1)
+                  (DF0)
+                (DF+ 1
+                     (COLLATZ-2-LIMIT (IF (LET ((K (DF-RATIONALIZE N)))
+                                            (AND (INTEGERP K) (EVENP K)))
+                                          (DF/ N 2)
+                                        (DF+ 1 (DF* 3 N)))
+                                      LIMIT))))))
+
+The admission of COLLATZ-2-LIMIT is trivial, using the relation O<
+(which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT LIMIT).  We observe that the type of 
+COLLATZ-2-LIMIT is described by the theorem 
+(RATIONALP (COLLATZ-2-LIMIT N LIMIT)).  We used the :type-prescription
+rule BINARY-DF+.
+
+(COLLATZ-2-LIMIT :DF *) => :DF.
+
+Computing the guard conjecture for COLLATZ-2-LIMIT....
+
+The guard conjecture for COLLATZ-2-LIMIT is trivial to prove, given
+the :compound-recognizer rules NATP-COMPOUND-RECOGNIZER and 
+ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of = and NOT and
+primitive type reasoning.  COLLATZ-2-LIMIT is compliant with Common
+Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ-2-LIMIT ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:EXECUTABLE-COUNTERPART =)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION BINARY-DF+))
+ COLLATZ-2-LIMIT
+ACL2 !>>(MEMOIZE-PARTIAL COLLATZ-2)
+
+
+ACL2 !>>>(MAKE-EVENT
+          (ER-PROGN
+             (MEMOIZE-PARTIAL-BASIC-CHECKS
+                  '((COLLATZ-2 COLLATZ-2-LIMIT COLLATZ-2-LIMIT-CHANGE
+                               COLLATZ-2-LIMIT-STABLE))
+                  'MEMOIZE-PARTIAL
+                  STATE)
+             (MV-LET (MSG DEFS TABLE-EVENT)
+                     (MEMOIZE-PARTIAL-SUPPORTING-EVENTS
+                          '((COLLATZ-2 COLLATZ-2-LIMIT COLLATZ-2-LIMIT-CHANGE
+                                       COLLATZ-2-LIMIT-STABLE))
+                          (W STATE))
+               (COND (MSG (ER SOFT 'MEMOIZE-PARTIAL "~@0" MSG))
+                     (T (VALUE (CONS 'PROGN
+                                     (APPEND DEFS (LIST TABLE-EVENT))))))))
+          :ON-BEHALF-OF :QUIET!)
+
+
+ACL2 !>>>(DEFCHOOSE COLLATZ-2-LIMIT-CHANGE (LARGE)
+                                           (N LIMIT)
+           (AND (NATP LARGE)
+                (<= LIMIT LARGE)
+                (NOT (EQUAL (COLLATZ-2-LIMIT N LIMIT)
+                            (COLLATZ-2-LIMIT N LARGE)))))
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-2-LIMIT-CHANGE ...)
+Rules: NIL
+COLLATZ-2-LIMIT-CHANGE
+
+
+ACL2 !>>>(DEFCHOOSE COLLATZ-2-LIMIT-STABLE (LIMIT)
+                                           (N)
+          (AND (NATP LIMIT)
+               (EQUAL (COLLATZ-2-LIMIT N LIMIT)
+                      (COLLATZ-2-LIMIT N (COLLATZ-2-LIMIT-CHANGE N LIMIT)))))
+
+Summary
+Form:  ( DEFCHOOSE COLLATZ-2-LIMIT-STABLE ...)
+Rules: NIL
+COLLATZ-2-LIMIT-STABLE
+
+
+ACL2 !>>>(DEFUN COLLATZ-2 (N)
+           (DECLARE (TYPE DOUBLE-FLOAT N)
+                    (XARGS :GUARD
+                           (LET ((LIMIT 0))
+                             (DECLARE (IGNORABLE LIMIT))
+                             (NATP LIMIT))))
+           (COLLATZ-2-LIMIT N
+                            (NFIX (NON-EXEC (COLLATZ-2-LIMIT-STABLE N)))))
+
+Since COLLATZ-2 is non-recursive, its admission is trivial.  We observe
+that the type of COLLATZ-2 is described by the theorem 
+(RATIONALP (COLLATZ-2 N)).  We used the :type-prescription rule 
+COLLATZ-2-LIMIT.
+
+(COLLATZ-2 :DF) => :DF.
+
+Computing the guard conjecture for COLLATZ-2....
+
+The guard conjecture for COLLATZ-2 is trivial to prove, given the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER, the :executable-counterpart
+of NOT and the :type-prescription rule NFIX.  COLLATZ-2 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN COLLATZ-2 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:TYPE-PRESCRIPTION COLLATZ-2-LIMIT)
+        (:TYPE-PRESCRIPTION NFIX))
+COLLATZ-2
+
+
+ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE
+          'COLLATZ-2-LIMIT
+          '((COLLATZ-2
+             COLLATZ-2-LIMIT COLLATZ-2-LIMIT-CHANGE
+             COLLATZ-2-LIMIT-STABLE
+             (DEFUN COLLATZ-2 (N)
+              (DECLARE (IGNORABLE N))
+              (DECLARE (TYPE DOUBLE-FLOAT N))
+              (FLET
+                ((COLLATZ-2-LIMIT (N LIMIT)
+                                  (DECLARE (IGNORE LIMIT))
+                                  (COLLATZ-2 N)))
+                (DECLARE (INLINE COLLATZ-2-LIMIT))
+                (LET ((LIMIT 0))
+                  (DECLARE (IGNORABLE LIMIT))
+                  (IF (DF= N 1)
+                      (DF0)
+                    (DF+ 1
+                         (COLLATZ-2-LIMIT (IF (LET ((K (DF-RATIONALIZE N)))
+                                                (AND (INTEGERP K) (EVENP K)))
+                                              (DF/ N 2)
+                                            (DF+ 1 (DF* 3 N)))
+                                          LIMIT)))))))))
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+Summary
+Form:  ( PROGN (DEFCHOOSE COLLATZ-2-LIMIT-CHANGE ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+PARTIAL-FUNCTIONS-TABLE
+
+
+ACL2 !>>>(MEMOIZE 'COLLATZ-2
+                  :TOTAL 'COLLATZ-2-LIMIT)
+COLLATZ-2
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ COLLATZ-2
+ACL2 !>>(COLLATZ-2 (TO-DF 6))
+#d8.0
+ACL2 !>>(ASSERT-EVENT (DF= (COLLATZ-2 (TO-DF 6)) 8))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (DF= (COLLATZ-2 (TO-DF 10)) 6))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (DF= (COLLATZ-2 (TO-DF 100)) 25))
+ :PASSED
+ACL2 !>>(DEFEXEC F26 (X Y)
+                 (DECLARE (XARGS :GUARD (NATP X) :DFS (Y))
+                          (EXEC-XARGS :DEFAULT-VALUE (TO-DF 1)))
+                 (MBE :LOGIC
+                      (IF (ZP X)
+                          Y
+                        (DF* (TO-DF X) (F26 (- X 1) Y)))
+                      :EXEC
+                      (IF (= X 0)
+                          Y
+                        (DF* (TO-DF X) (F26 (- X 1) Y)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (ENCAPSULATE NIL
+                  (SET-IGNORE-OK T)
+                  (SET-IRRELEVANT-FORMALS-OK T)
+                  (LOCAL (DEFUN F26 (X Y)
+                           (DECLARE (XARGS :VERIFY-GUARDS NIL :DFS (Y)))
+                           (IF (NATP X)
+                               (IF (= X 0)
+                                   Y
+                                 (DF* (TO-DF X) (F26 (- X 1) Y)))
+                             (TO-DF 1))))
+                  (LOCAL (DEFTHM F26-GUARD-IMPLIES-TEST
+                           (IMPLIES (NATP X) (NATP X))
+                           :RULE-CLASSES NIL))))
+
+To verify that the four encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(SET-IGNORE-OK T)
+T
+
+
+ACL2 !>>>(SET-IRRELEVANT-FORMALS-OK T)
+T
+
+
+ACL2 !>>>(LOCAL (DEFUN F26 (X Y)
+                  (DECLARE (XARGS :VERIFY-GUARDS NIL :DFS (Y)))
+                  (IF (NATP X)
+                      (IF (= X 0)
+                          Y
+                        (DF* (TO-DF X) (F26 (- X 1) Y)))
+                    (TO-DF 1))))
+
+For the admission of F26 we will use the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  The non-trivial part of the measure conjecture is
+
+Goal
+(IMPLIES (AND (NATP X) (NOT (= X 0)))
+         (O< (ACL2-COUNT (+ -1 X))
+             (ACL2-COUNT X))).
+Goal'
+
+Q.E.D.
+
+That completes the proof of the measure theorem for F26.  Thus, we
+admit this function under the principle of definition.  We observe
+that the type of F26 is described by the theorem 
+(OR (RATIONALP (F26 X Y)) (EQUAL (F26 X Y) Y)).  We used the :type-
+prescription rule BINARY-DF*.
+
+(F26 * :DF) => :DF.
+
+Summary
+Form:  ( DEFUN F26 ...)
+Rules: ((:DEFINITION =)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:TYPE-PRESCRIPTION BINARY-DF*))
+F26
+
+
+ACL2 !>>>(LOCAL (DEFTHM F26-GUARD-IMPLIES-TEST
+                  (IMPLIES (NATP X) (NATP X))
+                  :RULE-CLASSES NIL))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F26-GUARD-IMPLIES-TEST ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER))
+F26-GUARD-IMPLIES-TEST
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (SET-IGNORE-OK T) ...)
+Rules: NIL
+T
+
+
+ACL2 !>>>(DEFUN F26 (X Y)
+           (DECLARE (XARGS :GUARD (NATP X) :DFS (Y)))
+           (MBE :LOGIC
+                (IF (ZP X)
+                    Y
+                  (DF* (TO-DF X) (F26 (- X 1) Y)))
+                :EXEC
+                (IF (= X 0)
+                    Y
+                  (DF* (TO-DF X) (F26 (- X 1) Y)))))
+
+The admission of F26 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of F26 is described by the
+theorem (OR (RATIONALP (F26 X Y)) (EQUAL (F26 X Y) Y)).  We used the
+:type-prescription rule BINARY-DF*.
+
+(F26 * :DF) => :DF.
+
+Computing the guard conjecture for F26....
+
+The non-trivial part of the guard conjecture for F26, given the :compound-
+recognizer rule NATP-COMPOUND-RECOGNIZER and primitive type reasoning,
+is
+
+Goal
+(IMPLIES (AND (NATP X) (DFP Y))
+         (EQUAL (IF (ZP X)
+                    Y
+                  (DF* (TO-DF X) (F26 (+ -1 X) Y)))
+                (IF (= X 0)
+                    Y
+                  (DF* (TO-DF X) (F26 (+ -1 X) Y))))).
+Goal'
+Goal''
+
+Q.E.D.
+
+That completes the proof of the guard theorem for F26.  F26 is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN F26 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION =)
+        (:DEFINITION BINARY-DF*)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION BINARY-DF*))
+F26
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export F26.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(ASSERT-EVENT (DF= (F26 3 (TO-DF 7)) 42))
+ :PASSED
+ACL2 !>>(DEFUN F27-BAD (X)
+          (IF (CONSP X)
+              (MV-LET (Y Z)
+                      (F27-BAD (CDR X))
+                (MV Y Z))
+            (MV (DF0) X)))
+
+
+ACL2 Error [Translate] in ( DEFUN F27-BAD ...):  It is illegal to invoke
+DF0 here because of a signature mismatch.  This function call returns
+a result of shape :DF where a result of shape * is required.  Note:
+this error occurred in the context (DF0).
+
+
+Summary
+Form:  ( DEFUN F27-BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F27-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F27 (X)
+          (IF (CONSP X)
+              (MV-LET (Y Z)
+                      (F27 (CDR X))
+                (DECLARE (TYPE DOUBLE-FLOAT Y))
+                (MV Y Z))
+            (MV (DF0) X)))
+
+The admission of F27 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of F27 is described by the
+theorem (AND (CONSP (F27 X)) (TRUE-LISTP (F27 X))).  We used primitive
+type reasoning.
+
+(F27 *) => (MV :DF *).
+
+Summary
+Form:  ( DEFUN F27 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F27
+ACL2 !>>(DEFUN F27-EASY (X)
+          (IF (NOT (CONSP X))
+              (MV (DF0) X)
+            (MV-LET (Y Z)
+                    (F27-EASY (CDR X))
+              (MV Y Z))))
+
+The admission of F27-EASY is trivial, using the relation O< (which
+is known to be well-founded on the domain recognized by O-P) and the
+measure (ACL2-COUNT X).  We observe that the type of F27-EASY is described
+by the theorem (AND (CONSP (F27-EASY X)) (TRUE-LISTP (F27-EASY X))).
+We used primitive type reasoning.
+
+(F27-EASY *) => (MV :DF *).
+
+Summary
+Form:  ( DEFUN F27-EASY ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F27-EASY
+ACL2 !>>(DEFUN F28-BAD (X)
+          (IF (CONSP X)
+              (MV-LET (Y Z)
+                      (MV (TO-DF (CAR X)) (F28-BAD (CDR X)))
+                (DF+ Y Z))
+            (DF1)))
+
+
+ACL2 Error [Translate] in ( DEFUN F28-BAD ...):  It is illegal to invoke
+BINARY-DF+ here because of a signature mismatch.  This function call
+returns a result of shape :DF where a result of shape * is required.
+Note:  this error occurred in the context (BINARY-DF+ Y Z).
+
+
+Summary
+Form:  ( DEFUN F28-BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F28-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F28 (X)
+          (IF (CONSP X)
+              (MV-LET (Y Z)
+                      (MV (TO-DF (CAR X)) (F28 (CDR X)))
+                (DECLARE (TYPE DOUBLE-FLOAT Z))
+                (DF+ Y Z))
+            (DF1)))
+
+The admission of F28 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of F28 is described by the
+theorem (RATIONALP (F28 X)).  We used the :type-prescription rule BINARY-DF+.
+
+(F28 *) => :DF.
+
+Summary
+Form:  ( DEFUN F28 ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+ F28
+ACL2 !>>(DEFUN F28-ALT (X)
+          (IF (CONSP X)
+              (MV-LET (Y Z)
+                      (MV (TO-DF (CAR X)) (F28-ALT (CDR X)))
+                (DECLARE (TYPE DOUBLE-FLOAT Y Z))
+                (DF+ Y Z))
+            (DF1)))
+
+The admission of F28-ALT is trivial, using the relation O< (which is
+known to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of F28-ALT is described by
+the theorem (RATIONALP (F28-ALT X)).  We used the :type-prescription
+rule BINARY-DF+.
+
+(F28-ALT *) => :DF.
+
+Summary
+Form:  ( DEFUN F28-ALT ...)
+Rules: ((:TYPE-PRESCRIPTION BINARY-DF+))
+ F28-ALT
+ACL2 !>>(DEFUN F29 (X)
+          (IF (CONSP X)
+              (MV-LET (Y Z)
+                      (MV (CAR X) (F29 (CDR X)))
+                (DECLARE (TYPE DOUBLE-FLOAT Y Z))
+                (DF+ (TO-DF Y) Z))
+            (DF1)))
+
+
+ACL2 Error [Translate] in ( DEFUN F29 ...):  The bound variable list
+(Y Z) from an MV-LET expression has been found not to be compatible
+with the ``types'' (each a stobj name or an indicator of a non-stobj
+object) computed for them, (NIL :DF).
+If dfs are involved (see :DOC df), then proper double-float type declarations
+may help.  Note:  this error occurred in the context 
+(MV-LET (Y Z)
+        (MV (CAR X) (F29 (CDR X)))
+  (DECLARE (TYPE DOUBLE-FLOAT Y Z))
+  (DF+ (TO-DF Y) Z)).
+
+
+
+Summary
+Form:  ( DEFUN F29 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F29 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(MUTUAL-RECURSION
+          (DEFUN F30-BAD1 (X)
+            (IF (CONSP X)
+                (MV (TO-DF (CAR X)) (F31-BAD1 (CDR X)))
+              (MV (DF0) (DF1))))
+          (DEFUN F31-BAD1 (X)
+            (IF (CONSP X)
+                (MV-LET (U V)
+                        (F30-BAD1 (CDR X))
+                  (DF+ (TO-DF (CAR X)) (DF+ U V)))
+              (DF1))))
+
+
+ACL2 Error [Translate] in ( MUTUAL-RECURSION ... ( DEFUN F30-BAD1 ...)
+...):  It is illegal to invoke DF1 here because of a signature mismatch.
+This function call returns a result of shape :DF where a result of
+shape * is required.  Note:  this error occurred in the context (DF1).
+
+
+Summary
+Form:  ( MUTUAL-RECURSION ( DEFUN F30-BAD1 ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( MUTUAL-RECURSION ( DEFUN F30-BAD1 ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(MUTUAL-RECURSION
+          (DEFUN F31-BAD2 (X)
+            (IF (CONSP X)
+                (MV-LET (U V)
+                        (F30-BAD2 (CDR X))
+                  (DF+ (TO-DF (CAR X)) (DF+ U V)))
+              (DF1)))
+          (DEFUN F30-BAD2 (X)
+            (IF (CONSP X)
+                (MV (TO-DF (CAR X)) (F31-BAD2 (CDR X)))
+              (MV (DF0) (DF1)))))
+
+
+ACL2 Error [Translate] in ( MUTUAL-RECURSION ... ( DEFUN F31-BAD2 ...)
+...):  The form U represents an ordinary object, but it is being used
+where a form representing a :DF was expected.  See :DOC df.  Note:
+this error occurred in the context (BINARY-DF+ U V).
+
+
+Summary
+Form:  ( MUTUAL-RECURSION ( DEFUN F31-BAD2 ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( MUTUAL-RECURSION ( DEFUN F31-BAD2 ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(MUTUAL-RECURSION
+          (DEFUN F30-GOOD1 (X)
+            (IF (NOT (CONSP X))
+                (MV (DF0) (DF1))
+              (MV (TO-DF (CAR X))
+                  (F31-GOOD1 (CDR X)))))
+          (DEFUN F31-GOOD1 (X)
+            (IF (CONSP X)
+                (MV-LET (U V)
+                        (F30-GOOD1 (CDR X))
+                  (DF+ (TO-DF (CAR X)) (DF+ U V)))
+              (DF1))))
+
+The admission of F30-GOOD1 and F31-GOOD1 are trivial, using the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT X) for F30-GOOD1 and (ACL2-COUNT X) for
+F31-GOOD1.  We observe that the type of F30-GOOD1 is described by the
+theorem (AND (CONSP (F30-GOOD1 X)) (TRUE-LISTP (F30-GOOD1 X))) and
+the type of F31-GOOD1 is described by the theorem (RATIONALP (F31-GOOD1 X)).
+
+The Non-simple Signatures:
+(F30-GOOD1 *) => (MV :DF :DF).
+(F31-GOOD1 *) => :DF.
+
+Summary
+Form:  ( MUTUAL-RECURSION ( DEFUN F30-GOOD1 ...) ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION BINARY-DF+))
+ (F30-GOOD1 F31-GOOD1)
+ACL2 !>>(MUTUAL-RECURSION
+          (DEFUN F30-GOOD2 (X)
+            (IF (CONSP X)
+                (MV (TO-DF (CAR X))
+                    (THE DOUBLE-FLOAT (F31-GOOD2 (CDR X))))
+              (MV (DF0) (DF1))))
+          (DEFUN F31-GOOD2 (X)
+            (IF (CONSP X)
+                (MV-LET (U V)
+                        (F30-GOOD2 (CDR X))
+                  (DF+ (TO-DF (CAR X)) (DF+ U V)))
+              (DF1))))
+
+The admission of F30-GOOD2 and F31-GOOD2 are trivial, using the relation
+O< (which is known to be well-founded on the domain recognized by O-P)
+and the measure (ACL2-COUNT X) for F30-GOOD2 and (ACL2-COUNT X) for
+F31-GOOD2.  We observe that the type of F30-GOOD2 is described by the
+theorem (AND (CONSP (F30-GOOD2 X)) (TRUE-LISTP (F30-GOOD2 X))) and
+the type of F31-GOOD2 is described by the theorem (RATIONALP (F31-GOOD2 X)).
+
+The Non-simple Signatures:
+(F30-GOOD2 *) => (MV :DF :DF).
+(F31-GOOD2 *) => :DF.
+
+Summary
+Form:  ( MUTUAL-RECURSION ( DEFUN F30-GOOD2 ...) ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION BINARY-DF+))
+ (F30-GOOD2 F31-GOOD2)
+ACL2 !>>(DEFTTAG :FLOATING-POINT)
+ :FLOATING-POINT
+ACL2 !>>(DEFMACRO RAW-CHECK (FORM &OPTIONAL (RAW-FORM 'NIL RAW-FORM-P))
+         (CONS
+          'LD
+          (CONS
+           (CONS
+            'QUOTE
+            (CONS
+             (CONS
+              '(SET-RAW-MODE NIL)
+              (CONS
+               (CONS
+                'ER-LET*
+                (CONS
+                 (CONS (CONS 'STOBJS-OUT/VAL
+                             (CONS (CONS 'TRANS-EVAL
+                                         (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                               '('RAW-CHECK STATE NIL)))
+                                   'NIL))
+                       'NIL)
+                 '((ASSIGN RAW-CHECK-XXX (CDR STOBJS-OUT/VAL)))))
+               (CONS
+                '(SET-RAW-MODE T)
+                (CONS
+                 (CONS
+                  'LET
+                  (CONS
+                   (CONS (CONS 'RAW-CHECK-YYY
+                               (CONS (IF RAW-FORM-P RAW-FORM FORM)
+                                     'NIL))
+                         'NIL)
+                   (CONS
+                    (CONS
+                     'IF
+                     (CONS
+                      '(IF (TYPEP RAW-CHECK-YYY 'REAL)
+                           (= (@ RAW-CHECK-XXX) RAW-CHECK-YYY)
+                         (EQUAL (@ RAW-CHECK-XXX) RAW-CHECK-YYY))
+                      (CONS
+                       '(PPROGN
+                             (PRINC$ "Raw-check success" (STANDARD-CO STATE)
+                                     STATE)
+                             (NEWLINE (STANDARD-CO STATE) STATE))
+                       (CONS
+                        (CONS
+                         'FMS
+                         (CONS
+                          '"Raw-check failed for~|~x0~@1~|"
+                          (CONS
+                           (CONS
+                            'LIST
+                            (CONS
+                             (CONS 'CONS
+                                   (CONS '#\0
+                                         (CONS (CONS 'QUOTE (CONS FORM 'NIL))
+                                               'NIL)))
+                             (CONS
+                              (CONS
+                               'CONS
+                               (CONS
+                                '#\1
+                                (CONS
+                                 (IF RAW-FORM-P
+                                  (CONS
+                                   'MSG
+                                   (CONS
+                                     '"~|and raw form~|~x0"
+                                     (CONS (CONS 'QUOTE (CONS RAW-FORM 'NIL))
+                                           'NIL)))
+                                  "")
+                                 'NIL)))
+                              'NIL)))
+                           '((STANDARD-CO STATE) STATE NIL))))
+                        'NIL))))
+                    'NIL)))
+                 '((SET-RAW-MODE NIL) (VALUE :Q))))))
+             'NIL))
+           '(:LD-VERBOSE NIL
+                         :LD-PROMPT NIL
+                         :LD-PRE-EVAL-PRINT NIL
+                         :LD-POST-EVAL-PRINT NIL))))
+
+Summary
+Form:  ( DEFMACRO RAW-CHECK ...)
+Rules: NIL
+ RAW-CHECK
+ACL2 !>>(RAW-CHECK (EQUAL 3 3))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (EQUAL 3 3) (= 3 3))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (WITH-GUARD-CHECKING NIL (EQ '(A) '(A))))
+
+Raw-check failed for
+(WITH-GUARD-CHECKING NIL (EQ '(A) '(A)))
+ :EXIT
+ACL2 !>>(RAW-CHECK (WITH-GUARD-CHECKING NIL (EQ '(A) '(A)))
+                   (EQ '(A) '(A)))
+
+Raw-check failed for
+(WITH-GUARD-CHECKING NIL (EQ '(A) '(A)))
+and raw form
+(EQ '(A) '(A))
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF+ 2769713770832855/2251799813685248))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF+ 2769713770832855/2251799813685248)
+                   (+ (EVAL (READ-FROM-STRING "1.23"))))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF+ 3 4)
+                   (EVAL (READ-FROM-STRING "7.0")))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF+ 9/16
+                        1/4 6980579422424269/2251799813685248))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF+ (TO-DF 1/3) 1/4))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF/ (TO-DF 1/3) 1/4))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DFP 'ABC))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DFP 'ABC) NIL)
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (FROM-DF (TO-DF 1/4)))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (FROM-DF (TO-DF 1/3)))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (TO-DF 31/10))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (TO-DFP 31/10))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (NOT (EQUAL (TO-DFP 31/10) 31/10)))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (NOT (DF= (DF+ 3602879701896397/36028797018963968
+                                  (DF+ 3602879701896397/18014398509481984
+                                       5404319552844595/18014398509481984))
+                             (DF+ (DF+ 3602879701896397/36028797018963968
+                                       3602879701896397/18014398509481984)
+                                  5404319552844595/18014398509481984))))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (LET ((X (TO-DF 3602879701896397/36028797018963968))
+                         (Y (TO-DF 3602879701896397/18014398509481984))
+                         (Z (TO-DF 5404319552844595/18014398509481984)))
+                     (NOT (DF= (DF+ (DF+ X Y) Z)
+                               (DF+ X (DF+ Y Z))))))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF+ (IDENTITY-MACRO 1/4) 1/2)
+                   (EVAL (READ-FROM-STRING "0.75")))
+
+
+ACL2 Error [Translate] in RAW-CHECK:  The form 1/4 represents an ordinary
+object, but it is being used where a form representing a :DF was expected.
+See :DOC df.  Note:  this error occurred in the context (IDENTITY-MACRO 1/4).
+
+ (:STOP-LD 3)
+ACL2 !>>(RAW-CHECK (DF-RATIONALIZE (TO-DF 1/3)))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (DF-RATIONALIZE (TO-DF 1/3))
+                   (RATIONALIZE (TO-DF 1/3)))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (RIZE 1/3)
+                   (RATIONALIZE (FLOAT 1/3 (EVAL (READ-FROM-STRING "0.0")))))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (RIZE *DF-PI*))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (RIZE *DF-PI*)
+                   (RATIONALIZE PI))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (F1 3))
+Raw-check success
+ :EXIT
+ACL2 !>>(RAW-CHECK (F1 (TO-DF 3)))
+Raw-check success
+ :EXIT
+ACL2 !>>(DEFTTAG NIL)
+ NIL
+ACL2 !>>Bye.

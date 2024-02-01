@@ -1302,6 +1302,47 @@
     :temp-touchable-vars t
     :temp-touchable-fns t))
 
+(defun remove-double-floats (stobjs-out-with-dfs *1*body check)
+
+; WARNING: There should be at least one :DF member of stobjs-out-with-dfs,
+; which is the stobjs-out for *1*body.
+
+; This function converts a given expression *1*body to one that avoids
+; returning any double-floats.  If check is nil, then we expect double-floats
+; as indicated by stobjs-out-with-dfs; otherwise we check (as in the case that
+; we are returning from a *1* function call, where the corresponding raw Lisp
+; function might or might not have been called).
+
+  (cond
+   ((null (cdr stobjs-out-with-dfs)) ; stobjs-out-with-dfs is (:df)
+    (cond (check
+           `(let ((x ,*1*body))
+              (if (typep x 'double-float)
+                  (rational x)
+                x)))
+          (t `(rational ,*1*body))))
+   (t
+    (let ((xs (loop for s in stobjs-out-with-dfs as i from 0 collect
+                    (progn s ; avoid warning on ignored variable
+                           (packn (list 'x i))))))
+      `(multiple-value-bind
+        ,xs
+        ,*1*body
+        (values ,@(cond (check (loop for s in stobjs-out-with-dfs
+                                     as x in xs
+                                     collect
+                                     (if (eq s :df)
+                                         `(if (typep ,x 'double-float)
+                                              (rational ,x)
+                                            ,x)
+                                       x)))
+                        (t (loop for s in stobjs-out-with-dfs
+                                 as x in xs
+                                 collect
+                                 (if (eq s :df)
+                                     `(rational ,x)
+                                   x))))))))))
+
 (defun-one-output oneify (x fns w program-p)
 
 ; Warning: Keep this function in sync with the other functions listed in the
@@ -1384,6 +1425,7 @@
        t   ; stobjs-out
        nil ; bindings
        t   ; known-stobjs
+       nil ; known-dfs (irrelevant since stobjs-out = t)
        nil ; flet-alist
        x
        'oneify
@@ -1452,13 +1494,14 @@
                      (cadr x)))
            (return-last-fn (return-last-fn qfn))
            (fn (or return-last-fn 'progn))
-           (arg2 (return-last-arg2 return-last-fn
-                                   (oneify (caddr x) fns w program-p))))
+           (arg2 (and (not (eq fn 'ec-call1-raw)) ; else don't care
+                      (return-last-arg2 return-last-fn
+                                        (oneify (caddr x) fns w program-p)))))
       (cond ((eq fn 'ec-call1-raw)
 
-; In the case of ec-call1-raw, we are already oneifying the last argument -- we
-; don't want to call return-last on top of that, or we'll be attempting to take
-; the *1*-symbol of the *1*-symbol!
+; In the case of ec-call1-raw, we basically just oneify the last argument.  But
+; we give special treatment below for the case that are oneifying the body of a
+; function with respect to its having a true 'invariant-risk property.
 
              (cond
               ((not (eq program-p 'invariant-risk))
@@ -1469,11 +1512,14 @@
 ; oneifying the body of a :program mode function with invariant-risk, for which
 ; any call of an invariant-risk function is to execute with its *1* function
 ; but other calls should use raw Lisp functions; see the final case in oneify.
-; Here, though, we want to call the *1* function even if it does not have
-; invariant-risk, because of the ec-call wrapper.
+; Here, though, as in the case just above, we want to call the *1* function
+; even if it does not have invariant-risk, because of the ec-call wrapper.
 
-; We need to be careful in this case that ec-call really does invoke a *1*
-; function here, and does so properly.  Consider the following example.
+; We arrange here, in this invariant-risk case, that ec-call really does invoke
+; a *1* function in :logic-mode code, just like we would normally do without
+; invariant risk (where **1*-as-raw* is nil, both by default and as set by
+; raw-ev-fncall for logic-mode functions; see comments in **1*-as-raw*).
+; Consider the following example.
 
 ;   (defun f-log () (mbe :logic 'logic :exec 'exec))
 ;   (defstobj st (fld :type integer :initially 0))
@@ -1490,15 +1536,15 @@
 
 ; If we use the oneify call above (from the case that (not (eq program-p
 ; 'invariant-risk))), then EXEC would returned as a first value by the call of
-; f-prog2 just above, which is incorrect.  The EXEC return value would be OK if
-; f-prog2 were defined with the ec-call wrapper removed, because f-log has no
-; invariant-risk and hence we want it to execute fast using the :exec form from
-; its mbe.  But the ec-call means that we really want to call *1*f-log -- we
-; are no longer slipping into raw Lisp and hence we no longer want the special
-; **1*-as-raw* handling, which is inappropriate here since it is intended to
-; give the illusion that we are in raw Lisp.  Thus, we call *1*f-log and what's
-; more, we bind **1*-as-raw* to nil, to signify that we intend to execute the
-; function call in the logic.
+; f-prog2 just above, which we consider to be incorrect.  The EXEC return value
+; would be OK if f-prog2 were defined with the ec-call wrapper removed, because
+; f-log has no invariant-risk and hence we want it to execute fast using the
+; :exec form from its mbe.  But the ec-call means that we really want to call
+; *1*f-log -- we are no longer slipping into raw Lisp and hence we no longer
+; want the special **1*-as-raw* handling, which is inappropriate here since it
+; is intended to give the illusion that we are in raw Lisp.  Thus, we call
+; *1*f-log and what's more, we bind **1*-as-raw* to nil, to signify that we
+; intend to execute the function call in the logic.
 
                (let ((form (car (last x))))
                  `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
@@ -1648,10 +1694,10 @@
     (let ((len (length x)))
       (case len
         (3 `(with-global-stobj ,(cadr x)
-                               ,(oneify (caddr x) fns w program-p)))
+              ,(oneify (caddr x) fns w program-p)))
         (4 `(with-global-stobj ,(cadr x)
-                               ,(caddr x)
-                               ,(oneify (cadddr x) fns w program-p)))
+              ,(caddr x)
+              ,(oneify (cadddr x) fns w program-p)))
         (otherwise (error "Unexpected case for with-global-stobj,~|~x0" x)))))
    ((eq (car x) 'stobj-let)
 
@@ -1754,17 +1800,35 @@
                     (list 'lambda formals (oneify body fns w program-p)))
               *nil*)))))
    (t
-    (let ((arg-forms (oneify-lst (cdr x) fns w program-p))
-          (fn (cond ((and (eq program-p 'invariant-risk)
-                          (not (getpropc (car x) 'invariant-risk nil w)))
+    (let ((arg-forms (oneify-lst (cdr x) fns w program-p)))
+      (cond ((and (eq program-p 'invariant-risk)
+                  (not (getpropc (car x) 'invariant-risk nil w)))
+             (let ((stobjs-in (getpropc (car x) 'stobjs-in nil w)))
+
+; Make sure that any inputs that are expected to be double-floats are indeed
+; double-floats.
+
+               (when (member-eq :df stobjs-in)
+                 (setq arg-forms
+                       (loop for arg in arg-forms
+                             as s in stobjs-in
+                             collect (if (eq s :df)
+                                         `(to-df ,arg)
+                                       arg)))))
 
 ; Oneify was called at the top level with program-p 'invariant-risk.  There is
 ; no need for sub-functions with no invariant-risk to be called using their *1*
-; functions.
+; functions.  However, we are oneifying, so we expect no double-float return
+; values; hence we convert any of those to rationals.
 
-                     (car x))
-                    (t (*1*-symbol (car x))))))
-      (cons fn arg-forms)))))
+             (let ((stobjs-out (getpropc (car x) 'stobjs-out nil w)))
+               (if (member-eq :df stobjs-out)
+                   (remove-double-floats stobjs-out
+                                         (cons (car x) arg-forms)
+                                         nil)
+                 (cons (car x) arg-forms))))
+            (t (cons (*1*-symbol (car x))
+                     arg-forms)))))))
 
 (defun-one-output oneify-lst (lst fns w program-p)
   (cond ((atom lst) nil)
@@ -1877,8 +1941,23 @@
     `(labels (,*1*fn-binding)
              (,*1*fn ,@formals))))
 
-(defun oneify-cltl-code (defun-mode def stobj-flag wrld
-                          &optional trace-rec-for-none)
+(defun df-call (fn formals)
+  (let ((stobjs-in (stobjs-in fn (w *the-live-state*))))
+    (cons fn
+          (loop for f in formals
+                as s in stobjs-in
+                collect
+                (if (eq s :df)
+
+; Warning: Do not change the following to use a floating-point number, e.g.,
+; (float ,f 0.0D0).  The serialize writing will choke on that when writing the
+; expansion file, specifically when df-call has been use in generating a *1*
+; definition.
+
+                    `(to-df ,f)
+                  f)))))
+
+(defun oneify-cltl-code-1 (defun-mode def stobj-flag wrld trace-rec-for-none)
 
 ; Warning: Keep this in sync with intro-udf-lst2 for the case that defun-mode
 ; is nil (i.e., the non-executable case).
@@ -1896,6 +1975,9 @@
 ; See the template above for detailed comments, which however are not
 ; necessarily kept fully up-to-date.
 
+; Note that before the function defined here is called, double-float arguments
+; will have been converted to rationals.  See oneify-cltl-code.
+
   (when stobj-flag
     (cond
      ((null (cadr def))
@@ -1909,7 +1991,7 @@
 ; properties have not yet been laid down.  So we use the test above.  Keep this
 ; null test in sync with the one in stobj-creatorp.
 
-      (return-from oneify-cltl-code
+      (return-from oneify-cltl-code-1
                    `(,(*1*-symbol (car def)) nil
                      (throw-raw-ev-fncall ; as in oneify-fail-form
                       (list 'ev-fncall-creator-er ',(car def))))))))
@@ -1925,7 +2007,7 @@
 ; the raw Lisp function if we see that the guard is t, since then the guard of
 ; the attachment is also presumably true.
 
-    (return-from oneify-cltl-code
+    (return-from oneify-cltl-code-1
                  (case-match def
                    ((fn formals ('declare ('xargs ':non-executable ':program))
                         ('throw-or-attach fn formals))
@@ -2285,7 +2367,8 @@
                               ,(cond
                                 ((eq live-stobjp-test t)
                                  `(,guard
-                                   (return-from ,*1*fn (,fn ,@formals))))
+                                   (return-from ,*1*fn
+                                                ,(df-call fn formals))))
                                 (t
                                  `((if ,live-stobjp-test
                                        ,(if stobj-flag
@@ -2372,7 +2455,8 @@
 
                                             (cond
                                              ((and stobjs-out ; property is there
-                                                   (all-nils stobjs-out))
+                                                   (all-nils-or-dfs
+                                                    stobjs-out))
                                               guard)
                                              (t `(let ((*aokp* nil))
                                                    ,guard)))
@@ -2386,7 +2470,7 @@
                                      (not guarded-primitive-p)
                                      `(cond (,live-stobjp-test
                                              (return-from ,*1*fn
-                                                          (,fn ,@formals))))))))
+                                                          ,(df-call fn formals))))))))
                               ,@(cond (super-stobjs-in
                                        `((t ,fail_guard)))
                                       (guarded-primitive-p
@@ -2499,7 +2583,12 @@
 ; mode case.
 
                (append
-                (and (set-difference-eq stobjs-out '(nil state))
+                (and (set-difference-eq stobjs-out
+
+; This call is similar to (collect-non-nil-df stobjs-out), but it also removes
+; state.
+
+                                        '(nil :df state))
                      `((when *wormholep*
                          (wormhole-er (quote ,fn) (list ,@formals)))))
                 (and (eq defun-mode :logic) ; else :program
@@ -2508,7 +2597,7 @@
                       (not cl-compliant-p-optimization)
                       `((when (eq (symbol-class ',fn (w *the-live-state*))
                                   :common-lisp-compliant)
-                          (return-from ,*1*fn (,fn ,@formals))))))
+                          (return-from ,*1*fn ,(df-call fn formals))))))
                 (cond ((and skip-early-exit-code-when-none
                             early-exit-code) ; else nil; next case provides nil
                        (cond (super-stobjs-in early-exit-code) ; optimization
@@ -2603,8 +2692,8 @@
                                            ((check-invariant-risk t))
                                            ,labels-form)
                                        labels-form))))
-                                (t (,fn ,@formals)))))))
-                        (t `((,fn ,@formals))))))
+                                (t ,(df-call fn formals)))))))
+                        (t `(,(df-call fn formals))))))
                      (trace-rec-for-none
                       main-body-before-final-call)
                      (t
@@ -2660,6 +2749,54 @@
                   `((declare ,@optimize-dcls)))
            ,@*1*-body-forms)))))))
 
+(defun oneify-cltl-code (defun-mode def stobj-flag wrld
+                          &optional trace-rec-for-none)
+
+; We convert double-float inputs and outputs to rationals.  Except, that isn't
+; necessary when the function symbol is in *stobjs-out-invalid*, since those
+; are built-in functions that do not traffic explicitly in double-floats.
+
+  (let* ((stobjs-out-invalid (member-eq (car def) *stobjs-out-invalid*))
+         (fn (car def))
+         (stobjs-out (and (not stobjs-out-invalid) ; else irrelevant
+                          (stobjs-out fn wrld)))
+         (stobjs-in (stobjs-in fn wrld))
+         (stobjs-in-df (member-eq :df stobjs-in))
+         (stobjs-out-df (member-eq :df stobjs-out)))
+    (when (or stobjs-out-invalid
+              (and (not stobjs-in-df)
+                   (not stobjs-out-df)))
+      (return-from oneify-cltl-code
+                   (oneify-cltl-code-1 defun-mode def stobj-flag wrld
+                                       trace-rec-for-none)))
+    (let* ((new-def (oneify-cltl-code-1 defun-mode def stobj-flag wrld
+                                        trace-rec-for-none))
+           (*1*fn (car new-def))
+           (formals (cadr new-def)) ; probably same as (cadr def)
+
+; Convert df inputs to rationals.
+
+           (formals-checks
+            (loop for f in formals
+                  as s in stobjs-in
+                  when (eq s :df)
+                  collect
+                  `(assert (not (typep ,f 'double-float)))))
+           *1*body *1*dcls/strings)
+      (loop for tail on (cddr new-def)
+            while (or (stringp (car tail))
+                      (and (consp (car tail))
+                           (eq (caar tail) 'declare)))
+            collect (car tail) into dcls
+            finally (setq *1*dcls/strings dcls
+                          *1*body `(block ,*1*fn ,@tail)))
+      `(,*1*fn ,formals
+               ,@*1*dcls/strings
+               ,@formals-checks
+               ,(if stobjs-out-df
+                    (remove-double-floats stobjs-out *1*body t)
+                  *1*body)))))
+             
 
 ;          PROMPTS
 
@@ -6130,10 +6267,11 @@
 
 ; For explanation of the special handling of the first three of the following
 ; function symbols, see the comments in their defun-*1* forms.  For
-; *defun-overrides*, we have already taken responsibility for defining *1*
-; functions that we don't want to override here.
+; *df-primitives* and *defun-overrides*, we have already taken responsibility
+; for defining *1* functions that we don't want to override here.
 
                                      `(mv-list return-last wormhole-eval
+                                               ,@*df-primitives*
                                                ,@*defun-overrides*))
                           (setq new-*1*-defs
                                 (cons (list* 'oneify-cltl-code
@@ -6165,10 +6303,16 @@
 ; *1* def; see the next comment about ignorep.
 
                       (maybe-push-undo-stack 'defun (car def) ignorep))
-                     ((and boot-strap-flg
+                     ((and boot-strap-flg ; hence pass 2 (pass 1 covered above)
                            (or (member-eq (car def)
                                           *boot-strap-pass-2-acl2-loop-only-fns*)
-                               (member-eq (car def) ; see comment above
+
+; As noted above, for *df-primitives* and *defun-overrides*, we take
+; responsibility elsewhere for defining their *1* functions.
+
+                               (member-eq (car def)
+                                          *df-primitives*)
+                               (member-eq (car def)
                                           *defun-overrides*))))
                      (t (maybe-push-undo-stack 'defun (car def) ignorep)
 
@@ -7422,6 +7566,8 @@
     "hons"
     "serialize"
     "boot-strap-pass-2-a"
+    "float-a"
+    "float-b"
     "apply-prim"
     "apply-constraints"
     "apply"
@@ -7459,11 +7605,12 @@
 
   (and (consp form)
        (case (car form)
-         ((defun defund defn defproxy defun-nx defun-one-output defstub
-            defmacro defmacro-untouchable defabbrev
-            defun@par defmacro-last defun-overrides
-            defun-with-guard-check defun-sk defdeprecate
-            defun-inline defund-inline defun-notinline defund-notinline)
+         ((defun defund defn defproxy defun-nx defun-one-output
+                 defun-df-unary defun-df-binary
+                 defstub defmacro defmacro-untouchable defabbrev
+                 defun@par defmacro-last defun-overrides
+                 defun-with-guard-check defun-sk defdeprecate
+                 defun-inline defund-inline defun-notinline defund-notinline)
           (our-update-ht (cadr form) form ht when-pass-2-p))
          (save-def
           (note-fns-in-form (cadr form) ht when-pass-2-p))
@@ -7504,6 +7651,12 @@
                           when-pass-2-p))
          (state-global-let* ; (state-global-let* (... (fn val [fn2]) ...) form)
           (note-fns-in-form (caddr form) ht when-pass-2-p))
+         (df-constrained-functions-intro
+          (strip-cars *df-function-sigs-exec*))
+         (df-non-constrained-functions-intro
+          (loop for ev in (df-non-constrained-functions-events)
+                when (eq (car ev) 'defun)
+                collect (cadr ev)))
          ((add-custom-keyword-hint
            add-macro-alias
            add-macro-fn
@@ -7532,6 +7685,9 @@
            defthmd
            deftype
            defun-*1*
+           defun-df-*1*-unary
+           defun-df-*1*-binary
+           defun-df-*1*-from-function-sigs
            defv
            defvar
            error
@@ -7546,6 +7702,7 @@
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
            memoize
+           pprogn ; for install-df-basic-primitives
            program
            push
            reset-future-parallelism-variables
@@ -8167,7 +8324,7 @@
 
                       (and #+acl2-save-unnormalized-bodies (logicp fn wrld)
                            (getpropc fn 'unnormalized-body nil wrld)
-                           (all-nils (stobjs-in fn wrld)))
+                           (all-nils-or-dfs (stobjs-in fn wrld)))
                       collect fn))
            (bad (set-difference-eq fns
 ; Avoid undefined constant warning during boot-strap by using symbol-value:
@@ -9416,6 +9573,8 @@
     #+gcl
     (save-acl2-in-gcl nil nil nil t))
 
+  (setq *read-default-float-format* 'double-float)
+
   (with-more-warnings-suppressed
 
 ; Parallelism wart: we currently reset the parallelism variables twice on
@@ -10144,6 +10303,7 @@ such that feature :acl2-loop-only is true."))
                         (when (not (member-eq
                                     (car x)
                                     `(mv-list return-last wormhole-eval
+                                              ,@*df-primitives*
                                               ,@*defun-overrides*)))
                           (let ((*1*fn (*1*-symbol (car x))))
                             (cond
@@ -10418,14 +10578,6 @@ such that feature :acl2-loop-only is true."))
     (car alist))
    (t (assoc-eq-trace-alist val (cdr alist)))))
 
-(defun-one-output replace-live-stobjs-in-list (lst &optional rawp)
-  (loop for x in lst
-        collect
-        (if (live-state-p x)
-            '|<state>|
-          (or (stobj-print-symbol x *user-stobj-alist* rawp)
-              x))))
-
 (defun-one-output stobj-print-symbol (x user-stobj-alist-tail &optional rawp)
   (and (live-stobjp x)
        (loop for pair in user-stobj-alist-tail
@@ -10440,9 +10592,17 @@ such that feature :acl2-loop-only is true."))
                            (find-package-fast
                             (current-package *the-live-state*))))))))
 
+(defun-one-output replace-live-stobjs-in-list (lst &optional rawp)
+  (loop for x in lst
+        collect
+        (if (live-state-p x)
+            '|<state>|
+          (or (stobj-print-symbol x *user-stobj-alist* rawp)
+              x))))
+
 (defun trace-hide-world-and-state (l &optional no-stobj-hiding)
 
-; This function intuitively belongs over in init.lisp but it is here so
+; this function intuitively belongs over in init.lisp but it is here so
 ; that it will get compiled so we won't get stack overflow when
 ; tracing large objects.  It is used to replace certain offensive
 ; objects by less offensive ones before trace prints the args and

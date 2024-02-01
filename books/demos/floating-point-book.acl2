@@ -1,0 +1,13 @@
+(include-book "tools/run-script" :dir :system)
+(set-debugger-enable nil) ; about noisy backtraces
+(run-script "floating-point")
+
+; Help dependency scanner.
+#||
+(include-book "kestrel/utilities/checkpoints" :dir :system)
+(include-book "projects/apply/top" :dir :system)
+(depends-on "floating-point-input.lsp")
+(depends-on "floating-point-log.txt")
+||#
+
+; cert-flags: ? t :ttags :all

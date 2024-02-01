@@ -589,7 +589,9 @@
                (b* ((args (macro-required-args domain wrld))
                     (ulambda `(lambda ,args (,domain ,@args)))
                     ((mv tlambda stobjs-out) (check-user-lambda ulambda wrld))
-                    (stobjs-in (compute-stobj-flags args t wrld)))
+; Matt K. mod for df additions: Added nil below for df argument.
+; More work may be required here to handle dfs.
+                    (stobjs-in (compute-stobj-flags args t nil wrld)))
                  (value
                   (list tlambda
                         stobjs-in
@@ -619,7 +621,9 @@
                                  description domain tlambda/msg))
                       (tlambda tlambda/msg)
                       (stobjs-in
-                       (compute-stobj-flags (lambda-formals tlambda) t wrld)))
+; Matt K. mod for df additions: Added nil below for df argument.
+; More work may be required here to handle dfs.
+                       (compute-stobj-flags (lambda-formals tlambda) t nil wrld)))
                    (value (list tlambda
                                 stobjs-in
                                 stobjs-out

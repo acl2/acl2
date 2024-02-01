@@ -455,6 +455,51 @@
 #-acl2-devel
 (encapsulate
   ()
+
+; Start proof of standard-string-p1-implies-standard-char-listp.
+
+  (local (defun badguy (lst)
+           (cond ((endp lst)
+                  0)
+                 ((not (standard-char-p (car lst)))
+                  0)
+                 (t (1+ (badguy (cdr lst)))))))
+
+  (local (in-theory (enable standard-char-listp)))
+
+  (local (defthm lemma-1-1 ; proved by induction
+           (implies (and (character-listp lst)
+                         (not (standard-char-listp lst)))
+                    (let ((k (badguy lst)))
+                      (and (< k (len lst))
+                           (not (standard-char-p (nth k lst))))))))
+
+  (local (defthm lemma-1
+           (implies (not (standard-char-listp (coerce s 'list)))
+                    (let ((k (badguy (coerce s 'list))))
+                      (and (< k (len (coerce s 'list)))
+                           (not (standard-char-p (char s k))))))
+           :rule-classes nil))
+
+  (local (defthm lemma-2
+           (implies (and (natp k)
+                         (natp m)
+                         (< k m)
+                         (not (standard-char-p (char s k))))
+                    (not (standard-string-p1 s m)))
+           :rule-classes nil))
+
+  (local (defthm standard-string-p1-implies-standard-char-listp
+           (implies (and (stringp s)
+                         (standard-string-p1 s (len (coerce s 'list))))
+                    (standard-char-listp (coerce s 'list)))
+           :hints (("Goal" :use (lemma-1
+                                 (:instance lemma-2
+                                            (m (len (coerce s 'list)))
+                                            (k (badguy (coerce s 'list)))))))))
+
+  (verify-termination-boot-strap stobj-print-name)
+  (verify-termination-boot-strap eviscerate-do$-alist)
   (local (defthm nfix-list-preserves-consp
            (implies (consp x)
                     (consp (nfix-list x)))))
@@ -523,6 +568,10 @@
  (defwarrant nfix-list)
  (defwarrant lex-fix)
  (defwarrant lexp)
+ (defwarrant stobj-print-name)
+ (defwarrant eviscerate-do$-alist)
+ (defwarrant loop$-default-values1)
+ (defwarrant loop$-default-values)
  (defwarrant do$)
 
  )
@@ -772,6 +821,15 @@
                     ppr
                     ppr1
                     ppr2))
+
+(defconst *df-pi*
+
+; This form would naturally be in float-a.lisp or float-b.lisp.  However, an
+; attempt to put it into float-b.lisp results in an erroneous attempt to
+; evaluate (constrained-df-pi).  So we punt and simply put this definition
+; here.
+
+  (from-df (df-pi)))
 
 ; The following two are necessary because after the defun-inline in
 ; basis-a.lisp for each of +f!-fn2 and +f!-fn3, the second pass of axioms.lisp
