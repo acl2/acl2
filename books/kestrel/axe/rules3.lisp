@@ -6027,15 +6027,6 @@
 ;same with (BVMULT 6 2 FARG0) and (BVCAT 5 FARG0 1 0)..
 ;maybe i'll say we prefer bvmult/bvplus inside an nth or bv-array-read?
 
-(DEFTHM BVCHOP-SHIFT-GEN-alt
-  (IMPLIES (AND (INTEGERP X) (INTEGERP N) (NATP M))
-           (EQUAL (BVCHOP N (* X (EXPT 2 M)))
-                  (IF (<= M N)
-                      (* (EXPT 2 M) (BVCHOP (- N M) X))
-                      0)))
-  :hints (("Goal" :use (:instance BVCHOP-SHIFT-GEN)
-           :in-theory (disable BVCHOP-SHIFT-GEN))))
-
 (defthmd bvcat-rewrite
   (implies (and (natp lowsize)
                 ;(natp lowval)
@@ -13876,15 +13867,6 @@
          (myif test (take n a)
                (take n b)))
   :hints (("Goal" :in-theory (enable myif))))
-
-;slow?
-(defthm unsigned-byte-p-of-+
-  (implies (and (unsigned-byte-p (+ -1 size) x)
-                (unsigned-byte-p (+ -1 size) z)
-                (natp size))
-           (unsigned-byte-p size (+ x z)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p
-                                     expt-of-+))))
 
 (defthm bvlt-of-bitxor-of-1-same
   (equal (bvlt 1 (bitxor 1 x) x)
