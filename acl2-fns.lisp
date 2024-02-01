@@ -1480,6 +1480,17 @@ notation causes an error and (b) the use of ,. is not permitted."
              (t (unread-char next-char stream)
                 (if negp (- before-dot) before-dot)))))))
 
+(defun sharp-d-read (stream char n)
+  (declare (ignore char n))
+  (let* ((num (read stream t nil t))
+         (val (and (typep num 'double-float)
+                   (rational num))))
+    (or val
+        (acl2-reader-error
+         "The value, ~s0, was read from a token following #d that did not ~
+          have the syntax of a double-float.  See :DOC df."
+         (format nil "~s" num)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

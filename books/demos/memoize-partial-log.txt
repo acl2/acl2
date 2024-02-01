@@ -120,7 +120,8 @@ ACL2 !>>(ENCAPSULATE NIL
           (DEFUN FIB (N)
             (DECLARE (TYPE INTEGER N)
                      (XARGS :GUARD T))
-            (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N))))
+            (FIB-LIMIT N
+                       (NFIX (NON-EXEC (FIB-LIMIT-STABLE N)))))
           (TABLE PARTIAL-FUNCTIONS-TABLE
             'FIB-LIMIT
             '((FIB FIB-LIMIT
@@ -280,7 +281,8 @@ ACL2 !>>(ENCAPSULATE NIL
                             (LET ((CLOCK 0))
                               (DECLARE (IGNORABLE CLOCK))
                               (AND (NATP CLOCK) (INTEGERP N)))))
-            (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0 N)))))
+            (FIB2-CLOCK N
+                        (NFIX (NON-EXEC (FIB2-CLOCK-STABLE0 N))))))
 T
 
 The event ( DEFCHOOSE FIB2-CLOCK-CHANGE0 ...) is redundant.  See :DOC
@@ -570,7 +572,8 @@ ACL2 !>>(ENCAPSULATE NIL
                             (LET ((BOUND 0))
                               (DECLARE (IGNORABLE BOUND))
                               (NATP BOUND))))
-            (EVENLP-BDD X (NFIX (EVENLP-BDD-STABLE X))))
+            (EVENLP-BDD X
+                        (NFIX (NON-EXEC (EVENLP-BDD-STABLE X)))))
           (DEFCHOOSE ODDLP-BDD-CHANGE (LARGE)
                                       (X BOUND)
             (AND (NATP LARGE)
@@ -587,7 +590,8 @@ ACL2 !>>(ENCAPSULATE NIL
                             (LET ((BOUND 0))
                               (DECLARE (IGNORABLE BOUND))
                               (NATP BOUND))))
-            (ODDLP-BDD X (NFIX (ODDLP-BDD-STABLE X))))
+            (ODDLP-BDD X
+                       (NFIX (NON-EXEC (ODDLP-BDD-STABLE X)))))
           (TABLE PARTIAL-FUNCTIONS-TABLE
             'EVENLP-BDD
             '((EVENLP EVENLP-BDD
@@ -1182,11 +1186,11 @@ ACL2 !>>(MF (ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
                                  NIL)))
 
 
-ACL2 Error [Evaluation] in ASSERT-EVENT:  ACL2 cannot ev the call of
-non-executable function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument
-list:
+ACL2 Error [Evaluation] in ASSERT-EVENT:  ACL2 has been instructed
+to cause an error because of an attempt to evaluate the following form
+(see :DOC non-exec):
 
-((MEM (CAR (DEL A X)) X) (MEM (CAR (DEL A X)) Y))
+  (XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE TERM1 TERM2).
 
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
@@ -1766,7 +1770,8 @@ ACL2 !>>(MF (ENCAPSULATE NIL
                                 (LET ((BOUND 0))
                                   (DECLARE (IGNORABLE BOUND))
                                   (NATP BOUND))))
-                (EVENLP2-BDD X (NFIX (EVENLP2-BDD-STABLE X))))
+                (EVENLP2-BDD X
+                             (NFIX (NON-EXEC (EVENLP2-BDD-STABLE X)))))
               (DEFCHOOSE ODDLP2-BDD-CHANGE (LARGE)
                                            (X BOUND)
                 (AND (NATP LARGE)
@@ -1837,7 +1842,8 @@ The following event is missing:
                   (LET ((BOUND 0))
                     (DECLARE (IGNORABLE BOUND))
                     (NATP BOUND))))
-  (ODDLP2-BDD X (NFIX (ODDLP2-BDD-STABLE X))))
+  (ODDLP2-BDD X
+              (NFIX (NON-EXEC (ODDLP2-BDD-STABLE X)))))
 
 
 (See :DOC set-iprint to be able to see elided values in this message.)
@@ -1942,14 +1948,16 @@ The following events are missing:
                   (LET ((BOUND 0))
                     (DECLARE (IGNORABLE BOUND))
                     (NATP BOUND))))
-  (EVENLP2-BDD X (NFIX (EVENLP2-BDD-STABLE X))))
+  (EVENLP2-BDD X
+               (NFIX (NON-EXEC (EVENLP2-BDD-STABLE X)))))
 
 (DEFUN ODDLP2 (X)
   (DECLARE (XARGS :GUARD
                   (LET ((BOUND 0))
                     (DECLARE (IGNORABLE BOUND))
                     (NATP BOUND))))
-  (ODDLP2-BDD X (NFIX (ODDLP2-BDD-STABLE X))))
+  (ODDLP2-BDD X
+              (NFIX (NON-EXEC (ODDLP2-BDD-STABLE X)))))
 
 
 (See :DOC set-iprint to be able to see elided values in this message.)
@@ -2255,7 +2263,9 @@ FIB-ST-LIMIT-STABLE
 
 Summary
 Form:  ( DEFUN FIB-ST ...)
-Rules: ((:TYPE-PRESCRIPTION FIB-ST-LIMIT))
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION FIB-ST-LIMIT)
+        (:TYPE-PRESCRIPTION NFIX))
 FIB-ST
 
 Summary
@@ -2556,7 +2566,8 @@ ACL2 !>>(ENCAPSULATE NIL
                            (LET ((LIMIT 0))
                              (DECLARE (IGNORABLE LIMIT))
                              (AND (NATP N) (NATP LIMIT)))))
-           (COLLATZ-LIMIT N (NFIX (COLLATZ-LIMIT-STABLE N))))
+           (COLLATZ-LIMIT N
+                          (NFIX (NON-EXEC (COLLATZ-LIMIT-STABLE N)))))
          (TABLE PARTIAL-FUNCTIONS-TABLE
           'COLLATZ-LIMIT
           '((COLLATZ

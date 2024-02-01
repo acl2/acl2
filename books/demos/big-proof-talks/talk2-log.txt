@@ -2528,9 +2528,9 @@ produced the non-nil result
 Regarding this value
 (See :DOC set-iprint to be able to see elided values in this message.):
 The :DEFINITION rules for the built-in functions DOUBLE-REWRITE, THE-CHECK,
-CONS-WITH-HINT, IFF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP,
-LISTP, SYNP, CASE-SPLIT, FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM,
-NOT, IMPLIES and EQ are disabled by the theory expression 
+CONS-WITH-HINT, IFF, FROM-DF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP,
+ZEROP, LISTP, SYNP, CASE-SPLIT, FORCE, /=, =, RETURN-LAST, NULL, ENDP,
+ATOM, NOT, IMPLIES and EQ are disabled by the theory expression 
 (UNION-THEORIES NIL
                 (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN)))),
 but some expansions of their calls may still occur.  See :DOC theories-

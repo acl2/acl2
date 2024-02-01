@@ -212,9 +212,14 @@
                        (xargs :guard
                               ,(getpropc fn 'guard *t* wrld)
                               :verify-guards nil
-                              ,@(let ((stobjs (remove nil stobjs-in)))
+                              ,@(let ((stobjs (collect-non-nil-df stobjs-in)))
                                   (and stobjs
-                                       `(:stobjs ,stobjs)))))
+                                       `(:stobjs ,stobjs))))
+                       ,@(let ((dfs (collect-by-position '(:df)
+                                                         stobjs-in
+                                                         formals)))
+                           (and dfs
+                                `((type double-float ,@dfs)))))
                       ,condition)
                     (verify-guards ,condition-fn
                                    ,@(and hints `(:hints ,hints))
