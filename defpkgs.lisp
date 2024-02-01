@@ -31,6 +31,14 @@
 
 (in-package "ACL2")
 
+(defun df-macro-name-lst (fns)
+  (declare (xargs :guard (symbol-listp fns)))
+  (cond ((endp fns) nil)
+        (t (let ((macro-name (df-macro-name (car fns))))
+             (cond (macro-name (cons macro-name
+                                     (df-macro-name-lst (cdr fns))))
+                   (t (df-macro-name-lst (cdr fns))))))))
+
 (defconst *acl2-exports*
 
 ; This constant provides a handy list of symbols to export from the ACL2
@@ -76,6 +84,13 @@
   (sort-symbol-listp
    (append
     *hons-primitives*
+    *df-primitives*
+    (df-macro-name-lst *df-primitives*)
+; DF built-ins not included above:
+    '(*DF-PI*
+      DF* DF+ DF- DF-LOG DF-MINUS-1 DF-RATIONALIZE
+      DF-ROUND DF/ DF/=-FN DF0 DF1 DF< DF<-FN
+      DF<= DF= DF=-FN DF> DF>= RIZE TO-DFP)
     '(TRACE* ; not defined by ACL2, but may well be defined in a book
       GRANULARITY ; for parallelism primitives
       )
@@ -237,12 +252,12 @@
         DEFPROXY DEFREC DEFREFINEMENT DEFSTOBJ DEFSTUB
         DEFTHEORY DEFTHEORY-STATIC
         DEFTHM DEFTHMD DEFTHY DEFTTAG
-        DEFUN DEFUN$ DEFUN-INLINE DEFUN-NOTINLINE DEFUN-NX
+        DEFUN DEFUN$ DEFUN-DF DEFUN-INLINE DEFUN-NOTINLINE DEFUN-NX
         DEFUN-SK DEFUND DEFUND-INLINE DEFUND-NOTINLINE DEFUND-NX DEFUNS
         DEFWARRANT
         DELETE-ASSOC DELETE-ASSOC-EQ DELETE-ASSOC-EQUAL DELETE-FILE$
-        DELETE-INCLUDE-BOOK-DIR DELETE-INCLUDE-BOOK-DIR!
-        DENOMINATOR DIGIT-CHAR-P DIGIT-TO-CHAR
+        DELETE-INCLUDE-BOOK-DIR DELETE-INCLUDE-BOOK-DIR! DENOMINATOR
+        DIGIT-CHAR-P DIGIT-TO-CHAR
         DIMENSIONS DISABLE DISABLE-FORCING
         DISABLE-IMMEDIATE-FORCE-MODEP DISABLE-UBT
         DISABLEDP DISASSEMBLE$ DISTRIBUTIVITY
@@ -512,7 +527,7 @@
         REVAPPEND REVERSE REVERT-WORLD REWRITE-EQUIV
         REWRITE-LAMBDA-MODEP REWRITE-LAMBDA-OBJECTS-THEORY
         REWRITE-QUOTED-CONSTANT REWRITE-STACK-LIMIT
-        RFIX ROUND RW-CACHE RUNES-DIFF SATISFIES
+        RFIX RIZE ROUND RW-CACHE RUNES-DIFF SATISFIES
         SAVE-AND-CLEAR-MEMOIZATION-SETTINGS SAVE-EXEC
         SAVING-EVENT-DATA SEARCH SECOND
         SERIALIZE-READ SERIALIZE-WRITE SET-ABSSTOBJ-DEBUG

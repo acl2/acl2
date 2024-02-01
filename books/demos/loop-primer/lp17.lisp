@@ -757,7 +757,8 @@
                       (COND ((< (CDR (ASSOC-EQ-SAFE 'I ALIST)) 0)
                              (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
                                  (IF (< (CDR (ASSOC-EQ-SAFE 'N ALIST)) 0)
-                                     1 (+ 1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                     1
+                                     (+ 1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
                                  1))
                             ((INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
                              (COND ((< (CDR (ASSOC-EQ-SAFE 'N ALIST)) 0)
@@ -777,7 +778,8 @@
                             (T (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
                      ((INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
                       (IF (< (CDR (ASSOC-EQ-SAFE 'N ALIST)) 0)
-                          1 (+ 1 (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+                          1
+                          (+ 1 (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
                      (T 1)))
               (LIST (CONS 'I I0)
                     (CONS 'ANS ANS0)
@@ -806,7 +808,8 @@
                                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
                                    (CONS 'N
                                          (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
-              NIL NIL NIL)))))
+              '(NIL)
+              NIL NIL)))))
 
 ; -----------------------------------------------------------------
 ; LP17-11

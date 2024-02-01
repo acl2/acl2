@@ -78,7 +78,7 @@
   (DEFUN FIB (N)
     (DECLARE (TYPE INTEGER N)
              (XARGS :GUARD T))
-    (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N))))
+    (FIB-LIMIT N (NFIX (NON-EXEC (FIB-LIMIT-STABLE N)))))
 
   (TABLE PARTIAL-FUNCTIONS-TABLE 'FIB-LIMIT
          '((FIB FIB-LIMIT
@@ -183,7 +183,7 @@
                            (DECLARE (IGNORABLE CLOCK))
                            (AND (NATP CLOCK)
                                 (INTEGERP N)))))
-  (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0 N))))
+  (FIB2-CLOCK N (NFIX (NON-EXEC (FIB2-CLOCK-STABLE0 N)))))
 
 )
 
@@ -279,7 +279,7 @@
     (DECLARE (XARGS :GUARD (LET ((BOUND 0))
                                 (DECLARE (IGNORABLE BOUND))
                                 (NATP BOUND))))
-    (EVENLP-BDD X (NFIX (EVENLP-BDD-STABLE X))))
+    (EVENLP-BDD X (NFIX (NON-EXEC (EVENLP-BDD-STABLE X)))))
 
   (DEFCHOOSE ODDLP-BDD-CHANGE (LARGE)
     (X BOUND)
@@ -298,7 +298,7 @@
     (DECLARE (XARGS :GUARD (LET ((BOUND 0))
                                 (DECLARE (IGNORABLE BOUND))
                                 (NATP BOUND))))
-    (ODDLP-BDD X (NFIX (ODDLP-BDD-STABLE X))))
+    (ODDLP-BDD X (NFIX (NON-EXEC (ODDLP-BDD-STABLE X)))))
 
   (TABLE PARTIAL-FUNCTIONS-TABLE 'EVENLP-BDD
          '((EVENLP EVENLP-BDD
@@ -845,7 +845,7 @@ The following event is missing:
   (DECLARE (XARGS :GUARD (LET ((BOUND 0))
                               (DECLARE (IGNORABLE BOUND))
                               (NATP BOUND))))
-  (EVENLP2-BDD X (NFIX (EVENLP2-BDD-STABLE X))))
+  (EVENLP2-BDD X (NFIX (NON-EXEC (EVENLP2-BDD-STABLE X)))))
 
 (DEFCHOOSE ODDLP2-BDD-CHANGE (LARGE)
   (X BOUND)
@@ -866,7 +866,7 @@ The following event is missing:
   (DECLARE (XARGS :GUARD (LET ((BOUND 0))
                               (DECLARE (IGNORABLE BOUND))
                               (NATP BOUND))))
-  (ODDLP2-BDD X (NFIX (ODDLP2-BDD-STABLE X))))
+  (ODDLP2-BDD X (NFIX (NON-EXEC (ODDLP2-BDD-STABLE X)))))
 ||#
 
 (TABLE PARTIAL-FUNCTIONS-TABLE 'EVENLP2-BDD
@@ -1245,7 +1245,7 @@ FIB-STATE-LIMIT.
     (DECLARE (XARGS :GUARD (LET ((LIMIT 0))
                                 (DECLARE (IGNORABLE LIMIT))
                                 (AND (NATP N) (NATP LIMIT)))))
-    (COLLATZ-LIMIT N (NFIX (COLLATZ-LIMIT-STABLE N))))
+    (COLLATZ-LIMIT N (NFIX (NON-EXEC (COLLATZ-LIMIT-STABLE N)))))
   (TABLE PARTIAL-FUNCTIONS-TABLE 'COLLATZ-LIMIT
          '((COLLATZ
             COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE

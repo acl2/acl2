@@ -531,8 +531,8 @@
 (defconst *mutual-recursion-ctx-string*
   "( MUTUAL-RECURSION ( DEFUN ~x0 ...) ...)")
 
-(defun translate-bodies1 (non-executablep names bodies bindings
-                                          known-stobjs-lst ctx wrld state-vars)
+(defun translate-bodies1 (non-executablep names bodies bindings arglists
+                                          stobjs-in-lst ctx wrld state-vars)
 
 ; Non-executablep should be t or nil, to indicate whether or not the bodies are
 ; to be translated for execution.  In the case of a function introduced by
@@ -541,18 +541,21 @@
   (cond ((null bodies) (trans-value nil))
         (t (mv-let
             (erp x bindings2)
-            (translate1-cmp (car bodies)
-                            (if non-executablep t (car names))
-                            (if non-executablep nil bindings)
-                            (car known-stobjs-lst)
-                            (if (and (consp ctx)
-                                     (equal (car ctx)
-                                            *mutual-recursion-ctx-string*))
-                                (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+            (translate1-cmp+ (car bodies)
+                             (if non-executablep t (car names))
+                             (if non-executablep nil bindings)
+                             (collect-non-*-df (car stobjs-in-lst))
+                             (collect-by-position '(:df)
+                                                  (car stobjs-in-lst)
+                                                  (car arglists))
+                             (if (and (consp ctx)
+                                      (equal (car ctx)
+                                             *mutual-recursion-ctx-string*))
+                                 (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
                                       ...)"
-                                     (car names))
-                              ctx)
-                            wrld state-vars)
+                                      (car names))
+                               ctx)
+                             wrld state-vars)
             (cond
              ((and erp
                    (eq bindings2 :UNKNOWN-BINDINGS))
@@ -583,20 +586,24 @@
                                       (cdr names)
                                       (cdr bodies)
                                       bindings
-                                      (cdr known-stobjs-lst)
+                                      (cdr arglists)
+                                      (cdr stobjs-in-lst)
                                       ctx wrld state-vars))
-                (x (translate1-cmp (car bodies)
-                                   (if non-executablep t (car names))
-                                   (if non-executablep nil bindings)
-                                   (car known-stobjs-lst)
-                                   (if (and (consp ctx)
-                                            (equal (car ctx)
-                                                   *mutual-recursion-ctx-string*))
-                                       (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+                (x (translate1-cmp+ (car bodies)
+                                    (if non-executablep t (car names))
+                                    (if non-executablep nil bindings)
+                                    (collect-non-*-df (car stobjs-in-lst))
+                                    (collect-by-position '(:df)
+                                                         (car stobjs-in-lst)
+                                                         (car arglists))
+                                    (if (and (consp ctx)
+                                             (equal (car ctx)
+                                                    *mutual-recursion-ctx-string*))
+                                        (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
                                       ...)"
-                                            (car names))
-                                     ctx)
-                                   wrld state-vars)))
+                                             (car names))
+                                      ctx)
+                                    wrld state-vars)))
                (trans-value (cons x y))))
              (erp (mv erp x bindings2))
              (t (let ((bindings bindings2))
@@ -605,7 +612,8 @@
                                           (cdr names)
                                           (cdr bodies)
                                           bindings
-                                          (cdr known-stobjs-lst)
+                                          (cdr arglists)
+                                          (cdr stobjs-in-lst)
                                           ctx wrld state-vars)))
                    (trans-value (cons x y))))))))))
 
@@ -718,7 +726,7 @@
                                          :value))))))))))
 
 (defun translate-bodies (non-executablep names arglists bodies bindings0
-                                         known-stobjs-lst
+                                         stobjs-in-lst
                                          reclassifying-all-programp
                                          ctx wrld state)
 
@@ -753,8 +761,8 @@
         (mv-let (erp lst bindings)
           (translate-bodies1 (eq non-executablep t) ; not :program
                              names bodies
-                             bindings0
-                             known-stobjs-lst
+                             bindings0 arglists
+                             stobjs-in-lst
                              ctx wrld
                              (default-state-vars t
 
@@ -2124,7 +2132,7 @@
 ; for compatibility's sake.
 
                                (abbreviationp
-                                (not (all-nils
+                                (not (all-nils-or-dfs
 
 ; We call getprop rather than calling stobjs-out, because this code may run
 ; with fn = return-last, and the function stobjs-out causes an error in that
@@ -4335,8 +4343,8 @@
          (t (er-cmp ctx
                     "The guards for the given formula cannot be verified ~
                      because it has the wrong syntactic form for evaluation, ~
-                     perhaps due to multiple-value or stobj restrictions.  ~
-                     See :DOC verify-guards.")))))
+                     perhaps due to restrictions about multiple-values, ~
+                     stobjs or dfs.  See :DOC verify-guards.")))))
      (erp
       (er-cmp ctx
               "The guards for ~x0 cannot be verified because its formula has ~
@@ -6291,16 +6299,19 @@
 
 (defun simple-signaturep (fn wrld)
 
-; A simple signature is one in which no stobjs are involved and the
+; A simple signature is one in which no stobjs or dfs are involved and the
 ; output is a single value.
 
   (and (all-nils (stobjs-in fn wrld))
+       (let ((stobjs-out
 
 ; We call getprop rather than calling stobjs-out, because this code may run
 ; with fn = return-last, and the function stobjs-out causes an error in that
 ; case.  We don't mind treating return-last as an ordinary function here.
 
-       (null (cdr (getpropc fn 'stobjs-out '(nil) wrld)))))
+              (getpropc fn 'stobjs-out '(nil) wrld)))
+         (and (null (cdr stobjs-out))
+              (not (eq (car stobjs-out) :df))))))
 
 (defun all-simple-signaturesp (names wrld)
   (cond ((endp names) t)
@@ -6424,21 +6435,21 @@
              msg))
         (t (chk-all-stobj-names (cdr lst) src msg ctx wrld state))))
 
-(defun get-declared-stobj-names (edcls ctx wrld state)
+(defun get-declared-kwd-names (kwd edcls ctx wrld state)
 
-; Each element of edcls is the cdr of a DECLARE form.  We look for the
-; ones of the form (XARGS ...) and find the first :stobjs keyword
-; value in each such xargs.  We know there is at most one :stobjs
-; occurrence in each xargs by chk-dcl-lst.  We union together all the
-; values of that keyword, after checking that each value is legal.  We
-; return the list of declared stobj names or cause an error.
+; Kwd is (as of this writing) :STOBJS or :DFS.  Each element of edcls is the
+; cdr of a DECLARE form.  We look for the ones of the form (XARGS ...) and find
+; the first value of keyword kwd in each such xargs.  We know there is at most
+; one kwd occurrence in each xargs by chk-dcl-lst.  We union together all the
+; values of that keyword, after checking that each value is legal.  We return
+; the list of declared kwd names or cause an error.
 
 ; Keep this in sync with get-declared-stobjs (which does not do any checking
 ; and returns a single value).
 
   (cond ((endp edcls) (value nil))
         ((eq (caar edcls) 'xargs)
-         (let* ((temp (assoc-keyword :stobjs (cdar edcls)))
+         (let* ((temp (assoc-keyword kwd (cdar edcls)))
                 (lst (cond ((null temp) nil)
                            ((null (cadr temp)) nil)
                            ((atom (cadr temp))
@@ -6449,21 +6460,27 @@
              (cond
               ((not (symbol-listp lst))
                (er soft ctx
-                   "The value specified for the :STOBJS xarg must be a true ~
-                    list of symbols and ~x0 is not."
-                   lst))
+                   "The value specified for the ~x0 xarg must be a true ~
+                    list of symbols and ~x1 is not."
+                   kwd lst))
               (t (er-progn
-                  (chk-all-stobj-names lst
-                                       :STOBJS
-                                       (msg "... :stobjs ~x0 ..."
-                                            (cadr temp))
-                                       ctx wrld state)
+                  (case kwd
+                    (:stobjs (chk-all-stobj-names lst
+                                                  :STOBJS
+                                                  (msg "... :stobjs ~x0 ..."
+                                                       (cadr temp))
+                                                  ctx wrld state))
+                    (:dfs (value nil))
+                    (t (value (er hard 'get-declared-kwd-names
+                                  "Implementation error: Unexpected keyword, ~
+                                   ~x0"
+                                  kwd))))
                   (er-let*
-                    ((rst (get-declared-stobj-names (cdr edcls)
-                                                    ctx wrld state)))
+                      ((rst (get-declared-kwd-names kwd (cdr edcls) ctx wrld
+                                                    state)))
                     (value (union-eq lst rst)))))))
-            (t (get-declared-stobj-names (cdr edcls) ctx wrld state)))))
-        (t (get-declared-stobj-names (cdr edcls) ctx wrld state))))
+            (t (get-declared-kwd-names kwd (cdr edcls) ctx wrld state)))))
+        (t (get-declared-kwd-names kwd (cdr edcls) ctx wrld state))))
 
 (defun get-stobjs-in-lst (lst defun-mode ctx wrld state)
 
@@ -6483,8 +6500,17 @@
         (t (let ((fn (first (car lst)))
                  (formals (second (car lst))))
              (er-let* ((dcl-stobj-names
-                        (get-declared-stobj-names (fourth (car lst))
-                                                  ctx wrld state))
+                        (get-declared-kwd-names :stobjs
+                                                (fourth (car lst))
+                                                ctx wrld state))
+                       (dcl-df-names-1
+                        (get-declared-kwd-names :dfs
+                                                (fourth (car lst))
+                                                ctx wrld state))
+                       (dcl-df-names-2
+                        (value (extend-known-dfs-with-declared-df-types
+                                (fourth (car lst))
+                                nil)))
                        (dcl-stobj-namesx
                         (cond ((and (member-eq 'state formals)
                                     (not (member-eq 'state dcl-stobj-names)))
@@ -6515,6 +6541,23 @@
                        (set-difference-equal dcl-stobj-namesx formals)
                        fn
                        formals))
+                  ((or (intersectp-eq dcl-stobj-namesx dcl-df-names-1)
+                       (intersectp-eq dcl-stobj-namesx dcl-df-names-2))
+                   (mv-let (n int)
+                     (if (intersectp-eq dcl-stobj-namesx dcl-df-names-1)
+                         (mv 0
+                             (intersection-eq dcl-stobj-namesx dcl-df-names-1))
+                       (mv 1
+                           (intersection-eq dcl-stobj-namesx dcl-df-names-2)))
+                     (er soft ctx
+                         "The formal~#0~[ ~&0 of function ~x1 is~/s of ~
+                          function ~x1 ~&0 are each~] declared both with ~
+                          xargs :STOBJS and with ~#2~[xargs :DFS~/a ~
+                          double-float type declaration~].  But a formal ~
+                          cannot name both a stobj and a df."
+                         int
+                         fn
+                         n)))
                   (t (er-let* ((others (get-stobjs-in-lst (cdr lst)
                                                           defun-mode
                                                           ctx wrld state)))
@@ -6525,6 +6568,8 @@
                        (value
                         (cons (compute-stobj-flags formals
                                                    dcl-stobj-namesx
+                                                   (union-eq dcl-df-names-1
+                                                             dcl-df-names-2)
                                                    wrld)
                               others))))))))))
 
@@ -6795,6 +6840,11 @@
 
       (msg "the proposed and existing definitions for ~x0 differ on their ~
             :stobjs declarations."
+           (car def1)))
+     ((not (equal (fetch-dcl-field :dfs all-but-body1)
+                  (fetch-dcl-field :dfs all-but-body2)))
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
+            :dfs declarations."
            (car def1)))
      ((not (equal (fetch-dcl-field 'type all-but-body1)
                   (fetch-dcl-field 'type all-but-body2)))
@@ -7428,11 +7478,13 @@
 ; expect this extra checking to be unnecessary.
 
            (let ((names (strip-cars fives))
+                 (arglists (strip-cadrs fives))
                  (bodies (get-bodies fives)))
              (mv-let (erp lst bindings)
                      (translate-bodies1 (eq non-executablep t) ; not :program
                                         names bodies
                                         (pairlis$ names names)
+                                        arglists
                                         stobjs-in-lst
                                         ctx wrld default-state-vars)
                      (declare (ignore bindings))
@@ -7464,6 +7516,7 @@
                                      names
                                      (strip-last-elements old-defs)
                                      (pairlis$ names names)
+                                     arglists
                                      stobjs-in-lst
                                      ctx wrld default-state-vars)
                                     (declare (ignore bindings))
@@ -7975,17 +8028,16 @@
 ; badged.
 
 ; Before the introduction of apply$, there was a simple rule: :logic mode
-; functions are defined entirely in terms of :logic mode subfunctions.  Without
-; some such rule we could have the sort of soundness problem described in :DOC
-; program-only.  When apply$ was first introduced (in Version 8.0), every
-; badged function had also a warrant (and all warranted functions are
-; necessarily in :logic mode), so every badged function was in :logic mode.
-; But it was possible to define an unbadged :logic mode function to appear to
-; call a :program mode function (or even an undefined function!).  The
-; following commands were carried out in V8.3, which has the same restrictions
-; as V8.0 but was more powerful mainly because all warrants are true in its
-; evaluation theory (enabling top-level evaluation of apply$ forms), loop$
-; recursion was supported, and lambda object rewriting was done.
+; functions are defined entirely in terms of :logic mode subfunctions.  When
+; apply$ was first introduced (in Version 8.0), every badged function had also
+; a warrant (and all warranted functions are necessarily in :logic mode), so
+; every badged function was in :logic mode.  But it was possible to define an
+; unbadged :logic mode function to appear to call a :program mode function (or
+; even an undefined function!).  The following commands were carried out in
+; V8.3, which has the same restrictions as V8.0 but was more powerful mainly
+; because all warrants are true in its evaluation theory (enabling top-level
+; evaluation of apply$ forms), loop$ recursion was supported, and lambda object
+; rewriting was done.
 
 ; Consider this sketch of a V8.3 session:
 
@@ -8348,11 +8400,6 @@
              rel))
         (t
          (chk-classical-measures measures names ctx wrld state))))
-
-(defun union-collect-non-x (x lst)
-  (cond ((endp lst) nil)
-        (t (union-equal (collect-non-x x (car lst))
-                        (union-collect-non-x x (cdr lst))))))
 
 (defun translate-measures (terms logic-modep ctx wrld state)
 
@@ -8960,7 +9007,7 @@
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
 ; farther below.
 
-         (let ((call
+         (let ((call 
                 `(ec-call (do$ ,@(logic-code-to-runnable-code-lst (fargs term)
                                                                   wrld)))))
            (if (cdr (do$-stobjs-out (fargs term)))
@@ -9001,8 +9048,12 @@
 ; not only the stobjs-in but also the stobjs-out, so as to avoid raw Lisp
 ; calls of stobj creators.
 
+; There is a similar issue for dfs.
+
                    (and (not pair) ; optimization
-                        (not (and (all-nils stobjs-out) ; avoid stobj creators
+; The check on stobjs-out is not redundant with the check on stobjs-in, because
+; the former rules out stobj creators.
+                        (not (and (all-nils stobjs-out)
                                   (all-nils (stobjs-in fn wrld))))))
                   (args (logic-code-to-runnable-code-lst (fargs term) wrld))
                   (call (if pair ; hence not ec-call-p
@@ -9099,7 +9150,7 @@
              (edcls
               (edcls-from-lambda-object-dcls-short-cut (cddr lambda$-expr)))
              (guard-lst
-              (get-guards2 edcls '(types guards) nil wrld nil nil)))
+              (get-guards2 edcls '(types guards) nil wrld nil nil nil)))
 
 ; Guard-lst is the list of untranslated conjuncts in the guard (plus any TYPE
 ; declarations) typed in the original lambda$.  It can be run directly in raw
@@ -9179,6 +9230,7 @@
                              t   ; stobjs-out
                              nil ; bindings
                              t   ; known-stobjs
+                             nil ; known-floats (irrelevant since stobjs-out = t)
                              nil ; flet-alist
                              key
                              ctx
@@ -10230,6 +10282,46 @@
             (reads (cons reads nil)) ; (cons reads writes)
             (t nil)))))
 
+(defun translate-guards (guards arglists stobjs-in-lst ctx wrld state
+                                state-vars)
+  (cond ((endp guards) (value nil))
+        (t (mv-let (erp term bindings)
+             (translate11 (car guards)
+                          nil
+
+; Stobjs-out:
+; Each guard returns one, non-stobj result.  This arg is used for each guard.
+; By using stobjs-out '(nil) we enable the thorough checking of the use of
+; state.  Thus, this call ensures that guards do not modify (or return)
+; state.  We are taking the conservative position because intuitively there is
+; a confusion over the question of whether, when, and how often guards are run.
+; By prohibiting them from modifying state we don't have to answer the
+; questions about when they run.
+
+                          '(nil)
+                          nil
+                          (if (eq stobjs-in-lst t)
+                              t
+                            (collect-non-*-df (car stobjs-in-lst)))
+                          (if (eq stobjs-in-lst t)
+                              nil
+                            (collect-by-position '(:df)
+                                                 (car stobjs-in-lst)
+                                                 (car arglists)))
+                          nil (car guards) ctx wrld state-vars)
+             (declare (ignore bindings))
+             (cond
+              (erp ; see cmp-to-error-triple
+               (er-soft ctx "Translate" "~@0" term))
+              (t (er-let* ((rst (translate-guards (cdr guards)
+                                                  (cdr arglists)
+                                                  (if (eq stobjs-in-lst t)
+                                                      t
+                                                    (cdr stobjs-in-lst))
+                                                  ctx wrld state
+                                                  state-vars)))
+                   (value (cons term rst)))))))))
+
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
@@ -10246,7 +10338,8 @@
         (assumep (or (eq (ld-skip-proofsp state) 'include-book)
                      (eq (ld-skip-proofsp state) 'include-book-with-locals)))
         (reclassifying-all-programp (and (eq rc 'reclassifying)
-                                         (all-programp names wrld))))
+                                         (all-programp names wrld)))
+        (state-vars (default-state-vars t)))
     (er-let*
         ((wrld1 (chk-just-new-names names 'function rc ctx wrld state))
          (wrld2 (update-w
@@ -10479,7 +10572,7 @@
                                     (if (car loop$-recursion-lst)
                                         (list (cons (car names) '(NIL)))
                                       (pairlis$ names names))
-                                    stobjs-in-lst ; see "slight abuse" comment below
+                                    stobjs-in-lst
                                     reclassifying-all-programp
                                     ctx wrld2a state)))
               (let* ((bodies (car bodies-and-bindings))
@@ -10545,7 +10638,7 @@
 ; Keep this call in sync with the call of translate-term-list near the end of
 ; this definition.
 
-                              (translate-term-lst
+                              (translate-guards
                                guards0
 
 ; Note: The use of wrld2a in get-guards above is just an optimization.  We
@@ -10554,39 +10647,7 @@
 ; of the given world is to map from stobj names to the corresponding
 ; recognizers terms, e.g., from STATE to (STATE-P STATE).
 
-; Warning: Keep this call of translate-term-lst in sync with translation of a
-; guard in chk-defabsstobj-guard.
-
-; Stobjs-out:
-; Each guard returns one, non-stobj result.  This arg is used for each guard.
-; By using stobjs-out '(nil) we enable the thorough checking of the use of
-; state.  Thus, the above call ensures that guards do not modify (or return)
-; state.  We are taking the conservative position because intuitively there is
-; a confusion over the question of whether, when, and how often guards are run.
-; By prohibiting them from modifying state we don't have to answer the
-; questions about when they run.
-
-                               '(nil)
-
-; Logic-modep:
-; Since guards have nothing to do with the logic, and since they may
-; legitimately have mode :program, we set logic-modep to nil here.  This arg is
-; used for each guard.
-
-                               nil
-
-; Known-stobjs-lst:
-; Here is a slight abuse.  Translate-term-lst is expecting, in this
-; argument, a list in 1:1 correspondence with its first argument,
-; specifying the known-stobjs for the translation of corresponding
-; terms.  But we are supplying the stobjs-in for the term, not the
-; known-stobjs.  The former is a list of stobj flags and the latter is
-; a list of stobj names, i.e., the list we supply may contain a NIL
-; element where it should have no element at all.  This is allowed by
-; stobjsp.  Technically we ought to map over the stobjs-in-lst and
-; change each element to its collect-non-x nil.
-
-                               stobjs-in-lst ctx
+                               arglists stobjs-in-lst ctx
 
 ; Note the use below of wrld3 instead of wrld2a.  It is important that the
 ; proper stobjs-out be put on the new functions before we translate the guards!
@@ -10606,19 +10667,19 @@
 ;    :hints (("goal" :use ((:instance foo (x nil)))))
 ;    :rule-classes nil)
 
-                               wrld3
-                               state))
+                               wrld3 state state-vars))
                              (split-types-terms
-                              (translate-term-lst
+                              (translate-guards
                                (get-guards fives split-types-lst t wrld2a)
 
 ; Note: Wrld2a above is just the same optimization noted after the previous use
 ; of get-guards above.
 
 ; The arguments below are the same as those for the preceding call of
-; translate-term-lst.
+; translate-guards.
 
-                               '(nil) nil stobjs-in-lst ctx wrld3 state)))
+                               arglists stobjs-in-lst ctx wrld3
+                               state state-vars)))
                      (er-progn
                       (if (eq defun-mode :logic)
 
@@ -10763,17 +10824,10 @@
                                            stobjs-in-lst
                                            reclassifying-all-programp
                                            ctx wrld5 state)
-
-; Keep this call in sync with the call of translate-term-list near the end of
-; this definition.
-
-                                          (translate-term-lst
+                                          (translate-guards
                                            guards0
-                                           '(nil)
-                                           nil
-                                           stobjs-in-lst ctx
-                                           wrld5
-                                           state)))
+                                           arglists stobjs-in-lst ctx
+                                           wrld5 state state-vars)))
                                         (t (value nil)))))
                               (value (list 'chk-acceptable-defuns
                                            names

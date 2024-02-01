@@ -1050,10 +1050,64 @@
                                  (prin1 y-raw str))
                                 (t (ppr y col channel state t)))))
              (princ ")" str))
-            (t (prin1 raw-x str))))
+            (t
+             (prin1 raw-x str))))
     state)
    (t
     (ppr x col channel state t))))
+
+(defun evisceration-stobj-mark (name val)
+
+; Warning: Keep this in sync with evisceration-stobj-mark-simple.
+
+; NAME is a stobj name or :DF.  We return an evisceration mark that prints as
+; ``<name>'' if NAME is a stobj name and with #d notation if name is :DF.  We
+; make a special case out of STATE.
+
+  (cond
+   ((eq name 'STATE)
+    *evisceration-state-mark*)
+   ((eq name :DF)
+
+; Val comes from a list (see evisceration-stobj-marks1), so val is not a :df.
+; Normally val should be a rational, but we check that; perhaps in raw-mode one
+; could arrange that val is a double-float, for example.
+
+    (and (rationalp val)
+         (cons *evisceration-mark*
+               (concatenate 'string "#d" (df-string (to-df val))))))
+   (t
+    (cons *evisceration-mark* (stobj-print-name name)))))
+
+(defun evisceration-stobj-marks1 (stobjs-flags lst)
+
+; See the comment in eviscerate-stobjs, below.
+
+  (cond ((endp stobjs-flags) nil)
+        ((car stobjs-flags)
+         (cons (evisceration-stobj-mark (car stobjs-flags) (car lst))
+               (evisceration-stobj-marks1 (cdr stobjs-flags) (cdr lst))))
+        (t
+         (cons nil
+               (evisceration-stobj-marks1 (cdr stobjs-flags) (cdr lst))))))
+
+(defun evisceration-stobj-marks (stobjs-flags lst)
+
+; Lst is a list of values corresponding to stobjs-flags except that if
+; stobjs-flags is a singleton, then lst is a single value.
+
+  (cond ((equal stobjs-flags *error-triple-sig*)
+         *evisceration-error-triple-marks*)
+        ((equal stobjs-flags '(nil)) '(nil))
+        ((equal stobjs-flags '(:df))
+
+; In this case, lst is a single value.  We need this case so that we don't cdr
+; it in evisceration-stobj-marks1!  Normally lst is a rational, but in raw mode
+; it might be a double-float, in which case we don't want to eviscerate it.
+
+         (and (rationalp lst)
+              (list (evisceration-stobj-mark :df lst))))
+        (t (evisceration-stobj-marks1 stobjs-flags lst))))
 
 (defun ld-print-results (trans-ans state)
 
@@ -1093,7 +1147,7 @@
              (hiding-cars (cadddr evisc-tuple)))
         (mv-let
          (eviscerated-valx state)
-         (eviscerate-stobjs-top (evisceration-stobj-marks stobjs-out nil)
+         (eviscerate-stobjs-top (evisceration-stobj-marks stobjs-out valx)
                                 valx
                                 print-level print-length evisc-alist
                                 (table-alist 'evisc-table (w state))
@@ -1102,7 +1156,8 @@
          (cond
           ((and (eq flg :command-conventions)
                 (ld-error-triples state)
-                (equal stobjs-out *error-triple-sig*))
+                (or (equal stobjs-out *error-triple-sig*)
+                    (equal stobjs-out *error-triple-df-sig*)))
 
 ; We get here if we are following command-conventions and the form
 ; returned triple (mv erp val state).  Note that erp must be a
@@ -1113,10 +1168,11 @@
              state)
             (t
              (pprogn
-              (princ$ (if (stringp (f-get-global 'triple-print-prefix state))
-                          (f-get-global 'triple-print-prefix state)
-                        "")
-                      output-channel state)
+              (if (stringp (f-get-global 'triple-print-prefix state))
+                  (princ$ (f-get-global 'triple-print-prefix state)
+                          output-channel
+                          state)
+                state)
 
 ; The following raw code is identical to the logic code below except that the
 ; raw code handles raw-mode printing (which is entirely extra-logical).
@@ -1425,7 +1481,10 @@
                             (cond
                              (error-flg (mv t nil state))
                              ((and (ld-error-triples state)
-                                   (equal (car trans-ans) *error-triple-sig*)
+                                   (or (equal (car trans-ans)
+                                              *error-triple-sig*)
+                                       (equal (car trans-ans)
+                                              *error-triple-df-sig*))
                                    (car (cdr trans-ans)))
                               (mv t nil state))
                              (t (er-progn
@@ -3623,7 +3682,8 @@
                    (cond
                     (error-flg (mv t nil state))
                     ((and (ld-error-triples state)
-                          (equal (car trans-ans) *error-triple-sig*)
+                          (or (equal (car trans-ans) *error-triple-sig*)
+                              (equal (car trans-ans) *error-triple-df-sig*))
                           (car (cdr trans-ans)))
                      (mv t nil state))
                     (t (er-progn

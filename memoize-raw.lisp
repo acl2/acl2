@@ -3521,7 +3521,7 @@
               (and condition ; else no memo table usage, so skip flushing
                    (remove-duplicates-eq
                     (loop for st in (union stobjs-in stobjs-out)
-                          when st
+                          when (and st (not (eq st :df)))
                           collect
                           (assert$
                            (not (eq st 'state)) ; see memoize-table-chk

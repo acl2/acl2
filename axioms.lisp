@@ -1530,16 +1530,13 @@
 (defvar *acl2-error-msg*
   "~%The message above might explain the error.  If not, and~%~
    if you didn't cause an explicit interrupt (Control-C),~%~
-   then the root cause may be call of a :program mode~%~
-   function that has the wrong guard specified, or even no~%~
-   guard specified (i.e., an implicit guard of t).~%~
-   See :DOC raw-lisp-error and see :DOC guards.~&")
+   then it may help to see :DOC raw-lisp-error.~&")
 
 (defvar *acl2-error-msg-certify-book-step1*
   "~%The message above might explain the error.  If it mentions packages,
 it is probably because Step 1 is performed before any form in the book is
 evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
-1'' and portcullis commands.~&")
+1'' and portcullis commands.  It may also help to see :DOC raw-lisp-error.~&")
 
 (defun interface-er (&rest args)
 
@@ -1558,9 +1555,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (er soft 'acl2-interface
             ,@(let (ans)
                 (dolist (a args)
-                        (push (list 'quote a) ans))
-                (reverse ans)))
-        (error "ACL2 Halted"))))
+                  (push (list 'quote a) ans))
+                (reverse ans)))))
+    (error "ACL2 Halted"))
    (t (error "ACL2 error:  ~a." args))))
 
 (declaim (inline
@@ -3940,8 +3937,104 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         acl2_*1*_acl2::brr-data-mirror))
 
 #-acl2-loop-only
-(defmacro ec-call1-raw (ign x)
-  (declare (ignore ign))
+(defmacro to-df (x)
+
+; This raw Lisp definition of to-df would naturally seem to belong in
+; float-a.lisp next to the #+acl2-loop definition of to-df.  Instead we define
+; it here so that it's defined before the definition of ec-call1-raw-dfs,
+; below.  That may be important since to-df is a macro, which in turn is
+; because we want it expanded away before compilation: the byte length of the
+; assembly code produced by the following roughly doubles in CCL if to-df is
+; instead merely the obvious inlined function.
+
+; (disassemble (defun f (x) (declare (type double-float x)) (df+ 5 x)))
+
+; We use (float x 0.0D0) here, rather than (coerce x 'double-float), since we
+; rely an the float-rational identity discussed in a comment in
+; constrained-to-df-idempotent.
+
+; It is however tempting to avoid (float x 0.0D0) in favor of (coerce x
+; 'double-float), since the latter seems to have a clearer specification than
+; the former.
+
+; The CL HyperSpec says this about coerce at
+; http://www.lispworks.com/documentation/HyperSpec/Body/f_coerce.htm#coerce
+
+;   If the result-type is any of float, short-float, single-float,
+;   double-float, long-float, and the object is a real, then the result is a
+;   float of type result-type which is equal in sign and magnitude to the
+;   object to whatever degree of representational precision is permitted by
+;   that float representation. (If the result-type is float and object is not
+;   already a float, then the result is a single float.)
+
+; So it should be fine to use coerce here.  But the CL HyperSpec is less clear
+; that we can use (float x 0.0D0); here is what the page on float
+; (http://www.lispworks.com/documentation/HyperSpec/Body/f_float.htm) says:
+
+;   If a prototype is supplied, a float is returned that is mathematically
+;   equal to number but has the same format as prototype.
+
+; That doesn't seem to specify the value of (float 1/3 0.0D0), since 1/3 isn't
+; representable.
+
+; Fortunately, even though that's unfortunate, it doesn't seem to be important
+; for our purposes.
+
+  (cond ((rationalp x) ; compute suitable constant at compile time
+         (float x 0.0D0))
+        ((and (consp x)
+              (eq (car x) 'quote)
+              (consp (cdr x))
+              (rationalp (cadr x))
+              (null (cddr x)))
+         (float (cadr x) 0.0D0))
+        (t
+         `(float ,x 0.0D0))))
+
+#-acl2-loop-only
+(declaim (inline ec-call1-raw-dfs))
+
+#-acl2-loop-only
+(defun ec-call1-raw-dfs (x flg form n)
+
+; If flg is nil or x is a double-float, then return x.  Otherwise x should be a
+; representable rational (because x was produced by a df or df{i} expression),
+; and we return the double-float that represents x.
+
+; But what is the point of this function?
+
+; Ec-call presents a bit of an implementation challenge.  Recall that ec-call
+; invokes executable-counterpart (*1*) functions.  Also note that code
+; generated for *1* functions is designed to return ordinary objects, not
+; double-floats.  Yet ec-call invokes *1* functions, hence returns ordinary
+; objects where raw Lisp code might expect a double-float.
+
+; When a guard-verified function or program-mode function leads to evaluation
+; of an ec-call form in raw Lisp, the caller may expect double-float outputs.
+; So ec-call's expansions in raw Lisp need to make adjustments to the outputs
+; when double-floats are expected.  The :dfs argument of ec-call tells Lisp
+; when to convert rationals returned by a *1* function to double-floats.
+
+  (cond ((null flg) x)
+        ((typep x 'double-float) x)
+        (t (let ((val (and (rationalp x)
+                           (let ((val (to-df x)))
+                             (and (= val x)
+                                  val)))))
+             (or val
+                 (let ((*print-pretty* t))
+                   (error "Implementation error (please contact the ACL2 ~
+                           implementors):~%~s error:~%Form: ~s~%Value~a that ~
+                           does not represent a double-float:~%  ~s"
+                          'ec-call
+                          form
+                          (if n
+                              (format nil " (at position ~s)" n)
+                            "")
+                          x)))))))
+                    
+#-acl2-loop-only
+(defmacro ec-call1-raw (dfs x)
   (cond
    ((not (and (consp x) (symbolp (car x))))
 
@@ -3950,48 +4043,76 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (ec-call x)).  In that case we simply cause an error at execution time, as a
 ; precaution, while fully expecting that we never actually hit this case.
 
-    `(error "Implementation error: It is unexpected to be executing a call~%~
-             of ec-call on other than the application of a symbol to~%~
-             arguments, but we are executing it on the form,~%~s."
+    `(error "Implementation error: It is unexpected to be executing a ~
+             call~%of ec-call on other than the application of a symbol ~
+             to~%arguments, but we are executing it on the form,~%~s."
+            x))
+   ((not (and (consp dfs)
+              (eq (car dfs) 'quote)
+              (consp (cdr dfs))
+              (null (cddr dfs))
+              (boolean-listp (cadr dfs))))
+    `(error "Implementation error (or incorrect use of implementation macros
+             for ec-call): dfs should be a quoted list of booleans, but it is ~
+             ~s."
             x))
    (t
-    (let ((*1*fn (*1*-symbol (car x)))
+    (let ((dfs0 (cadr dfs))
+          (*1*fn (*1*-symbol (car x)))
           (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*)))
       `(cond
-        (*safe-mode-verified-p* ; see below for discussion of this case
+        (*safe-mode-verified-p*
+
+; We are presumably in a context where we know that evaluation will not lead to
+; an ill-guarded call in raw Lisp.  See *safe-mode-verified-p*.
+
          ,x)
+        (t ,(let ((form
 
 ; Through Version_8.2 we had a single funcall below, where the first argument
 ; depended on whether (fboundp ',*1*fn) or else (fboundp ',*1*fn$inline).  But
-; SBCL took a very long to compile the function apply$-prim in
+; SBCL took a very long time to compile the function apply$-prim in
 ; books/projects/apply-model-2/apply-prim.lisp (and perhaps other such
 ; apply$-prim definitions), which we fixed by lifting those fboundp tests above
 ; the calls of funcall.  This reduced the time (presumably virtually all of it
 ; for compilation) from 1294.33 seconds to 8.12 seconds.
 
-        ((fboundp ',*1*fn)
-         (funcall ',*1*fn ,@(cdr x)))
-        ((fboundp ',*1*fn$inline)
-         (funcall
-          (assert$ (macro-function ',(car x)) ; sanity check; could be omitted
-                   ',*1*fn$inline)
-          ,@(cdr x)))
-        (t
-         (error "Undefined function, ~s.  Please contact the ACL2 ~
-                 implementors."
-                ',*1*fn)))))))
+                   `(cond ((fboundp ',*1*fn)
+                           (funcall ',*1*fn ,@(cdr x)))
+                          ((fboundp ',*1*fn$inline)
+                           (funcall
+; The following call of macro-function is a sanity check that could be
+; omitted.
+                            (assert$ (macro-function ',(car x))
+                                     ',*1*fn$inline)
+                            ,@(cdr x)))
+                          (t
+                           (error "Undefined function, ~s.  Please contact ~
+                                   the ACL2 implementors."
+                                  ',*1*fn)))))
+              (cond
+               ((null dfs0) form)
+               ((null (cdr dfs0)) ; hence dfs = (t)
+                `(ec-call1-raw-dfs ,form t ',x nil))
+               (t `(let ((lst (multiple-value-list ,form)))
+                     (values-list
+                      (loop for e in lst
+                            as flg in ,dfs
+                            as n from 0
+                            collect
+                            (ec-call1-raw-dfs e flg ',x n)))))))))))))
 
-(defmacro ec-call1 (ign x)
+(defmacro ec-call1 (dfs x)
 
 ; We introduce ec-call1 inbetween the ultimate macroexpansion of an ec-call
 ; form to a return-last form, simply because untranslate will produce (ec-call1
 ; nil x) from (return-last 'ec-call1-raw nil x).
 
-  `(return-last 'ec-call1-raw ,ign ,x))
+  `(return-last 'ec-call1-raw ,dfs ,x))
 
-(defmacro ec-call (x)
+(defmacro ec-call (x &key (dfs ''nil))
   (declare (xargs :guard t))
-  `(ec-call1 nil ,x))
+  `(ec-call1 ,dfs ,x))
 
 (defmacro non-exec (x)
   (declare (xargs :guard t))
@@ -7338,8 +7459,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; in a non-ACL2 object.
 
 (defun abs (x)
-  (declare (xargs :guard (real/rationalp x)))
-
+  (declare (xargs :guard (real/rationalp x)
+; Logic mode is needed because abs is called in the event introducing
+; constrained-binary-df+.
+                  :mode :logic))
   (if (minusp x) (- x) x))
 
 (defun signum (x)
@@ -7594,7 +7717,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            :hints :measure :measure-debug
            :ruler-extenders :mode :non-executable :normalize
            :otf-flg #+:non-standard-analysis :std-hints
-           :stobjs :verify-guards :well-founded-relation
+           :stobjs :dfs :verify-guards :well-founded-relation
            :split-types :loop$-recursion :type-prescription))
 
 (defun plausible-dclsp1 (lst)
@@ -11770,6 +11893,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      (caddr x) tflg))
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
+        ((eq x 'double-float) (list 'dfp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
         ((eq x 'number) (list 'acl2-numberp var))
         ((and (consp x)
@@ -12175,10 +12299,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+acl2-loop-only
 (defmacro the (x y)
 
-; Warning: Keep this in sync with the-for-*1*.
+; Warning: Keep this in sync with the-for-*1*.  We make an exception for the
+; case that x is DOUBLE-FLOAT, as we consider that case to be a logical no-op
+; other than to enforce :DF tracking by translate.  See :DOC the.
 
   (declare (xargs :guard (translate-declaration-to-guard x 'var nil)))
-  (the-fn x y))
+  (if (eq x 'double-float)
+      y
+    (the-fn x y)))
 
 (defun the-check-for-*1* (guard x y var)
 
@@ -12201,11 +12329,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro the-for-*1* (x y)
 
-; Warning: Keep this in sync with THE.
+; Warning: Keep this in sync with THE (including the DOUBLE-FLOAT exception).
 
   (declare (xargs :guard (and (symbolp y)
                               (translate-declaration-to-guard x y nil))))
-  (the-fn-for-*1* x y))
+  (if (eq x 'double-float)
+      y
+    (the-fn-for-*1* x y)))
 
 ; THEORY PROTO-PRIMITIVES
 
@@ -14193,48 +14323,48 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(mod-expt ; (GCL only) si::powm
     header
     search-fn
-    state-p1 ; LIVE-STATE-P
-    aref2 ; aref, slow-array-warning
-    aref1 ; aref, slow-array-warning
-    fgetprop ; EQ, GET, ...
-    getenv$ ; GETENV$-RAW
-    wormhole-eval ; *WORMHOLE-STATUS-ALIST*
-    wormhole1 ; *WORMHOLEP*, ...
-    get-persistent-whs ; *WORMHOLE-STATUS-ALIST*
+    state-p1                               ; LIVE-STATE-P
+    aref2                                  ; aref, slow-array-warning
+    aref1                                  ; aref, slow-array-warning
+    fgetprop                               ; EQ, GET, ...
+    getenv$                                ; GETENV$-RAW
+    wormhole-eval                          ; *WORMHOLE-STATUS-ALIST*
+    wormhole1                              ; *WORMHOLEP*, ...
+    get-persistent-whs                     ; *WORMHOLE-STATUS-ALIST*
     sync-ephemeral-whs-with-persistent-whs ; *WORMHOLE-STATUS-ALIST*
-    aset2 ; [seems like we can live with logic code]
-    sgetprop ; SGETPROP1
-    setenv$ ; SI::SETENV ...
-    getprops ; EQ, GET, ...
-    compress1 ; [seems like we can live with logic code]
-    time-limit5-reached-p ; THROW
-    fmt-to-comment-window ; *THE-LIVE-STATE*
-    fmt-to-comment-window! ; *THE-LIVE-STATE*
-    fmt-to-comment-window+ ; *THE-LIVE-STATE*
-    fmt-to-comment-window!+ ; *THE-LIVE-STATE*
-    len ; len1
-    cpu-core-count ; CORE-COUNT-RAW
+    aset2                        ; [seems like we can live with logic code]
+    sgetprop                     ; SGETPROP1
+    setenv$                      ; SI::SETENV ...
+    getprops                     ; EQ, GET, ...
+    compress1                    ; [seems like we can live with logic code]
+    time-limit5-reached-p        ; THROW
+    fmt-to-comment-window        ; *THE-LIVE-STATE*
+    fmt-to-comment-window!       ; *THE-LIVE-STATE*
+    fmt-to-comment-window+       ; *THE-LIVE-STATE*
+    fmt-to-comment-window!+      ; *THE-LIVE-STATE*
+    len                          ; len1
+    cpu-core-count               ; CORE-COUNT-RAW
     nonnegative-integer-quotient ; floor
-    check-print-base ; PRIN1-TO-STRING
-    retract-world ; RETRACT-WORLD1
-    aset1 ; [seems like we can live with logic code]
-    array1p ; get [seems like we can live with logic code]
-    boole$ ; boole
-    array2p ; [seems like we can live with logic code]
-    strip-cdrs ; strip-cdrs1
-    compress2 ; [seems like we can live with logic code]
-    strip-cars ; strip-cars1
-    plist-worldp ; *the-live-state* (performance)
+    check-print-base             ; PRIN1-TO-STRING
+    retract-world                ; RETRACT-WORLD1
+    aset1                        ; [seems like we can live with logic code]
+    array1p                      ; get [seems like we can live with logic code]
+    boole$                       ; boole
+    array2p                      ; [seems like we can live with logic code]
+    strip-cdrs                   ; strip-cdrs1
+    compress2                    ; [seems like we can live with logic code]
+    strip-cars                   ; strip-cars1
+    plist-worldp                 ; *the-live-state* (performance)
     #-acl2-devel plist-worldp-with-formals ; *the-live-state* (performance)
-    wormhole-p ; *WORMHOLEP*
+    wormhole-p                             ; *WORMHOLEP*
     may-need-slashes-fn ;*suspiciously-first-numeric-array* ...
-    has-propsp ; EQ, GET, ...
-    hard-error ; *HARD-ERROR-RETURNS-NILP*, FUNCALL, ...
-    abort! p! ; THROW
-    flush-compress ; SETF [may be critical for correctness]
+    has-propsp          ; EQ, GET, ...
+    hard-error          ; *HARD-ERROR-RETURNS-NILP*, FUNCALL, ...
+    abort! p!           ; THROW
+    flush-compress      ; SETF [may be critical for correctness]
     maybe-flush-and-compress1
-    alphorder ; [bad atoms]
-    extend-world ; EXTEND-WORLD1
+    alphorder                            ; [bad atoms]
+    extend-world                         ; EXTEND-WORLD1
     default-total-parallelism-work-limit ; for #+acl2-par (raw Lisp error)
 
 ; The following have arguments of state-state, and hence some may not be of
@@ -14277,7 +14407,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     file-write-date$
     print-call-history
     set-debugger-enable-fn ; system::*break-enable* and *debugger-hook*
-    break$ ; break
+    break$                 ; break
     prin1$ prin1-with-slashes
     member-equal assoc-equal subsetp-equal
     rassoc-equal remove-equal position-equal
@@ -14306,13 +14436,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     gc-verbose-fn
     set-absstobj-debug-fn
     sys-call-status ; *last-sys-call-status*
-    sys-call ; system-call
-    sys-call+ ; system-call+
-    sys-call* ; system-call+
+    sys-call        ; system-call
+    sys-call+       ; system-call+
+    sys-call*       ; system-call+
 
     canonical-pathname ; redefined from partial-encapsulate
 
-    doppelganger-badge-userfn ; redefined from partial-encapsulate
+    doppelganger-badge-userfn  ; redefined from partial-encapsulate
     doppelganger-apply$-userfn ; redefined from partial-encapsulate
 
     ev-fncall-w-guard1
@@ -14323,22 +14453,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; mfc functions
 
-    mfc-ancestors ; *metafunction-context*
-    mfc-clause ; *metafunction-context*
-    mfc-rdepth ; *metafunction-context*
-    mfc-type-alist ; *metafunction-context*
-    mfc-unify-subst ; *metafunction-context*
-    mfc-world ; *metafunction-context*
-    mfc-ap-fn ; redefined from partial-encapsulate
-    mfc-relieve-hyp-fn ; redefined from partial-encapsulate
+    mfc-ancestors         ; *metafunction-context*
+    mfc-clause            ; *metafunction-context*
+    mfc-rdepth            ; *metafunction-context*
+    mfc-type-alist        ; *metafunction-context*
+    mfc-unify-subst       ; *metafunction-context*
+    mfc-world             ; *metafunction-context*
+    mfc-ap-fn             ; redefined from partial-encapsulate
+    mfc-relieve-hyp-fn    ; redefined from partial-encapsulate
     mfc-relieve-hyp-ttree ; redefined from partial-encapsulate
-    mfc-rw+-fn ; redefined from partial-encapsulate
-    mfc-rw+-ttree ; redefined from partial-encapsulate
-    mfc-rw-fn ; redefined from partial-encapsulate
-    mfc-rw-ttree ; redefined from partial-encapsulate
-    mfc-ts-fn ; redefined from partial-encapsulate
-    mfc-ts-ttree ; redefined from partial-encapsulate
-    magic-ev-fncall ; redefined from partial-encapsulate
+    mfc-rw+-fn            ; redefined from partial-encapsulate
+    mfc-rw+-ttree         ; redefined from partial-encapsulate
+    mfc-rw-fn             ; redefined from partial-encapsulate
+    mfc-rw-ttree          ; redefined from partial-encapsulate
+    mfc-ts-fn             ; redefined from partial-encapsulate
+    mfc-ts-ttree          ; redefined from partial-encapsulate
+    magic-ev-fncall       ; redefined from partial-encapsulate
     never-memoize-fn
 
 ; The following are introduced into the logic by an encapsulate, but have raw
@@ -14376,7 +14506,42 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     iprint-oracle-updates
     #-acl2-devel iprint-ar-aref1
     #-acl2-devel brr-near-missp
-  ))
+
+; Double-float functions:
+
+    binary-df*
+    binary-df+
+    binary-df-log
+    binary-df/
+    df-abs-fn
+    df-acos-fn
+    df-acosh-fn
+    df-asin-fn
+    df-asinh-fn
+    df-atan-fn
+    df-atanh-fn
+    df-cos-fn
+    df-cosh-fn
+    df-exp-fn
+    df-expt-fn
+    df-pi
+    df-rationalize
+    df-string
+    df-sin-fn
+    df-sinh-fn
+    df-sqrt-fn
+    df-tan-fn
+    df-tanh-fn
+    dfp
+    from-df
+    to-df
+    unary-df-
+    unary-df/
+    unary-df-log
+    df<-fn
+    df=-fn
+    df/=-fn
+    ))
 
 (defconst *initial-macros-with-raw-code*
 
@@ -14474,6 +14639,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-global-stobj
     with-cbd
     with-current-package
+    ec-call
     ))
 
 (defun untouchable-marker (mac)
@@ -22094,6 +22260,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((typep x '(complex rational))
          (or (bad-lisp-atomp (realpart x))
              (bad-lisp-atomp (imagpart x))))
+        ((typep x 'float)
+         (cons "A floating-point input, which CLTL displays as ~s0, has been ~
+                encountered.  To permit floating-point input, which ACL2 ~
+                treats as a rational number, use the prefix #d or #D; see ~
+                :DOC df)."
+               (list (cons #\0 (format nil "~s" x)))))
         (t (cons
             "ACL2 permits only objects constructed from rationals, complex ~
              rationals, legal ACL2 characters, simple strings of these ~
@@ -28227,6 +28399,13 @@ Lisp definition."
              fn))
         (t (getpropc fn 'stobjs-out '(nil) w))))
 
+(defun all-nils-or-dfs (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) t)
+        (t (and (or (eq (car lst) nil)
+                    (eq (car lst) :df))
+                (all-nils-or-dfs (cdr lst))))))
+
 (defun ev-fncall-w-guard1 (fn wrld temp-touchable-fns)
 
 ; See ev-fncall-w-guard.  Here we use a cache to avoid most of that computation
@@ -28270,7 +28449,7 @@ Lisp definition."
               (not (and (null formals)
                         (getpropc fn 'stobj-function nil wrld)))
               (true-listp stobjs-in) ; needed for guard of all-nils
-              (all-nils stobjs-in)
+              (all-nils-or-dfs stobjs-in)
               (let ((data (list* (len formals)
                                  (programp fn wrld)
                                  (if (eq fn 'return-last)
@@ -28841,8 +29020,11 @@ Lisp definition."
   (read-acl2-oracle state))
 
 (defconst *expandable-boot-strap-non-rec-fns*
+
+; Warning: Keep this suitably in sync with *bbody-alist*.
+
   '(not
-    implies eq atom eql = /= null endp zerop
+    implies eq atom eql = /= null endp zerop from-df
 
 ; If we ever make 1+ and 1- functions again, they should go back on this list.
 
@@ -28868,6 +29050,8 @@ Lisp definition."
 
 (defconst *bbody-alist*
 
+; Warning: Keep this suitably in sync with *expandable-boot-strap-non-rec-fns*.
+
 ; This alist associates each function in *definition-minimal-theory* except
 ; mv-nth with its normalized body.  It is built as follows.  The equality of
 ; this constant to that expression is checked at the end of the boot-strap.
@@ -28888,6 +29072,7 @@ Lisp definition."
     (eq equal x y)
     (eql equal x y)
     (force . x)
+    (from-df . x)
     (iff if p (if q 't 'nil) (if q 'nil 't))
     (implies if p (if q 't 'nil) 't)
     (listp if (consp x) 't (equal x 'nil))
@@ -29610,3 +29795,34 @@ Lisp definition."
 ;   :rule-classes nil)
 
 ; Facts suffice that are proved in books/support/ppr-support.lisp.
+
+; Here are some logic-mode functions to be used later.
+
+(defun >=-len (x n)
+  (declare (xargs :guard (and (integerp n) (<= 0 n))
+                  :mode :logic))
+  (if (= n 0)
+      t
+      (if (atom x)
+          nil
+          (>=-len (cdr x) (1- n)))))
+
+(defun all->=-len (lst n)
+  (declare (xargs :guard (and (integerp n) (<= 0 n))
+                  :mode :logic))
+  (if (atom lst)
+      (eq lst nil)
+      (and (>=-len (car lst) n)
+           (all->=-len (cdr lst) n))))
+
+(defun strip-cadrs (x)
+  (declare (xargs :guard (all->=-len x 2)
+                  :mode :logic))
+  (cond ((endp x) nil)
+        (t (cons (cadar x) (strip-cadrs (cdr x))))))
+
+(defun strip-cddrs (x)
+  (declare (xargs :guard (all->=-len x 2)
+                  :mode :logic))
+  (cond ((endp x) nil)
+        (t (cons (cddar x) (strip-cddrs (cdr x))))))
