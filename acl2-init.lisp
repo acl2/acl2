@@ -847,12 +847,12 @@ implementations.")
                                                (cons (format nil fmt-str x)
                                                      result))))
                                      (reverse result)))))
-                 (append lst (list "hons-raw.lisp"
-                                   "memoize-raw.lisp"
-                                   "multi-threading-raw.lisp"
+                 #+acl2-par
+                 lst
+                 #-acl2-par
+                 (append lst (list "multi-threading-raw.lisp"
                                    "futures-raw.lisp"
-                                   "parallel-raw.lisp"
-                                   "serialize-raw.lisp")))))
+                                   "parallel-raw.lisp")))))
 
 (defvar *saved-build-date-lst* nil)
 

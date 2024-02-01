@@ -4764,20 +4764,6 @@
                     (chk-theory-expr-value@par (cdr trans-ans) wrld expr ctx state)
                     (value@par (runic-theory (cdr trans-ans) wrld)))))))))
 
-(defun append-strip-cars (x y)
-
-; This is (append (strip-cars x) y).
-
-  (cond ((null x) y)
-        (t (cons (car (car x)) (append-strip-cars (cdr x) y)))))
-
-(defun append-strip-cdrs (x y)
-
-; This is (append (strip-cdrs x) y).
-
-  (cond ((null x) y)
-        (t (cons (cdr (car x)) (append-strip-cdrs (cdr x) y)))))
-
 (defun no-rune-based-on (runes symbols)
   (cond ((null runes) t)
         ((member-eq (base-symbol (car runes)) symbols)
@@ -8890,12 +8876,12 @@
 (defun get-guardsp (lst wrld)
 
 ; Note that get-guards always returns a list of untranslated terms as long as
-; lst and that if a guard is not specified (via either a :GUARD or :STOBJS XARG
-; declaration or a TYPE declaration) then *t* is used.  But in order to default
-; the verify-guards flag in defuns we must be able to decide whether no such
-; declaration was specified.  That is the role of this function.  It returns t
-; or nil according to whether at least one of the 5-tuples in lst specifies a
-; guard (or stobj) or a type.
+; lst and that if a guard is not specified (via either a :GUARD, :STOBJS, or
+; :DFS XARG declaration or a TYPE declaration) then *t* is used.  But in order
+; to default the verify-guards flag in defuns we must be able to decide whether
+; no such declaration was specified.  That is the role of this function.  It
+; returns t or nil according to whether at least one of the 5-tuples in lst
+; specifies a guard (or stobj) or a type.
 
 ; Thus, specification of a type is sufficient for this function to return t,
 ; even if :split-types t was specified.  If that changes, adjust :doc
@@ -13145,12 +13131,13 @@
 ; establishes that all of the guards in term are satisfied.  We discuss the
 ; second result in the next paragraph.  The third result is a ttree justifying
 ; the simplification we do and extending ttree.  Stobj-optp indicates whether
-; we are to optimize away stobj recognizers.  Call this with stobj-optp = t
-; only when it is known that the term in question has been translated with full
-; enforcement of the stobj rules.  Clause is the list of accumulated, negated
-; tests passed so far on this branch, possibly enhanced by facts known about
-; evaluation as discussed in the next paragraph.  Clause is maintained in
-; reverse order, but reversed before we return it.
+; we are to optimize away stobj recognizers and dfp calls.  Call this with
+; stobj-optp = t only when it is known that the term in question has been
+; translated with full enforcement of the stobj rules (which include df
+; restrictions).  Clause is the list of accumulated, negated tests passed so
+; far on this branch, possibly enhanced by facts known about evaluation as
+; discussed in the next paragraph.  Clause is maintained in reverse order, but
+; reversed before we return it.
 
 ; The second result is a list of terms, which we think of as an "environment"
 ; or "env" for short.  To understand the environment result, consider what we
@@ -16031,11 +16018,11 @@
                                       hist pspv ctx))))))))
           (t (er@par soft ctx
                "When you give a hint that is a symbol, it must be a function ~
-                symbol of three, four or seven arguments (not involving STATE ~
-                or other single-threaded objects) that returns a single ~
-                value.  The allowable arguments are ID, CLAUSE, WORLD, ~
-                STABLE-UNDER-SIMPLIFICATIONP, HIST, PSPV, and CTX. See :DOC ~
-                computed-hints.  ~x0 is not such a symbol."
+                symbol of three, four or seven ordinary arguments (so, not ~
+                involving STATE or other single-threaded objects) that ~
+                returns a single ordinary value.  The allowable arguments are ~
+                ID, CLAUSE, WORLD, STABLE-UNDER-SIMPLIFICATIONP, HIST, PSPV, ~
+                and CTX. See :DOC computed-hints.  ~x0 is not such a symbol."
                term))))
    (t
     (er-let*@par
@@ -18589,19 +18576,23 @@
                           (equal stobjs-out '(nil nil))))
                  (er soft 'table
                      "The table :guard must return either one or two ~
-                      values~@0, but ~x1 ~@2."
+                      values~@0; but ~x1 ~@2."
                      (if (all-nils stobjs-out)
                          ""
-                       ", none of them STATE or stobjs")
+                       ", none of them STATE, other stobjs, or :DF values")
                      term
                      (if (cdr stobjs-out)
                          (msg "has output signature"
                               (cons 'mv stobjs-out))
-                       (assert$
 ; See comment above about stobj creators.
-                        (eq (car stobjs-out) 'state)
-                        (msg "returns STATE"
-                             (car stobjs-out))))))
+                       (msg "returns ~#0~[a :DF value~/STATE~]"
+                            (if (eq (car stobjs-out) :DF)
+                                0
+                              (assert$
+                               (eq (car stobjs-out) 'state)
+                               1))))))
+; See comment above about stobj creators.
+
                 (t
 
 ; Known-stobjs includes only STATE.  No variable other than STATE is treated

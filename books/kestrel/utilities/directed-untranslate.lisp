@@ -1582,7 +1582,7 @@
                              (null ignore-vars)
                              (mv-let (erp tbody)
                                (translate-cmp main-body
-                                              nil ; stobjs-out
+                                              t   ; stobjs-out
                                               nil ; logic-modep (don't care)
                                               t   ; known-stobjs
                                               'du-make-mv-let ; ctx
@@ -2321,7 +2321,7 @@
 ; Note: It's technically wrong to untranslate to b*, since someone may have
 ; defined b* differently from how it's defined in std/util/bstar.lisp.  But we
 ; view directed-untranslate as essentially heuristic, so we can live with that
-; technical "unsoundness" that, in fact, is very likely ever to be relevant.
+; technical "unsoundness" that, in fact, is very unlikely ever to be relevant.
 
   (case-match uterm
     (('b* bindings form1 form2 . rest)
@@ -2444,7 +2444,7 @@
                             (mv-let
                               (erp tbody)
                               (translate-cmp body
-                                             nil ; stobjs-out
+                                             t   ; stobjs-out
                                              nil ; logic-modep (don't care)
                                              t   ; known-stobjs
                                              'directed-untranslate-b* ; ctx
