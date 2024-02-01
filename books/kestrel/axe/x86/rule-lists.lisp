@@ -595,6 +595,11 @@
 
     integerp-of-cf-spec64
 
+    cf-spec32-becomes-getbit
+    cf-spec64-becomes-getbit
+
+    acl2::unsigned-byte-p-of-+ ; can work with cf-spec64-becomes-getbit
+
     ;;todo: not x86-specific
     acl2::integerp-of-logext
     acl2::integerp-of--))
