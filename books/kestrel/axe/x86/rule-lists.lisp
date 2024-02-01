@@ -1359,6 +1359,7 @@
             jb-condition-of-sub-cf-spec64
             jb-condition-of-cf-spec32
             jb-condition-of-cf-spec64
+            jb-condition-of-getbit ; for when we turn a cf-spec function into getbit
             jnb-condition-of-sub-cf-spec8
             jnb-condition-of-sub-cf-spec16
             jnb-condition-of-sub-cf-spec32

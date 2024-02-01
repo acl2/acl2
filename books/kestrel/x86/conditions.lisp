@@ -1249,6 +1249,11 @@
          (acl2::bool-fix test))
   :hints (("Goal" :in-theory (enable jb-condition))))
 
+(defthm jb-condition-of-getbit
+  (equal (jb-condition (getbit n x))
+         (equal 1 (getbit n x)))
+  :hints (("Goal" :in-theory (enable jb-condition))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
