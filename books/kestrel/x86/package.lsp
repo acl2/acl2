@@ -323,6 +323,7 @@
     list-rules
     core-rules-bv
     amazing-rules-bv
+    set-axe-rule-priority
 
     memberp
 
@@ -373,7 +374,7 @@
 
 ;; TODO: Think about this...
 (defconst *common-formals*
-  '(x y m n))
+  '(x y m n size i))
 
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*

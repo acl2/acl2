@@ -75,7 +75,6 @@
 (include-book "kestrel/crypto/keccak/portcullis" :dir :system)
 (include-book "kestrel/crypto/mimc/portcullis" :dir :system)
 (include-book "kestrel/crypto/padding/portcullis" :dir :system)
-(include-book "kestrel/crypto/pfcs/portcullis" :dir :system)
 (include-book "kestrel/crypto/portcullis" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "kestrel/crypto/salsa/portcullis" :dir :system)
@@ -107,6 +106,7 @@
 (include-book "projects/irv/portcullis" :dir :system)
 ;(include-book "projects/legacy-defrstobj/portcullis" :dir :system) ; conflicts with the main one
 ;(include-book "projects/milawa/ACL2/portcullis" :dir :system) ; not certified in normal builds
+(include-book "projects/pfcs/portcullis" :dir :system)
 (include-book "projects/regex/portcullis" :dir :system)
 (include-book "projects/rp-rewriter/meta/portcullis" :dir :system)
 (include-book "projects/rp-rewriter/portcullis" :dir :system)

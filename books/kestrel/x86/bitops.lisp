@@ -144,8 +144,9 @@
 (in-theory (disable BITOPS::PART-SELECT-WIDTH-LOW))
 (in-theory (disable BITOPS::PART-INSTALL-WIDTH-LOW))
 
-(defthm PART-INSTALL-WIDTH-LOW-becomes-bvcat
-  (implies (and (unsigned-byte-p xsize x) ;todo
+;; Unfortunately, PART-INSTALL-WIDTH-LOW does not indicate any size for X.
+(defthm part-install-width-low-becomes-bvcat
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free var
                 (natp xsize) ;(posp xsize)              ;drop?
                 ;(< (+ width low) xsize)   ;allow = ?
                 (natp low)

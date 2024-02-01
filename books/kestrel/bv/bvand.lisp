@@ -396,3 +396,9 @@
   (equal (bvchop size (logand x y))
          (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))
+
+;; -1 is a mask of all ones
+(defthm bvand-of-minus1
+  (equal (bvand width -1 x)
+         (bvchop width x))
+  :hints (("Goal" :in-theory (enable bvand))))

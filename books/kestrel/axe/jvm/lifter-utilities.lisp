@@ -14,6 +14,7 @@
 
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "../make-axe-rules") ; for make-axe-rules-from-theorem
+(include-book "../priorities")
 ;(include-book "../jvm/heap0")
 (include-book "kestrel/jvm/jvm" :dir :system) ;for JVM::CALL-STACK-SIZE
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
@@ -42,8 +43,8 @@
               (make-axe-rules-from-theorem! *ignore-exception-pseudo-rule-2* 'ignore-exceptions-2 nil nil t (w state)))))
 
 ;want these to fire before we lift the if
-(table axe-rule-priorities-table 'ignore-exceptions-1 -1)
-(table axe-rule-priorities-table 'ignore-exceptions-2 -1)
+(set-axe-rule-priority ignore-exceptions-1 -1)
+(set-axe-rule-priority ignore-exceptions-2 -1)
 
 ;; TODO: Pull these out as above.  We need a way to refer to named terms that are not actually theorems.
 ;; Note that these rules do not correspond to true theorems!  So we cannot make
@@ -65,8 +66,8 @@
                                             'run-until-exit-segment-of-error-state nil nil t (w state)))))
 
 ;want these to fire before we lift the if
-(table axe-rule-priorities-table 'ignore-error-state-1 -1)
-(table axe-rule-priorities-table 'ignore-error-state-2 -1)
+(set-axe-rule-priority ignore-error-state-1 -1)
+(set-axe-rule-priority ignore-error-state-2 -1)
 
 ;; (defun ignore-exceptions-and-errors-runes ()
 ;;   (prog2$ (cw "(WARNING: Ignoring exceptions and errors!)~%")

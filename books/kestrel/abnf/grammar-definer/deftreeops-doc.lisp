@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,7 +69,11 @@
      (xdoc::p
       "This must be a symbol that is a named constant
        whose value is a grammar, i.e. a value of type @(tsee rulelist).
-       It could be a grammar introduced by @(tsee defgrammar)."))
+       It could be a grammar introduced by @(tsee defgrammar).")
+     (xdoc::p
+      "The grammar must be "
+      (xdoc::seetopic "closure" "closed")
+      "."))
 
     (xdoc::desc
      "@(':prefix') &mdash; no default"
@@ -189,6 +193,39 @@
        the alternation that defines the rule name
        then the list of lists of trees matches
        one of the alternatives (each of which is a concatenation)."))
+
+    (xdoc::desc
+     "@('<prefix>-alt-equivs-when-<rulename>')"
+     (xdoc::p
+      "For each rule name defined in the grammar by two or more alternatives,
+       a theorem stating equivalences between
+       (i) the branches (of a tree matching the rule name)
+       matching each alternative that defines the rule name and
+       (ii) some term over the branches
+       that discriminates among the alternatives;
+       there is an equivalence for each alternative,
+       and the theorem consists of the conjunction of the equivalences.
+       For now we only generate this theorem
+       when each alternative is
+       a singleton concatenation of
+       a singleton repetition of a rulename element."))
+
+    (xdoc::desc
+     "@('<prefix>-<rulename>-alt?')"
+     (xdoc::p
+      "For each rule name defined in the garmmar by two or more alternatives,
+       a function that, given a tree matching the rule name,
+       returns a positive integer
+       indicating the alternative matched by the tree,
+       in the order in which the alternative appears in the grammar,
+       starting from 1 for the first alternative.
+       If a rule name is defined by multiple rules
+       (the first one non-incremental, the other ones incremental),
+       the order of the alternatives
+       indicated by the integer returned by this function
+       is lexicographic, based first on the order of the rules
+       and then on the order of the alternatives within each rule.
+       The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
      "@('<prefix>-match-alt<i>-<rulename>')"

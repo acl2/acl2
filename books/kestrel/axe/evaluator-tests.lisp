@@ -101,7 +101,7 @@
                              (MV T (UNARY-/-UNGUARDED ARG1))
                              (IF
                               (EQ 'CEILING-OF-LG FN)
-                              (MV T (CEILING-OF-LG ARG1))
+                              (MV T (CEILING-OF-LG-unguarded ARG1))
                               (IF
                                (EQ 'INTEGER-LENGTH FN)
                                (MV
@@ -350,7 +350,7 @@
                         (MV T (NTH-UNGUARDED ARG1 ARG2))
                         (IF
                          (EQ 'LOGEXT FN)
-                         (MV T (LOGEXT ARG1 (IFIX ARG2)))
+                         (MV T (LOGEXT-unguarded ARG1 ARG2))
                          (IF
                           (EQ 'LOGTAIL$INLINE FN)
                           (MV T (LOGTAIL-UNGUARDED ARG1 ARG2))
@@ -1564,7 +1564,7 @@
                             (MV T (UNARY-/-UNGUARDED ARG1))
                             (IF
                              (EQ 'CEILING-OF-LG FN)
-                             (MV T (CEILING-OF-LG ARG1))
+                             (MV T (CEILING-OF-LG-unguarded ARG1))
                              (IF
                               (EQ 'INTEGER-LENGTH FN)
                               (MV
@@ -1809,7 +1809,7 @@
                         (MV T (NTH-UNGUARDED ARG1 ARG2))
                         (IF
                          (EQ 'LOGEXT FN)
-                         (MV T (LOGEXT ARG1 (IFIX ARG2)))
+                         (MV T (LOGEXT-unguarded ARG1 ARG2))
                          (IF
                           (EQ 'LOGTAIL$INLINE FN)
                           (MV T (LOGTAIL-UNGUARDED ARG1 ARG2))

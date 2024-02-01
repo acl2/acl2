@@ -3104,14 +3104,6 @@
                 )
            (< (+ k y) x)))
 
-(defthm signed-byte-p-of-plus-constant
-  (implies (and (syntaxp (quotep k))
-                (natp k)
-                (< x (- 2147483648 k))
-                (SIGNED-BYTE-P 32 x))
-           (SIGNED-BYTE-P 32 (+ k x)))
-  :hints (("Goal" :in-theory (enable SIGNED-BYTE-P))))
-
 ;move?
 (theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGTHEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
 

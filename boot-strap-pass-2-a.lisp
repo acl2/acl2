@@ -109,6 +109,9 @@
 
 (verify-guards warranted-fns-of-world)
 
+(verify-termination-boot-strap string-prefixp-1) ; and guards
+(verify-termination-boot-strap string-prefixp) ; and guards
+
 ; Convert defproxy events to :logic mode.
 (defstub initialize-event-user (* * state) => state)
 (defstub finalize-event-user (* * state) => state)

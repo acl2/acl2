@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,8 +44,7 @@
    (xdoc::p
     "The HTTP grammar rules are well-formed.")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output."))
+    "We keep this constant unexpanded in output."))
   :file "http.abnf"
   :untranslate t
   :well-formed t)
@@ -61,7 +60,7 @@
     "The HTTP grammar rules include rules defined by prose notation
      that refer to the URI grammar rules.
      To obtain the complete HTTP grammar rules,
-     we plug into the HTTP rules the URI grammar rules.
+     we plug into the HTTP rules the URI rules.
      Since the rule @('uri-host') in the HTTP grammar
      is defined by prose that references the rule @('host') in the URI grammar,
      before the plugging operation
@@ -77,8 +76,7 @@
      those are exactly the ABNF core rules
      present in the complete HTTP grammar rules.")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output."))
+    "We keep this constant unexpanded in output."))
   (plug-rules (plug-rules *http-grammar-rules*
                           (rulelist-rename-rule *uri-grammar-rules*
                                                 (rulename "host")

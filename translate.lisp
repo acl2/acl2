@@ -211,7 +211,8 @@
 
 (defun latch-stobjs1 (stobjs-out vals latches)
   (cond ((endp stobjs-out) latches)
-        ((car stobjs-out)
+        ((and (car stobjs-out)
+              (not (eq (car stobjs-out) :df)))
          (let ((temp (assoc-eq (car stobjs-out) latches)))
            (cond
 
@@ -266,7 +267,8 @@
   (cond ((null latches) latches)
         ((null stobjs-out) latches)
         ((null (cdr stobjs-out))
-         (cond ((car stobjs-out)
+         (cond ((and (car stobjs-out)
+                     (not (eq (car stobjs-out) :df)))
 ; We call latch-stobjs1 rather than put-assoc-eq to get the error check.
                 (latch-stobjs1 stobjs-out (list vals) latches))
                (t latches)))
@@ -280,6 +282,7 @@
   (cond ((endp stobjs-in)
          (assert$ (null arg-exprs) nil))
         (t (cond ((or (null (car stobjs-in))
+                      (eq (car stobjs-in) :df)
                       (eq (car stobjs-in) 'state)
                       (eq (car stobjs-in) (car arg-exprs)))
                   (actual-stobjs-out1 (cdr stobjs-in) (cdr arg-exprs)))
@@ -1455,8 +1458,10 @@
 
 (defun actual-stobjs-out (fn arg-exprs wrld)
 
-; Arg-exprs is the list of translated arguments of a call of fn made in a
-; context where we are tracking latches.
+; This function was originally written for the case that arg-exprs is the list
+; of translated arguments of a call of fn made in a context where we are
+; tracking latches.  However, it may be used heuristically when arg-exprs is a
+; list of untranslated terms.
 
   (declare (xargs :guard (and (symbolp fn)
                               (or (eq fn 'do$)
@@ -1479,7 +1484,7 @@
                  fn arg-exprs))))
    (t
     (let ((stobjs-out (stobjs-out fn wrld)))
-      (cond ((all-nils stobjs-out) ; optimization for common case
+      (cond ((all-nils-or-dfs stobjs-out) ; optimization for common case
              stobjs-out)
             (t (let ((stobjs-in (stobjs-in fn wrld)))
                  (let ((alist (actual-stobjs-out1 stobjs-in arg-exprs)))
@@ -2978,11 +2983,18 @@
 
   (translate-declaration-to-guard-gen-var-lst x var-lst nil wrld))
 
-(defun get-guards2 (edcls targets tflg wrld stobjs-acc guards-acc)
+(defun map-predicate (fn lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (fcons-term* fn (car lst))
+                 (map-predicate fn (cdr lst))))))
+
+(defun get-guards2 (edcls targets tflg wrld stobjs-acc dfs-acc guards-acc)
 
 ; Targets is a subset of (GUARDS TYPES), where we pick up expressions from
-; :GUARD and :STOBJS XARGS declarations if GUARDS is in the list and we pick up
-; expressions corresponding to TYPE declarations if TYPES is in the list.
+; :GUARD, :STOBJS, and :DFS XARGS declarations if GUARDS is in the list and we
+; pick up expressions corresponding to TYPE declarations if TYPES is in the
+; list.
 
 ; Tflg specifies whether we want translated or user-level terms when we
 ; construct the type expressions.  Note that tflg does not affect how we treat
@@ -3008,14 +3020,14 @@
 ; edcls contains only valid type declarations, as explained in the comment
 ; below about translate-declaration-to-guard-gen-var-lst.
 
-; We are careful to preserve the order, except that we consider :STOBJS as
-; going before :GUARD.  (An example is (defun load-qs ...) in community book
-; books/defexec/other-apps/qsort/programs.lisp.)  Before Version_3.5, Jared
-; Davis sent us the following example, for which guard verification failed on
-; the guard of the guard, because the :GUARD conjuncts were unioned into the
-; :type contribution to the guard, leaving a guard of (and (natp n) (= (length
-; x) n) (stringp x)).  It seems reasonable to accumulate the guard conjuncts in
-; the order presented by the user.
+; We are careful to preserve the order, except that we consider :STOBJS and
+; :DFS as going before :GUARD.  (An example is (defun load-qs ...) in community
+; book books/defexec/other-apps/qsort/programs.lisp.)  Before Version_3.5,
+; Jared Davis sent us the following example, for which guard verification
+; failed on the guard of the guard, because the :GUARD conjuncts were unioned
+; into the :type contribution to the guard, leaving a guard of (and (natp n) (=
+; (length x) n) (stringp x)).  It seems reasonable to accumulate the guard
+; conjuncts in the order presented by the user.
 
 ; (defun f (x n)
 ;   (declare (xargs :guard (and (stringp x)
@@ -3031,7 +3043,7 @@
 ; suitably with :STOBJS declarations and check SATISFIES declarations.
 
   (cond ((null edcls)
-         (revappend stobjs-acc (reverse guards-acc)))
+         (revappend stobjs-acc (revappend dfs-acc (reverse guards-acc))))
         ((and (eq (caar edcls) 'xargs)
               (member-eq 'guards targets))
 
@@ -3062,13 +3074,25 @@
                         (list (cadr temp2)))
                        (t nil))
                       wrld)
-                     nil)))
+                     nil))
+                (temp3 (assoc-keyword :DFS (cdar edcls)))
+                (df-conjuncts
+                 (cond
+                  ((null temp3) nil)
+                  ((symbol-listp (cadr temp3))
+                   (map-predicate 'dfp (cadr temp3)))
+                  ((and (cadr temp3)
+                        (symbolp (cadr temp3)))
+                   (list (fcons-term* 'dfp (cadr temp3))))
+                  (t nil))))
            (get-guards2 (cdr edcls)
                         targets
                         tflg
                         wrld
                         (rev-union-equal stobj-conjuncts
                                          stobjs-acc)
+                        (rev-union-equal df-conjuncts
+                                         dfs-acc)
                         (rev-union-equal guard-conjuncts
                                          guards-acc))))
         ((and (eq (caar edcls) 'type)
@@ -3085,6 +3109,7 @@
 ; type declarations are legal.
 
                       stobjs-acc
+                      dfs-acc
                       (rev-union-equal (translate-declaration-to-guard-gen-var-lst
                                         (cadr (car edcls))
                                         (cddr (car edcls))
@@ -3092,7 +3117,7 @@
                                         wrld)
                                        guards-acc)))
         (t (get-guards2 (cdr edcls)
-                        targets tflg wrld stobjs-acc guards-acc))))
+                        targets tflg wrld stobjs-acc dfs-acc guards-acc))))
 
 (defun get-guards1 (edcls targets args name wrld)
 
@@ -3119,7 +3144,7 @@
 ; if you call this with wrld = nil, then other code should deal suitably with
 ; :STOBJS declarations and check SATISFIES declarations.
 
-  (let ((conjuncts (get-guards2 edcls targets nil wrld nil nil)))
+  (let ((conjuncts (get-guards2 edcls targets nil wrld nil nil nil)))
     (cond ((and (consp wrld) ; see NOTE just above
                 (member-eq 'guards targets) ; (1)
                 (member-eq 'state args) ; (2)
@@ -3184,7 +3209,7 @@
 ; (see note below).  We return (mv dcls guard), where dcls is the strip-cdrs of
 ; the declarations of def and guard is the untranslated guard extracted from
 ; def, comprehending not only :GUARD xargs but also TYPE declarations,
-; :SPLIT-TYPES xargs, and if wrld is non-nil, :STOBJS xargs.
+; :SPLIT-TYPES and :DFS xargs, and if wrld is non-nil, :STOBJS xargs.
 
 ; NOTE: A special case is when wrld is nil.  In that case, :STOBJS declarations
 ; in edcls are ignored and checks are skipped for SATISFIES declarations.
@@ -3342,6 +3367,8 @@
                "Implementation error: Unexpected call of raw-ev-fncall (the ~
                 world is not sufficiently close to (w state)).")))))
 
+(defvar *inside-do$* nil)
+
 (defun raw-ev-fncall (fn arg-values arg-exprs latches w user-stobj-alist
                          hard-error-returns-nilp aok)
 
@@ -3405,6 +3432,8 @@
                       '(nil))
                      (latches (actual-stobjs-out fn arg-exprs w))
                      (t (stobjs-out fn w))))
+              (*inside-do$* (or (eq fn 'do$)
+                                *inside-do$*))
               (val (catch-raw-ev-fncall
                     (chk-raw-ev-fncall fn w aok)
                     (cond ((not (fboundp fn))
@@ -5447,11 +5476,12 @@
 ; MV-LIST, and CONS-WITH-HINT appear in *non-instantiable-primitives*.
 
 ; Special functions recognized by this function are: RETURN-LAST, MV-LIST,
-; CONS-WITH-HINT, THE-CHECK and DO$.
+; CONS-WITH-HINT, THE-CHECK, DO$, DF0, DF1, and certain (for suitable calls)
+; FROM-DF.
 
-; The last function, DO$, is not exactly a guard holder but has two irrelevant
-; arguments -- args 6 and 7 -- that are replaced by *nil* by this function when
-; they are non-nil quoted objects.
+; Note that DO$ is not exactly a guard holder but has two irrelevant arguments
+; -- args 6 and 7 -- that are replaced by *nil* by this function when they are
+; non-nil quoted objects.
 
   (declare (xargs :guard (pseudo-termp term)
                   :measure (acl2-count term)))
@@ -5491,6 +5521,25 @@
         (remove-guard-holders1 nil (fargn term 2) lamp)
         (declare (ignore changedp2))
         (mv t (mcons-term* 'cons arg1 arg2)))))
+   ((eq (ffn-symb term) 'TO-DF)
+    (let ((arg (fargn term 1)))
+      (cond ((and (quotep arg)
+                  (dfp (unquote arg)))
+             (mv t arg))
+            (t (mv-let
+                 (changedp1 arg1)
+                 (remove-guard-holders1 nil arg lamp)
+                 (mv changedp1
+                     (fcons-term* 'TO-DF arg1)))))))
+   ((eq (ffn-symb term) 'FROM-DF)
+    (mv-let (changedp1 arg1)
+      (remove-guard-holders1 nil (fargn term 1) lamp)
+      (declare (ignore changedp1))
+      (mv t arg1)))
+   ((eq (ffn-symb term) 'DF0)
+    (mv t *0*))
+   ((eq (ffn-symb term) 'DF1)
+    (mv t *1*))
    ((flambdap (ffn-symb term))
     (case-match
       term
@@ -5548,7 +5597,7 @@
 ; by nil.  Note that this means we do not nil out those two arguments if
 ; they're variables or other non-quote terms.  We just mess with DO$s that have
 ; quoted objects in the last two arguments.  (We used to be more drastic and
-; replace the last to args any time they weren't nil, whether they were quotes
+; replace the last two args any time they weren't nil, whether they were quotes
 ; or not.  But this prevented centaur/misc/defapply from certifying because
 ; that book generates a function containing a call of DO$ on its formals and
 ; another function in that book explores the first and expects to find such
@@ -7155,6 +7204,31 @@
   (declare (xargs :guard t :mode :logic))
   x)
 
+(defun eviscerate-do$-alist (alist)
+  (declare (xargs :guard t
+                  :mode :program))
+  (cond
+   ((atom alist) nil)
+   ((or (atom (car alist))
+        (not (symbolp (caar alist))))
+    (cons (car alist)
+          (eviscerate-do$-alist (cdr alist))))
+   (t (let* ((key (caar alist))
+             (val (cdar alist))
+             (new-val
+              (cond
+               ((dfp val)
+                (to-dfp val)) ; works in raw Lisp even if val is a df
+               ((or (acl2-numberp val)
+                    (symbolp val)
+                    (consp val)
+                    (characterp val)
+                    (stringp val))
+                val)
+               (t (stobj-print-name key)))))
+        (cons (cons key new-val)
+              (eviscerate-do$-alist (cdr alist)))))))
+
 (mutual-recursion
 
 ; These functions assume that the input world is "close to" the installed
@@ -8340,14 +8414,18 @@
                     the ``live'' ~p1 and ACL2 does not support non-compliant ~
                     live stobj manipulation."
                    fn
-                   (find-first-non-nil stobjs-in)))
+                   (let ((stobjs (collect-non-nil-df stobjs-in)))
+                     (assert$ (consp stobjs)
+                              (car stobjs)))))
              ((eq extra :live-stobj-gc-on)
               (msg "~|This error will be reported even if guard-checking is ~
                     turned off, because a stobj argument of ~x0 is the ~
                     ``live'' ~p1 and ACL2 does not support non-compliant live ~
                     stobj manipulation."
                    fn
-                   (find-first-non-nil stobjs-in)))
+                   (let ((stobjs (collect-non-nil-df stobjs-in)))
+                     (assert$ (consp stobjs)
+                              (car stobjs)))))
              ((eq extra :no-extra) "") ; :no-extra is unused as of late 10/2013
              (extra *safe-mode-guard-er-addendum*)
              (t "~|See :DOC set-guard-checking for information about ~
@@ -8379,7 +8457,7 @@
                 (msg "The guard for a DO$ form,~|~x0,~| has been violated by the ~
                       following alist:~|~x1.~|See :DOC do-loop$."
                      (untranslate* g nil wrld)
-                     (car args))))
+                     (eviscerate-do$-alist (car args)))))
          (& nil))))
 
 (defun ev-fncall-guard-er-msg (fn guard stobjs-in args w user-stobj-alist
@@ -9962,29 +10040,6 @@
 
 ; Below are two ways that we create a lambda application (see the Warnings
 ; about how they differ).
-
-(defun collect-by-position (sub-domain full-domain full-range)
-
-; Full-domain and full-range are lists of the same length, where
-; full-domain is a list of symbols.  Collect into a list those members
-; of full-range that correspond (positionally) to members of
-; full-domain that belong to sub-domain.
-
-  (declare (xargs :guard (and (symbol-listp full-domain)
-                              (true-listp sub-domain)
-                              (true-listp full-range)
-                              (eql (length full-domain)
-                                   (length full-range)))))
-  (if (endp full-domain)
-      nil
-    (if (member-eq (car full-domain) sub-domain)
-        (cons (car full-range)
-              (collect-by-position sub-domain
-                                   (cdr full-domain)
-                                   (cdr full-range)))
-      (collect-by-position sub-domain
-                           (cdr full-domain)
-                           (cdr full-range)))))
 
 (defun make-lambda-application (formals body actuals)
 
@@ -14328,14 +14383,17 @@
 ; :GUARD and :SPLIT-TYPES.  The other XARGS keywords and why they were omitted
 ; are (as of ACL2 Version_8.1):
 
+; :DFS - lambda objects automatically tolerate dfs (see ec-call-p case in
+;        logic-code-to-runnable-code) 
 ; :GUARD-DEBUG - proof time (see below)
 ; :GUARD-HINTS - proof time
 ; :GUARD-SIMPLIFY - proof time
 ; :HINTS - recursion (see below)
 ; :MEASURE - recursion
 ; :MEASURE-DEBUG - recursion
-; :MODE - all lambda objects have to be in :LOGIC mode because APPLY$ can't
-;         run programs
+; :MODE - depends on the modes of the function symbols in the lambda object but
+;         recall that top-level evaluation and proof-time evaluation also
+;         depend on the existence of badges and (possibly) warrants
 ; :NON-EXECUTABLE - irrelevant for lambda objects?
 ; :NORMALIZE - might this flag be useful someday?
 ; :OTF-FLG - proof time
@@ -14611,10 +14669,14 @@
                              (duplicates (evens (cdr entry)))
                              entry))
                     ((and (eq binder 'defmacro)
-                          (assoc-keyword :stobjs (cdr entry)))
+                          (or (assoc-keyword :stobjs (cdr entry))
+                              (assoc-keyword :dfs (cdr entry))))
                      (er-cmp ctx
-                             "The use of the :stobjs keyword is prohibited ~
-                              for an xargs declaration in a call of defmacro."))
+                             "The use of the ~x0 keyword is prohibited ~
+                              for an xargs declaration in a call of defmacro."
+                             (if (assoc-keyword :stobjs (cdr entry))
+                                 :stobjs
+                               :dfs)))
                     (t (value-cmp nil))))
                   (otherwise
                    (mv t
@@ -14744,8 +14806,14 @@
 ; function symbol by guard-clauses (if) or special treatment in oneify
 ; (return-last and anything in *oneify-primitives*).
 
-  (union-equal '(if wormhole-eval return-last)
-               *oneify-primitives*))
+; We rely, for example in our handling of ec-call in translate11, on the fact
+; that *stobjs-out-invalid* is a subset of *ec-call-bad-ops*.
+
+  (assert$ (subsetp-equal '(if return-last)
+                          *stobjs-out-invalid*)
+           (union-equal (cons 'wormhole-eval
+                              *stobjs-out-invalid*)
+                        *oneify-primitives*)))
 
 (defmacro return-last-call (fn &rest args)
   `(fcons-term* 'return-last ',fn ,@args))
@@ -14834,7 +14902,9 @@
 
 ;  Like pairlis$, but LISTs instead of CONSes.
 
-  (cond ((null l1) nil)
+  (declare (xargs :guard (and (true-listp l1)
+                              (<= (length l1) (len l2)))))
+  (cond ((endp l1) nil)
         (t (cons (list (car l1) (car l2))
                  (listlis (cdr l1) (cdr l2))))))
 
@@ -15196,18 +15266,22 @@
 ; way that a live stobj can be found in the output (unless there is a call of a
 ; creator function, which cannot be made directly in code).
 
-(defun compute-stobj-flags (lst known-stobjs w)
+(defun compute-stobj-flags (lst known-stobjs known-dfs w)
 
-; Lst is a list of possibly UNTRANSLATED terms!  This function
-; computes the stobj flags for the elements of the list, assigning nil
-; unless the element is a symbol with a 'STOBJ property in w.
+; Lst is generally a list of variables, though it could contain possibly
+; UNTRANSLATED terms if known-dfs is nil.  This function computes the stobj
+; flags for the elements of the list, assigning nil unless the element is a
+; symbol with a 'STOBJ property in w or a variable in known-dfs.
 
   (cond ((endp lst) nil)
+        ((member-eq (car lst) known-dfs)
+         (cons :df
+               (compute-stobj-flags (cdr lst) known-stobjs known-dfs w)))
         ((stobjp (car lst) known-stobjs w)
          (cons (car lst)
-               (compute-stobj-flags (cdr lst) known-stobjs w)))
+               (compute-stobj-flags (cdr lst) known-stobjs known-dfs w)))
         (t (cons nil
-                 (compute-stobj-flags (cdr lst) known-stobjs w)))))
+                 (compute-stobj-flags (cdr lst) known-stobjs known-dfs w)))))
 
 (defun prettyify-stobj-flags (lst)
 
@@ -15643,6 +15717,16 @@
    (mv erp msg :UNKNOWN-BINDINGS)))
 
 (defun congruent-stobjsp (st1 st2 wrld)
+  (declare (xargs :guard
+
+; Guard is incomplete, because it doesn't imply the necessary condition that
+; the 'congruent-stobj-rep property is a symbol for each of st1 and st2
+; (although we expect that of any installed world).
+
+                  (and (symbolp st1)
+                       (symbolp st2)
+                       wrld
+                       (plist-worldp wrld))))
   (eq (congruent-stobj-rep st1 wrld)
       (congruent-stobj-rep st2 wrld)))
 
@@ -15657,15 +15741,15 @@
 ; See stobjs-in-out for additional background.
 
 ; We are translating the application of a function to args.  We assume that
-; stobjs-in is a true-list consisting of nil and/or stobjs and that args is a
-; true-list of the same length as stobjs-in.  (Moreover, at the top level,
+; stobjs-in is a true-list consisting of nil, :df, and/or stobjs and that args
+; is a true-list of the same length as stobjs-in.  (Moreover, at the top level,
 ; alist and new-stobjs-in-rev are nil.)  We return (mv failp alist
 ; new-stobjs-in).  Ideally, new-stobjs-in is a list of known stobjs without
 ; duplicates, of the same length as stobjs-in, such that for each natp i <
 ; (length stobjs-in), (nth i stobjs-in) and (nth i new-stobjs-in) are either
-; both nil or are congruent stobjs (possibly equal).  In that case, alist is a
-; list, in any order, consisting of pairs (s1 . s2) in (pairlis$ stobjs-in
-; new-stobjs-in) such that s1 and s2 are not equal.
+; both nil, both :df, or are congruent stobjs (possibly equal).  In that case,
+; alist is a list, in any order, consisting of pairs (s1 . s2) in (pairlis$
+; stobjs-in new-stobjs-in) such that s1 and s2 are not equal.
 
 ; The goal is thus to return a new stobjs-in, together with a corresponding
 ; mapping from old stobjs-in to new stobjs-in, such that we can legally view
@@ -15698,7 +15782,8 @@
 
   (cond ((endp stobjs-in)
          (mv nil alist (reverse new-stobjs-in-rev)))
-        ((null (car stobjs-in))
+        ((or (null (car stobjs-in))
+             (eq (car stobjs-in) :df))
          (stobjs-in-out1 (cdr stobjs-in) (cdr args) stobjs-out wrld alist
                          (cons nil new-stobjs-in-rev)))
         (t
@@ -15734,6 +15819,7 @@
   (cond ((endp stobjs-in) (null args))
         ((endp args) nil)
         ((or (null (car stobjs-in))
+             (eq (car stobjs-in) :df)
              (eq (car stobjs-in) (car args)))
          (stobjs-in-matchp (cdr stobjs-in) (cdr args)))
         (t nil)))
@@ -15750,22 +15836,22 @@
 ; stobjs-out using congruence of stobjs, then we return the stobjs-in and
 ; stobjs-out unmodified.
 
-; We return an alist that represents a map whose domain is the stobjs-in of fn,
-; which is computed from fn if fn is a lambda.  This alist associates each
-; stobj st in its domain with a corresponding congruent stobj, possibly equal
-; to st (as equal stobjs are congruent).  We return (mv alist new-stobjs-in
-; new-stobjs-out), where new-stobjs-in and new-stobjs-out result from stobjs-in
-; and stobjs-out (respectively) by applying alist to each of them, except that
-; stobjs-out is not modified if it is a symbol rather than a list. (In the case
-; of a symbol, translate11 is trying to determine a stobjs-out for that
-; symbol.)  Note that we do not put equal pairs (s . s) into alist; hence,
-; alist represents the identity function if and only if it is nil.
+; We return an alist that represents a map whose domain is the stobjs present
+; in the stobjs-in of fn, which is computed from fn if fn is a lambda.  This
+; alist associates each stobj st in its domain with a corresponding congruent
+; stobj.  We return (mv alist new-stobjs-in new-stobjs-out), where
+; new-stobjs-in and new-stobjs-out result from stobjs-in and stobjs-out
+; (respectively) by applying alist to each of them, except that stobjs-out is
+; not modified if it is a symbol rather than a list.  (In the case of a symbol,
+; translate11 is trying to determine a stobjs-out for that symbol.)  Note that
+; we do not put equal pairs (s . s) into alist; hence, alist represents the
+; identity function if and only if it is nil.
 
 ; If stobjs-out is a symbol, then the returned alist is a one-to-one mapping.
 ; Otherwise that alist may contain duplicate values (i.e., cdrs) that are not
 ; among the stobjs-out even up to congruence.  This allows an example like the
-; following, provided by Sol Swords, where the a stobj occurs more than once
-; among the actual parameters provided that stobj is not modified by the call.
+; following, provided by Sol Swords, where a stobj occurs more than once among
+; the actual parameters provided that stobj is not modified by the call.
 
 ;   (defstobj st fld)
 ;   (defstobj st1 fld1 :congruent-to st)
@@ -15781,10 +15867,15 @@
   (let ((stobjs-in (cond ((consp fn)
                           (compute-stobj-flags (lambda-formals fn)
                                                known-stobjs
+                                               nil ; dfs (irrelevant here)
                                                wrld))
                          (t (stobjs-in fn wrld)))))
     (cond
      ((stobjs-in-matchp stobjs-in args)
+
+; The stobjs match up, but there could still be an issue with dfs that will
+; ultimately cause translation to fail.
+
       (mv nil stobjs-in stobjs-out))
      (t
       (mv-let
@@ -15801,7 +15892,11 @@
                       (t (apply-symbol-alist alist stobjs-out nil)))))))))))
 
 (defun non-trivial-stobj-binding (stobj-flags bindings)
+
+; Warning: Stobj-flags is assumed not to contain :df.
+
   (declare (xargs :guard (and (symbol-listp stobj-flags)
+                              (not (member-eq :df stobj-flags))
                               (symbol-doublet-listp bindings)
                               (eql (length stobj-flags)
                                    (length bindings)))))
@@ -15891,7 +15986,7 @@
                                of names that are all defined by the ~x1 ~
                                expression.  The declare form ~x2 is thus ~
                                illegal because of its declaration, ~x3.  See ~
-                               :DOC ~@3."
+                               :DOC ~@4."
                               (if fletp "an FLET" "a MACROLET")
                               (if fletp "FLET" "MACROLET")
                               declare-form
@@ -17094,13 +17189,14 @@
                 (chk-stobj-let/accessors acc-stobj bound-vars actuals
                                          producer-vars wrld))))))))
 
-(defun all-nils-or-x (x lst)
+(defun all-nils-or-dfs-or-x (x lst)
   (declare (xargs :guard (and (symbolp x)
                               (true-listp lst))))
   (cond ((endp lst) t)
         ((or (eq (car lst) x)
-             (null (car lst)))
-         (all-nils-or-x x (cdr lst)))
+             (null (car lst))
+             (eq (car lst) :df))
+         (all-nils-or-dfs-or-x x (cdr lst)))
         (t nil)))
 
 (defun absstobj-field-fn-of-stobj-type-p (fn tuples)
@@ -17156,8 +17252,8 @@
                      (cddr (access absstobj-info abs-info
                                    :absstobj-tuples))))))
             (t ; st is a concrete stobj
-             (or (not (all-nils-or-x st (stobjs-in fn wrld)))
-                 (not (all-nils-or-x st (stobjs-out fn wrld))))))))))
+             (or (not (all-nils-or-dfs-or-x st (stobjs-in fn wrld)))
+                 (not (all-nils-or-dfs-or-x st (stobjs-out fn wrld))))))))))
 
 (defun stobj-recognizer-p (fn wrld)
 
@@ -18128,7 +18224,7 @@
 ; )
 
 (defun translate11-var-or-quote-exit
-  (x term stobjs-out bindings known-stobjs flet-alist
+  (x term stobjs-out bindings known-stobjs known-dfs flet-alist
      cform ctx wrld state-vars)
 
 ; Term is the translation of x and we know term is a variable symbol or a
@@ -18154,7 +18250,8 @@
                   "One value, ~x0, is being returned where ~x1 values were ~
                    expected."
                   x (length stobjs-out)))
-     ((and (null (car stobjs-out))
+     ((and (or (null (car stobjs-out))
+               (eq (car stobjs-out) :df))
            (stobjp term known-stobjs wrld))
       (trans-er+? cform x
                   ctx
@@ -18162,6 +18259,7 @@
                    an ordinary object is expected."
                   term))
      ((and (car stobjs-out)
+           (not (eq (car stobjs-out) :df))
            (not (eq (car stobjs-out) term)))
       (cond
        ((stobjp term known-stobjs wrld)
@@ -18176,6 +18274,15 @@
                     "The ordinary object ~x0 is being used where the ~
                      single-threaded object ~x1 was expected."
                     term (car stobjs-out)))))
+     ((not (iff (eq (car stobjs-out) :df)
+                (member-eq term known-dfs)))
+      (trans-er+? cform x
+                  ctx
+                  "The form ~x0 represents ~#1~[an ordinary object~/a :DF~], ~
+                   but it is being used where a form representing ~#1~[a ~
+                   :DF~/an ordinary object~] was expected.  See :DOC df."
+                  x
+                  (if (eq (car stobjs-out) :df) 0 1)))
      (t (trans-value term))))
    (t ;;; (3)
     (trans-value term
@@ -18183,7 +18290,10 @@
                   stobjs-out
                   (list (if (stobjp term known-stobjs wrld)
                             term
-                            nil))
+                          (if (and (variablep term)
+                                   (member-eq term known-dfs))
+                              :df
+                            nil)))
                   bindings)))))
 
 (defun ilks-per-argument-slot (fn wrld)
@@ -18476,8 +18586,14 @@
                               (symbol-listp values))))
   (cond
    ((cdr values)
-    (make-true-list-cons-nest (substitute *nil* nil values)))
+    (make-true-list-cons-nest (substitute *nil*
+                                          nil
+                                          (substitute (fcons-term* 'to-df *0*)
+                                                      :df
+                                                      values))))
    ((null (car values)) *nil*)
+   ((eq (car values) :df)
+    (fcons-term* 'to-df *0*))
    (t (car values))))
 
 ; Essay on the Design of With-global-stobj
@@ -20268,6 +20384,629 @@
            (assoc-eq 'hons-copy-lambda-object-wormhole
                      *wormhole-status-alist*)))))
 
+(defun stobjs-out-sym-pair (n)
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2.
+
+  (or (cdr (assoc n '((0 . (:stobjs-out-0 . :stobjs-out-0))
+                      (1 . (:stobjs-out-1 . :stobjs-out-1))
+                      (2 . (:stobjs-out-2 . :stobjs-out-2))
+                      (3 . (:stobjs-out-3 . :stobjs-out-3))
+                      (4 . (:stobjs-out-4 . :stobjs-out-4))
+                      (5 . (:stobjs-out-5 . :stobjs-out-5))
+                      (6 . (:stobjs-out-6 . :stobjs-out-6))
+                      (7 . (:stobjs-out-7 . :stobjs-out-7))
+                      (8 . (:stobjs-out-8 . :stobjs-out-8))
+                      (9 . (:stobjs-out-9 . :stobjs-out-9)))))
+      (let ((sym (packn-pos (list :stobjs-out- n)
+                            :KEYWORD)))
+        (cons sym sym))))
+
+(defun replace-cdrs-eq (sym val alist)
+  (declare (xargs :guard (and (symbolp sym)
+                              (alistp alist))))
+  (cond ((endp alist) nil)
+        ((eq (cdar alist) sym)
+         (acons (caar alist)
+                val
+                (replace-cdrs-eq sym val (cdr alist))))
+        (t (cons (car alist)
+                 (replace-cdrs-eq sym val (cdr alist))))))
+
+(defun remove-from-binding (sym val bindings)
+
+; Val is (translate-deref sym bindings) and val is a cons.  We remove every
+; pair in bindings whose key is sym.  Moreover, for every pair of the form
+; (sym2 . sym) for some sym2, we also replace (sym2 . sym) with (sym2 . val).
+
+  (let ((bindings (remove-assoc-eq sym bindings)))
+    (if (rassoc-eq sym bindings) ; optimization
+        (replace-cdrs-eq sym val bindings)
+      bindings)))
+
+(defun top-level-bindings-p (bindings)
+
+; This function recognizes the case that the input bindings value (as passed
+; around by the translate11 nest) represents translation for execution that is
+; not translation of a function body.  At the top level, such a value is
+; ((:stobjs-out . :stobjs-out)).  The :stobjs-out key may get bound, but the
+; only key that can be put in front of a binding of :stobjs-out is a key
+; stobjs-out-N as created by function stobjs-out-sym-pair.
+
+  (cond ((endp bindings) nil)
+        ((eq (caar bindings) :stobjs-out) t)
+        ((keywordp (caar bindings)) ; :stobjs-out-N
+         (top-level-bindings-p (cdr bindings)))
+        (t nil)))
+
+(defun lambda-to-let (x)
+  (declare (xargs :guard (and (consp x)
+                              (not (symbolp (car x))))))
+  (cond ((or (not (consp (car x)))
+             (not (eq (caar x) 'lambda)))
+         (mv (msg "Function (and macro) applications in ACL2 must begin with ~
+                   a symbol or LAMBDA expression.  ~x0 is not of this form."
+                  x)
+             nil))
+        ((or (not (true-listp (car x)))
+             (not (>= (length (car x)) 3))
+             (not (true-listp (cadr (car x)))))
+         (mv (msg "Illegal LAMBDA expression: ~x0."
+                  x)
+             nil))
+        ((not (= (length (cadr (car x))) (len (cdr x))))
+         (mv (msg "The LAMBDA expression ~x0 takes ~#1~[no arguments~/1 ~
+                   argument~/~x2 arguments~] and is being passed ~#3~[no ~
+                   arguments~/1 argument~/~x4 arguments~].  Note:  this error ~
+                   occurred in the context ~x5."
+                  (car x)
+                  (zero-one-or-more (length (cadr (car x))))
+                  (length (cadr (car x)))
+                  (zero-one-or-more (len (cdr x)))
+                  (len (cdr x))
+                  x)
+             nil))
+        (t (mv nil
+               (list* 'let
+                      (listlis (cadr (car x)) (cdr x))
+                      (cddr (car x)))))))
+
+(mutual-recursion
+
+(defun df-type-p (typ)
+
+; This function is for heuristic use only, to help translate.  It returns t or
+; nil if we expect that any variable satisfying typ must represent a
+; double-float or not a double-float respectively).  If the return value is not
+; t or nil then we conclude nothing about what typ implies.
+
+  (declare (xargs :guard t :measure (acl2-count typ)))
+  (cond
+   ((consp typ)
+    (case (car typ)
+      (and (df-type-listp-and (cdr typ))) ; (cdr typ) is non-nil for legal typ
+      (or (and (consp (cdr typ))          ; should always hold
+               (let ((val (df-type-p (cadr typ))))
+                 (if (eq val :unknown)
+                     :unknown
+                   (df-type-listp-or (cddr typ) val)))))
+      (double-float t)
+      (real :unknown)
+      (t nil)))
+   ((eq typ 'double-float) t)
+   ((eq typ 'real) :unknown)
+   ((eq typ 'number) :unknown)
+   (t nil)))
+
+(defun df-type-listp-and (lst)
+
+; We return the first Boolean df-type-p value as we traverse lst, else :unknown
+; if no such is found.
+
+  (declare (xargs :guard t :measure (acl2-count lst)))
+  (cond ((atom lst) :unknown)
+        (t (let ((x (df-type-p (car lst))))
+             (cond ((eq x t) t)
+                   ((eq x nil) nil)
+                   (t (df-type-listp-and (cdr lst))))))))
+
+(defun df-type-listp-or (lst val)
+
+; We return val if df-type-p is val for every element of lst, else :unknown.
+
+  (declare (xargs :guard t :measure (acl2-count lst)))
+  (cond ((atom lst) val)
+        ((eq (df-type-p (car lst)) val)
+         (df-type-listp-or (cdr lst) val))
+        (t :unknown)))
+)
+
+(defun union-eq-safe (x lst)
+
+; This variant of union-eq makes no assumptions about x, which may contain
+; non-symbols and duplicates and needn't be null-terminated.  The result is
+; guaranteed to be a duplicate-free list of symbols if lst is; in fact ACL2
+; can admit each of the following.
+
+; (thm (implies (symbol-listp lst) (symbol-listp (union-eq-safe x lst))))
+; (thm (implies (no-duplicatesp lst) (no-duplicatesp (union-eq-safe x lst))))
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond
+   ((atom x) lst)
+   (t (union-eq-safe (cdr x)
+                     (if (and (symbolp (car x))
+                              (not (member-eq (car x) lst)))
+                         (cons (car x) lst)
+                       lst)))))
+
+(defun extend-known-dfs-with-declared-df-types (edcls known-dfs)
+
+; Edcls may have already passed the check in chk-dcl-lst, but at the least it
+; satisfies the guard below.
+
+  (declare (xargs :guard (and (symbol-listp known-dfs)
+                              (true-list-listp edcls))))
+  (cond ((endp edcls) known-dfs)
+        ((and (eq (car (car edcls)) 'type)
+              (eq (df-type-p (cadr (car edcls))) t))
+         (extend-known-dfs-with-declared-df-types
+          (cdr edcls)
+          (union-eq-safe (cddr (car edcls)) known-dfs)))
+        (t (extend-known-dfs-with-declared-df-types (cdr edcls) known-dfs))))
+
+(mutual-recursion
+
+(defun returns-df? (form known-stobjs known-dfs wrld)
+
+; Warning: Keep this ins sync with the related function stobjs-out-for-form,
+; which heuristically attempts to compute a stobjs-out for a given form.
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2.
+
+; Form is an untranslated term.  This function may return t, nil, or :unknown.
+; When it returns t or nil, then we expect that any successful translation of
+; form in wrld must return a :df or not, respectively.  We do not rely on that,
+; as this function is for heuristic use only; however, in practice we hope and
+; expect it to be the case.
+
+; Known-dfs and known-stobjs are lists of symbols at the top level.  However,
+; known-dfs may be '? on recursive calls, signifying that we must compute an
+; answer without information about which variables are known to be dfs.
+
+  (declare (xargs :guard (and (symbol-listp known-stobjs)
+                              (symbol-listp known-dfs)
+                              (plist-worldp wrld))))
+  (cond
+   ((or (keywordp form)
+        (eq (legal-variable-or-constant-namep form)
+            'constant))
+    nil)
+   ((symbolp form)
+    (cond ((eq known-dfs '?)
+           (if (stobjp form known-stobjs wrld) nil :unknown))
+          ((member-eq form known-dfs) t)
+          (t nil)))
+   ((atom form) nil)                ; includes numbers
+   ((not (symbolp (car form)))      ; should be a lambda application
+    (mv-let (msg val)
+      (lambda-to-let form)
+      (cond (msg :unknown)
+            (t (returns-df? val known-stobjs known-dfs wrld)))))
+   ((eq (car form) 'quote) nil)
+   ((not (true-listp form))
+    :unknown)
+   ((eq (car form) 'the)
+    (let ((b (df-type-p (cadr form))))
+      (cond ((eq b t) '(:df))
+            ((eq b nil) '(nil))
+            (t (returns-df? (caddr form) known-stobjs known-dfs wrld)))))
+   ((eq (car form) 'return-last)
+    (returns-df? (car (last form)) known-stobjs known-dfs wrld))
+   ((eq (car form) 'if)
+    (let ((r (returns-df? (caddr form) known-stobjs known-dfs wrld)))
+      (cond ((eq r :unknown)
+             (returns-df? (cadddr form) known-stobjs known-dfs wrld))
+            (t r))))
+   ((eq (car form) 'let)
+    (cond
+     ((and (<= 3 (length form))
+           (doublet-listp (cadr form)))
+      (let ((vars (strip-cars (cadr form))))
+        (cond
+         ((symbol-listp vars) ; should satisfy arglistp; not needed here
+          (let* ((dcls (butlast (cddr form) 1))
+                 (df-vars (and (true-list-listp dcls) ; should always hold
+                               (extend-known-dfs-with-declared-df-types
+                                dcls
+                                (set-difference-eq known-dfs vars))))
+                 (new-known-dfs (bindings-known-dfs (cadr form) known-stobjs
+                                                    known-dfs wrld df-vars)))
+            (cond ((eq new-known-dfs :unknown) :unknown)
+                  (t (returns-df? (car (last form))
+                                  known-stobjs
+                                  new-known-dfs
+                                  wrld)))))
+         (t :unknown))))
+     (t :unknown)))
+   ((eq (car form) 'let*)
+
+; This is similar to the general case of a macro call, just below, except that
+; only a single expansion step is taken, to take us directly to the LET case.
+
+    (mv-let (erp val)
+      (macroexpand1-cmp form 'any-ctx wrld (default-state-vars nil))
+      (if erp
+          :unknown
+        (returns-df? val known-stobjs known-dfs wrld))))
+
+; There are no cases for (car form) eq to 'mv or 'mv-let, unlike
+; stobjs-out-for-form.  For 'mv, that's because form is intended to return a
+; single value.  For 'mv-let, it's because the present function isn't set up to
+; figure out suitable known-dfs for the bound variables.
+
+   ((and (getpropc (car form) 'macro-body nil wrld)
+
+; The following test is to get us past a boot-strap problem, which is an
+; infinite loop caused by a call of string-append (see the comment there about
+; safe-mode).
+
+         (not (global-val 'boot-strap-flg wrld)))
+    (mv-let (erp val)
+      (macroexpand1*-cmp form 'any-ctx wrld (default-state-vars nil))
+      (if (or erp (equal form val))
+          :unknown
+        (returns-df? val known-stobjs known-dfs wrld))))
+   (t
+    (let ((stobjs-out (and (not (member-eq (car form) *stobjs-out-invalid*))
+                           (getpropc (car form) 'stobjs-out nil wrld))))
+      (cond ((and (consp stobjs-out)
+                  (null (cdr stobjs-out)))
+             (cond ((eq (car stobjs-out) :df) t)
+                   ((eq (car stobjs-out) nil) nil)
+                   ((stobjp (car stobjs-out) known-stobjs wrld) nil)
+                   (t :unknown)))
+            (t :unknown))))))
+
+(defun bindings-known-dfs (bindings known-stobjs known-dfs wrld df-vars)
+
+; Bindings is a list of doublets (var form) where var is a legal variable and
+; form is arbitrary but is intended to be an untranslated term.  If for each
+; such doublet, either var is in df-vars or form is known either to return a df
+; or to return a non-df, then we return the extension of df-vars by those var
+; whose corresponding form returns a df.  Otherwise we return '?.
+
+  (declare (xargs :guard (and (doublet-listp bindings)
+                              (symbol-listp known-stobjs)
+                              (symbol-listp known-dfs)
+                              (plist-worldp wrld)
+                              (symbol-listp df-vars))))
+  (cond
+   ((endp bindings) df-vars)
+   (t
+    (cond
+     ((member-eq (caar bindings) df-vars)
+      (bindings-known-dfs (cdr bindings) known-stobjs known-dfs wrld df-vars))
+     (t
+      (let ((x (returns-df? (cdar bindings) known-stobjs known-dfs wrld)))
+        (cond
+         ((eq x :unknown) :unknown)
+         (t
+          (let ((rec (bindings-known-dfs (cdr bindings) known-stobjs known-dfs wrld
+                                         df-vars)))
+            (cond
+             ((eq rec :unknown) :unknown)
+             ((eq x :df) (cons (caar bindings) rec))
+             (t rec)))))))))))
+)
+
+(defun compute-stobj-flags-df? (lst known-stobjs known-dfs w)
+
+; Keep this in sync with compute-stobj-flags-df?-doublets.
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2.
+
+; This variant of compute-stobj-flags expects lst to be a list of untranslated
+; terms, and puts :df? in any slot for which it is not determined whether that
+; slot should be one of nil, :df, or a stobj name.
+
+  (cond ((endp lst) nil)
+        ((stobjp (car lst) known-stobjs w)
+         (cons (car lst)
+               (compute-stobj-flags-df? (cdr lst) known-stobjs known-dfs w)))
+        (t (let ((r (returns-df? (car lst) known-stobjs known-dfs w)))
+             (cons (cond ((eq r t) :df)
+                         ((eq r nil) nil)
+                         (t :df?))
+                   (compute-stobj-flags-df? (cdr lst) known-stobjs known-dfs
+                                            w))))))
+
+(defun compute-stobj-flags-df?-doublets (doublets declared-known-dfs
+                                                  known-stobjs known-dfs w)
+
+; Keep this in sync with compute-stobj-flags-df?.
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2.
+
+; Here, doublets is intended to be a let-bindings list, and
+; declared-known-stobjs is intended to be a list of variables v in the domain
+; of doublets that have been declared to be dfs.  Like compute-stobj-flags-df?,
+; we return a list that can serve as stobjs-out but perhaps with some df?
+; members; here, that list corresponds to doublets but always has :df in any
+; position whose variable is in declared-known-dfs.
+
+  (declare (xargs :guard (and (doublet-listp doublets)
+                              (symbol-listp declared-known-dfs)
+                              (symbol-listp known-stobjs)
+                              (symbol-listp known-dfs)
+                              (plist-worldp w))))
+  (cond ((endp doublets) nil)
+        ((member-eq (caar doublets) declared-known-dfs)
+         (cons :df
+               (compute-stobj-flags-df?-doublets
+                (cdr doublets) declared-known-dfs known-stobjs known-dfs w)))
+        ((stobjp (caar doublets) known-stobjs w)
+         (cons (caar doublets)
+               (compute-stobj-flags-df?-doublets
+                (cdr doublets) declared-known-dfs known-stobjs known-dfs w)))
+        (t (let ((r (returns-df? (cadar doublets) known-stobjs known-dfs w)))
+             (cons (cond ((eq r t) :df)
+                         ((eq r nil) nil)
+                         (t :df?))
+                   (compute-stobj-flags-df?-doublets
+                    (cdr doublets) declared-known-dfs known-stobjs known-dfs
+                    w))))))
+
+(defun set-difference-assoc-eq (lst alist)
+  (declare (xargs :guard (and (true-listp lst)
+                              (alistp alist)
+                              (or (symbol-listp lst)
+                                  (symbol-alistp alist)))))
+  (cond ((endp lst) nil)
+        ((assoc-eq (car lst) alist)
+         (set-difference-assoc-eq (cdr lst) alist))
+        (t (cons (car lst) (set-difference-assoc-eq (cdr lst) alist)))))
+
+(defun ec-call-boolean-listp-check (stobjs-out lst)
+  (declare (xargs :guard (true-listp stobjs-out)))
+  (cond ((endp stobjs-out)
+         (null lst))
+        ((atom lst)
+         nil)
+        (t (and (eq (eq :df (car stobjs-out))
+                    (car lst))
+                (ec-call-boolean-listp-check (cdr stobjs-out) (cdr lst))))))
+
+(defun plausible-actual-stobjs-out-p (stobjs-out lst known-stobjs wrld)
+  (declare (xargs :guard (and (symbol-listp stobjs-out)
+                              (true-listp lst)
+                              (true-listp known-stobjs)
+                              wrld
+                              (plist-worldp wrld))))
+  (cond ((endp stobjs-out) (null lst))
+        ((endp lst) nil)
+        ((or (eq (car stobjs-out) (car lst))
+             (eq (car lst) nil)
+             (eq (car lst) :df)
+             (and (car stobjs-out)
+                  (not (eq (car stobjs-out) :df))
+                  (stobjp (car lst) known-stobjs wrld)
+                  (congruent-stobjsp (car stobjs-out) (car lst) wrld)))
+         (plausible-actual-stobjs-out-p (cdr stobjs-out) (cdr lst)
+                                        known-stobjs wrld))
+        (t nil)))
+
+(defun remove-df?-elements (lst stobjs-out)
+  (declare (xargs :guard (and (symbol-listp lst)
+                              (symbol-listp stobjs-out))))
+  (cond ((endp lst) nil)
+        (t (cons (if (eq (car lst) :df?)
+                     (if (eq (car stobjs-out) :df)
+                         :df
+                       nil)
+                   (car lst))
+                 (remove-df?-elements (cdr lst) (cdr stobjs-out))))))
+
+(defun stobjs-out-for-form (form known-stobjs known-dfs wrld state-vars
+                                 stobjs-out)
+
+; Warning: Keep this in sync with the related function returns-df?, which
+; computes whether a single value is a df.  Unlike that function, here
+; known-dfs is assumed to be a symbol-listp.
+
+; Form is an untranslated term.  See term-stobjs-out for an analogous function
+; that is applied to translated terms.
+
+; This function attempts to guess a stobjs-out list for the given form when it
+; is to be translated for execution.  When necessary it consults stobjs-out to
+; help with the guess.  Soundness is not an issue since this information is
+; only used heuristically, when translating for execution; however, we expect
+; it to be accurate in nearly all cases.
+
+; Note that stobjs-out can be nil, in which case stobjs-out-for-form returns
+; nil.
+
+; See stobjs-out-raw for a related function for which, however, the input form
+; may not be translatable, and could even be a raw Lisp form.
+
+  (cond
+   ((or (keywordp form)
+        (eq (legal-variable-or-constant-namep form)
+            'constant))
+    '(nil))
+   ((symbolp form)
+    (cond ((member-eq form known-dfs)
+           '(:df))
+          ((stobjp form known-stobjs wrld)
+           (list form))
+          (t '(nil))))
+   ((atom form) ; numbers, characters, and strings
+    '(nil))
+   ((not (symbolp (car form))) ; should be a lambda application
+    (mv-let (msg val)
+      (lambda-to-let form)
+      (if (null msg)
+          (stobjs-out-for-form val known-stobjs known-dfs wrld state-vars
+                               stobjs-out)
+        stobjs-out)))
+   ((eq (car form) 'quote)
+    '(nil))
+   ((not (true-listp form))
+    stobjs-out)
+   ((eq (car form) 'the)
+    (let ((b (df-type-p (cadr form))))
+      (cond ((eq b t) '(:df))
+            ((eq b nil) '(nil))
+            (t (stobjs-out-for-form (caddr form) known-stobjs known-dfs
+                                    wrld state-vars stobjs-out)))))
+   ((eq (car form) 'return-last)
+    (stobjs-out-for-form (car (last form)) known-stobjs known-dfs wrld
+                         state-vars stobjs-out))
+   ((eq (car form) 'if)
+    (or (stobjs-out-for-form (caddr form) known-stobjs known-dfs wrld
+                             state-vars nil)
+        (stobjs-out-for-form (cadddr form) known-stobjs known-dfs wrld
+                             state-vars stobjs-out)))
+   ((eq (car form) 'let) ; (let ((var1 expr1) ...) ... body)
+    (or
+     (and (<= 3 (length form))
+          (doublet-listp (cadr form))
+          (let ((vars (strip-cars (cadr form))))
+            (and (symbol-listp vars) ; should satisfy arglistp; not needed here
+                 (let* ((dcls (butlast (cddr form) 1))
+                        (df-vars
+                         (and (true-list-listp dcls) ; should always hold
+                              (extend-known-dfs-with-declared-df-types
+                               dcls
+                               (set-difference-eq known-dfs vars))))
+                        (new-known-dfs
+                         (bindings-known-dfs (cadr form) known-stobjs
+                                             known-dfs wrld df-vars)))
+                   (cond ((eq new-known-dfs :unknown)
+                          nil) ; maybe we can do better
+                         (t (stobjs-out-for-form (car (last form))
+                                                 known-stobjs
+                                                 new-known-dfs
+                                                 wrld
+                                                 state-vars
+                                                 stobjs-out)))))))
+     stobjs-out))
+   ((eq (car form) 'let*)
+
+; This is similar to the general case of a macro call, just below, except that
+; only a single expansion step is taken, to take us directly to the LET case.
+
+    (mv-let (erp val)
+      (macroexpand1-cmp form 'stobjs-out-for-form wrld state-vars)
+      (if erp
+          stobjs-out
+        (stobjs-out-for-form val known-stobjs known-dfs wrld state-vars
+                             stobjs-out))))
+   ((eq (car form) 'mv)
+    (let ((lst
+           (compute-stobj-flags-df? (cdr form) known-stobjs known-dfs wrld)))
+      (if (member-eq :df? lst) ; optimization
+
+; We replace each :df? member of lst with the corresponding stobjs-out value.
+; Stobjs-out may be passed in with nil in positions that would more properly be
+; :df, in which case we'll return an undesirable answer here.  But we don't
+; expect a lot of :df?  elements, and probably nil is much more common than :df
+; as a stobjs-out element.
+
+          (remove-df?-elements lst stobjs-out)
+        lst)))
+   ((eq (car form) 'mv-let) ; (mv-let (var1 ... varn) expr ... body)
+    (or
+     (let ((vars (and (consp (cdr form))
+                      (cadr form))))
+       (and vars
+            (symbol-listp vars)
+            (let ((stobjs-out-expr
+                   (stobjs-out-for-form (caddr form) known-stobjs known-dfs
+                                        wrld state-vars nil)))
+              (and stobjs-out-expr
+                   (= (length vars) (length stobjs-out-expr))
+                   (let* ((dcls (butlast (cdddr form) 1))
+                          (df-vars
+                           (and (true-list-listp dcls) ; should always hold
+                                (extend-known-dfs-with-declared-df-types
+                                 dcls
+                                 (append (collect-by-position '(:df)
+                                                              stobjs-out-expr
+                                                              vars)
+                                         (set-difference-eq known-dfs
+                                                            vars))))))
+                     (stobjs-out-for-form (car (last form)) known-stobjs
+                                          df-vars wrld state-vars
+                                          stobjs-out))))))
+     stobjs-out))
+   ((or (eq (car form) 'non-exec)
+        (eq (getpropc (car form) 'non-executablep nil wrld)
+            t))
+    stobjs-out)
+   ((getpropc (car form) 'macro-body nil wrld)
+    (mv-let (msg val)
+      (macroexpand1-cmp form 'stobjs-out-for-form wrld state-vars)
+      (cond (msg stobjs-out)
+            (t (stobjs-out-for-form val known-stobjs known-dfs wrld
+                                    state-vars stobjs-out)))))
+   (t
+    (or
+     (let ((stobjs-out (and (not (member-eq (car form) *stobjs-out-invalid*))
+                            (actual-stobjs-out (car form) (cdr form) wrld))))
+       (and (or (eq known-stobjs t)
+                (subsetp-eq (collect-non-nil-df stobjs-out)
+                            known-stobjs))
+            (no-duplicatesp-eq stobjs-out)
+            (plausible-actual-stobjs-out-p (getpropc (car form) 'stobjs-out
+                                                     nil wrld)
+                                           stobjs-out
+                                           known-stobjs
+                                           wrld)
+            stobjs-out))
+     stobjs-out))))
+
+(defun compatible-stobjs-out-p (stobjs-out bound-vars known-stobjs
+                                           bound-known-dfs wrld)
+
+; Stobjs-out is a stobjs-out list and bound-vars is a list of variables-vars.
+; We return t iff these correspond in the following three senses: they have the
+; same length; they are equal at every position where either denotes a known
+; stobj; and every variable in bound-vars that is in bound-known-dfs
+; corresponds to a :df element of stobjs-out.
+
+  (cond ((endp bound-vars) ; equivalently, (endp stobjs-out)
+         (null stobjs-out))
+        ((endp stobjs-out)
+         nil)
+        ((and (member-eq (car bound-vars) bound-known-dfs)
+              (not (eq (car stobjs-out) :df)))
+         nil)
+        ((or (eq (car stobjs-out) (car bound-vars))
+             (and (not (and (car stobjs-out) ; stobj, when not :df:
+                            (not (eq (car stobjs-out) :df))))
+                  (not (stobjp (car bound-vars) known-stobjs wrld))))
+         (compatible-stobjs-out-p (cdr stobjs-out) (cdr bound-vars)
+                                  known-stobjs bound-known-dfs wrld))
+        (t
+         nil)))
+
+(defun adjust-known-dfs-for-var-tuples (twvts known-dfs)
+  (cond ((endp twvts) known-dfs)
+        (t (adjust-known-dfs-for-var-tuples
+            (cdr twvts)
+            (let* ((tuple (car twvts))
+                   (var (car tuple)))
+              (cond ((eq (cadr tuple) 'double-float)
+                     (add-to-set-eq var known-dfs))
+                    ((member-eq var known-dfs)
+                     (remove1-eq var known-dfs))
+                    (t known-dfs)))))))
+
 (mutual-recursion
 
 (defun translate11-local-def (form name bound-vars args edcls body
@@ -20327,6 +21066,7 @@
                                 nil ;;; stobjs-out = '(nil ... nil)
                                 bindings
                                 known-stobjs
+                                nil ; known-dfs; see comment below on known-dfs
                                 (if fletp
                                     "in a DECLARE form in an FLET binding"
                                   "in a DECLARE form in a MACROLET binding")
@@ -20340,6 +21080,11 @@
                               (translate-bind new-stobjs-out new-stobjs-out
                                               bindings))
                             (if fletp known-stobjs nil)
+
+; As of this writing there isn't support for type declarations in local
+; definitions.  So, there's no way to declare dfs.
+
+                            nil ; known-dfs
                             flet-alist form ctx wrld state-vars)))
        (let ((used-vars (union-eq (all-vars tbody)
                                   (all-vars1-lst tdcls nil)))
@@ -20354,8 +21099,7 @@
 ; stobjs-bound criterion.  But we leave this case here as a comment in case we
 ; ultimately find a way to eliminate the more sweeping case after it.  Note:
 ; unknown-binding-msg has been replaced by unknown-binding-msg-er, so a bit of
-; rework will be needed if this case is to be reinstalled.  Also note that we
-; will need to bind stobjs-bound to
+; rework will be needed if this case is to be reinstalled.
 
 ;         ((and (not (eq stobjs-out t))
 ;               (not (consp stobjs-out))
@@ -20363,6 +21107,7 @@
 ;                nil
 ;                (compute-stobj-flags bound-vars
 ;                                     known-stobjs
+;                                     nil ; known-dfs
 ;                                     wrld)))
 ;          (trans-er ctx
 ;                    "~@0"
@@ -20371,6 +21116,7 @@
 ;                      nil
 ;                      (compute-stobj-flags bound-vars
 ;                                           known-stobjs
+;                                           nil ; known-dfs
 ;                                           wrld))
 ;                     (msg "the formals of an FLET binding for function ~x0"
 ;                          name)
@@ -20497,7 +21243,8 @@
                                      state-vars))
            (flet-entries
             (translate11-flet-alist  form (cdr fives) stobjs-out bindings
-                                     known-stobjs flet-alist ctx wrld state-vars)))
+                                     known-stobjs flet-alist ctx wrld
+                                     state-vars)))
           (trans-value (cons flet-entry flet-entries))))))
 
 (defun translate11-flet-alist1 (form five stobjs-out bindings known-stobjs
@@ -20572,8 +21319,9 @@
                                          state-vars)))
                (translate11 body
                             nil ; ilk
-                            stobjs-out bindings known-stobjs flet-alist x
-                            ctx wrld state-vars)))))))))))
+                            stobjs-out bindings known-stobjs
+                            nil ; known-dfs
+                            flet-alist x ctx wrld state-vars)))))))))))
 
 (defun translate11-macrolet-alist (defs stobjs-out bindings known-stobjs
                                     flet-alist form ctx wrld state-vars)
@@ -20653,11 +21401,14 @@
              (translate11-macrolet-alist defs stobjs-out bindings known-stobjs
                                          flet-alist x ctx wrld
                                          state-vars)))
-           (translate11 body nil stobjs-out bindings known-stobjs flet-alist
+           (translate11 body nil stobjs-out bindings known-stobjs
+                        nil ; known-dfs
+                        flet-alist
                         x ctx wrld state-vars)))))))))
 
 (defun translate-stobj-calls (calls creators accp bindings known-stobjs
-                                    flet-alist cform ctx wrld state-vars)
+                                    known-dfs flet-alist cform ctx wrld
+                                    state-vars)
 
 ; Calls is the list of untranslated expressions to which stobjs are bound in
 ; the bindings of a stobj-let if accp=t, else corresponding untranslated
@@ -20678,7 +21429,7 @@
    (t
     (trans-er-let*
      ((rest (translate-stobj-calls (cdr calls) (cdr creators) accp bindings
-                                   known-stobjs flet-alist
+                                   known-stobjs known-dfs flet-alist
                                    cform ctx wrld state-vars)))
      (let ((call (car calls)))
        (cond
@@ -20702,14 +21453,14 @@
 ; Note: No stobj accessor or updater accepts functional arguments so we can use
 ; ilk = nil below.
 
-            (translate11 (cadr call) nil '(nil) bindings known-stobjs
+            (translate11 (cadr call) nil '(nil) bindings known-stobjs known-dfs
                          flet-alist cform ctx wrld state-vars)))
           (trans-value (cons (list* (car call) index (cddr call))
                              rest))))
         (t (trans-value (cons call rest)))))))))
 
 (defun translate11-let (x tbody0 targs stobjs-out bindings known-stobjs
-                          flet-alist ctx wrld state-vars)
+                          known-dfs flet-alist ctx wrld state-vars)
 
 ; Warning:  If the final form of a translated let is changed,
 ; be sure to reconsider translated-acl2-unwind-protectp.
@@ -20717,19 +21468,21 @@
 ; X is a cons whose car is 'LET.  If tbody0 is nil, as is the case for a
 ; user-supplied LET expression, then this function is nothing more than the
 ; restriction of function translate11 to that case.  Otherwise, the LET
-; expression arises from a STOBJ-LET expression, and we make the following
-; exceptions: the bindings are allowed to bind more than one stobj; we suppress
-; the check that a stobj bound in the LET bindings must be returned by the LET;
-; tbody0 is used as the translation of the body of the LET; and targs, if
-; non-nil, is used as the translation of the strip-cadrs of the bindings of the
-; let, as these are assumed already to be translated.
+; expression arises from another construct (as of this writing, a STOBJ-LET or
+; WITH-GLOBAL-STOBJ expression), and we make the following exceptions: the
+; bindings are allowed to bind more than one stobj; we suppress the check that
+; a stobj bound in the LET bindings must be returned by the LET; tbody0 is used
+; as the translation of the body of the LET; and targs, if non-nil, is used as
+; the translation of the strip-cadrs of the bindings of the let.
 
-; In translating LET and MV-LET we generate "open lambdas" as function
-; symbols.  The main reason we did this was to prevent translate from
-; exploding in our faces when presented with typical DEFUNs (e.g., our
-; own code).  Note that such LAMBDAs can be expanded away.  However,
-; expansion affects the guards.  Consider (let ((x (car 3))) t), which
-; expands to ((lambda (x) t) (car 3)).
+; If targs is non-nil then tbody0 must also be non-nil; we check this with an
+; assert$ below, with comments explaining this requirement.
+
+; In translating LET and MV-LET we generate "open lambdas" as function symbols.
+; The main reason we did this was to prevent translate from exploding in our
+; faces when presented with typical DEFUNs (e.g., our own code).  Note that
+; such LAMBDAs can be expanded away.  However, expansion affects the guards.
+; Consider (let ((x (car 3))) t), which expands to ((lambda (x) t) (car 3)).
 
   (cond
    ((not (and (>= (length x) 3)
@@ -20752,7 +21505,12 @@
            (multiple-bindings-p (consp (cdr bound-vars)))
            (stobj-flags
             (and (not (eq stobjs-out t))
-                 (compute-stobj-flags bound-vars known-stobjs wrld)))
+                 (compute-stobj-flags bound-vars known-stobjs
+
+; Here we want stobj-flags to represent only stobjs, not dfs.
+
+                                      nil ; known-dfs
+                                      wrld)))
            (stobjs-bound (and stobj-flags ; optimization
                               (collect-non-x nil stobj-flags)))
            (do-expressionp (access state-vars state-vars :do-expressionp))
@@ -20850,164 +21608,225 @@
             (cond
              (erp (mv erp edcls bindings))
              (t
-              (trans-er-let*
-               ((value-forms
-                 (cond (targs (trans-value targs))
-                       ((and stobjs-bound ; hence (not (eq stobjs-out t))
-                             (not multiple-bindings-p))
+              (mv-let (erp value-forms bindings known-dfs-for-body)
+                (let ((known-dfs-for-body0 ; may be extended below
+                       (extend-known-dfs-with-declared-df-types
+                        edcls
+                        (set-difference-assoc-eq known-dfs (cadr x)))))
+                  (cond (targs
+                         (assert$
+
+; We use known-dfs-for-body to translate the body of the LET.  In the normal
+; case, when tbody0 is nil (so, we are not translating a STOBJ-LET or
+; WITH-GLOBAL-STOBJ form), we deduce dfs from the bindings of the LET; for
+; example, for a let-binding (x (df+ a b)) we will put x into
+; known-dfs-for-body.  But if tbody0 is non-nil then we only use
+; known-dfs-for-body to translate declarations, in which case no such
+; deductions are necessary.
+
+; We check with assert$ in the present case, when targs is non-nil, that tbody0
+; is also non-nil, which (as explained just above) justifies the use of
+; known-dfs-for-body0 as known-dfs-for-body.
+
+                          tbody0
+                          (mv nil targs bindings known-dfs-for-body0)))
+                        ((and stobjs-bound ; hence (not (eq stobjs-out t))
+                              (not multiple-bindings-p))
 
 ; In this case, we know that the only variable of the LET is a stobj name.
 ; Note that (list (car bound-vars)) is thus a stobjs-out specifying
 ; a single result consisting of that stobj.
 
-                        (trans-er-let*
-                         ((val (translate11 (cadr (car (cadr x)))
-                                            nil ; ilk
-                                            (list (car bound-vars))
-                                            bindings known-stobjs flet-alist
-                                            x ctx wrld state-vars)))
-                         (trans-value (list val))))
-                       (t (translate11-lst (strip-cadrs (cadr x))
-                                           nil ; ilks = '(nil nil ...)
-                                           (if (eq stobjs-out t)
-                                               t
-                                             stobj-flags)
-                                           bindings known-stobjs
-                                           "in a LET binding (or LAMBDA ~
-                                            application)"
-                                           flet-alist x ctx wrld
-                                           state-vars))))
-                (tbody
-                 (if tbody0
-                     (trans-value tbody0)
-                   (translate11 (car (last x))
-                                nil
-                                stobjs-out bindings known-stobjs
-                                flet-alist x ctx wrld state-vars)))
-                (tdcls (translate11-lst
-                        (translate-dcl-lst edcls wrld)
-                        nil ; ilks = '(nil nil ...)
-                        (if (eq stobjs-out t)
-                            t
-                          nil) ;;; '(nil ... nil)
-                        bindings known-stobjs
-                        "in a DECLARE form in a LET (or LAMBDA)"
-                        flet-alist x ctx wrld state-vars)))
-               (let ((used-vars (union-eq (all-vars tbody)
-                                          (all-vars1-lst tdcls nil)))
-                     (ignore-vars (ignore-vars edcls))
-                     (ignorable-vars (ignorable-vars edcls))
-                     (stobjs-out (translate-deref stobjs-out bindings)))
-                 (cond
-                  ((and stobjs-bound ; hence (not (eq stobjs-out t))
-                        (not (consp stobjs-out)))
-                   (unknown-binding-msg-er x ctx stobjs-bound
-                                           "a LET" "the LET" "the LET"))
-                  ((and
-                    (null tbody0)            ; else skip this check
-                    stobjs-bound             ; hence (not (eq stobjs-out t))
-                    (not multiple-bindings-p) ; possible stobj mod in bindings
-                    (not (eq (caar (cadr x))
-                             (cadar (cadr x)))) ; stobj mod in bindings
-                    (assert$ (null (cdr stobjs-bound))
-                             (not (member-eq (car stobjs-bound) stobjs-out))))
+                         (mv-let (erp val bindings)
+                           (translate11 (cadr (car (cadr x)))
+                                        nil ; ilk
+                                        (list (car bound-vars))
+                                        bindings known-stobjs known-dfs
+                                        flet-alist x ctx wrld state-vars)
+                           (cond
+                            (erp (mv erp val bindings known-dfs-for-body0))
+; Note: We expect known-dfs = known-dfs-for-body0 in the following case.
+                            (t (mv nil (list val) bindings
+                                   known-dfs-for-body0)))))
+                        ((eq stobjs-out t)
+                         (mv-let (erp value-forms bindings)
+                           (translate11-lst (strip-cadrs (cadr x))
+                                            nil ; ilks = '(nil nil ...)
+                                            t
+                                            bindings known-stobjs known-dfs
+                                            "in a LET binding (or LAMBDA ~
+                                             application)"
+                                            flet-alist x ctx wrld
+                                            state-vars)
+                           (mv erp value-forms bindings
+; Known-dfs is irrelevant for for translation of the LET body when
+; stobjs-out = t.
+                               known-dfs-for-body0)))
+                        (t (let ((stobjs-out-df?
+                                  (compute-stobj-flags-df?-doublets
+                                   (cadr x) known-dfs-for-body0
+                                   known-stobjs known-dfs
+                                   wrld)))
+                             (mv-let
+                               (erp args bindings returned-stobjs-out)
+                               (translate11-lst/stobjs-out
+                                (strip-cadrs (cadr x))
+                                nil ; ilks = '(nil nil ...)
+                                stobjs-out-df?
+                                bindings known-stobjs known-dfs
+                                "in a LET binding (or LAMBDA application)"
+                                flet-alist x ctx wrld state-vars)
+                               (cond
+                                (erp
+                                 (mv erp args bindings known-dfs-for-body0))
+                                (t (mv nil
+                                       args
+                                       bindings
+                                       (union-eq
+                                        (collect-by-position
+                                         '(:df)
+                                         returned-stobjs-out
+                                         (strip-cars (cadr x)))
+                                        known-dfs-for-body0)))))))))
+                (cond
+                 (erp (mv erp value-forms bindings))
+                 (t
+                  (trans-er-let*
+                   ((tbody
+                     (if tbody0
+                         (trans-value tbody0)
+                       (translate11 (car (last x))
+                                    nil
+                                    stobjs-out bindings known-stobjs
+                                    known-dfs-for-body flet-alist x ctx wrld
+                                    state-vars)))
+                    (tdcls (translate11-lst
+                            (translate-dcl-lst edcls wrld)
+                            nil ; ilks = '(nil nil ...)
+                            (if (eq stobjs-out t)
+                                t
+                              nil) ;;; '(nil ... nil)
+                            bindings known-stobjs known-dfs-for-body
+                            "in a DECLARE form in a LET (or LAMBDA)"
+                            flet-alist x ctx wrld state-vars)))
+                   (let ((used-vars (union-eq (all-vars tbody)
+                                              (all-vars1-lst tdcls nil)))
+                         (ignore-vars (ignore-vars edcls))
+                         (ignorable-vars (ignorable-vars edcls))
+                         (stobjs-out (translate-deref stobjs-out bindings)))
+                     (cond
+                      ((and stobjs-bound ; hence (not (eq stobjs-out t))
+                            (not (consp stobjs-out)))
+                       (unknown-binding-msg-er x ctx stobjs-bound
+                                               "a LET" "the LET" "the LET"))
+                      ((and
+                        (null tbody0) ; else skip this check
+                        stobjs-bound  ; hence (not (eq stobjs-out t))
+                        (not multiple-bindings-p) ; maybe stobj mod in bindings
+                        (not (eq (caar (cadr x))
+                                 (cadar (cadr x)))) ; stobj mod in bindings
+                        (assert$ (null (cdr stobjs-bound))
+                                 (not (member-eq (car stobjs-bound)
+                                                 stobjs-out))))
 
 ; This clause is clearly necessary in general.  We mention it specifically in a
 ; comment above, about disallowing LET-binding of stobjs in the :do-expressionp
 ; case.
 
-                   (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-                     (trans-er+ x ctx
-                                "The single-threaded object ~x0 has been ~
-                                 bound in a LET.  It is a requirement that ~
-                                 this object be among the outputs of the LET, ~
-                                 but it is not.  The LET returns ~#1~[no ~
-                                 single-threaded objects~/the single-threaded ~
-                                 object ~&2~/the single-threaded objects ~
-                                 ~&2~]."
-                                (car stobjs-bound)
-                                (zero-one-or-more stobjs-returned)
-                                stobjs-returned)))
-                  ((intersectp-eq used-vars ignore-vars)
-                   (trans-er+ x ctx
-                              "Contrary to the declaration that ~#0~[it ~
-                              is~/they are~] IGNOREd, the variable~#0~[ ~&0 ~
-                              is~/s ~&0 are~] used in the body of the LET ~
-                              expression that binds ~&1."
-                              (intersection-eq used-vars ignore-vars)
-                              bound-vars))
-                  (t
-                   (let* ((ignore-vars
-                           (if (eq stobjs-out t)
-                               (augment-ignore-vars bound-vars
-                                                    value-forms
-                                                    ignore-vars)
-                             ignore-vars))
-                          (diff (set-difference-eq
-                                 bound-vars
-                                 (union-eq used-vars
-                                           (union-eq ignorable-vars
-                                                     ignore-vars))))
-                          (ignore-ok
-                           (if (null diff)
-                               t
-                             (cdr (assoc-eq
-                                   :ignore-ok
-                                   (table-alist 'acl2-defaults-table wrld))))))
-                     (cond
-                      ((null ignore-ok)
+                       (let ((stobjs-returned (collect-non-nil-df stobjs-out)))
+                         (trans-er+ x ctx
+                                    "The single-threaded object ~x0 has been ~
+                                     bound in a LET.  It is a requirement ~
+                                     that this object be among the outputs of ~
+                                     the LET, but it is not.  The LET returns ~
+                                     ~#1~[no single-threaded objects~/the ~
+                                     single-threaded object ~&2~/the ~
+                                     single-threaded objects ~&2~]."
+                                    (car stobjs-bound)
+                                    (zero-one-or-more stobjs-returned)
+                                    stobjs-returned)))
+                      ((intersectp-eq used-vars ignore-vars)
                        (trans-er+ x ctx
-                                  "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
-                                  used in the body of the LET expression that ~
-                                  binds ~&1.  But ~&0 ~#0~[is~/are~] not ~
-                                  declared IGNOREd or IGNORABLE.  See :DOC ~
-                                  set-ignore-ok."
-                                  diff
+                                  "Contrary to the declaration that ~#0~[it ~
+                                   is~/they are~] IGNOREd, the variable~#0~[ ~
+                                   ~&0 is~/s ~&0 are~] used in the body of ~
+                                   the LET expression that binds ~&1."
+                                  (intersection-eq used-vars ignore-vars)
                                   bound-vars))
                       (t
-                       (prog2$
-                        (cond
-                         ((eq ignore-ok :warn)
-                          (warning$-cw1 ctx "Ignored-variables"
-                                        "The variable~#0~[ ~&0 is~/s ~&0 ~
-                                         are~] not used in the body of the ~
-                                         LET expression that binds ~&1.  But ~
-                                         ~&0 ~#0~[is~/are~] not declared ~
-                                         IGNOREd or IGNORABLE.  See :DOC ~
-                                         set-ignore-ok."
-                                        diff
-                                        bound-vars))
-                         (t nil))
-                        (let* ((tbody
-                                (cond
-                                 (tdcls
-                                  (let ((guardian (dcl-guardian tdcls)))
-                                    (cond ((equal guardian *t*)
+                       (let* ((ignore-vars
+                               (if (eq stobjs-out t)
+                                   (augment-ignore-vars bound-vars
+                                                        value-forms
+                                                        ignore-vars)
+                                 ignore-vars))
+                              (diff (set-difference-eq
+                                     bound-vars
+                                     (union-eq used-vars
+                                               (union-eq ignorable-vars
+                                                         ignore-vars))))
+                              (ignore-ok
+                               (if (null diff)
+                                   t
+                                 (cdr (assoc-eq
+                                       :ignore-ok
+                                       (table-alist 'acl2-defaults-table wrld))))))
+                         (cond
+                          ((null ignore-ok)
+                           (trans-er+ x ctx
+                                      "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
+                                       not used in the body of the LET ~
+                                       expression that binds ~&1.  But ~&0 ~
+                                       ~#0~[is~/are~] not declared IGNOREd or ~
+                                       IGNORABLE.  See :DOC set-ignore-ok."
+                                      diff
+                                      bound-vars))
+                          (t
+                           (prog2$
+                            (cond
+                             ((eq ignore-ok :warn)
+                              (warning$-cw1 ctx "Ignored-variables"
+                                            "The variable~#0~[ ~&0 is~/s ~&0 ~
+                                             are~] not used in the body of ~
+                                             the LET expression that binds ~
+                                             ~&1.  But ~&0 ~#0~[is~/are~] not ~
+                                             declared IGNOREd or IGNORABLE.  ~
+                                             See :DOC set-ignore-ok."
+                                            diff
+                                            bound-vars))
+                             (t nil))
+                            (let* ((tbody
+                                    (cond
+                                     (tdcls
+                                      (let ((guardian (dcl-guardian tdcls)))
+                                        (cond ((equal guardian *t*)
 
 ; See the comment about THE in dcl-guardian.
 
-                                           tbody)
-                                          (t (prog2$-call guardian tbody)))))
-                                 (t tbody))))
-                          (trans-value
-                           (if (and (access state-vars state-vars
-                                            :do-expressionp)
-                                    (ersatz-symbols t tbody))
-                               (make-lambda-term
-                                bound-vars
-                                (hide-ignored-actuals ignore-vars
-                                                      bound-vars
-                                                      value-forms)
-                                tbody)
-                             (make-lambda-term bound-vars
-                                               (hide-ignored-actuals
-                                                ignore-vars
-                                                bound-vars
-                                                value-forms)
-                                               tbody)))))))))))))))))))))
+                                               tbody)
+                                              (t
+                                               (prog2$-call guardian tbody)))))
+                                     (t tbody))))
+                              (trans-value
+                               (if (and (access state-vars state-vars
+                                                :do-expressionp)
+                                        (ersatz-symbols t tbody))
+                                   (make-lambda-term
+                                    bound-vars
+                                    (hide-ignored-actuals ignore-vars
+                                                          bound-vars
+                                                          value-forms)
+                                    tbody)
+                                 (make-lambda-term
+                                  bound-vars
+                                  (hide-ignored-actuals
+                                   ignore-vars
+                                   bound-vars
+                                   value-forms)
+                                  tbody))))))))))))))))))))))))
 
 (defun translate11-let* (x tbody targs stobjs-out bindings known-stobjs
-                           flet-alist ctx wrld state-vars)
+                           known-dfs flet-alist ctx wrld state-vars)
 
 ; This function is analogous to translate11-let, but it is for let* instead of
 ; let and here we assume no declarations.  Thus, x is (let* ((var1 arg1) (vark
@@ -21022,16 +21841,156 @@
                 (trans-er-let*
                  ((tbody0 (translate11-let*
                            body0 tbody (cdr targs) stobjs-out bindings
-                           known-stobjs flet-alist ctx wrld state-vars)))
+                           known-stobjs known-dfs flet-alist ctx wrld
+                           state-vars)))
                  (translate11-let
                   `(let (,pair) ,body0)
                   tbody0 (list (car targs)) stobjs-out bindings known-stobjs
-                  flet-alist ctx wrld state-vars))))
+                  known-dfs flet-alist ctx wrld state-vars))))
              (& (trans-er+ x ctx
                            "Implementation error: Unexpected form for ~x0."
                            'translate11-let*))))))
 
-(defun translate11-mv-let (x tcall0 tbody0 stobjs-out bindings known-stobjs
+(defun translate11-collecting-known-dfs (x bound-stobjs-out bound-known-dfs
+                                           bindings known-stobjs top-known-dfs
+                                           flet-alist cform ctx wrld state-vars
+; Argument specific to this function:
+                                           bound-vars)
+
+; Unlike most other functions in the translate11 nest, this one returns an
+; extra value that is a new known-dfs.  To understand this function, we discuss
+; here its primary use, which is to translate an expression (mv-let bound-vars
+; mv-expr dcls* x) in an environment where the known-dfs is the input,
+; top-known-dfs.  A key problem is to determine the known-dfs for translating
+; x.  These should include (set-difference-eq top-known-dfs bound-vars) and it
+; should also include the input, bound-known-dfs, which represents the df
+; variables extracted from dcls*; but other variables from bound-vars may be
+; included as well.
+
+; Thus, this function returns (mv erp val bindings new-known-dfs), where if erp
+; is nil, then val is a translation of x with respect to new-known-dfs, which
+; includes bound-known-dfs as well as (set-difference-eq top-known-dfs
+; bound-vars) and is contained in (union-eq top-known-dfs bound-vars).
+
+; Note that the input, bound-stobjs-out, must always be a list.  It represents
+; the stobjs-out value based on the double-float type declarations in the
+; mv-let form.
+
+; In general there could be many such values of known-dfs to try, and we might
+; someday decide to try them all.  For now, we make at most two tries.  The
+; first try to translate much as we do at the top level, but using variants of
+; the :STOBJS-OUT to avoid problems when this function is applied to nested
+; mv-let calls (or any recursive application of this function).  If there is an
+; error, then we return an error except in the case that the error is due to
+; being unable to determine bindings (the :UNKNOWN-BINDINGS case below), in
+; which case we try again with the minimal suitable known-dfs.  Otherwise (no
+; error), we check that the stobjs-out resulting from translation is suitable
+; (as checked with compatible-stobjs-out-p).
+
+  (let* ((binding-count (access state-vars state-vars :binding-count))
+         (stobjs-out-sym-pair (stobjs-out-sym-pair binding-count))
+         (stobjs-out-sym (car stobjs-out-sym-pair)))
+    (mv-let (erp val new-bindings)
+      (translate11 x nil stobjs-out-sym
+; The following saves a cons vs. using
+; (translate-bind stobjs-out-sym stobjs-out-sym bindings).
+                   (cons stobjs-out-sym-pair bindings)
+                   known-stobjs top-known-dfs flet-alist cform ctx wrld
+                   (change state-vars state-vars
+                           :binding-count
+                           (1+ binding-count)))
+      (let ((stobjs-out-val
+             (and (not erp) ; else don't care
+                  (translate-deref stobjs-out-sym new-bindings))))
+        (cond
+         ((and erp
+               (not (eq new-bindings :UNKNOWN-BINDINGS)))
+
+; If we get an error here, other than one due to not having yet determined the
+; stobjs-out for a function symbol or (in bindings) for the symbol :stobjs-out,
+; then we don't expect translation to succeed with a heuristically computed
+; stobjs-out.  So we don't bother with the retry below.
+
+          (mv erp val new-bindings nil))
+         ((or erp ; (eq new-bindings :UNKNOWN-BINDINGS)
+              (symbolp stobjs-out-val)
+              (not (compatible-stobjs-out-p stobjs-out-val bound-vars
+                                            known-stobjs bound-known-dfs
+                                            wrld)))
+
+; This is a failure case (but we will retry; see below).  Even if erp is nil,
+; it is not acceptable for stobjs-out-val to be a symbol, because we are trying
+; to build a stobjs-out list each of whose members is nil, :df, or a stobj
+; name.  We will be substituting stobjs-out-val for stobjs-out-sym in
+; new-bindings (see the call of remove-from-binding below), so it won't do for
+; stobjs-out-val to be a symbol.  It is also not acceptable for the
+; compatible-stobjs-out-p test to fail, but an error might be avoided if we
+; translate with a suitable stobjs-out list.
+
+; So we translate again, this time with a stobjs-out list.  That could result
+; in an error, but so be it; in that case the user needs to cope, for example
+; by adding double-float declarations for the appriate bound variables.  It
+; might be nice for that error message to point to :DOC df or even suggest
+; directly that using a type declaration or THE could help, but for now we'll
+; assume that users of dfs can figure that out.
+
+          (let ((stobjs-out-for-form
+                 (stobjs-out-for-form x known-stobjs top-known-dfs 
+                                      wrld state-vars
+                                      bound-stobjs-out))
+                (minimal-known-dfs
+                 (append? bound-known-dfs
+                          (set-difference-eq top-known-dfs bound-vars))))
+            (cond
+             ((compatible-stobjs-out-p stobjs-out-for-form bound-vars
+                                       known-stobjs bound-known-dfs
+                                       wrld)
+              (mv-let (erp val bindings)
+                (translate11 x nil
+                             stobjs-out-for-form
+                             bindings known-stobjs
+                             minimal-known-dfs flet-alist cform ctx wrld
+                             state-vars)
+                (mv erp val bindings
+                    (collect-by-position '(:df)
+                                         stobjs-out-for-form
+                                         bound-vars))))
+             (t
+              (mv ctx
+                  (msg "The bound variable list ~x0 from an MV-LET expression ~
+                        has been found not to be compatible with the ~
+                        ``types'' (each a stobj name or an indicator of a ~
+                        non-stobj object) computed for them, ~x1.~@2"
+                       bound-vars
+                       stobjs-out-for-form
+                       (if (or (member-eq :df bound-known-dfs)
+                               (member-eq :df stobjs-out-for-form))
+                           "~|If dfs are involved (see :DOC df), then proper ~
+                            double-float type declarations may help."
+                         ""))
+                  bindings ; irrelevant
+                  nil      ; irrelevant
+                  )))))
+         (t
+
+; This is the case one might reasonably desire, where the computed
+; stobjs-out-val is a stobjs-out list rather than a symbol, with the right
+; length and suitable entries.
+
+          (let ((new-known-dfs (append (collect-by-position '(:df)
+                                                            stobjs-out-val
+                                                            bound-vars)
+                                       (set-difference-eq top-known-dfs
+                                                          bound-vars))))
+
+            (mv nil
+                val
+                (remove-from-binding stobjs-out-sym stobjs-out-val
+                                     new-bindings)
+                new-known-dfs))))))))
+
+(defun translate11-mv-let (x tcall0 tbody0 stobjs-out bindings
+                             known-stobjs known-dfs 
                              local-stobj local-stobj-creator flet-alist
                              ctx wrld state-vars)
 
@@ -21059,12 +22018,12 @@
               (cadr x)))
    ((not (arglistp (cadr x)))
     (mv-let (culprit explan)
-            (find-first-bad-arg (cadr x))
-            (trans-er ctx
-                      "The first form in an MV-LET expression must be a list ~
-                       of distinct variables of length 2 or more, but ~x0 ~
-                       does not meet these conditions.  The element ~x1 ~@2."
-                      x culprit explan)))
+      (find-first-bad-arg (cadr x))
+      (trans-er ctx
+                "The first form in an MV-LET expression must be a list of ~
+                 distinct variables of length 2 or more, but ~x0 does not ~
+                 meet these conditions.  The element ~x1 ~@2."
+                x culprit explan)))
    ((not (>= (length x) 4))
     (trans-er ctx
               "An MV-LET expression has the form (mv-let (var var var*) form ~
@@ -21072,166 +22031,204 @@
                this condition."
               x))
    (t
-    (let* ((bound-vars (cadr x))
-           (producer-known-stobjs (if (and local-stobj
-                                           (not (eq known-stobjs t)))
-                                      (add-to-set-eq local-stobj known-stobjs)
-                                    known-stobjs))
-           (bound-stobjs-out (if (and (eq stobjs-out t)
+    (mv-let
+      (erp edcls)
+      (collect-declarations-cmp (butlast (cdddr x) 1)
+                                (cadr x) 'mv-let ctx wrld)
+      (cond
+       (erp ; erp is a ctx and edcls is a msg
+        (trans-er erp "~@0" edcls))
+       (t
+        (let* ((bound-vars (cadr x))
+               (producer-known-stobjs (if (and local-stobj
+                                               (not (eq known-stobjs t)))
+                                          (add-to-set-eq local-stobj
+                                                         known-stobjs)
+                                        known-stobjs))
+               (bound-known-dfs (extend-known-dfs-with-declared-df-types
+                                 edcls nil))
+               (bound-stobjs-out (if (and (eq stobjs-out t)
 
 ; If local-stobj is true (hence we are being called by translate in the case of
 ; a with-local-stobj term), then we want to do syntax-checking that we wouldn't
 ; normally do with stobjs-out = t, because we don't have a spec for
 ; with-local-stobj in the case that this syntax-checking is turned off.
 
-                                      (not local-stobj))
-                                 t
-                               (compute-stobj-flags bound-vars
-                                                    producer-known-stobjs
-                                                    wrld)))
-           (stobjs-bound0 (if (eq bound-stobjs-out t)
-                              nil
-                            (collect-non-x nil bound-stobjs-out)))
-           (stobjs-bound
+                                          (not local-stobj))
+                                     t
+                                   (compute-stobj-flags
+                                    bound-vars
+                                    producer-known-stobjs
+                                    bound-known-dfs
+                                    wrld)))
+               (stobjs-bound0 (if (eq bound-stobjs-out t)
+                                  nil
+                                (collect-non-nil-df bound-stobjs-out)))
+               (stobjs-bound
 
 ; Stobjs-bound is perhaps an odd name for this variable, since if there is a
 ; local stobj, then literally speaking it is bound -- though we do not consider
 ; it so here.  Really, stobjs-bound is the list of stobj names that we require
 ; to come out of the mv-let.
 
-            (if local-stobj
-                (remove1-eq local-stobj stobjs-bound0)
-              stobjs-bound0)))
-      (mv-let
-       (erp edcls)
-       (collect-declarations-cmp (butlast (cdddr x) 1)
-                                 (cadr x) 'mv-let ctx wrld)
-       (cond
-        (erp ; erp is a ctx and edcls is a msg
-         (trans-er erp "~@0" edcls))
-        (t
-         (trans-er-let*
-          ((tcall (if tcall0
-                      (trans-value tcall0)
-                    (translate11 (caddr x)
-                                 nil
-                                 bound-stobjs-out
-                                 bindings
-                                 producer-known-stobjs
-                                 flet-alist x ctx wrld state-vars)))
-           (tdcls (translate11-lst (translate-dcl-lst edcls wrld)
-                                   nil ; ilks = '(nil nil ...)
-                                   (if (eq stobjs-out t)
-                                       t
-                                     nil) ;;; '(nil ... nil)
-                                   bindings known-stobjs
-                                   "in a DECLARE form in an MV-LET"
-                                   flet-alist x ctx wrld state-vars))
-           (tbody (if tbody0
-                      (trans-value tbody0)
-                    (translate11 (car (last x))
-                                 nil
-                                 stobjs-out bindings known-stobjs flet-alist x
-                                 ctx wrld state-vars))))
-          (let ((used-vars (union-eq (all-vars tbody)
-                                     (all-vars1-lst tdcls nil)))
-                (ignore-vars (if local-stobj
-                                 (cons local-stobj (ignore-vars edcls))
-                               (ignore-vars edcls)))
-                (ignorable-vars (ignorable-vars edcls))
-                (stobjs-out (translate-deref stobjs-out bindings)))
+                (if local-stobj
+                    (remove1-eq local-stobj stobjs-bound0)
+                  stobjs-bound0)))
+          (mv-let (erp tcall bindings known-dfs)
             (cond
-             ((and local-stobj
-                   (not (member-eq local-stobj ignore-vars)))
-              (trans-er+ x ctx
-                         "A local-stobj must be declared ignored, but ~x0 is ~
-                          not.  See :DOC with-local-stobj."
-                         local-stobj))
-             ((and stobjs-bound
-                   (not (consp stobjs-out)))
-              (unknown-binding-msg-er x ctx stobjs-bound
-                                      "an MV-LET" "the MV-LET" "the MV-LET"))
-             ((and stobjs-bound
-                   (null tbody0) ; else skip this check
-                   (not (subsetp stobjs-bound
-                                 (collect-non-x nil stobjs-out))))
-              (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-                (trans-er+ x ctx
-                           "The single-threaded object~#0~[ ~&0 has~/s ~&0 ~
-                            have~] been bound in an MV-LET.  It is a ~
-                            requirement that ~#0~[this object~/these ~
-                            objects~] be among the outputs of the MV-LET, but ~
-                            ~#0~[it is~/they are~] not.  The MV-LET returns ~
-                            ~#1~[no single-threaded objects~/the ~
-                            single-threaded object ~&2~/the single-threaded ~
-                            objects ~&2~]."
-                           (set-difference-eq stobjs-bound stobjs-returned)
-                           (zero-one-or-more stobjs-returned)
-                           stobjs-returned)))
-             ((intersectp-eq used-vars ignore-vars)
-              (trans-er+ x ctx
-                         "Contrary to the declaration that ~#0~[it is~/they ~
-                          are~] IGNOREd, the variable~#0~[ ~&0 is~/s ~&0 ~
-                          are~] used in the MV-LET expression that binds ~&1."
-                         (intersection-eq used-vars ignore-vars)
-                         bound-vars))
+             (tcall0
+              (assert$
+
+; We use the returned known-dfs to translate the body of the mv-let.  In the
+; normal case, when tcall0 is nil, we deduce dfs; for example, for (mv-let (x
+; ...) (mv (df+ a b) ...)) we will put x into known-dfs.  But if tcall0 is
+; non-nil then we only use known-dfs to translate declarations, in which case
+; no such deductions are necessary.
+
+; We check with assert$ in the present case, when tcall0 is non-nil, that
+; tbody0 is also non-nil, which (as explained just above) justifies the use of
+; known-dfs here as the returned known-dfs.
+
+               tbody0
+               (mv nil tcall0 bindings known-dfs)))
+             ((eq bound-stobjs-out t)
+              (mv-let (erp val bindings)
+                (translate11 (caddr x)
+                             nil t bindings producer-known-stobjs
+                             known-dfs flet-alist x ctx wrld state-vars)
+
+; Known-dfs is irrelevant in this case.
+
+                (mv erp val bindings nil)))
              (t
-              (let* ((diff (set-difference-eq
-                            bound-vars
-                            (union-eq used-vars
-                                      (union-eq ignorable-vars
-                                                ignore-vars))))
-                     (ignore-ok
-                      (if (null diff)
-                          t
-                        (cdr (assoc-eq
-                              :ignore-ok
-                              (table-alist 'acl2-defaults-table wrld))))))
-                (cond
-                 ((null ignore-ok)
-                  (trans-er+ x ctx
-                             "The variable~#0~[ ~&0 is~/s ~&0 are~] not used ~
-                              in the body of the MV-LET expression that binds ~
-                              ~&1.  But ~&0 ~#0~[is~/are~] not declared ~
-                              IGNOREd or IGNORABLE.  See :DOC set-ignore-ok."
-                             diff
-                             bound-vars))
-                 (t
-                  (prog2$
-                   (cond
-                    ((eq ignore-ok :warn)
-                     (warning$-cw1 ctx "Ignored-variables"
-                                   "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
-                                    used in the body of the MV-LET expression ~
-                                    that binds ~&1. But ~&0 ~#0~[is~/are~] ~
-                                    not declared IGNOREd or IGNORABLE.  See ~
-                                    :DOC set-ignore-ok."
-                                   diff
-                                   bound-vars))
-                    (t nil))
-                   (let* ((tbody
-                           (cond
-                            (tdcls
-                             (let ((guardian (dcl-guardian tdcls)))
-                               (cond ((equal guardian *t*)
+              (translate11-collecting-known-dfs
+               (caddr x)
+               bound-stobjs-out bound-known-dfs bindings producer-known-stobjs
+               known-dfs flet-alist x ctx wrld state-vars bound-vars)))
+            (cond
+             (erp (trans-er+ x erp "~@0" tcall))
+             (t
+              (trans-er-let*
+               ((tdcls (translate11-lst (translate-dcl-lst edcls wrld)
+                                        nil ; ilks = '(nil nil ...)
+                                        (if (eq stobjs-out t)
+                                            t
+                                          nil) ;;; '(nil ... nil)
+                                        bindings known-stobjs known-dfs
+                                        "in a DECLARE form in an MV-LET"
+                                        flet-alist x ctx wrld state-vars))
+                (tbody (if tbody0
+                           (trans-value tbody0)
+                         (translate11 (car (last x))
+                                      nil
+                                      stobjs-out bindings known-stobjs
+                                      known-dfs flet-alist x
+                                      ctx wrld state-vars))))
+               (let ((used-vars (union-eq (all-vars tbody)
+                                          (all-vars1-lst tdcls nil)))
+                     (ignore-vars (if local-stobj
+                                      (cons local-stobj (ignore-vars edcls))
+                                    (ignore-vars edcls)))
+                     (ignorable-vars (ignorable-vars edcls))
+                     (stobjs-out (translate-deref stobjs-out bindings)))
+                 (cond
+                  ((and local-stobj
+                        (not (member-eq local-stobj ignore-vars)))
+                   (trans-er+ x ctx
+                              "A local-stobj must be declared ignored, but ~
+                               ~x0 is not.  See :DOC with-local-stobj."
+                              local-stobj))
+                  ((and stobjs-bound
+                        (not (consp stobjs-out)))
+                   (unknown-binding-msg-er x ctx stobjs-bound
+                                           "an MV-LET"
+                                           "the MV-LET"
+                                           "the MV-LET"))
+                  ((and stobjs-bound
+                        (null tbody0) ; else skip this check
+                        (not (subsetp stobjs-bound
+                                      (collect-non-x nil stobjs-out))))
+                   (let ((stobjs-returned (collect-non-nil-df stobjs-out)))
+                     (trans-er+ x ctx
+                                "The single-threaded object~#0~[ ~&0 has~/s ~
+                                 ~&0 have~] been bound in an MV-LET.  It is a ~
+                                 requirement that ~#0~[this object~/these ~
+                                 objects~] be among the outputs of the ~
+                                 MV-LET, but ~#0~[it is~/they are~] not.  The ~
+                                 MV-LET returns ~#1~[no single-threaded ~
+                                 objects~/the single-threaded object ~&2~/the ~
+                                 single-threaded objects ~&2~]."
+                                (set-difference-eq stobjs-bound
+                                                   stobjs-returned)
+                                (zero-one-or-more stobjs-returned)
+                                stobjs-returned)))
+                  ((intersectp-eq used-vars ignore-vars)
+                   (trans-er+ x ctx
+                              "Contrary to the declaration that ~#0~[it ~
+                               is~/they are~] IGNOREd, the variable~#0~[ ~&0 ~
+                               is~/s ~&0 are~] used in the MV-LET expression ~
+                               that binds ~&1."
+                              (intersection-eq used-vars ignore-vars)
+                              bound-vars))
+                  (t
+                   (let* ((diff (set-difference-eq
+                                 bound-vars
+                                 (union-eq used-vars
+                                           (union-eq ignorable-vars
+                                                     ignore-vars))))
+                          (ignore-ok
+                           (if (null diff)
+                               t
+                             (cdr (assoc-eq
+                                   :ignore-ok
+                                   (table-alist 'acl2-defaults-table wrld))))))
+                     (cond
+                      ((null ignore-ok)
+                       (trans-er+ x ctx
+                                  "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
+                                   used in the body of the MV-LET expression ~
+                                   that binds ~&1.  But ~&0 ~#0~[is~/are~] ~
+                                   not declared IGNOREd or IGNORABLE.  See ~
+                                   :DOC set-ignore-ok."
+                                  diff
+                                  bound-vars))
+                      (t
+                       (prog2$
+                        (cond
+                         ((eq ignore-ok :warn)
+                          (warning$-cw1 ctx "Ignored-variables"
+                                        "The variable~#0~[ ~&0 is~/s ~&0 ~
+                                         are~] not used in the body of the ~
+                                         MV-LET expression that binds ~&1. ~
+                                         But ~&0 ~#0~[is~/are~] not declared ~
+                                         IGNOREd or IGNORABLE.  See :DOC ~
+                                         set-ignore-ok."
+                                        diff
+                                        bound-vars))
+                         (t nil))
+                        (let* ((tbody
+                                (cond
+                                 (tdcls
+                                  (let ((guardian (dcl-guardian tdcls)))
+                                    (cond ((equal guardian *t*)
 
 ; See the comment about THE in dcl-guardian.
 
-                                      tbody)
-                                     (t (prog2$-call guardian tbody)))))
-                            (t tbody)))
-                          (body-vars (all-vars tbody))
-                          (extra-body-vars
-                           (set-difference-eq body-vars (cadr x)))
-                          (vars (all-vars1 tcall extra-body-vars))
-                          (mv-var (genvar 'genvar "MV" nil vars)))
-                     (trans-value
-                      (list* (make-lambda
-                              (cons mv-var extra-body-vars)
-                              (cons (make-lambda
-                                     (append (cadr x)
-                                             extra-body-vars)
-                                     tbody)
+                                           tbody)
+                                          (t (prog2$-call guardian tbody)))))
+                                 (t tbody)))
+                               (body-vars (all-vars tbody))
+                               (extra-body-vars
+                                (set-difference-eq body-vars (cadr x)))
+                               (vars (all-vars1 tcall extra-body-vars))
+                               (mv-var (genvar 'genvar "MV" nil vars)))
+                          (trans-value
+                           (list* (make-lambda
+                                   (cons mv-var extra-body-vars)
+                                   (cons (make-lambda
+                                          (append (cadr x)
+                                                  extra-body-vars)
+                                          tbody)
 
 ; When the rewriter encounters ((lambda (... xi ...) body) ... actuali
 ; ...), where xi is ignored and actuali is in the corresponding
@@ -21240,24 +22237,24 @@
 ; only happens with MV-LET expressions, though we do it for LET
 ; expressions as well.
 
-                                    (append (hide-ignored-actuals
-                                             ignore-vars
-                                             (cadr x)
-                                             (mv-nth-list
-                                              mv-var 0
-                                              (length (cadr x))))
-                                            extra-body-vars)))
-                             (if local-stobj
-                                 (let ((tcall-vars
-                                        (remove1-eq local-stobj
-                                                    (all-vars tcall))))
-                                   (cons (make-lambda
-                                          (cons local-stobj tcall-vars)
-                                          tcall)
-                                         (cons (list local-stobj-creator)
-                                               tcall-vars)))
-                               tcall)
-                             extra-body-vars))))))))))))))))))
+                                         (append (hide-ignored-actuals
+                                                  ignore-vars
+                                                  (cadr x)
+                                                  (mv-nth-list
+                                                   mv-var 0
+                                                   (length (cadr x))))
+                                                 extra-body-vars)))
+                                  (if local-stobj
+                                      (let ((tcall-vars
+                                             (remove1-eq local-stobj
+                                                         (all-vars tcall))))
+                                        (cons (make-lambda
+                                               (cons local-stobj tcall-vars)
+                                               tcall)
+                                              (cons (list local-stobj-creator)
+                                                    tcall-vars)))
+                                    tcall)
+                                  extra-body-vars)))))))))))))))))))))
 
 (defun translate11-wormhole-eval (x y z bindings flet-alist ctx wrld
                                     state-vars)
@@ -21323,6 +22320,13 @@
                             '(nil)           ; stobjs-out
                             nil
                             '(state) ; known-stobjs
+
+; It seems reasonable to translate the lambda-body without assuming any
+; known-dfs, since we assume that the result is an ordinary value and we have
+; always assumed that state is the only known stobj.  If using known-dfs = nil
+; becomes problematic we can reconsider this decision.
+
+                            nil ; known-dfs
                             flet-alist
                             x ctx wrld state-vars)
                (declare (ignore body-bindings))
@@ -21358,8 +22362,8 @@
                                     (all-vars tlambda-body)))))))))))))))
 
 (defun translate11-call-1 (form fn args bindings
-                                known-stobjs msg flet-alist ctx wrld state-vars
-                                stobjs-in-call)
+                                known-stobjs known-dfs msg flet-alist ctx wrld
+                                state-vars stobjs-in-call)
 
 ; Warning: Keep this function in sync with the other functions listed in the
 ; Essay on the Wormhole Implementation Nexus in axioms.lisp.
@@ -21387,16 +22391,20 @@
                              (ilks-per-argument-slot fn wrld)
                              stobjs-in-call
                              bindings
-                             known-stobjs
+                             known-stobjs known-dfs
                              msg flet-alist form ctx wrld
                              state-vars)
 
-; Just below, we allow a stobj recognizer to be applied to an ordinary object,
-; even when translating for execution (function bodies or top-level loop).
-; This is an exception to the usual rule, which requires stobj functions to
-; respect their stobjs-in arguments when translating for execution.  We take
-; advantage of this exception in our support for stobj fields of stobjs.  For
-; example, consider the following two events.
+; Just below, we allow dfp to be applied to a df even though the stobjs-in for
+; dfp is (nil).  This is useful for translating guards for which dfp is applied
+; to a variable declared with (xargs :dfs ...) or with (type double-float ...).
+
+; We also allow a stobj recognizer to be applied to an ordinary object, even
+; when translating for execution (function bodies or top-level loop).  This is
+; an exception to the usual rule, which requires stobj functions to respect
+; their stobjs-in arguments when translating for execution.  We take advantage
+; of this exception in our support for stobj fields of stobjs.  For example,
+; consider the following two events.
 
 ;   (defstobj sub1 sub1-fld1)
 ;   (defstobj top1 (top1-fld :type sub1))
@@ -21414,18 +22422,23 @@
 ; By allowing sub1p to be applied to an ordinary object, we allow the
 ; definition to be accepted without any (other) special treatment.
 
-            (stobj-recognizer-p fn wrld)
+            (or (eq fn 'dfp)
+                (stobj-recognizer-p fn wrld))
             (translate11-lst args
                              nil ; ilks = '(nil)
-                             '(nil)
+                             (if (eq fn 'dfp)
+                                 '(:df)
+                               '(nil))
                              bindings
-                             known-stobjs
+                             known-stobjs known-dfs
                              msg flet-alist form ctx wrld
                              state-vars)
-            (msg "  Observe that while it is permitted to apply ~x0 to an ~
-                  ordinary object, this stobj recognizer must not be applied ~
-                  to the wrong stobj."
-                 fn))))
+            (if (eq fn 'dfp)
+                ""
+              (msg "  Observe that while it is permitted to apply ~x0 to an ~
+                    ordinary object, this stobj recognizer must not be ~
+                    applied to the wrong stobj."
+                   fn)))))
    (cond
     ((and (not (global-val 'boot-strap-flg wrld))
           (member-eq fn '(wormhole-eval
@@ -21463,7 +22476,8 @@
     (t (trans-value (fcons-term fn targs))))))
 
 (defun translate11-call (form fn args stobjs-out-x stobjs-out-fn bindings
-                              known-stobjs msg flet-alist ctx wrld state-vars)
+                              known-stobjs known-dfs msg flet-alist ctx wrld
+                              state-vars)
 
 ; Warning: Keep this function in sync with the other functions listed in the
 ; Essay on the Wormhole Implementation Nexus in axioms.lisp.
@@ -21534,8 +22548,8 @@
 ; to stobjs-out-call; see stobjs-in-out.
 
           (translate11-call-1 form fn args bindings
-                              known-stobjs msg flet-alist ctx wrld state-vars
-                              stobjs-in-call))
+                              known-stobjs known-dfs msg flet-alist ctx wrld
+                              state-vars stobjs-in-call))
          (t
 
 ; We are definitely in an error case.  That is because stobjs-in-out has
@@ -21572,8 +22586,8 @@
 ; blame the output over the input; anyhow, that's what we do here!
 
                        (translate11-call-1 form fn args bindings
-                                           known-stobjs msg flet-alist
-                                           ctx wrld state-vars
+                                           known-stobjs known-dfs msg
+                                           flet-alist ctx wrld state-vars
                                            stobjs-in-call)
 
 ; Otherwise the output signatures are definitely a mismatched pair, so don't
@@ -21626,7 +22640,7 @@
            ((args (translate11-lst args
                                    (ilks-per-argument-slot fn wrld)
                                    stobjs-in-call
-                                   bindings known-stobjs
+                                   bindings known-stobjs known-dfs
                                    msg flet-alist form ctx wrld state-vars)))
            (trans-value (fcons-term fn args)))))))
      ((consp stobjs-out-call) ; equivalently: (consp stobjs-out-fn)
@@ -21644,22 +22658,27 @@
                                      args)
                                    (ilks-per-argument-slot fn wrld)
                                    stobjs-in-call
-                                   bindings known-stobjs
+                                   bindings known-stobjs known-dfs
                                    msg flet-alist form ctx wrld state-vars)
 
-; See the comment above about applying a stobj recognizer to be applied to an
-; ordinary object.
+; See the comment above about applying dfp or a stobj recognizer to be applied
+; to an ordinary object.
 
-                  (stobj-recognizer-p fn wrld)
+                  (or (eq fn 'dfp)
+                      (stobj-recognizer-p fn wrld))
                   (translate11-lst args
                                    (ilks-per-argument-slot fn wrld)
-                                   '(nil)
-                                   bindings known-stobjs
+                                   (if (eq fn 'dfp)
+                                       '(:df)
+                                     '(nil))
+                                   bindings known-stobjs known-dfs
                                    msg flet-alist form ctx wrld state-vars)
-                  (msg "  Observe that while it is permitted to apply ~x0 to ~
-                        an ordinary object, this stobj recognizer must not be ~
-                        applied to the wrong stobj."
-                       fn))))
+                  (if (eq fn 'dfp)
+                      ""
+                    (msg "  Observe that while it is permitted to apply ~x0 ~
+                          to an ordinary object, this stobj recognizer must ~
+                          not be applied to the wrong stobj."
+                         fn)))))
          (cond
           ((and (not (global-val 'boot-strap-flg wrld))
                 (member-eq fn '(wormhole-eval
@@ -21718,13 +22737,13 @@
          ((args (translate11-lst args
                                  (ilks-per-argument-slot fn wrld)
                                  stobjs-in-call
-                                 bindings known-stobjs
+                                 bindings known-stobjs known-dfs
                                  msg flet-alist form ctx wrld state-vars)))
          (trans-value (fcons-term fn args))))))))
 
 (defun translate11-do-clause (term type-preds tguard sigma
-                                   known-stobjs flet-alist cform ctx wrld
-                                   state-vars)
+                                   known-stobjs known-dfs flet-alist cform ctx
+                                   wrld state-vars)
 
 ; We have already translated the pieces of a do loop$ expression and compiled
 ; away their ersatz functions.  Term is one such translation (for the measure,
@@ -21734,12 +22753,14 @@
 ; execution.  But we do not need to translate it for execution, as our
 ; translation for DO loop$ expressions is carefully controlled.
 
+  (declare (ignore known-dfs))
   (mv-let (erp val bindings)
     (translate11-lambda-object
      (make-do-body-lambda$ type-preds tguard sigma term)
      t   ; stobjs-out; see comment above about not translating for execution
      nil ; bindings
-     known-stobjs flet-alist cform ctx wrld state-vars nil)
+     known-stobjs
+     flet-alist cform ctx wrld state-vars nil)
     (cond (erp (trans-er ctx "~@0" val))
           (t (trans-value val)))))
 
@@ -21930,7 +22951,9 @@
         (translate11-var-or-quote-exit
          x
          val
-         stobjs-out bindings known-stobjs flet-alist
+         stobjs-out bindings known-stobjs
+         nil ; Known-dfs is nil, since we are returning a quoted object.
+         flet-alist
          cform ctx wrld state-vars)))))
    ((and (or (eq (car x) 'LAMBDA)
              (eq (car x) 'LAMBDA$))
@@ -22032,12 +23055,19 @@
                                       stobjs-out-simple
                                       nil    ; bindings
                                       nil    ; known-stobjs
+
+; For lambda$ we translate without any known df values.  We can tolerate that
+; because it's not generally great to use apply$ on lambdas that involve dfs,
+; as discussed in books/demos/floating-point-input.lsp.
+
+                                      nil    ; known-dfs
                                       nil    ; flet-alist
                                       cform ctx wrld state-vars))))
             (let* ((bindings bindings0) ; Restore original bindings
                    (type-exprs (if split-types
                                    (flatten-ands-in-lit-lst
-                                    (get-guards2 edcls '(TYPES) t wrld nil nil))
+                                    (get-guards2 edcls '(TYPES) t wrld nil nil
+                                                 nil))
                                  nil))
                    (guard-conjuncts (if split-types
                                         (flatten-ands-in-lit tguard)
@@ -22131,6 +23161,10 @@
                                     stobjs-out-simple
                                     bindings
                                     nil ; known-stobjs
+
+; See comment above about translating without any known df values.
+
+                                    nil ; known-dfs
 
 ; It is perhaps a bit subtle why we use flet-list = nil here.  The function
 ; apply$-lambda can reduce a call of apply$ on a lambda object to a
@@ -22239,7 +23273,8 @@
                                                 'IGNORABLE vars
                                                 (put-assoc-eq
                                                  'XARGS
-                                                 `(:GUARD ,tguard :SPLIT-TYPES T)
+                                                 `(:GUARD ,tguard
+                                                          :SPLIT-TYPES T)
                                                  edcls))))
                                           (vars1
                                            (if allow-free-varsp
@@ -22284,15 +23319,18 @@
                                  (translate11-var-or-quote-exit
                                   x
                                   val
-                                  stobjs-out bindings known-stobjs flet-alist
-                                  cform ctx wrld state-vars)))))))))))))))))))))
+                                  stobjs-out bindings known-stobjs
+                                  nil ; known-dfs (translating a quotep)
+                                  flet-alist
+                                  cform ctx wrld
+                                  state-vars)))))))))))))))))))))
    (t (trans-er+? cform x ctx
                   "Every LAMBDA object and lambda$ term must be a true list ~
                    of at least 3 elements, e.g., (LAMBDA vars ...dcls... ~
                    body) and ~x0 is not.  ~@1"
                   x *gratuitous-lambda-object-restriction-msg*))))
 
-(defun translate-with-var-tuples (tuples stobjs-out bindings known-stobjs cform
+(defun translate-with-var-tuples (tuples stobjs-out bindings known-stobjs known-dfs cform
                                          ctx wrld state-vars)
 
 ; Tuples is a true-listp of 4-tuples of the form (var spec init-flg init-form),
@@ -22310,7 +23348,7 @@
 ; from the surrounding scope.  So there's no simple check that there are no
 ; free variables.  Only top-level translation/evaluation can determine that.
 
-; We return a list of ``translated with-var-tuples which are also 4-tuples but
+; We return a list of "translated" with-var-tuples which are also 4-tuples but
 ; with different components: (var spec guard-term init-term), where guard-term
 ; is the fully translated guard expression expressing the type spec relative to
 ; var.
@@ -22336,14 +23374,19 @@
    ((endp tuples) (trans-value nil))
    (t (let* ((var (car (car tuples)))
              (spec (cadr (car tuples)))
-             (guard-form    ; untranslated guard
+             (guard-form ; untranslated guard
               (translate-declaration-to-guard spec var wrld))
              (init-form (if (caddr (car tuples))
                             (cadddr (car tuples))
-                            *nil*))
+                          *nil*))
+             (known-dfs (if (eq spec 'double-float)
+                            (cons var known-dfs)
+                          known-dfs))
              (stobjs-out-simple (if (eq stobjs-out t)
                                     t
-                                    '(nil))))
+                                  (if (eq spec 'double-float)
+                                      '(:df)
+                                    '(nil)))))
         (cond
          ((not (legal-variablep var))
           (trans-er+? cform var ctx "~x0 is not a legal variable name." var))
@@ -22364,6 +23407,7 @@
                                       stobjs-out-simple
                                       nil ; bindings
                                       known-stobjs
+                                      known-dfs
                                       nil ; flet-alist
                                       cform ctx wrld state-vars))
               (guard-term (translate11 guard-form
@@ -22371,17 +23415,18 @@
                                        stobjs-out-simple
                                        nil ; bindings
                                        known-stobjs
+                                       known-dfs
                                        nil ; flet-alist
                                        cform ctx wrld state-vars))
               (rest (translate-with-var-tuples
                      (cdr tuples)
-                     stobjs-out bindings known-stobjs
+                     stobjs-out bindings known-stobjs known-dfs
                      cform ctx wrld state-vars)))
              (trans-value
               (cons (list var spec guard-term init-term) rest)))))))))
 
-(defun translate11-do-finally (form stobjs-out known-stobjs cform ctx wrld
-                                    do-state-vars settable-vars)
+(defun translate11-do-finally (form stobjs-out known-stobjs known-dfs cform ctx
+                                    wrld do-state-vars settable-vars)
 
 ; Here we translate the FINALLY clause of a do loop$.  Thus, do-state-vars has
 ; a non-nil :do-expressionp field.  It is tempting simply to call translate11
@@ -22397,6 +23442,7 @@
                  stobjs-out
                  nil        ; bindings
                  known-stobjs
+                 known-dfs
                  nil ; flet-alist
                  cform ctx wrld
                  do-state-vars)
@@ -22409,6 +23455,7 @@
                             t   ; stobjs-out
                             nil ; bindings
                             known-stobjs
+                            known-dfs
                             nil ; flet-alist
                             cform ctx wrld
                             do-state-vars)
@@ -22426,8 +23473,8 @@
                                                 See :DOC do-loop$."
                                                msg)))))))))))
 
-(defun translate11-loop$ (x stobjs-out bindings known-stobjs flet-alist cform
-                            ctx wrld state-vars)
+(defun translate11-loop$ (x stobjs-out bindings known-stobjs known-dfs
+                            flet-alist cform ctx wrld state-vars)
 
 ; Warning: We assume that the translation of a loop$ is always a loop$ scion
 ; call whose first argument (after full translation) is a quoted LAMBDA
@@ -22554,6 +23601,9 @@
 ; type-guard-wrt-LOOP$-IVARS target-thing), and go read the comment in
 ; translate-vsts for a precise description!
 
+                (known-dfs
+                 (trans-value
+                  (adjust-known-dfs-for-var-tuples tvsts known-dfs)))
                 (translated-until-guard
                  (if (and untilc
                           (not (eq (excart :untranslated :guard untilc) t)))
@@ -22562,6 +23612,7 @@
                                   stobjs-out-simple
                                   nil ; bindings
                                   nil ; known-stobjs
+                                  known-dfs
                                   nil ; flet-alist
                                   cform ctx wrld state-vars)
                    (trans-value *t*)))
@@ -22572,6 +23623,7 @@
                                   stobjs-out-simple
                                   nil ; bindings
                                   nil ; known-stobjs
+                                  known-dfs
                                   nil ; flet-alist
                                   cform ctx wrld state-vars)
                    (trans-value *nil*)))
@@ -22583,6 +23635,7 @@
                                   stobjs-out-simple
                                   nil ; bindings
                                   nil ; known-stobjs
+                                  known-dfs
                                   nil ; flet-alist
                                   cform ctx wrld state-vars)
                    (trans-value *t*)))
@@ -22593,6 +23646,7 @@
                                   stobjs-out-simple
                                   nil ; bindings
                                   nil ; known-stobjs
+                                  known-dfs
                                   nil ; flet-alist
                                   cform ctx wrld state-vars)
                    (trans-value *nil*)))
@@ -22604,6 +23658,7 @@
                                   stobjs-out-simple
                                   nil ; bindings
                                   nil ; known-stobjs
+                                  known-dfs
                                   nil ; flet-alist
                                   cform ctx wrld state-vars)
                    (trans-value *t*)))
@@ -22614,6 +23669,7 @@
                                   stobjs-out-simple
                                   nil ; bindings
                                   nil ; known-stobjs
+                                  known-dfs
                                   nil ; flet-alist
                                   cform ctx wrld state-vars)
                    (trans-value *nil*))))
@@ -22677,8 +23733,10 @@
                        (if whenc
                            (set-difference-eq
                             (revappend
-                             (all-vars1-lst (list (excart :translated :guard whenc)
-                                                  (excart :translated :body whenc))
+                             (all-vars1-lst (list (excart :translated :guard
+                                                          whenc)
+                                                  (excart :translated :body
+                                                          whenc))
                                             nil)
                              nil)
                             iteration-vars)
@@ -22738,7 +23796,7 @@
                       lobodyc lobody-free-vars))))
                   nil
                   stobjs-out-simple ; only DO returns stobj or multiple values
-                  bindings known-stobjs flet-alist
+                  bindings known-stobjs known-dfs flet-alist
                   cform ctx wrld state-vars)))))))
          (t ; (eq (car parse) 'DO)
           (mv-let (wvts mform values do-bodyc fin-bodyc finp)
@@ -22754,7 +23812,7 @@
 ; cartons are just being used to keep the guard and body together.  But cartons
 ; were handy for the FOR loop$ case so we can live with that.
 
-            (let* ((stobjs (collect-non-x nil values))
+            (let* ((stobjs (collect-non-nil-df values))
                    (values0 values)
                    (values (or values '(nil)))
                    (do-expressionp (make do-expressionp
@@ -22762,8 +23820,8 @@
                                          :with-vars (strip-cars wvts)))
                    (do-state-vars (change state-vars state-vars
                                           :do-expressionp do-expressionp))
-                   (settable-vars (append (collect-non-x nil values)
-                                          (strip-cars wvts))))
+                   (settable-vars (append (strip-cars wvts)
+                                          stobjs)))
 
 ; We start with some checks largely focused on :values.
 
@@ -22796,19 +23854,23 @@
                (t
                 (trans-er-let*
                  ((twvts (translate-with-var-tuples wvts stobjs-out-simple
-                                                    nil known-stobjs
+                                                    nil known-stobjs known-dfs
                                                     cform ctx wrld state-vars))
 
 ; The nil above in the call of translate-with-var-tuples is a value for
 ; bindings which is passed in only so that the signature of that function is
 ; the same as that for the translate11 calls below.
 
+                  (known-dfs
+                   (trans-value
+                    (adjust-known-dfs-for-var-tuples twvts known-dfs)))
                   (translated-mform
                    (translate11 mform
                                 nil ; ilk
                                 stobjs-out-simple
                                 nil ; bindings
                                 known-stobjs
+                                known-dfs
                                 nil ; flet-alist
                                 cform ctx wrld state-vars))
                   (translated-do-body-guard
@@ -22817,6 +23879,7 @@
                                 stobjs-out-simple
                                 nil ; bindings
                                 known-stobjs
+                                known-dfs
                                 nil ; flet-alist
                                 cform ctx wrld
                                 state-vars))
@@ -22830,6 +23893,7 @@
                                 stobjs-out-simple
                                 nil               ; bindings
                                 known-stobjs
+                                known-dfs
                                 nil ; flet-alist
                                 cform ctx wrld
                                 do-state-vars))
@@ -22839,6 +23903,7 @@
                                 stobjs-out-simple
                                 nil ; bindings
                                 known-stobjs
+                                known-dfs
                                 nil ; flet-alist
                                 cform ctx wrld
                                 state-vars))
@@ -22861,7 +23926,7 @@
 ; found in a comment in cmp-do-body.
 
                            stobjs-out-simple
-                           known-stobjs
+                           known-stobjs known-dfs
                            cform ctx wrld
                            do-state-vars
                            settable-vars)))))
@@ -23014,7 +24079,7 @@
                                              type-preds
                                              translated-do-body-guard
                                              sigma
-                                             known-stobjs flet-alist
+                                             known-stobjs known-dfs flet-alist
                                              cform ctx wrld state-vars))
                                            (alist
                                             (trans-value
@@ -23026,7 +24091,7 @@
                                              type-preds
                                              translated-do-body-guard
                                              sigma
-                                             known-stobjs
+                                             known-stobjs known-dfs
                                              flet-alist cform ctx wrld
                                              state-vars))
                                            (finally-fn
@@ -23035,7 +24100,7 @@
                                              type-preds
                                              translated-fin-body-guard
                                              sigma
-                                             known-stobjs
+                                             known-stobjs known-dfs
                                              flet-alist cform ctx wrld
                                              state-vars)))
                                           (let ((bindings
@@ -23058,12 +24123,12 @@
                                                alist
                                                do-fn
                                                finally-fn
-                                               (loop$-default values)
+                                               (kwote values)
                                                (kwote untrans-measure)
                                                (kwote x))))))))
                                       )))))))))))))))))))))))))))
 
-(defun translate11 (x ilk stobjs-out bindings known-stobjs flet-alist
+(defun translate11 (x ilk stobjs-out bindings known-stobjs known-dfs flet-alist
                       cform ctx wrld state-vars)
 
 ; Warning: Keep this in sync with macroexpand1*-cmp.  Also, for any new special
@@ -23135,6 +24200,10 @@
 ; allows us to implement the :STOBJS declaration in defuns, by which the user
 ; can declare the stobjs in a function.
 
+; Known-dfs is a list of variables that should be assumed to represent :DFs.
+; It should be disjoint from known-stobjs.  Any variable not in this list and
+; not in known-stobjs represents an ordinary object.
+
 ; The flet-alist argument was given that name when flet was first supported in
 ; ACL2.  Now it includes information not only from superior flet bindings but
 ; also from superior macrolet bindings.  Each entry is of the form (list* name
@@ -23189,11 +24258,11 @@
                     "The proper form of a quoted constant is (quote x), but ~
                      ~x0 is not of this form."
                     x))
+       (t (trans-er-let*
+           ((transx
 
 ; We now know that x denotes a term.  Let transx be that term.
 
-       (t (trans-er-let*
-           ((transx
              (cond
               ((keywordp x) (trans-value (kwote x)))
               ((symbolp x)
@@ -23211,7 +24280,8 @@
                (if (or (eq ilk :FN) (eq ilk :FN?))
                    (translate11-lambda-object
                     (cadr x)
-                    stobjs-out bindings known-stobjs flet-alist
+                    stobjs-out bindings known-stobjs
+                    flet-alist
                     cform ctx wrld state-vars nil)
 
 ; Historical Note: We once tried to cause an error on lambda objects outside
@@ -23282,7 +24352,7 @@
                 "is not a function symbol or lambda object")))
             (t
              (translate11-var-or-quote-exit x transx stobjs-out bindings
-                                            known-stobjs flet-alist
+                                            known-stobjs known-dfs flet-alist
                                             cform ctx wrld state-vars))))))))
    ((not (true-listp (cdr x)))
     (trans-er ctx
@@ -23290,36 +24360,14 @@
                ~x0 is not of this form."
               x))
    ((not (symbolp (car x)))
-    (cond ((or (not (consp (car x)))
-               (not (eq (caar x) 'lambda)))
-           (trans-er ctx
-                     "Function (and macro) applications in ACL2 must begin ~
-                      with a symbol or LAMBDA expression.  ~x0 is not of this ~
-                      form."
-                     x))
-          ((or (not (true-listp (car x)))
-               (not (>= (length (car x)) 3))
-               (not (true-listp (cadr (car x)))))
-           (trans-er ctx
-                     "Illegal LAMBDA expression: ~x0."
-                     x))
-          ((not (= (length (cadr (car x))) (length (cdr x))))
-           (trans-er+ x ctx
-                      "The LAMBDA expression ~x0 takes ~#1~[no arguments~/1 ~
-                       argument~/~x2 arguments~] and is being passed ~#3~[no ~
-                       arguments~/1 argument~/~x4 arguments~]."
-                      (car x)
-                      (zero-one-or-more (length (cadr (car x))))
-                      (length (cadr (car x)))
-                      (zero-one-or-more (length (cdr x)))
-                      (length (cdr x))))
-          (t (translate11
-              (list* 'let
-                     (listlis (cadr (car x)) (cdr x))
-                     (cddr (car x)))
-              nil ; ilk
-              stobjs-out bindings known-stobjs flet-alist x ctx wrld
-              state-vars))))
+    (mv-let (msg val)
+      (lambda-to-let x)
+      (cond (msg (trans-er ctx "~@0" msg))
+            (t (translate11
+                val
+                nil ; ilk
+                stobjs-out bindings known-stobjs known-dfs flet-alist x ctx wrld
+                state-vars)))))
    ((and (access state-vars state-vars :in-macrolet-def) ; inside macrolet body
          (assoc-eq (car x) flet-alist)) ; call of locally-bound symbol
 
@@ -23382,7 +24430,7 @@
 ; by its ersatz counterpart, e.g., SETQ will become ERSATZ-SETQ, which is an
 ; undefined function of 2 arguments so that translate can proceed to
 ; macroexpand this form.  In the context of a DO or FINALLY translation we
-; treat PROGN specially, expanding it to nest of ersatz-prog2s just as though
+; treat PROGN specially, expanding it to a nest of ersatz-prog2s just as though
 ; it were defined as a macro in this context.
 
     (let* ((temp (assoc-eq (car x) *cltl-to-ersatz-fns*)) ; nil for progn
@@ -23407,18 +24455,26 @@
              (trans-er-let*
               ((body
                 (translate11 (caddr x) ilk
-                             (compute-stobj-flags (cadr x) known-stobjs
-                                                  wrld)
-                             bindings known-stobjs flet-alist cform ctx wrld
+                             (if (eq stobjs-out t)
+                                 t
+                               (compute-stobj-flags (cadr x) known-stobjs
+                                                    known-dfs wrld))
+                             bindings known-stobjs known-dfs flet-alist cform
+                             ctx wrld
                              (change state-vars state-vars
                                      :do-expressionp nil))))
               (trans-value (make-ersatz-mv-setq (cadr x) body))))))
           (setq
            (trans-er-let*
             ((body (translate11 (caddr x) ilk
-                                (compute-stobj-flags (list (cadr x))
-                                                     known-stobjs wrld)
-                                bindings known-stobjs flet-alist cform ctx wrld
+                                (if (eq stobjs-out t)
+                                    t
+                                  (compute-stobj-flags (list (cadr x))
+                                                       known-stobjs
+                                                       known-dfs
+                                                       wrld))
+                                bindings known-stobjs known-dfs flet-alist
+                                cform ctx wrld
                                 (change state-vars state-vars
                                         :do-expressionp nil))))
             (trans-value (fcons-term* ersatz-fn (cadr x) body))))
@@ -23427,11 +24483,13 @@
           (return
            (trans-er-let*
             ((body (translate11 (cadr x) ilk
-                                (access do-expressionp
-                                        (access state-vars state-vars
-                                                :do-expressionp)
-                                        :stobjs-out)
-                                bindings known-stobjs
+                                (if (eq stobjs-out t)
+                                    t
+                                  (access do-expressionp
+                                          (access state-vars state-vars
+                                                  :do-expressionp)
+                                          :stobjs-out))
+                                bindings known-stobjs known-dfs
                                 flet-alist cform ctx wrld
                                 (change state-vars state-vars
                                         :do-expressionp nil))))
@@ -23446,19 +24504,19 @@
                 ((body1 (translate11 (cadr x) ilk
                                      stobjs-out
                                      bindings
-                                     known-stobjs flet-alist cform ctx wrld
-                                     state-vars))
+                                     known-stobjs known-dfs flet-alist cform
+                                     ctx wrld state-vars))
                  (body2 (translate11 (caddr x) ilk stobjs-out bindings
-                                     known-stobjs flet-alist cform ctx wrld
-                                     state-vars)))
+                                     known-stobjs known-dfs flet-alist cform
+                                     ctx wrld state-vars)))
                 (trans-value (fcons-term* ersatz-fn body1 body2)))))
           (progn
             (translate11
              (cond ((null (cdr x)) *NIL*) ; or nil, since we are translating
                    ((null (cddr x)) (cadr x))
                    (t (xxxjoin 'prog2 (cdr x))))
-             ilk stobjs-out bindings known-stobjs flet-alist cform ctx wrld
-             state-vars))
+             ilk stobjs-out bindings known-stobjs known-dfs flet-alist cform
+             ctx wrld state-vars))
           (otherwise
            (trans-er ctx
                      "Implementation error: There is no ersatz function for ~
@@ -23517,8 +24575,8 @@
               flet-alist cform ctx wrld state-vars nil))))
    ((eq (car x) 'loop$)
     (cond ((eq ilk nil)
-           (translate11-loop$ x stobjs-out bindings known-stobjs flet-alist
-                              cform ctx wrld state-vars))
+           (translate11-loop$ x stobjs-out bindings known-stobjs known-dfs
+                              flet-alist cform ctx wrld state-vars))
           (t (trans-er+? cform x
                          ctx
                          "It is illegal for a LOOP$ expression to occur in a ~
@@ -23555,8 +24613,8 @@
              (congruent-stobjsp s1 s2 wrld))
         (mv-let (erp val bindings)
           (translate11 (list 'mv s1 s2)
-                       ilk stobjs-out bindings known-stobjs flet-alist
-                       cform ctx wrld state-vars)
+                       ilk stobjs-out bindings known-stobjs known-dfs
+                       flet-alist cform ctx wrld state-vars)
           (cond (erp (trans-er+? cform x
                                  ctx
                                  "The form ~x0 failed to translate because ~
@@ -23603,13 +24661,13 @@
                  32)))
         (cond ((< (length (cdr x)) 2)
                (trans-er ctx
-                         "MV must be given at least two arguments, but ~x0 has ~
-                          fewer than two arguments."
+                         "MV must be given at least two arguments, but ~x0 ~
+                          has fewer than two arguments."
                          x))
               (t
                (trans-er ctx
-                         "MV must be given no more than 32 arguments; thus ~x0 ~
-                          has too many arguments."
+                         "MV must be given no more than 32 arguments; thus ~
+                          ~x0 has too many arguments."
                          x))))
        ((consp stobjs-out)
         (cond
@@ -23625,22 +24683,23 @@
           (trans-er-let*
            ((args (translate11-lst (cdr x)
                                    nil ; ilks, where (eq (car x) 'mv)
-                                   stobjs-out bindings known-stobjs 'mv
-                                   flet-alist x ctx wrld state-vars)))
+                                   stobjs-out bindings known-stobjs known-dfs
+                                   'mv flet-alist x ctx wrld state-vars)))
            (trans-value (listify args))))))
-       (t (let* ((new-stobjs-out (compute-stobj-flags (cdr x)
-                                                      known-stobjs
-                                                      wrld))
-                 (bindings
-                  (translate-bind stobjs-out new-stobjs-out bindings)))
+       (t (let ((stobjs-out-df?
+                 (compute-stobj-flags-df? (cdr x) known-stobjs known-dfs
+                                          wrld)))
 
-; When we compute new-stobjs-out, above, we do with untranslated
-; terms.  The stobj slots of an mv must be occupied by stobj variable
-; names!  If a slot is occupied by anything else, the occupant must be
-; a single non-stobj.
+; When we compute stobjs-out-df?, above, we do with untranslated terms.  The
+; stobj slots of an mv must be occupied by stobj variable names!  If a slot is
+; occupied by anything else, the occupant must be a single non-stobj.
 
             (cond
-             ((not (no-duplicatesp (collect-non-x nil new-stobjs-out)))
+             ((not (no-duplicatesp
+; The following is similar to (collect-non-nil-df stobjs-out-df?), but it also
+; removes :df?.
+                    (set-difference-eq stobjs-out-df?
+                                       '(nil :df :df?))))
               (trans-er ctx
                         "It is illegal to return more than one reference to a ~
                          given single-threaded object in an MV form.  The ~
@@ -23648,16 +24707,18 @@
                         x))
              (t
               (mv-let
-                (erp args bindings)
-                (translate11-lst (cdr x)
-                                 nil ; ilks, where (eq (car x) 'mv)
-                                 new-stobjs-out
-                                 bindings known-stobjs
-                                 'mv flet-alist x ctx wrld state-vars)
+                (erp args bindings returned-stobjs-out)
+                (translate11-lst/stobjs-out (cdr x)
+                                            nil ; ilks, where (eq (car x) 'mv)
+                                            stobjs-out-df?
+                                            bindings known-stobjs known-dfs
+                                            'mv flet-alist x ctx wrld
+                                            state-vars)
                 (cond
                  (erp
                   (let ((st/call (find-stobj-out-and-call (cdr x) known-stobjs
-                                                          ctx wrld state-vars)))
+                                                          ctx wrld
+                                                          state-vars)))
                     (cond
                      (st/call
                       (trans-er+ cform ctx
@@ -23673,11 +24734,25 @@
                                  'mv
                                  (car st/call)))
                      (t (mv erp args bindings)))))
-                 (t (trans-value (listify args))))))))))))
+                 (t (let ((bindings (translate-bind stobjs-out
+                                                    returned-stobjs-out
+                                                    bindings)))
+                      (trans-value (listify args)))))))))))))
    ((eq (car x) 'mv-let)
-    (translate11-mv-let x nil nil stobjs-out bindings known-stobjs
+    (translate11-mv-let x nil nil stobjs-out bindings known-stobjs known-dfs
                         nil nil ; stobj info
                         flet-alist ctx wrld state-vars))
+   ((and (eq (car x) 'dfp)
+         (consp (cdr x))
+         (null (cddr x))
+         (symbolp (cadr x))
+         (eq (legal-variable-or-constant-namep (cadr x))
+             'variable)
+         (not (stobjp (cadr x) known-stobjs wrld)))
+
+; We want to call dfp on variables in guards on df variables.
+
+    (trans-value x))
    ((assoc-eq (car x) flet-alist)
     (let ((entry (assoc-eq (car x) flet-alist)))
       (cond
@@ -23687,7 +24762,8 @@
           (cond (erp ; expansion is a msg
                  (trans-er+? cform x ctx "~@0" expansion))
                 (t (translate11 expansion ilk stobjs-out bindings known-stobjs
-                                flet-alist cform ctx wrld state-vars)))))
+                                known-dfs flet-alist cform ctx wrld
+                                state-vars)))))
        (t ; X is a call of an flet-bound symbol
 
 ; The lambda-bodies in flet-alist are already translated.  Our approach is to
@@ -23718,17 +24794,17 @@
                  (trans-er-let*
                   ((args (translate11-lst (cdr x)
                                           nil ;;; ilks = '(nil ... nil)
-                                          t bindings known-stobjs nil
+                                          t bindings known-stobjs known-dfs nil
                                           flet-alist x ctx wrld state-vars)))
                   (trans-value (fcons-term lambda-fn args))))
                 (t
                  (translate11-call x lambda-fn (cdr x) stobjs-out stobjs-out2
-                                   bindings known-stobjs
+                                   bindings known-stobjs known-dfs
                                    (msg "a call of FLET-bound function ~x0"
                                         (car x))
                                    flet-alist ctx wrld state-vars))))))))
    ((and bindings
-         (not (eq (caar bindings) :stobjs-out))
+         (not (top-level-bindings-p bindings))
          (hons-get (car x) *syms-not-callable-in-code-fal*))
     (trans-er+ x ctx
                "We do not permit the use of ~x0 inside of code to be executed ~
@@ -23796,7 +24872,7 @@
               ((ans (translate11 (caddr x)
                                  nil ; ilk
                                  stobjs-out bindings
-                                 known-stobjs flet-alist x ctx wrld
+                                 known-stobjs known-dfs flet-alist x ctx wrld
                                  state-vars)))
 
 ; The next mv-let is spiritually just a continuation of the trans-er-let*
@@ -23809,8 +24885,8 @@
                 (test-erp test-term test-bindings)
                 (translate11 (list (cadr x) 'form)
                              nil ; ilk
-                             '(nil) nil known-stobjs flet-alist x ctx wrld
-                             state-vars)
+                             '(nil) nil known-stobjs known-dfs flet-alist x ctx
+                             wrld state-vars)
                 (declare (ignore test-bindings))
                 (cond
                  (test-erp (mv test-erp test-term bindings))
@@ -23894,8 +24970,8 @@
                  (eq creator 'create-state)
                (eq st (stobj-creatorp creator wrld))))
         (translate11-mv-let mv-let-form nil nil stobjs-out bindings
-                            known-stobjs st creator flet-alist ctx wrld
-                            state-vars))
+                            known-stobjs known-dfs st creator flet-alist ctx
+                            wrld state-vars))
        (t
         (let ((actual-creator (get-stobj-creator st wrld)))
           (cond
@@ -23996,7 +25072,7 @@
                           (null sig))
                       stobjs-out-reduced
                     sig)
-                  bindings known-stobjs+ flet-alist
+                  bindings known-stobjs+ known-dfs flet-alist
                   x ctx wrld state-vars)))
               (ignore (if (or sig
                               (eq stobjs-out t)
@@ -24053,14 +25129,14 @@
                               'state)
                         nil
                         (if (eq stobjs-out t) t '(state))
-                        bindings known-stobjs+ flet-alist
+                        bindings known-stobjs+ known-dfs flet-alist
                         x ctx wrld state-vars)))
                      (translate11-let
                       main-body
                       write-call
                       (list tbody)
                       (if (eq stobjs-out t) t '(state))
-                      bindings known-stobjs+ flet-alist ctx wrld state-vars)))
+                      bindings known-stobjs+ known-dfs flet-alist ctx wrld state-vars)))
                    (&
                     (trans-er+ x ctx
                                "Implementation error (please report to the ~
@@ -24089,14 +25165,14 @@
                         let-expr
                         nil
                         t ; stobjs-out (see comment above)
-                        bindings known-stobjs+ flet-alist
+                        bindings known-stobjs+ known-dfs flet-alist
                         x ctx wrld state-vars)))
                      (translate11-mv-let
                       main-body
                       tbody
                       translated-let-expr
                       stobjs-out
-                      bindings known-stobjs+ nil nil flet-alist
+                      bindings known-stobjs+ known-dfs nil nil flet-alist
                       ctx wrld state-vars)))
                    (& (trans-er+ x ctx
                                  "Implementation error (please report to the ~
@@ -24118,7 +25194,7 @@
                                   translated-main-body
                                   nil
                                   t ; stobjs-out
-                                  bindings known-stobjs flet-alist
+                                  bindings known-stobjs known-dfs flet-alist
                                   ctx wrld state-vars))))))))))
      (t ; stobjs-out is not t and state is not a known stobj
       (trans-er ctx
@@ -24210,114 +25286,177 @@
                                       ,guarded-producer
                                       (declare (ignorable ,@producer-vars))
                                       ,body1)))))
-              (trans-er-let*
-               ((tactuals
-                 (translate-stobj-calls actuals creators t bindings
-                                        new-known-stobjs flet-alist x ctx wrld
+              (mv-let (erp tproducer bindings producer-known-dfs)
+                (translate11-collecting-known-dfs
+                 guarded-producer
+                 (compute-stobj-flags producer-vars
+                                      new-known-stobjs
+                                      known-dfs
+                                      wrld)
+                 nil bindings new-known-stobjs known-dfs flet-alist
+                 guarded-producer ctx wrld state-vars
+                 producer-vars)
+                (cond
+                 (erp (trans-er ctx "~@0" tproducer))
+                 (t
+                  (trans-er-let*
+                   ((tactuals
+                     (translate-stobj-calls
+                      actuals creators t bindings new-known-stobjs known-dfs
+                      flet-alist x ctx wrld state-vars))
+                    (tupdaters
+                     (translate-stobj-calls
+                      updaters creators nil bindings new-known-stobjs known-dfs
+                      flet-alist x ctx wrld state-vars))
+                    (tconsumer
+                     (translate11
+                      guarded-consumer
+                      nil ; ilk
+                      stobjs-out bindings known-stobjs producer-known-dfs
+                      flet-alist x ctx wrld state-vars))
+                    (tbody1
+                     (translate11-let*
+                      body1 tconsumer tupdaters stobjs-out bindings
+                      known-stobjs producer-known-dfs flet-alist ctx wrld
+                      state-vars))
+                    (tbody2
+                     (cond
+                      (letp
+                       (translate11-let body2 tbody1 (list tproducer)
+                                        stobjs-out
+                                        bindings new-known-stobjs known-dfs
+                                        flet-alist ctx wrld
                                         state-vars))
-                (tupdaters
-                 (translate-stobj-calls updaters creators nil bindings
-                                        new-known-stobjs flet-alist x ctx wrld
-                                        state-vars))
-                (tconsumer
-                 (translate11 guarded-consumer
-                              nil ; ilk
-                              stobjs-out bindings known-stobjs
-                              flet-alist x ctx wrld state-vars))
-                (tbody1 (translate11-let* body1 tconsumer tupdaters stobjs-out
-                                          bindings known-stobjs flet-alist ctx
-                                          wrld state-vars))
-                (tbody2 (cond
-                         (letp (translate11-let body2 tbody1 nil
-                                                stobjs-out
-                                                bindings new-known-stobjs
-                                                flet-alist ctx wrld
-                                                state-vars))
-                         (t (translate11-mv-let body2 nil tbody1 stobjs-out
-                                                bindings new-known-stobjs
-                                                nil nil ; local-stobj args
-                                                flet-alist ctx wrld
-                                                state-vars)))))
-               (let ((actual-stobjs-out
-                      (translate-deref stobjs-out bindings))
-                     (dups-check
-                      (no-duplicate-indices-checks-for-stobj-let-actuals
-                       bound-vars actuals creators producer-vars stobj wrld))
-                     (producer-stobjs
-                      (collect-non-x
-                       nil
-                       (compute-stobj-flags producer-vars known-stobjs wrld))))
-                 (cond
-                  ((and updaters
+                      (t
+                       (translate11-mv-let body2 tproducer tbody1 stobjs-out
+                                           bindings new-known-stobjs known-dfs
+                                           nil nil ; local-stobj args
+                                           flet-alist ctx wrld
+                                           state-vars)))))
+                   (let ((actual-stobjs-out
+                          (translate-deref stobjs-out bindings))
+                         (dups-check
+                          (no-duplicate-indices-checks-for-stobj-let-actuals
+                           bound-vars actuals creators producer-vars stobj
+                           wrld))
+                         (producer-stobjs
+                          (collect-non-x
+                           nil
+                           (compute-stobj-flags producer-vars known-stobjs
+                                                nil ; collect without dfs
+                                                wrld))))
+                     (cond
+                      ((and updaters
 
 ; It may be impossible for actual-stobjs-out to be an atom here (presumably
 ; :stobjs-out or a function symbol).  But we cover that case, albeit with a
 ; potentially mysterious error message.
 
-                        (or (not (consp actual-stobjs-out))
-                            (not (member-eq stobj actual-stobjs-out))))
-                   (let ((stobjs-returned
-                          (and (consp actual-stobjs-out)
-                               (collect-non-x nil actual-stobjs-out))))
-                     (trans-er+ x ctx
-                                "A STOBJ-LET form has been encountered that ~
-                                specifies (with its list of producer ~
-                                variables) ~#1~[a call~/calls~] of stobj ~
-                                updater~#2~[~/s~] ~&2 of ~x0.  It is ~
-                                therefore a requirement that ~x0 be among the ~
-                                outputs of the STOBJ-LET, but it is not.  The ~
-                                STOBJ-LET returns ~#3~[no single-threaded ~
-                                objects~/the single-threaded object ~&4~/the ~
-                                single-threaded objects ~&4~/an undetermined ~
-                                output signature in this context~].  See :DOC ~
-                                stobj-let."
-                                stobj
-                                updaters
-                                (remove-duplicates-eq (strip-cars updaters))
-                                (if (consp actual-stobjs-out)
-                                    (zero-one-or-more stobjs-returned)
-                                  3)
-                                stobjs-returned)))
-                  ((and (atom actual-stobjs-out) ; impossible?
-                        (set-difference-eq producer-stobjs bound-vars))
-                   (trans-er+ x ctx
-                              "A STOBJ-LET form has been encountered that ~
-                              specifies stobj producer variable~#0~[~/s~] ~&0 ~
-                              that cannot be determined to be returned by ~
-                              that STOBJ-LET form, that is, by its consumer ~
-                              form.  See :DOC stobj-let."
-                              (set-difference-eq producer-stobjs bound-vars)))
-                  ((set-difference-eq
-                    (set-difference-eq producer-stobjs bound-vars)
-                    actual-stobjs-out)
-                   (trans-er+ x ctx
-                              "A STOBJ-LET form has been encountered that ~
-                              specifies stobj producer variable~#0~[ ~&0 that ~
-                              is~/s ~&0~ that are~] not returned by that ~
-                              STOBJ-LET form, that is, not returned by its ~
-                              consumer form.  See :DOC stobj-let."
-                              (set-difference-eq
-                               (set-difference-eq producer-stobjs bound-vars)
-                               actual-stobjs-out)))
-                  (t
-                   (trans-er-let*
-                    ((val
-                      (translate11-let `(let ,(pairlis$ bound-vars
-                                                        (pairlis$ actuals nil))
-                                          (declare (ignorable ,@bound-vars))
-                                          ,body2)
-                                       tbody2 tactuals stobjs-out bindings
-                                       known-stobjs flet-alist ctx wrld
+                            (or (not (consp actual-stobjs-out))
+                                (not (member-eq stobj actual-stobjs-out))))
+                       (let ((stobjs-returned
+                              (and (consp actual-stobjs-out)
+                                   (collect-non-nil-df actual-stobjs-out))))
+                         (trans-er+ x ctx
+                                    "A STOBJ-LET form has been encountered ~
+                                     that specifies (with its list of ~
+                                     producer variables) ~#1~[a call~/calls~] ~
+                                     of stobj updater~#2~[~/s~] ~&2 of ~x0.  ~
+                                     It is therefore a requirement that ~x0 ~
+                                     be among the outputs of the STOBJ-LET, ~
+                                     but it is not.  The STOBJ-LET returns ~
+                                     ~#3~[no single-threaded objects~/the ~
+                                     single-threaded object ~&4~/the ~
+                                     single-threaded objects ~&4~/an ~
+                                     undetermined output signature in this ~
+                                     context~].  See :DOC stobj-let."
+                                    stobj
+                                    updaters
+                                    (remove-duplicates-eq
+                                     (strip-cars updaters))
+                                    (if (consp actual-stobjs-out)
+                                        (zero-one-or-more stobjs-returned)
+                                      3)
+                                    stobjs-returned)))
+                      ((and (atom actual-stobjs-out) ; impossible?
+                            (set-difference-eq producer-stobjs bound-vars))
+                       (trans-er+ x ctx
+                                  "A STOBJ-LET form has been encountered that ~
+                                   specifies stobj producer ~
+                                   variable~#0~[~/s~] ~&0 that cannot be ~
+                                   determined to be returned by that ~
+                                   STOBJ-LET form, that is, by its consumer ~
+                                   form.  See :DOC stobj-let."
+                                  (set-difference-eq producer-stobjs
+                                                     bound-vars)))
+                      ((set-difference-eq
+                        (set-difference-eq producer-stobjs bound-vars)
+                        actual-stobjs-out)
+                       (trans-er+ x ctx
+                                  "A STOBJ-LET form has been encountered that ~
+                                   specifies stobj producer variable~#0~[ ~&0 ~
+                                   that is~/s ~&0~ that are~] not returned by ~
+                                   that STOBJ-LET form, that is, not returned ~
+                                   by its consumer form.  See :DOC stobj-let."
+                                  (set-difference-eq
+                                   (set-difference-eq producer-stobjs
+                                                      bound-vars)
+                                   actual-stobjs-out)))
+                      (t
+                       (trans-er-let*
+                        ((val
+                          (translate11-let
+                           `(let ,(pairlis$ bound-vars
+                                            (pairlis$ actuals nil))
+                              (declare (ignorable ,@bound-vars))
+                              ,body2)
+                           tbody2 tactuals stobjs-out bindings
+                           known-stobjs known-dfs flet-alist ctx wrld
+                           state-vars)))
+                        (cond (dups-check
+                               (trans-er-let*
+                                ((chk (translate11
+                                       dups-check
+                                       nil ; ilk
+                                       '(nil) bindings known-stobjs known-dfs
+                                       flet-alist cform ctx wrld
                                        state-vars)))
-                    (cond (dups-check
-                           (trans-er-let*
-                            ((chk (translate11 dups-check
-                                               nil ; ilk
-                                               '(nil) bindings known-stobjs
-                                               flet-alist cform ctx wrld
-                                               state-vars)))
-                            (trans-value (prog2$-call chk val))))
-                          (t (trans-value val))))))))))))))))
+                                (trans-value (prog2$-call chk val))))
+                              (t (trans-value val)))))))))))))))))))
+   ((and (eq (car x) 'the)
+         (not (eq stobjs-out t))
+         (consp (cdr x))
+         (consp (cddr x))
+         (null (cdddr x))
+         (eq (cadr x) 'double-float))
+
+; We are looking at (the double-float expr).  We insist that expr return a :DF.
+
+    (let ((stobjs-out (translate-deref stobjs-out bindings)))
+      (cond ((atom stobjs-out)
+             (assert$
+              (symbolp stobjs-out)
+              (let ((bindings (translate-bind stobjs-out '(:DF) bindings)))
+                (translate11 (caddr x) ilk '(:DF) bindings known-stobjs
+                             known-dfs flet-alist x ctx wrld state-vars))))
+            ((cdr stobjs-out)
+             (trans-er+? cform x
+                         ctx
+                         "The form ~x0 represents a single :DF value, but it ~
+                          is being used where ~n1 values are expected."
+                         x
+                         (length stobjs-out)))
+            ((not (eq (car stobjs-out) ':DF))
+             (trans-er+? cform x
+                         ctx
+                         "The form ~x0 represents a :DF, but it is being used ~
+                          where ~#1~[the stobj ~x2~/an ordinary value~] is ~
+                          expected."
+                         x
+                         (if (car stobjs-out) 0 1)
+                         (car stobjs-out)))
+            (t (translate11 (caddr x) ilk stobjs-out bindings known-stobjs
+                            known-dfs flet-alist x ctx wrld state-vars)))))
    ((getpropc (car x) 'macro-body nil wrld)
     (cond
      ((and (eq stobjs-out :stobjs-out)
@@ -24359,16 +25498,14 @@
         (macroexpand1-cmp x ctx wrld state-vars)
         (cond
          (erp (mv erp expansion bindings))
-         (t (translate11 expansion
-                         ilk
-                         stobjs-out bindings known-stobjs flet-alist x
-                         ctx wrld state-vars)))))))
+         (t (translate11 expansion ilk stobjs-out bindings known-stobjs
+                         known-dfs flet-alist x ctx wrld state-vars)))))))
    ((eq (car x) 'let)
-    (translate11-let x nil nil stobjs-out bindings known-stobjs
+    (translate11-let x nil nil stobjs-out bindings known-stobjs known-dfs
                      flet-alist ctx wrld state-vars))
    ((eq (car x) 'flet) ; (flet bindings form)
-    (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx
-                      wrld state-vars))
+    (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx wrld
+                      state-vars))
    ((eq (car x) 'macrolet) ; (macrolet bindings form)
     (translate11-macrolet x stobjs-out bindings known-stobjs flet-alist ctx
                           wrld state-vars))
@@ -24423,14 +25560,14 @@
                                   (if (eq stobjs-out t)
                                       t
                                     '(nil))
-                                  bindings known-stobjs
+                                  bindings known-stobjs known-dfs
                                   flet-alist x ctx wrld state-vars)))
               (mv-let
                 (erp2 arg2 bindings2)
                 (trans-er-let*
                  ((arg2 (translate11 (caddr x)
                                      nil ; ilk
-                                     stobjs-out bindings known-stobjs
+                                     stobjs-out bindings known-stobjs known-dfs
                                      flet-alist x ctx wrld state-vars)))
                  (trans-value arg2))
                 (cond
@@ -24441,7 +25578,7 @@
                       (erp3 arg3 bindings)
                       (translate11 (cadddr x)
                                    nil ; ilk
-                                   stobjs-out bindings known-stobjs
+                                   stobjs-out bindings known-stobjs known-dfs
                                    flet-alist x ctx wrld state-vars)
                       (cond
                        (erp3 (mv erp2 arg2 bindings2))
@@ -24449,7 +25586,8 @@
                            ((arg2 (translate11 (caddr x)
                                                nil ; ilk
                                                stobjs-out bindings known-stobjs
-                                               flet-alist x ctx wrld state-vars)))
+                                               known-dfs flet-alist x ctx wrld
+                                               state-vars)))
                            (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))
                    (t (mv erp2 arg2 bindings2))))
                  (t
@@ -24458,7 +25596,8 @@
                      ((arg3 (translate11 (cadddr x)
                                          nil ; ilk
                                          stobjs-out bindings known-stobjs
-                                         flet-alist x ctx wrld state-vars)))
+                                         known-dfs flet-alist x ctx wrld
+                                         state-vars)))
                      (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))))))
           ((and (eq (car x) 'synp)
                 (eql (length x) 4) ; else fall through to normal error
@@ -24493,12 +25632,14 @@
                                    '(nil)   ; stobjs-out
                                    bindings
                                    '(state) ; known-stobjs
+                                   nil ; known-dfs
                                    flet-alist x ctx wrld state-vars))
                (user-form0 (translate11 (caddr x)
                                         nil      ; ilk
                                         '(nil)   ; stobjs-out
                                         bindings
                                         '(state) ; known-stobjs
+                                        nil ; known-dfs
                                         flet-alist x ctx wrld
                                         state-vars))
                (term0 (translate11 (cadddr x)
@@ -24506,6 +25647,7 @@
                                    '(nil)   ; stobjs-out
                                    bindings
                                    '(state) ; known-stobjs
+                                   nil ; known-dfs
                                    flet-alist x ctx wrld state-vars)))
               (let ((quoted-vars (if (quotep vars0)
                                      vars0
@@ -24526,6 +25668,7 @@
                                        '(nil)   ; stobjs-out
                                        bindings
                                        '(state) ; known-stobjs
+                                       nil ; known-dfs
                                        flet-alist x ctx wrld state-vars)))
                         (trans-value
                          (fcons-term* 'synp
@@ -24552,14 +25695,14 @@
            (trans-er-let*
             ((args (translate11-lst (cdr x)
                                     (ilks-per-argument-slot (car x) wrld)
-                                    t bindings known-stobjs
+                                    t bindings known-stobjs known-dfs
                                     nil flet-alist x ctx wrld state-vars)))
             (trans-value (fcons-term (car x) args))))
           ((eq (car x) 'mv-list) ; and stobjs-out is not t
            (trans-er-let*
             ((arg1 (translate11 (cadr x)
                                 nil ; ilk
-                                stobjs-out bindings known-stobjs
+                                stobjs-out bindings known-stobjs known-dfs
                                 flet-alist x ctx wrld state-vars)))
             (cond ((not (and (quotep arg1)
                              (integerp (unquote arg1))
@@ -24575,7 +25718,7 @@
                                         nil ; ilk
                                         (make-list (unquote arg1)
                                                    :initial-element nil)
-                                        bindings known-stobjs
+                                        bindings known-stobjs known-dfs
                                         flet-alist x ctx wrld state-vars)))
                     (trans-value (fcons-term* 'mv-list arg1 arg2)))))))
           ((stobj-field-fn-of-stobj-type-p
@@ -24597,7 +25740,7 @@
              (trans-er-let*
               ((targ1 (translate11 arg1
                                    nil ; ilk
-                                   '(nil) bindings known-stobjs
+                                   '(nil) bindings known-stobjs known-dfs
                                    flet-alist x ctx wrld state-vars)))
               (cond
                ((and keyp (not (equal targ1 arg1))) ; an optional extra check
@@ -24626,12 +25769,13 @@
                  ((targ2 (translate11 arg2
                                       nil ; ilk
                                       stobjs-out
-                                      bindings known-stobjs
+                                      bindings known-stobjs known-dfs
                                       flet-alist x ctx wrld state-vars))
                   (targ3 (translate11 arg3
                                       nil ; ilk
                                       stobjs-out bindings known-stobjs
-                                      flet-alist x ctx wrld state-vars)))
+                                      known-dfs flet-alist x ctx wrld
+                                      state-vars)))
                  (trans-value
                   (fcons-term* 'return-last targ1 targ2 targ3))))
                ((and
@@ -24704,6 +25848,34 @@
                                                    fn0 sym))))))))
                           'ec-call '*ec-call-bad-ops*))
                ((and
+                 (eq key 'ec-call1-raw)
+                 (not (and (consp arg2)
+                           (eq (car arg2) 'quote)
+                           (consp (cdr arg2))
+                           (null (cddr arg2)))))
+                (trans-er ctx
+                          "A use of ~x0 on the term ~x1 has a :DFS argument ~
+                           that is not of the form (QUOTE lst), hence is ~
+                           illegal.  See :DOC ec-call."
+                          'ec-call
+                          arg3))
+               ((and
+                 (eq key 'ec-call1-raw)
+                 (let* ((fn (if (function-symbolp (car arg3) wrld)
+                                (car arg3)
+                              (corresponding-inline-fn (car arg3)
+                                                       wrld)))
+                        (u (cadr arg2))
+                        (stobjs-out (stobjs-out fn wrld)))
+                   (if (null u)
+                       (member-eq :df stobjs-out)
+                     (not (ec-call-boolean-listp-check stobjs-out u)))))
+                (trans-er ctx
+                          "A use of ~x0 on the term ~x1 requires a suitable ~
+                           :DFS keyword argument.  See :DOC ec-call."
+                          'ec-call
+                          arg3))
+               ((and
                  (eq key 'with-guard-checking1-raw)
                  (or (not (case-match arg2
                             (('chk-with-guard-checking-arg &) t)
@@ -24769,7 +25941,7 @@
                   (translate11 arg2
                                nil ; ilk
                                '(nil)
-                               bindings known-stobjs flet-alist x
+                               bindings known-stobjs known-dfs flet-alist x
                                ctx wrld state-vars)
                   (declare (ignore targ2-bindings))
                   (cond
@@ -24788,6 +25960,7 @@
                        t   ; stobjs-out
                        bindings
                        nil ; known-stobjs is irrelevant
+                       nil ; known-dfs (irrelevant since stobjs-out = t)
                        flet-alist x ctx wrld state-vars)
                       (declare (ignore targ3-bindings))
                       (cond
@@ -24800,7 +25973,8 @@
                      ((targ3 (translate11 arg3
                                           nil ; ilk
                                           stobjs-out bindings known-stobjs
-                                          flet-alist x ctx wrld state-vars)))
+                                          known-dfs flet-alist x ctx wrld
+                                          state-vars)))
                      (trans-value
                       (fcons-term* 'return-last
                                    targ1 targ2 targ3)))))))))))
@@ -24830,8 +26004,8 @@
              (mv-let (erp trans bindings)
                (if untrans-do-loop$
                    (translate11 untrans-do-loop$ ilk stobjs-out bindings
-                                known-stobjs flet-alist cform ctx wrld
-                                state-vars)
+                                known-stobjs known-dfs flet-alist cform ctx
+                                wrld state-vars)
                  (mv t nil bindings))
                (cond
                 ((or erp
@@ -24860,13 +26034,14 @@
                t)
            (let ((computed-stobjs-out (compute-stobj-flags (cdr x)
                                                            known-stobjs
+                                                           known-dfs
                                                            wrld)))
              (trans-er-let*
               ((args (translate11-lst (cdr x)
                                       (ilks-per-argument-slot (car x) wrld)
                                       computed-stobjs-out bindings
-                                      known-stobjs nil flet-alist x ctx wrld
-                                      state-vars)))
+                                      known-stobjs known-dfs nil flet-alist x
+                                      ctx wrld state-vars)))
               (trans-value (fcons-term (car x) args)))))
           ((and (member-eq (car x) '(makunbound-global put-global))
                 (not (eq (access state-vars state-vars :temp-touchable-vars)
@@ -24947,8 +26122,8 @@
                                        (do$-stobjs-out (cdr x)))
                                       (t (stobjs-out (car x) wrld))))))
              (translate11-call x (car x) (cdr x) stobjs-out stobjs-out2
-                               bindings known-stobjs (car x) flet-alist
-                               ctx wrld state-vars)))))
+                               bindings known-stobjs known-dfs (car x)
+                               flet-alist ctx wrld state-vars)))))
    ((arity (car x) wrld)
     (trans-er ctx
               "~x0 takes ~#1~[no arguments~/1 argument~/~x2 arguments~] but ~
@@ -24999,7 +26174,91 @@
                            with the same name but in a different package: ~v0."
                           syms))))))))
 
-(defun translate11-lst (lst ilks stobjs-out bindings known-stobjs
+(defun translate11-lst-1 (x ilk stobj-out bindings known-stobjs known-dfs
+                            msg flet-alist cform ctx wrld state-vars)
+
+; This function translates one element of a list given to translate11-lst or
+; translate11-lst/stobjs-out.  Stobj-out is a stobj name, nil, or :df.
+
+  (cond
+   ((and stobj-out
+         (not (eq stobj-out :df)))
+
+; Stobj-out is a stobj name.  It must moreover be a known stobj, and x must be
+; equal to it.
+
+    (cond
+     ((and (eq x stobj-out)
+           (or (eq known-stobjs t)
+               (member-eq x known-stobjs)))
+      (trans-value x))
+     ((eq x stobj-out)
+
+; In this case, we fail because x is not considered a stobj even though it has
+; the right name.
+
+      (let ((known-stobjs (collect-non-x nil known-stobjs)))
+        (trans-er+ cform ctx
+                   "The form ~x0 is being used~#1~[ ~/, as an argument to a ~
+                    call of ~x2,~/, ~@2,~] where the single-threaded object ~
+                    of that name is required.  But in the current context, ~
+                    ~#3~[there are no declared stobj names~/the only declared ~
+                    stobj name is ~&4~/the only declared stobj names are ~
+                    ~&4~]."
+                   x
+                   (if (null msg) 0 (if (symbolp msg) 1 2))
+                   msg
+                   (cond ((null known-stobjs) 0)
+                         ((null (cdr known-stobjs)) 1)
+                         (t 2))
+                   known-stobjs)))
+     ((and (symbolp x)
+           (congruent-stobjsp x
+                              stobj-out
+                              wrld))
+      (trans-er+ cform ctx
+                 "The form ~x0 is being used~#1~[ ~/, as an argument to a ~
+                  call of ~x2,~/, ~@2,~] where the single-threaded object ~x3 ~
+                  was expected, even though these are congruent stobjs.  See ~
+                  :DOC defstobj, in particular the discussion of congruent ~
+                  stobjs."
+                 x
+                 (if (null msg) 0 (if (symbolp msg) 1 2))
+                 msg
+                 stobj-out))
+     (t (trans-er+ cform ctx
+                   "The form ~x0 is being used~#1~[ ~/, as an argument to a ~
+                    call of ~x2,~/, ~@2,~] where the single-threaded object ~
+                    ~x3 is required.  Note that the variable ~x3 is required, ~
+                    not merely a term that returns such a single-threaded ~
+                    object, so you may need to bind ~x3 with LET; see :DOC ~
+                    stobj."
+                   x
+                   (if (null msg) 0 (if (symbolp msg) 1 2))
+                   msg
+                   stobj-out))))
+   (t (translate11 x ilk
+
+; The next argument is equal to (list stobj-out), but this way we save a cons.
+
+                   (if stobj-out ; then stobj-out must be :df
+                       '(:df)
+                     '(nil))
+                   bindings known-stobjs known-dfs flet-alist
+
+; At one time we passed in x here for cform (to represent the
+; surrounding context).  But it makes more sense to preserve cform.  To see
+; why, first note that translate11-call passes the call down to
+; translate11-lst.  Now suppose we have an error, for example from the
+; following where st is a stobj and the call should be (foo x st), not (foo st
+; x).
+;   (defun bar (x st) (declare (xargs :stobjs st)) (foo st x))
+; We want to see the call of foo when told that st is being used where an
+; ordinary object is expected.
+
+                   cform ctx wrld state-vars))))
+
+(defun translate11-lst (lst ilks stobjs-out bindings known-stobjs known-dfs
                             msg flet-alist cform ctx wrld state-vars)
 
 ; WARNING: This function's treatment of stobjs-out is unusual:
@@ -25034,90 +26293,117 @@
         ((eq stobjs-out t)
          (trans-er-let*
           ((x (translate11 (car lst) (car ilks) t bindings known-stobjs
-                           flet-alist
-                           (car lst) ctx wrld state-vars))
-           (y (translate11-lst (cdr lst) (cdr ilks) t bindings known-stobjs msg
-                               flet-alist cform ctx wrld state-vars)))
+                           known-dfs flet-alist (car lst) ctx wrld state-vars))
+           (y (translate11-lst (cdr lst) (cdr ilks) t bindings known-stobjs
+                               known-dfs msg flet-alist cform ctx wrld
+                               state-vars)))
           (trans-value (cons x y))))
-        ((car stobjs-out)
+        (t
          (trans-er-let*
-          ((x (cond
-               ((eq (if (or (eq known-stobjs t)
-                            (member-eq (car lst) known-stobjs))
-                        (car lst)
-                      nil)
-                    (car stobjs-out))
-                (trans-value (car lst)))
-               ((eq (car lst) (car stobjs-out))
-
-; In this case, we failed because (car lst) is not considered a stobj even
-; though it has the right name.
-
-                (let ((known-stobjs (collect-non-x nil known-stobjs)))
-                  (trans-er+ cform ctx
-                             "The form ~x0 is being used~#1~[ ~/, as an ~
-                              argument to a call of ~x2,~/, ~@2,~] where the ~
-                              single-threaded object of that name is ~
-                              required.  But in the current context, ~
-                              ~#3~[there are no declared stobj names~/the ~
-                              only declared stobj name is ~&4~/the only ~
-                              declared stobj names are ~&4~]."
-                             (car lst)
-                             (if (null msg) 0 (if (symbolp msg) 1 2))
-                             msg
-                             (cond ((null known-stobjs) 0)
-                                   ((null (cdr known-stobjs)) 1)
-                                   (t 2))
-                             known-stobjs)))
-               ((and (symbolp (car lst))
-                     (congruent-stobjsp (car lst)
-                                        (car stobjs-out)
-                                        wrld))
-                (trans-er+ cform ctx
-                             "The form ~x0 is being used~#1~[ ~/, as an ~
-                              argument to a call of ~x2,~/, ~@2,~] where the ~
-                              single-threaded object ~x3 was expected, even ~
-                              though these are congruent stobjs.  See :DOC ~
-                              defstobj, in particular the discussion of ~
-                              congruent stobjs."
-                             (car lst)
-                             (if (null msg) 0 (if (symbolp msg) 1 2))
-                             msg
-                             (car stobjs-out)))
-               (t (trans-er+ cform ctx
-                             "The form ~x0 is being used~#1~[ ~/, as an ~
-                              argument to a call of ~x2,~/, ~@2,~] where the ~
-                              single-threaded object ~x3 is required.  Note ~
-                              that the variable ~x3 is required, not merely a ~
-                              term that returns such a single-threaded ~
-                              object, so you may need to bind ~x3 with LET; ~
-                              see :DOC stobj."
-                             (car lst)
-                             (if (null msg) 0 (if (symbolp msg) 1 2))
-                             msg
-                             (car stobjs-out)))))
+          ((x (translate11-lst-1 (car lst) (car ilks) (car stobjs-out)
+                                 bindings known-stobjs known-dfs msg flet-alist
+                                 cform ctx wrld state-vars))
            (y (translate11-lst (cdr lst) (cdr ilks) (cdr stobjs-out)
-                               bindings known-stobjs msg flet-alist cform ctx
-                               wrld state-vars)))
-          (trans-value (cons x y))))
-        (t (trans-er-let*
-            ((x (translate11 (car lst) (car ilks) '(nil) bindings known-stobjs flet-alist
+                               bindings known-stobjs known-dfs msg flet-alist
+                               cform ctx wrld state-vars)))
+          (trans-value (cons x y))))))
 
-; At one time we passed in (car lst) here for cform (to represent the
-; surrounding context).  But it makes more sense to preserve cform.  To see
-; why, first note that translate11-call passes the call down to
-; translate11-lst.  Now suppose we have an error, for example from the
-; following where st is a stobj and the call should be (foo x st), not (foo st
-; x).
-;   (defun bar (x st) (declare (xargs :stobjs st)) (foo st x))
-; We want to see the call of foo when told that st is being used where an
-; ordinary object is expected.
+(defun translate11-lst/stobjs-out-1 (x bindings known-stobjs known-dfs
+                                       msg flet-alist cform ctx wrld
+                                       state-vars)
 
-                             cform ctx wrld state-vars))
-             (y (translate11-lst (cdr lst) (cdr ilks) (cdr stobjs-out)
-                                 bindings known-stobjs msg flet-alist cform ctx
-                                 wrld state-vars)))
-            (trans-value (cons x y))))))
+; X is typically an ordinary object with nil ilk (see the binding of stobj-out0
+; in translate11-lst/stobjs-out-rec), but it could be a :df.  We return the
+; translation of x with stobjs-out (nil) if that succeeds, else with stobjs-out
+; (:df) if that succeeds.  Because of our use of the heuristics in returns-df?,
+; we expect it to be relatively rare that we call this function; see
+; translate11-lst/stobjs-out-rec.
+
+  (mv-let (erp1 val1 bindings1)
+    (translate11-lst-1 x nil nil bindings known-stobjs known-dfs msg
+                       flet-alist cform ctx wrld state-vars)
+    (cond
+     ((null erp1)
+      (mv nil val1 bindings1 nil))
+     (t
+      (mv-let (erp2 val2 bindings2)
+        (translate11-lst-1 x nil :df bindings known-stobjs known-dfs msg
+                           flet-alist cform ctx wrld state-vars)
+        (cond (erp2
+; The first attempt may be more likely suitable in general, so we return what
+; it computed.
+               (mv erp1 val1 bindings1 nil))
+              (t (mv nil val2 bindings2 :df))))))))
+
+(defun translate11-lst/stobjs-out-rec (lst ilks stobjs-out bindings
+                                       known-stobjs known-dfs msg flet-alist
+                                       cform ctx wrld state-vars)
+
+; See translate11-lst/stobjs-out.
+
+  (cond ((atom lst)
+         (mv nil nil bindings nil)) ; (trans-value nil) plus stobjs-out := nil
+        (t
+         (let ((stobj-out0 (if (eq (car stobjs-out) :df?)
+                               (if (car ilks)
+
+; If (car ilks) is non-nil, then (car lst) is presumably not a df.
+
+                                   nil
+                                 :df?)
+                             (car stobjs-out))))
+           (mv-let (erp val bindings stobj-out)
+             (cond
+              ((eq stobj-out0 :df?)
+
+; Presumably ACL2 was unable to make a good guess at whether (car lst) returns
+; an ordinary object or a :df.  We try translating both ways if necessary.
+
+               (translate11-lst/stobjs-out-1 (car lst)
+                                             bindings known-stobjs known-dfs
+                                             msg flet-alist cform ctx wrld
+                                             state-vars))
+              (t (mv-let (erp val bindings)
+                   (translate11-lst-1 (car lst) (car ilks)
+                                      stobj-out0
+                                      bindings known-stobjs known-dfs msg
+                                      flet-alist cform ctx wrld state-vars)
+                   (mv erp val bindings stobj-out0))))
+             (cond
+              (erp (mv erp val bindings 'irrelevant))
+              (t (mv-let (erp rst bindings stobjs-out)
+                   (translate11-lst/stobjs-out-rec (cdr lst) (cdr ilks)
+                                                   (cdr stobjs-out)
+                                                   bindings known-stobjs
+                                                   known-dfs msg flet-alist
+                                                   cform ctx wrld state-vars)
+                   (cond
+                    (erp (mv erp rst bindings stobjs-out))
+                    (t (mv nil
+                           (cons val rst)
+                           bindings
+                           (cons stobj-out stobjs-out))))))))))))
+
+(defun translate11-lst/stobjs-out (lst ilks stobjs-out bindings known-stobjs
+                                       known-dfs msg flet-alist cform ctx wrld
+                                       state-vars)
+
+; This function is like translate11-lst, but with two changes.  First,
+; stobjs-out is a usual stobjs-out list whose length is the same as list,
+; except that it can contain :df? members.  Second, instead of returning the
+; usual triple (erp val bindings), it returns a fourth value, which is a
+; computed stobjs-out list.
+
+  (cond ((member-eq :df? stobjs-out)
+         (translate11-lst/stobjs-out-rec lst ilks stobjs-out bindings
+                                         known-stobjs known-dfs msg flet-alist
+                                         cform ctx wrld state-vars))
+        (t
+         (mv-let (erp val bindings)
+           (translate11-lst lst ilks stobjs-out bindings known-stobjs
+                            known-dfs msg flet-alist cform ctx wrld
+                            state-vars)
+           (mv erp val bindings stobjs-out)))))
 
 )
 
@@ -25131,7 +26417,11 @@
             translate11-lambda-object-proxy-builtin)
   :skip-checks t)
 
-(defun translate1-cmp (x stobjs-out bindings known-stobjs ctx w state-vars)
+(defun translate1-cmp+ (x stobjs-out bindings known-stobjs known-dfs ctx w
+                          state-vars)
+
+; See also translate1-cmp, which is similar except that in the present function
+; we pass in known-dfs rather than assuming it's nil.
 
 ; See also translate1 for a corresponding version that also returns state.
 
@@ -25180,7 +26470,9 @@
    ((result
      (translate11 x
                   nil ; ilk
-                  stobjs-out bindings known-stobjs nil x ctx w state-vars)))
+                  stobjs-out bindings known-stobjs
+                  known-dfs
+                  nil x ctx w state-vars)))
    (cond ((and bindings
                (null (cdr bindings))
                (symbolp (caar bindings))
@@ -25200,6 +26492,15 @@
           (trans-value result
                        (translate-bind (caar bindings) '(nil) bindings)))
          (t (trans-value result)))))
+
+(defun translate1-cmp (x stobjs-out bindings known-stobjs ctx w state-vars)
+
+; See also translate1-cmp+, which allows one to pass in known-dfs.  Here,
+; known-dfs is implicitly nil.
+
+  (translate1-cmp+ x stobjs-out bindings known-stobjs
+                   nil ; known-dfs
+                   ctx w state-vars))
 
 (defun@par translate1 (x stobjs-out bindings known-stobjs ctx w state)
   (cmp-and-value-to-error-quadruple@par
@@ -25275,6 +26576,9 @@
 ; (default-state-vars t) unless one does not have state available, and then
 ; (default-state-vars nil).
 
+; This function implicitly assumes that no variable is a df by ultimately
+; passing nil as the known-dfs argument of translate1-cmp+.
+
   (mv-let (erp val bindings)
           (translate1-cmp x stobjs-out nil known-stobjs ctx w state-vars)
           (declare (ignore bindings))
@@ -25295,9 +26599,13 @@
 
 (defun@par translate (x stobjs-out logic-modep known-stobjs ctx w state)
 
-; This is the toplevel entry into translation throughout ACL2,
-; excepting translate-bodies, which translates the bodies of
-; definitions.  The output of translate is (mv erp transx state).
+; This function implicitly assumes that no variable is a df by ultimately
+; passing nil as the known-dfs argument of translate1-cmp+.
+
+; This is the toplevel entry into translation throughout ACL2, excepting
+; translate-guards and translate-bodies, which translates the guards and bodies
+; (respectively) of definitions.  The output of translate is (mv erp transx
+; state).
 
 ; Stobjs-out should be
 ; * t           - to indicate that we are translating only for logical use, as
@@ -25387,7 +26695,8 @@
 
 (defun replace-stobjs1 (stobjs-out val)
   (cond ((endp val) val)
-        ((car stobjs-out)
+        ((and (car stobjs-out)
+              (not (eq (car stobjs-out) :df)))
          (cons (replaced-stobj (car stobjs-out))
                (replace-stobjs1 (cdr stobjs-out) (cdr val))))
         (t (cons (car val)
@@ -25405,7 +26714,8 @@
 
   (cond ((null stobjs-out) val)
         ((null (cdr stobjs-out))
-         (cond ((car stobjs-out)
+         (cond ((and (car stobjs-out)
+                     (not (eq (car stobjs-out) :df)))
                 (replaced-stobj (car stobjs-out)))
                (t val)))
         (t (replace-stobjs1 stobjs-out val))))
@@ -25437,6 +26747,7 @@
 (defun user-stobjsp (stobjs-out)
   (cond ((endp stobjs-out) nil)
         ((or (null (car stobjs-out))
+             (eq (car stobjs-out) :df)
              (eq (car stobjs-out) 'state))
          (user-stobjsp (cdr stobjs-out)))
         (t t)))
@@ -25477,6 +26788,7 @@
 (defun collect-user-stobjs (stobjs-out)
   (cond ((endp stobjs-out) nil)
         ((or (null (car stobjs-out))
+             (eq (car stobjs-out) :df)
              (eq (car stobjs-out) 'state))
          (collect-user-stobjs (cdr stobjs-out)))
         (t (cons (car stobjs-out)

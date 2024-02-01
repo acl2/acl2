@@ -500,6 +500,10 @@
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
 
+; The following form is executed by LP, but we also need it to be evaluated
+; during the build.
+(setq *read-default-float-format* 'double-float)
+
 ; See the function print-number-base-16-upcase-digits for an explanation of the
 ; following code, which pushes a feature when that function can be needed.
 (let ((*print-base* 16) (*print-case* :downcase))
@@ -980,6 +984,7 @@
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
     "memoize-raw"
+    "float-a"
     "translate"
     "type-set-a"
     "linear-a"
@@ -1000,10 +1005,12 @@
     "proof-builder-a"
     "defthm"
     "other-events"
+    "float-b"
     "ld"
     "proof-builder-b"
     "apply-raw"
     "interface-raw"
+    "float-raw"
     "defpkgs"
     "boot-strap-pass-2-a"
     "apply-prim"
@@ -1702,6 +1709,46 @@ ACL2 from scratch.")
        (load acl2-fns-compiled)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                          FP SUPPORT CHECKS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(or (member :ieee-floating-point *features*)
+    (let ((x (getenv$-raw "ACL2_FP_OK")))
+      (and x
+           (not (equal x ""))))
+
+; Quoting
+; http://www.lispworks.com/documentation/lw71/CLHS/Body/v_featur.htm
+
+; :ieee-floating-point
+;    If present, indicates that the implementation purports to conform to the
+;    requirements of IEEE Standard for Binary Floating-Point Arithmetic.
+
+; Note regarding addition of :ieee-floating-point to CCL.  The page
+; https://github.com/Clozure/ccl/pull/384
+; says:  "xrme merged commit 110c230 into Clozure:master  on Sep 27, 2021".
+
+    (error "This Lisp may be unsuitable for ACL2, because it does not ~%~
+            specify support for IEEE floating point, that is, feature ~%~
+            :ieee-floating-point is missing from *features*.  This may ~%~
+            be easily fixed with an environment variable; see :DOC fp."))
+
+(or (equal (rational (float 0 0.0D0))
+           0)
+
+; See comments in constrained-to-df-idempotent and constrained-to-df-0.
+
+    (error "This Lisp is unsuitable for ACL2, because it failed~%~
+            the sanity check that ~s."
+           '(equal (rational (float 0 0.0D0))
+                   0)))
+
+(or (equal (float-radix 1.0d0) 2)
+    (error "This Lisp is unsuitable for ACL2, because it failed~%~
+            the sanity check that ~s."
+           '(equal (float-radix 1.0d0) 2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           ACL2-READTABLE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1802,6 +1849,12 @@ which is saved just in case it's needed later.")
    #\f
    #'sharp-f-read))
 
+(defun define-sharp-d ()
+  (set-new-dispatch-macro-character
+   #\#
+   #\d
+   #'sharp-d-read))
+
 (defvar *old-character-reader*
   (get-dispatch-macro-character #\# #\\))
 
@@ -1857,7 +1910,8 @@ which is saved just in case it's needed later.")
 ;     (define-sharp-atsign) ; see interface-raw.lisp
       (define-sharp-bang)
       (define-sharp-u)
-      (define-sharp-f))
+      (define-sharp-f)
+      (define-sharp-d))
 
 ;  Keep control of character reader.  However, we do not need to keep such
 ;  control when reading in a .fas file for CLISP, and in fact, the set-theory
@@ -1888,6 +1942,7 @@ which is saved just in case it's needed later.")
           (define-sharp-bang)
           (define-sharp-u)
           (define-sharp-f)
+          (define-sharp-d)
           (set-dispatch-macro-character
            #\#
            #\\

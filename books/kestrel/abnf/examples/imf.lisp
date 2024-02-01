@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,6 +13,7 @@
 (include-book "../grammar-definer/defgrammar")
 (include-book "../grammar-definer/deftreeops")
 (include-book "../operations/in-terminal-set")
+(include-book "../operations/plugging")
 
 ; (depends-on "imf.abnf")
 
@@ -44,12 +45,55 @@
    (xdoc::p
     "The IMF grammar rules are well-formed.")
    (xdoc::p
-    "We use @(tsee add-const-to-untranslate-preprocess)
-     to keep this constant unexpanded in output."))
+    "We keep this constant unexpanded in output."))
   :file "imf.abnf"
   :untranslate t
   :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(deftreeops *imf-grammar-rules* :prefix imf-cst)
+(defval *all-imf-grammar-rules*
+  :short "All the IMF grammar rules, including the referenced ABNF core rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are obtained by plugging the core rules into the IMF rules.")
+   (xdoc::p
+    "The resulting rules are well-formed and closed.
+     They generate terminal strings consisting only of ASCII codes")
+   (xdoc::p
+    "We keep this constant unexpanded in output."))
+  (plug-rules *imf-grammar-rules*
+              *core-rules*)
+  ///
+
+  (add-const-to-untranslate-preprocess *all-imf-grammar-rules*)
+
+  (defrule rulelist-wfp-of-*all-imf-grammar-rules*
+    (rulelist-wfp *all-imf-grammar-rules*))
+
+  (defrule rulelist-closedp-of-*all-imf-grammar-rules*
+    (rulelist-closedp *all-imf-grammar-rules*))
+
+  (defrule ascii-only-*all-imf-grammar-rules*
+    (rulelist-in-termset-p *all-imf-grammar-rules*
+                           (integers-from-to 0 127)))
+
+  (defrule abnf-core-rules-in-*all-imf-grammar-rules*
+    (implies (member-equal core-rule *core-rules*)
+             (iff (member-equal core-rule *all-imf-grammar-rules*)
+                  (member-equal core-rule (list *rule_ALPHA*
+                                                *rule_CR*
+                                                *rule_CRLF*
+                                                *rule_DIGIT*
+                                                *rule_DQUOTE*
+                                                *rule_HTAB*
+                                                *rule_LF*
+                                                *rule_SP*
+                                                *rule_VCHAR*
+                                                *rule_WSP*))))
+    :rule-classes nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftreeops *all-imf-grammar-rules* :prefix imf-cst)

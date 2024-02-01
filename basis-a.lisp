@@ -1085,6 +1085,8 @@
   (cons *evisceration-mark* "<state>"))
 (defconst *evisceration-error-triple-marks*
   (list nil nil *evisceration-state-mark*))
+(defconst *evisceration-error-triple-df-marks*
+  (list nil :df *evisceration-state-mark*))
 (defconst *evisceration-hiding-mark*
   (cons *evisceration-mark* "<hidden>"))
 
@@ -7457,7 +7459,8 @@
 ; default-state-vars.  Also note that its value is either nil or a
 ; do-expressionp record.
 
-  (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
+  (((binding-count . boot-strap-flg) . ((temp-touchable-vars . safe-mode)
+                                        . guard-checking-on))
    .
    ((ld-skip-proofsp . temp-touchable-fns) .
     ((parallel-execution-enabled . in-macrolet-def)
@@ -7471,7 +7474,8 @@
 
   (make state-vars
         :guard-checking-on t
-        :inhibit-output-lst '(proof-tree)))
+        :inhibit-output-lst '(proof-tree)
+        :binding-count 0))
 
 (defmacro default-state-vars
 
@@ -7491,6 +7495,8 @@
               'nil)
              (do-expressionp ; not a state global, so avoid f-get-global below
               'nil)
+             (binding-count ; not a state global, so avoid f-get-global below
+              '0)
              (warnings-as-errors 'nil warnings-as-errors-p)
 ; Warning: If you change '(proof-tree) just below, make the corresponding
 ; change in enter-boot-strap-mode.
@@ -7537,6 +7543,8 @@
                 ,in-macrolet-def
                 :do-expressionp
                 ,do-expressionp
+                :binding-count
+                ,binding-count
                 :warnings-as-errors
                 ,(if warnings-as-errors-p
                      warnings-as-errors
@@ -7556,6 +7564,7 @@
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
                 :parallel-execution-enabled ,parallel-execution-enabled
+                :binding-count ,binding-count
                 :warnings-as-errors ,warnings-as-errors
                 :inhibit-output-lst ,inhibit-output-lst))))
 
@@ -8584,9 +8593,9 @@
   #+gcl
   `(make-array$ 1
                 :element-type ',elt-type
-                :initial-element ',init)
+                :initial-element ,init)
   #-gcl
-  `(the ,elt-type ',init))
+  `(the ,elt-type ,init))
 
 (mutual-recursion
 
@@ -8960,7 +8969,11 @@
 ; with NILs.
 
                                              :initial-element
-                                             ',init
+                                             ,(if (and (eq array-etype
+                                                           'double-float)
+                                                       (dfp init))
+                                                  `(to-df ,init)
+                                                `',init)
                                              :element-type
                                              ',array-etype)))
                       (memoize-flush ,flush-var)
@@ -9120,6 +9133,12 @@
                                   do
                                   (setf (svref ar i) (,stobj-creator)))
                             ar))))
+                      ((and (eq array-etype 'double-float)
+                            (dfp init))
+                       `(make-array$ ,array-size
+                                     :element-type ',array-etype
+                                     :initial-element
+                                     (to-df ,init)))
                       (t `(make-array$ ,array-size
                                        :element-type ',array-etype
                                        :initial-element ',init)))
@@ -9136,7 +9155,12 @@
          (stobj-creator
           (cons `(,stobj-creator)
                 (defstobj-raw-init-fields (cdr field-templates))))
-         (t (cons `(make-stobj-scalar-field ,type ,init)
+         ((and (eq type 'double-float)
+               (dfp init))
+          (cons `(make-stobj-scalar-field ,type
+                                          (to-df ,init))
+                (defstobj-raw-init-fields (cdr field-templates))))
+         (t (cons `(make-stobj-scalar-field ,type ',init)
                   (defstobj-raw-init-fields (cdr field-templates)))))))))
 
 (defun defstobj-raw-init-setf-forms (var index raw-init-fields acc)
@@ -9363,6 +9387,9 @@
               name template (cdr field-templates) wrld))))))
 
 (defun congruent-stobj-rep (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              wrld
+                              (plist-worldp wrld))))
   (assert$
    wrld ; use congruent-stobj-rep-raw if wrld is not available
    (or (getpropc name 'congruent-stobj-rep nil wrld)
@@ -10752,3 +10779,48 @@
   (declare (xargs :guard (and (true-listp lst)
                               (plist-worldp wrld))))
   (get-invalid-book-name-1 lst os (project-dir-alist wrld)))
+
+(defun append-strip-cars (x y)
+
+; This is (append (strip-cars x) y).
+
+  (cond ((null x) y)
+        (t (cons (car (car x)) (append-strip-cars (cdr x) y)))))
+
+(defun append-strip-cdrs (x y)
+
+; This is (append (strip-cdrs x) y).
+
+  (cond ((null x) y)
+        (t (cons (cdr (car x)) (append-strip-cdrs (cdr x) y)))))
+
+(defun substring-p (i1 s1 len i2 s2)
+
+; This predicate recognizes when the substring of s1 (with length len) starting
+; at s1 equals the substring of s2 starting at i2.
+
+  (declare (type string s1 s2)
+           (type (integer 0 *) i1 len i2)
+           (xargs :guard (and (<= i1 len)
+                              (= len (length s1))
+; There is at least as much room to increase i2 as there is to increase i1:
+                              (>= (- (length s2) i2)
+                                  (- len i1)))
+                  :measure (nfix (- len i1))))
+  (cond ((mbe :logic (not (and (natp i1)
+                               (natp len)
+                               (< i1 len)))
+              :exec (= i1 len))
+         t)
+        ((eql (the character (char s1 i1))
+              (the character (char s2 i2)))
+         (substring-p (1+ i1) s1 len (1+ i2) s2))
+        (t nil)))
+
+(defun string-suffixp (suffix string)
+  (declare (type string suffix string))
+  (let ((len-suffix (length suffix))
+        (len-string (length string)))
+    (and (<= len-suffix len-string)
+         (substring-p 0 suffix len-suffix
+                      (- len-string len-suffix) string))))
