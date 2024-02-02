@@ -483,15 +483,17 @@ ACL2 !>>*DF{1/3}*
 6004799503160661/18014398509481984
 ACL2 !>>(DFP *DF{1/3}*)
 T
+ACL2 !>>(ASSIGN SCRIPT-MODE 'SKIP-LDD-N)
+ SKIP-LDD-N
 ACL2 !>>:PE FROM-DF
- V     -6425  (DEFUN FROM-DF (X)
-                (DECLARE (XARGS :GUARD (DFP X) :MODE :LOGIC))
-                X)
+ V     (DEFUN FROM-DF (X)
+         (DECLARE (XARGS :GUARD (DFP X) :MODE :LOGIC))
+         X)
 ACL2 !>>:PE TO-DFP
- V     -6424  (DEFUN TO-DFP (X)
-                (DECLARE (XARGS :GUARD (RATIONALP X)
-                                :MODE :LOGIC))
-                (FROM-DF (TO-DF X)))
+ V     (DEFUN TO-DFP (X)
+         (DECLARE (XARGS :GUARD (RATIONALP X)
+                         :MODE :LOGIC))
+         (FROM-DF (TO-DF X)))
 ACL2 !>>(TO-DF 1/3)
 #d0.3333333333333333
 ACL2 !>>(THM (EQUAL *DF{1/3}* (TO-DF 1/3)))
@@ -527,14 +529,14 @@ Proof succeeded.
 ACL2 !>>(DF-RATIONALIZE (TO-DF 1/3))
 1/3
 ACL2 !>>:PE RIZE
- V       -67  (DEFUN RIZE (X)
-                (DECLARE (TYPE RATIONAL X))
-                (DF-RATIONALIZE (TO-DF X)))
+ V     (DEFUN RIZE (X)
+         (DECLARE (TYPE RATIONAL X))
+         (DF-RATIONALIZE (TO-DF X)))
 
 Additional events for the logical name RIZE:
- PV    -1675  (DEFUN RIZE (X)
-                (DECLARE (TYPE RATIONAL X))
-                (DF-RATIONALIZE (TO-DF X)))
+ PV    (DEFUN RIZE (X)
+         (DECLARE (TYPE RATIONAL X))
+         (DF-RATIONALIZE (TO-DF X)))
 ACL2 !>>(RIZE 1/3)
 1/3
 ACL2 !>>*DF{1/3}*
@@ -545,19 +547,19 @@ ACL2 !>>(A-E (EQUAL (TO-DFP (RIZE *DF{1/3}*))
                     *DF{1/3}*))
  :SUCCESS
 ACL2 !>>:PE TO-DFP-OF-RIZE
-         -66  (DEFTHM TO-DFP-OF-RIZE
-                (IMPLIES (DFP X)
-                         (EQUAL (TO-DFP (RIZE X)) X)))
+       (DEFTHM TO-DFP-OF-RIZE
+         (IMPLIES (DFP X)
+                  (EQUAL (TO-DFP (RIZE X)) X)))
 ACL2 !>>(A-E (AND (NOT (DFP 1/3))
                   (DFP *DF{1/3}*)
                   (NOT (EQUAL 1/3 *DF{1/3}*))))
  :SUCCESS
 ACL2 !>>:PE DFP
- V d   -6426  (DEFUN DFP (X)
-                (DECLARE (XARGS :GUARD T :MODE :LOGIC))
-                (AND (RATIONALP X) (= (TO-DF X) X)))
+ V d   (DEFUN DFP (X)
+         (DECLARE (XARGS :GUARD T :MODE :LOGIC))
+         (AND (RATIONALP X) (= (TO-DF X) X)))
 ACL2 !>>:PE DFP-TO-DF
-         -97  (DEFTHM DFP-TO-DF (DFP (TO-DF X)))
+       (DEFTHM DFP-TO-DF (DFP (TO-DF X)))
 ACL2 !>>(A-E (EQUAL (DFP 1/4) T))
  :SUCCESS
 ACL2 !>>(A-E (EQUAL (DFP 1/3) NIL))
@@ -574,7 +576,7 @@ Rules: ((:EXECUTABLE-COUNTERPART TAU-SYSTEM))
 
 Proof succeeded.
 ACL2 !>>:PE *DF-PI*
-          -5  (DEFCONST *DF-PI* (FROM-DF (DF-PI)))
+       (DEFCONST *DF-PI* (FROM-DF (DF-PI)))
 ACL2 !>>(DEFCONST *2PI* (* 2 *DF-PI*))
 
 Summary
@@ -644,16 +646,16 @@ Note that macro DF-2PI is a macro alias for the function DF-2PI$INLINE;
 so we print event information for each in turn.
 
 Printing event information for DF-2PI:
-           7:x(DEFUN-INLINE DF-2PI NIL ...)
-              \
->              (DEFMACRO DF-2PI NIL
-                 (LIST 'DF-2PI$INLINE))
+     :x(DEFUN-INLINE DF-2PI NIL ...)
+       \
+>       (DEFMACRO DF-2PI NIL
+          (LIST 'DF-2PI$INLINE))
 
 Printing event information for DF-2PI$INLINE:
-           7:x(DEFUN-INLINE DF-2PI NIL ...)
-              \
->L             (DEFUN DF-2PI$INLINE NIL
-                 (DF* 2 (DF-PI)))
+     :x(DEFUN-INLINE DF-2PI NIL ...)
+       \
+>L      (DEFUN DF-2PI$INLINE NIL
+          (DF* 2 (DF-PI)))
 ACL2 !>>:ARGS DF-2PI$INLINE
 
 Function         DF-2PI$INLINE
@@ -708,27 +710,27 @@ Note that macro DF-SIN is a macro alias for the function DF-SIN-FN;
 so we print event information for each in turn.
 
 Printing event information for DF-SIN:
-   d   -1677  (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
-              \
->              (DEFMACRO DF-SIN (X)
-                 (CONS 'DF-SIN-FN
-                       (TO-DF?-ARGS (LIST X))))
+   d   (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
+       \
+>       (DEFMACRO DF-SIN (X)
+          (CONS 'DF-SIN-FN
+                (TO-DF?-ARGS (LIST X))))
 
 Printing event information for DF-SIN-FN:
-   d     -71  (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
-              \
->V d           (DEFUN DF-SIN-FN (X)
-                 (DECLARE (TYPE DOUBLE-FLOAT X))
-                 (DECLARE (XARGS :GUARD T))
-                 (TO-DF (NON-EXEC (CONSTRAINED-DF-SIN-FN X))))
+   d   (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
+       \
+>V d    (DEFUN DF-SIN-FN (X)
+          (DECLARE (TYPE DOUBLE-FLOAT X))
+          (DECLARE (XARGS :GUARD T))
+          (TO-DF (NON-EXEC (CONSTRAINED-DF-SIN-FN X))))
 
 Additional events for the logical name DF-SIN-FN:
-   d   -1677  (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
-              \
->PVd           (DEFUN DF-SIN-FN (X)
-                 (DECLARE (TYPE DOUBLE-FLOAT X))
-                 (DECLARE (XARGS :GUARD T))
-                 (TO-DF (NON-EXEC (CONSTRAINED-DF-SIN-FN X))))
+   d   (DF-NON-CONSTRAINED-FUNCTIONS-INTRO)
+       \
+>PVd    (DEFUN DF-SIN-FN (X)
+          (DECLARE (TYPE DOUBLE-FLOAT X))
+          (DECLARE (XARGS :GUARD T))
+          (TO-DF (NON-EXEC (CONSTRAINED-DF-SIN-FN X))))
 ACL2 !>>(TRANS '(TO-DF *2PI*))
 
 (TO-DF '884279719003555/140737488355328)
@@ -959,18 +961,18 @@ Note that macro F2 is a macro alias for the function F2-FN; so we print
 event information for each in turn.
 
 Printing event information for F2:
-          13:x(DEFUN-DF F2 (X) ...)
-              \
->              (DEFMACRO F2 (X)
-                 (CONS 'F2-FN (TO-DF?-ARGS (LIST X))))
+     :x(DEFUN-DF F2 (X) ...)
+       \
+>       (DEFMACRO F2 (X)
+          (CONS 'F2-FN (TO-DF?-ARGS (LIST X))))
 
 Printing event information for F2-FN:
-          13:x(DEFUN-DF F2 (X) ...)
-              \
->L             (DEFUN F2-FN (X)
-                 (DECLARE (TYPE DOUBLE-FLOAT X))
-                 (DECLARE (XARGS :VERIFY-GUARDS NIL))
-                 (FROM-DF (DF- X)))
+     :x(DEFUN-DF F2 (X) ...)
+       \
+>L      (DEFUN F2-FN (X)
+          (DECLARE (TYPE DOUBLE-FLOAT X))
+          (DECLARE (XARGS :VERIFY-GUARDS NIL))
+          (FROM-DF (DF- X)))
 ACL2 !>>:ARGS F2-FN
 
 Function         F2-FN
@@ -3881,151 +3883,17 @@ ACL2 !>>(LOOP$-APPLY$-QUOTE-F0)
   <2 (F0 -3.0)
 <1 (ACL2_*1*_ACL2::F0 -3)
 (-3 -3 -3)
-ACL2 !>>(DEFUN DO-LOOP$-ON-F0 NIL
-          (DECLARE (XARGS :GUARD T))
-          (LOOP$ WITH
-                 ANS OF-TYPE DOUBLE-FLOAT = (TO-DF 2)
-                 WITH I OF-TYPE (INTEGER 0 *)
-                 = 3 DO :VALUES (:DF)
-                 (COND ((ZP I) (RETURN ANS))
-                       (T (PROGN (SETQ I (1- I))
-                                 (SETQ ANS (DF* (F0 ANS) ANS)))))))
-
-Since DO-LOOP$-ON-F0 is non-recursive, its admission is trivial.  We
-could deduce no constraints on the type of DO-LOOP$-ON-F0.
-
-(DO-LOOP$-ON-F0) => :DF.
-
-Computing the guard conjecture for DO-LOOP$-ON-F0....
-
-The non-trivial part of the guard conjecture for DO-LOOP$-ON-F0, given
-the :executable-counterparts of <, ALISTP, APPLY$-GUARD, ASSOC-EQ-SAFE,
-CDR, CONS, DFP, DO-BODY-GUARD-WRAPPER, INTEGERP, NOT and TO-DF, primitive
-type reasoning and the :type-prescription rules ASSOC-EQ-SAFE and 
-DO-BODY-GUARD-WRAPPER, is
-
-Goal
-(AND
- (IMPLIES
-  (APPLY$-WARRANT-F0)
-  (LET
-   ((TRIPLE
-     (TRUE-LIST-FIX
-      (APPLY$
-       (LAMBDA$ (ALIST)
-        (DECLARE
-         (XARGS
-             :GUARD (DO-BODY-GUARD-WRAPPER
-                         (AND (ALISTP ALIST)
-                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                              (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                  (NOT (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) '0))
-                                'NIL)))))
-        (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-              (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-         (DECLARE (IGNORABLE ANS I))
-         (IF (ZP I)
-             (CONS ':RETURN
-                   (CONS ANS
-                         (CONS (CONS (CONS 'ANS ANS)
-                                     (CONS (CONS 'I I) 'NIL))
-                               'NIL)))
-          ((LAMBDA (I ANS)
-            (RETURN-LAST
-             'PROGN
-             (CHECK-DCL-GUARDIAN
-                  (IF (INTEGERP I) (NOT (< I '0)) 'NIL)
-                  '(SETQ I (THE (INTEGER 0 *) (BINARY-+ '-1 I))))
-             (CONS
-              'NIL
-              (CONS
-               'NIL
-               (CONS
-                ((LAMBDA (ANS I)
-                   (RETURN-LAST 'PROGN
-                                (CHECK-DCL-GUARDIAN
-                                     (DFP ANS)
-                                     '(SETQ ANS
-                                            (THE DOUBLE-FLOAT
-                                                 (BINARY-DF* (F0 ANS) ANS))))
-                                (CONS (CONS 'ANS ANS)
-                                      (CONS (CONS 'I I) 'NIL))))
-                 (BINARY-DF* (F0 ANS) ANS)
-                 I)
-                'NIL)))))
-           (BINARY-+ '-1 I)
-           ANS))))
-       (LIST ALIST)))))
-   (LET ((EXIT-FLG (CAR TRIPLE))
-         (NEW-ALIST (CADDR TRIPLE)))
-    (IMPLIES
-     (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
-                                 (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                                 (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                 (<= 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
-     (CASE EXIT-FLG
-      ((NIL)
-       (AND
-        (DO-BODY-GUARD-WRAPPER
-             (AND (ALISTP NEW-ALIST)
-                  (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))
-                  (INTEGERP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))
-                  (<= 0 (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))))
-        (L<
-         (LEX-FIX
-          (APPLY$
-           (LAMBDA$ (ALIST)
-            (DECLARE
-             (XARGS :GUARD
-                    (DO-BODY-GUARD-WRAPPER
-                         (AND (ALISTP ALIST)
-                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                              (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                  (NOT (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) '0))
-                                'NIL)))))
-            (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                  (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-              (DECLARE (IGNORABLE ANS I))
-              (ACL2-COUNT I)))
-           (LIST NEW-ALIST)))
-         (LEX-FIX
-          (APPLY$
-           (LAMBDA$ (ALIST)
-            (DECLARE
-             (XARGS :GUARD
-                    (DO-BODY-GUARD-WRAPPER
-                         (AND (ALISTP ALIST)
-                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                              (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                                  (NOT (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) '0))
-                                'NIL)))))
-            (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                  (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-              (DECLARE (IGNORABLE ANS I))
-              (ACL2-COUNT I)))
-           (LIST ALIST))))))
-      (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER
-                         (AND (ALISTP NEW-ALIST)
-                              (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))
-                              (INTEGERP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))
-                              (<= 0 (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST))))))
-      (OTHERWISE T))))))
- (IMPLIES (AND (<= 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-               (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-               (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-               (ALISTP ALIST))
-          (LET ((ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                (I (CDR (ASSOC-EQ-SAFE 'I ALIST))))
-            (AND (INTEGERP I)
-                 (<= 0 I)
-                 (OR (ZP I) (ACL2-NUMBERP I))
-                 (OR (ZP I)
-                     (LET ((I (+ -1 I)))
-                       (AND (AND (INTEGERP I) (<= 0 I))
-                            (DFP (F0 ANS))
-                            (DFP ANS)
-                            (LET ((ANS (DF* (F0 ANS) ANS)))
-                              (DFP ANS))))))))).
+ACL2 !>>(WITH-OUTPUT
+             :OFF EVENT
+             (DEFUN DO-LOOP$-ON-F0 NIL
+               (DECLARE (XARGS :GUARD T))
+               (LOOP$ WITH
+                      ANS OF-TYPE DOUBLE-FLOAT = (TO-DF 2)
+                      WITH I OF-TYPE (INTEGER 0 *)
+                      = 3 DO :VALUES (:DF)
+                      (COND ((ZP I) (RETURN ANS))
+                            (T (PROGN (SETQ I (1- I))
+                                      (SETQ ANS (DF* (F0 ANS) ANS))))))))
 Subgoal 2
 
 Splitter note (see :DOC splitter) for Subgoal 2 (2 subgoals).
@@ -4037,9 +3905,6 @@ Subgoal 2.1
 Subgoal 1
 
 Q.E.D.
-
-That completes the proof of the guard theorem for DO-LOOP$-ON-F0. 
-DO-LOOP$-ON-F0 is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN DO-LOOP$-ON-F0 ...)

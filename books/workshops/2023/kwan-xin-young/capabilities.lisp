@@ -1,5 +1,9 @@
 (in-package "ACL2")
 
+; Matt K. mod: certification with ACL2 based on Allegro CL seemed to be taking
+; about 3 hours, so let's exclude that Lisp.
+; cert_param: (non-allegro)
+
 (include-book "operations-nbp")
 
 (include-book "std/util/define" :dir :system)
@@ -13,10 +17,10 @@
 (defconst *mw*    14)   ;; Mantissa width
 (defconst *tw*    12)   ;; width for encoded top
 (defconst *eh*     3)   ;; half width used for storing E
- 
+
 ;; MEMORY-RESIDENT CAPABILITIES
 ;; This section models memory-resident (or in-memory as referred to in the
-;; CHERI documentation) capabilities according to the CHERI Concentrate 
+;; CHERI documentation) capabilities according to the CHERI Concentrate
 ;; Compression format found in CHERI ISA v8
 
 ;; Representation of CHERI Concentrate Compression capabilities:
@@ -42,15 +46,15 @@
 ;;       bits not explicit in memory
 
 ;;   I - internal exponent bit that selects between two formats, if set then
-;;       exponent is stored instead of lower 3 bits of B & T (reduces precision 
+;;       exponent is stored instead of lower 3 bits of B & T (reduces precision
 ;;       by 3 bits), otherwise exponent is zero and full width of B & T used
 
-;;   E - 6-bit exponent, determines position at which B & T are inserted in 
+;;   E - 6-bit exponent, determines position at which B & T are inserted in
 
 ;; -------------------------------------------------------
 ;; helper functions
 ;; -------------------------------------------------------
-;; read last <len> bits after shifting shift bits to the right  
+;; read last <len> bits after shifting shift bits to the right
 (defmacro nb-ash (shift len seq)
   `(let* ((ash-seq (ash ,seq (- ,shift)))
           (len-bit (1- (expt 2 ,len))))
@@ -118,7 +122,7 @@
 ;; out-of-range truncation could happen to B and T when base and top
 ;; are compressed, in which case the least significant bit of B / T
 ;; needs to be incremented / decremented
-;; 
+;;
 ;; corrections returns 1 if T / B needs to be incremented,
 ;;                     -1                     decremented,
 ;;                     0    there is no out-of-range truncation
@@ -130,7 +134,7 @@
         (T 0)))
 
 ;; returns correction bits for TL and BL
-(defun corrections (addr TL BL E) 
+(defun corrections (addr TL BL E)
   (declare (xargs :guard (and (nbp addr *xlen*)
                               (nbp BL *mw*)
                               (nbp TL *mw*)
@@ -171,13 +175,13 @@
       (bounds top base)))
 
 ;; -------------------------------------------------------------
-;; START - verifications of decode-compression related function 
+;; START - verifications of decode-compression related function
 ;;
 ;; list of items to verify:
 ;; 1) guards for corrections
 ;; 2) (nbp TL *MW*=14)
 ;; 3) output from vars-large-seg and vars-small-seg are correct
-;;    - (nbp BL *MW*=14)              
+;;    - (nbp BL *MW*=14)
 ;;    - (nbp TS *TW*=12)
 ;;    - (and (natp E) (<= E 52))
 ;;    - Lcarry and Lmsb are i bit each
@@ -283,7 +287,7 @@
 
 ;; if B[13:12] and T[13:12] are two bits away, and bsn <= tsh,
 ;; the carry-bit wouldn't be accounted for in decode-compression,
-;; in which case we need to increment e 
+;; in which case we need to increment e
 (defun carry? (overflow-flg top base e)
   (b* ((comp-bits (- *tw* *eh*))
        (t-2 (nb-ash (+ e *tw*) 2 top))
@@ -304,11 +308,11 @@
       ;; reset e and length if Lmsb changes
       ((mv n-e len)
        (if (< 0 (nb-ash 0 align top))
-           (mv (e (+ len gap)) (+ len gap)) 
+           (mv (e (+ len gap)) (+ len gap))
            (mv e len)))
 
       ;; if an overflow happens during to rounding up T, set flg to t
-      (overflow-flg (not (equal e n-e)))          
+      (overflow-flg (not (equal e n-e)))
       ;; if not overflow, check if there is an unaccounted for carry situation
       (carry-flg (carry? overflow-flg (+ base len) base e))
 
@@ -332,15 +336,15 @@
                   :verify-guards nil))
   (b* ((e (e len))          ;; E = 52 - CountLeadingZeros(len[64:13])
        (ie (ie e len))      ;; IE = if (E = 0 and len[12] = 0) then 0 else 1
-       (top (+ base len)) 
+       (top (+ base len))
        ((mv & ts bl)        ;; binds ts and bl to T[11:0] and  B[13:0], respectively
         (if (= ie 0)
             (mv 0
                 (nb-ash 0 *tw* top)     ;; T[2:0]
                 (nb-ash 0 *mw* base))   ;; B[13:0]
             (rounding len base))))
-      (logior (ash ie (+ *tw* *mw*))  
-              (ash ts *mw*) bl)))     
+      (logior (ash ie (+ *tw* *mw*))
+              (ash ts *mw*) bl)))
 
 ;; ------------------------------------------------------
 ;; helper functions for properties hypothesis
@@ -448,7 +452,7 @@
                 (valid-b-l-p base len)
                 (<= (expt 2 *tw*) len)
                 (< len (expt 2 60)))
-    :concl (<= (+ base len) 
+    :concl (<= (+ base len)
                (bounds->top (decode-compression (encode-compression len base) addr)))
     :param-bindings
     `((((low 12) (high 16)) ,(gl::auto-bindings (:mix (:nat base 65) (:nat len 65) (:nat addr 65))))
@@ -470,7 +474,7 @@
 
 ;; helper macro for proving the following properties
 (defmacro E+3-expt (base len)
-  `(b* ((e (mv-nth 0 (rounding ,len ,base))))       
+  `(b* ((e (mv-nth 0 (rounding ,len ,base))))
        (expt 2 (+ 3 e))))
 
 ;; if IE = 1, b - b' < 2^(E + 3)
@@ -551,7 +555,7 @@
      (sl  (nbp sl 1))    ;; PERMIT_SEAL - Allow cap to seal another cap with otype equal to
                          ;; this cap's base + offset
      (ci  (nbp ci 1))    ;; PERMIT_CINVOKE - Allow this sealed cap to be used with CInvoke instruction
-     (usl (nbp usl 1))   ;; PERMIT_UNSEAL - Allow cap to unseal another cap with otype 
+     (usl (nbp usl 1))   ;; PERMIT_UNSEAL - Allow cap to unseal another cap with otype
                          ;; equal to this cap's base + offset
      (cid (nbp cid 1)))) ;; PERMIT_SET_CID - Allow architectural compartment ID to be set
                          ;; to this cap's base + offset using CSetCID instruction
@@ -575,17 +579,17 @@
      (sl  (nbp sl 1))    ;; PERMIT_SEAL - Allow cap to seal another cap with otype equal to
                          ;; this cap's base + offset
      (ci  (nbp ci 1))    ;; PERMIT_CINVOKE - Allow this sealed cap to be used with CInvoke instruction
-     (usl (nbp usl 1))   ;; PERMIT_UNSEAL - Allow cap to unseal another cap with otype 
+     (usl (nbp usl 1))   ;; PERMIT_UNSEAL - Allow cap to unseal another cap with otype
                          ;; equal to this cap's base + offset
      (cid (nbp cid 1))   ;; PERMIT_SET_CID - Allow architectural compartment ID to be set
                          ;; to this cap's base + offset using CSetCID instruction
      (asr (nbp asr 1))   ;; ACCESS_SYSTEM_REGISTERS - Allow access to privileged
                          ;; processor permitted by the architecture (e.g., by virtue
-                         ;; of being in supervisor mode), with architecture-specific implications. 
+                         ;; of being in supervisor mode), with architecture-specific implications.
      (up0 (nbp up0 1))   ;; UPERMS bit 0 - software-defined permission bit
-     (up1 (nbp up1 1))   ;; UPERMS bit 1 
-     (up2 (nbp up3 1))   ;; UPERMS bit 2 
-     (up3 (nbp up3 1)))) ;; UPERMS bit 3 
+     (up1 (nbp up1 1))   ;; UPERMS bit 1
+     (up2 (nbp up3 1))   ;; UPERMS bit 2
+     (up3 (nbp up3 1)))) ;; UPERMS bit 3
 
 (std::defaggregate ccap
     ((perms ccperm-p)
@@ -647,11 +651,11 @@
 (std::defaggregate acap
     ((tag    (nbp tag 1))
      (perms  (nbp perms *plen*))
-     (ot     (nbp ot *xlen*))                              
+     (ot     (nbp ot *xlen*))
      (offset (nbp offset *xlen*))
      (base   (nbp base *xlen*))                            ;; base + offset --> pointer addr
      (len    (and (natp len) (<= len (expt 2 *xlen*)))))   ;; base + len    --> upper bound
-  )       
+  )
 
 (defun mcapp (mcap)
   (declare (xargs :guard t))
@@ -662,7 +666,7 @@
 (define null-mcap-to-acap ()
   (b* ((perms 0)
        (tag 0)
-       (ot (1- (expt 2 *xlen*))) 
+       (ot (1- (expt 2 *xlen*)))
        (offset 0)
        (base 0)
        (len (expt 2 *xlen*)))
@@ -673,15 +677,15 @@
                                           (not (zp mcap)))))
   :verify-guards nil
   (b* ((perms (nb-ash (- *clen* *plen*) *plen* mcap))
-       (tag (nb-ash (+ *otlen* *cmplen* *xlen*) 1 mcap)) 
-       (ot (nb-ash (+ *cmplen* *xlen*) *otlen* mcap))      
+       (tag (nb-ash (+ *otlen* *cmplen* *xlen*) 1 mcap))
+       (ot (nb-ash (+ *cmplen* *xlen*) *otlen* mcap))
        (cmp (nb-ash *xlen* *cmplen* mcap))
        (addr (nb-ash 0 *xlen* mcap))
        (bounds (decode-compression cmp addr))
        (base (bounds->base bounds))
        (top (bounds->top bounds))
        (offset (- addr base))
-       (len (- top base)))                                 
+       (len (- top base)))
       (acap tag perms ot offset base len)))
 
 ;; mcap to acap
@@ -719,7 +723,7 @@
     :hyp   (and (valid-b-l-p base len)
                 (nbp tag 1)
                 (nbp perms *plen*)
-                (nbp ot *otlen*)  
+                (nbp ot *otlen*)
                 (nbp offset *xlen*)
                 (< len (expt 2 *TW*))
                 (< offset len))
@@ -737,7 +741,7 @@
                 (E+3-aligned-p base len)
                 (nbp tag 1)
                 (nbp perms *plen*)
-                (nbp ot *otlen*)  
+                (nbp ot *otlen*)
                 (nbp offset *xlen*)
                 (<= (expt 2 *TW*) len)
                 (< offset len))

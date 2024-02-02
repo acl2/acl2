@@ -1107,6 +1107,9 @@
 
          (and (rationalp lst)
               (list (evisceration-stobj-mark :df lst))))
+        ((null (cdr stobjs-flags))
+         (assert$ (symbolp lst)
+                  (list (evisceration-stobj-mark (car stobjs-flags) lst))))
         (t (evisceration-stobj-marks1 stobjs-flags lst))))
 
 (defun ld-print-results (trans-ans state)
