@@ -8,6 +8,9 @@
 (include-book "induction-proof-checker")
 (include-book "arith-theory")
 
+; Matt K. mod: Avoid ACL2(p) error.
+(acl2::set-waterfall-parallelism nil)
+
 ;; Put functions that you want to define in ACL2s here
 
 (defunc all-varp (xs)
