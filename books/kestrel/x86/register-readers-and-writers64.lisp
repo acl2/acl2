@@ -963,3 +963,24 @@
 (defthm fix-of-r15 (equal (fix (r15 x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
 (defthm fix-of-rsp (equal (fix (rsp x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
 (defthm fix-of-rbp (equal (fix (rbp x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: more!
+(defthm set-rax-of-if-arg2
+  (equal (set-rax val (if test x86_1 x86_2))
+         (if test (set-rax val x86_1) (set-rax val x86_2))))
+
+(defthm set-rdi-of-if-arg2
+  (equal (set-rdi val (if test x86_1 x86_2))
+         (if test (set-rdi val x86_1) (set-rdi val x86_2))))
+
+(defthm set-rip-of-if
+  (equal (set-rip val (if test x y))
+         (if test (set-rip val x)
+           (set-rip val y))))
+
+(defthm set-undef-of-if
+  (equal (set-undef val (if test x y))
+         (if test (set-undef val x)
+           (set-undef val y))))

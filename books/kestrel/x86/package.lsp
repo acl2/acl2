@@ -316,6 +316,7 @@
     axe-syntaxp
     axe-bind-free
     prove-equivalence
+    prove-equal-with-tactics
     symbolic-byte-assumptions
     symbolic-list
     ;rule lists:
