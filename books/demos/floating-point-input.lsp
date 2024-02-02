@@ -475,6 +475,9 @@
 
 (dfp *df{1/3}*) ; T because to-dfp returns a representable rational
 
+; We skip printing of event numbers so that the same output is created by :pe
+; for ACL2, ACL2(p), and ACL2(r).
+(assign script-mode 'skip-ldd-n)
 
 :pe from-df ; From-df is logically the identity.
 :pe to-dfp ; To-dfp and to-df are logically equivalent.
@@ -482,7 +485,7 @@
 (to-df 1/3) ; :df version of (to-dfp 1/3), i.e., of *df{1/3}*
 (thm (equal *df{1/3}* (to-df 1/3)))
 (equal *df{1/3}* #d0.3333333333333333) ; consistent with results above
-       
+
 ; Df-rationalize maps a :df to a "nice" rational that approximates
 ; that df.
 (to-df 1/3) ; again, :df that approximates 1/3
@@ -1601,6 +1604,7 @@
 ; But a DO loop$ expression in guard-verified code does not similarly invoke
 ; the *1* function.
 
+(with-output :off event ; avoid slight difference for ACL2 vs. ACL2(r)
 (defun do-loop$-on-f0 ()
   (declare (xargs :guard t))
   (loop$ with ans of-type double-float = (to-df 2)
@@ -1610,6 +1614,7 @@
          (cond ((zp i) (return ans))
                (t (progn (setq i (1- i))
                          (setq ans (df* (f0 ans) ans)))))))
+)
 
 (do-loop$-on-f0)
 
