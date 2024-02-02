@@ -1655,11 +1655,13 @@
          (not (acl2::sbvlt 32 0 x)))
   :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; or should we keep the flag expressions disabled?
 (defthm jnl-condition-of-getbit-31-and-0
-  (equal (JNL-CONDITION (GETBIT '31 x) '0)
+  (equal (jnl-condition (getbit 31 x) 0)
          (sbvle 32 0 x))
-  :hints (("Goal" :in-theory (enable JNL-CONDITION))))
+  :hints (("Goal" :in-theory (enable jnl-condition))))
 
 (defthm jnl-condition-rewrite-16
   (equal (jnl-condition (sf-spec32 (bvsx 32 16 x))
@@ -1669,27 +1671,27 @@
                                      of-spec32
                                      sf-spec32))))
 
+;rename
 (defthm jnl-condition-rewrite-16b
-  (equal (jnl-condition (sf-spec32 x)
-                        0)
+  (equal (jnl-condition (sf-spec32 x) 0)
          (sbvle 32 0 x))
   :hints (("Goal" :in-theory (enable jnl-condition
                                      of-spec32
                                      sf-spec32))))
 
 (defthm jnl-condition-of-sf-spec64-and-of-spec64-same
-  (implies (SIGNED-BYTE-P 64 X) ;t;(unsigned-byte-p 64 x)
-           (equal (JNL-CONDITION (SF-SPEC64 x)
-                                 (OF-SPEC64 x))
+  (implies (signed-byte-p 64 x) ;t;(unsigned-byte-p 64 x)
+           (equal (jnl-condition (sf-spec64 x)
+                                 (of-spec64 x))
                   (sbvle 64 0 x)))
-  :hints (("Goal" :in-theory (enable SF-SPEC64 OF-SPEC64 JNL-CONDITION))))
+  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition))))
 
 (defthm jnl-condition-of-sf-spec32-and-of-spec32-same
-  (implies (SIGNED-BYTE-P 32 X) ;t;(unsigned-byte-p 32 x)
-           (equal (JNL-CONDITION (SF-SPEC32 x)
-                                 (OF-SPEC32 x))
+  (implies (signed-byte-p 32 x) ;t;(unsigned-byte-p 32 x)
+           (equal (jnl-condition (sf-spec32 x)
+                                 (of-spec32 x))
                   (sbvle 32 0 x)))
-  :hints (("Goal" :in-theory (enable SF-SPEC32 OF-SPEC32 JNL-CONDITION))))
+  :hints (("Goal" :in-theory (enable sf-spec32 of-spec32 jnl-condition))))
 
 
 
