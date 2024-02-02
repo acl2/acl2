@@ -1381,8 +1381,8 @@
     bvmult-of-logext-alt ;new
     bvmult-of-logext     ;new
 
-    bvplus-of-logext-gen-arg1
-    bvplus-of-logext-gen-arg2
+    bvplus-of-logext-arg2
+    bvplus-of-logext-arg3
 
     bvif-of-logext-gen-arg1
     bvif-of-logext-gen-arg2

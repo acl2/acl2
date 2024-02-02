@@ -416,10 +416,10 @@
                (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
        (result-dag-fns (dag-fns result-dag))
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first
-        (cw "Test ~x0 failed: Did not finish the run.  See DAG above.)~%" function-name-string)
+        (cw "ERROR in test ~x0: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
           (acl2::real-time-since start-real-time state)
-          (mv (erp-nil) nil elapsed state)))
+          (mv :did-not-finish-the-run nil elapsed state)))
        (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
        ;; Prove the test routine always returns 1 (we pass :bit for the type):
