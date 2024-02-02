@@ -1303,7 +1303,7 @@ variable CERT_MAX_MEM:</p>
 
 <p>Additionally, the following pattern is scanned to set the environment variable CERT_MAX_TIME.
 Note this isn't a real ACL2 event, so it should occur in a comment:</p>
-@({ 
+@({
  ; (set-max-time N)
  })
 
@@ -1433,7 +1433,11 @@ certification using @('make')."
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
- </ul>"))
+ </ul>
+
+ <p>There is currently no @('cert_param') related to ACL2(p) (see @(see
+ acl2::parallelism)), but see @(see acl2::non-parallel-book) for a related
+ utility </p>"))
 
 ; The following defpointer forms were added by Matt K., 7/14/2021.
 (acl2::defpointer acl2x cert_param)
@@ -1601,4 +1605,3 @@ save certification time.</p>"
   :parents (cert.pl)
   :short "Like @(see include-events) but allows an arbitrary file extension."
   :pkg "ACL2")
-
