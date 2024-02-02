@@ -1892,15 +1892,9 @@
                    (and (not (integerp a)) (integerp b))
                    (and (integerp a) (not (integerp b)))))))
 
-
-
-(defthm bvplus-of-logext-gen-arg1
+(defthm bvplus-of-logext-arg2
    (implies (and (<= size1 size2)
-;               (integerp x)
-;                (integerp y)
-                 (< 0 size2)
-                 (natp size1)
-                 (natp size2))
+                 (integerp size2))
             (equal (bvplus size1 (logext size2 x) y)
                    (bvplus size1 x y)))
    :hints (("Goal"
@@ -1908,17 +1902,13 @@
             :in-theory (e/d (bvplus)
                             (bvchop-sum-drop-bvchop)))))
 
-(defthm bvplus-of-logext-gen-arg2
+(defthm bvplus-of-logext-arg3
   (implies (and (<= size1 size2)
-;               (integerp x)
-;                (integerp y)
-                (< 0 size2)
-                (natp size1)
-                (natp size2))
+                (integerp size2))
            (equal (bvplus size1 y (logext size2 x))
                   (bvplus size1 y x)))
-  :hints (("Goal" :use bvplus-of-logext-gen-arg1
-           :in-theory (enable bvplus-of-logext-gen-arg1))))
+  :hints (("Goal" :use bvplus-of-logext-arg2
+           :in-theory (enable bvplus-of-logext-arg2))))
 
 (defthm bvif-of-logext-gen-arg1
    (implies (and (<= size1 size2)
@@ -2720,29 +2710,6 @@
                          k
                          0)))
   :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvplus-of-logext
-  (implies (and; (integerp x) ;bozo
-                (natp n)
-                ;(integerp y)
-                )
-           (equal (bvplus n x (logext n y))
-                  (bvplus n x y)))
-  :hints (("Goal"
-           :cases ((integerp x))
-           :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
-
-(defthm bvplus-of-logext-arg1
-  (implies (and ; (integerp x) ;bozo
-            (natp n)
-     ;(integerp y)
-            )
-           (equal (bvplus n (logext n y) x)
-                  (bvplus n y x)))
-  :hints (("Goal" :use bvplus-of-logext
-           :in-theory (disable bvplus-of-logext))))
-
-
 
 (defthm bvchop-hack1b2
   (implies (and (integerp x)

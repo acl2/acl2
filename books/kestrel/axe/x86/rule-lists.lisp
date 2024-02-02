@@ -1255,7 +1255,8 @@
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
 ; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
-            acl2::bvplus-of-logext
+            acl2::bvplus-of-logext-arg2
+            acl2::bvplus-of-logext-arg3
             acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
 ;<-when-canonical-address-p
@@ -1325,8 +1326,6 @@
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
             acl2::bvplus-of-unary-minus
-            acl2::bvplus-of-logext-arg1
-            acl2::bvplus-of-logext
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
@@ -3797,10 +3796,6 @@
             ACL2::<-BECOMES-BVLT-DAG-ALT-GEN-BETTER2
             ACL2::<-BECOMES-BVLT-DAG-GEN-BETTER2
             ;; after adding core-rules-bv:
-            acl2::bvplus-of-logext-gen-arg1
-            acl2::bvplus-of-logext-gen-arg2
-            ACL2::BVPLUS-OF-LOGEXT ; rename
-            ACL2::BVPLUS-OF-LOGEXT-arg1 ; rename
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
@@ -3869,8 +3864,8 @@
             ACL2::BVPLUS-OF-BVCHOP-ARG2
             ACL2::EQUAL-OF-BVSX-AND-BVSX
             acl2::equal-same
-            ACL2::BVPLUS-OF-LOGEXT ; rename
-            ACL2::BVPLUS-OF-LOGEXT-arg1 ; rename
+            ACL2::BVPLUS-OF-LOGEXT-arg2
+            ACL2::BVPLUS-OF-LOGEXT-arg3
             ACL2::BVUMINUS-OF-LOGEXT
             ACL2::SIGNED-BYTE-P-OF-BVIF
             ACL2::LOGEXT-IDENTITY
