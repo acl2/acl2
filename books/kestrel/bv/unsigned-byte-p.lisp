@@ -301,3 +301,11 @@
            (equal (unsigned-byte-p bits (+ -1 x))
                   (not (equal 0 x))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;slow?
+(defthm unsigned-byte-p-of-+
+  (implies (and (unsigned-byte-p (+ -1 size) x)
+                (unsigned-byte-p (+ -1 size) y)
+                (natp size))
+           (unsigned-byte-p size (+ x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+))))

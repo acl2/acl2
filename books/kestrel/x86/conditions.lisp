@@ -964,12 +964,12 @@
 
 ;; fixme; add the rest of these condition rules from tester-rules.
 
-(defthm jnb-condition-of-bv-if-1-0-1
+(defthm jnb-condition-of-bvif-1-0-1
   (equal (jnb-condition (bvif 1 test 0 1))
          (acl2::bool-fix test))
   :hints (("Goal" :in-theory (enable jnb-condition))))
 
-(defthm jnb-condition-of-bv-if-1-1-0
+(defthm jnb-condition-of-bvif-1-1-0
   (equal (jnb-condition (bvif 1 test 1 0))
          (not test))
   :hints (("Goal" :in-theory (enable jnb-condition))))
@@ -1239,14 +1239,19 @@
          (not (unsigned-byte-p 64 x)))
   :hints (("Goal" :in-theory (enable cf-spec64 jb-condition))))
 
-(defthm jb-condition-of-bv-if-1-0-1
+(defthm jb-condition-of-bvif-1-0-1
   (equal (jb-condition (bvif 1 test 0 1))
          (not test))
   :hints (("Goal" :in-theory (enable jb-condition))))
 
-(defthm jb-condition-of-bv-if-1-1-0
+(defthm jb-condition-of-bvif-1-1-0
   (equal (jb-condition (bvif 1 test 1 0))
          (acl2::bool-fix test))
+  :hints (("Goal" :in-theory (enable jb-condition))))
+
+(defthm jb-condition-of-getbit
+  (equal (jb-condition (getbit n x))
+         (equal 1 (getbit n x)))
   :hints (("Goal" :in-theory (enable jb-condition))))
 
 
@@ -1844,10 +1849,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; maybe ok because it reduces the CF-SPEC64 call to a constant
-;; maybe open CF-SPEC64 when it's an arg to bvplus
-(defthm cf-spec64-when-unsigned-byte-p
-  (implies (unsigned-byte-p 64 raw-result)
-           (equal (x86isa::cf-spec64 raw-result)
-                  0))
-  :hints (("Goal" :in-theory (enable x86isa::cf-spec64))))
+;; maybe ok because it reduces the CF-SPEC call to a constant
+;; or maybe open CF-SPEC64 when it's an arg to bvplus
+(defthm cf-spec32-when-unsigned-byte-p (implies (unsigned-byte-p 32 raw-result) (equal (cf-spec32 raw-result) 0)) :hints (("Goal" :in-theory (enable cf-spec32))))
+(defthm cf-spec64-when-unsigned-byte-p (implies (unsigned-byte-p 64 raw-result) (equal (cf-spec64 raw-result) 0)) :hints (("Goal" :in-theory (enable cf-spec64))))
+
+;; maybe ok because cf-spec32 is unary?
+(defthm cf-spec32-becomes-getbit
+  (implies (unsigned-byte-p 33 x) ; example; sum of two u32s
+           (equal (cf-spec32 x)
+                  (getbit 32 x)))
+  :hints (("Goal" :in-theory (enable cf-spec32))))
+
+;; maybe ok because cf-spec64 is unary?
+(defthm cf-spec64-becomes-getbit
+  (implies (unsigned-byte-p 65 x) ; example; sum of two u64s
+           (equal (cf-spec64 x)
+                  (getbit 64 x)))
+  :hints (("Goal" :in-theory (enable cf-spec64))))
