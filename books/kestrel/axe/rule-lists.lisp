@@ -263,7 +263,7 @@
     bvmult-of-bvcat-low-arg3
     bvminus-of-bvcat-low-arg2
     bvminus-of-bvcat-low-arg3
-    bvuminus-of-bvcat-low
+    bvuminus-of-bvcat-low ; todo: also rules for bitnot and bvnot?
     bvif-of-bvcat-low-arg3
     bvif-of-bvcat-low-arg4
     bitand-of-bvsx-low-arg1
@@ -753,7 +753,6 @@
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
-     bvchop-of-bvsx2          ;new
      bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
@@ -860,6 +859,8 @@
      sbvlt-of-bvplus-of-1       ;Sun Oct 26 16:32:17 2014
 
      ;; rules about bvsx:
+     bvchop-of-bvsx-low          ;new
+     ; slice-of-bvsx-high ; introduces repeatbit..
      equal-of-0-and-bvsx ;Wed Oct 14 13:28:17 2015
      equal-of-bvsx-and-bvsx
      bvsx-too-high-axe
@@ -867,7 +868,7 @@
      getbit-of-bvsx
      ;; bvsx base cases?
      ;; introduce-bvsx-25-7 ;fixme yuck
-
+     bvsx-of-bvsx
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
@@ -970,7 +971,16 @@
      bvplus-of-bvuminus-same
      bvplus-of-bvuminus-same-alt
      bvplus-of-bvuminus-same-2
-     bvplus-of-bvuminus-same-2-alt)))
+     bvplus-of-bvuminus-same-2-alt
+
+     bvdiv-of-0-arg2
+     bvdiv-of-0-arg3 ; unusual case
+     bvdiv-of-1-arg3
+     bvdiv-same
+     sbvdiv-of-0-arg1
+     sbvdiv-of-0-arg2 ; unusual casae
+     sbvdiv-of-1-arg3
+     sbvdiv-same)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
