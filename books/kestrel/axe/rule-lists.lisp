@@ -682,6 +682,9 @@
      equal-constant-when-slice-equal-constant     ;was in axe prover rules
      bvnot-becomes-bvxor ;new! fri jan 28 13:08:38 2011
 
+     equal-of-0-and-bvxor
+     bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
+
      bitxor-of-unary-minus-arg1 ;fixme lots of others like this, or use trim!
      bitxor-of-unary-minus-arg2
      bvcat-of-unary-minus-low
@@ -689,7 +692,6 @@
      bvcat-of-ifix-arg2
      bvcat-of-ifix-arg4
 
-     bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
 
      bvplus-of-bvplus-of-bvuminus
 
@@ -2868,7 +2870,6 @@
              bv-array-write-shorten-constant-data
              EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              bvlt-6-4
-             equal-of-0-and-bvxor
              bvlt-of-bvuminus-same
              bvplus-of-same
              bvlt-of-bvmult-of-constant-and-constant
