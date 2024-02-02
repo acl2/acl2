@@ -31,8 +31,7 @@
   (natp (bvsx a b c))
   :hints (("Goal" :in-theory (enable bvsx))))
 
-;; rename to bvchop-of-bvsx-low
-(defthm bvchop-of-bvsx2
+(defthm bvchop-of-bvsx-low
   (implies (and (<= n old-size)
                 (< 0 old-size)
                 (<= old-size new-size)
@@ -44,7 +43,7 @@
   :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthm bvchop-of-bvsx
-  (implies (and (< old-size n) ; could allow = but we prefer bvchop-of-bvsx2 in that case
+  (implies (and (< old-size n) ; could allow = but we prefer bvchop-of-bvsx-low in that case
                 (<= n new-size)
                 (< 0 old-size)
                 ;; (<= old-size new-size)

@@ -3487,8 +3487,6 @@
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;RFLAGSBITS->AF-of-myif
-            ACL2::BVASHR-of-0-arg2
-            ACL2::BVSHR-of-0-arg2
             acl2::eql ; drop soon?
             ACL2::EQUAL-OF-CONSTANT-AND-BVUMINUS
             ACL2::BVOR-OF-MYIF-ARG2 ; introduces bvif (myif can arise from expanding a shift into cases)
@@ -3500,11 +3498,7 @@
             not-sbvlt-of-sbvdiv-and-minus-constant-32-64
             not-bvlt-of-constant-and-bvdiv-64-128
             not-bvlt-of-constant-and-bvdiv-32-64
-            ACL2::BVDIV-SAME
-            ACL2::SBVDIV-SAME
-            ACL2::SBVDIV-OF-1-ARG3
-            ACL2::BVSX-OF-BVSX
-            ACL2::SLICE-OF-BVSX-HIGH
+            ACL2::SLICE-OF-BVSX-HIGH ; move back, but this introduces repeatbit
             bvcat-of-repeatbit-of-getbit-of-bvsx-same
             not-sbvlt-of-bvsx-of-constant-arg2-64-8
             not-sbvlt-of-bvsx-of-constant-arg2-64-16
