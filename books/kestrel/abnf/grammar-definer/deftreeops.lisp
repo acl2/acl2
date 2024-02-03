@@ -20,6 +20,7 @@
 (include-book "kestrel/std/system/constant-value" :dir :system)
 (include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "kestrel/utilities/true-list-listp-theorems" :dir :system)
 (include-book "std/alists/assoc" :dir :system)
 (include-book "std/typed-alists/string-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
@@ -1026,7 +1027,7 @@
        (check-alt-fn
         (and two-or-more-alts-p
              (packn-pos (list prefix '- rulename-upstring '-alt?) prefix)))
-       ((mv cond-arms disjuncts lemma-instances)
+       ((mv cond-arms disjuncts rules)
         (if two-or-more-alts-p
             (b* (((unless (equal (len alt-infos) (len alt)))
                   (raise "Internal error: ~x0 and ~x1 have different lengths."
@@ -1046,22 +1047,20 @@
            :guard-hints
            (("Goal"
              :in-theory
-             '((:e elementp)
-               (:e rulename)
-               nth
-               (:e ,matchp)
-               (:e zp)
-               tree-list-listp-of-tree-nonleaf->branches
-               tree-listp-of-car-when-tree-list-listp
-               treep-of-car-when-tree-listp
+             '(acl2::true-listp-of-nth-when-true-list-listp
                (:t tree-nonleaf->branches)
-               (:t true-listp-of-car-of-tree-nonleaf->branches))
+               abnf::true-list-listp-of-tree-nonleaf->branches
+               abnf::treep-of-nth-when-tree-listp
+               abnf::tree-listp-of-nth-when-tree-list-listp
+               abnf::tree-list-listp-of-tree-nonleaf->branches
+               (:e abnf::rulename)
+               (:e nfix)
+               ,(deftreeops-rulename-info->nonleaf-thm rulename-info)
+               ,(deftreeops-rulename-info->match-thm rulename-info)
+               ,@rules)
              :use
-             (,(deftreeops-rulename-info->nonleaf-thm rulename-info)
-              ,(deftreeops-rulename-info->match-thm rulename-info)
-              (:instance ,(deftreeops-rulename-info->alt-disj-thm rulename-info)
-                         (cstss (tree-nonleaf->branches cst)))
-              ,@lemma-instances)))
+             ((:instance ,(deftreeops-rulename-info->alt-disj-thm rulename-info)
+                         (cstss (tree-nonleaf->branches cst))))))
            ///
            (more-returns
             (number (or ,@disjuncts)
@@ -1146,7 +1145,7 @@
      :guard (equal (len alt-infos) (len alt))
      :returns (mv (cond-arms true-listp)
                   (disjuncts true-listp)
-                  (lemma-instances true-listp))
+                  (rules symbol-listp))
      (b* (((when (endp alt)) (mv nil nil nil))
           (conc (car alt))
           (alt-info (car alt-infos))
@@ -1180,21 +1179,16 @@
           ((unless rulename-info)
            (raise "Internal error: no information for rule name ~x0." rulename)
            (mv nil nil nil))
-          (lemma-instances
-           `((:instance ,(deftreeops-rulename-info->nonleaf-thm rulename-info)
-                        (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))
-             (:instance ,(deftreeops-rulename-info->rulename-thm rulename-info)
-                        (cst (nth 0 (nth 0 (tree-nonleaf->branches cst)))))
-             (:instance ,(deftreeops-alt-info->match-thm alt-info)
-                        (cstss (tree-nonleaf->branches cst)))
-             (:instance ,(deftreeops-rep-info->match-thm rep-info)
-                        (csts (nth 0 (tree-nonleaf->branches cst))))))
-          ((mv more-cond-arms more-disjuncts more-lemma-instances)
+          (rules (list (deftreeops-rulename-info->nonleaf-thm rulename-info)
+                       (deftreeops-rulename-info->rulename-thm rulename-info)
+                       (deftreeops-alt-info->match-thm alt-info)
+                       (deftreeops-rep-info->match-thm rep-info)))
+          ((mv more-cond-arms more-disjuncts more-rules)
            (deftreeops-gen-rulename-fns+thms+info-pass2-aux2
              (cdr alt) (cdr alt-infos) (1+ index) rulename-infos)))
        (mv (cons cond-arm more-cond-arms)
            (cons disjunct more-disjuncts)
-           (append lemma-instances more-lemma-instances))))))
+           (append rules more-rules))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
