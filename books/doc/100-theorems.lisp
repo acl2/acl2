@@ -225,8 +225,8 @@
 
      "<h3 id=\"25\">25. Schroeder-Bernstein Theorem</h3>"
 
-     "@(def sb::injectivity-of-sb)"
-     "@(def sb::surjectivity-of-sb)"
+     "@(def sbt::injectivity-of-sb)"
+     "@(def sbt::surjectivity-of-sb)"
 
      "<p>By Grant Jurgensen, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/schroder-bernstein/schroder-bernstein.lisp\">books/projects/schroder-bernstein/schroder-bernstein.lisp</a>.</p>"
 
