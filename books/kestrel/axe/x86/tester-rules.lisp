@@ -139,13 +139,14 @@
  :hints (("Goal" :in-theory (enable BVSX))))
 
 
-(defthmd bvlt-hack-1
-  (implies (not (bvlt 16 x 1))
-           (equal (bvlt 16 x 2)
-                  (equal (bvchop 16 x) 1)))
-  :hints (("Goal" :in-theory (enable bvlt))))
+;; (defthmd bvlt-hack-1
+;;   (implies (not (bvlt 16 x 1))
+;;            (equal (bvlt 16 x 2)
+;;                   (equal (bvchop 16 x) 1)))
+;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;loops with boolif-of-bvlt-strengthen-to-equal?
+;rename
 (defthmd bvlt-hack-1-gen
   (implies (and (syntaxp (quotep k))
                 (not (bvlt 16 x (+ -1 k)))
@@ -166,8 +167,8 @@
                 (not (bvlt 16 x (+ -1 k)))
                 (< k (expt 2 16))
                 (posp k))
-           (equal (acl2::boolif (bvlt 16 x k) then else)
-                  (acl2::boolif (equal (bvchop 16 x) (+ -1 k)) then else)))
+           (equal (boolif (bvlt 16 x k) then else)
+                  (boolif (equal (bvchop 16 x) (+ -1 k)) then else)))
   :hints (("Goal" :in-theory (enable acl2::boolor
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
@@ -179,8 +180,8 @@
                 (not (bvlt 16 x (+ -1 k)))
                 (< k (expt 2 16))
                 (posp k))
-           (equal (acl2::boolif (bvlt 16 x k) t else)
-                  (acl2::boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
+           (equal (boolif (bvlt 16 x k) t else)
+                  (boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
   :hints (("Goal" :in-theory (enable acl2::boolor boolif
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases

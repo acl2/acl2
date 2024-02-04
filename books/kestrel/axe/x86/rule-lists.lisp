@@ -3795,7 +3795,7 @@
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
             ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
-            ;bvlt-hack-1-gen
+            ;; bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
             ACL2::BVCHOP-SUBST-CONSTANT-alt
             ACL2::BOOL-FIX$INLINE-CONSTANT-OPENER
