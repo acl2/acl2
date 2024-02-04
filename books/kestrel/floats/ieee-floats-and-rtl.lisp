@@ -128,3 +128,33 @@
                                      *-of-expt-and-/-of-expt
                                      *-of-/-of-expt-and-expt)
                            (not-integer-of-*-of-expt2-when-<-of-expt2-of--)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Our notion of smallest positive normal agrees with RTL.
+(defthm spn-becomes-smallest-positive-normal
+  (implies (rtl::formatp f)
+           (equal (rtl::spn f)
+                  (smallest-positive-normal (+ (rtl::prec f)
+                                               (rtl::expw f))
+                                            (rtl::prec f))))
+  :hints (("Goal" :in-theory (enable rtl::spn rtl::bias rtl::expw rtl::prec
+                                     smallest-positive-normal
+                                     decode-normal-number
+                                     bias
+                                     emax))))
+
+;; Our notion of largest (positive) normal agrees with RTL.
+(defthm lpn-becomes-largest-normal
+  (implies (rtl::formatp f)
+           (equal (rtl::lpn f)
+                  (largest-normal (+ (rtl::prec f)
+                                     (rtl::expw f))
+                                  (rtl::prec f))))
+  :hints (("Goal" :in-theory (enable rtl::lpn rtl::bias rtl::expw rtl::prec rtl::formatp
+                                     largest-normal
+                                     decode-normal-number
+                                     bias
+                                     emax
+                                     wfn
+                                     expt-of-+))))
