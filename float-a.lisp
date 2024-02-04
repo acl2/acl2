@@ -309,6 +309,59 @@
 ; well make this constraint explicit.
 
   (equal (constrained-to-df 0) 0))
+
+(defthm constrained-to-df-monotonicity
+
+; Why do we include this theorem, and why is it justified?
+
+; To see why we include it, consider the following example where guard
+; verification fails but could otherwise succeed.
+
+;   (defun foo (n)
+;     (declare (xargs :guard (and (integerp n) (<= 1 n))))
+;     (df/ (to-df n)))
+
+; The following goal, generated for guard verification, is provable using this
+; monotonicity property, but is likely not provable without it.
+
+;   (IMPLIES (AND (<= 1 N) (INTEGERP N))
+;            (NOT (EQUAL (TO-DF N) 0)))
+
+; But what justifies this property?  To-df is defined in raw Lisp as,
+; essentially, (float x 0.0D0).  The CL HyperSpec says the following about
+; float.
+
+;   > float number &optional prototype => float
+;   > ...
+;   > If a prototype is supplied, a float is returned that is
+;   > mathematically equal to number but has the same format as prototype.
+
+; That is, of course, incorrect.  There's no way, for example, that (float 1/3
+; 0.0d0 could be mathematically equal to 1/3, since 1/3 isn't representable by
+; a double-float.  CLtL2, specifically Section 12.6 on "Type Conversions...",
+; is also not helpful; it says that float converts, but it says nothing about
+; the value of the resulting floating-point value.
+
+; However, it would be utter craziness if x < y but float reverses the order.
+; An additional argument is that evaluation of (float x 0.0d0) quite plausibly
+; gives the same result as (coerce x 'double-float).  The following HyperSpec
+; passage about coerce (see
+; https://www.lispworks.com/documentation/HyperSpec/Body/f_coerce.htm#coerce)
+; seems to imply that (coerce x 'double-float) can't reverse order.
+
+;   If the result-type is any of float, short-float, single-float,
+;   double-float, long-float, and the object is a real, then the result
+;   is a float of type result-type which is equal in sign and magnitude
+;   to the object to whatever degree of representational precision is
+;   permitted by that float representation. (If the result-type is float
+;   and object is not already a float, then the result is a single
+;   float.)
+
+  (implies (and (<= x y)
+                (rationalp x)
+                (rationalp y))
+           (<= (constrained-to-df x) (constrained-to-df y)))
+  :rule-classes (:linear :rewrite))
 )
 )
 
@@ -327,6 +380,15 @@
 (defthm to-df-default
   (implies (not (rationalp x))
            (equal (to-df x) 0)))
+(defthm to-df-monotonicity
+
+; See comments in constrained-to-df-monotonicity.
+
+  (implies (and (<= x y)
+                (rationalp x)
+                (rationalp y))
+           (<= (to-df x) (to-df y)))
+  :rule-classes (:linear :rewrite))
 
 (defun dfp (x)
 
@@ -525,6 +587,26 @@
            (equal (df-round r)
                   r)))
 
+(defthm df-round-monotonicity
+
+; To see why we include this property, consider the following example.
+
+;   (implies (and (dfp x1) (dfp y1) (dfp x2) (dfp y2)
+;                 (<= x1 x2) (<= y1 y2))
+;            (<= (df+ x1 y1) (df+ x2 y2))))
+
+; That formula is provable using this monotonicity property, but is likely not
+; provable without it.  In fact, the same holds if dfp is replaced in the
+; hypotheses by rationalp.
+
+; We believe that this property holds for all rounding modes that might be used
+; in Common Lisp implementations.
+
+  (implies (and (<= x y)
+                (rationalp x)
+                (rationalp y))
+           (<= (df-round x) (df-round y)))
+  :rule-classes (:linear :rewrite))
 )
 )
 

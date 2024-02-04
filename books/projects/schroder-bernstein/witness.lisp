@@ -4,7 +4,7 @@
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
 
-(in-package "SB")
+(in-package "SBT")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/define-sk" :dir :system)

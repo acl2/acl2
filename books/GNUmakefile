@@ -572,6 +572,12 @@ OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 # idea to include targets here that are in ACL2_CUSTOM_TARGETS:
 # SLOW_BOOKS is removed from OK_CERTS just below, but later,
 # ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
+# NOTE: kestrel/acl2data/gather/tests/run-tests.lisp isn't slow, but
+# we include it here so that it is not certified during ACL2(p)
+# regressions, since regression-everything is not generally run for
+# ACl2(p).  Its certification fails with ACL2(p), even with
+# waterfall-parallelism turned off, and it doesn't seem worthwhile to
+# investigate why.
 
 SLOW_BOOKS := \
   coi/defung/defung-stress-long.cert \
@@ -581,7 +587,8 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
-  demos/ppr1-experiments-thm-1-ppr1.cert
+  demos/ppr1-experiments-thm-1-ppr1.cert \
+  kestrel/acl2data/gather/tests/run-tests.cert
 
 # The following could well be considered as slow books, too.
 # top.cert

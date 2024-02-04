@@ -21,6 +21,8 @@
 
 ;(local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
+; Matt K. mod: Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
 
 (defthm subseq-character-list3
   (implies
@@ -50,7 +52,7 @@
 ;;Helper Functions and types
 
 ;Parse function outputs are stored in an ast object with a string type and value (parse result)
-(fty::defprod ast-obj 
+(fty::defprod ast-obj
    ((type stringp :default "")
    (value any-p :default "" )
    ))
@@ -88,9 +90,9 @@
   )
 (defthm combine2-ast-objs-ast-obj
   (ast-obj-p (combine2-ast-objs res1 res2))
-    :hints (("Goal" :in-theory (enable combine2-ast-objs)))  
+    :hints (("Goal" :in-theory (enable combine2-ast-objs)))
 )
-(defthm combine2-ast-objs-not-null 
+(defthm combine2-ast-objs-not-null
   (implies
    (or
    (ast-obj-null ast1)
@@ -98,9 +100,9 @@
    )
    (ast-obj-null (combine2-ast-objs ast1 ast2))
   )
-     :hints (("Goal" :in-theory (enable combine2-ast-objs)))  
+     :hints (("Goal" :in-theory (enable combine2-ast-objs)))
   )
-(defthm combine2-ast-objs-not-null2 
+(defthm combine2-ast-objs-not-null2
   (implies
    (and
   (not  (ast-obj-null ast1))
@@ -108,7 +110,7 @@
    )
  (not  (ast-obj-null (combine2-ast-objs ast1 ast2)))
   )
-     :hints (("Goal" :in-theory (enable combine2-ast-objs)))  
+     :hints (("Goal" :in-theory (enable combine2-ast-objs)))
   )
 
 (defund index-of-subseq (seq1 seq2)
@@ -200,7 +202,7 @@
    (declare (xargs :guard (and (character-listp list)
                                )))
    (convert-charlist-to-natural-helper (reverse list))
-   
+
    )
 (defthm convert-charlist-nat
    (natp (convert-charlist-to-natural contents))
@@ -210,18 +212,18 @@
 
 
 (defun index-of-first-non-digit (contents)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                            (character-listp contents)
                             ))
   (if (< 0 (length contents) )
     (if (digit-char-p (car contents))
       (+ 1 (index-of-first-non-digit (cdr contents)))
-       0 
+       0
       )
       0
     )
   )
-  
+
 
 
 
@@ -233,8 +235,8 @@
             (<= (index-of-first-non-digit contents) (len contents))
     ;        )
   )
-  
-  
+
+
   (defthm subseq-character-list2
   (implies
    (and
@@ -348,14 +350,14 @@
 
 (defthm parse-char-cons
     (consp (parse-char char contents))
-    
+
   )
 (defthm parse-char-ast
    (ast-obj-p  (car (parse-char char contents)) )
            :hints (("Goal" :in-theory (enable parse-char)))
   )
 (defthm parse-char-charlist
-    (implies 
+    (implies
       (character-listp contents)
       (character-listp  (cdr (parse-char char contents)) )
              )
@@ -367,12 +369,12 @@
 (defund parse-until-string-non-incl (string contents)
   (declare (xargs :guard (and
                            (character-listp contents)
-                         
+
                             (stringp string)
                             )))
   ;(if (and (natp  (index-of-subseq (explode string) contents)) (character-listp (subseq contents (index-of-subseq (explode string) contents) NIL) ) (<=  (index-of-subseq (explode string) contents)  (len contents)))
   (if (natp  (index-of-subseq (explode string) contents))
-  (if (<=  (index-of-subseq (explode string) contents)  (len contents)) 
+  (if (<=  (index-of-subseq (explode string) contents)  (len contents))
   (if (character-listp (subseq contents (index-of-subseq (explode string) contents) NIL))
   ;  (if  (and (<=  (index-of-subseq (explode string) contents)  (len contents)) (character-listp contents) (character-listp (subseq contents (index-of-subseq (explode string) contents) NIL)) )
     (cons (ast-obj "before-str" (implode (subseq contents 0 (index-of-subseq (explode string) contents))) )
@@ -385,7 +387,7 @@
     ;)
    (cons (ast-obj "null" "") contents)
     )
-  
+
 )
 
 (defthm parse-until-string-non-incl-cons
@@ -400,7 +402,7 @@
                :hints (("Goal" :in-theory (enable parse-until-string-non-incl)))
   )
 (defthm parse-until-string-non-incl-charlist
-    (implies 
+    (implies
      (and
      (parse-until-string-non-incl string contents)
       (character-listp contents)
@@ -408,7 +410,7 @@
              (character-listp  (cdr (parse-until-string-non-incl string contents)) )
              )
                     :hints (("Goal" :in-theory (enable parse-until-string-non-incl)
-                                                   
+
                                              ))
   )
 
@@ -416,13 +418,13 @@
 (defund parse-until-string (string contents)
   (declare (xargs :guard (and
                            (character-listp contents)
-                         
+
                             (stringp string)
                             )))
   (if (natp  (index-of-subseq (explode string) contents))
     (if  (and (<=  (+ (len (explode string )) (index-of-subseq (explode string) contents) ) (len contents)) (character-listp contents))
     (if (character-listp (subseq contents ( + (len (explode string)) (index-of-subseq (explode string) contents) ) NIL))
-    (cons (ast-obj "until-str" (implode (subseq contents 0 (+ (len (explode string)) (index-of-subseq (explode string) contents))) )) 
+    (cons (ast-obj "until-str" (implode (subseq contents 0 (+ (len (explode string)) (index-of-subseq (explode string) contents))) ))
             (subseq contents ( + (len (explode string)) (index-of-subseq (explode string) contents) ) NIL))
                    (cons (ast-obj "null" "") contents)
             )
@@ -430,7 +432,7 @@
     )
    (cons (ast-obj "null" "") contents)
     )
-  
+
 )
 
 
@@ -438,14 +440,14 @@
 (defthm parse-until-string-cons
 
     (consp (parse-until-string string contents))
-    
+
   )
 (defthm parse-until-string-ast
    (ast-obj-p  (car (parse-until-string string contents)) )
                    :hints (("Goal" :in-theory (enable parse-until-string)))
   )
 (defthm parse-until-string-charlist
-    (implies 
+    (implies
       (character-listp contents)
     (character-listp  (cdr (parse-until-string string contents)) )
              )
@@ -458,23 +460,23 @@
    (declare (xargs :guard
                            (character-listp contents)
                             ))
-  (parse-until-string-non-incl " " contents) 
+  (parse-until-string-non-incl " " contents)
   )
 
 (defthm parse-word-cons
- 
+
     (consp (parse-word contents))
-  
+
   )
 (defthm parse-word-ast
    (ast-obj-p  (car (parse-word contents)) )
                       :hints (("Goal" :in-theory (enable parse-word)))
   )
 (defthm parse-word-charlist
-    (implies 
+    (implies
       (character-listp contents)
       (character-listp  (cdr (parse-word contents)) )
-      
+
              )
                           :hints (("Goal" :in-theory (enable parse-word)))
     )
@@ -530,7 +532,7 @@
    (declare (xargs :guard (and (stringp string)
                                string
                                 (character-listp contents)
-                        
+
                               )
                      :guard-hints (("Goal" :in-theory (disable index-of-subseq-from-end)))
                    ))
@@ -560,7 +562,7 @@
     :hints (("Goal" :in-theory (enable parse-string-from-end)))
   )
 (defthm parse-string-from-end-charlist
-    (implies 
+    (implies
      (and
      (parse-string-from-end string contents)
       (character-listp contents)
@@ -572,13 +574,13 @@
 
 ;;;;;;;;;;;;PARSE NUMBER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defund parse-number-helper (contents)
-      (declare (xargs :guard 
+      (declare (xargs :guard
                            (character-listp contents)
-                              :guard-hints (("Goal" :hands-off (subseq)))   
+                              :guard-hints (("Goal" :hands-off (subseq)))
                             ))
 
-   (if  (natp (convert-charlist-to-natural (subseq contents 0 (index-of-first-non-digit contents)))) 
-    (convert-charlist-to-natural (subseq contents 0 (index-of-first-non-digit contents))) 
+   (if  (natp (convert-charlist-to-natural (subseq contents 0 (index-of-first-non-digit contents))))
+    (convert-charlist-to-natural (subseq contents 0 (index-of-first-non-digit contents)))
     0
     )
   )
@@ -595,16 +597,16 @@
   )
 ;;;Returns the remainder after parsing the number
 (defund parse-number-helper-remainder (contents)
-      (declare (xargs :guard 
+      (declare (xargs :guard
                            (character-listp contents)
-                              :guard-hints (("Goal" :hands-off (subseq)))   
+                              :guard-hints (("Goal" :hands-off (subseq)))
                             ))
   (if (and (natp (index-of-first-non-digit contents))(<=  (index-of-first-non-digit contents) (len contents))(character-listp (subseq contents (index-of-first-non-digit contents) NIL)) )
     (subseq contents (index-of-first-non-digit contents) NIL)
     (list )
     )
  ;    NIL
-    
+
   )
 
 
@@ -616,16 +618,16 @@
    :hints (("Goal" :in-theory (enable parse-number-helper-remainder)))
   )
 (defund parse-number (contents)
-    (declare (xargs :guard 
+    (declare (xargs :guard
                            (character-listp contents)
                             ))
-    
+
       (if (and (< 0 (length contents)) (digit-char-p (car contents)))
         (cons (ast-obj "number" (parse-number-helper contents))
             (parse-number-helper-remainder contents))
         (cons (ast-obj "null" "") contents)
-      )    
-     
+      )
+
     )
 (defthm parse-number-cons
   ;(implies
@@ -637,16 +639,16 @@
 (defthm parse-number-ast-obj
 
    (ast-obj-p (car (parse-number contents)) )
-     :hints (("Goal" :in-theory (and (enable parse-number) )))    
+     :hints (("Goal" :in-theory (and (enable parse-number) )))
   )
 
 
 (defthm parse-parse-number-charlist
-    (implies 
+    (implies
       (character-listp contents)
       (character-listp  (cdr (parse-number contents)) )
              )
-     :hints (("Goal" :in-theory (and (enable parse-number) )))    
+     :hints (("Goal" :in-theory (and (enable parse-number) )))
     )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; COMPOSITE FUNCTION EXAMPLES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -655,9 +657,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;PDF HEADER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun parse-header (contents)
-  (declare (xargs :guard 
-                           (character-listp contents)     
-                            
+  (declare (xargs :guard
+                           (character-listp contents)
+
             :guard-hints (("Goal" :hands-off (parse-string parse-number parse-char )))
             )
            )
@@ -671,9 +673,9 @@
          (ast3 (combine2-ast-objs ast2 (car res4)))
          (ast4 (combine2-ast-objs ast3 (car res5)))
          )
-       (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) ) 
-              
-                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) ) 
+       (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) )
+
+                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) )
                      (if (and  (not (ast-obj-null (car res3)))(character-listp (cdr res3)))
                        (if (and  (not (ast-obj-null (car res4)))(character-listp (cdr res4)))
                          (if (and  (not (ast-obj-null (car res4)))(character-listp (cdr res4)))
@@ -701,7 +703,7 @@
   (implies
    (character-listp contents)
  (character-listp (cdr (parse-header contents)))
- 
+
   )
    :hints (("Goal" :in-theory (enable parse-header)))
   )
@@ -709,9 +711,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;PDF XREF ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defund parse-option-char (char1 char2 contents)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                   (and
-                           (character-listp contents)  
+                           (character-listp contents)
                             (characterp char1)
                             (characterp char2)
                            )))
@@ -723,7 +725,7 @@
       res2
       )
     )
-    
+
   )
 
 (defthm parse-option-cons
@@ -737,7 +739,7 @@
   (implies
    (character-listp contents)
  (character-listp (cdr (parse-option-char char1 char2 contents)))
- 
+
   )
    :hints (("Goal" :in-theory (enable parse-option-char)))
   )
@@ -745,9 +747,9 @@
 
 
 (defund parse-xref-sequence (contents)
-  (declare (xargs :guard 
-                           (character-listp contents)     
-                            
+  (declare (xargs :guard
+                           (character-listp contents)
+
             :guard-hints (("Goal" :hands-off (parse-number parse-char parse-option-char  )))
             )
            )
@@ -763,9 +765,9 @@
          (ast4 (combine2-ast-objs ast3 (car res5)))
          (ast5 (combine2-ast-objs ast4 (car res6)))
          )
-       (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) ) 
-              
-                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) ) 
+       (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) )
+
+                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) )
                      (if (and  (not (ast-obj-null (car res3)))(character-listp (cdr res3)))
                        (if (and  (not (ast-obj-null (car res4)))(character-listp (cdr res4)))
                         (if (and  (not (ast-obj-null (car res5)))(character-listp (cdr res5)))
@@ -773,7 +775,7 @@
                              (cons ast5 (cdr res6))
                              (cons (ast-obj "null" NIL) contents)
                               )
-                           (cons (ast-obj "null" NIL) contents) 
+                           (cons (ast-obj "null" NIL) contents)
                            )
 
                          (cons (ast-obj "null" NIL) contents)
@@ -786,11 +788,11 @@
                 )
              )
   )
-           
+
 (defthm parse-xref-sequence-cons
   (consp (parse-xref-sequence contents))
   )
-  
+
 (defthm parse-xref-sequence-ast
   (ast-obj-p (car (parse-xref-sequence contents)))
     :hints (("Goal"  :in-theory (and (enable parse-xref-sequence) )))
@@ -808,17 +810,17 @@
     (declare (xargs :guard
                          (and  (character-listp contents)
                            )
-                     
+
              )
              )
-             
+
 
  (let ((res1 (parse-xref-sequence contents) ))
-    (if (ast-obj-p prefix) 
+    (if (ast-obj-p prefix)
       (if (character-listp contents)
 
-        (if  (< 0  (len contents) ) 
-          (if (and (not (ast-obj-null (car res1))) (< (len (cdr res1)) (len contents)))  
+        (if  (< 0  (len contents) )
+          (if (and (not (ast-obj-null (car res1))) (< (len (cdr res1)) (len contents)))
             (parse-xref-entry-repetition (combine2-ast-objs prefix (car res1) ) (cdr res1) )
             (cons prefix contents)
             )
@@ -829,13 +831,13 @@
             (cons (ast-obj "null" NIL) contents)
      )
     )
-    
+
   )
 
 (defthm parse-xref-entry-repetition-cons
   (consp (parse-xref-entry-repetition prefix contents))
   )
-  
+
 (defthm parse-xref-entry-repetition-ast
   (ast-obj-p (car (parse-xref-entry-repetition prefix contents)))
     :hints (("Goal"  :in-theory (and (enable parse-xref-entry-repetition) )))
@@ -848,20 +850,20 @@
   )
     :hints (("Goal"  :in-theory (and (enable parse-xref-entry-repetition) )))
   )
- 
+
 
 
 (defun parse-xref-section (contents)
-  (declare (xargs :guard 
-                           (character-listp contents)     
-                            
+  (declare (xargs :guard
+                           (character-listp contents)
+
             :guard-hints (("Goal" :hands-off (parse-number parse-char parse-string parse-xref-entry-repetition  )))
             )
            )
   (let* ((res1 (parse-string "xref" contents))
          (res2 (parse-char #\Newline (cdr res1)))
          (res3 (parse-char #\0 (cdr res2)))
-         (res4 (parse-char #\Space (cdr res3))) 
+         (res4 (parse-char #\Space (cdr res3)))
          (res5 (parse-number (cdr res4)))
          (res6 (parse-char #\Newline (cdr res5)))
          (ast1 (combine2-ast-objs (car res1) (car res2)))
@@ -870,11 +872,11 @@
          (ast4 (combine2-ast-objs ast3 (car res5)))
          (ast5 (combine2-ast-objs ast4 (car res6)))
          (res7 (parse-xref-entry-repetition ast5 (cdr res6)))
-         
+
          )
-      (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) ) 
-              
-                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) ) 
+      (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) )
+
+                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) )
                      (if (and  (not (ast-obj-null (car res3)))(character-listp (cdr res3)))
                        (if (and  (not (ast-obj-null (car res4)))(character-listp (cdr res4)))
                         (if (and  (not (ast-obj-null (car res5)))(character-listp (cdr res5)))
@@ -885,7 +887,7 @@
                                 )
                              (cons (ast-obj "null" NIL) contents)
                               )
-                           (cons (ast-obj "null" NIL) contents) 
+                           (cons (ast-obj "null" NIL) contents)
                            )
 
                          (cons (ast-obj "null" NIL) contents)
@@ -911,17 +913,17 @@
   (implies
    (character-listp contents)
  (character-listp (cdr (parse-xref-section contents)))
- 
+
   )
    :hints (("Goal" :in-theory (enable parse-xref-section)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; PDF OBJECTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defund parse-char-optional (char contents)
-   (declare (xargs :guard 
+   (declare (xargs :guard
                    (and
-                           (character-listp contents)     
-                            (characterp char)     
+                           (character-listp contents)
+                            (characterp char)
                             )
                             )
             )
@@ -929,34 +931,34 @@
          )
      (if (not (ast-obj-null (car res)))
        res
-       (cons (ast-obj "optional-char" "") contents) 
+       (cons (ast-obj "optional-char" "") contents)
        )
   )
    )
 (defthm  parse-char-optional-cons
- 
+
    (consp ( parse-char-optional char contents))
- 
+
   )
 
 
 (defthm  parse-char-optional-ast
    (ast-obj-p  (car ( parse-char-optional char contents)) )
- 
-       :hints (("Goal" :in-theory (and (enable  parse-char-optional) )))    
+
+       :hints (("Goal" :in-theory (and (enable  parse-char-optional) )))
   )
 (defthm  parse-char-optional-charlist
-    (implies 
+    (implies
       (character-listp contents)
       (character-listp  (cdr ( parse-char-optional char contents)) )
              )
-           :hints (("Goal" :in-theory (and (enable  parse-char-optional) )))    
+           :hints (("Goal" :in-theory (and (enable  parse-char-optional) )))
     )
 
 
 (defun parse-object-entry (contents)
-     (declare (xargs :guard 
-                           (character-listp contents)     
+     (declare (xargs :guard
+                           (character-listp contents)
                       :guard-hints (("Goal" :hands-off (parse-string combine2-ast-objs parse-until-string parse-char-optional  parse-number parse-char )  ))
                             )
             )
@@ -966,21 +968,21 @@
          (res4 (parse-char #\Space (cdr res3)))
          (res5 (parse-string "obj" (cdr res4)))
          (res6 (parse-char-optional #\Space (cdr res5)))
-         (res7 (parse-char-optional #\Newline (cdr res6))) 
+         (res7 (parse-char-optional #\Newline (cdr res6)))
          (res8 (parse-until-string "endobj" (cdr res7)))
-         (res9 (parse-char-optional #\Newline (cdr res8)))          
+         (res9 (parse-char-optional #\Newline (cdr res8)))
          (ast1 (combine2-ast-objs (car res1) (car res2)))
          (ast2 (combine2-ast-objs ast1 (car res3)))
          (ast3 (combine2-ast-objs ast2 (car res4)))
-         (ast4 (combine2-ast-objs ast3 (car res5)))         
-         (ast5 (combine2-ast-objs ast4 (car res6)))        
+         (ast4 (combine2-ast-objs ast3 (car res5)))
+         (ast5 (combine2-ast-objs ast4 (car res6)))
          (ast6 (combine2-ast-objs ast5 (car res7)))
          (ast7 (combine2-ast-objs ast6 (car res8)))
-         (ast8 (combine2-ast-objs ast7 (car res9)))         
+         (ast8 (combine2-ast-objs ast7 (car res9)))
         )
-                 (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) ) 
-              
-                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) ) 
+                 (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)) )
+
+                (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)) )
                      (if (and  (not (ast-obj-null (car res3)))(character-listp (cdr res3)))
                        (if (and  (not (ast-obj-null (car res4)))(character-listp (cdr res4)))
                            (if (and  (not (ast-obj-null (car res5)))(character-listp (cdr res5)))
@@ -994,17 +996,17 @@
 
                                      (cons (ast-obj "null" NIL) contents)
                                      )
-                                   
+
                                    (cons (ast-obj "null" NIL) contents)
                                    )
-                                   
+
                              (cons (ast-obj "null" NIL) contents)
                              )
 
                           (cons (ast-obj "null" NIL) contents)
                           )
                          (cons (ast-obj "null" NIL) contents)
-                         )     
+                         )
                    (cons (ast-obj "null" NIL) contents)
                   )
                  (cons (ast-obj "null" NIL) contents)
@@ -1015,7 +1017,7 @@
   )
 
 
-  
+
 (defund parse-objects (prefix contents )
     (declare (xargs :guard
                          (and  (character-listp contents)
@@ -1023,11 +1025,11 @@
                             )
              )
   (let ((res1 (parse-object-entry contents) ))
-    (if (ast-obj-p prefix) 
+    (if (ast-obj-p prefix)
       (if (character-listp contents)
 
-        (if  (< 0  (len contents) ) 
-          (if (and (not (ast-obj-null (car res1))) (< (len (cdr res1)) (len contents)))  
+        (if  (< 0  (len contents) )
+          (if (and (not (ast-obj-null (car res1))) (< (len (cdr res1)) (len contents)))
             (parse-objects (combine2-ast-objs prefix (car res1) ) (cdr res1) )
             (cons prefix contents)
             )
@@ -1043,7 +1045,7 @@
 (defthm parse-objects-cons
   (consp (parse-objects prefix contents))
   )
-  
+
 (defthm parse-objects-ast
   (ast-obj-p (car (parse-objects prefix contents)))
     :hints (("Goal"  :in-theory (and (enable parse-objects) )))
@@ -1056,7 +1058,7 @@
   )
     :hints (("Goal"  :in-theory (and (enable parse-objects) )))
   )
- 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PDF TRAILER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1090,18 +1092,18 @@
 
 (defthm  parse-until-option-ast
    (ast-obj-p  (car (parse-until-option string1 string2 contents)) )
- 
-       :hints (("Goal" :in-theory (enable parse-until-option))))    
-  
+
+       :hints (("Goal" :in-theory (enable parse-until-option))))
+
 (defthm  parse-until-option-charlist
-    (implies 
+    (implies
       (character-listp contents)
       (character-listp  (cdr ( parse-until-option string1 string2 contents)) )
              )
-:hints (("Goal" :in-theory (enable parse-until-option))))     
-    
+:hints (("Goal" :in-theory (enable parse-until-option))))
+
 (defun parse-trailer-entry (contents)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                            (character-listp contents)
                    :guard-hints (("Goal" :hands-off (parse-char parse-word parse-until-option)))
                             ))
@@ -1121,7 +1123,7 @@
           )
         (cons (ast-obj "null" NIL) contents)
       )
-        
+
   )
   )
 (defthm  parse-trailer-entry-cons
@@ -1131,16 +1133,16 @@
 
 (defthm  parse-trailer-entry-ast
    (ast-obj-p  (car (parse-trailer-entry contents)) )
- 
-       :hints (("Goal" :in-theory (enable parse-trailer-entry))))    
-  
+
+       :hints (("Goal" :in-theory (enable parse-trailer-entry))))
+
 (defthm  parse-trailer-entry-charlist
-    (implies 
+    (implies
       (character-listp contents)
       (character-listp  (cdr ( parse-trailer-entry contents)) )
              )
-:hints (("Goal" :in-theory (enable parse-trailer-entry))))     
-    
+:hints (("Goal" :in-theory (enable parse-trailer-entry))))
+
 
 (defund parse-trailer-entry-repetition (prefix contents )
     (declare (xargs :guard
@@ -1149,11 +1151,11 @@
                             )
              )
   (let ((res1 (parse-trailer-entry contents) ))
-    (if (ast-obj-p prefix) 
+    (if (ast-obj-p prefix)
       (if (character-listp contents)
 
-        (if  (< 0  (len contents) ) 
-          (if (and (not (ast-obj-null (car res1))) (< (len (cdr res1)) (len contents)))  
+        (if  (< 0  (len contents) )
+          (if (and (not (ast-obj-null (car res1))) (< (len (cdr res1)) (len contents)))
             (parse-trailer-entry-repetition (combine2-ast-objs prefix (car res1) ) (cdr res1) )
             (cons prefix contents)
             )
@@ -1169,7 +1171,7 @@
 (defthm parse-trailer-entry-repetition-cons
   (consp (parse-trailer-entry-repetition prefix contents))
   )
-  
+
 (defthm parse-trailer-entry-repetition-ast
   (ast-obj-p (car (parse-trailer-entry-repetition prefix contents)))
     :hints (("Goal"  :in-theory (and (enable parse-trailer-entry-repetition) )))
@@ -1183,9 +1185,9 @@
     :hints (("Goal"  :in-theory (and (enable parse-trailer-entry-repetition) )))
   )
 (defund parse-trailer-dictionary (contents)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                            (character-listp contents)
-                             :guard-hints (("Goal" :hands-off (parse-string parse-char combine2-ast-objs parse-trailer-entry-repetition)))       
+                             :guard-hints (("Goal" :hands-off (parse-string parse-char combine2-ast-objs parse-trailer-entry-repetition)))
                             ))
      (let*
         ((res1 (parse-string "<<" contents ))
@@ -1198,22 +1200,22 @@
            (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)))
       (if (and (not (ast-obj-null (car res2)))  (character-listp (cdr res2)))
         (if (and (not (ast-obj-null (car res3)))  (character-listp (cdr res3)))
-          (if (and (not (ast-obj-null (car res4)))  (character-listp (cdr res4)))          
+          (if (and (not (ast-obj-null (car res4)))  (character-listp (cdr res4)))
             (cons ast2 (cdr res4))
             (cons (ast-obj "null" NIL) contents)
-          )            
+          )
             (cons (ast-obj "null" NIL) contents)
           )
           (cons (ast-obj "null" NIL) contents)
           )
         (cons (ast-obj "null" NIL) contents)
-      )    
+      )
   )
   )
 (defthm parse-trailer-dictionary-cons
   (consp (parse-trailer-dictionary contents))
   )
-  
+
 (defthm parse-trailer-dictionary-ast
   (ast-obj-p (car (parse-trailer-dictionary contents)))
     :hints (("Goal"  :in-theory (and (enable parse-trailer-dictionary) )))
@@ -1227,34 +1229,34 @@
     :hints (("Goal"  :in-theory (and (enable parse-trailer-dictionary) )))
   )
 (defund parse-trailer (contents)
-  (declare (xargs :guard 
+  (declare (xargs :guard
                            (character-listp contents)
-                             :guard-hints (("Goal" :hands-off (parse-string parse-char combine2-ast-objs parse-trailer-dictionary)))       
+                             :guard-hints (("Goal" :hands-off (parse-string parse-char combine2-ast-objs parse-trailer-dictionary)))
                             ))
    (let* ((res1 (parse-string "trailer" contents) )
-         (res2 (parse-char #\Space (cdr res1))) 
+         (res2 (parse-char #\Space (cdr res1)))
          (res3 (parse-trailer-dictionary (cdr res2) ))
          (res4 (parse-string "startxref" (cdr res3)) )
-         (res5 (parse-char #\Newline (cdr res4)) )         
+         (res5 (parse-char #\Newline (cdr res4)) )
          (res6 (parse-number (cdr res5) ))
-         (res7 (parse-char #\Newline  (cdr res6  ) ))  
-         (res8 (parse-string "%%EOF"  (cdr res7  ) ))         
+         (res7 (parse-char #\Newline  (cdr res6  ) ))
+         (res8 (parse-string "%%EOF"  (cdr res7  ) ))
          (ast1 (combine2-ast-objs (car res1) (car res2)))
          (ast2 (combine2-ast-objs ast1 (car res3)))
          (ast3 (combine2-ast-objs ast2 (car res4)))
-         (ast4 (combine2-ast-objs ast3 (car res5)))         
-         (ast5 (combine2-ast-objs ast4 (car res6)))         
+         (ast4 (combine2-ast-objs ast3 (car res5)))
+         (ast5 (combine2-ast-objs ast4 (car res6)))
          (ast6 (combine2-ast-objs ast5 (car res7)))
-         (ast7 (combine2-ast-objs ast6 (car res8)))         
+         (ast7 (combine2-ast-objs ast6 (car res8)))
      )
      (if (and (not (ast-obj-null (car res1))) (character-listp (cdr res1)))
        (if (and  (not (ast-obj-null (car res2)))(character-listp (cdr res2)))
           (if (and  (not (ast-obj-null (car res3)))(character-listp (cdr res3)))
             (if (and  (not (ast-obj-null (car res4)))(character-listp (cdr res4)))
               (if (and  (not (ast-obj-null (car res5)))(character-listp (cdr res5)))
-                (if (and  (not (ast-obj-null (car res6)))(character-listp (cdr res6)))                
+                (if (and  (not (ast-obj-null (car res6)))(character-listp (cdr res6)))
                   (if (and  (not (ast-obj-null (car res7)))(character-listp (cdr res7)))
-                    (if (and  (not (ast-obj-null (car res8)))(character-listp (cdr res8)))            
+                    (if (and  (not (ast-obj-null (car res8)))(character-listp (cdr res8)))
                       (cons ast7 (cdr res8))
                       (cons (ast-obj "null" NIL) contents)
             )
@@ -1277,7 +1279,7 @@
 (defthm parse-trailer-cons
   (consp (parse-trailer contents))
   )
-  
+
 (defthm parse-trailer-ast
   (ast-obj-p (car (parse-trailer contents)))
     :hints (("Goal"  :in-theory (and (enable parse-trailer) )))
@@ -1292,12 +1294,12 @@
   )
  ;;;;;;;;;;;;;;;; PARSE PDF ;;;;;;;;;;;;;;;;;;;;;;;
  (defun parse-pdf (contents)
-   (declare (xargs :guard 
+   (declare (xargs :guard
                            (character-listp contents)
-                             :guard-hints (("Goal" :hands-off (parse-header parse-objects parse-xref-section parse-trailer)))       
+                             :guard-hints (("Goal" :hands-off (parse-header parse-objects parse-xref-section parse-trailer)))
                             ))
    (let* ((res1 (parse-header contents) )
-         (res2 (parse-objects (car res1) (cdr res1))) 
+         (res2 (parse-objects (car res1) (cdr res1)))
          (res3 (parse-xref-section (cdr res2) ))
          (res4 (parse-trailer (cdr res3)) )
          (ast1 (combine2-ast-objs (car res2) (car res3)))
@@ -1317,6 +1319,6 @@
                      (cons (ast-obj "null" NIL) contents)
               )
     )
-            
-         
+
+
    )

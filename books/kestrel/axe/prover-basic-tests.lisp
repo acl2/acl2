@@ -40,6 +40,9 @@
                                                   :rule-lists (list '(implies)) ;todo
                                                   )))
 
+; Matt K. mod: Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
+
 (defthm-with-basic-prover-clause-processor test1
   (natp 7))
 

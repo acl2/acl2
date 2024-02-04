@@ -521,12 +521,15 @@
     rationalp-to-df constrained-to-df-0
     constrained-to-df-default
     constrained-to-df-idempotent
+    constrained-to-df-monotonicity
     rationalp-constrained-to-df
     df-round-idempotent
+    df-round-monotonicity
     df-round-is-identity-for-dfp
     dfp-df-round
     rationalp-df-round
-    to-df-minus))
+    to-df-minus
+    to-df-monotonicity))
 
 (defconst *builtin-defaxiom/defthm-characters*
   '(booleanp-characterp

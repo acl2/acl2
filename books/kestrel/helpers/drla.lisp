@@ -267,6 +267,9 @@
       term
       (subst-pairwise (cdr new) (cdr old) (subst (car new) (car old) term))))
 
+; Matt K. mod: Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
+
 (mutual-recursion
  (defun apply-lambdas (term)
    (if (consp term)
