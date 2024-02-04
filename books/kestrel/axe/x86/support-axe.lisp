@@ -218,6 +218,19 @@
 (acl2::def-constant-opener x86isa::!rflagsbits->sf$inline)
 (acl2::def-constant-opener x86isa::!rflagsbits->zf$inline)
 
+(def-constant-opener x86isa::vex-prefixes-fix$inline)
+(def-constant-opener x86isa::vex-prefixes->byte0$inline)
+(def-constant-opener x86isa::vex-prefixes->byte1$inline)
+(def-constant-opener x86isa::vex-prefixes->byte2$inline)
+(def-constant-opener x86isa::!vex-prefixes->byte0$inline)
+(def-constant-opener x86isa::!vex-prefixes->byte1$inline)
+(def-constant-opener x86isa::!vex-prefixes->byte2$inline)
+(def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
+(def-constant-opener x86isa::vex-prefixes-map-p$inline)
+(def-constant-opener x86isa::prefixes->rep$inline)
+(def-constant-opener x86isa::vex3-byte1->m-mmmm$inline)
+(def-constant-opener x86isa::vex3-byte1-fix$inline)
+
 (acl2::def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
 (acl2::def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
 

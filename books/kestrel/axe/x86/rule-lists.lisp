@@ -289,6 +289,14 @@
 ;;     x86isa::rflagsbits->sf$inline
 ;;     x86isa::rflagsbits->zf$inline
 
+    x86isa::rflagsbits$inline-constant-opener
+    x86isa::10bits-fix-constant-opener
+    x86isa::2bits-fix-constant-opener
+    acl2::logapp-constant-opener
+    acl2::expt2$inline-constant-opener
+
+    x86isa::!rflagsbits->af$inline-constant-opener
+
     x86isa::rflagsbits->ac$inline-constant-opener
     x86isa::rflagsbits->af$inline-constant-opener
     x86isa::rflagsbits->cf$inline-constant-opener
@@ -296,10 +304,41 @@
     x86isa::rflagsbits->pf$inline-constant-opener
     x86isa::rflagsbits->sf$inline-constant-opener
     x86isa::rflagsbits->zf$inline-constant-opener
-    ;todo: more like this?
+    x86isa::rflagsbits->res1$inline-constant-opener
+    x86isa::rflagsbits->res2$inline-constant-opener
+    x86isa::rflagsbits->res3$inline-constant-opener
+    x86isa::rflagsbits->tf$inline-constant-opener
+    x86isa::rflagsbits->intf$inline-constant-opener
+    x86isa::rflagsbits->df$inline-constant-opener
+    x86isa::rflagsbits->iopl$inline-constant-opener
+    x86isa::rflagsbits->nt$inline-constant-opener
+    x86isa::rflagsbits->res4$inline-constant-opener
+    x86isa::rflagsbits->rf$inline-constant-opener
+    x86isa::rflagsbits->vm$inline-constant-opener
+    x86isa::rflagsbits->vif$inline-constant-opener
+    x86isa::rflagsbits->vip$inline-constant-opener
+    x86isa::rflagsbits->id$inline-constant-opener
+    x86isa::rflagsbits->res5$inline-constant-opener
+
+    ;todo: more like this, or do we have them all?
 
     x86isa::rflagsbits-fix$inline-constant-opener
     unsigned-byte-p-of-rflagsbits
+
+    ;; Or perhaps instead of these we should recharacterize
+    ;; some instruction semantic functions so as not to need these:
+    ;; x86isa::rflagsbits->af$inline-of-if-safe
+    ;; x86isa::rflagsbits->cf$inline-of-if-safe
+    ;; x86isa::rflagsbits->of$inline-of-if-safe
+    ;; x86isa::rflagsbits->pf$inline-of-if-safe
+    ;; x86isa::rflagsbits->sf$inline-of-if-safe
+    ;; x86isa::rflagsbits->zf$inline-of-if-safe
+    x86isa::rflagsbits->af$inline-of-if
+    x86isa::rflagsbits->cf$inline-of-if
+    x86isa::rflagsbits->of$inline-of-if
+    x86isa::rflagsbits->pf$inline-of-if
+    x86isa::rflagsbits->sf$inline-of-if
+    x86isa::rflagsbits->zf$inline-of-if
 
     ;; These introduce set-flag:
     !rflags-of-!rflagsbits->af
@@ -478,6 +517,21 @@
     x86isa::sib-fix$inline
     x86isa::4bits-fix
     x86isa::8bits-fix
+
+    x86isa::vex-prefixes-fix$inline-constant-opener
+    x86isa::vex-prefixes->byte0$inline-constant-opener
+    x86isa::vex-prefixes->byte1$inline-constant-opener
+    x86isa::vex-prefixes->byte2$inline-constant-opener
+    x86isa::!vex-prefixes->byte0$inline-constant-opener
+    x86isa::!vex-prefixes->byte1$inline-constant-opener
+    x86isa::!vex-prefixes->byte2$inline-constant-opener
+    x86isa::vex-opcode-modr/m-p$inline-constant-opener
+    x86isa::vex-prefixes-map-p$inline-constant-opener
+    x86isa::prefixes->rep$inline-constant-opener
+    x86isa::vex3-byte1->m-mmmm$inline-constant-opener
+    x86isa::vex3-byte1-fix$inline-constant-opener
+    x86isa::vex-decode-and-execute
+    x86isa::vex-0f38-execute  ; move?
 ))
 
 (defun x86-type-rules ()
@@ -1138,7 +1192,8 @@
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
             x86isa::one-byte-opcode-execute-base
-            eql
+            eql ; move
+            = ; move
 
             acl2::binary-+-bring-constant-forward ;improve to disallow the other arg to be constant
 
@@ -3465,7 +3520,8 @@
             x86isa::canonical-address-p-between-special5
             x86isa::canonical-address-p-between-special5-alt
             x86isa::canonical-address-p-between-special6
-            bitops::ash-is-expt-*-x acl2::natp-of-*
+            bitops::ash-is-expt-*-x
+            acl2::natp-of-*
             acl2::<-of-constant-and-+-of-constant ; for address calcs
             <-of-15-and-*-of-4
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
@@ -3559,10 +3615,6 @@
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
             acl2::bvchop-of-bvshr-same
-            ;bvand-of-lognot-arg2
-            ;bvand-of-lognot-arg3
-            ;bvxor-of-lognot-arg2
-            ;bvxor-of-lognot-arg3
             acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil

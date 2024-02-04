@@ -72,26 +72,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;todo: or use a trim-like scheme for stuff like this
-(defthm bvand-of-lognot-arg2
-  (equal (bvand size (lognot x) y)
-         (bvand size (bvnot size x) y))
-  :hints (("Goal" :in-theory (enable bvnot))))
+;; ;; Use the trim scheme instead
+;; (defthm bvand-of-lognot-arg2
+;;   (equal (bvand size (lognot x) y)
+;;          (bvand size (bvnot size x) y))
+;;   :hints (("Goal" :in-theory (enable bvnot))))
 
-(defthm bvand-of-lognot-arg3
-  (equal (bvand size x (lognot y))
-         (bvand size x (bvnot size y)))
-  :hints (("Goal" :in-theory (enable bvnot))))
+;; (defthm bvand-of-lognot-arg3
+;;   (equal (bvand size x (lognot y))
+;;          (bvand size x (bvnot size y)))
+;;   :hints (("Goal" :in-theory (enable bvnot))))
 
-(defthm bvxor-of-lognot-arg2
-  (equal (bvxor size (lognot x) y)
-         (bvxor size (bvnot size x) y))
-  :hints (("Goal" :in-theory (enable bvnot))))
+;; (defthm bvxor-of-lognot-arg2
+;;   (equal (bvxor size (lognot x) y)
+;;          (bvxor size (bvnot size x) y))
+;;   :hints (("Goal" :in-theory (enable bvnot))))
 
-(defthm bvxor-of-lognot-arg3
-  (equal (bvxor size x (lognot y))
-         (bvxor size x (bvnot size y)))
-  :hints (("Goal" :in-theory (enable bvnot))))
+;; (defthm bvxor-of-lognot-arg3
+;;   (equal (bvxor size x (lognot y))
+;;          (bvxor size x (bvnot size y)))
+;;   :hints (("Goal" :in-theory (enable bvnot))))
 
 (defthm bvchop-of-lognot
   (equal (bvchop size (lognot x))

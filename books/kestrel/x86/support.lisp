@@ -2145,8 +2145,102 @@
 (acl2::def-constant-opener x86isa::rflagsbits->pf$inline)
 (acl2::def-constant-opener x86isa::rflagsbits->sf$inline)
 (acl2::def-constant-opener x86isa::rflagsbits->zf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res1$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res2$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res3$inline)
+
+(acl2::def-constant-opener x86isa::rflagsbits->tf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->intf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->df$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->iopl$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->nt$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res4$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->rf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vm$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vif$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vip$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->id$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res5$inline)
+(acl2::def-constant-opener x86isa::rflagsbits$inline)
+
+(acl2::def-constant-opener x86isa::!rflagsbits->af$inline)
+
+(acl2::def-constant-opener x86isa::10bits-fix)
+(acl2::def-constant-opener x86isa::2bits-fix)
+(acl2::def-constant-opener logapp)
+(acl2::def-constant-opener acl2::expt2$inline)
+
 
 (acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+
+(defthm x86isa::rflagsbits->of$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->of$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->of$inline tp) (x86isa::rflagsbits->of$inline ep)))))
+
+(defthm x86isa::rflagsbits->sf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->sf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->sf$inline tp) (x86isa::rflagsbits->sf$inline ep)))))
+
+(defthm x86isa::rflagsbits->cf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->cf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->cf$inline tp) (x86isa::rflagsbits->cf$inline ep)))))
+
+(defthm x86isa::rflagsbits->af$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->af$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->af$inline tp) (x86isa::rflagsbits->af$inline ep)))))
+
+(defthm x86isa::rflagsbits->zf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->zf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->zf$inline tp) (x86isa::rflagsbits->zf$inline ep)))))
+
+(defthm x86isa::rflagsbits->pf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->pf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->pf$inline tp) (x86isa::rflagsbits->pf$inline ep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm x86isa::rflagsbits->of$inline-of-if
+  (equal (x86isa::rflagsbits->of$inline (if test tp ep))
+         (if test (x86isa::rflagsbits->of$inline tp) (x86isa::rflagsbits->of$inline ep))))
+
+(defthm x86isa::rflagsbits->sf$inline-of-if
+  (equal (x86isa::rflagsbits->sf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->sf$inline tp) (x86isa::rflagsbits->sf$inline ep))))
+
+(defthm x86isa::rflagsbits->cf$inline-of-if
+  (equal (x86isa::rflagsbits->cf$inline (if test tp ep))
+         (if test (x86isa::rflagsbits->cf$inline tp) (x86isa::rflagsbits->cf$inline ep))))
+
+(defthm x86isa::rflagsbits->af$inline-of-if
+  (equal (x86isa::rflagsbits->af$inline (if test tp ep))
+         (if test (x86isa::rflagsbits->af$inline tp) (x86isa::rflagsbits->af$inline ep))))
+
+(defthm x86isa::rflagsbits->zf$inline-of-if
+  (equal (x86isa::rflagsbits->zf$inline (if test tp ep))
+         (if test (x86isa::rflagsbits->zf$inline tp) (x86isa::rflagsbits->zf$inline ep))))
+
+(defthm x86isa::rflagsbits->pf$inline-of-if
+  (equal (x86isa::rflagsbits->pf$inline (if test tp ep))
+         (if test (x86isa::rflagsbits->pf$inline tp) (x86isa::rflagsbits->pf$inline ep))))
+
 
 (acl2::def-constant-opener x86isa::feature-flags)
 
@@ -2218,6 +2312,14 @@
 ;ACL2::BVCAT-EQUAL-REWRITE-ALT
                                    ACL2::BVCAT-EQUAL-REWRITE
                                    ACL2::BFIX-WHEN-NOT-BITP)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm set-rax-of-if-arg1
+;;   (equal (set-rax (if test val1 val2) x86)
+;;          (if test (set-rax val1 x86) (set-rax val2 x86))))
+
+(defthm 64-bit-modep-of-if (equal (64-bit-modep (if test x y)) (if test (64-bit-modep x) (64-bit-modep y))))
 
 (defthm unsigned-byte-p-1-of-rflagsbits->cf$inline (unsigned-byte-p '1 (x86isa::rflagsbits->cf$inline rflags)))
 (defthm unsigned-byte-p-1-of-rflagsbits->res1$inline (unsigned-byte-p '1 (x86isa::rflagsbits->res1$inline rflags)))
