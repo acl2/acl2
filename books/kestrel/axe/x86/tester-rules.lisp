@@ -330,10 +330,6 @@
          0)
   :hints (("Goal" :in-theory (enable of-spec64))))
 
-
-(acl2::def-constant-opener X86ISA::!PREFIXES->REP$inline)
-(acl2::def-constant-opener X86ISA::PREFIXES->REP$INLINE)
-
 (defthm X86ISA::FEATURE-FLAGS-opener
   (implies (consp features)
            (equal (X86ISA::FEATURE-FLAGS features)
@@ -347,10 +343,6 @@
            (equal (X86ISA::FEATURE-FLAGS features)
                   1))
   :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
-
-;; probably only needed for axe
-(defthmd integerp-of-ctri
-  (integerp (ctri acl2::i x86)))
 
 (defthm cr0bits->ts-of-bvchop
   (implies (and (< 3 n)
@@ -521,8 +513,6 @@
 (defthm !RFLAGS-of-if-arg2
   (equal (X86ISA::!RFLAGS v (if test x86_1 x86_2))
          (if test (X86ISA::!RFLAGS v x86_1) (X86ISA::!RFLAGS v x86_2))))
-
-(acl2::def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
 
 ;; (thm
 ;;  (IMPLIES (AND (< J 0)
@@ -1218,8 +1208,6 @@
                                   (;acl2::logand-of-bvchop-becomes-bvand-alt ;loop
                                    ;acl2::logand-of-bvchop-becomes-bvand ;loop
                                    )))))
-
-(def-constant-opener x86isa::!prefixes->seg$inline)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

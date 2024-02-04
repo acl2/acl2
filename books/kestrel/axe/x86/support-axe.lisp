@@ -290,3 +290,12 @@
            (equal (run-until-stack-shorter-than old-rsp x86)
                   (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-opener))))
+
+(acl2::def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
+(acl2::def-constant-opener X86ISA::!PREFIXES->REP$inline)
+(acl2::def-constant-opener X86ISA::PREFIXES->REP$INLINE)
+(def-constant-opener x86isa::!prefixes->seg$inline)
+
+;; probably only needed for axe
+(defthmd integerp-of-ctri
+  (integerp (ctri acl2::i x86)))

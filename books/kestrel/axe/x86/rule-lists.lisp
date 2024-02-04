@@ -478,6 +478,12 @@
     x86isa::sib-fix$inline
     x86isa::4bits-fix
     x86isa::8bits-fix
+
+    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
+    X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
+    x86isa::!prefixes->seg$inline-constant-opener
+    X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
 ))
 
 (defun x86-type-rules ()
@@ -2914,7 +2920,11 @@
     ctri-of-set-rsp
     ctri-of-set-rbp
     ctri-of-set-undef
-    ctri-of-!rflags
+    ctri-of-!rflags ; rename !rflags?
+    ctri-of-xw-irrel ; why?
+    ctri-of-write
+    ctri-of-set-flag
+    integerp-of-ctri
 
     rax-of-write
     rbx-of-write
@@ -3617,7 +3627,7 @@
           '(X86ISA::WX32$inline ; more?
             X86ISA::WZ32$inline ; more?
             <-of-fp-to-rat ; do we want this?
-            X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
+
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
             ;;xr-of-!rflags-irrel
@@ -3704,14 +3714,9 @@
             of-spec64-of-logext-64
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
-            X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
-            X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
             X86ISA::CHK-EXC-FN ; for floating point?
-            ctri-of-xw-irrel
-            ctri-of-write
-            ctri-of-set-flag
             eql
-            integerp-of-ctri
+
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
@@ -3807,7 +3812,7 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-            x86isa::!prefixes->seg$inline-constant-opener
+
             read-of-2 ; splits into 2 reads
             )
           (acl2::core-rules-bv) ; trying
