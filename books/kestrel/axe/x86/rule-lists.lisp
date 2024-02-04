@@ -916,6 +916,7 @@
     X86ISA::N32P-XR-MXCSR
     ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
     x86isa::dp-sse-cmp ; scary?
+    dazify-of-0-arg2
     ))
 
 ;; Try to introduce is-nan as soon as possible:
