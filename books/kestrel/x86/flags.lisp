@@ -702,3 +702,8 @@
          (x86 (set-flag :sf 0 x86))
          (x86 (set-flag :zf 0 x86)))
     x86))
+
+(defthm set-flag-of-if
+  (equal (set-flag flag val (if test x y))
+         (if test (set-flag flag val x)
+               (set-flag flag val y))))

@@ -323,6 +323,7 @@
     heavier-dag-term
 
     prove-equivalence
+    prove-equal-with-tactics
     symbolic-byte-assumptions
     symbolic-list
     ;rule lists:
