@@ -1118,3 +1118,21 @@
   :hints (("Goal" :in-theory (e/d (memi)
                                   (;x86isa::memi-is-n08p ;does forcing
                                    )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm app-view-of-if
+  (equal (app-view (if test x86 x86_2))
+         (if test (app-view x86) (app-view x86_2))))
+
+(defthm program-at-of-if
+  (equal (program-at prog-addr bytes (if test x86 x86_2))
+         (if test (program-at prog-addr bytes x86) (program-at prog-addr bytes x86_2))))
+
+(defthm x86p-of-if
+  (equal (x86p (if test x86 x86_2))
+         (if test (x86p x86) (x86p x86_2))))
+
+(defthm ctri-of-if
+  (equal (ctri i (if test x86 x86_2))
+         (if test (ctri i x86) (ctri i x86_2))))
