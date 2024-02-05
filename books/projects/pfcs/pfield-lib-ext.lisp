@@ -24,15 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ prime-field-library-extensions
-  :parents (pfcs)
-  :short "Extensions of the prime fields library."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These may be moved to the prime fields library."))
-  :order-subtopics t
-  :default-parent t)
+; Prime fields library extensions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
