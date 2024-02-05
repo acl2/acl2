@@ -12,9 +12,11 @@
 (in-package "PFCS")
 
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/list-fix" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -35,6 +37,60 @@
   :induct t
   :enable append)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fe-listp-of-repeat
+  (iff (fe-listp (repeat n x) p)
+       (or (zp n) (fep x p)))
+  :induct t
+  :enable repeat)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fe-listp-of-last
+  (implies (fe-listp x p)
+           (fe-listp (last x) p))
+  :induct t
+  :enable last)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defrule pfield::fe-listp-of-take
+  (implies (fe-listp x p)
+           (iff (fe-listp (take n x) p)
+                (or (fep nil p)
+                    (<= (nfix n) (len x)))))
+  :induct t
+  :enable (take nfix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fe-listp-of-butlast
+  (implies (fe-listp x p)
+           (fe-listp (butlast x n) p))
+  :enable (butlast nfix fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fep-of-nth-when-fe-listp
+  (implies (fe-listp x p)
+           (iff (fep (nth n x) p)
+                (< (nfix n) (len x))))
+  :induct t
+  :enable (nth nfix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule pfield::fe-listp-of-update-nth
+  (implies (fe-listp x p)
+           (iff (fe-listp (update-nth n y x) p)
+                (and (fep y p)
+                     (or (<= (nfix n) (len x))
+                         (fep nil p)))))
+  :induct t
+  :enable (update-nth nfix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled pfield::nat-listp-when-fe-listp
@@ -42,6 +98,8 @@
            (nat-listp x))
   :induct t
   :enable nat-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule pfield::fe-listp-fw-to-nat-listp
   (implies (fe-listp x p)
