@@ -255,6 +255,12 @@
              (XR :ms nil state1)
            (XR :ms nil state2))))
 
+(defthm x86isa::xr-of-if-special-case-for-fault
+  (equal (xr :fault nil (if test state1 state2))
+         (if test
+             (xr :fault nil state1)
+           (xr :fault nil state2))))
+
 (defthm canonical-address-p-of-if
   (equal (canonical-address-p (if test a1 a2))
          (if test
