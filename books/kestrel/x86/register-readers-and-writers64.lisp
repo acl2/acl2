@@ -183,6 +183,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Write-of-read of the same register
+(defthm set-rax-of-rax-same (equal (set-rax (rax x86) x86) x86) :hints (("Goal" :in-theory (enable rax set-rax))))
+(defthm set-rbx-of-rbx-same (equal (set-rbx (rbx x86) x86) x86) :hints (("Goal" :in-theory (enable rbx set-rbx))))
+(defthm set-rcx-of-rcx-same (equal (set-rcx (rcx x86) x86) x86) :hints (("Goal" :in-theory (enable rcx set-rcx))))
+(defthm set-rdx-of-rdx-same (equal (set-rdx (rdx x86) x86) x86) :hints (("Goal" :in-theory (enable rdx set-rdx))))
+(defthm set-rdi-of-rdi-same (equal (set-rdi (rdi x86) x86) x86) :hints (("Goal" :in-theory (enable rdi set-rdi))))
+(defthm set-rsi-of-rsi-same (equal (set-rsi (rsi x86) x86) x86) :hints (("Goal" :in-theory (enable rsi set-rsi))))
+(defthm set-r8-of-r8-same (equal (set-r8 (r8 x86) x86) x86) :hints (("Goal" :in-theory (enable r8 set-r8))))
+(defthm set-r9-of-r9-same (equal (set-r9 (r9 x86) x86) x86) :hints (("Goal" :in-theory (enable r9 set-r9))))
+(defthm set-r10-of-r10-same (equal (set-r10 (r10 x86) x86) x86) :hints (("Goal" :in-theory (enable r10 set-r10))))
+(defthm set-r11-of-r11-same (equal (set-r11 (r11 x86) x86) x86) :hints (("Goal" :in-theory (enable r11 set-r11))))
+(defthm set-r12-of-r12-same (equal (set-r12 (r12 x86) x86) x86) :hints (("Goal" :in-theory (enable r12 set-r12))))
+(defthm set-r13-of-r13-same (equal (set-r13 (r13 x86) x86) x86) :hints (("Goal" :in-theory (enable r13 set-r13))))
+(defthm set-r14-of-r14-same (equal (set-r14 (r14 x86) x86) x86) :hints (("Goal" :in-theory (enable r14 set-r14))))
+(defthm set-r15-of-r15-same (equal (set-r15 (r15 x86) x86) x86) :hints (("Goal" :in-theory (enable r15 set-r15))))
+(defthm set-rsp-of-rsp-same (equal (set-rsp (rsp x86) x86) x86) :hints (("Goal" :in-theory (enable rsp set-rsp))))
+(defthm set-rbp-of-rbp-same (equal (set-rbp (rbp x86) x86) x86) :hints (("Goal" :in-theory (enable rbp set-rbp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; <reg> of set-rip:
 
 (defthm rax-of-set-rip (equal (rax (set-rip rip x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
