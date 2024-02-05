@@ -585,7 +585,7 @@
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
        ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
-        (if (< result-dag-size 10000)
+        (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (untranslate (dag-to-term result-dag) nil (w state)) nil)
                     (cw ")~%"))
