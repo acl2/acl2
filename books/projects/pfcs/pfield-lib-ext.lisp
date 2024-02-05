@@ -13,6 +13,7 @@
 
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -54,7 +55,6 @@
   :enable last)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (defrule pfield::fe-listp-of-take
   (implies (fe-listp x p)
@@ -107,3 +107,18 @@
   :rule-classes :forward-chaining
   :induct t
   :enable nat-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist pfield::fe-list-listp (pfield::x p)
+  :guard (primep p)
+  (fe-listp pfield::x p)
+  :true-listp t
+  :elementp-of-nil t
+  ///
+
+  (defruled pfield::true-list-listp-when-fe-list-listp
+    (implies (fe-list-listp x p)
+             (true-list-listp x))
+    :induct t
+    :enable true-list-listp))
