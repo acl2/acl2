@@ -28,6 +28,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule pfield::fe-listp-of-append
+  (equal (fe-listp (append x y) p)
+         (and (fe-listp (true-list-fix x) p)
+              (fe-listp y p)))
+  :induct t
+  :enable append)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled pfield::nat-listp-when-fe-listp
   (implies (fe-listp x p)
            (nat-listp x))
@@ -40,12 +49,3 @@
   :rule-classes :forward-chaining
   :induct t
   :enable nat-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule pfield::fe-listp-of-append
-  (equal (fe-listp (append x y) p)
-         (and (fe-listp (true-list-fix x) p)
-              (fe-listp y p)))
-  :induct t
-  :enable append)
