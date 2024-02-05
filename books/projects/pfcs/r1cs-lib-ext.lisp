@@ -23,15 +23,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ r1cs-library-extensions
-  :parents (pfcs)
-  :short "Extensions of the R1CS library."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These may be moved to the R1CS library."))
-  :order-subtopics t
-  :default-parent t)
+; R1CS library extensions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
