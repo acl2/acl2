@@ -68,7 +68,6 @@
   use-equal-by-logbitp
   :disabled t))
 
-
 (create-case-match-macro de-morgan-pattern-1
                          ('sv::bitnot ('sv::bitor ('sv::bitnot x)
                                                   ('sv::bitnot y))))
@@ -76,6 +75,32 @@
 (create-case-match-macro de-morgan-pattern-2
                          ('sv::bitnot ('sv::bitand ('sv::bitnot x)
                                                    ('sv::bitnot y))))
+
+(progn
+  (create-case-match-macro deep1-de-morgan-pattern-1a
+                           ('sv::bitnot ('sv::bitand ('sv::bitnot x) y))
+                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
+                                         (or (de-morgan-pattern-1-p not-y)
+                                             (de-morgan-pattern-2-p not-y)))
+                           :inline nil)
+  (create-case-match-macro deep1-de-morgan-pattern-1b
+                           ('sv::bitnot ('sv::bitand y ('sv::bitnot x)))
+                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
+                                         (or (de-morgan-pattern-1-p not-y)
+                                             (de-morgan-pattern-2-p not-y)))
+                           :inline nil)
+  (create-case-match-macro deep1-de-morgan-pattern-2a
+                           ('sv::bitnot ('sv::bitor ('sv::bitnot x) y))
+                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
+                                         (or (de-morgan-pattern-1-p not-y)
+                                             (de-morgan-pattern-2-p not-y)))
+                           :inline nil)
+  (create-case-match-macro deep1-de-morgan-pattern-2b
+                           ('sv::bitnot ('sv::bitor y ('sv::bitnot x)))
+                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
+                                         (or (de-morgan-pattern-1-p not-y)
+                                             (de-morgan-pattern-2-p not-y)))
+                           :inline nil))
 
 (create-case-match-macro xor-pattern-1
                          ('sv::bitand ('sv::bitor x y)
@@ -100,7 +125,6 @@
   (create-case-match-macro xor-pattern-3d
                            ('sv::bitor ('sv::bitand y ('sv::bitnot x))
                                        ('sv::bitand ('sv::bitnot y) x))))
- 
 
 (local
  (defsection proofs-with-logbitp
@@ -165,10 +189,9 @@
                  (:type-prescription acl2::binary-logand)
 
 
-
                  SV::4VEC->UPPER
                  SV::4VEC->LOWER
-                
+
                  )))
 
    (local
@@ -178,7 +201,6 @@
       :hints (("Goal"
                :in-theory (e/d (acl2::zbp acl2::bool->bit) ())))))
 
-
    #|(defthm xor-pattern-1-lemma1
    (implies t ;
    (EQUAL ;
@@ -187,7 +209,7 @@
    (sv::4vec-bitnot (4VEC-BITand x y))) ;
    (SV::4VEC-BITXOR x y))) ;
    :hints ((bitops::logbitp-reasoning)))|#
-  
+
    (defthm xor-pattern-1-lemma1
      (implies t
               (EQUAL
@@ -209,7 +231,6 @@
      :hints (("Goal"
               :use ((:instance xor-pattern-1-lemma1))
               :in-theory (e/d (4vec-bitnot-to-4vec-bitxor) ()))))
-
 
    (defthm xor-pattern-3
      (equal (4vec-bitor
@@ -272,7 +293,6 @@
    ))
 
 
-
 (defines svex-convert-bitnot-to-bitxor
   :hints (("Goal"
            :expand ((SV::SVEX-COUNT SVEX)
@@ -305,6 +325,41 @@
                            (hons-list
                             (svex-convert-bitnot-to-bitxor x)
                             (svex-convert-bitnot-to-bitxor y)))))
+
+          ;; ((deep1-de-morgan-pattern-1a-p svex)
+          ;;  (deep1-de-morgan-pattern-1a-body
+          ;;   svex
+          ;;   (sv::svex-call 'sv::bitor
+          ;;                  (hons-list
+          ;;                   (svex-convert-bitnot-to-bitxor x)
+          ;;                   (svex-convert-bitnot-to-bitxor
+          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))))))
+          ;; ((deep1-de-morgan-pattern-1b-p svex)
+          ;;  (deep1-de-morgan-pattern-1b-body
+          ;;   svex
+          ;;   (sv::svex-call 'sv::bitor
+          ;;                  (hons-list
+          ;;                   (svex-convert-bitnot-to-bitxor
+          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))
+          ;;                   (svex-convert-bitnot-to-bitxor x)))))
+          ;; ((deep1-de-morgan-pattern-2a-p svex)
+          ;;  (deep1-de-morgan-pattern-2a-body
+          ;;   svex
+          ;;   (sv::svex-call 'sv::bitand
+          ;;                  (hons-list
+          ;;                   (svex-convert-bitnot-to-bitxor x)
+          ;;                   (svex-convert-bitnot-to-bitxor
+          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))))))
+          ;; ((deep1-de-morgan-pattern-2b-p svex)
+          ;;  (deep1-de-morgan-pattern-2b-body
+          ;;   svex
+          ;;   (sv::svex-call 'sv::bitand
+          ;;                  (hons-list
+          ;;                   (svex-convert-bitnot-to-bitxor
+          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))
+          ;;                   (svex-convert-bitnot-to-bitxor x)))))
+
+
           ((xor-pattern-1-p svex)
            (xor-pattern-1-body
             svex
@@ -342,7 +397,7 @@
             (svex-reduce-w/-env-apply 'sv::bitxor
                                       (hons-list (svex-convert-bitnot-to-bitxor x)
                                                  (svex-convert-bitnot-to-bitxor y)))))
-          
+
           ((and (equal (sv::svex-call->fn svex) 'sv::bitnot)
                 (equal (len (sv::svex-call->args svex)) 1))
            (svex-reduce-w/-env-apply 'sv::bitxor

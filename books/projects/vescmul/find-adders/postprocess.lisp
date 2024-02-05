@@ -1516,9 +1516,9 @@
 
    (create-case-match-macro partsel-of-int-vector-adder
                             ('sv::partsel start size term)
-                            (and (natp size)
-                                 (natp start)
-                                 (case-match term (('int-vector-adder & &) t))))
+                            :extra-cond (and (natp size)
+                                             (natp start)
+                                             (case-match term (('int-vector-adder & &) t))))
 
    (create-case-match-macro xdet-pattern
                             ('sv::xdet arg1)))
