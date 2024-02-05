@@ -705,5 +705,37 @@
 
 (defthm set-flag-of-if
   (equal (set-flag flag val (if test x y))
-         (if test (set-flag flag val x)
-               (set-flag flag val y))))
+         (if test
+             (set-flag flag val x)
+           (set-flag flag val y))))
+
+(defthm set-flag-of-get-flag-same
+  (implies (member-equal flag *flags*)
+           (equal (set-flag flag (get-flag flag x86) x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable get-flag set-flag
+                                     x86isa::!rflagsbits->af x86isa::rflagsbits->af
+                                     x86isa::!rflagsbits->cf x86isa::rflagsbits->cf
+                                     x86isa::!rflagsbits->of x86isa::rflagsbits->of
+                                     x86isa::!rflagsbits->pf x86isa::rflagsbits->pf
+                                     x86isa::!rflagsbits->sf x86isa::rflagsbits->sf
+                                     x86isa::!rflagsbits->zf x86isa::rflagsbits->zf
+                                     x86isa::!rflagsbits->id x86isa::rflagsbits->id
+                                     x86isa::!rflagsbits->tf x86isa::rflagsbits->tf
+                                     x86isa::!rflagsbits->nt x86isa::rflagsbits->nt
+                                     x86isa::!rflagsbits->df x86isa::rflagsbits->df
+                                     x86isa::!rflagsbits->vm x86isa::rflagsbits->vm
+                                     x86isa::!rflagsbits->ac x86isa::rflagsbits->ac
+                                     x86isa::!rflagsbits->rf x86isa::rflagsbits->rf
+                                     x86isa::!rflagsbits->vif x86isa::rflagsbits->vif
+                                     x86isa::!rflagsbits->vip x86isa::rflagsbits->vip
+                                     x86isa::!rflagsbits->iopl x86isa::rflagsbits->iopl
+                                     x86isa::!rflagsbits->intf x86isa::rflagsbits->intf))))
+
+(defthmd if-of-set-flag-arg2
+  (implies (member-equal flag *flags*)
+           (equal (if test (set-flag flag val x86_1) x86_2) (set-flag flag (if test val (get-flag flag x86_2)) (if test x86_1 x86_2)))) )
+
+(defthmd if-of-set-flag-arg3
+  (implies (member-equal flag *flags*)
+           (equal (if test x86_1 (set-flag flag val x86_2)) (set-flag flag (if test (get-flag flag x86_1) val) (if test x86_1 x86_2)))) )
