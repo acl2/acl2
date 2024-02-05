@@ -550,9 +550,7 @@
 ;          (WRND r) = 0.
 
 (local (defun df-round (x)
-         (if (dfp x)
-             x
-           0)))
+         (constrained-to-df x)))
 
 (defthm rationalp-df-round
 

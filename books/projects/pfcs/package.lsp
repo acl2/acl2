@@ -43,6 +43,7 @@
                          pfield::add
                          pfield::fep
                          pfield::fe-listp
+                         pfield::fe-list-listp
                          pfield::inv
                          pfield::mul
                          str::str-fix
