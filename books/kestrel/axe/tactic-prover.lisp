@@ -61,6 +61,21 @@
 ;;            (pseudo-termp a))
 ;;   :hints (("Goal" :in-theory (enable pseudo-term-listp MEMBERP))))
 
+;; Returns nil.  Throws an error if any assumption is a constant.
+;; TODO: Can we do others checks to catch the case where the user gives a term instead of a list of terms for the :assumptions?
+(defun check-assumptions (assumptions)
+  (declare (xargs :guard (pseudo-term-listp assumptions)))
+  (if (endp assumptions)
+      nil
+    (let ((assumption (first assumptions)))
+      (if (variablep assumption)
+          (prog2$ (cw "WARNING: Assumption ~x0 is a variable.~%" assumption)
+                  (check-assumptions (rest assumptions)))
+        (if (quotep assumption)
+            (er hard? 'check-assumptions "Constant assumption detected: ~x0." assumption)
+          ;; could check someting about the vars, but assumptions might be used to replace terms with new vars...
+          (check-assumptions (rest assumptions)))))))
+
 ;;
 ;; Proof tactics
 ;;
@@ -1096,7 +1111,8 @@
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state))
-       (assumptions (translate-terms assumptions 'prove-equal-with-tactics-fn (w state))) ;throws an error on bad input
+       (assumptions (translate-terms assumptions 'prove-equal-with-tactics-fn (w state))) ; throws an error on bad input
+       (- (check-assumptions assumptions)) ; may throw an error
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 (w state)))

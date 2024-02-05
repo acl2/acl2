@@ -3686,12 +3686,12 @@
             ACL2::BVCHOP-OF-IF
             ifix-of-if
 
-            app-view-of-if
-            program-at-of-if
-            x86p-of-if
+            x86isa::app-view-of-if
+            x86isa::program-at-of-if
+            x86isa::x86p-of-if
             ALIGNMENT-CHECKING-ENABLED-P-of-if
             get-flag-of-if
-            ctri-of-if
+            x86isa::ctri-of-if
             ;; feature-flag-of-if
             read-of-if
             bvle
