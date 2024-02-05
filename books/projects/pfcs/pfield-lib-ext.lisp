@@ -12,11 +12,13 @@
 (in-package "PFCS")
 
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
+(include-book "kestrel/prime-fields/prime-fields" :dir :system)
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/list-fix" :dir :system))
 
@@ -28,6 +30,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Prime fields library extensions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled pfield::pow-0-equiv
+  (implies (and (primep p)
+                (integerp x))
+           (equal (equal (pfield::pow x n p) 0)
+                  (and (not (zp n))
+                       (equal (mod x p) 0))))
+  :induct t
+  :enable pfield::pow)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
