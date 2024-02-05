@@ -291,6 +291,8 @@
     erp-t
 
     def-constant-opener
+    defopeners
+    add-known-boolean
 
     defconst-computed
     defconst-computed2 ;drop?
@@ -315,6 +317,11 @@
     dagify-term2
     axe-syntaxp
     axe-bind-free
+
+    ;; axe-syntaxp and axe-bind-free functions:
+    bind-bv-size-axe
+    heavier-dag-term
+
     prove-equivalence
     prove-equal-with-tactics
     symbolic-byte-assumptions

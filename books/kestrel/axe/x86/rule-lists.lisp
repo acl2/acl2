@@ -518,6 +518,12 @@
     x86isa::4bits-fix
     x86isa::8bits-fix
 
+    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
+    X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
+    x86isa::!prefixes->seg$inline-constant-opener
+    X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
+
     x86isa::vex-prefixes-fix$inline-constant-opener
     x86isa::vex-prefixes->byte0$inline-constant-opener
     x86isa::vex-prefixes->byte1$inline-constant-opener
@@ -527,7 +533,6 @@
     x86isa::!vex-prefixes->byte2$inline-constant-opener
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
-    x86isa::prefixes->rep$inline-constant-opener
     x86isa::vex3-byte1->m-mmmm$inline-constant-opener
     x86isa::vex3-byte1-fix$inline-constant-opener
     x86isa::vex-decode-and-execute
@@ -964,6 +969,7 @@
     X86ISA::N32P-XR-MXCSR
     ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
     x86isa::dp-sse-cmp ; scary?
+    dazify-of-0-arg2
     ))
 
 ;; Try to introduce is-nan as soon as possible:
@@ -2969,7 +2975,11 @@
     ctri-of-set-rsp
     ctri-of-set-rbp
     ctri-of-set-undef
-    ctri-of-!rflags
+    ctri-of-!rflags ; rename !rflags?
+    ctri-of-xw-irrel ; why?
+    ctri-of-write
+    ctri-of-set-flag
+    integerp-of-ctri
 
     rax-of-write
     rbx-of-write
@@ -3669,7 +3679,7 @@
           '(X86ISA::WX32$inline ; more?
             X86ISA::WZ32$inline ; more?
             <-of-fp-to-rat ; do we want this?
-            X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
+
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
             ;;xr-of-!rflags-irrel
@@ -3686,12 +3696,12 @@
             ACL2::BVCHOP-OF-IF
             ifix-of-if
 
-            app-view-of-if
-            program-at-of-if
-            x86p-of-if
+            x86isa::app-view-of-if
+            x86isa::program-at-of-if
+            x86isa::x86p-of-if
             ALIGNMENT-CHECKING-ENABLED-P-of-if
             get-flag-of-if
-            ctri-of-if
+            x86isa::ctri-of-if
             ;; feature-flag-of-if
             read-of-if
             bvle
@@ -3756,14 +3766,9 @@
             of-spec64-of-logext-64
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
-            X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
-            X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
             X86ISA::CHK-EXC-FN ; for floating point?
-            ctri-of-xw-irrel
-            ctri-of-write
-            ctri-of-set-flag
             eql
-            integerp-of-ctri
+
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
@@ -3847,7 +3852,7 @@
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
             ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
-            ;bvlt-hack-1-gen
+            ;; bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
             ACL2::BVCHOP-SUBST-CONSTANT-alt
             ACL2::BOOL-FIX$INLINE-CONSTANT-OPENER
@@ -3859,7 +3864,7 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-            x86isa::!prefixes->seg$inline-constant-opener
+
             read-of-2 ; splits into 2 reads
             )
           (acl2::core-rules-bv) ; trying
