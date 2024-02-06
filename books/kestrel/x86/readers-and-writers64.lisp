@@ -65,9 +65,19 @@
          (set-undef undef1 x86))
   :hints (("Goal" :in-theory (enable set-undef))))
 
+;; write-of-read rule
+(defthm set-undef-of-undef-same
+  (equal (set-undef (undef x86) x86)
+         x86)
+  :hints (("Goal" :in-theory (enable undef set-undef))))
+
+;; These lower the IF:
+(defthmd if-of-set-undef-arg2 (equal (if test (set-undef undef x86_1) x86_2) (set-undef (if test undef (undef x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-undef-arg3 (equal (if test x86_1 (set-undef undef x86_2)) (set-undef (if test (undef x86_1) undef) (if test x86_1 x86_2))) )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Note that RIP is built in the x86 model.
+;; Note that RIP is built into the x86 model.
 
 ;; Introduces rip.
 (defthmd xr-becomes-rip
@@ -118,6 +128,11 @@
            (equal (rip (xw fld index value x86))
                   (rip x86)))
   :hints (("Goal" :in-theory (enable rip))))
+
+;todo: more like this, also try such rules first?
+(defthmd if-of-set-rip-and-set-rip-same
+  (equal (if test (set-rip rip x86_1) (set-rip rip x86_2)) ; same rip on both branches
+         (set-rip rip (if test x86_1 x86_2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

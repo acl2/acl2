@@ -1005,3 +1005,21 @@
   (equal (set-undef val (if test x y))
          (if test (set-undef val x)
            (set-undef val y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: more like this
+;; todo: only do this if the 2 states have the same PC (RIP) and are not faulted or error states
+(defthmd if-of-set-rax-arg2 (equal (if test (set-rax rax x86_1) x86_2) (set-rax (if test rax (rax x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-rbx-arg2 (equal (if test (set-rbx rbx x86_1) x86_2) (set-rbx (if test rbx (rbx x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-rcx-arg2 (equal (if test (set-rcx rcx x86_1) x86_2) (set-rcx (if test rcx (rcx x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-rdx-arg2 (equal (if test (set-rdx rdx x86_1) x86_2) (set-rdx (if test rdx (rdx x86_2)) (if test x86_1 x86_2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: more like this
+;; todo: only do this if the 2 states have the same PC (RIP) and are not faulted or error states
+(defthmd if-of-set-rax-arg3 (equal (if test x86_1 (set-rax rax x86_2)) (set-rax (if test (rax x86_1) rax) (if test x86_1 x86_2))))
+(defthmd if-of-set-rbx-arg3 (equal (if test x86_1 (set-rbx rbx x86_2)) (set-rbx (if test (rbx x86_1) rbx) (if test x86_1 x86_2))))
+(defthmd if-of-set-rcx-arg3 (equal (if test x86_1 (set-rcx rcx x86_2)) (set-rcx (if test (rcx x86_1) rcx) (if test x86_1 x86_2))))
+(defthmd if-of-set-rdx-arg3 (equal (if test x86_1 (set-rdx rdx x86_2)) (set-rdx (if test (rdx x86_1) rdx) (if test x86_1 x86_2))))

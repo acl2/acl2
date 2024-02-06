@@ -314,3 +314,28 @@
 ;; probably only needed for axe
 (defthmd integerp-of-ctri
   (integerp (ctri acl2::i x86)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Warning: Do not prove a rule to open this on non-constants, even though it is provably always true.
+;; We arrange for (poor-mans-quotep x) to be rewritten to true only if x is a quoted constant.
+(defund poor-mans-quotep (x) (declare (ignore x)) t)
+(def-constant-opener poor-mans-quotep)
+
+;; Only opens x86-fetch-decode-execute if we can resolve the (first byte of) the current instruction to a constant
+;; Creates x86-fetch-decode-execute-base-new.
+;; We tried just testing whether RIP is a constant, but sometimes RIP can be the variable TEXT-OFFSET.
+;; Could simplify this for 64-bit mode (use rip and read) but then what about 32-bit mode?
+(defopeners x86-fetch-decode-execute :suffix -new
+  :hyps (;(poor-mans-quotep (rip x86))
+         ;;(canonical-address-p (rip x86)) ; could drop, but this clarifies failures
+         (canonical-address-p (let ((proc-mode (x86isa::x86-operation-mode x86)))
+                                (x86isa::read-*ip proc-mode x86))) ; could drop, but this clarifies failures
+         ;; ;; Requires us to be able to read the byte at the RIP:
+         (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
+                             (mv-nth 1 (x86isa::rme08$inline proc-mode (x86isa::read-*ip proc-mode x86) 1 :x x86))))
+         ;; (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
+         ;;                     (read 1 (x86isa::read-*ip proc-mode x86) x86)))
+         ;; (poor-mans-quotep (read 1 (rip x86) x86))
+         (not (ms x86))
+         (not (fault x86))))
