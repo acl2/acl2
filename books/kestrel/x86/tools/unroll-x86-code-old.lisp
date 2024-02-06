@@ -34,6 +34,7 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/x86/parsers/parsed-executable-tools" :dir :system)
+(include-book "kestrel/x86/parsers/parse-executable" :dir :system)
 
 ;todo: factor some of this stuff out into a lifter-common file
 
@@ -46,7 +47,7 @@
 ;; Returns (mv erp nil state)
 (defun def-lifted-x86-fn (lifted-name
                           subroutine-name
-                          parsed-executable
+                          executable
                           stack-slots-needed
                           enables
                           whole-form
@@ -67,6 +68,16 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ;; Parse the executable, if needed:
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'def-lifted-x86-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; assumptions (these get simplified and so don't have to be in normal form):
        (assumptions (if (eq :mach-o-64 executable-type)
@@ -147,7 +158,7 @@
 (defmacro def-lifted-x86 (&whole whole-form
                                  lifted-name ;name to use for the generated function
                                  subroutine-name ;this assumes there is a symbol table!
-                                 parsed-executable
+                                 executable
                                  stack-slots-needed
                                  &key
                                  (enable 'nil)
@@ -160,7 +171,7 @@
   `(make-event (def-lifted-x86-fn
                  ',lifted-name
                  ,subroutine-name
-                 ,parsed-executable
+                 ,executable
                  ',stack-slots-needed
                  ',enable
                  ',whole-form
