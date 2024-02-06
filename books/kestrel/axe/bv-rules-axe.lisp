@@ -1602,7 +1602,7 @@
   :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
 
 ;how does the speed of this compare to doing it for each operator separately?
-(defthmd <-lemma-for-known-operators
+(defthmd <-lemma-for-known-operators-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= (expt 2 xsize) k)
@@ -1610,7 +1610,7 @@
                 )
            (< x k)))
 
-(defthmd <-lemma-for-known-operators-alt
+(defthmd <-lemma-for-known-operators-axe-alt
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= (+ -1 (expt 2 xsize)) k)
@@ -1619,7 +1619,7 @@
            (not (< k x)))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P))))
 
-(defthmd <-lemma-for-known-operators2
+(defthmd <-lemma-for-known-operators-axe2
   (implies (and (syntaxp (quotep k))
                 (<= k 0)
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1627,7 +1627,7 @@
            (not (< x k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-(defthmd <-lemma-for-known-operators3
+(defthmd <-lemma-for-known-operators-axe3
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< k 0)
