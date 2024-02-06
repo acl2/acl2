@@ -59,9 +59,18 @@
     x86isa::*compatibility-mode*
     x86isa::*64-bit-mode*
 
+    x86isa::rme-size
+    x86isa::rme-size$inline
+
+    x86isa::rml-size
+    x86isa::rml-size$inline
     x86isa::rml08
+    x86isa::rml16
     x86isa::rml32
+    x86isa::rml48
     x86isa::rml64
+    x86isa::rml80
+    x86isa::rml128
 
     ;; registers (the order is odd but follows the numeric values):
     x86isa::*rax*
@@ -190,6 +199,7 @@
     x86isa::!rip
 
     x86isa::ctri
+    x86isa::msri
 
     ;; floating-point stuff:
     x86isa::fp-decode
