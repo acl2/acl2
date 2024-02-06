@@ -38,3 +38,9 @@
            (equal (rtl::bitn x n)
                   (getbit n x)))
   :hints (("Goal" :in-theory (enable rtl::bitn))))
+
+(defthm bvcep-becomes-unsigned-byte-p
+  (implies (natp n)
+           (equal (rtl::bvecp x n)
+                  (unsigned-byte-p n x)))
+  :hints (("Goal" :in-theory (enable rtl::bvecp unsigned-byte-p))))
