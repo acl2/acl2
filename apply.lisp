@@ -3199,6 +3199,32 @@
       (and (= (len x) (len y))
            (if (atom x) (< x y) (d< x y)))))
 
+(defun loop$-default-values1 (values alist)
+; See loop$-default-values.
+  (declare (xargs :guard t))
+  (cond
+   ((atom values)
+    nil)
+   (t (cons (cond
+             ((eq (car values) nil) nil)
+             ((eq (car values) :df) 0) ; = #d0.0
+             (t (cdr (hons-assoc-equal (car values) alist))))
+            (loop$-default-values1 (cdr values) alist)))))
+
+(defun loop$-default-values (values alist)
+
+; For the given values, which is really a stobjs-out list, return a list with
+; that output signature, in which the values for non-stobjs are nil, the values
+; of any :dfs are 0, and the values for any stobjs are obtained from the alist.
+; If the values has only one element, we return just the car of the list just
+; described.
+
+  (declare (xargs :guard t))
+  (cond
+   ((and (consp values) (cdr values))
+    (loop$-default-values1 values alist))
+   (t (car (loop$-default-values1 values alist)))))
+
 ; WARNING: Much like the other loop$ scions above, do$ is admitted in :program
 ; mode and converted to :logic mode during the normal build in
 ; boot-strap-pass-2-b.lisp, where we convert all the loop$ scions to
@@ -3212,7 +3238,10 @@
 ; and LEXP to the well-founded-relation-alist; but we verify that "cheat" in
 ; check-system-events, as noted in comments in the definitions of both of them.
 
-(defun do$ (measure-fn alist do-fn finally-fn default
+; See the note following the defun of do$ for an illustration of a bug in an
+; earlier version of the definition.
+
+(defun do$ (measure-fn alist do-fn finally-fn values
                        untrans-measure untrans-do-loop$)
   (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
 
@@ -3249,27 +3278,150 @@
             nil)))
      ((l< (lex-fix (apply$ measure-fn (list new-alist)))
           (lex-fix (apply$ measure-fn (list alist))))
-      (do$ measure-fn new-alist do-fn finally-fn default
+      (do$ measure-fn new-alist do-fn finally-fn values
            untrans-measure untrans-do-loop$))
      (t
       (prog2$
        (er hard? 'do$
            "The measure, ~x0, used in the do loop$ statement~%~Y12~%failed to ~
-            decrease!  In particular, when the incoming alist (an alist of ~
-            dotted pairs specifying the values of all the variables) ~
-            was~%~Y32the alist produced by the do body was~%~Y42and the ~
-            measure went from~%~x5~%to~%~x6.~%Logically, do$ returns ~x7 ~
-            in this situation."
+            decrease!  Recall that do$ tracks the values of do loop$ ~
+            variables in an alist.  The measure is computed using the values ~
+            in the alist from before and after execution of the body.  We ~
+            cannot print the values of double floats and live stobjs, if any ~
+            are found in the alist, because they are raw Lisp objects, not ~
+            ACL2 objects.  Before execution of the do body the alist ~
+            was~%~Y32.~|After the execution of the do body the alist ~
+            was~%~Y42.~|Before the execution of the body the measure ~
+            was~%~x5.~|After the execution of the body the measure ~
+            was~%~x6.~|~%Logically, in this situation the do$ returns the ~
+            value of a term whose output signature is ~x7, where the value of ~
+            any component of type :df is #d0.0 and the value of any stobj ~
+            component is the last latched value of that stobj."
            untrans-measure
            untrans-do-loop$
            nil
-           alist
-           new-alist
+           (eviscerate-do$-alist alist)
+           (eviscerate-do$-alist new-alist)
            (apply$ measure-fn (list alist))
            (apply$ measure-fn (list new-alist))
-           default)
-       default)))))
+           values)
+       (loop$-default-values values new-alist))))))
 )
+
+; About a bug in DO$ in ACL2 Version_8.5
+
+; In v85, the fifth formal of do$ was named `default', it was initialized by
+; translate11-loop$ to be some default value, was passed along unchanged as do$
+; iterated, and was returned if and when the measure failed to decrease.
+; Actually, before returning the default value, do$ causes a hard error
+; explaining the problem.  Logically, of course, the hard error just returns
+; nil and the default value is returned.
+
+; However, we realized during the development of v86 that this was a bug.
+; Returning a default value computed before the loop$ executes can violate
+; single-threadedness if the default value is or includes a stobj.  The problem
+; is that as do$ repeatedly executes the body of the do loop$ it may be
+; modifying the stobj.  So, logically speaking, if the measure fails to
+; decrease, do$ returns the initial value of the stobj, when in fact it has
+; modified it.
+
+; This can be demonstrated in v85 as follows:
+
+; (include-book "projects/apply/top" :dir :system)
+; (defstobj st fld)
+; (defwarrant fld)
+; (defwarrant update-fld)
+
+; (defun rev! (lst st)
+
+; ; This function reverses lst and leaves the result in (fld st).  It works by
+; ; accumulating successive elements into that field, after setting (fld st) to
+; ; nil.  HOWEVER, if the element BANG is encountered the do loop$ below fails
+; ; to terminate.  That causes do$ to print a hard error and return the initial
+; ; stobj which is allegedly preserved in the `default' argument of do$.
+
+;   (declare (xargs :stobjs (st)
+;                   :guard (true-listp lst)
+;                   :verify-guards nil))
+;   (let ((st (update-fld nil st)))
+;     (loop$ with x = lst
+;            do
+;            :measure (acl2-count x)
+;            :guard (and (stp st)
+;                        (true-listp x))
+;            :values (st)
+;            (if (equal x nil)
+;                (return st)
+;                (progn
+;                  (setq st (update-fld (cons (car x) (fld st)) st))
+;                  (setq x (if (eq (car x) 'bang)
+;                              x
+;                              (cdr x))))))))
+
+; Normal behavior:  It really seems to reverse lst into (fld st).
+; ACL2 !>(rev! '(1 2 3) st)
+; <st>
+; ACL2 !>(fld st) ; = (3 2 1)
+
+; The following thm can be proved in v85:
+
+; (thm (implies (warrant fld update-fld)
+;               (let ((st (rev! '(BANG 4) st)))
+;                 (equal (fld st) nil))))
+
+; That is, when the list (BANG 4) is `reversed' the final value of (fld st) is
+; nil.  That is because on the list in question, the measure fails to decrease,
+; so the do loop$ causes a hard error and returns the stobj as it was at the
+; beginning of the loop$.  But (fld st) in that version of the stobj is nil
+; because that is how rev! initializes it.
+
+; However, contrary to the theorem above, if we execute this rev! at the
+; top-level of the ACL2 loop a hard error is caused, as expected.  This error
+; prevents us from seeing the value.  We know from the defun that the value is
+; st, and from the theorem above we expect (fld st) to be nil.  But in fact it
+; is not:
+
+; ACL2 !>(rev! '(BANG 4) st)
+; HARD ACL2 ERROR in DO$:  The measure, (ACL2-COUNT X), used in the do
+; loop$ statement ... failed to decrease! ...
+
+; ACL2 !>(fld st) ; = (BANG)
+
+; Now, in fact, the hard error signalled in the v85 defun of do$ contains a bug
+; that provokes a hard raw Lisp error.  So the whole interaction is confusing.
+
+; This confusion can be avoided by redefining hard-error to simply return nil
+; (in a way that is not detected as being logically redundant) and turning off
+; guard checking, e.g.,
+
+; :redef+
+; (defun hard-error (ctx str alist) (declare (ignore ctx str alist)) (car nil))
+; :redef-
+; (set-guard-checking :none)
+
+; And now we see an actual log that shows behavior contradicting the thm above:
+
+; ACL2 >(rev! '(bang 4) st)
+; <st>
+; ACL2 >(fld st)
+; (BANG)
+; ACL2 >
+
+; So in v86 we changed the defun of do$ so that the fifth argument is now the
+; output signature (which is specified by the value given to the do loop$
+; keyword :values).  In fact, in v86, that argument is named `values'.  If the
+; measure fails to decrease a suitable default answer is computed having the
+; signature specified by :values.  That default object is composed of default
+; constant values except for the stobjs.  The values returned for the stobjs
+; are the last latched values from the iteration.
+
+; Thus, in v86 the following theorem is provable
+
+; (thm (implies (warrant fld update-fld)
+;               (let ((st (rev! '(BANG 4) st)))
+;                 (equal (fld st) '(BANG)))))
+
+; which is consistent with observed behavior.
 
 ;-----------------------------------------------------------------
 ; Note: See *system-verify-guards-alist* to make scions be in :logic mode.  See

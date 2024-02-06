@@ -52,7 +52,7 @@
 
 ; Levels
 
-; [C] presents a lexical grammar [C:A.1] and a phase structure grammar [C:A.2].
+; [C] presents a lexical grammar [C:A.1] and a phrase structure grammar [C:A.2].
 ; This is a typical two-level grammar structure for programming languages:
 ; the first grammar describes how a sequence of characters
 ; is organized into lexical units (identifiers, literals, etc.),
@@ -422,7 +422,7 @@ punctuator = "["
 ; (if not, we can easily add CR not followed by LF as an additional delimiter).
 ; We regard either an LF not preceded by CR,
 ; or a CR immediately followed by LF
-; (equivalently, an LR immediately preceded by a CR),
+; (equivalently, an LF immediately preceded by a CR),
 ; to delimit lines.
 ; [C:5.1.1.2] seems to suggest that
 ; these delimiters should be turned into single new-line characters,
@@ -472,10 +472,9 @@ line-comment = "//" *not-line-feed-or-carriage-return
 
 ; White space [C:6.4/3]
 
-; [C] designates as white-space characters:
+; [C] designates the following as white-space characters:
 ; space, horizontal tab, vertical tab, form feed, and new-line.
-; It also designates white space as not only these characters,
-; but also comments.
+; It designates white space as not only these characters, but also comments.
 ; We introduce an ABNF rule (which has no counterpart grammar rule in [C])
 ; for white-space characters (not comments, which are defined above).
 
@@ -503,7 +502,7 @@ lexeme = token
 ; The intent of the lexical part of our ABNF grammar is that
 ; a finite sequence of ASCII characters
 ; is organized into a sequence of lexemes.
-; The ABNF grammar rules expresses most of the requirements for this,
+; The ABNF grammar rules express most of the requirements for this,
 ; but not all, such as the fact that an identifier cannot be a keyword.
 ; An important and general extra-grammatical requirement is that
 ; the longest match is always taken [C:6.4/4],

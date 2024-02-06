@@ -320,3 +320,10 @@
                 (integerp i))
            (<= 2 (expt 2 i)))
   :rule-classes :linear)
+
+;todo: rename
+(defthm expt-hack
+  (implies (integerp n)
+           (equal (* 2 (expt 2 (+ -1 n)))
+                  (expt 2 n)))
+  :hints (("Goal" :in-theory (enable expt))))

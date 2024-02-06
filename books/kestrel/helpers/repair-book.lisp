@@ -338,12 +338,22 @@
        (- (cw ")~%")))
     (mv remaining-event-data-forms state)))
 
+;; todo: generalize and move
+(defun name-already-definedp (name wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))))
+  (or (function-symbolp name wrld)
+      (defthm-or-defaxiom-symbolp name wrld)))
+
 ;; TODO: If event-data gets out of sync, look for any event data for the given name (perhaps count occurrences of each name as we go?)
-;; Returns (mv erp state).
-(defun repair-events-with-event-data (events event-data-forms state)
+;; Returns (mv erp state).  TODO: What does the ERP really mean here?
+(defun repair-events-with-event-data (events event-data-forms
+                                             book-path ; just used to print messages
+                                             state)
   (declare (xargs :guard (and (true-listp events)
                               (or (true-listp event-data-forms)
-                                  (or (eq :none event-data-forms))))
+                                  (or (eq :none event-data-forms)))
+                              (stringp book-path))
                   :stobjs state
                   :mode :program))
   (if (endp events)
@@ -353,6 +363,12 @@
         (progn$ nil ; todo: print warning if no failure found
                 (mv nil state)))
     (b* ((event (first events))
+         ((when (and (consp event)
+                     (member-eq (car event) '(defthm defthmd defun defund defaxiom)) ; todo: generalize
+                     (symbolp (cadr event))
+                     (name-already-definedp (cadr event) (w state))))
+          (cw "~%~%*** NAME CLASH on ~x0 in ~s1.  ABORTING REPAIR ATTEMPT.~%~%~%" (cadr event) book-path)
+          (mv nil state))
          ;; Clear event-data:
          (state (f-put-global 'event-data-fal nil state))
          ;; Submit the event, saving event-data:
@@ -362,20 +378,22 @@
          )
       (if erp
           ;; this event failed, so attempt a repair:
-          (b* ((- (cw "Event ~x0 failed.~%" event))
-               ;; TODO: Consider submitting it again with :print t.
+          (b* ((- (cw "Event ~x0 failed.  More info:~%" event))
+               ;; This will fail but will print information that may be useful to the human:
+               ((mv erp state) (submit-event-core `(saving-event-data ,event) :verbose state))
+               ((when erp) (mv erp state))
                ((mv event-data-forms state) (repair-event-with-event-data event new-event-data-alist event-data-forms state))
                ;; Submit the event with skip-proofs so we can continue:
                ((mv erp state) (submit-event-core `(skip-proofs ,event) nil state)) ; todo: make this even quieter
                ((when erp) (mv erp state)))
-            (repair-events-with-event-data (rest events) event-data-forms state))
+            (repair-events-with-event-data (rest events) event-data-forms book-path state))
         ;; this event succeeded, so continue:
         (b* ((- (cw "Event ~x0 succeeded.~%" event))
              (names-with-event-data (strip-cars new-event-data-alist))
              ;; (- (cw "~x0 Event-data forms generated: ~x1.~%" (len names-with-event-data) names-with-event-data))
              ;; (- (cw "~x0 saved event-data forms left.~%" (len event-data-forms)))
              (event-data-forms (consume-event-data-forms names-with-event-data event-data-forms)))
-          (repair-events-with-event-data (rest events) event-data-forms state))))))
+          (repair-events-with-event-data (rest events) event-data-forms book-path state))))))
 
 ;todo: support :dir arg?
 ;; Returns (mv erp result state).
@@ -417,7 +435,7 @@
        ((when erp) (cw "Error (~x0) reading: ~x1.~%" erp event-data-file-path) (mv erp nil state))
        (- (cw "(~x0 event data forms for ~s1.)~%" (len event-data-forms) book-path))
        ;; Walk through the book and the event-data-forms in sync:
-       ((mv erp state) (repair-events-with-event-data events event-data-forms state))
+       ((mv erp state) (repair-events-with-event-data events event-data-forms book-path state))
        ((when erp) (mv erp nil state))
        (- (cw "Done repairing ~s0)~%" book-path))
        (state (unwiden-margins state))

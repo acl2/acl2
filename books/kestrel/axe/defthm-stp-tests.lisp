@@ -1,7 +1,7 @@
 ; Tests of defthm-stp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -34,3 +34,8 @@
 ; "Dropping a disjunct that is a (possibly negated) variable: X."
 ; "Note: No disjuncts. Not calling STP."
 (must-fail (defthm-stp test3 x :counterexample t))
+
+;; Test whether the arg to BVSX gets chopped right:
+(deftest
+  (defthm-stp foo (implies (unsigned-byte-p 64 x) (equal (bvsx 32 16 x) (bvsx 32 16 x))) :rule-classes nil))
+(must-fail (defthm-stp foo (implies (unsigned-byte-p 64 x) (equal (bvsx 32 16 x) (bvsx 32 16 y))) :rule-classes nil))

@@ -1299,8 +1299,8 @@
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
              (dag-len (+ 1 (top-nodenum dag)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
-             ;;Load all the nodes into the dag-array (fixme only include nodes that support internal contexts?!):
-;ffixme should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
+             ;;Load all the nodes into the dag-array (todo: could only include nodes that support internal contexts):
+             ;; todo: should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
              ;; It's important that this not change the node numbering, since the internal contexts refer to these nodes:
              (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
              ;; Make the auxiliary data structures for the DAG:

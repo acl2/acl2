@@ -162,17 +162,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund make-register-replacement-assumptions (param-names register-names)
-  (declare (xargs :guard (and (symbol-listp param-names)
-                              (symbol-listp register-names))))
-  (if (or (endp param-names)
-          (endp register-names) ; additional params will be on the stack
-          )
-      nil
-    (let ((register-name (first register-names))
-          (param-name (first param-names)))
-      (cons `(equal (,register-name x86) ,param-name)
-            (make-register-replacement-assumptions (rest param-names) (rest register-names))))))
+;; Makes assumptions that replace calls of the REGISTER-FUNCTIONS, such as (RDI X86),
+;; with the given VARS.
+;; We make the register variables be usb64s, and we assert that the registers
+;; contain their signed forms.  (Note that the registers are signed; see rule X86ISA::I64P-XR-RGF.)
+;; Returns (mv replacement-assumptions type-assumptions).
+(defund make-register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (symbol-listp register-functions))))
+  (if (or (endp register-functions) ; additional params will be on the stack
+          (endp vars))
+      (mv replacement-assumptions-acc type-assumptions-acc)
+    (let ((register-name (first register-functions))
+          (var (first vars)))
+      (make-register-replacement-assumptions64 (rest register-functions)
+                                               (rest vars)
+                                               (cons `(equal (,register-name x86) (logext '64 ,var)) replacement-assumptions-acc)
+                                               (cons `(unsigned-byte-p '64 ,var) type-assumptions-acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,7 +247,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an (mv erp passedp time state).
-;; TODO: Add redundancy checking
+;; TODO: Add redundancy checking -- where?
+;; Parsing of the executable is done outside this function (so we don't do it more than once).
 (defun test-function-core (function-name-string
                            parsed-executable
                            param-names ; todo: can we somehow get these from the executable?
@@ -254,6 +261,7 @@
                            max-conflicts  ;a number of conflicts, or nil for no max
                            stack-slots
                            position-independentp
+                           rewriter
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
@@ -274,14 +282,19 @@
                                   (natp max-conflicts))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
-                              (booleanp position-independentp))
-                  :mode :program ; because of apply-tactic-prover and def-unrolled-fn-core
+                              (booleanp position-independentp)
+                              (member-eq rewriter '(:x86 :legacy)))
+                  :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
-  (b* ((stack-slots (if (eq :auto stack-slots) 100 stack-slots))
+  (b* ((- (acl2::ensure-x86 parsed-executable))
+       (executable-type (acl2::parsed-executable-type parsed-executable))
+       (32-bitp (member-eq executable-type *executable-types32*))
+
+       (stack-slots (if (eq :auto stack-slots) 100 stack-slots))
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
-       (- (acl2::ensure-x86 parsed-executable))
+
+
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "(Testing ~x0.~%" function-name-string))
        ;; Check the param names, if any:
@@ -291,19 +304,18 @@
                             (not (member-eq 'x86 param-names))))))
         (cw "ERROR: Bad param names: ~x0." param-names)
         (mv (erp-t) nil nil state))
+       ;; todo: consider also the microsoft calling convention:
+       (register-names64 '(rdi rsi rdx rcx r8 r9)) ; see the x86-64 calling convention ; todo: what about xmm0-xmm7? param-names should be a map, or separate for float and non-float.
+       (param-names (if (eq :none param-names)
+                        register-names64 ; todo: how to tell how many will be needed?
+                      param-names))
        ;; These serve to introduce vars for the 6 registers that may contain params (todo: confirm this)
        ;; TODO: Consider the implications if the replacement may be incomplete.
        ;; TODO: Add more of these?  What about registers that hold floats, etc.?
-       (register-assumptions (if (eq param-names :none)
-                                 ;; We make the register variables be usb64s (todo: add those assumptions), and we assert that the registers
-                                 ;; contain their signed forms:
-                                 `((equal (rdi x86) (logext 64 rdi))
-                                   (equal (rsi x86) (logext 64 rsi))
-                                   (equal (rdx x86) (logext 64 rdx))
-                                   (equal (rcx x86) (logext 64 rcx))
-                                   (equal (r8 x86) (logext 64 r8))
-                                   (equal (r9 x86) (logext 64 r9)))
-                               (make-register-replacement-assumptions param-names '(rdi rsi rdx rcx r8 r9))))
+       ((mv register-replacement-assumptions register-type-assumptions)
+        (if 32-bitp ;todo: add support for this in 32-bit mode, or is the calling convention too different?
+            (mv nil nil)
+          (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
        (assumptions `(,@user-assumptions
                       ;; these help with floating point code:
                       (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
@@ -316,19 +328,20 @@
                       (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ;
-                      ;; todo: build this into def-unrolled:
-                      ,@register-assumptions
+                      ;; todo: build this stuff into def-unrolled:
+                      ,@register-replacement-assumptions
+                      ,@register-type-assumptions
                       ;; todo: build this into def-unrolled:
                       ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
                       ))
        (target function-name-string)
-       (32-bitp (member-eq executable-type *executable-types32*))
+
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
        ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
        ((mv erp result-dag-or-quotep & & state)
-        (def-unrolled-fn-core
+        (unroll-x86-code-core
           target
           parsed-executable
           assumptions
@@ -370,10 +383,11 @@
                     integerp-of-rsp))
           step-limit
           step-increment
-          t ; memoizep
+          t ; memoizep (nil allows internal contexts)
           rules-to-monitor
           print
           10 ; print-base (todo: consider 16)
+          rewriter
           state))
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
@@ -426,7 +440,8 @@
         (acl2::apply-tactic-prover result-dag
                                    ;; tests ;a natp indicating how many tests to run
                                    tactics
-                                   nil ; assumptions ; TODO: We may need separateness assumptions!
+                                   ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
+                                   register-type-assumptions ;TODO: We may need separateness assumptions!
                                    t   ; simplify-assumptions
                                    ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                                    print
@@ -482,6 +497,7 @@
                          prune tactics
                          max-conflicts stack-slots
                          position-independent
+                         rewriter
                          expected-result
                          state)
   (declare (xargs :guard (and (stringp function-name-string)
@@ -504,7 +520,8 @@
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (member-eq expected-result '(:pass :fail :any)))
+                              (member-eq expected-result '(:pass :fail :any))
+                              (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs state))
   (b* (((mv erp parsed-executable state)
@@ -530,7 +547,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-lift-rules remove-proof-rules
-                            print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+                            print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp rewriter state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -568,7 +585,8 @@
                          (expected-result ':pass)
                          (stack-slots ':auto)
                          (position-independent ':auto)
-                         (max-conflicts '1000000))
+                         (max-conflicts '1000000)
+                         (rewriter ':legacy))
   `(acl2::make-event-quiet (test-function-fn ',function-name-string
                                              ,executable   ; gets evaluated
                                              ,param-names  ; gets evaluated
@@ -581,7 +599,7 @@
                                              ,remove-proof-rules ; gets evaluated
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',expected-result state)))
+                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',rewriter ',expected-result state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -595,6 +613,7 @@
                               tactics max-conflicts
                               stack-slots
                               position-independentp
+                              rewriter
                               expected-failures
                               result-alist
                               state)
@@ -622,7 +641,8 @@
                                   (eq :auto stack-slots))
                               (booleanp position-independentp)
                               (string-listp expected-failures)
-                              (alistp result-alist))
+                              (alistp result-alist)
+                              (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
@@ -634,7 +654,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+                              print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp rewriter state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -646,7 +666,7 @@
                              extra-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-lift-rules remove-proof-rules
                              print monitor step-limit step-increment prune
-                             tactics max-conflicts stack-slots position-independentp
+                             tactics max-conflicts stack-slots position-independentp rewriter
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
@@ -660,7 +680,7 @@
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
                           print monitor step-limit step-increment prune
-                          tactics max-conflicts stack-slots position-independent
+                          tactics max-conflicts stack-slots position-independent rewriter
                           expected-failures
                           state)
   (declare (xargs :guard (and (stringp executable)
@@ -688,7 +708,8 @@
                               (eq :auto stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures)))
+                              (string-listp expected-failures))
+                          (member-eq rewriter '(:x86 :legacy)))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
@@ -759,7 +780,7 @@
                                extra-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-lift-rules remove-proof-rules
                                print monitor step-limit step-increment prune
-                               tactics max-conflicts stack-slots position-independentp
+                               tactics max-conflicts stack-slots position-independentp rewriter
                                expected-failures
                                nil ; empty result-alist
                                state))
@@ -798,6 +819,7 @@
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
+                          (rewriter ':legacy)
                           )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
@@ -812,7 +834,7 @@
                                               ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune
-                                              ',tactics ',max-conflicts ',stack-slots ',position-independent
+                                              ',tactics ',max-conflicts ',stack-slots ',position-independent ',rewriter
                                               ',expected-failures
                                               state)))
 
@@ -842,6 +864,7 @@
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
+                     (rewriter ':legacy)
                      )
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?
@@ -856,6 +879,6 @@
                                               ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune
-                                              ',tactics ',max-conflicts ',stack-slots ',position-independent
+                                              ',tactics ',max-conflicts ',stack-slots ',position-independent ',rewriter
                                               ',expected-failures
                                               state)))

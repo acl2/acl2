@@ -124,22 +124,22 @@
            :use (:instance <-becomes-bvlt))))
 
 
-;gen the 1
-(defthmd +-becomes-bvplus-when-bv-dag
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x)
-                (natp xsize))
-           (equal (+ 1 x)
-                  (bvplus (+ 1 xsize) 1 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus
-                                   UNSIGNED-BYTE-P-FORCED)
-                                  (anti-bvplus
-                                   ;GETBIT-OF-+
-                                   BVLT-OF-PLUS-ARG1
-                                   BVLT-OF-PLUS-ARG2
-                                   PLUS-BECOMES-BVPLUS
-                                   <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
-                                   )))))
+;; ;gen the 1
+;; (defthmd +-becomes-bvplus-when-bv-dag
+;;   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+;;                 (unsigned-byte-p-forced xsize x)
+;;                 (natp xsize))
+;;            (equal (+ 1 x)
+;;                   (bvplus (+ 1 xsize) 1 x)))
+;;   :hints (("Goal" :in-theory (e/d (bvplus
+;;                                    UNSIGNED-BYTE-P-FORCED)
+;;                                   (anti-bvplus
+;;                                    ;GETBIT-OF-+
+;;                                    BVLT-OF-PLUS-ARG1
+;;                                    BVLT-OF-PLUS-ARG2
+;;                                    PLUS-BECOMES-BVPLUS
+;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
+;;                                    )))))
 
 (DEFTHMd BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-NO-SPLIT-dag
   (IMPLIES (AND (syntaxp (QUOTEP SIZE))
@@ -217,8 +217,8 @@
                   t))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED))))
 
-
-(defthmd plus-becomes-bvplus-dag
+;; Pretty aggressive
+(defthmd +-becomes-bvplus-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -229,6 +229,17 @@
   :hints (("Goal" :use (:instance plus-becomes-bvplus)
            :in-theory (disable plus-becomes-bvplus))))
 
+;; Special case for when the + is inside an unsigned-byte-p.
+(defthmd unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y)
+                (posp xsize))
+           (equal (unsigned-byte-p size (+ x y))
+                  (unsigned-byte-p size (bvplus (+ 1 (max xsize ysize)) x y))))
+  :hints (("Goal" :use (:instance +-becomes-bvplus-axe)
+           :in-theory (disable +-becomes-bvplus-axe equal-of-+-and-bv))))
 
 (defthmd equal-when-bv-sizes-differ-1-dag
   (implies (and (unsigned-byte-p free x)

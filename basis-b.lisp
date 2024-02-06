@@ -222,7 +222,8 @@
 (defun gen-formals-from-pretty-flags1 (pretty-flags i avoid)
   (cond ((endp pretty-flags) nil)
         ((and (symbolp (car pretty-flags))
-              (equal (symbol-name (car pretty-flags)) "*"))
+              (or (equal (symbol-name (car pretty-flags)) "*")
+                  (eq (car pretty-flags) :df)))
          (let ((xi (pack2 'x i)))
            (cond ((member-eq xi avoid)
                   (let ((new-var (genvar 'genvar ;;; ACL2 package
@@ -260,13 +261,27 @@
 (defun collect-non-x (x lst)
 
 ; This function preserves possible duplications of non-x elements in lst.
-; We use this fact when we check the legality of signatures.
+; We may use this fact when we check the legality of signatures.
 
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
         ((equal (car lst) x)
          (collect-non-x x (cdr lst)))
         (t (cons (car lst) (collect-non-x x (cdr lst))))))
+
+(defun collect-non-nil-df (lst)
+
+; This function preserves possible duplications of non-x elements in lst.
+; We may use this fact when we check the legality of signatures.
+
+; It could just as well be defined as (set-difference-eq lst '(nil :df)).
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((or (eq (car lst) nil)
+             (eq (car lst) :df))
+         (collect-non-nil-df (cdr lst)))
+        (t (cons (car lst) (collect-non-nil-df (cdr lst))))))
 
 (defun collect-non-* (lst)
 
@@ -294,11 +309,50 @@
          (cond ((and (symbolp outputs)
                      (equal (symbol-name outputs) "*"))
                 nil)
+               ((eq outputs :df)
+                '(df0))
                (t outputs)))
         ((and (symbolp (car outputs))
               (equal (symbol-name (car outputs)) "*"))
          (cons nil (defstub-body-new (cdr outputs))))
+        ((eq (car outputs) :df)
+         (cons '(df0) (defstub-body-new (cdr outputs))))
         (t (cons (car outputs) (defstub-body-new (cdr outputs))))))
+
+(defun collect-non-*-df (lst)
+
+; This variant of collect-symbol-name considers any symbol with name "*",
+; regardless of the package.
+
+  (declare (xargs :guard (symbol-listp lst)))
+  (cond ((endp lst) nil)
+        ((or (equal (symbol-name (car lst)) "*")
+             (eq (car lst) :df))
+         (collect-non-*-df (cdr lst)))
+        (t (cons (car lst) (collect-non-*-df (cdr lst))))))
+
+(defun collect-by-position (sub-domain full-domain full-range)
+
+; Full-domain and full-range are lists of the same length, where
+; full-domain is a list of symbols.  Collect into a list those members
+; of full-range that correspond (positionally) to members of
+; full-domain that belong to sub-domain.
+
+  (declare (xargs :guard (and (symbol-listp full-domain)
+                              (true-listp sub-domain)
+                              (true-listp full-range)
+                              (eql (length full-domain)
+                                   (length full-range)))))
+  (if (endp full-domain)
+      nil
+    (if (member-eq (car full-domain) sub-domain)
+        (cons (car full-range)
+              (collect-by-position sub-domain
+                                   (cdr full-domain)
+                                   (cdr full-range)))
+      (collect-by-position sub-domain
+                           (cdr full-domain)
+                           (cdr full-range)))))
 
 #+acl2-loop-only
 (defmacro defproxy (name args-sig arrow body-sig)
@@ -310,13 +364,17 @@
         "Defproxy must be of the form (proxy name args-sig => body-sig), ~
          where args-sig is a true-list of symbols.  See :DOC defproxy."))
    (t
-    (let ((formals (gen-formals-from-pretty-flags args-sig))
-          (body (defstub-body-new body-sig))
-          (stobjs (collect-non-* args-sig)))
+    (let* ((formals (gen-formals-from-pretty-flags args-sig))
+           (body (defstub-body-new body-sig))
+           (stobjs (collect-non-*-df args-sig))
+           (dfs (collect-by-position '(:df)
+                                     args-sig
+                                     formals)))
       `(defun ,name ,formals
          (declare (xargs :non-executable :program
                          :mode :program
-                         ,@(and stobjs `(:stobjs ,stobjs)))
+                         ,@(and stobjs `(:stobjs ,stobjs))
+                         ,@(and dfs `(:dfs ,dfs)))
                   (ignorable ,@formals))
 
 ; The form of the body below is dictated by function throw-nonexec-error-p.
@@ -353,11 +411,12 @@
 ; encapsulate, provided we generate it!  Provided they check out, the
 ; result returned is the list of ignored formals.
 
+  (declare (xargs :guard t))
   (if (and (symbol-listp formals)
            (or (symbolp body)
                (and (consp body)
-                    (symbol-listp (cdr body)))))
-      (set-difference-equal
+                    (true-listp (cdr body)))))
+      (set-difference-eq
        formals
        (if (symbolp body)
            (list body)
@@ -397,7 +456,7 @@
                (t nil)))
         (t (cons (car outputs) (defstub-body-old-aux (cdr outputs) stobjs)))))
 
-(defun defstub-fn1 (signatures name formals ign-dcl stobjs body outputs)
+(defun defstub-fn1 (signatures name formals ign-dcl stobjs dfs body outputs)
   `(with-output
      :off (:other-than error summary)
      :ctx '(defstub . ,name)
@@ -411,7 +470,8 @@
          (local
           (defun ,name ,formals
             (declare ,ign-dcl
-                     ,@(and stobjs `((xargs :stobjs ,stobjs))))
+                     ,@(and stobjs `((xargs :stobjs ,stobjs)))
+                     ,@(and dfs `((type double-float ,@dfs))))
             ,body)))
        ,@(and (consp outputs)
 
@@ -470,7 +530,8 @@
 ; We handle the old style first.
 
      ((or (= len-args 2)
-          (keywordp (caddr args)))
+          (and (keywordp (caddr args))
+               (not (eq (caddr args) :df))))
 
 ; We keep the same syntax for the signature, including any options.  We use the
 ; inputs as the formals of the witness function.  If there is a :stobjs option
@@ -486,7 +547,7 @@
       (let* ((inputs (car args))
              (outputs (cadr args))
              (options (cddr args))
-             (stobjs (and (keyword-value-listp options) ; assoc-keyword guard
+             (stobjs (and (keyword-value-listp options)
                           (cadr (assoc-keyword :stobjs options))))
              (stobjs (cond ((symbol-listp stobjs) stobjs) ; covers nil case
                            ((symbolp stobjs) (list stobjs))
@@ -501,12 +562,14 @@
 ; be illegal in the generated encapsulate, in which case the value of stobjs is
 ; irrelevant.
 
+             (dfs (and (keyword-value-listp options)
+                       (cadr (assoc-keyword :dfs options))))
              (body (defstub-body-old outputs stobjs)))
         (defstub-fn1
           `((,name ,@args)) ; args includes inputs, outputs, and options
           name inputs
           `(ignorable ,@inputs)
-          stobjs body outputs)))
+          stobjs dfs body outputs)))
 
 ; In the new style, we adapt the syntax of the signature, keeping all the
 ; options.  We derive the formals of the witness function by replacing the *s
@@ -536,11 +599,14 @@
                              (gen-formals-from-pretty-flags inputs)))
                (body (defstub-body-new outputs))
                (ignores (defstub-ignores formals body))
-               (stobjs (and (true-listp inputs) ; collect-non-x guard
-                            (collect-non-* inputs))))
+               (stobjs (and (symbol-listp inputs) ; collect-non-*-df guard
+                            (collect-non-*-df inputs)))
+               (dfs (collect-by-position '(:df)
+                                         inputs
+                                         formals)))
           (defstub-fn1
             `(((,name ,@inputs) ,arrow ,outputs ,@options))
-            name formals `(ignore ,@ignores) stobjs body outputs))))))
+            name formals `(ignore ,@ignores) stobjs dfs body outputs))))))
 
 (defmacro defstub (name &rest args)
   (defstub-fn name args))
@@ -784,50 +850,46 @@
   (cond ((equal n 0) v)
         (t (fargn1 v n))))
 
+(encapsulate () (logic)
+; We do it this way (instead of putting (logic) inside the
+; partial-encapsulate), to support redundancy in pass 2.
+(partial-encapsulate
+ (((constrained-df-string *)  => * :formals (x)))
+ ()
+ (local (defun constrained-df-string (x)
+          (declare (ignore x))
+          ""))
+ (defthm stringp-constrained-df-string
+   (stringp (constrained-df-string x))
+   :rule-classes :type-prescription)
+)
+)
+
+#+acl2-loop-only
+(defun df-string (x)
+  (declare (xargs :guard t :mode :logic))
+  (constrained-df-string x))
+
 (defun stobj-print-name (name)
-  (coerce
-   (cons #\<
-         (append (string-downcase1 (coerce (symbol-name name) 'list))
-                 '(#\>)))
-   'string))
-
-(defun evisceration-stobj-mark (name inputp)
-
-; NAME is a stobj name.  We return an evisceration mark that prints as
-; ``<name>''.  We make a special case out of STATE.
-
-  (cond
-   (inputp name)
-   ((eq name 'STATE)
-    *evisceration-state-mark*)
-   (t
-    (cons *evisceration-mark* (stobj-print-name name)))))
-
-(defun evisceration-stobj-marks1 (stobjs-flags inputp)
-
-; See the comment in eviscerate-stobjs, below.
-
-  (cond ((null stobjs-flags) nil)
-        ((car stobjs-flags)
-         (cons (evisceration-stobj-mark (car stobjs-flags) inputp)
-               (evisceration-stobj-marks1 (cdr stobjs-flags) inputp)))
-        (t
-         (cons nil
-               (evisceration-stobj-marks1 (cdr stobjs-flags) inputp)))))
+  (declare (xargs :guard (symbolp name)))
+  (let* ((s (symbol-name name))
+         (s (if (standard-string-p s)
+                s
+              "some_stobj")))
+    (coerce
+     (cons #\<
+           (append (string-downcase1 (coerce s 'list))
+                   '(#\>)))
+     'string)))
 
 (defconst *error-triple-sig*
   '(nil nil state))
 
+(defconst *error-triple-df-sig*
+  '(nil :df state))
+
 (defconst *cmp-sig*
   '(nil nil))
-
-(defun evisceration-stobj-marks (stobjs-flags inputp)
-  (cond ((equal stobjs-flags *error-triple-sig*)
-         (if inputp
-             *error-triple-sig*
-           *evisceration-error-triple-marks*))
-        ((equal stobjs-flags '(nil)) '(nil))
-        (t (evisceration-stobj-marks1 stobjs-flags inputp))))
 
 (defun eviscerate-stobjs1 (estobjs-out lst print-level print-length
                                        alist evisc-table hiding-cars
@@ -868,17 +930,18 @@
 ; Stobjs below.
 
 ; We wish to eviscerate lst with the given print-level, etc., but respecting
-; stobjs that we may find in lst.  Estobjs-out describes the shape of lst as a
-; multiple value vector: if estobjs-out is of length 1, then lst is the single
-; result; otherwise, lst is a list of as many elements as estobjs-out is long.
-; The non-nil elements of stobjs name the stobjs in lst -- EXCEPT that unlike
-; an ordinary ``stobjs-out'', the elements of estobjs-out are evisceration
-; marks we are to ``print!''  For example corresponding to the stobjs-out
-; setting of '(NIL $MY-STOBJ NIL STATE) is the estobjs-out
+; stobjs and dfs that we may find in lst.  Estobjs-out describes the shape of
+; lst as a multiple value vector: if estobjs-out is of length 1, then lst is
+; the single result; otherwise, lst is a list of as many elements as
+; estobjs-out is long.  The non-nil elements of estobjs-out name the stobjs and
+; dfs in lst, so that unlike an ordinary ``stobjs-out'', the elements of estobjs-out
+; are evisceration marks we are to ``print!''  For example corresponding to the
+; stobjs-out setting of '(NIL $MY-STOBJ NIL :DF STATE) may be the estobjs-out
 
 ; '(NIL
 ;   (:EVISCERATION-MARK . "<$my-stobj>")
 ;   NIL
+;   (:EVISCERATION-MARK . "#d6.0")
 ;   (:EVISCERATION-MARK . "<state>"))
 
 ; Here, we assume *evisceration-mark* is :EVISCERATION-MARK.
@@ -2501,44 +2564,70 @@
 ; pass down this flag.  I won't mark every such place, but they'll
 ; show up in the compare-windows.
 
+(mutual-recursion
+
+(defun optimize-dfp (known-dfs term)
+  (cond ((or (variablep term)
+             (fquotep term))
+         term)
+        ((and (eq (ffn-symb term) 'dfp)
+              (variablep (fargn term 1)) ; optimization
+              (member-eq (fargn term 1) known-dfs))
+         *t*)
+        (t (mcons-term-smart (ffn-symb term)
+                             (optimize-dfp-lst known-dfs (fargs term))))))
+
+(defun optimize-dfp-lst (known-dfs termlist)
+  (cond ((endp termlist) nil)
+        (t (cons (optimize-dfp known-dfs (car termlist))
+                 (optimize-dfp-lst known-dfs (cdr termlist))))))
+)
+
 (defun guard (fn stobj-optp w)
 
 ; This function is just the standard way to obtain the guard of fn in
 ; world w.
 
-; If stobj-optp is t, we optimize the returned term, simplifying it
-; under the assumption that every stobj recognizer in it is true.  If
-; fn traffics in stobjs, then it was translated under the stobj
-; syntactic restrictions.  Let st be a known stobj for fn (i.e.,
-; mentioned in its stobjs-in) and let st-p be the corresponding
-; recognizer.  This function should only be called with stobj-optp = t
-; if you know (st-p st) to be true in the context of that call.
+; If stobj-optp is t, we optimize the returned term, simplifying it under the
+; assumption that every stobj recognizer in it is true, as is every application
+; of dfp to a df formal.  If fn traffics in stobjs or dfs, then it was
+; translated under the stobj syntactic restrictions.  Let st be a known stobj
+; for fn (i.e., mentioned in its stobjs-in) and let st-p be the corresponding
+; recognizer.  This function should only be called with stobj-optp = t if you
+; know (st-p st) to be true in the context of that call.  The analogous
+; requirement holds for dfs.
 
 ; The documentation string below addresses the general notion of
 ; guards in ACL2, rather than explaining this function.
 
   (cond ((flambdap fn) *t*)
         ((or (not stobj-optp)
-             (all-nils (stobjs-in fn w)) )
+             (all-nils (stobjs-in fn w)))
          (getpropc fn 'guard *t* w))
         (t
 
-; If we have been told to optimize the stobj recognizers (stobj-optp =
-; t) and there are stobjs among the arguments of fn, then fn was
-; translated with the stobj syntactic restrictions enforced for those
-; names.  That means we can optimize the guard of the function
-; appropriately.
+; If we have been told to optimize the stobj recognizers (stobj-optp = t) and
+; there are stobjs or dfs among the arguments of fn, then fn was translated
+; with the stobj syntactic restrictions enforced.  That means we can optimize
+; the guard of the function appropriately.
 
-         (optimize-stobj-recognizers
-          (collect-non-x 'nil (stobjs-in fn w))
-          (or (getpropc fn 'guard *t* w)
+         (let* ((guard (or (getpropc fn 'guard *t* w)
 
 ; Once upon a time we found a guard of nil, and it took awhile to track down
 ; the source of the ensuing error.
 
-              (illegal 'guard "Found a nil guard for ~x0."
-                       (list (cons #\0 fn))))
-          w))))
+                           (illegal 'guard "Found a nil guard for ~x0."
+                                    (list (cons #\0 fn)))))
+                (stobjs-in (stobjs-in fn w))
+                (known-dfs (collect-by-position '(:df)
+                                                stobjs-in
+                                                (formals fn w))))
+           (optimize-stobj-recognizers
+            (collect-non-nil-df stobjs-in)
+            (if known-dfs ; optimization
+                (optimize-dfp known-dfs guard)
+              guard)
+            w)))))
 
 (defun guard-lst (fns stobj-optp w)
   (cond ((null fns) nil)
@@ -2569,33 +2658,6 @@
          (eq fn 'iff)
          (and (not (flambdap fn))
               (getpropc fn 'coarsenings nil ,w)))))
-
-(defun >=-len (x n)
-  (declare (xargs :guard (and (integerp n) (<= 0 n))))
-  (if (= n 0)
-      t
-      (if (atom x)
-          nil
-          (>=-len (cdr x) (1- n)))))
-
-(defun all->=-len (lst n)
-  (declare (xargs :guard (and (integerp n) (<= 0 n))))
-  (if (atom lst)
-      (eq lst nil)
-      (and (>=-len (car lst) n)
-           (all->=-len (cdr lst) n))))
-
-(defun strip-cadrs (x)
-  (declare (xargs :guard (all->=-len x 2)))
-  (cond ((endp x) nil)
-        (t (cons (cadar x) (strip-cadrs (cdr x))))))
-
-; Rockwell Addition: Just moved from other-events.lisp
-
-(defun strip-cddrs (x)
-  (declare (xargs :guard (all->=-len x 2)))
-  (cond ((endp x) nil)
-        (t (cons (cddar x) (strip-cddrs (cdr x))))))
 
 (defun global-set-lst (alist wrld)
   (cond ((null alist) wrld)
@@ -2911,6 +2973,9 @@
 
 ; Warning: This function currently has heuristic application only.  We need to
 ; think harder about it if we are to rely on it for soundness.
+
+; This function is applied a translated term.  See stobjs-out-for-form for an
+; analogous function that is applied to untranslated terms.
 
   (cond
    ((variablep term)

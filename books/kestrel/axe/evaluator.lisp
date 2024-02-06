@@ -393,7 +393,7 @@
            (bitnot bitnot-unguarded arg1)   ;see bitnot-unguarded-correct
            (logmaskp logmaskp arg1)         ;drop?
            (integer-length integer-length-unguarded arg1) ;see INTEGER-LENGTH-UNGUARDED-CORRECT
-           (ceiling-of-lg ceiling-of-lg arg1)
+           (ceiling-of-lg ceiling-of-lg-unguarded arg1) ; see ceiling-of-lg-unguarded-correct
            (unary-/ unary-/-unguarded arg1) ;see unary-/-unguarded-correct
            (nfix nfix arg1)                 ;unguarded
            (ifix ifix arg1)                 ;unguarded
@@ -484,7 +484,7 @@
                   (cons cons arg1 arg2)               ;primitive
                   (bvchop bvchop-unguarded arg1 arg2) ;see bvchop-unguarded-correct
                   (logtail$inline logtail-unguarded arg1 arg2) ;see logtail-unguarded-correct
-                  (logext logext arg1 (ifix arg2))
+                  (logext logext-unguarded arg1 arg2) ;see logext-unguarded-correct
                   (nth nth-unguarded arg1 arg2) ;see nth-unguarded-correct
                   (binary-* binary-*-unguarded arg1 arg2) ;see binary-*-unguarded-correct
                   (bvnot-list bvnot-list-unguarded arg1 arg2) ;see bvnot-list-unguarded-correct

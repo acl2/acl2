@@ -2318,9 +2318,31 @@
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig)
                 (stack-segment-assumptions32 stack-slots-needed x86)
                 (natp k)
-                (<= k 11)
+                (<= k 11) ;; ttodo: generalize the 11
                 )
            (unsigned-byte-p 32 (+ k (esp x86))))
+  :hints (("Goal" :in-theory (enable esp))))
+
+; special case of bvchop-identity
+(defthm bvchop-of-+-of-esp-becomes-+-of-esp
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig)
+                (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (<= k 11) ;; todo: generalize the 11?
+                )
+           (equal (bvchop 32 (+ k (esp x86)))
+                  (+ k (esp x86))))
+  :hints (("Goal" :in-theory (enable esp))))
+
+;; enforces the normal form (+ x (esp x86)).
+(defthm bvplus-32-of-esp-becomes-+-of-esp
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86-orig)
+                (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (<= k 11) ;; todo: generalize the 11?
+                )
+           (equal (bvplus 32 k (esp x86))
+                  (+ k (esp x86))))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm eff-addrs-okp-of-+-of-esp-positive-offset

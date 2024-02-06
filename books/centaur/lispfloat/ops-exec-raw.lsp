@@ -66,19 +66,27 @@
           (format nil "Error: ~s cannot be re-converted to a float without rounding." x))
         ans)))
 
-(assert (equal (rat-to-float-raw 1/2) 0.5))
-(assert (equal (float-to-rat-raw 0.5) 1/2))
+; Matt K. mod for df additions:
+; (assert (equal (rat-to-float-raw 1/2) 0.5))
+(assert (equal (rat-to-float-raw 1/2) 0.5f0))
+; Matt K. mod for df additions:
+; (assert (equal (float-to-rat-raw 0.5) 1/2))
+(assert (equal (float-to-rat-raw 0.5f0) 1/2))
 
 (assert (b* (((mv err ans) (rat-to-float 1/2)))
           (and (not err)
-               (equal ans 0.5))))
+; Matt K. mod for df additions:
+;              (equal ans 0.5))))
+               (equal ans 0.5f0))))
 
 (assert (b* (((mv err ans) (rat-to-float 1/3)))
           (and err
                (and (<= 0.33333 ans)
                     (<= ans 0.33334)))))
 
-(assert (b* (((mv err ans) (float-to-rat 0.5)))
+; Matt K. mod for df additions:
+; (assert (b* (((mv err ans) (float-to-rat 0.5)))
+(assert (b* (((mv err ans) (float-to-rat 0.5f0)))
           (and (not err)
                (equal ans 1/2))))
 

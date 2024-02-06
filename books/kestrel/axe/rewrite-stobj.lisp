@@ -13,9 +13,9 @@
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "interpreted-function-alistp")
+(include-book "rule-alists")
 
-;; TODO: Consider adding more things to this, such as:
-;; interpreted-function-alist and rule-alist.
+;; TODO: Consider adding more things to this.
 ;; We could also add things like memoization, info, tries, and limits,
 ;; but then the stobj would have to be returned from each function
 ;; in the main clique.
@@ -32,6 +32,8 @@
   ;; Definitions of functions not built into the evaluator:
   ;; TODO: Require alist this to be complete?
   (interpreted-function-alist :type (satisfies interpreted-function-alistp) :initially nil)
+  ;; Rules to be applied when rewriting, stored as a rule-alist:
+  (rule-alist :type (satisfies rule-alistp) :initially nil)
   :inline t
   :renaming ((known-booleans get-known-booleans)
              (update-known-booleans put-known-booleans)
@@ -44,4 +46,7 @@
              (update-normalize-xors put-normalize-xors)
              (interpreted-function-alistp interpreted-function-alist-fieldp) ; since interpreted-function-alistp is already used!  can we suppress the recognizer in this case?
              (interpreted-function-alist get-interpreted-function-alist)
-             (update-interpreted-function-alist put-interpreted-function-alist)))
+             (update-interpreted-function-alist put-interpreted-function-alist)
+             (rule-alistp rule-alist-fieldp) ; since rule-alistp is already used!  can we suppress the recognizer in this case?
+             (rule-alist get-rule-alist)
+             (update-rule-alist put-rule-alist)))

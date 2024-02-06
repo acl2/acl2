@@ -1,7 +1,7 @@
 ; Rule Lists used by the x86 Axe tools
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "kestrel/axe/rule-lists" :dir :system)
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
+(include-book "../priorities")
 
 (include-book "projects/x86isa/machine/instructions/top" :dir :system) ;needed to get the full ruleset instruction-decoding-and-spec-rules
 
@@ -24,6 +25,7 @@
 
 ;; Most of these are just names of functions to open
 (defun instruction-rules ()
+  (declare (xargs :guard t))
   (append '(x86isa::gpr-arith/logic-spec-1 ;; dispatches based on operation
             x86isa::gpr-arith/logic-spec-2 ;; dispatches based on operation
             x86isa::gpr-arith/logic-spec-4 ;; dispatches based on operation
@@ -106,8 +108,10 @@
             x86isa::imul-spec-32
             x86isa::imul-spec-64
 
-            x86isa::gpr-add-spec-8$inline
+            x86isa::gpr-add-spec-1$inline
+            x86isa::gpr-add-spec-2$inline
             x86isa::gpr-add-spec-4$inline
+            x86isa::gpr-add-spec-8$inline
 
             x86isa::idiv-spec$inline
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
@@ -137,6 +141,7 @@
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
+  (declare (xargs :guard t))
   '(atom ;open to expose consp
     car-cons
     acl2::consp-of-cons
@@ -152,6 +157,7 @@
     ))
 
 (defun linear-memory-rules ()
+  (declare (xargs :guard t))
   '(
     ;; Open these read operations to RB, which then gets turned into READ (TODO: Turn these into READ directly?)
     x86isa::rml08
@@ -170,6 +176,7 @@
     x86isa::wml16
     x86isa::wml32
     x86isa::wml64           ;shilpi leaves this enabled, but this is big!
+    x86isa::wml128
     x86isa::wml-size$inline ;shilpi leaves this enabled
 
     x86isa::wiml08
@@ -180,14 +187,17 @@
     ))
 
 (defun read-introduction-rules ()
+  (declare (xargs :guard t))
   '(mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read))
 
 (defun write-introduction-rules ()
+  (declare (xargs :guard t))
   '(mv-nth-1-of-wb-1-becomes-write
     mv-nth-1-of-wb-becomes-write))
 
 (defun read-byte-rules ()
+  (declare (xargs :guard t))
   '(read-byte-of-xw-irrel
     read-byte-when-program-at
     read-byte-of-set-flag
@@ -196,6 +206,7 @@
     ))
 
 (defun read-rules ()
+  (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
     integerp-of-read
     <-of-read-and-non-positive
@@ -210,6 +221,7 @@
     ))
 
 (defun write-rules ()
+  (declare (xargs :guard t))
   '(write-of-bvchop-arg3-gen
     xr-of-write-when-not-mem
     x86p-of-write
@@ -234,6 +246,7 @@
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG.
 (defun state-rules ()
+  (declare (xargs :guard t))
   '(
     ;x86isa::x86p-set-flag
     force ;todo: think about this
@@ -428,6 +441,7 @@
     ))
 
 (defun decoding-and-dispatch-rules ()
+  (declare (xargs :guard t))
   '(x86isa::two-byte-opcode-execute ;todo: restrict to constants?  ;big case split
     x86isa::64-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep ; axe can't eval this
     x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if-when-constants
@@ -467,6 +481,7 @@
 ))
 
 (defun x86-type-rules ()
+  (declare (xargs :guard t))
   '(x86isa::n01p-pf-spec64 ;targets unsigned-byte-p-of-pf-spec64
     x86isa::n01p-of-spec64 ;targets unsigned-byte-p-of-of-spec64
     x86isa::n01p-sf-spec64 ;targets unsigned-byte-p-of-sf-spec64
@@ -576,6 +591,14 @@
     x86isa::integerp-of-sub-zf-spec32
     x86isa::integerp-of-sub-zf-spec64
 
+    x86isa::n01p-cf-spec64 ; targets unsigned-byte-p-of-cf-spec64
+
+    integerp-of-cf-spec64
+
+    cf-spec32-becomes-getbit
+    cf-spec64-becomes-getbit
+
+    acl2::unsigned-byte-p-of-+ ; can work with cf-spec64-becomes-getbit
 
     ;;todo: not x86-specific
     acl2::integerp-of-logext
@@ -598,6 +621,14 @@
     x86isa::n08-to-i08$inline ;this is just logext
     x86isa::slice-of-part-install-width-low
     x86isa::bvchop-of-part-install-width-low-becomes-bvcat
+    x86isa::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
+    part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
+
+    acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
+
+    acl2::bvdiv-of-1-arg3
+    acl2::bvdiv-of-bvchop-arg2-same
+    acl2::bvdiv-of-bvchop-arg3-same
 
     ;;todo: try core-runes-bv:
     acl2::slice-of-slice-gen-better ;figure out which bv rules to include
@@ -632,6 +663,7 @@
 
 ;; These are about if but are not 'if lifting' rules.
 (defun if-rules ()
+  (declare (xargs :guard t))
   '(acl2::if-nil-t
     acl2::if-of-not
     x86isa::if-of-if-same-arg2
@@ -640,6 +672,7 @@
 
 ;todo: try always including these?  these help with conditional branches
 (defun if-lifting-rules ()
+  (declare (xargs :guard t))
   '(x86isa::mv-nth-of-if          ;could restrict to when both branches are cons nests
    x86isa::equal-of-if-constants ;seems safe
    x86isa::equal-of-if-constants-alt ;seems safe
@@ -657,6 +690,7 @@
    x86isa::logext-of-if-arg2))
 
 (defun simple-opener-rules ()
+  (declare (xargs :guard t))
   '(x86isa::n08p$inline ;just unsigned-byte-p
     ; 64-bit-modep ; using rules about this instead, since this is no longer just true
     ))
@@ -684,6 +718,7 @@
 
 ;; these are for functions axe can't evaluate
 (defun constant-opener-rules ()
+  (declare (xargs :guard t))
   '(x86isa::zf-spec$inline-constant-opener
 
     x86isa::cf-spec8$inline-constant-opener
@@ -787,6 +822,7 @@
 
 ;todo: separate out the 64 but rules
 (defun segment-base-and-bounds-rules ()
+  (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
     segment-base-and-bounds-of-set-rsp
     segment-base-and-bounds-of-set-rbp
@@ -845,10 +881,10 @@
     x86isa::sse-cmp-base ; when operation and operands are constant
     unsigned-byte-p-of-mv-nth-1-of-sse-cmp-of-OP-UCOMI
     ;; todo: some of these may be more general than just float rules:
-    jb-condition-of-bv-if-1-0-1
-    jb-condition-of-bv-if-1-1-0
-    jnb-condition-of-bv-if-1-0-1
-    jnb-condition-of-bv-if-1-1-0
+    jb-condition-of-bvif-1-0-1
+    jb-condition-of-bvif-1-1-0
+    jnb-condition-of-bvif-1-0-1
+    jnb-condition-of-bvif-1-1-0
     acl2::bool-fix-of-myif
     boolif-of-myif-arg1-true ; drop
     equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe ;equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
@@ -877,7 +913,17 @@
     ))
 
 ;; Try to introduce is-nan as soon as possible:
-(table axe-rule-priorities-table 'is-nan-intro -1)
+(set-axe-rule-priority is-nan-intro -1)
+
+
+;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
+(set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
+
+;; Careful, this one broke things by introducing bvplus into esp expressions.  So we added bvchop-of-+-of-esp-becomes-+-of-esp.
+;; Ensures that rules targetting things like (bvchop 32 (+ x y)) have a chance to fire first.
+;; Or we could recharacterize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
+(set-axe-rule-priority acl2::bvchop-identity 1)
+
 
 (defund symbolic-execution-rules ()
   (declare (xargs :guard t))
@@ -931,6 +977,7 @@
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
+  (declare (xargs :guard t))
   (append (symbolic-execution-rules)
           (acl2::base-rules)
           (acl2::type-rules)
@@ -1071,11 +1118,8 @@
             x86isa::combine-bytes-when-singleton
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
-
-
-            part-install-width-low-becomes-bvcat-axe
             x86isa::car-create-canonical-address-list
-            ;;canonical-address-p-between ;this is involved in loops (other rules backchain from < to canonical-addressp but this does the reverse)
+            ;;canonical-address-p-between ;this is involved in loops (other rules backchain from < to canonical-address-p but this does the reverse)
             ;;will axe try all free variable matches?
             x86isa::canonical-address-p-between-special1
             x86isa::canonical-address-p-between-special2
@@ -1306,11 +1350,16 @@
             read-in-terms-of-nth-and-pos-eric-4-bytes
             read-in-terms-of-nth-and-pos-eric-8-bytes
 
+            cf-spec64-when-unsigned-byte-p
+
             ;; nice rules: fixme: add the rest!
             jb-condition-of-sub-cf-spec8
             jb-condition-of-sub-cf-spec16
             jb-condition-of-sub-cf-spec32
             jb-condition-of-sub-cf-spec64
+            jb-condition-of-cf-spec32
+            jb-condition-of-cf-spec64
+            jb-condition-of-getbit ; for when we turn a cf-spec function into getbit
             jnb-condition-of-sub-cf-spec8
             jnb-condition-of-sub-cf-spec16
             jnb-condition-of-sub-cf-spec32
@@ -1339,6 +1388,8 @@
             jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
             jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
             jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
+            jo-condition-of-of-spec32
+            jo-condition-of-of-spec64
             jz-condition-of-zf-spec
             jz-condition-of-sub-zf-spec8
             jz-condition-of-sub-zf-spec16
@@ -1433,21 +1484,26 @@
 
             x86isa::feature-flags-constant-opener  ; move
 
+            acl2::lookup-becomes-lookup-equal ; or try just executing lookup itself
+
+            ;; Can help resolve overflow conditions in Rust code:
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
-(table axe-rule-priorities-table 'acl2::bvplus-of-+-combine-constants -1)
+(set-axe-rule-priority acl2::bvplus-of-+-combine-constants -1)
 
 ;; Not needed?:
-;; (table axe-rule-priorities-table 'x86isa::separate-when-separate -1)
-;; (table axe-rule-priorities-table 'x86isa::separate-when-separate-alt -1)
+;; (set-axe-rule-priority x86isa::separate-when-separate -1)
+;; (set-axe-rule-priority x86isa::separate-when-separate-alt -1)
 
 ;; note: mv-nth-1-wb-and-set-flag-commute loops with set-flag-and-wb-in-app-view
 
 ;; Used in both versions of the lifter
 ;; TODO: Split into 32-bit and 64-bit rules:
 (defun assumption-simplification-rules ()
+  (declare (xargs :guard t))
   (append
    '(standard-state-assumption
      standard-state-assumption-32
@@ -1547,6 +1603,7 @@
 
 ;move?
 (defun myif-rules ()
+  (declare (xargs :guard t))
   (append '(acl2::myif-same-branches ;add to lifter-rules?
             acl2::myif-of-t-and-nil-when-booleanp
             acl2::myif-nil-t
@@ -1563,6 +1620,7 @@
 
 ;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
+  (declare (xargs :guard t))
   (append (lifter-rules-common)
           '(x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
@@ -1675,6 +1733,7 @@
 
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 (defun lifter-rules32-new ()
+  (declare (xargs :guard t))
   '(
     ACL2::BVCHOP-NUMERIC-BOUND
 ;    not-mv-nth-0-of-ea-to-la-of-cs
@@ -1781,6 +1840,8 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
+    bvchop-of-+-of-esp-becomes-+-of-esp ; new, let's us drop the bvchop
+    ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
 
     xr-of-write-byte-to-segment
@@ -2209,7 +2270,13 @@
     write-to-segment-of-write-to-segment-included
     ))
 
+(defund lifter-rules32-all ()
+  (declare (xargs :guard t))
+  (append (lifter-rules32)
+          (lifter-rules32-new)))
+
 (defun lifter-rules64 ()
+  (declare (xargs :guard t))
   (append (lifter-rules-common)
           (read-introduction-rules)
           (write-introduction-rules)
@@ -3224,16 +3291,22 @@
     mv-nth-0-of-rme-size-of-set-undef
     ))
 
+(defund lifter-rules64-all ()
+  (declare (xargs :guard t))
+  (append (lifter-rules64)
+          (lifter-rules64-new)))
+
 ;; Try this rule first
-(table axe-rule-priorities-table 'read-of-write-disjoint -1)
+(set-axe-rule-priority read-of-write-disjoint -1)
 
 ;; Wait to try this rule until the read is cleaned up by removing irrelevant inner sets
-(table acl2::axe-rule-priorities-table 'read-when-program-at-gen 1)
+(set-axe-rule-priority read-when-program-at-gen 1)
 
 
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
 (defun low-level-rules-32 ()
+    (declare (xargs :guard t))
   (append (linear-memory-rules)
           (read-introduction-rules)
           (write-introduction-rules)
@@ -3361,11 +3434,13 @@
     ))
 
 (defun debug-rules32 ()
+  (declare (xargs :guard t))
   (append (debug-rules-common)
           '(not-mv-nth-0-of-add-to-*sp-gen
             mv-nth-1-of-add-to-*sp-gen)))
 
 (defun debug-rules64 ()
+  (declare (xargs :guard t))
   (append (debug-rules-common)
           (get-prefixes-openers)
           ;; todo: flesh out this list:
@@ -3534,6 +3609,7 @@
             acl2::bvif-of-logext-1
             acl2::bvif-of-logext-2
             equal-of-bvif-safe2
+            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )
           (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
           (acl2::booleanp-rules)
@@ -3711,7 +3787,9 @@
             acl2::bvand-of-bvchop-1 ;rename
             acl2::bvand-of-bvchop-2 ;rename
             ACL2::BVCHOP-OF-MINUS-BECOMES-BVUMINUS ; todo: or re-characterize the subl instruction
+            ACL2::BVPLUS-OF-PLUS-ARG2 ; todo: drop once we characterize long negation?
             ACL2::BVPLUS-OF-PLUS-ARG3 ; todo: drop once we characterize long negation?
+            acl2::integerp-when-unsigned-byte-p-free ; needed for the BVPLUS-OF-PLUS rules.
             ACL2::BVUMINUS-OF-+
             X86ISA::INTEGERP-OF-XR-RGF
             ACL2::NATP-OF-+-OF-- ; trying, or simplify (NATP (BINARY-+ '32 (UNARY-- (BVCHOP '5 x))))

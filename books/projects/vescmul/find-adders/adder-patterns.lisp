@@ -1224,7 +1224,7 @@
 
   (create-case-match-macro partsel-of-atom-pattern
                            ('sv::partsel start size term)
-                           (atom term))
+                           :extra-cond (atom term))
   (create-case-match-macro bitxor-pattern
                            ('sv::bitxor x y))
 
@@ -1270,6 +1270,7 @@
                                                                    ;; When two of them are variables, then don't try to create a a half-adder.
                                                                    ;; This is redundant and only here for performance improvements.
                                                                    ;; May cause issues in corner cases.
+                                                                   :extra-cond
                                                                    (and (or (not (and (partsel-of-atom-pattern-p x)
                                                                                       (partsel-of-atom-pattern-p y))))
                                                                         ;; when  one of  them is  zero,
@@ -1340,6 +1341,7 @@
                                :prepwork ((create-case-match-macro ha-c-chain-pattern
                                                                    ('sv::bitand x y)
                                                                    ;; prevent two partsels to be go intp a half-adder.
+                                                                   :Extra-cond
                                                                    (and (or (not (and (partsel-of-atom-pattern-p x)
                                                                                       (partsel-of-atom-pattern-p y)))
                                                                             )
@@ -1391,10 +1393,12 @@
 
                                             (create-case-match-macro ha-c-chain-repeated-with-self1
                                                                      ('ha-c-chain x ('ha-c-chain y1 y2))
+                                                                     :extra-cond
                                                                      (or (equal y1 x)
                                                                          (equal y2 x)))
                                             (create-case-match-macro ha-c-chain-repeated-with-self2
                                                                      ('ha-c-chain ('ha-c-chain y1 y2) x)
+                                                                     :extra-cond
                                                                      (or (equal y1 x)
                                                                          (equal y2 x)))
                                             
@@ -1495,6 +1499,7 @@
                                :prepwork ((create-case-match-macro ha+1-c-chain-pattern
                                                                    ('sv::bitor x y)
                                                                    ;; prevent two partsels to be go intp a half-adder.
+                                                                   :extra-cond
                                                                    (and (not (and (partsel-of-atom-pattern-p x)
                                                                                   (partsel-of-atom-pattern-p y)))
                                                                         (not (integerp x))
@@ -1649,6 +1654,7 @@
                                                                    ('sv::bitnot ('sv::bitxor x y)))
                                           (create-case-match-macro ha+1-s-chain-pattern-2
                                                                    ('sv::bitxor ('sv::bitxor x y) z)
+                                                                   :extra-cond
                                                                    (and (or (equal x 1)
                                                                             (equal y 1)
                                                                             (equal z 1))
@@ -1657,6 +1663,7 @@
                                                                         (not (equal z 0))))
                                           (create-case-match-macro ha+1-s-chain-pattern-3
                                                                    ('sv::bitxor z ('sv::bitxor x y))
+                                                                   :extra-cond
                                                                    (and (or (equal x 1)
                                                                             (equal y 1)
                                                                             (equal z 1))

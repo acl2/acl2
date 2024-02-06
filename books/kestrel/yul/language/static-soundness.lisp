@@ -16,7 +16,6 @@
 (include-book "../language/errors")
 
 (local (include-book "../library-extensions/lists"))
-(local (include-book "../library-extensions/omaps"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

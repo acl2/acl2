@@ -1,7 +1,7 @@
 ; Mixed rules about packing and grouping
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -57,10 +57,7 @@
   :hints (("subgoal *1/4" :use (:instance list-split (n n)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (all-all-unsigned-byte-p group2)
-                           (;LIST::EQUAL-APPEND-REDUCTION!
-                            ;LIST::EQUAL-APPEND-REDUCTION!-ALT
-                            APPEND-OF-TAKE-AND-NTHCDR-2
-                            )))))
+                           (append-of-take-and-nthcdr-2)))))
 
 (defthm all-all-unsigned-byte-p-of-group2-rewrite
   (implies (and (equal 0 (mod (len x) n)) ;handle better

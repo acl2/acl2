@@ -529,7 +529,8 @@ Mainly to be used for evaluating enum lists "
 
   (mv-let
    (erp term x)
-   (acl2::translate11 form nil nil nil nil nil nil
+; Matt K. mod for df additions: Added nil for known-dfs argument.
+   (acl2::translate11 form nil nil nil nil nil nil nil
                       ctx w (acl2::default-state-vars nil))
    (declare (ignore x))
    (if erp

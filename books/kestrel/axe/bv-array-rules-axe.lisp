@@ -253,12 +253,24 @@
                                                   )))))
 
 ;gen!  may need a new syntax function
+;drop?
 (defthmd bv-array-read-trim-index-dag-256
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array)) ;fixme had x here instead of index which caused a crash - check for that!
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array))
                 ;(natp size)
                 )
            (equal (bv-array-read element-width 256 index data)
                   (bv-array-read element-width 256 (trim 8 index) data)))
+  :hints (("Goal" :in-theory (e/d (trim) nil))))
+
+(defthmd bv-array-read-trim-index-axe-gen
+  (implies (and (syntaxp (quotep len))
+                (axe-bind-free (bind-bv-size-axe index 'indexsize dag-array) '(indexsize))
+                (< (ceiling-of-lg len) indexsize)
+                (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array))
+                ;(natp size)
+                )
+           (equal (bv-array-read element-width len index data)
+                  (bv-array-read element-width len (trim (ceiling-of-lg len) index) data)))
                :hints (("Goal" :in-theory (e/d (trim) nil))))
 
 ;move
