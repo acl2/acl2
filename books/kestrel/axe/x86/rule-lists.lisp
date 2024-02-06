@@ -3823,7 +3823,7 @@
             ACL2::BVPLUS-COMMUTATIVE-2-INCREASING-AXE
             ;;acl2::equal-same
             ;; bvcat-of-minus-becomes-bvshl ; except STP doesn't support the shift operators
-            acl2::<-lemma-for-known-operators
+            acl2::<-lemma-for-known-operators-axe
             acl2::bvlt-of-bvchop-arg2
             acl2::bvlt-of-bvchop-arg3
             acl2::sbvlt-of-bvchop-arg2

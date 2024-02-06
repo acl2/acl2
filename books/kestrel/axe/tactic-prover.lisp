@@ -474,8 +474,8 @@
      bvashr-32-cases
      bvashr-64-cases
      ;; these are needed to resolve claims about the indiced being in bounds (todo: generalize the rules above):
-     <-lemma-for-known-operators    ; rename with axe in the name
-     <-lemma-for-known-operators-alt ; rename with axe in the name
+     <-lemma-for-known-operators-axe
+     <-lemma-for-known-operators-axe-alt
      eql ; introduced by case
      not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
      not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
