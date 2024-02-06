@@ -516,7 +516,7 @@
   :hints (("Goal" :cases ((natp size)))))
 
 ;rename?
-;see also <-lemma-for-known-operators2 but that one probably requires a constant for the width
+;see also <-lemma-for-known-operators-axe2 but that one probably requires a constant for the width
 (defthm bvchop-numeric-bound
   (implies (and (syntaxp (quotep k))
                 (<= k 0))

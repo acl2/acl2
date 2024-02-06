@@ -830,8 +830,8 @@
      bvchop-of-bvxor ; drop?
 
      ;; these replace the numeric bound rules
-     <-lemma-for-known-operators-alt
-     <-lemma-for-known-operators
+     <-lemma-for-known-operators-axe-alt
+     <-lemma-for-known-operators-axe
      <-of-bv-and-non-positive-constant ;Thu May 17 00:37:24 2012
 
      ;; We leave most commutativity rules out of core-rules-bv, because they can be expensive for large nests
@@ -3671,8 +3671,8 @@
              +-becomes-bvplus-axe
              bvmult-of-bvplus-hack
              bvmult-of-bvmult-hack
-             <-lemma-for-known-operators2
-             <-lemma-for-known-operators3
+             <-lemma-for-known-operators-axe2
+             <-lemma-for-known-operators-axe3
              nthcdr-of-nthcdr
 
              cdr-of-group2
