@@ -114,6 +114,10 @@
     x86isa::pf-spec32$inline
     x86isa::pf-spec64
     x86isa::pf-spec64$inline
+    x86isa::of-spec8
+    x86isa::of-spec8$inline
+    x86isa::of-spec16
+    x86isa::of-spec16$inline
     x86isa::of-spec32
     x86isa::of-spec32$inline
     x86isa::of-spec64
@@ -130,6 +134,10 @@
     x86isa::sub-af-spec32$inline
     x86isa::sub-af-spec64
     x86isa::sub-af-spec64$inline
+    x86isa::sub-of-spec8
+    x86isa::sub-of-spec16
+    x86isa::sub-of-spec32
+    x86isa::sub-of-spec64
 
     ;; do we want to include stuff like this?
     x86isa::x86-one-byte-opcode-modr/m-p$inline
