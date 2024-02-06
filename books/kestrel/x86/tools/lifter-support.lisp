@@ -1,7 +1,7 @@
 ; Supporting tools for x86 lifters
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "X86ISA") ;todo: use X package
+(in-package "X")
 
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
@@ -39,7 +39,7 @@
      (and (normal-output-indicatorp (first x))
           (normal-output-indicatorsp (rest x))))))
 
-(defun x::output-indicatorp (x)
+(defun output-indicatorp (x)
   (declare (xargs :guard t))
   (or (eq x :all)
       (normal-output-indicatorp x)))
@@ -57,7 +57,7 @@
          `(acl2::bvchop '8 (xr ':rgf ',(second output-indicator) ,term-to-simulate))
        (if (and (consp output-indicator)
                 (eq :mem32 (first output-indicator)))
-           `(x::read '4 ,(second output-indicator) ,term-to-simulate)
+           `(read '4 ,(second output-indicator) ,term-to-simulate)
          (if (and (consp output-indicator)
                   (eq :tuple (first output-indicator)))
              (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term-to-simulate))
@@ -70,23 +70,23 @@
      (cons (wrap-in-normal-output-extractor (first output-indicators) term-to-simulate)
            (wrap-in-normal-output-extractors (rest output-indicators) term-to-simulate)))))
 
-(defun x::wrap-in-output-extractor (output-indicator term-to-simulate)
-  (declare (xargs :guard (x::output-indicatorp output-indicator)))
+(defun wrap-in-output-extractor (output-indicator term-to-simulate)
+  (declare (xargs :guard (output-indicatorp output-indicator)))
   (if (eq :all output-indicator)
       term-to-simulate
     (wrap-in-normal-output-extractor output-indicator term-to-simulate)))
 
-(defun x::get-x86-lifter-table (state)
+(defun get-x86-lifter-table (state)
   (declare (xargs :stobjs state))
   (table-alist 'x86-lifter-table (w state)))
 
 ;TODO: Use the generic utility for redundancy checking
 ;WHOLE-FORM is a call to the lifter
-(defun x::previous-lifter-result (whole-form state)
+(defun previous-lifter-result (whole-form state)
   (declare (xargs :stobjs state))
-  (let* ((table-alist (x::get-x86-lifter-table state)))
+  (let* ((table-alist (get-x86-lifter-table state)))
     (if (not (alistp table-alist))
-        (hard-error 'x::previous-lifter-result "Invalid table alist for x86-lifter-table: ~x0."
+        (hard-error 'previous-lifter-result "Invalid table alist for x86-lifter-table: ~x0."
                     (acons #\0 table-alist nil))
       (let ((previous-result (acl2::lookup-equal whole-form table-alist)))
         (if previous-result
