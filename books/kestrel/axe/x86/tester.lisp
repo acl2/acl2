@@ -155,7 +155,10 @@
           ))
     (if (eq :elf-64 executable-type) ; todo: handle elf32
         ;; todo: handle more sections here:
-        (assumptions-for-elf64-sections '(".data" ".rodata") position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable)
+        (assumptions-for-elf64-sections '(".data" ".rodata"
+                                          ;;  ".got" ; todo: consider putting this back (at least assume it disjoint from the stack)
+                                          )
+                                        position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable)
       (if (eq :elf-32 executable-type)
           (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
         nil))))

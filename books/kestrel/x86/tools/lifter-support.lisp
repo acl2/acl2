@@ -57,8 +57,8 @@
    (declare (xargs :guard (normal-output-indicatorp output-indicator)))
    (if (symbolp output-indicator)
        (case output-indicator
-         (:rax `(rax ,term)) ; todo: convert to unsigned?!
-         (:eax `(xr ':rgf '0 ,term)) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
+         (:rax `(bvchop '64 (rax ,term)))
+         (:eax `(bvchop '32 (xr ':rgf '0 ,term))) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
          ;; (:eax (rax ,term))
          (t (er hard 'wrap-in-normal-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
      (if (and (consp output-indicator)
