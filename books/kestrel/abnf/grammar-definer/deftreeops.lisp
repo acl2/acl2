@@ -1069,7 +1069,14 @@
                                       check-alt-fn)
                     :rule-classes ((:forward-chaining
                                     :trigger-terms ((,check-alt-fn cst))))
-                    :hints (("Goal" :in-theory '(,check-alt-fn)))))))
+                    :hints (("Goal" :in-theory '(,check-alt-fn)))))
+           (fty::deffixequiv ,check-alt-fn
+             :hints
+             (("Goal"
+               :in-theory
+               '(,check-alt-fn
+                 tree-nonleaf->branches$inline-tree-equiv-congruence-on-x
+                 tree-fix-under-tree-equiv))))))
        (more-events
         `(,@(and two-or-more-alts-p
                  (list alt-equiv-thm-event
