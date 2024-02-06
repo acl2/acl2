@@ -18,7 +18,12 @@
 (mutual-recursion
  (defun normal-output-indicatorp (x)
    (declare (xargs :guard t))
-   (or (and (true-listp x) ;; (:register <N>) or (:register-bool <N>)
+   (or ;; TODO: Deprecate this case:
+    (member-equal x '(:rax
+                      :eax
+                      ;; todo: more
+                      ))
+       (and (true-listp x) ;; (:register <N>) or (:register-bool <N>)
             (member-eq (first x) '(:register :register-bool))
             (eql 2 (len x))
             (natp (second x)) ;todo: what is the max allowed?
@@ -39,42 +44,53 @@
      (and (normal-output-indicatorp (first x))
           (normal-output-indicatorsp (rest x))))))
 
+;; Indicates the desired result of lifting, either :all or some component of the state
 (defun output-indicatorp (x)
   (declare (xargs :guard t))
   (or (eq x :all)
       (normal-output-indicatorp x)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (mutual-recursion
- (defun wrap-in-normal-output-extractor (output-indicator term-to-simulate)
+ (defun wrap-in-normal-output-extractor (output-indicator term)
    (declare (xargs :guard (normal-output-indicatorp output-indicator)))
-   (if (and (consp output-indicator)
-            (eq :register (first output-indicator)))
-       `(xr ':rgf ',(second output-indicator) ,term-to-simulate)
+   (if (symbolp output-indicator)
+       (case output-indicator
+         (:rax `(rax ,term)) ; todo: convert to unsigned?!
+         (:eax `(xr ':rgf '0 ,term)) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
+         ;; (:eax (rax ,term))
+         (t (er hard 'wrap-in-normal-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
      (if (and (consp output-indicator)
-              (eq :register-bool (first output-indicator)))
+              (eq :register (first output-indicator)))
+         `(xr ':rgf ',(second output-indicator) ,term)
+       (if (and (consp output-indicator)
+                (eq :register-bool (first output-indicator)))
          ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
          ;; TODO: Should we chop to a single bit?
-         `(acl2::bvchop '8 (xr ':rgf ',(second output-indicator) ,term-to-simulate))
-       (if (and (consp output-indicator)
-                (eq :mem32 (first output-indicator)))
-           `(read '4 ,(second output-indicator) ,term-to-simulate)
+           `(acl2::bvchop '8 (xr ':rgf ',(second output-indicator) ,term))
          (if (and (consp output-indicator)
-                  (eq :tuple (first output-indicator)))
-             (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term-to-simulate))
-           (er hard 'wrap-in-output-extractor "Invalid output indicator: ~x0" output-indicator))))))
+                  (eq :mem32 (first output-indicator)))
+             `(read '4 ,(second output-indicator) ,term)
+           (if (and (consp output-indicator)
+                    (eq :tuple (first output-indicator)))
+               (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term))
+             (er hard 'wrap-in-output-extractor "Invalid output indicator: ~x0" output-indicator)))))))
 
- (defun wrap-in-normal-output-extractors (output-indicators term-to-simulate)
+ (defun wrap-in-normal-output-extractors (output-indicators term)
    (declare (xargs :guard (normal-output-indicatorsp output-indicators)))
    (if (endp output-indicators)
        nil
-     (cons (wrap-in-normal-output-extractor (first output-indicators) term-to-simulate)
-           (wrap-in-normal-output-extractors (rest output-indicators) term-to-simulate)))))
+     (cons (wrap-in-normal-output-extractor (first output-indicators) term)
+           (wrap-in-normal-output-extractors (rest output-indicators) term)))))
 
-(defun wrap-in-output-extractor (output-indicator term-to-simulate)
+(defun wrap-in-output-extractor (output-indicator term)
   (declare (xargs :guard (output-indicatorp output-indicator)))
   (if (eq :all output-indicator)
-      term-to-simulate
-    (wrap-in-normal-output-extractor output-indicator term-to-simulate)))
+      term
+    (wrap-in-normal-output-extractor output-indicator term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun get-x86-lifter-table (state)
   (declare (xargs :stobjs state))

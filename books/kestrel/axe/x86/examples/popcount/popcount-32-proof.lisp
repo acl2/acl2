@@ -31,7 +31,7 @@
 (def-unrolled popcount_32 "popcount-macho-64.executable"
   :target "_popcount_32"
   :stack-slots 2
-  :output (:register 0)
+  :output :rax
   ;; Introduce x as the input var:
   :assumptions '((equal (rdi x86) x)))
 
