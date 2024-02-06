@@ -2315,3 +2315,10 @@
                 (<= (expt 2 size) k)
                 (natp size))
            (< (bvuminus size x) k)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; not really a bv rule
+;; Only needed by Axe
+(defthmd integerp-of-logior
+  (integerp (logior x y)))
