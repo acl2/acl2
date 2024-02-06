@@ -3462,18 +3462,6 @@
 ;; ;;             ;read-byte-from-segment-of-write-to-segment-diff-segments
 ;; ;;             ;; mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment
 ;; ;;             ;; not-mv-nth-0-of-rme08-of-cs-gen
-;;             x86isa::get-prefixes-base-1
-;;             x86isa::get-prefixes-base-2
-;;             x86isa::get-prefixes-base-3
-;;             x86isa::get-prefixes-base-4
-;;             x86isa::get-prefixes-base-5
-;;             x86isa::get-prefixes-base-6
-;;             x86isa::get-prefixes-base-7
-;;             x86isa::get-prefixes-base-8
-;;             x86isa::get-prefixes-unroll-1
-;;             x86isa::get-prefixes-unroll-2
-;;             x86isa::get-prefixes-unroll-3
-;;             x86isa::get-prefixes-unroll-4
 ;; ;;             ;;read-when-equal-of-read
 ;; ;;             ;;read-when-equal-of-read-alt
 ;; ;;             ;read-when-program-at
