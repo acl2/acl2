@@ -30,6 +30,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Register readers (when we need an ordering on registers, we use the order given here):
+;; These are signed-byte-p-64s:
 (defund rax (x86) (declare (xargs :stobjs x86)) (rgfi *rax* x86))
 (defund rbx (x86) (declare (xargs :stobjs x86)) (rgfi *rbx* x86))
 (defund rcx (x86) (declare (xargs :stobjs x86)) (rgfi *rcx* x86))
