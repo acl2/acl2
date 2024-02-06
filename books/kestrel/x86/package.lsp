@@ -402,6 +402,9 @@
     untranslate
     subset-eq
     submit-event
+
+    ;; x86 stuff (more to x package?):
+    elf-info
     ))
 
 ;; Ideally, these would all be rewritten to BV ops
