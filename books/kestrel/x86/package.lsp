@@ -1,7 +1,7 @@
 ; A package for x86 proof work
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 
 ;(include-book "std/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
+(include-book "rtl/rel11/portcullis" :dir :system)
 
 ;; A Package for x86 analysis tools and proofs
 
@@ -207,7 +208,25 @@
     x86isa::!rip
 
     x86isa::ctri
+    ;; todo: more like this:
+    x86isa::cr0bits->ts
+    x86isa::cr0bits->em
+    x86isa::cr4bits->osfxsr
+
     x86isa::msri
+    x86isa::mxcsrbits-fix
+    ;; todo: more like this:
+    x86isa::mxcsrbits->daz$inline
+    x86isa::mxcsrbits->de$inline
+    x86isa::mxcsrbits->im$inline
+    x86isa::mxcsrbits->dm$inline
+    x86isa::mxcsrbits->ie$inline
+    x86isa::mxcsrbits->ze$inline
+    x86isa::mxcsrbits->pe$inline
+    x86isa::mxcsrbits->ue$inline
+    x86isa::mxcsrbits->zm$inline
+    x86isa::mxcsrbits->oe$inline
+    x86isa::mxcsrbits->rc$inline
 
     x86isa::feature-flag
 
@@ -286,6 +305,10 @@
     bvif
     bvsx
     repeatbit
+    leftrotate
+    rightrotate
+    leftrotate32
+    rightrotate32
 
     ceiling-of-lg
     lg
@@ -411,6 +434,23 @@
 (defconst *symbols-from-bitops*
   '(bitops::part-install-width-low$inline))
 
+;; Ideally, these would all be rewritten away
+(defconst *symbols-from-rtl*
+  '(rtl::bitn
+    rtl::bits
+    rtl::bvecp
+    rtl::daz
+    rtl::snanp
+    rtl::qnanp
+    rtl::denormp
+    rtl::infp
+    rtl::mxcsr-masks
+    rtl::zencode
+    rtl::iencode
+    rtl::dencode
+    rtl::nencode
+    ))
+
 ;; TODO: Think about this...
 (defconst *common-formals*
   '(x y m n size i))
@@ -419,4 +459,5 @@
                     *symbols-from-acl2-package*
                     *x86isa-exports*
                     *symbols-from-bitops*
+                    *symbols-from-rtl*
                     *common-formals*))
