@@ -38,10 +38,15 @@
          -1)
   :hints (("Goal" :in-theory (enable logior))))
 
-(defthm logior-of-0
+(defthm logior-of-0-arg1
   (equal (logior 0 j)
          (ifix j))
   :hints (("Goal" :in-theory (enable logior))))
+
+;; Disabled since we should commute the 0 forward
+(defthmd logior-of-0-arg2
+  (equal (logior i 0)
+         (ifix i)))
 
 (defthm logior-when-not-integerp-arg1
   (implies (not (integerp i))
