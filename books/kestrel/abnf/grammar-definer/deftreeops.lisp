@@ -149,10 +149,18 @@
       then its length is the length of the alternative
       and each list of trees in the list matches the corresponding repetition.")
     (xdoc::li
+     "The name of the generated theorem that  asserts the equivalence between
+      (1) the fact that the alternative checking function
+      (@('check-alt-fn') in @(tsee deftreeops-rulename-info))
+      returns the positive integer corresponding to this alternative and
+      (2) the discriminant term described above.
+      This is @('nil') if the rule has just one alternative.")
+    (xdoc::li
      "The information about the repetitions that form the alternative.")))
   ((discriminant-term "A term.")
    (get-tree-list-list-fn acl2::symbol)
    (match-thm acl2::symbol)
+   (check-alt-fn-equiv-thm acl2::symbol)
    (rep-infos deftreeops-rep-info-list))
   :pred deftreeops-alt-infop)
 
@@ -656,7 +664,12 @@
     "For now we only generate some of these,
      namely the matching theorem.
      For now, we generate it only if the concatenation
-     consists of exactly one repetition."))
+     consists of exactly one repetition.")
+   (xdoc::p
+    "Here we set the @('check-alt-fn-equiv-thm') component to @('nil'),
+     but we set it to non-@('nil')
+     in @(tsee deftreeops-gen-rulename-fns+thms+info-pass2),
+     if the rule name is defined by two or more alternatives."))
   (b* (((unless (and (consp conc)
                      (endp (cdr conc))))
         (mv nil
@@ -664,6 +677,7 @@
              :discriminant-term nil
              :get-tree-list-list-fn nil
              :match-thm nil
+             :check-alt-fn-equiv-thm nil
              :rep-infos nil)))
        (match-thm (packn-pos (list prefix '-match-alt i '- rulename-upstring)
                              prefix))
@@ -692,6 +706,7 @@
               :discriminant-term discriminant-term
               :get-tree-list-list-fn nil
               :match-thm match-thm
+              :check-alt-fn-equiv-thm nil
               :rep-infos rep-infos)))
     (mv (append (list match-thm-event)
                 rep-events)
@@ -991,9 +1006,11 @@
      one of the numbers that indicate the alternatives
      a @(tsee fty::deffixequiv) fixing theorem,
      and, for each alternative that defines the rule name,
-     a theorem stating the equivalence between
-     the function returning the positive integer the alternative
-     and the discriminating term for the alternative.")
+     the theorem whose name is stored in
+     the @('check-alt-fn-equiv-thm') component
+     of @(tsee deftreeops-alt-info) (see its documentation there).
+     In fact, here we update the information about the alternative
+     with the name of that theorem.")
    (xdoc::p
     "We extend the incomplete rule name information structures
      generated during the first pass."))
@@ -1038,12 +1055,12 @@
        (check-alt-fn
         (and two-or-more-alts-p
              (packn-pos (list prefix '- rulename-upstring '-alt?) prefix)))
-       ((mv cond-arms disjuncts rules thm-events)
+       ((mv cond-arms disjuncts rules thm-events updated-alt-infos)
         (if two-or-more-alts-p
             (b* (((unless (equal (len alt-infos) (len alt)))
                   (raise "Internal error: ~x0 and ~x1 have different lengths."
                          alt-infos alt)
-                  (mv nil nil nil nil)))
+                  (mv nil nil nil nil nil)))
               (deftreeops-gen-rulename-fns+thms+info-pass2-aux2
                 alt
                 alt-infos
@@ -1054,7 +1071,7 @@
                 rulename-string
                 matchp
                 conc-matchp))
-          (mv nil nil nil nil)))
+          (mv nil nil nil nil nil)))
        (check-alt-fn-event
         `(define ,check-alt-fn ((cst treep))
            :guard (,matchp cst ,rulename-string)
@@ -1104,7 +1121,7 @@
               rulename-info
               :alt-equiv-thm alt-equiv-thm
               :check-alt-fn check-alt-fn
-              :alt-infos alt-infos)))
+              :alt-infos updated-alt-infos)))
     (mv (append events more-events) info))
 
   :prepwork
@@ -1178,25 +1195,26 @@
      :returns (mv (cond-arms true-listp)
                   (disjuncts true-listp)
                   (rules symbol-listp)
-                  (thm-events pseudo-event-form-listp))
+                  (thm-events pseudo-event-form-listp)
+                  (updated-alt-infos deftreeops-alt-info-listp))
      :parents nil
-     (b* (((when (endp alt)) (mv nil nil nil nil))
+     (b* (((when (endp alt)) (mv nil nil nil nil nil))
           (conc (car alt))
           (alt-info (car alt-infos))
           ((unless (and (consp conc)
                         (endp (cdr conc))))
            (raise "Internal error: non-singleton concatenation ~x0." conc)
-           (mv nil nil nil nil))
+           (mv nil nil nil nil nil))
           (rep (car conc))
           ((unless (equal (repetition->range rep)
                           (make-repeat-range :min 1
                                              :max (nati-finite 1))))
            (raise "Internal error: non-singleton repetition ~x0." rep)
-           (mv nil nil nil nil))
+           (mv nil nil nil nil nil))
           (elem (repetition->element rep))
           ((unless (element-case elem :rulename))
            (raise "Internal error: element ~x0 is not a rule name." elem)
-           (mv nil nil nil nil))
+           (mv nil nil nil nil nil))
           (rulename (element-rulename->get elem))
           (cond-arm `(,(deftreeops-alt-info->discriminant-term alt-info)
                       ,index))
@@ -1207,12 +1225,12 @@
            (raise "Internal error:
                    non-singleton list of repetition information ~x0."
                   rep-infos)
-           (mv nil nil nil nil))
+           (mv nil nil nil nil nil))
           (rep-info (car rep-infos))
           (rulename-info (cdr (assoc-equal rulename rulename-infos)))
           ((unless rulename-info)
            (raise "Internal error: no information for rule name ~x0." rulename)
-           (mv nil nil nil nil))
+           (mv nil nil nil nil nil))
           (rules (list (deftreeops-rulename-info->nonleaf-thm rulename-info)
                        (deftreeops-rulename-info->rulename-thm rulename-info)
                        (deftreeops-alt-info->match-thm alt-info)
@@ -1246,7 +1264,14 @@
                               ,alt-equiv-thm
                               (:e rulename))
                  :use (:guard-theorem ,check-alt-fn)))))
-          ((mv more-cond-arms more-disjuncts more-rules more-thm-events)
+          (updated-alt-info (change-deftreeops-alt-info
+                             alt-info
+                             :check-alt-fn-equiv-thm thm-name))
+          ((mv more-cond-arms
+               more-disjuncts
+               more-rules
+               more-thm-events
+               more-updated-alt-infos)
            (deftreeops-gen-rulename-fns+thms+info-pass2-aux2
              (cdr alt)
              (cdr alt-infos)
@@ -1260,7 +1285,8 @@
        (mv (cons cond-arm more-cond-arms)
            (cons disjunct more-disjuncts)
            (append rules more-rules)
-           (cons thm-event more-thm-events))))))
+           (cons thm-event more-thm-events)
+           (cons updated-alt-info more-updated-alt-infos))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
