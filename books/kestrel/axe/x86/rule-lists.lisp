@@ -1142,7 +1142,10 @@
 
             ;; x86-fetch-decode-execute-opener ; this had binding hyps
             ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
-            x86isa::x86-fetch-decode-execute-base
+            ;; x86isa::x86-fetch-decode-execute-base ; even this can introduce confusing cases when things can't be resolved
+            ;; TODO: Support using this one only when debugging:
+            x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the PC
+            poor-mans-quotep-constant-opener
 
             ms x86isa::ms$a                            ;expose the call to xr
             fault x86isa::fault$a                         ;expose the call to xr
@@ -1448,8 +1451,14 @@
             jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
             jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
             jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
+            jo-condition-of-of-spec8
+            jo-condition-of-of-spec16
             jo-condition-of-of-spec32
             jo-condition-of-of-spec64
+            jo-condition-of-sub-of-spec8
+            jo-condition-of-sub-of-spec16
+            jo-condition-of-sub-of-spec32
+            jo-condition-of-sub-of-spec64
             jz-condition-of-zf-spec
             jz-condition-of-sub-zf-spec8
             jz-condition-of-sub-zf-spec16
@@ -3436,7 +3445,7 @@
 ;;             unsigned-byte-p-64-of-xr-of-rgf
 ;;             )
 ;; ;;more:
-;;  (x86isa::x86-fetch-decode-execute-base mv-nth-1-of-add-to-*sp-positive-offset
+;;  ( mv-nth-1-of-add-to-*sp-positive-offset
 ;;             mv-nth-1-of-add-to-*sp-gen-special
 ;;             read-from-segment-of-write-to-segment-same
 ;;             read-from-segment-of-write-to-segment-irrel
@@ -3483,6 +3492,8 @@
     mv-nth-1-of-wme-size     ;introduces write-to-segment
     mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read
+    ;; x86isa::x86-fetch-decode-execute-base
+    x86isa::x86-fetch-decode-execute-base-new
     ))
 
 (defun debug-rules32 ()
