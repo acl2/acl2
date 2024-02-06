@@ -130,7 +130,7 @@
   :hints (("Goal" :in-theory (enable rip))))
 
 ;todo: more like this, also try such rules first?
-(defthm if-of-set-rip-and-set-rip-same
+(defthmd if-of-set-rip-and-set-rip-same
   (equal (if test (set-rip rip x86_1) (set-rip rip x86_2)) ; same rip on both branches
          (set-rip rip (if test x86_1 x86_2))))
 
