@@ -1463,6 +1463,39 @@
                   (not (signed-byte-p 8 (- (logext 8 dst) (logext 8 src))))))
   :hints (("Goal" :in-theory (enable jo-condition x86isa::sub-of-spec8 x86isa::of-spec8))))
 
+(defthm jo-condition-of-sub-of-spec16
+  (implies (and (unsigned-byte-p 16 dst)
+                (unsigned-byte-p 16 src))
+           (equal (jo-condition (x86isa::sub-of-spec16 dst src))
+                  (not (signed-byte-p 16 (- (logext 16 dst) (logext 16 src))))))
+  :hints (("Goal" :in-theory (enable jo-condition x86isa::sub-of-spec16 x86isa::of-spec16))))
+
+(defthm jo-condition-of-sub-of-spec32
+  (implies (and (unsigned-byte-p 32 dst)
+                (unsigned-byte-p 32 src))
+           (equal (jo-condition (x86isa::sub-of-spec32 dst src))
+                  (not (signed-byte-p 32 (- (logext 32 dst) (logext 32 src))))))
+  :hints (("Goal" :in-theory (enable jo-condition x86isa::sub-of-spec32 x86isa::of-spec32))))
+
+(defthm jo-condition-of-sub-of-spec64
+  (implies (and (unsigned-byte-p 64 dst)
+                (unsigned-byte-p 64 src))
+           (equal (jo-condition (x86isa::sub-of-spec64 dst src))
+                  (not (signed-byte-p 64 (- (logext 64 dst) (logext 64 src))))))
+  :hints (("Goal" :in-theory (enable jo-condition x86isa::sub-of-spec64 x86isa::of-spec64))))
+
+;nice
+(defthm jo-condition-of-of-spec8
+  (equal (jo-condition (of-spec8 x))
+         (not (signed-byte-p 8 x)))
+  :hints (("Goal" :in-theory (enable of-spec8 jo-condition))))
+
+;nice
+(defthm jo-condition-of-of-spec16
+  (equal (jo-condition (of-spec16 x))
+         (not (signed-byte-p 16 x)))
+  :hints (("Goal" :in-theory (enable of-spec16 jo-condition))))
+
 ;nice
 (defthm jo-condition-of-of-spec32
   (equal (jo-condition (of-spec32 x))
