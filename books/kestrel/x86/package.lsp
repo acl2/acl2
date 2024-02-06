@@ -191,13 +191,19 @@
 
     x86isa::ctri
 
+    x86isa::feature-flag
+
     ;; floating-point stuff:
     x86isa::fp-decode
     x86isa::sse-cmp
     x86isa::sse-cmp-special
-    x86isa::mxcsrbits->daz$inline x86isa::mxcsrbits->daz$
-    x86isa::mxcsrbits->dm$inline x86isa::mxcsrbits->dm$
-    x86isa::mxcsrbits->im$inline x86isa::mxcsrbits->im$
+    x86isa::mxcsr
+    x86isa::mxcsr$a
+    x86isa::mxcsrbits-fix
+    x86isa::mxcsrbits->daz$inline x86isa::mxcsrbits->daz
+    x86isa::mxcsrbits->dm$inline x86isa::mxcsrbits->dm
+    x86isa::mxcsrbits->im$inline x86isa::mxcsrbits->im
+    ;; todo: more like the above
     x86isa::*op-ucomi*
     x86isa::snan
     x86isa::qnan
@@ -380,6 +386,10 @@
     submit-event
     ))
 
+;; Ideally, these would all be rewritten to BV ops
+(defconst *symbols-from-bitops*
+  '(bitops::part-install-width-low$inline))
+
 ;; TODO: Think about this...
 (defconst *common-formals*
   '(x y m n size i))
@@ -387,4 +397,5 @@
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
                     *x86isa-exports*
+                    *symbols-from-bitops*
                     *common-formals*))
