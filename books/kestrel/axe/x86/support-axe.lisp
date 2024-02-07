@@ -339,3 +339,13 @@
          ;; (poor-mans-quotep (read 1 (rip x86) x86))
          (not (ms x86))
          (not (fault x86))))
+
+(acl2::def-constant-opener x86isa::mxcsrbits-fix)
+;; todo: more like this?:
+(acl2::def-constant-opener x86isa::mxcsrbits->ue$inline)
+(acl2::def-constant-opener x86isa::mxcsrbits->pe$inline)
+
+(acl2::def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
+(acl2::def-constant-opener x86isa::feature-flag)
+;(acl2::def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
+(acl2::def-constant-opener rtl::set-flag) ; drop?

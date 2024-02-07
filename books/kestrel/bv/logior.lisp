@@ -381,3 +381,16 @@
            (equal (logior (+ -1 (expt 2 n)) x)
                   (+ -1 (expt 2 n))))
   :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
+
+(defthm logior-of-1-arg1-when-bitp
+  (implies (bitp j)
+           (equal (logior 1 j)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))
+
+;; Disabled since we expect to commute
+(defthmd logior-of-1-arg2-when-bitp
+  (implies (bitp i)
+           (equal (logior i 1)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))

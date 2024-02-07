@@ -12,7 +12,7 @@
 (in-package "X")
 
 (include-book "support32")
-(include-book "register-readers-and-writers")
+(include-book "register-readers-and-writers32")
 
 ;; read-<reg> of set-eip
 

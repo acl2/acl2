@@ -767,3 +767,13 @@
                    (slice high1 low x))))
   :hints (("Goal" :cases ((<= low high1))
            :in-theory (enable slice))))
+
+(defthm slice-of-expt-high
+  (implies (and (< size low)
+                (integerp high)
+                (natp low)
+                (integerp size))
+           (equal (slice high low (expt 2 size))
+                  0))
+  :hints (("Goal" :in-theory (e/d (slice)
+                                  (bvchop-of-logtail-becomes-slice)))))

@@ -3859,7 +3859,7 @@
             bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
             read-of-write-1-4
-            read-of-write-1-both
+            read-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32

@@ -1,7 +1,7 @@
 ; "Write over write" rules for our 32-bit x86 state writers
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "X")
 
 (include-book "support32")
-(include-book "register-readers-and-writers")
+(include-book "register-readers-and-writers32")
 
 (defthm write-byte-to-segment-of-set-eip
   (equal (write-byte-to-segment eff-addr seg-reg val (set-eip eip x86))
