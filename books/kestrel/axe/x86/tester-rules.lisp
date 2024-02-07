@@ -1131,20 +1131,7 @@
 ;;                            distributivity
 ;;                            )))))
 
-(defthmd bvminus-of-+-arg2
-  (implies (and (integerp x1)
-                (integerp x2))
-           (equal (bvminus size (+ x1 x2) y)
-                  (bvminus size (bvplus size x1 x2) y)))
-  :hints (("Goal" :in-theory (enable bvminus bvplus))))
-
-(defthmd bvminus-of-+-arg3
-  (implies (and (integerp y1)
-                (integerp y2))
-           (equal (bvminus size x (+ y1 y2))
-                  (bvminus size x (bvplus size y1 y2))))
-  :hints (("Goal" :in-theory (enable bvminus bvplus))))
-
+;move
 (defthm acl2::bvminus-of-bvplus-and-bvplus-same-2-2
   (equal (bvminus size (bvplus size y1 x) (bvplus size y2 x))
          (bvminus size y1 y2)))

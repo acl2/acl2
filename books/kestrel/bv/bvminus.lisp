@@ -189,3 +189,17 @@
            (equal (bvminus size x (binary-+ y x))
                   (bvuminus size y)))
   :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))
+
+(defthmd bvminus-of-+-arg2
+  (implies (and (integerp x1)
+                (integerp x2))
+           (equal (bvminus size (+ x1 x2) y)
+                  (bvminus size (bvplus size x1 x2) y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+(defthmd bvminus-of-+-arg3
+  (implies (and (integerp y1)
+                (integerp y2))
+           (equal (bvminus size x (+ y1 y2))
+                  (bvminus size x (bvplus size y1 y2))))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
