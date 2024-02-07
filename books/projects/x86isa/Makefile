@@ -104,19 +104,19 @@ tools: model
 	@${info Building tools to enable concrete simulation of x86 programs...}
 	$(BUILD_DIR)/cert.pl -j $(JOBS) tools/execution/top
 
-write_exec_fn: # Here only when X86ISA_EXEC=t, X86ISA_EXEC_CERTS is not empty, and if generated files don't exist already	
+write_exec_fn: # Here only when X86ISA_EXEC=t, X86ISA_EXEC_CERTS is not empty, and if generated files don't exist already
 	@${info Including the following C shared libraries: $(SYSCALL_LIB)}
-	@echo ';; File contents generated during the make process:' > machine/x86isa_full_exec_support.lisp 
+	@echo ';; File contents generated during the make process:' > machine/x86isa_full_exec_support.lisp
 	@echo '(in-package "X86ISA")' >> machine/x86isa_full_exec_support.lisp
-	@echo '(defun x86isa_syscall_exec_support () 42)' >> machine/x86isa_full_exec_support.lisp 
-	@${info machine/x86isa_full_exec_support.lisp created to support X86ISA_EXEC=$(X86ISA_EXEC).} 
-	@${info Do not add machine/x86isa_full_exec_support.lisp to the repository!} 
+	@echo '(defun x86isa_syscall_exec_support () 42)' >> machine/x86isa_full_exec_support.lisp
+	@${info machine/x86isa_full_exec_support.lisp created to support X86ISA_EXEC=$(X86ISA_EXEC).}
+	@${info Do not add machine/x86isa_full_exec_support.lisp to the repository!}
 	@cp machine/cert.acl2 machine/syscalls.acl2
-	@echo '(ld "x86isa_full_exec_support.lisp" :ld-missing-input-ok t)' >> machine/syscalls.acl2 
-	@${info machine/syscalls.acl2 created to support X86ISA_EXEC=$(X86ISA_EXEC).} 
-	@${info Do not add machine/syscalls.acl2 to the repository!} 
-	@${info Remember to do 'make execclean' if you wish to build with X86ISA_EXEC=nil.} 
-	@${info ----------------------------------------------------------------------} 
+	@echo '(ld "x86isa_full_exec_support.lisp" :ld-missing-input-ok t)' >> machine/syscalls.acl2
+	@${info machine/syscalls.acl2 created to support X86ISA_EXEC=$(X86ISA_EXEC).}
+	@${info Do not add machine/syscalls.acl2 to the repository!}
+	@${info Remember to do 'make execclean' if you wish to build with X86ISA_EXEC=nil.}
+	@${info ----------------------------------------------------------------------}
 
 machine/shared/libsyscallutils.dylib: machine/shared/syscall-utils.c
 	$(CC) -m64 -dynamiclib -Wall -o machine/shared/libsyscallutils.dylib \
