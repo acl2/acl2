@@ -127,7 +127,7 @@
 
  <p>Reasoning efficiency is desirable to make code proofs tractable
  and execution efficiency is desirable to enable faster model
- validation via co-simulations \(See @(see model-validation)\).</p>
+ validation via co-simulations \(see @(see model-validation)\).</p>
 
  <p>However, simple definitions that are suitable for reasoning
  typically offer poor execution performance and definitions optimized
