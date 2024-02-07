@@ -54,7 +54,6 @@
     x86isa::get-prefixes
     x86isa::!ms$inline
     x86isa::x86-fetch-decode-execute
-    x86isa::rflags
 
     x86isa::64-bit-modep
     x86isa::*compatibility-mode*
@@ -199,7 +198,23 @@
     x86isa::*segment-register-names-len*
 
     ;; new stuff after change to x86 model state representation:
+
+    x86isa::rflags
+    x86isa::rflagsbits
     x86isa::!rflags
+    x86isa::rflagsbits->of$inline
+    x86isa::rflagsbits->sf$inline
+    x86isa::rflagsbits->cf$inline
+    x86isa::rflagsbits->af$inline
+    x86isa::rflagsbits->zf$inline
+    x86isa::rflagsbits->pf$inline
+    x86isa::rflagsbits->of
+    x86isa::rflagsbits->sf
+    x86isa::rflagsbits->cf
+    x86isa::rflagsbits->af
+    x86isa::rflagsbits->zf
+    x86isa::rflagsbits->pf
+
     x86isa::!seg-hidden-attri
     x86isa::seg-hidden-attri
     x86isa::seg-hidden-limiti
