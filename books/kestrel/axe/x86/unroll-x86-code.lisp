@@ -272,7 +272,7 @@
         (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
-          (if (acl2::equivalent-dags dag old-dag) ; todo: can we test equivalence up to xor nest normalization?
+          (if (acl2::equivalent-dagsp dag old-dag) ; todo: can we test equivalence up to xor nest normalization?
               (prog2$ (cw "Note: Stopping the run because nothing changed.~%")
                       (mv (erp-nil) dag state))
             (let* ((total-steps (+ steps-for-this-iteration total-steps))

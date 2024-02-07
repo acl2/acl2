@@ -3333,7 +3333,7 @@
       nil
     (let* ((entry (car alist-with-dag-keys))
            (key (car entry)))
-      (if (equivalent-dags dag key)
+      (if (equivalent-dagsp dag key)
           (cdr entry)
         (lookup-equivalent-dag dag (cdr alist-with-dag-keys))))))
 
