@@ -1717,12 +1717,9 @@
                   (bvcat 2 3 30 x)))
   :hints (("Goal" :in-theory (e/d (bvplus bvcat logapp) (anti-bvplus BVLT-OF-BVCHOP-ARG2 BVLT-OF-BVCHOP-ARG3 BVLT-OF-PLUS-ARG1 BVLT-OF-PLUS-ARG2)))))
 
-
-
-
-(defthmd usb3-cases
-  (equal (unsigned-byte-p 3 x)
-         (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7))))
+;; (defthmd usb3-cases
+;;   (equal (unsigned-byte-p 3 x)
+;;          (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7))))
 
 (in-theory (enable floor-when-multiple)) ;drop?
 
@@ -1733,60 +1730,10 @@
   :hints (("Goal" :in-theory (e/d (bvcat logapp posp) (bvcat-of-getbit-and-x-adjacent))
            :use ((:instance split-with-bvcat (x y) (hs 1) (ls (+ -1 size)))))))
 
-
-(defthm minus-two-expts
-  (implies (posp size)
-           (equal (+ (- (expt 2 (+ -1 size))) (- (expt 2 (+ -1 size))))
-                  (- (expt 2 size))))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
-(defthm times-x-slash-x
-  (implies (and (rationalp x)
-                (rationalp y))
-           (equal (* Y (/ Y) x)
-                  (if (equal 0 y)
-                      0
-                    x))))
-
-(defthm bvchop-of-sum-minus-expt
-  (implies (and (natp size)
-                (integerp x))
-           (equal (BVCHOP SIZE (+ X (- (EXPT 2 SIZE))))
-                  (BVCHOP SIZE X)))
-  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-(defthm bvchop-of-sum-expt
-  (implies (and (natp size)
-                (integerp y)
-                (integerp x))
-           (equal (bvchop size (+ x (expt 2 size) y))
-                  (bvchop size (+ x y))))
-  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-(defthm bvchop-of-sum-minus-expt-alt
-  (implies (and (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (BVCHOP SIZE (+ X (- (EXPT 2 SIZE)) y))
-                  (BVCHOP SIZE (+ X y))))
-  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-
-
-(defthm bvchop-of-plus-of-times-expt
-  (implies (and (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (bvchop size (+ x (* (expt 2 size) y)))
-                  (bvchop size x)))
-  :hints (("Goal" :in-theory (disable bvplus-of-*-arg2 bvplus-recollapse))))
-
 (defthmd usb4-cases
   (equal (unsigned-byte-p 4 x)
          (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7)
              (equal x 8)(equal x 9)(equal x 10)(equal x 11)(equal x 12)(equal x 13)(equal x 14)(equal x 15))))
-
-
 
 (defthm bvlt-of-bvcat-trim
   (equal (bvlt 31 z (bvcat 2 x 30 y))
