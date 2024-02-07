@@ -988,13 +988,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: more!
-(defthm set-rax-of-if-arg2
-  (equal (set-rax val (if test x86_1 x86_2))
-         (if test (set-rax val x86_1) (set-rax val x86_2))))
-
-(defthm set-rdi-of-if-arg2
-  (equal (set-rdi val (if test x86_1 x86_2))
-         (if test (set-rdi val x86_1) (set-rdi val x86_2))))
+(defthm set-rax-of-if-arg2 (equal (set-rax val (if test x86_1 x86_2)) (if test (set-rax val x86_1) (set-rax val x86_2))))
+(defthm set-rbx-of-if-arg2 (equal (set-rbx val (if test x86_1 x86_2)) (if test (set-rbx val x86_1) (set-rbx val x86_2))))
+(defthm set-rcx-of-if-arg2 (equal (set-rcx val (if test x86_1 x86_2)) (if test (set-rcx val x86_1) (set-rcx val x86_2))))
+(defthm set-rdx-of-if-arg2 (equal (set-rdx val (if test x86_1 x86_2)) (if test (set-rdx val x86_1) (set-rdx val x86_2))))
+(defthm set-rdi-of-if-arg2 (equal (set-rdi val (if test x86_1 x86_2)) (if test (set-rdi val x86_1) (set-rdi val x86_2))))
+(defthm set-rsi-of-if-arg2 (equal (set-rsi val (if test x86_1 x86_2)) (if test (set-rsi val x86_1) (set-rsi val x86_2))))
+(defthm set-rbp-of-if-arg2 (equal (set-rbp val (if test x86_1 x86_2)) (if test (set-rbp val x86_1) (set-rbp val x86_2))))
+(defthm set-rsp-of-if-arg2 (equal (set-rsp val (if test x86_1 x86_2)) (if test (set-rsp val x86_1) (set-rsp val x86_2))))
 
 (defthm set-rip-of-if
   (equal (set-rip val (if test x y))
