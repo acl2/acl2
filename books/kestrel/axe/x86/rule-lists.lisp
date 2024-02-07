@@ -3028,11 +3028,16 @@
     rdx-of-if
     rsi-of-if
     rdi-of-if
-    r8-of-if
-    r9-of-if
-    r10-of-if ; todo: more?
     rsp-of-if
     rbp-of-if
+    r8-of-if
+    r9-of-if
+    r10-of-if
+    r11-of-if
+    r12-of-if
+    r13-of-if
+    r14-of-if
+    r15-of-if
     undef-of-if
 
     set-rip-of-myif
@@ -3263,8 +3268,6 @@
     !RFLAGS-OF-SET-R15
     !RFLAGS-OF-SET-RSP
     !RFLAGS-OF-SET-RBP
-
-    rsp-of-if
 
     rax-of-!rflags
     rbx-of-!rflags
@@ -3578,7 +3581,7 @@
             bvcat-of-repeatit-tighten-64-32 ;gen!
             ACL2::BVLT-OF-BVSX-ARG2
             sbvlt-of-bvsx-32-16-constant
-            RFLAGSBITS->AF-OF-IF
+;            RFLAGSBITS->AF-OF-IF
             ACL2::SBVLT-FALSE-WHEN-SBVLT-GEN ; did nothing?
             if-of-sbvlt-and-not-sbvlt-helper
             if-of-set-flag-and-set-flag
@@ -3695,6 +3698,7 @@
             ACL2::BVCHOP-OF-IF
             ifix-of-if
 
+            ;; move all of these:
             x86isa::app-view-of-if
             x86isa::program-at-of-if
             x86isa::x86p-of-if
@@ -3828,11 +3832,12 @@
             acl2::sbvlt-of-bvchop-arg2
             acl2::sbvlt-of-bvchop-arg3
             ;; todo: more like this?:
-            X86ISA::RFLAGSBITS->CF-of-if
-            X86ISA::RFLAGSBITS->PF-of-if
-            X86ISA::RFLAGSBITS->OF-of-if
-            X86ISA::RFLAGSBITS->SF-of-if
-            X86ISA::RFLAGSBITS->ZF-of-if
+            X86ISA::RFLAGSBITS->CF$inline-of-if
+            X86ISA::RFLAGSBITS->PF$inline-of-if
+            X86ISA::RFLAGSBITS->OF$inline-of-if
+            X86ISA::RFLAGSBITS->SF$inline-of-if
+            X86ISA::RFLAGSBITS->ZF$inline-of-if
+            X86ISA::RFLAGSBITS->AF$inline-of-if
             acl2::bvand-of-bvchop-1 ;rename
             acl2::bvand-of-bvchop-2 ;rename
             ACL2::BVCHOP-OF-MINUS-BECOMES-BVUMINUS ; todo: or re-characterize the subl instruction

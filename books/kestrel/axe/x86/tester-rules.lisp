@@ -67,11 +67,11 @@
   :hints (("Goal" :in-theory (enable acl2::bvdiv bvlt))))
 
 ;; todo: do we want to see myif or if?
-(defthm rflagsbits->af-of-if
-  (equal (x86isa::rflagsbits->af$inline (if test tp ep))
-         (myif test
-               (x86isa::rflagsbits->af$inline tp)
-               (x86isa::rflagsbits->af$inline ep))))
+;; (defthm rflagsbits->af-of-if
+;;   (equal (x86isa::rflagsbits->af$inline (if test tp ep))
+;;          (myif test
+;;                (x86isa::rflagsbits->af$inline tp)
+;;                (x86isa::rflagsbits->af$inline ep))))
 
 (defthm rflagsbits->af-of-myif
   (equal (x86isa::rflagsbits->af$inline (myif test tp ep))
@@ -680,25 +680,25 @@
                   (acl2::bvshl 32 val amt)))
   :hints (("Goal" :in-theory (enable acl2::bvshl))))
 
-(defthm X86ISA::RFLAGSBITS->PF-of-if
-  (equal (X86ISA::RFLAGSBITS->PF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->PF x1) (X86ISA::RFLAGSBITS->PF x2))))
+;; (defthm x86isa::rflagsbits->pf-of-if
+;;   (equal (x86isa::rflagsbits->pf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->pf x1) (x86isa::rflagsbits->pf x2))))
 
-(defthm X86ISA::RFLAGSBITS->CF-of-if
-  (equal (X86ISA::RFLAGSBITS->CF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->CF x1) (X86ISA::RFLAGSBITS->cF x2))))
+;; (defthm x86isa::rflagsbits->cf-of-if
+;;   (equal (x86isa::rflagsbits->cf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->cf x1) (x86isa::rflagsbits->cf x2))))
 
-(defthm X86ISA::RFLAGSBITS->OF-of-if
-  (equal (X86ISA::RFLAGSBITS->OF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->OF x1) (X86ISA::RFLAGSBITS->of x2))))
+;; (defthm x86isa::rflagsbits->of-of-if
+;;   (equal (x86isa::rflagsbits->of (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->of x1) (x86isa::rflagsbits->of x2))))
 
-(defthm X86ISA::RFLAGSBITS->SF-of-if
-  (equal (X86ISA::RFLAGSBITS->SF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->SF x1) (X86ISA::RFLAGSBITS->sf x2))))
+;; (defthm x86isa::rflagsbits->sf-of-if
+;;   (equal (x86isa::rflagsbits->sf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->sf x1) (x86isa::rflagsbits->sf x2))))
 
-(defthm X86ISA::RFLAGSBITS->ZF-of-if
-  (equal (X86ISA::RFLAGSBITS->ZF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->ZF x1) (X86ISA::RFLAGSBITS->zf x2))))
+;; (defthm x86isa::rflagsbits->zf-of-if
+;;   (equal (x86isa::rflagsbits->zf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->zf x1) (x86isa::rflagsbits->zf x2))))
 
 ;; since we can get better context info from boolif than from boolor?
 (defthmd boolor-becomes-boolif
