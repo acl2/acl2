@@ -57,11 +57,11 @@
   when the value of the field @('app-view') is <tt>T</tt>.</p>
 
 <p>Some supervisor-level features are neither used nor required for
-the analysis of application software.  In most cases, a application
+the analysis of application software.  In most cases, a user
 cares about the correctness of his application program while assuming
 that services like paging and I/O operations are provided reliably by
 the operating system.  The application-level view of our model attempts
-to provide the same environment to a application for reasoning as is
+to provide the same environment to an application for reasoning as is
 provided by an OS for programming.  In this mode, our memory model
 provides the <tt>2^48</tt>-byte linear address space specified for
 modern 64-bit Intel machines.</p>

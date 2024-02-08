@@ -330,6 +330,10 @@ otherwise.</p>"
                                    (logbitp
                                     0
                                     (logcount
+                                     ;; Only the least significant byte
+                                     ;; (i.e. the low 8 bits) is considered
+                                     ;; for calculating the parity flag
+                                     ;; (Intel manual, Vol. 1, Section 3.4.3.1).
                                      ,(if (equal result-nbits 8)
                                           `result
                                         `(loghead 8 result))))))

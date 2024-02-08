@@ -689,7 +689,7 @@ set to the most-significant bit of the original operand.</p>"
               by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
-       :parents (sar-spec)       
+       :parents (sar-spec)
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
                                               (unsigned-byte-p
                                                (tau-system)))))
@@ -999,8 +999,8 @@ most-significant bit of the original operand.</p>"
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
                                               (unsigned-byte-p
                                                (tau-system)))))
-       
-       :parents (shld-spec)       
+
+       :parents (shld-spec)
 
        (b* ((dst (mbe :logic (n-size ,size dst)
                       :exec dst))
@@ -1159,7 +1159,7 @@ most-significant bit of the original operand.</p>"
          (mv output-dst
              (> cnt ,size) ; result undefined if count exceeds operand size
              output-rflags
-             undefined-flags))       
+             undefined-flags))
 
        ///
 
