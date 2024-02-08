@@ -13,6 +13,7 @@
 (include-book "register-readers-and-writers64")
 (include-book "flags")
 (include-book "read-and-write")
+(include-book "readers-and-writers")
 
 ;; These push write-byte inward:
 (defthm write-byte-of-set-rip (equal (write-byte base-addr byte (set-rip rip x86)) (set-rip rip (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte))))
@@ -116,14 +117,9 @@
 (defthm set-undef-of-set-rsp (equal (set-undef undef (set-rsp rsp x86)) (set-rsp rsp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-rsp))))
 (defthm set-undef-of-set-rbp (equal (set-undef undef (set-rbp rbp x86)) (set-rbp rbp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-rbp))))
 
-
-(defthm set-undef-of-set-flag (equal (set-undef undef (set-flag flag fval x86)) (set-flag flag fval (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-flag set-undef))))
-
 (defthm set-undef-of-write-byte (equal (set-undef undef (write-byte base-addr byte x86)) (write-byte base-addr byte (set-undef undef x86))) :hints (("Goal" :in-theory (enable write-byte set-undef))))
 
 (defthm set-undef-of-write (equal (set-undef undef (write n base-addr val x86)) (write n base-addr val (set-undef undef x86))) :hints (("Goal" :in-theory (enable write set-undef))))
-
-(defthm set-undef-of-!rflags (equal (set-undef undef (!rflags flags x86)) (!rflags flags (set-undef undef x86))) :hints (("Goal" :in-theory (enable write set-undef))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
