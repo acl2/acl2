@@ -998,17 +998,6 @@
                        (+ k2 (rsp x86)))))
   :hints (("Goal" :in-theory (enable separate))))
 
-;used by the tester
-(defthm acl2::<-of-+-cancel-3-1
-  (equal (< (+ y (+ z x)) x)
-         (< (+ y z) 0)))
-
-(defthm bvminus-of-+-of-1-same
-  (implies (integerp x)
-           (equal (bvminus size x (+ 1 x))
-                  (bvchop size -1)))
-  :hints (("Goal" :in-theory (enable bvminus))))
-
 ;; (thm
 ;;  (implies (and (syntaxp (and (quotep offset1)
 ;;                              (quotep offset2)))
