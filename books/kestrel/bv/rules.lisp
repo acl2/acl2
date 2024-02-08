@@ -2857,23 +2857,23 @@
   (implies (and (integerp x)
                 (integerp y)
                 (natp size))
-           (equal (equal (bvmult size x y) (binary-* x y))
-                  (unsigned-byte-p size (binary-* x y))))
+           (equal (equal (bvmult size x y) (* x y))
+                  (unsigned-byte-p size (* x y))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm equal-of-bvmult-and-*-alt
   (implies (and (integerp x)
                 (integerp y)
                 (natp size))
-           (equal (equal (binary-* x y) (bvmult size x y))
-                  (unsigned-byte-p size (binary-* x y))))
+           (equal (equal (* x y) (bvmult size x y))
+                  (unsigned-byte-p size (* x y))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
 ;move
 (defthmd bvchop-of-*
   (implies (and (integerp x)
                 (integerp y))
-           (equal (bvchop size (binary-* x y))
+           (equal (bvchop size (* x y))
                   (bvmult size x y)))
   :hints (("Goal" :in-theory (enable bvmult))))
 
@@ -4565,7 +4565,7 @@
   (implies (and (integerp x)
                 (natp highsize)
                 (natp lowsize))
-           (equal (bvcat highsize highval lowsize (unary-- x))
+           (equal (bvcat highsize highval lowsize (- x))
                   (bvcat highsize highval lowsize (bvuminus lowsize x))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
@@ -4573,7 +4573,7 @@
   (implies (and (integerp x)
                 (natp highsize)
                 (natp lowsize))
-           (equal (bvcat highsize (unary-- x) lowsize lowval)
+           (equal (bvcat highsize (- x) lowsize lowval)
                   (bvcat highsize (bvuminus highsize x) lowsize lowval)))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 

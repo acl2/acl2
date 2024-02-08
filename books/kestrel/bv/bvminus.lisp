@@ -1,7 +1,7 @@
 ; A function to subtract two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -178,7 +178,7 @@
 (defthm bvminus-of-+-same-arg2
   (implies (and (integerp x)
                 (integerp y))
-           (equal (bvminus size x (binary-+ x y))
+           (equal (bvminus size x (+ x y))
                   (bvuminus size y)))
   :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))
 
@@ -186,7 +186,7 @@
 (defthm bvminus-of-+-same-arg2-alt
   (implies (and (integerp x)
                 (integerp y))
-           (equal (bvminus size x (binary-+ y x))
+           (equal (bvminus size x (+ y x))
                   (bvuminus size y)))
   :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))
 

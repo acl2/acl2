@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,7 +36,7 @@
                 (< n size))
            (equal (sbvlt size (bvsx size n x) 0)
                   (equal 1 (getbit (+ -1 n) x))))
-  :hints (("Goal"; :cases ((< (BINARY-+ '1 (BINARY-+ (UNARY-- N) SIZE)) '0))
+  :hints (("Goal"; :cases ((< (+ '1 (+ (- N) SIZE)) '0))
            :in-theory (enable bvsx sbvlt))))
 
 ;may be better, though it does shrink the size?
@@ -46,5 +46,5 @@
                 (< n size))
            (equal (sbvlt size (bvsx size n x) 0)
                   (sbvlt n x 0)))
-  :hints (("Goal"; :cases ((< (BINARY-+ '1 (BINARY-+ (UNARY-- N) SIZE)) '0))
+  :hints (("Goal"; :cases ((< (+ '1 (+ (- N) SIZE)) '0))
            :in-theory (enable bvsx sbvlt <-OF-LOGEXT-AND-0))))
