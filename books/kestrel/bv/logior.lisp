@@ -394,3 +394,9 @@
            (equal (logior i 1)
                   1))
   :hints (("Goal" :in-theory (enable bitp))))
+
+(defthm logior-combine-constants
+  (implies (syntaxp (and (quotep i)
+                         (quotep j)))
+           (equal (logior i (logior j k))
+                  (logior (logior i j) k))))

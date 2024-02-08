@@ -380,8 +380,8 @@
           ;; this event failed, so attempt a repair:
           (b* ((- (cw "Event ~x0 failed.  More info:~%" event))
                ;; This will fail but will print information that may be useful to the human:
-               ((mv erp state) (submit-event-core `(saving-event-data ,event) :verbose state))
-               ((when erp) (mv erp state))
+               ((mv & ; ignore erp (error is expected)
+                    state) (submit-event-core `(saving-event-data ,event) :verbose state))
                ((mv event-data-forms state) (repair-event-with-event-data event new-event-data-alist event-data-forms state))
                ;; Submit the event with skip-proofs so we can continue:
                ((mv erp state) (submit-event-core `(skip-proofs ,event) nil state)) ; todo: make this even quieter

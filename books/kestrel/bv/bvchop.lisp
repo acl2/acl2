@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvchop.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -847,3 +847,33 @@
            (equal (evenp (bvchop n x))
                   (equal 0 (bvchop 1 x))))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm bvchop-of-sum-expt
+  (implies (and (natp size)
+                (integerp y)
+                (integerp x))
+           (equal (bvchop size (+ x (expt 2 size) y))
+                  (bvchop size (+ x y))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+(defthm bvchop-of-sum-minus-expt
+  (implies (and (natp size)
+                (integerp x))
+           (equal (bvchop size (+ x (- (expt 2 size))))
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+(defthm bvchop-of-sum-minus-expt-alt
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x (- (expt 2 size)) y))
+                  (bvchop size (+ x y))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+(defthm bvchop-of-plus-of-times-expt
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x (* (expt 2 size) y)))
+                  (bvchop size x))))
