@@ -42,8 +42,9 @@
 (std::defredundant :names (svtv-spec-stimulus-equiv
                            svtv-spec-stimulus-equiv-is-an-equivalence
                            svtv-spec-stimulus-equiv-implies-equal-svtv-spec-override-syntax-checks-1))
-  
 
+; Matt K. mod: Avoid ACL2(p) error.
+(acl2::set-waterfall-parallelism nil)
 
 (defsection override-transparency-of-svtv-data-obj->ideal-spec
   (local (defthm svex-env-reduce-is-extract
@@ -78,11 +79,11 @@
                                           (svex-env-extract keys2 x)))
                                (var (svex-env-<<=-witness . ,(cdr lit)))))
                         :in-theory (disable svex-env-<<=-necc))))))))
-  
+
   (local (defcong svex-alist-keys-equiv set-equiv (svtv-assigns-override-vars assigns config) 1
            :hints(("Goal" :in-theory (enable svtv-assigns-override-vars
                                              svex-alist-keys-equiv)))))
-  
+
   (local (defthm flatnorm-res->assigns-of-design->flatnorm
            (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                          (svtv-data-obj->flatten-validp x)
@@ -112,7 +113,7 @@
                            x.flatten-validp)
                       (design-flatten-okp x.design)))
            :hints(("Goal" :in-theory (enable design-flatten-okp)))))
-   
+
   (defthm override-transparency-of-svtv-data-obj->ideal-spec
     (b* (((svtv-spec spec) (svtv-data-obj->ideal-spec x))
          ((svtv-data-obj x))
@@ -128,7 +129,7 @@
 
                     (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
 
-                    
+
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                     (svex-env-<<= (svex-env-reduce (append (svex-alist-vars spec.initst-alist)
                                                            (svex-alistlist-vars spec.in-alists))
@@ -143,7 +144,7 @@
                    (x (svtv-data-obj->design x))
                    (config (svtv-data-obj->phase-fsm-setup x)))))))
 
-  
+
 
   (local (defthm svarlist-addr-p-of-flatnorm-res->assigns-vars
            (B* (((svtv-data-obj x)))
@@ -188,7 +189,7 @@
                                 (x env1) (y env2)))
                          :in-theory (e/d (svar-override-p-when-other)
                                          (svex-envs-ovsimilar-necc)))))))
-  
+
   (local (defthmd svex-alist-eval-when-no-override-vars-and-envs-ovsimilar
            (implies (and (svarlist-override-p (svex-alist-vars x) nil)
                          (svex-envs-ovsimilar env1 env2))
@@ -210,7 +211,7 @@
   (local (defthmd similar-when-equal
            (implies (equal x y)
                     (svex-envs-similar x y))))
-  
+
   (local (Defthm svex-alist-ovcongruent-when-vars-nonoverride-p
            (implies (svarlist-override-p (svex-alist-vars x) nil)
                     (svex-alist-ovcongruent x))
@@ -229,8 +230,8 @@
                    (bitops::logbitp-reasoning)
                    (and stable-under-simplificationp
                         '(:in-theory (enable b-ite))))))
-                        
-  
+
+
   (local (defthm eval-bit?!-when-ovsimilar
            (implies (svex-envs-ovsimilar x y)
                     (b* ((test (svar-change-override v :test))
@@ -246,8 +247,8 @@
            :hints (("Goal" :use ((:instance svex-envs-ovsimilar-necc (v (svar-change-override v :test)))
                                  (:instance svex-envs-ovsimilar-necc (v (svar-change-override v :val)))
                                  (:instance svex-envs-ovsimilar-necc (v (svar-change-override v nil))))))))
-           
-  
+
+
   (local (defthm eval-svarlist-to-override-alist-when-ovsimilar
            (implies (svex-envs-ovsimilar env1 env2)
                     (b* ((a (svarlist-to-override-alist x)))
@@ -260,7 +261,7 @@
                                              svex-lookup-of-svarlist-to-override-alist)
                    :expand ((:free (v env) (svex-eval (svex-var v) env)))
                    ))))
-  
+
   (local (defthm svex-alist-ovcongruent-of-svarlist-to-override-alist
            (svex-alist-ovcongruent (svarlist-to-override-alist x))
            :hints(("Goal" :in-theory (enable svex-alist-ovcongruent)))))
@@ -280,7 +281,7 @@
            :hints(("goal" :do-not-induct t)
                   (and stable-under-simplificationp
                        `(:expand (,(car (last clause))))))))
-  
+
   (local (defthm svex-alist-ovcongruent-of-append
            (implies (and (svex-alist-ovcongruent x)
                          (svex-alist-ovcongruent y))
@@ -361,7 +362,7 @@
 
                     ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.values) overridetriples))
                     ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.nextstate) overridetriples))
-                    
+
                     (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                     (svex-env-<<= (svex-env-reduce (append (svex-alist-vars spec.initst-alist)
                                                            (svex-alistlist-vars spec.in-alists))
@@ -413,7 +414,7 @@
   ;;          (implies (svar-override-p key nil)
   ;;                   (not (member-equal key (svarlist-change-override other :test))))
   ;;          :hints(("Goal" :in-theory (enable svarlist-override-p svarlist-change-override)))))
-   
+
   (local (defthm intersectp-equal-when-svarlist-override-p
            (implies (svarlist-override-p keys nil)
                     (not (intersectp-equal keys (svarlist-change-override other :test))))
@@ -460,7 +461,7 @@
                  (let ((call (acl2::find-call-lst 'svex-alist-ovmonotonic-witness clause)))
                    (and call
                         `(:clause-processor (acl2::generalize-with-alist-cp clause '(((mv-nth '0 ,call) . env1)
-                                                                                     ((mv-nth '1 ,call) . env2))))))))) 
+                                                                                     ((mv-nth '1 ,call) . env2)))))))))
   ;; (local (defthm svex-alist-monotonic-on-vars-of-flatnorm-res
   ;;          (B* (((svtv-data-obj x))
   ;;               ((flatnorm-res x.flatnorm)))
@@ -492,7 +493,7 @@
   ;;                                (x (design->flatnorm (svtv-data-obj->design x)))))
   ;;                  :in-theory (disable svex-alist-partial-monotonic-of-flatnorm-add-overrides)))))
 
-     
+
   ;; (local (defthm svex-alist-width-of-c
   ;;          (B* (((svtv-data-obj x)))
   ;;            (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
@@ -500,7 +501,7 @@
   ;;                          x.flatnorm-validp)
   ;;                     (svarlist-addr-p (svex-alist-vars (flatnorm-res->assigns x.flatnorm)))))
   ;;          :hints(("Goal" :in-theory (enable flatnorm-of-svtv-data-obj)))))
-        
+
 
 
   (local (defthm no-duplicate-keys-of-flatnorm-res->assigns
@@ -538,7 +539,7 @@
                                              phase-fsm-composition-p
                                              svtv-flatnorm-apply-overrides)
                    :use phase-fsm-validp-of-svtv-data-obj))))
-           
+
   (local (defthmd svex-alist-compose-flatnorm-add-overrides
            (svex-alist-eval-equiv
             (svex-alist-compose
@@ -558,7 +559,6 @@
                     (svex-alist-compose-<<= (append x x2) (append y y2)))
            :hints ((and stable-under-simplificationp
                         `(:expand (,(car (last clause))))))))
-  
 
 
   
@@ -600,8 +600,8 @@
                                           (phase-fsm-validp-of-svtv-data-obj))
                    :use phase-fsm-validp-of-svtv-data-obj))))
 
-  
-  
+
+
   (local
    (defthm override-transparency-of-svtv-data-obj->spec/ideal-spec-abstraction-lemma
      (b* (((svtv-spec spec) (svtv-data-obj->ideal-spec x))
@@ -620,7 +620,7 @@
 
                      (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
 
-                    
+
                      (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                      (svex-env-<<= (svex-env-reduce (append (svex-alist-vars spec.initst-alist)
                                                            (svex-alistlist-vars spec.in-alists))
@@ -658,7 +658,7 @@
 
                      (svtv-spec-override-syntax-checks abs overridekeys triplemaps)
 
-                    
+
                      (svtv-override-triplemaplist-envs-ok triplemaps pipe-env spec-env spec-run)
                      (svex-env-<<= (svex-env-reduce (append (svex-alist-vars abs.initst-alist)
                                                             (svex-alistlist-vars abs.in-alists))

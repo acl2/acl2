@@ -192,7 +192,10 @@
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         (limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration nil)) ; todo: pass around
+         (limits nil) ; todo: don't recompute for each small run?
+         ;; todo: just use one of these 2:
+         ;; (limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration limits))
+         (limits (acons 'x86isa::x86-fetch-decode-execute-base-new steps-for-this-iteration limits))
          ((mv erp dag-or-quote state)
           (if (eq :legacy rewriter)
               (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -585,7 +588,7 @@
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
        ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
-        (if (< result-dag-size 10000)
+        (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (untranslate (dag-to-term result-dag) nil (w state)) nil)
                     (cw ")~%"))

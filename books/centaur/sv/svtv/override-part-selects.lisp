@@ -30,6 +30,9 @@
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
+; Matt K. mod: Avoid ACL2(p) error.
+(acl2::set-waterfall-parallelism nil)
+
 (local (defthm logbitp-of-logeqv
          (equal (logbitp n (logeqv x y))
                 (iff (logbitp n x) (logbitp n y)))))
@@ -100,7 +103,7 @@
                                 (loghead w (logtail lsb xu)))))
            :hints ((bitops::logbitp-reasoning :prune-examples nil))))
 
-  
+
   (local (defthm loghead-logapp-vs-ash-lemma
            (implies (posp w2)
                     (equal (equal (loghead w (logapp w2 -1 x))

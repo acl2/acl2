@@ -38,10 +38,15 @@
          -1)
   :hints (("Goal" :in-theory (enable logior))))
 
-(defthm logior-of-0
+(defthm logior-of-0-arg1
   (equal (logior 0 j)
          (ifix j))
   :hints (("Goal" :in-theory (enable logior))))
+
+;; Disabled since we should commute the 0 forward
+(defthmd logior-of-0-arg2
+  (equal (logior i 0)
+         (ifix i)))
 
 (defthm logior-when-not-integerp-arg1
   (implies (not (integerp i))
@@ -376,3 +381,16 @@
            (equal (logior (+ -1 (expt 2 n)) x)
                   (+ -1 (expt 2 n))))
   :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
+
+(defthm logior-of-1-arg1-when-bitp
+  (implies (bitp j)
+           (equal (logior 1 j)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))
+
+;; Disabled since we expect to commute
+(defthmd logior-of-1-arg2-when-bitp
+  (implies (bitp i)
+           (equal (logior i 1)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))

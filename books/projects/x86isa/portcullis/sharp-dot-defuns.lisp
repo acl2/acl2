@@ -68,7 +68,7 @@
 (defun define-segment-registers ()
 
   ;; These indices are used in the Reg field of the ModR/M byte of the
-  ;; instructions 'MOV ..., <seg-reg>', to represent <seg-reg> ('MOV ..., CS'
+  ;; instructions 'MOV ..., <seg-reg>', to represent <seg-reg>. 'MOV ..., CS'
   ;; is disallowed, but the only index not used for the other segment registers
   ;; is 1:
   `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*

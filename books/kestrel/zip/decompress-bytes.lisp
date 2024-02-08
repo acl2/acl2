@@ -15,6 +15,9 @@
 (include-book "quicklisp/zippy" :dir :system :ttags :all)
 ; (depends-on "decompress-bytes-raw.lsp")
 
+; Matt K. mod 2/2/2024: Avoid error, ``Package "3BZ" not found''.
+; cert_param: (non-allegro)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defttag decompress-bytes)

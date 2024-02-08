@@ -4,6 +4,10 @@
 
 (in-package "ACL2")
 
+; I'm excluding Allegro CL runs because I get different failures for different
+; runs, perhaps because of timing variations.
+; cert_param: (non-allegro)
+
 ; For dependency generation:
 #|
 
@@ -55,4 +59,4 @@
        "Failed!  See file~|chk-all-test-files.lsp.out~|in directory~|~s0"
        (cbd))))
 
-            
+

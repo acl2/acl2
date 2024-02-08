@@ -263,7 +263,7 @@
     bvmult-of-bvcat-low-arg3
     bvminus-of-bvcat-low-arg2
     bvminus-of-bvcat-low-arg3
-    bvuminus-of-bvcat-low
+    bvuminus-of-bvcat-low ; todo: also rules for bitnot and bvnot?
     bvif-of-bvcat-low-arg3
     bvif-of-bvcat-low-arg4
     bitand-of-bvsx-low-arg1
@@ -682,6 +682,9 @@
      equal-constant-when-slice-equal-constant     ;was in axe prover rules
      bvnot-becomes-bvxor ;new! fri jan 28 13:08:38 2011
 
+     equal-of-0-and-bvxor
+     bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
+
      bitxor-of-unary-minus-arg1 ;fixme lots of others like this, or use trim!
      bitxor-of-unary-minus-arg2
      bvcat-of-unary-minus-low
@@ -689,7 +692,6 @@
      bvcat-of-ifix-arg2
      bvcat-of-ifix-arg4
 
-     bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
 
      bvplus-of-bvplus-of-bvuminus
 
@@ -751,7 +753,6 @@
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
-     bvchop-of-bvsx2          ;new
      bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
@@ -829,8 +830,8 @@
      bvchop-of-bvxor ; drop?
 
      ;; these replace the numeric bound rules
-     <-lemma-for-known-operators-alt
-     <-lemma-for-known-operators
+     <-lemma-for-known-operators-axe-alt
+     <-lemma-for-known-operators-axe
      <-of-bv-and-non-positive-constant ;Thu May 17 00:37:24 2012
 
      ;; We leave most commutativity rules out of core-rules-bv, because they can be expensive for large nests
@@ -858,6 +859,8 @@
      sbvlt-of-bvplus-of-1       ;Sun Oct 26 16:32:17 2014
 
      ;; rules about bvsx:
+     bvchop-of-bvsx-low          ;new
+     ; slice-of-bvsx-high ; introduces repeatbit..
      equal-of-0-and-bvsx ;Wed Oct 14 13:28:17 2015
      equal-of-bvsx-and-bvsx
      bvsx-too-high-axe
@@ -865,7 +868,7 @@
      getbit-of-bvsx
      ;; bvsx base cases?
      ;; introduce-bvsx-25-7 ;fixme yuck
-
+     bvsx-of-bvsx
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
@@ -968,7 +971,16 @@
      bvplus-of-bvuminus-same
      bvplus-of-bvuminus-same-alt
      bvplus-of-bvuminus-same-2
-     bvplus-of-bvuminus-same-2-alt)))
+     bvplus-of-bvuminus-same-2-alt
+
+     bvdiv-of-0-arg2
+     bvdiv-of-0-arg3 ; unusual case
+     bvdiv-of-1-arg3
+     bvdiv-same
+     sbvdiv-of-0-arg1
+     sbvdiv-of-0-arg2 ; unusual casae
+     sbvdiv-of-1-arg3
+     sbvdiv-same)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1369,8 +1381,8 @@
     bvmult-of-logext-alt ;new
     bvmult-of-logext     ;new
 
-    bvplus-of-logext-gen-arg1
-    bvplus-of-logext-gen-arg2
+    bvplus-of-logext-arg2
+    bvplus-of-logext-arg3
 
     bvif-of-logext-gen-arg1
     bvif-of-logext-gen-arg2
@@ -2868,7 +2880,6 @@
              bv-array-write-shorten-constant-data
              EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              bvlt-6-4
-             equal-of-0-and-bvxor
              bvlt-of-bvuminus-same
              bvplus-of-same
              bvlt-of-bvmult-of-constant-and-constant
@@ -3660,8 +3671,8 @@
              +-becomes-bvplus-axe
              bvmult-of-bvplus-hack
              bvmult-of-bvmult-hack
-             <-lemma-for-known-operators2
-             <-lemma-for-known-operators3
+             <-lemma-for-known-operators-axe2
+             <-lemma-for-known-operators-axe3
              nthcdr-of-nthcdr
 
              cdr-of-group2

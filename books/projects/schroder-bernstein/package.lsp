@@ -11,7 +11,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; "SB" = "Schroder-Bernstein"
-(defpkg "SB"
+;; "SBT" = "Schroder-Bernstein Theorem"
+(defpkg "SBT"
   (append *std-pkg-symbols*
           '(define-sk)))

@@ -289,6 +289,14 @@
 ;;     x86isa::rflagsbits->sf$inline
 ;;     x86isa::rflagsbits->zf$inline
 
+    x86isa::rflagsbits$inline-constant-opener
+    x86isa::10bits-fix-constant-opener
+    x86isa::2bits-fix-constant-opener
+    acl2::logapp-constant-opener
+    acl2::expt2$inline-constant-opener
+
+    x86isa::!rflagsbits->af$inline-constant-opener
+
     x86isa::rflagsbits->ac$inline-constant-opener
     x86isa::rflagsbits->af$inline-constant-opener
     x86isa::rflagsbits->cf$inline-constant-opener
@@ -296,10 +304,41 @@
     x86isa::rflagsbits->pf$inline-constant-opener
     x86isa::rflagsbits->sf$inline-constant-opener
     x86isa::rflagsbits->zf$inline-constant-opener
-    ;todo: more like this?
+    x86isa::rflagsbits->res1$inline-constant-opener
+    x86isa::rflagsbits->res2$inline-constant-opener
+    x86isa::rflagsbits->res3$inline-constant-opener
+    x86isa::rflagsbits->tf$inline-constant-opener
+    x86isa::rflagsbits->intf$inline-constant-opener
+    x86isa::rflagsbits->df$inline-constant-opener
+    x86isa::rflagsbits->iopl$inline-constant-opener
+    x86isa::rflagsbits->nt$inline-constant-opener
+    x86isa::rflagsbits->res4$inline-constant-opener
+    x86isa::rflagsbits->rf$inline-constant-opener
+    x86isa::rflagsbits->vm$inline-constant-opener
+    x86isa::rflagsbits->vif$inline-constant-opener
+    x86isa::rflagsbits->vip$inline-constant-opener
+    x86isa::rflagsbits->id$inline-constant-opener
+    x86isa::rflagsbits->res5$inline-constant-opener
+
+    ;todo: more like this, or do we have them all?
 
     x86isa::rflagsbits-fix$inline-constant-opener
     unsigned-byte-p-of-rflagsbits
+
+    ;; Or perhaps instead of these we should recharacterize
+    ;; some instruction semantic functions so as not to need these:
+    ;; x86isa::rflagsbits->af$inline-of-if-safe
+    ;; x86isa::rflagsbits->cf$inline-of-if-safe
+    ;; x86isa::rflagsbits->of$inline-of-if-safe
+    ;; x86isa::rflagsbits->pf$inline-of-if-safe
+    ;; x86isa::rflagsbits->sf$inline-of-if-safe
+    ;; x86isa::rflagsbits->zf$inline-of-if-safe
+    x86isa::rflagsbits->af$inline-of-if
+    x86isa::rflagsbits->cf$inline-of-if
+    x86isa::rflagsbits->of$inline-of-if
+    x86isa::rflagsbits->pf$inline-of-if
+    x86isa::rflagsbits->sf$inline-of-if
+    x86isa::rflagsbits->zf$inline-of-if
 
     ;; These introduce set-flag:
     !rflags-of-!rflagsbits->af
@@ -478,6 +517,26 @@
     x86isa::sib-fix$inline
     x86isa::4bits-fix
     x86isa::8bits-fix
+
+    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
+    X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
+    x86isa::!prefixes->seg$inline-constant-opener
+    X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
+
+    x86isa::vex-prefixes-fix$inline-constant-opener
+    x86isa::vex-prefixes->byte0$inline-constant-opener
+    x86isa::vex-prefixes->byte1$inline-constant-opener
+    x86isa::vex-prefixes->byte2$inline-constant-opener
+    x86isa::!vex-prefixes->byte0$inline-constant-opener
+    x86isa::!vex-prefixes->byte1$inline-constant-opener
+    x86isa::!vex-prefixes->byte2$inline-constant-opener
+    x86isa::vex-opcode-modr/m-p$inline-constant-opener
+    x86isa::vex-prefixes-map-p$inline-constant-opener
+    x86isa::vex3-byte1->m-mmmm$inline-constant-opener
+    x86isa::vex3-byte1-fix$inline-constant-opener
+    x86isa::vex-decode-and-execute
+    x86isa::vex-0f38-execute  ; move?
 ))
 
 (defun x86-type-rules ()
@@ -910,6 +969,7 @@
     X86ISA::N32P-XR-MXCSR
     ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
     x86isa::dp-sse-cmp ; scary?
+    dazify-of-0-arg2
     ))
 
 ;; Try to introduce is-nan as soon as possible:
@@ -1082,7 +1142,10 @@
 
             ;; x86-fetch-decode-execute-opener ; this had binding hyps
             ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
-            x86isa::x86-fetch-decode-execute-base
+            ;; x86isa::x86-fetch-decode-execute-base ; even this can introduce confusing cases when things can't be resolved
+            ;; TODO: Support using this one only when debugging:
+            x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the PC
+            poor-mans-quotep-constant-opener
 
             ms x86isa::ms$a                            ;expose the call to xr
             fault x86isa::fault$a                         ;expose the call to xr
@@ -1138,7 +1201,8 @@
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
             x86isa::one-byte-opcode-execute-base
-            eql
+            eql ; move
+            = ; move
 
             acl2::binary-+-bring-constant-forward ;improve to disallow the other arg to be constant
 
@@ -1255,7 +1319,8 @@
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
 ; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
-            acl2::bvplus-of-logext
+            acl2::bvplus-of-logext-arg2
+            acl2::bvplus-of-logext-arg3
             acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
 ;<-when-canonical-address-p
@@ -1325,8 +1390,6 @@
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
             acl2::bvplus-of-unary-minus
-            acl2::bvplus-of-logext-arg1
-            acl2::bvplus-of-logext
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
@@ -1388,8 +1451,14 @@
             jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
             jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
             jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
+            jo-condition-of-of-spec8
+            jo-condition-of-of-spec16
             jo-condition-of-of-spec32
             jo-condition-of-of-spec64
+            jo-condition-of-sub-of-spec8
+            jo-condition-of-sub-of-spec16
+            jo-condition-of-sub-of-spec32
+            jo-condition-of-sub-of-spec64
             jz-condition-of-zf-spec
             jz-condition-of-sub-zf-spec8
             jz-condition-of-sub-zf-spec16
@@ -2915,7 +2984,11 @@
     ctri-of-set-rsp
     ctri-of-set-rbp
     ctri-of-set-undef
-    ctri-of-!rflags
+    ctri-of-!rflags ; rename !rflags?
+    ctri-of-xw-irrel ; why?
+    ctri-of-write
+    ctri-of-set-flag
+    integerp-of-ctri
 
     rax-of-write
     rbx-of-write
@@ -3372,7 +3445,7 @@
 ;;             unsigned-byte-p-64-of-xr-of-rgf
 ;;             )
 ;; ;;more:
-;;  (x86isa::x86-fetch-decode-execute-base mv-nth-1-of-add-to-*sp-positive-offset
+;;  ( mv-nth-1-of-add-to-*sp-positive-offset
 ;;             mv-nth-1-of-add-to-*sp-gen-special
 ;;             read-from-segment-of-write-to-segment-same
 ;;             read-from-segment-of-write-to-segment-irrel
@@ -3398,18 +3471,6 @@
 ;; ;;             ;read-byte-from-segment-of-write-to-segment-diff-segments
 ;; ;;             ;; mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment
 ;; ;;             ;; not-mv-nth-0-of-rme08-of-cs-gen
-;;             x86isa::get-prefixes-base-1
-;;             x86isa::get-prefixes-base-2
-;;             x86isa::get-prefixes-base-3
-;;             x86isa::get-prefixes-base-4
-;;             x86isa::get-prefixes-base-5
-;;             x86isa::get-prefixes-base-6
-;;             x86isa::get-prefixes-base-7
-;;             x86isa::get-prefixes-base-8
-;;             x86isa::get-prefixes-unroll-1
-;;             x86isa::get-prefixes-unroll-2
-;;             x86isa::get-prefixes-unroll-3
-;;             x86isa::get-prefixes-unroll-4
 ;; ;;             ;;read-when-equal-of-read
 ;; ;;             ;;read-when-equal-of-read-alt
 ;; ;;             ;read-when-program-at
@@ -3431,6 +3492,8 @@
     mv-nth-1-of-wme-size     ;introduces write-to-segment
     mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read
+    ;; x86isa::x86-fetch-decode-execute-base
+    x86isa::x86-fetch-decode-execute-base-new
     ))
 
 (defun debug-rules32 ()
@@ -3466,7 +3529,8 @@
             x86isa::canonical-address-p-between-special5
             x86isa::canonical-address-p-between-special5-alt
             x86isa::canonical-address-p-between-special6
-            bitops::ash-is-expt-*-x acl2::natp-of-*
+            bitops::ash-is-expt-*-x
+            acl2::natp-of-*
             acl2::<-of-constant-and-+-of-constant ; for address calcs
             <-of-15-and-*-of-4
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
@@ -3487,8 +3551,6 @@
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;RFLAGSBITS->AF-of-myif
-            ACL2::BVASHR-of-0-arg2
-            ACL2::BVSHR-of-0-arg2
             acl2::eql ; drop soon?
             ACL2::EQUAL-OF-CONSTANT-AND-BVUMINUS
             ACL2::BVOR-OF-MYIF-ARG2 ; introduces bvif (myif can arise from expanding a shift into cases)
@@ -3500,11 +3562,7 @@
             not-sbvlt-of-sbvdiv-and-minus-constant-32-64
             not-bvlt-of-constant-and-bvdiv-64-128
             not-bvlt-of-constant-and-bvdiv-32-64
-            ACL2::BVDIV-SAME
-            ACL2::SBVDIV-SAME
-            ACL2::SBVDIV-OF-1-ARG3
-            ACL2::BVSX-OF-BVSX
-            ACL2::SLICE-OF-BVSX-HIGH
+            ACL2::SLICE-OF-BVSX-HIGH ; move back, but this introduces repeatbit
             bvcat-of-repeatbit-of-getbit-of-bvsx-same
             not-sbvlt-of-bvsx-of-constant-arg2-64-8
             not-sbvlt-of-bvsx-of-constant-arg2-64-16
@@ -3566,10 +3624,6 @@
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
             acl2::bvchop-of-bvshr-same
-            ;bvand-of-lognot-arg2
-            ;bvand-of-lognot-arg3
-            ;bvxor-of-lognot-arg2
-            ;bvxor-of-lognot-arg3
             acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
@@ -3624,7 +3678,7 @@
           '(X86ISA::WX32$inline ; more?
             X86ISA::WZ32$inline ; more?
             <-of-fp-to-rat ; do we want this?
-            X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
+
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
             ;;xr-of-!rflags-irrel
@@ -3641,12 +3695,12 @@
             ACL2::BVCHOP-OF-IF
             ifix-of-if
 
-            app-view-of-if
-            program-at-of-if
-            x86p-of-if
+            x86isa::app-view-of-if
+            x86isa::program-at-of-if
+            x86isa::x86p-of-if
             ALIGNMENT-CHECKING-ENABLED-P-of-if
             get-flag-of-if
-            ctri-of-if
+            x86isa::ctri-of-if
             ;; feature-flag-of-if
             read-of-if
             bvle
@@ -3711,14 +3765,9 @@
             of-spec64-of-logext-64
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
-            X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
-            X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
             X86ISA::CHK-EXC-FN ; for floating point?
-            ctri-of-xw-irrel
-            ctri-of-write
-            ctri-of-set-flag
             eql
-            integerp-of-ctri
+
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
@@ -3773,7 +3822,7 @@
             ACL2::BVPLUS-COMMUTATIVE-2-INCREASING-AXE
             ;;acl2::equal-same
             ;; bvcat-of-minus-becomes-bvshl ; except STP doesn't support the shift operators
-            acl2::<-lemma-for-known-operators
+            acl2::<-lemma-for-known-operators-axe
             acl2::bvlt-of-bvchop-arg2
             acl2::bvlt-of-bvchop-arg3
             acl2::sbvlt-of-bvchop-arg2
@@ -3797,16 +3846,12 @@
             ACL2::<-BECOMES-BVLT-DAG-ALT-GEN-BETTER2
             ACL2::<-BECOMES-BVLT-DAG-GEN-BETTER2
             ;; after adding core-rules-bv:
-            acl2::bvplus-of-logext-gen-arg1
-            acl2::bvplus-of-logext-gen-arg2
-            ACL2::BVPLUS-OF-LOGEXT ; rename
-            ACL2::BVPLUS-OF-LOGEXT-arg1 ; rename
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
             ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
             ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
-            ;bvlt-hack-1-gen
+            ;; bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
             ACL2::BVCHOP-SUBST-CONSTANT-alt
             ACL2::BOOL-FIX$INLINE-CONSTANT-OPENER
@@ -3814,11 +3859,11 @@
             bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
             read-of-write-1-4
-            read-of-write-1-both
+            read-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-            x86isa::!prefixes->seg$inline-constant-opener
+
             read-of-2 ; splits into 2 reads
             )
           (acl2::core-rules-bv) ; trying
@@ -3869,8 +3914,8 @@
             ACL2::BVPLUS-OF-BVCHOP-ARG2
             ACL2::EQUAL-OF-BVSX-AND-BVSX
             acl2::equal-same
-            ACL2::BVPLUS-OF-LOGEXT ; rename
-            ACL2::BVPLUS-OF-LOGEXT-arg1 ; rename
+            ACL2::BVPLUS-OF-LOGEXT-arg2
+            ACL2::BVPLUS-OF-LOGEXT-arg3
             ACL2::BVUMINUS-OF-LOGEXT
             ACL2::SIGNED-BYTE-P-OF-BVIF
             ACL2::LOGEXT-IDENTITY

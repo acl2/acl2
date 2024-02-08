@@ -21,6 +21,10 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "system/fmt-support" :dir :system)
 
+; Matt K. mod, 2/2/2024 to avoid failure apparently due to ACL2(p) parallelism
+; issues:
+(set-waterfall-parallelism nil)
+
 (in-theory (disable fix ppr-tuple-p-ppr1 ppr-tuple-lst-p-ppr1-lst))
 
 ; We will create two induction schemes, a ``coarse'' one and a ``fine'' one.
@@ -183,7 +187,7 @@
                                         pair-keywords-p state eviscp)))
     :flag ppr1-lst
     :rule-classes nil)
-  :hints (("Goal" 
+  :hints (("Goal"
            :expand ((:free (print-base print-radix width rpc state eviscp)
                            (ppr1 x print-base print-radix width rpc state eviscp))
                     (:free (print-base print-radix width rpc
@@ -263,7 +267,7 @@
                                         pair-keywords-p state eviscp)))
     :flag ppr1-lst
     :rule-classes nil)
-  :hints (("Goal" 
+  :hints (("Goal"
            :expand ((:free (print-base print-radix width rpc state eviscp)
                            (ppr1 x print-base print-radix width rpc state eviscp))
                     (:free (print-base print-radix width rpc
@@ -298,7 +302,7 @@
     :rule-classes nil)
   :hints ((computed-hint '(ppr1 ppr1-lst) nil nil
                          clause stable-under-simplificationp state)
-          ("Goal" 
+          ("Goal"
            :expand ((:free (print-base print-radix width rpc state eviscp)
                            (ppr1 x print-base print-radix width rpc state eviscp))
                     (:free (print-base print-radix width rpc
@@ -347,7 +351,7 @@
     :rule-classes nil)
   :hints ((computed-hint '(ppr1 ppr1-lst) t nil ; <--- TWEAK!
                            clause stable-under-simplificationp state)
-          ("Goal" 
+          ("Goal"
            :expand ((:free (print-base print-radix width rpc state eviscp)
                            (ppr1 x print-base print-radix width rpc state eviscp))
                     (:free (print-base print-radix width rpc
@@ -437,7 +441,7 @@
     :rule-classes nil)
   :hints ((computed-hint '(ppr1 ppr1-lst) nil nil
                          clause stable-under-simplificationp state)
-          ("Goal" 
+          ("Goal"
            :expand ((:free (print-base print-radix width rpc state eviscp)
                            (ppr1 x print-base print-radix width rpc state eviscp))
                     (:free (print-base print-radix width rpc

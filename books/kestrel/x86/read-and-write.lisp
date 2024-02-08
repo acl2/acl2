@@ -617,6 +617,8 @@
 (acl2::defopeners acl2::bv-array-read-chunk-little) ; move
 (acl2::def-constant-opener acl2::bv-array-read-chunk-little)
 
+(def-constant-opener acl2::packbv-little) ; move?
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename since used for a read proof as well

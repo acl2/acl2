@@ -30,6 +30,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Register readers (when we need an ordering on registers, we use the order given here):
+;; These are signed-byte-p-64s:
 (defund rax (x86) (declare (xargs :stobjs x86)) (rgfi *rax* x86))
 (defund rbx (x86) (declare (xargs :stobjs x86)) (rgfi *rbx* x86))
 (defund rcx (x86) (declare (xargs :stobjs x86)) (rgfi *rcx* x86))
@@ -180,6 +181,26 @@
 (defthm set-r15-of-set-r15 (equal (set-r15 r151 (set-r15 r152 x86)) (set-r15 r151 x86)) :hints (("Goal" :in-theory (enable set-r15))))
 (defthm set-rsp-of-set-rsp (equal (set-rsp rsp1 (set-rsp rsp2 x86)) (set-rsp rsp1 x86)) :hints (("Goal" :in-theory (enable set-rsp))))
 (defthm set-rbp-of-set-rbp (equal (set-rbp rbp1 (set-rbp rbp2 x86)) (set-rbp rbp1 x86)) :hints (("Goal" :in-theory (enable set-rbp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Write-of-read of the same register
+(defthm set-rax-of-rax-same (equal (set-rax (rax x86) x86) x86) :hints (("Goal" :in-theory (enable rax set-rax))))
+(defthm set-rbx-of-rbx-same (equal (set-rbx (rbx x86) x86) x86) :hints (("Goal" :in-theory (enable rbx set-rbx))))
+(defthm set-rcx-of-rcx-same (equal (set-rcx (rcx x86) x86) x86) :hints (("Goal" :in-theory (enable rcx set-rcx))))
+(defthm set-rdx-of-rdx-same (equal (set-rdx (rdx x86) x86) x86) :hints (("Goal" :in-theory (enable rdx set-rdx))))
+(defthm set-rdi-of-rdi-same (equal (set-rdi (rdi x86) x86) x86) :hints (("Goal" :in-theory (enable rdi set-rdi))))
+(defthm set-rsi-of-rsi-same (equal (set-rsi (rsi x86) x86) x86) :hints (("Goal" :in-theory (enable rsi set-rsi))))
+(defthm set-r8-of-r8-same (equal (set-r8 (r8 x86) x86) x86) :hints (("Goal" :in-theory (enable r8 set-r8))))
+(defthm set-r9-of-r9-same (equal (set-r9 (r9 x86) x86) x86) :hints (("Goal" :in-theory (enable r9 set-r9))))
+(defthm set-r10-of-r10-same (equal (set-r10 (r10 x86) x86) x86) :hints (("Goal" :in-theory (enable r10 set-r10))))
+(defthm set-r11-of-r11-same (equal (set-r11 (r11 x86) x86) x86) :hints (("Goal" :in-theory (enable r11 set-r11))))
+(defthm set-r12-of-r12-same (equal (set-r12 (r12 x86) x86) x86) :hints (("Goal" :in-theory (enable r12 set-r12))))
+(defthm set-r13-of-r13-same (equal (set-r13 (r13 x86) x86) x86) :hints (("Goal" :in-theory (enable r13 set-r13))))
+(defthm set-r14-of-r14-same (equal (set-r14 (r14 x86) x86) x86) :hints (("Goal" :in-theory (enable r14 set-r14))))
+(defthm set-r15-of-r15-same (equal (set-r15 (r15 x86) x86) x86) :hints (("Goal" :in-theory (enable r15 set-r15))))
+(defthm set-rsp-of-rsp-same (equal (set-rsp (rsp x86) x86) x86) :hints (("Goal" :in-theory (enable rsp set-rsp))))
+(defthm set-rbp-of-rbp-same (equal (set-rbp (rbp x86) x86) x86) :hints (("Goal" :in-theory (enable rbp set-rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -963,3 +984,43 @@
 (defthm fix-of-r15 (equal (fix (r15 x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
 (defthm fix-of-rsp (equal (fix (rsp x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
 (defthm fix-of-rbp (equal (fix (rbp x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: more!
+(defthm set-rax-of-if-arg2 (equal (set-rax val (if test x86_1 x86_2)) (if test (set-rax val x86_1) (set-rax val x86_2))))
+(defthm set-rbx-of-if-arg2 (equal (set-rbx val (if test x86_1 x86_2)) (if test (set-rbx val x86_1) (set-rbx val x86_2))))
+(defthm set-rcx-of-if-arg2 (equal (set-rcx val (if test x86_1 x86_2)) (if test (set-rcx val x86_1) (set-rcx val x86_2))))
+(defthm set-rdx-of-if-arg2 (equal (set-rdx val (if test x86_1 x86_2)) (if test (set-rdx val x86_1) (set-rdx val x86_2))))
+(defthm set-rdi-of-if-arg2 (equal (set-rdi val (if test x86_1 x86_2)) (if test (set-rdi val x86_1) (set-rdi val x86_2))))
+(defthm set-rsi-of-if-arg2 (equal (set-rsi val (if test x86_1 x86_2)) (if test (set-rsi val x86_1) (set-rsi val x86_2))))
+(defthm set-rbp-of-if-arg2 (equal (set-rbp val (if test x86_1 x86_2)) (if test (set-rbp val x86_1) (set-rbp val x86_2))))
+(defthm set-rsp-of-if-arg2 (equal (set-rsp val (if test x86_1 x86_2)) (if test (set-rsp val x86_1) (set-rsp val x86_2))))
+
+(defthm set-rip-of-if
+  (equal (set-rip val (if test x y))
+         (if test (set-rip val x)
+           (set-rip val y))))
+
+(defthm set-undef-of-if
+  (equal (set-undef val (if test x y))
+         (if test (set-undef val x)
+           (set-undef val y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: more like this
+;; todo: only do this if the 2 states have the same PC (RIP) and are not faulted or error states
+(defthmd if-of-set-rax-arg2 (equal (if test (set-rax rax x86_1) x86_2) (set-rax (if test rax (rax x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-rbx-arg2 (equal (if test (set-rbx rbx x86_1) x86_2) (set-rbx (if test rbx (rbx x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-rcx-arg2 (equal (if test (set-rcx rcx x86_1) x86_2) (set-rcx (if test rcx (rcx x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-rdx-arg2 (equal (if test (set-rdx rdx x86_1) x86_2) (set-rdx (if test rdx (rdx x86_2)) (if test x86_1 x86_2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: more like this
+;; todo: only do this if the 2 states have the same PC (RIP) and are not faulted or error states
+(defthmd if-of-set-rax-arg3 (equal (if test x86_1 (set-rax rax x86_2)) (set-rax (if test (rax x86_1) rax) (if test x86_1 x86_2))))
+(defthmd if-of-set-rbx-arg3 (equal (if test x86_1 (set-rbx rbx x86_2)) (set-rbx (if test (rbx x86_1) rbx) (if test x86_1 x86_2))))
+(defthmd if-of-set-rcx-arg3 (equal (if test x86_1 (set-rcx rcx x86_2)) (set-rcx (if test (rcx x86_1) rcx) (if test x86_1 x86_2))))
+(defthmd if-of-set-rdx-arg3 (equal (if test x86_1 (set-rdx rdx x86_2)) (set-rdx (if test (rdx x86_1) rdx) (if test x86_1 x86_2))))

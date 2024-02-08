@@ -55,6 +55,10 @@
              (foo a b c))
     :hints (("Goal" :cases ((equal 0 a) (equal 0 b) (equal 0 c))))))
 
+; Added by Matt K. 2/2/2024 to avoid ACL2(p) error about producing an error
+; triple.
+(set-waterfall-parallelism nil)
+
 ;; Works with the :casesx hint, which creates 8 cases
 (defthm test1
   (implies (and (<= 0 a)

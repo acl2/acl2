@@ -26,6 +26,7 @@
 ;(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 ;(include-book "kestrel/x86/read-and-write" :dir :system)
 ;(include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
+(include-book "projects/x86isa/machine/instructions/fp/add-mul-spec" :dir :system) ; for dazify
 (local (include-book "kestrel/bv/logapp" :dir :system)) ; for ACL2::LOGHEAD-BECOMES-BVCHOP
 (local (include-book "kestrel/bv/logtail" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
@@ -451,3 +452,8 @@
 
 (defthm integerp-of-xr-mxcsr
   (INTEGERP (XR :MXCSR NIL X86)))
+
+(defthm dazify-of-0-arg2
+  (equal (rtl::dazify x 0 acl2::f)
+         x)
+  :hints (("Goal" :in-theory (enable rtl::dazify))))

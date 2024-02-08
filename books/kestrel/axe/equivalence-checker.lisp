@@ -19041,7 +19041,7 @@
                    ;;                      (acons #\1 sorted-vars-given-types
                    ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
                    ;;                                    nil))))
-                   (cw "WARNING: The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+                   (cw "WARNING: The DAG variables, ~x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                        sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
            ;;(prog2$ (mv nil state rand result-array-stobj))
            ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
