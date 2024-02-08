@@ -32,10 +32,10 @@
            :in-theory (e/d (slice) (slice-becomes-bvchop slice-becomes-getbit BVCHOP-1-BECOMES-GETBIT
                                                           BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-(defthm getbit-of-logand
+(defthmd getbit-of-logand
   (equal (getbit bit (logand x y))
-         (logand  (getbit bit x)
-                  (getbit bit y)))
+         (logand (getbit bit x)
+                 (getbit bit y)))
   :hints (("Goal" :in-theory (e/d (getbit)
                                   (slice-becomes-getbit bvchop-1-becomes-getbit)))))
 
@@ -205,33 +205,39 @@
          (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthm bvand-with-mask-basic
+(defthmd getbit-of-logand-becomes-bvand-of-getbit-and-getbit
+  (equal (getbit n (logand a b))
+         (bvand 1 (getbit n a)
+                (getbit n b)))
+  :hints (("Goal" :in-theory (enable bvand getbit-of-logand))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvand-with-mask-basic-arg2
   (equal (bvand size (+ -1 (expt 2 size)) x)
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthm bvand-with-mask-basic-alt
+(defthm bvand-with-mask-basic-arg3
   (equal (bvand size x (+ -1 (expt 2 size)))
          (bvchop size x))
-  :hints (("Goal" :use bvand-with-mask-basic
-           :in-theory (disable bvand-with-mask-basic))))
+  :hints (("Goal" :use bvand-with-mask-basic-arg2
+           :in-theory (disable bvand-with-mask-basic-arg2))))
 
 ;lets the sizes differ
 (defthm bvand-with-mask-arg2-gen
-  (implies (and (<= size size2)
-                (natp size)
-                (natp size2))
-           (equal (bvand size2 (+ -1 (expt 2 size)) x)
-                  (bvchop size x)))
+  (implies (and (natp n)
+                (integerp size))
+           (equal (bvand size (+ -1 (expt 2 n)) x)
+                  (bvchop (min n size) x)))
   :hints (("Goal" :in-theory (enable bvand))))
 
 ;lets the sizes differ
 (defthm bvand-with-mask-arg3-gen
-  (implies (and (<= size size2)
-                (natp size)
-                (natp size2))
-           (equal (bvand size2 x (+ -1 (expt 2 size)))
-                  (bvchop size x)))
+  (implies (and (natp n)
+                (integerp size))
+           (equal (bvand size x (+ -1 (expt 2 n)))
+                  (bvchop (min n size) x)))
   :hints (("Goal" :in-theory (enable bvand))))
 
 ;requires the number of 1's in k to be size
@@ -246,10 +252,20 @@
   (implies (and (logmaskp mask)
                 (equal size (integer-length mask)) ;acl2 can bind size here...
                 (<= size size2)
-                (natp size)
+                ;(natp size)
                 (integerp size2))
            (equal (bvand size2 mask i)
                   (bvchop size i))))
+
+(defthm bvand-with-mask-drop
+  (implies (and (syntaxp (quotep mask))
+                (logmaskp mask)
+                (<= (integer-length mask) size)
+                (natp size)
+                (unsigned-byte-p (integer-length mask) y)
+                )
+           (equal (bvand size mask y)
+                  y)))
 
 ;doesn't bind any free vars
 ;add syntaxp hyp - does compute integer-length several times..
@@ -262,7 +278,7 @@
                   (bvchop (integer-length mask) i))))
 
 ;don't need if we are commuting constants
-(defthm bvand-with-mask-better-eric-alt
+(defthmd bvand-with-mask-better-eric-alt
   (implies (and (syntaxp (quotep mask)) ;new
                 (logmaskp mask)
                 (<= (integer-length mask) size)
@@ -311,7 +327,8 @@
            (equal (getbit n (bvand size x y))
                   (bvand 1 (getbit n x)
                            (getbit n y))))
-  :hints (("Goal" :in-theory (enable bvand))))
+  :hints (("Goal" :in-theory (enable bvand
+                                     getbit-of-logand-becomes-bvand-of-getbit-and-getbit))))
 
 (defthm getbit-of-bvand-eric
   (implies (and (< 1 size) ;if size is 0 or 1, other rules should fire?

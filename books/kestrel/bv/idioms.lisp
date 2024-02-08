@@ -36,26 +36,6 @@
                        n)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-(defthmd bvand-with-mask-of-ones
-  (implies (and (natp size)
-                (natp n)
-                (<= n size)
-                )
-           (equal (bvand size (+ -1 (expt 2 n)) x)
-                  (bvchop n x)))
-  :hints (("Goal" :in-theory (e/d (bvand) (;logand-with-mask
-                                           )))))
-
-(defthmd bvand-with-mask-of-ones-alt
-  (implies (and (natp size)
-                (natp n)
-                (<= n size)
-                )
-           (equal (bvand size x (+ -1 (expt 2 n)))
-                  (bvchop n x)))
-  :hints (("Goal" :in-theory (e/d (bvand) (;logand-with-mask
-                                           )))))
-
 ;; Shows how to express bit slicing as masking followed by shifting.
 ;todo: use a better mask?
 (defthmd slice-becomes-shift-of-mask
@@ -71,7 +51,7 @@
                                  (+ -1 (expt 2 (+ 1 (- high low)))))
                               x)
                        low)))
-  :hints (("Goal" :in-theory (e/d (bvshr bvand-with-mask-of-ones-alt)
+  :hints (("Goal" :in-theory (e/d (bvshr)
                                   (;slice-of-bvand
                                    DISTRIBUTIVITY
                                    )))))
@@ -94,9 +74,9 @@
                 (<= n 32))
            (equal (bvchop n x)
                   (bvand 32 x (+ -1 (expt 2 n)))))
-  :hints (("Goal" :use (:instance bvand-with-mask-of-ones-alt
+  :hints (("Goal" :use (:instance bvand-with-mask-arg2-gen
                                   (size 32))
-           :in-theory (disable bvand-with-mask-of-ones-alt))))
+           :in-theory (disable bvand-with-mask-arg2-gen))))
 
 (defthmd bvshr-extend-to-32bits
   (implies (natp amt)
@@ -151,14 +131,3 @@
                     ;bvshl-rewrite-with-bvchop-for-constant-shift-amount
                     ;bvshl-rewrite-with-bvchop
                     bvand-with-mask-better-eric-alt))
-
-(defthm bvand-with-mask-drop
-  (implies (and (syntaxp (quotep mask))
-                (logmaskp mask)
-                (<= (integer-length mask) size)
-                (natp size)
-                (unsigned-byte-p (integer-length mask) y)
-                )
-           (equal (bvand size mask y)
-                  y))
-  :hints (("Goal" :use (:instance bvand-with-mask-better-eric (size size) (i y)))))

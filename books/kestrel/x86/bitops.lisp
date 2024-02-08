@@ -115,13 +115,9 @@
                                                             low
                                                             x)))))
 
-  :otf-flg t
   :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
-           :in-theory (e/d (ifix ) (;ACL2::BVPLUS-OF-UNARY-MINUS-ARG2
-                                    ;ACL2::BVPLUS-OF-UNARY-MINUS
-                                    ash
-                                    logmask
-                                    )))))
+           :in-theory (e/d (ifix acl2::getbit-of-logand)
+                           (ash logmask)))))
 
 (defthm getbit-of-part-install-width-low
   (implies (and (natp m)

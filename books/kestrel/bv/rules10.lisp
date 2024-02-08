@@ -1,7 +1,7 @@
 ; More rules about bit vectors
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -114,16 +114,7 @@
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit
                                    MOD-OF-EXPT-OF-2)))))
-(defthm logand-becomes-bvand
-  (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-;                (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p size x)
-;               (unsigned-byte-p size y)
-                (natp y)
-                )
-           (equal (logand x y)
-                  (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
+
 
 (defthm UNSIGNED-BYTE-P-shift-lemma
   (IMPLIES (AND (natp n)
@@ -202,10 +193,10 @@
                 (integerp k))
            (equal (bvand size k x)
                   (bvcat 1
-                               (getbit (+ -1 (integer-length k))
-                                             x)
-                               (+ -1 (integer-length k))
-                               0))))
+                         (getbit (+ -1 (integer-length k))
+                                 x)
+                         (+ -1 (integer-length k))
+                         0))))
 
 (in-theory (disable bvand-of-expt)) ;bvand-of-expt-constant-version should usually be enough
 
@@ -233,46 +224,6 @@
                                   (repeatbit
                                    bvchop-of-logtail-becomes-slice
                                    logtail-of-plus)))))
-
-(defthm bvand-with-mask-basic-gen
-  (implies (and (<= size n)
-                (natp size)
-                (integerp n))
-           (equal (bvand size (+ -1 (expt 2 n)) x)
-                  (bvchop size x)))
-  :hints (("Goal" :in-theory (e/d (;bitops::part-install-width-low
-                                   repeatbit-of-1-arg2
-                                   bvnot-of-0
-                                   bvand)
-                                  ( ;slice-of-bvand
-;                                   bvplus-recollapse ;looped
-;                                   bvcat-of-+-high
-                                   ;exponents-add
- ;                                  bvcat-of-+-low ;looped
-                                   bvand-of-+-arg3      ;looped
-                                   bvand-of-+-arg2
-                                   )))))
-
-(defthm bvand-with-mask-basic-gen-alt
-  (implies (and (<= size n)
-                (natp size)
-                (integerp n))
-           (equal (bvand size x (+ -1 (expt 2 n)))
-                  (bvchop size x)))
-  :hints (("Goal" :use bvand-with-mask-basic-gen
-           :in-theory (disable bvand-with-mask-basic-gen))))
-
-;drop in favor of a general trim rule?
-(defthm bvand-of-bvnot-trim
-  (implies (and (< low size)
-                (integerp size)
-                (natp low))
-           (equal (bvand low x (bvnot size y))
-                  (bvand low x (bvnot low y))))
-  :hints (("Goal" :in-theory (enable bvand))))
-
-;move
-
 
 (defthm ash-becomes-bvcat
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x)) ;only works for constant size?
@@ -314,24 +265,6 @@
                                    BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;BVPLUS-RECOLLAPSE ;looped!
                                    )))))
-
-;move to intro.lisp?
-(defthmd logand-of-bvchop-becomes-bvand
-  (implies (and (natp width)
-                (natp y)) ;gen
-           (equal (LOGAND y (BVCHOP WIDTH x))
-                  (bvand width y x)))
-  :hints (("Goal" :use (:instance LOGAND-BECOMES-BVAND (size width) (x (BVCHOP WIDTH x)))
-           :in-theory (disable LOGAND-BECOMES-BVAND))))
-
-;move to intro.lisp?
-(defthmd logand-of-bvchop-becomes-bvand-alt
-  (implies (and (natp width)
-                (natp y)) ;gen
-           (equal (LOGAND (BVCHOP WIDTH x) y)
-                  (bvand width y x)))
-  :hints (("Goal" :use (:instance LOGAND-BECOMES-BVAND (size width) (x (BVCHOP WIDTH x)))
-           :in-theory (disable LOGAND-BECOMES-BVAND))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -456,15 +389,6 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 (in-theory (disable getbit-of-logior))
-
-;move
-(defthm getbit-of-logand-better
-  (equal (getbit n (logand a b))
-         (bvand 1 (getbit n a)
-               (getbit n b)))
-  :hints (("Goal" :in-theory (enable bvand))))
-
-(in-theory (disable getbit-of-logand))
 
 ;move
 (defthm getbit-of-bvchop-both

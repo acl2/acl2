@@ -2382,7 +2382,7 @@
                                      segment-selectorbits->rpl
                                      cr0bits->am
                                      2bits-fix
-                                     ))))
+                                     acl2::getbit-of-logand))))
 
 ;; goes to set-flag instead of exposing details of the flags
 (defthm write-user-rflags-rewrite
