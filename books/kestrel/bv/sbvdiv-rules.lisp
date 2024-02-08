@@ -1,7 +1,7 @@
 ; Rules about sbvdiv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -305,7 +305,7 @@
   :otf-flg t
   :hints (("Goal" :cases ((equal y1 0)
                           (and (not (equal y1 0))
-                               (EQUAL (BVCHOP (BINARY-+ '-1 SIZE) X) '0)))
+                               (EQUAL (BVCHOP (+ '-1 SIZE) X) '0)))
            :in-theory (e/d (;SBVDIV-WHEN-BOTH-POSITIVE
                             sbvlt
                             bvdiv

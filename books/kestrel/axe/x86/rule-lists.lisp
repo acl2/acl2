@@ -3614,8 +3614,8 @@
             write-of-write-same
             write-of-write-of-write-same
             write-of-write-of-write-of-write-same
-            bvminus-of-+-arg2
-            bvminus-of-+-arg3
+            acl2::bvminus-of-+-arg2
+            acl2::bvminus-of-+-arg3
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
             acl2::right-cancellation-for-+ ; todo: switch to an arithmetic-light rule
             acl2::bvplus-of-unary-minus

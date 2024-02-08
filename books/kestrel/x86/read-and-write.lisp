@@ -92,16 +92,7 @@
                   (bvuminus 48 (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-;move
-;dup
-(defthmd bvminus-of-+-arg3
-  (implies (and (integerp y1)
-                (integerp y2))
-           (equal (bvminus size x (+ y1 y2))
-                  (bvminus size x (bvplus size y1 y2))))
-  :hints (("Goal" :in-theory (enable bvminus bvplus))))
-
-(theory-invariant (incompatible (:rewrite bvminus-of-+-arg3) (:rewrite acl2::bvchop-of-sum-cases)))
+(theory-invariant (incompatible (:rewrite acl2::bvminus-of-+-arg3) (:rewrite acl2::bvchop-of-sum-cases)))
 
 (in-theory (disable acl2::natp-when-gte-0)) ;questionable rule; the x86 model should not bring in std/basic/arith-equivs.lisp
 
@@ -2289,7 +2280,7 @@
                 (<= (+ (len vals1) (len vals2)) (expt 2 48)))
            (equal (write-bytes ad (append vals1 vals2) x86)
                   (write-bytes ad vals1 (write-bytes (+ ad (len vals1)) vals2 x86))))
-  :hints (("Goal" :in-theory (enable write-bytes append bvminus-of-+-arg3))))
+  :hints (("Goal" :in-theory (enable write-bytes append acl2::bvminus-of-+-arg3))))
 
 ;; outer write is at lower addresses
 (defthmd write-bytes-of-write-bytes-adjacent-2

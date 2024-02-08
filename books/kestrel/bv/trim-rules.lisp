@@ -1,7 +1,7 @@
 ; Rules about trim
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,7 +51,7 @@
            (equal (trim n (bvcat highsize highval lowsize lowval))
                   (if (<= n lowsize)
                       (bvchop n lowval) ;don't want to leave a trim (e.g. around a variable)
-                    (bvcat (min (binary-+ n (unary-- lowsize))
+                    (bvcat (min (+ n (- lowsize))
                                 highsize)
                            highval lowsize lowval))))
   :hints (("Goal" :in-theory (enable trim))))

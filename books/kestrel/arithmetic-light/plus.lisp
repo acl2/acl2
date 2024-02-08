@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation +.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -185,6 +185,10 @@
 (defthm <-of-+-cancel-2-1+
   (equal (< (+ y x) (+ x z))
          (< y z)))
+
+(defthm <-of-+-cancel-3-1
+  (equal (< (+ y (+ z x)) x)
+         (< (+ y z) 0)))
 
 (defthm <-of-+-cancel-3-1+
   (equal (< (+ y y2 x) (+ x z))

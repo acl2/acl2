@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvcat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -178,7 +178,7 @@
            (equal (bvchop n (bvcat highsize highval lowsize lowval))
                   (if (<= n lowsize) ;use min or max instead of this if?
                       (bvchop n lowval)
-                    (bvcat (min (binary-+ n (unary-- lowsize))
+                    (bvcat (min (+ n (- lowsize))
                                 highsize)
                            highval lowsize lowval))))
   :hints (("Goal" :cases ((natp (+ (- lowsize) n))))))
@@ -1414,7 +1414,7 @@
              0
            (if (<= n (nfix lowsize))
                (bvchop n lowval)
-               (bvcat (min (binary-+ n (unary-- (nfix lowsize)))
+               (bvcat (min (+ n (- (nfix lowsize)))
                            (nfix highsize))
                       highval (nfix lowsize) lowval)))))
 

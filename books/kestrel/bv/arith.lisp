@@ -64,7 +64,7 @@
     :USE FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-RIGHT-LEMMA)))
 
 ;dup
-;todo: bad rule.  matches (BINARY-* '-1/2 LOW)
+;todo: bad rule.  matches (* '-1/2 LOW)
 ;loops with |(- (* c x))|
 (DEFTHM FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-LEFT
   (EQUAL (* (- X) Y)
