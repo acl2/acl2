@@ -2218,28 +2218,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm x86isa::rflagsbits->of$inline-of-if
-  (equal (x86isa::rflagsbits->of$inline (if test tp ep))
-         (if test (x86isa::rflagsbits->of$inline tp) (x86isa::rflagsbits->of$inline ep))))
+  (equal (rflagsbits->of$inline (if test tp ep))
+         (if test (rflagsbits->of$inline tp) (rflagsbits->of$inline ep))))
 
 (defthm x86isa::rflagsbits->sf$inline-of-if
-  (equal (x86isa::rflagsbits->sf$inline (if test tp ep))
-                  (if test (x86isa::rflagsbits->sf$inline tp) (x86isa::rflagsbits->sf$inline ep))))
+  (equal (rflagsbits->sf$inline (if test tp ep))
+                  (if test (rflagsbits->sf$inline tp) (rflagsbits->sf$inline ep))))
 
 (defthm x86isa::rflagsbits->cf$inline-of-if
-  (equal (x86isa::rflagsbits->cf$inline (if test tp ep))
-         (if test (x86isa::rflagsbits->cf$inline tp) (x86isa::rflagsbits->cf$inline ep))))
+  (equal (rflagsbits->cf$inline (if test tp ep))
+         (if test (rflagsbits->cf$inline tp) (rflagsbits->cf$inline ep))))
 
 (defthm x86isa::rflagsbits->af$inline-of-if
-  (equal (x86isa::rflagsbits->af$inline (if test tp ep))
-         (if test (x86isa::rflagsbits->af$inline tp) (x86isa::rflagsbits->af$inline ep))))
+  (equal (rflagsbits->af$inline (if test tp ep))
+         (if test (rflagsbits->af$inline tp) (rflagsbits->af$inline ep))))
 
 (defthm x86isa::rflagsbits->zf$inline-of-if
-  (equal (x86isa::rflagsbits->zf$inline (if test tp ep))
-         (if test (x86isa::rflagsbits->zf$inline tp) (x86isa::rflagsbits->zf$inline ep))))
+  (equal (rflagsbits->zf$inline (if test tp ep))
+         (if test (rflagsbits->zf$inline tp) (rflagsbits->zf$inline ep))))
 
 (defthm x86isa::rflagsbits->pf$inline-of-if
-  (equal (x86isa::rflagsbits->pf$inline (if test tp ep))
-         (if test (x86isa::rflagsbits->pf$inline tp) (x86isa::rflagsbits->pf$inline ep))))
+  (equal (rflagsbits->pf$inline (if test tp ep))
+         (if test (rflagsbits->pf$inline tp) (rflagsbits->pf$inline ep))))
 
 
 (acl2::def-constant-opener x86isa::feature-flags)
