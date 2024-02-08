@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1891,7 +1891,7 @@
 (defthm cancel-from-logext-equality-helper
   (implies (and (integerp x)
                 (integerp k))
-           (implies (equal (logext 32 (binary-+ k x)) x)
+           (implies (equal (logext 32 (+ k x)) x)
                     (equal 0 (bvchop 32 k))))
   :rule-classes nil
   :hints (("Goal"
@@ -1910,7 +1910,7 @@
                 (integerp k)
                 (signed-byte-p 32 x))
            (implies (equal 0 (bvchop 32 k))
-                    (equal (logext 32 (binary-+ k x)) x)))
+                    (equal (logext 32 (+ k x)) x)))
   :rule-classes nil
 
   :hints (("Goal"
@@ -1926,7 +1926,7 @@
 (defthm cancel-from-logext-equality
   (implies (and (integerp x)
                 (integerp k))
-           (equal (equal (logext 32 (binary-+ k x)) x)
+           (equal (equal (logext 32 (+ k x)) x)
                   (and (signed-byte-p 32 x) ;new..
                        (equal 0 (bvchop 32 k)))))
   :hints (("Goal" :use (cancel-from-logext-equality-helper
@@ -2107,7 +2107,7 @@
 ;newly disabled
 (defthmd +-becomes-bvplus-hack
   (implies (unsigned-byte-p 30 x)
-           (equal (binary-+ 1 x)
+           (equal (+ 1 x)
                   (bvplus 31 1 x)))
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
                                             BVPLUS-OPENER)))))
@@ -2287,7 +2287,7 @@
   :hints (("Goal" :in-theory (enable booland boolif))))
 
 (defthm plus-of-bvplus-of-minus1
-  (equal (binary-+ '1 (bvplus '32 4294967295 x))
+  (equal (+ '1 (bvplus '32 4294967295 x))
          (if (equal (bvchop 32 x) 0)
              (expt 2 32)
            (bvchop 32 x)))
@@ -2389,7 +2389,7 @@
                 (<= k (bvchop freesize free))
                 (natp freesize)
                 (unsigned-byte-p freesize x))
-           (equal (binary-+ (- k) x)
+           (equal (+ (- k) x)
                   (bvplus freesize (- k) x)))
   :hints (("Goal"
 ;          :expand (UNSIGNED-BYTE-P FREESIZE (- K)) ;this expands with the wrong defn..
@@ -2406,7 +2406,7 @@
                 (<= (- k) (bvchop freesize free))
                 (natp freesize)
                 (unsigned-byte-p freesize x))
-           (equal (binary-+ k x)
+           (equal (+ k x)
                   (bvplus freesize k x)))
   :hints (("Goal" :use (:instance +-of-minus (k (- k)))
            :in-theory (disable +-of-minus))))
@@ -2541,14 +2541,14 @@
 ;gen the 8
 (defthm unsigned-byte-p-1-of-*
   (implies (integerp x)
-           (equal (unsigned-byte-p '1 (binary-* '8 x))
+           (equal (unsigned-byte-p '1 (* '8 x))
                   (equal 0 x))))
 
 (defthm unsigned-byte-p-of-*-of-constant-helper
   (implies (and (<= (expt 2 size) k)
                 (integerp k)
                 (integerp x))
-           (equal (unsigned-byte-p size (binary-* k x))
+           (equal (unsigned-byte-p size (* k x))
                   (and (natp size)
                        (equal 0 x))))
   :hints (("Goal" :cases ((< k (* k x))(= k (* k x)))
@@ -2560,7 +2560,7 @@
                 (<= (expt 2 size) k) ;gets computed
                 (integerp k)
                 (integerp x))
-           (equal (unsigned-byte-p size (binary-* k x))
+           (equal (unsigned-byte-p size (* k x))
                   (and (natp size)
                        (equal 0 x))))
   :hints (("Goal" :use unsigned-byte-p-of-*-of-constant-helper

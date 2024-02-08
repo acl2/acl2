@@ -1414,7 +1414,7 @@
         (mv erp nil nil state)
       (if (quotep result-dag)
           (mv (erp-nil) result-dag limits state)
-        (if (equivalent-dags dag result-dag) ; nothing changed (except perhaps node numbering)
+        (if (equivalent-dagsp dag result-dag) ; nothing changed (except perhaps node numbering)
             (mv (erp-nil) dag limits state)
           (progn$ (cw "(Something changed, so continue.)~%")
                   ;; (print-list result-dag) ; consider printing here if in verbose mode
@@ -1514,7 +1514,7 @@
             (if (quotep simplified-dag)
                 (mv (erp-nil) simplified-dag limits state)
               ;; normalizing xors did nothing, so we are done (we already rewrote until stable, so doing it again won't help)
-              (if (equivalent-dags simplified-dag normalized-dag)
+              (if (equivalent-dagsp simplified-dag normalized-dag)
                   (mv (erp-nil) normalized-dag limits state)
                 (normalize-xors-and-simplify-until-stable
                  simplified-dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print

@@ -1,7 +1,7 @@
 ; A book about the sign-extending operation logext
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -253,7 +253,7 @@
   :hints (("Goal" :cases (;messy
                           (not (integerp final-size))
                           (< final-size 0)
-;                          (< EXT-SIZE (BINARY-+ '1 FINAL-SIZE))
+;                          (< EXT-SIZE (+ '1 FINAL-SIZE))
                           (equal 0 ext-size)
                           )
            :use (:instance BVCHOP-OF-LOGAPP-BIGGER

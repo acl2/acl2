@@ -248,7 +248,7 @@
         (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
-          (if (equivalent-dags dag old-dag)
+          (if (equivalent-dagsp dag old-dag)
               (progn$ (cw "Note: Stopping the run because nothing changed.~%")
                       (and print
                            (prog2$ (cw "(DAG:~%")
