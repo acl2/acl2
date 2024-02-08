@@ -366,7 +366,7 @@
 (defthm jle-condition-rewrite-1
   (implies (unsigned-byte-p 32 x)
            (equal (jle-condition (if (equal 0 x) 1 0)
-                                 (acl2::getbit 31 x)
+                                 (getbit 31 x)
                                  0)
                   (not (acl2::sbvlt 32 0 x))))
   :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
@@ -401,22 +401,22 @@
 (defthm jnle-condition-rewrite
   (implies (unsigned-byte-p 32 x)
            (equal (jnle-condition (if (equal 0 x) 1 0)
-                                 (acl2::getbit 31 x)
+                                 (getbit 31 x)
                                  0)
                   (acl2::sbvlt 32 0 x)))
   :hints (("Goal" :in-theory (enable jnle-condition acl2::sbvlt-rewrite))))
 
 (defthmd signed-byte-p-with-top-bit-0
   (implies (and (signed-byte-p 64 x)
-                (equal (acl2::getbit 63 x) 0))
+                (equal (getbit 63 x) 0))
            (<= 0 x)))
 
 (defthmd signed-byte-p-with-top-bit-0-bound
   (implies (and (<= -9223372036854775808 x)
                 (integerp x)
-                (equal (acl2::getbit 63 x) 0))
+                (equal (getbit 63 x) 0))
            (<= 0 x))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice logtail bvchop)
+  :hints (("Goal" :in-theory (e/d (getbit acl2::slice logtail bvchop)
                                   (acl2::slice-becomes-getbit
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
@@ -425,9 +425,9 @@
 (defthmd signed-byte-p-with-top-bit-1-bound
   (implies (and (<= x 9223372036854775807)
                 (integerp x)
-                (equal (acl2::getbit 63 x) 1))
+                (equal (getbit 63 x) 1))
            (< x 0))
-  :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice logtail)
+  :hints (("Goal" :in-theory (e/d (getbit acl2::slice logtail)
                                   (acl2::slice-becomes-getbit
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
@@ -457,11 +457,11 @@
   (implies (and (signed-byte-p size x)
                 (posp size))
            (equal x
-                  (+ (* (- (expt 2 (+ -1 size))) (acl2::getbit (+ -1 size) x))
+                  (+ (* (- (expt 2 (+ -1 size))) (getbit (+ -1 size) x))
                      (bvchop (+ -1 size) x))))
-  :hints (("Goal" :cases ((equal 0 (acl2::getbit (+ -1 size) x)))
+  :hints (("Goal" :cases ((equal 0 (getbit (+ -1 size) x)))
            :in-theory (e/d (acl2::bvcat logapp
-                                  acl2::getbit
+                                  getbit
                                   ;slice logtail bvchop
                                   SIGNED-BYTE-P
                                   bvchop
@@ -488,8 +488,8 @@
 (defthm jnl-condition-rewrite-1
   (implies (and (signed-byte-p 64 x)
                 (signed-byte-p 64 y))
-           (equal (jnl-condition (x86isa::sf-spec64$inline (acl2::bvplus '64 x (acl2::bvuminus '64 y)))
-                                 (x86isa::of-spec64$inline (binary-+ x (unary-- y))))
+           (equal (jnl-condition (sf-spec64$inline (acl2::bvplus '64 x (acl2::bvuminus '64 y)))
+                                 (of-spec64$inline (binary-+ x (unary-- y))))
                   (acl2::sbvle 64 y x)))
   :otf-flg t
   :hints (("Goal"
@@ -499,21 +499,21 @@
                  (:instance acl2::split-signed-bv-top
                             (x y)
                             (size 64)))
-           :cases ((and (equal 0 (acl2::getbit 63 Y))
-                        (equal 0 (acl2::getbit 63 x)))
-                   (and (equal 0 (acl2::getbit 63 Y))
-                        (equal 1 (acl2::getbit 63 x)))
-                   (and (equal 1 (acl2::getbit 63 Y))
-                        (equal 0 (acl2::getbit 63 x)))
-                   (and (equal 1 (acl2::getbit 63 Y))
-                        (equal 1 (acl2::getbit 63 x))))
+           :cases ((and (equal 0 (getbit 63 Y))
+                        (equal 0 (getbit 63 x)))
+                   (and (equal 0 (getbit 63 Y))
+                        (equal 1 (getbit 63 x)))
+                   (and (equal 1 (getbit 63 Y))
+                        (equal 0 (getbit 63 x)))
+                   (and (equal 1 (getbit 63 Y))
+                        (equal 1 (getbit 63 x))))
 
            :in-theory (e/d ( ;signed-byte-p-with-top-bit-0
                             signed-byte-p-with-top-bit-0-bound
                             signed-byte-p-with-top-bit-1-bound
                             jnl-condition
-                            x86isa::of-spec64$inline
-                            x86isa::sf-spec64$inline
+                            of-spec64$inline
+                            sf-spec64$inline
                             acl2::bvplus
                             ;; acl2::bvchop-of-sum-cases
                             signed-byte-p
@@ -547,14 +547,14 @@
                  (:instance acl2::split-signed-bv-top
                             (x y)
                             (size 32)))
-           :cases ((and (equal 0 (acl2::getbit 31 Y))
-                        (equal 0 (acl2::getbit 31 x)))
-                   (and (equal 0 (acl2::getbit 31 Y))
-                        (equal 1 (acl2::getbit 31 x)))
-                   (and (equal 1 (acl2::getbit 31 Y))
-                        (equal 0 (acl2::getbit 31 x)))
-                   (and (equal 1 (acl2::getbit 31 Y))
-                        (equal 1 (acl2::getbit 31 x))))
+           :cases ((and (equal 0 (getbit 31 Y))
+                        (equal 0 (getbit 31 x)))
+                   (and (equal 0 (getbit 31 Y))
+                        (equal 1 (getbit 31 x)))
+                   (and (equal 1 (getbit 31 Y))
+                        (equal 0 (getbit 31 x)))
+                   (and (equal 1 (getbit 31 Y))
+                        (equal 1 (getbit 31 x))))
            :in-theory (e/d ( ;signed-byte-p-with-top-bit-0
                             signed-byte-p-with-top-bit-0-bound
                             signed-byte-p-with-top-bit-1-bound
@@ -653,7 +653,7 @@
                              (acl2::bvuminus 32
                                        (logext 32 y))))
               1 0)
-          (acl2::getbit 31
+          (getbit 31
                   (acl2::bvplus 32
                           x
                           (acl2::bvuminus 32
@@ -695,7 +695,7 @@
                              (acl2::bvuminus 32
                                        y)))
               1 0)
-          (acl2::getbit 31
+          (getbit 31
                   (acl2::bvplus 32
                           x
                           (acl2::bvuminus 32
@@ -1674,21 +1674,21 @@
 (defthm jle-condition-rewrite-1-with-bvif
   (implies (unsigned-byte-p 32 x)
            (equal (jle-condition (bvif 1 (equal 0 x) 1 0)
-                                 (acl2::getbit 31 x)
+                                 (getbit 31 x)
                                  0)
                   (not (acl2::sbvlt 32 0 x))))
   :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
 
 (defthm jle-condition-rewrite-1-with-bvif-and-bvchop
   (equal (jle-condition (bvif 1 (equal 0 (bvchop 32 x)) 1 0)
-                        (acl2::getbit 31 x)
+                        (getbit 31 x)
                         0)
          (not (acl2::sbvlt 32 0 x)))
   :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
 
 (defthm jle-condition-rewrite-1-with-bvchop
   (equal (jle-condition (if (equal 0 (bvchop 32 x)) 1 0)
-                        (acl2::getbit 31 x)
+                        (getbit 31 x)
                         0)
          (not (acl2::sbvlt 32 0 x)))
   :hints (("Goal" :in-theory (enable jle-condition acl2::sbvlt-rewrite))))
@@ -1731,12 +1731,10 @@
                   (sbvle 32 0 x)))
   :hints (("Goal" :in-theory (enable sf-spec32 of-spec32 jnl-condition))))
 
-
-
 (defthm jnl-condition-of-sf-spec64-and-0
   (equal (jnl-condition (sf-spec64 x) 0)
          (sbvle 64 0 x))
-  :hints (("Goal" :in-theory (enable SF-SPEC64 OF-SPEC64 JNL-CONDITION))))
+  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition))))
 
 ;; ;todo: should not be needed if cf-spec is not being opened?
 ;; (defthm jnbe-condition-of-bool->bit-of-<-of-bvchop-and-zf-spec-of-bvplus-of-bvuminus
