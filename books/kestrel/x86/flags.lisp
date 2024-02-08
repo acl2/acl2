@@ -262,14 +262,6 @@
                   (xw fld index val2 (set-flag flag val1 x86))))
   :hints (("Goal" :in-theory (enable set-flag))))
 
-;; (local (include-book "kestrel/bv/logand" :dir :system))
-;; (local (include-book "kestrel/bv/logior" :dir :system))
-;; (defthm logior-combine-constants
-;;   (implies (syntaxp (and (quotep i)
-;;                          (quotep j)))
-;;            (equal (logior i (logior j k))
-;;                   (logior (logior i j) k))))
-
 (local (include-book "bitops"))
 
 (defthm set-flag-of-set-flag-same
