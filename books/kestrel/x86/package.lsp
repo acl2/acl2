@@ -279,6 +279,8 @@
     x86isa::*op-cmpord*
     x86isa::*op-ucomi*
     x86isa::*op-comi*
+
+    x86isa::undef
     ))
 
 (defconst *symbols-from-acl2-package*

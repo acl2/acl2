@@ -263,7 +263,6 @@
 (defthm rax-of-set-r15 (equal (rax (set-r15 val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-r15))))
 (defthm rax-of-set-rsp (equal (rax (set-rsp val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-rsp))))
 (defthm rax-of-set-rbp (equal (rax (set-rbp val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-rbp))))
-(defthm rax-of-set-undef (equal (rax (set-undef val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-undef))))
 
 (defthm rbx-of-set-rax (equal (rbx (set-rax val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-rax))))
 (defthm rbx-of-set-rcx (equal (rbx (set-rcx val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-rcx))))
@@ -280,7 +279,6 @@
 (defthm rbx-of-set-r15 (equal (rbx (set-r15 val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-r15))))
 (defthm rbx-of-set-rsp (equal (rbx (set-rsp val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-rsp))))
 (defthm rbx-of-set-rbp (equal (rbx (set-rbp val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-rbp))))
-(defthm rbx-of-set-undef (equal (rbx (set-undef val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-undef))))
 
 (defthm rcx-of-set-rax (equal (rcx (set-rax val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-rax))))
 (defthm rcx-of-set-rbx (equal (rcx (set-rbx val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-rbx))))
@@ -297,7 +295,6 @@
 (defthm rcx-of-set-r15 (equal (rcx (set-r15 val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-r15))))
 (defthm rcx-of-set-rsp (equal (rcx (set-rsp val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-rsp))))
 (defthm rcx-of-set-rbp (equal (rcx (set-rbp val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-rbp))))
-(defthm rcx-of-set-undef (equal (rcx (set-undef val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-undef))))
 
 (defthm rdx-of-set-rax (equal (rdx (set-rax val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-rax))))
 (defthm rdx-of-set-rbx (equal (rdx (set-rbx val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-rbx))))
@@ -314,7 +311,6 @@
 (defthm rdx-of-set-r15 (equal (rdx (set-r15 val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-r15))))
 (defthm rdx-of-set-rsp (equal (rdx (set-rsp val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-rsp))))
 (defthm rdx-of-set-rbp (equal (rdx (set-rbp val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-rbp))))
-(defthm rdx-of-set-undef (equal (rdx (set-undef val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-undef))))
 
 (defthm rsi-of-set-rax (equal (rsi (set-rax val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-rax))))
 (defthm rsi-of-set-rbx (equal (rsi (set-rbx val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-rbx))))
@@ -331,7 +327,6 @@
 (defthm rsi-of-set-r15 (equal (rsi (set-r15 val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-r15))))
 (defthm rsi-of-set-rsp (equal (rsi (set-rsp val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-rsp))))
 (defthm rsi-of-set-rbp (equal (rsi (set-rbp val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-rbp))))
-(defthm rsi-of-set-undef (equal (rsi (set-undef val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-undef))))
 
 (defthm rdi-of-set-rax (equal (rdi (set-rax val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-rax))))
 (defthm rdi-of-set-rbx (equal (rdi (set-rbx val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-rbx))))
@@ -348,7 +343,6 @@
 (defthm rdi-of-set-r15 (equal (rdi (set-r15 val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-r15))))
 (defthm rdi-of-set-rsp (equal (rdi (set-rsp val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-rsp))))
 (defthm rdi-of-set-rbp (equal (rdi (set-rbp val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-rbp))))
-(defthm rdi-of-set-undef (equal (rdi (set-undef val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-undef))))
 
 (defthm r8-of-set-rax (equal (r8 (set-rax val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-rax))))
 (defthm r8-of-set-rbx (equal (r8 (set-rbx val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-rbx))))
@@ -365,7 +359,6 @@
 (defthm r8-of-set-r15 (equal (r8 (set-r15 val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-r15))))
 (defthm r8-of-set-rsp (equal (r8 (set-rsp val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-rsp))))
 (defthm r8-of-set-rbp (equal (r8 (set-rbp val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-rbp))))
-(defthm r8-of-set-undef (equal (r8 (set-undef val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-undef))))
 
 (defthm r9-of-set-rax (equal (r9 (set-rax val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-rax))))
 (defthm r9-of-set-rbx (equal (r9 (set-rbx val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-rbx))))
@@ -382,7 +375,6 @@
 (defthm r9-of-set-r15 (equal (r9 (set-r15 val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-r15))))
 (defthm r9-of-set-rsp (equal (r9 (set-rsp val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-rsp))))
 (defthm r9-of-set-rbp (equal (r9 (set-rbp val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-rbp))))
-(defthm r9-of-set-undef (equal (r9 (set-undef val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-undef))))
 
 (defthm r10-of-set-rax (equal (r10 (set-rax val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-rax))))
 (defthm r10-of-set-rbx (equal (r10 (set-rbx val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-rbx))))
@@ -399,7 +391,6 @@
 (defthm r10-of-set-r15 (equal (r10 (set-r15 val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-r15))))
 (defthm r10-of-set-rsp (equal (r10 (set-rsp val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-rsp))))
 (defthm r10-of-set-rbp (equal (r10 (set-rbp val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-rbp))))
-(defthm r10-of-set-undef (equal (r10 (set-undef val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-undef))))
 
 (defthm r11-of-set-rax (equal (r11 (set-rax val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-rax))))
 (defthm r11-of-set-rbx (equal (r11 (set-rbx val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-rbx))))
@@ -416,7 +407,6 @@
 (defthm r11-of-set-r15 (equal (r11 (set-r15 val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-r15))))
 (defthm r11-of-set-rsp (equal (r11 (set-rsp val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-rsp))))
 (defthm r11-of-set-rbp (equal (r11 (set-rbp val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-rbp))))
-(defthm r11-of-set-undef (equal (r11 (set-undef val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-undef))))
 
 (defthm r12-of-set-rax (equal (r12 (set-rax val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-rax))))
 (defthm r12-of-set-rbx (equal (r12 (set-rbx val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-rbx))))
@@ -433,7 +423,6 @@
 (defthm r12-of-set-r15 (equal (r12 (set-r15 val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-r15))))
 (defthm r12-of-set-rsp (equal (r12 (set-rsp val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-rsp))))
 (defthm r12-of-set-rbp (equal (r12 (set-rbp val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-rbp))))
-(defthm r12-of-set-undef (equal (r12 (set-undef val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-undef))))
 
 (defthm r13-of-set-rax (equal (r13 (set-rax val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-rax))))
 (defthm r13-of-set-rbx (equal (r13 (set-rbx val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-rbx))))
@@ -450,7 +439,6 @@
 (defthm r13-of-set-r15 (equal (r13 (set-r15 val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-r15))))
 (defthm r13-of-set-rsp (equal (r13 (set-rsp val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-rsp))))
 (defthm r13-of-set-rbp (equal (r13 (set-rbp val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-rbp))))
-(defthm r13-of-set-undef (equal (r13 (set-undef val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-undef))))
 
 (defthm r14-of-set-rax (equal (r14 (set-rax val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-rax))))
 (defthm r14-of-set-rbx (equal (r14 (set-rbx val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-rbx))))
@@ -467,7 +455,6 @@
 (defthm r14-of-set-r15 (equal (r14 (set-r15 val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-r15))))
 (defthm r14-of-set-rsp (equal (r14 (set-rsp val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-rsp))))
 (defthm r14-of-set-rbp (equal (r14 (set-rbp val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-rbp))))
-(defthm r14-of-set-undef (equal (r14 (set-undef val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-undef))))
 
 (defthm r15-of-set-rax (equal (r15 (set-rax val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-rax))))
 (defthm r15-of-set-rbx (equal (r15 (set-rbx val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-rbx))))
@@ -484,7 +471,6 @@
 (defthm r15-of-set-r14 (equal (r15 (set-r14 val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-r14))))
 (defthm r15-of-set-rsp (equal (r15 (set-rsp val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-rsp))))
 (defthm r15-of-set-rbp (equal (r15 (set-rbp val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-rbp))))
-(defthm r15-of-set-undef (equal (r15 (set-undef val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-undef))))
 
 (defthm rsp-of-set-rax (equal (rsp (set-rax val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-rax))))
 (defthm rsp-of-set-rbx (equal (rsp (set-rbx val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-rbx))))
@@ -501,7 +487,6 @@
 (defthm rsp-of-set-r14 (equal (rsp (set-r14 val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-r14))))
 (defthm rsp-of-set-r15 (equal (rsp (set-r15 val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-r15))))
 (defthm rsp-of-set-rbp (equal (rsp (set-rbp val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-rbp))))
-(defthm rsp-of-set-undef (equal (rsp (set-undef val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-undef))))
 
 (defthm rbp-of-set-rax (equal (rbp (set-rax val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-rax))))
 (defthm rbp-of-set-rbx (equal (rbp (set-rbx val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-rbx))))
@@ -518,24 +503,6 @@
 (defthm rbp-of-set-r14 (equal (rbp (set-r14 val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-r14))))
 (defthm rbp-of-set-r15 (equal (rbp (set-r15 val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-r15))))
 (defthm rbp-of-set-rsp (equal (rbp (set-rsp val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-rsp))))
-(defthm rbp-of-set-undef (equal (rbp (set-undef val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-undef))))
-
-(defthm undef-of-set-rax (equal (undef (set-rax val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rax))))
-(defthm undef-of-set-rbx (equal (undef (set-rbx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rbx))))
-(defthm undef-of-set-rcx (equal (undef (set-rcx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rcx))))
-(defthm undef-of-set-rdx (equal (undef (set-rdx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rdx))))
-(defthm undef-of-set-rsi (equal (undef (set-rsi val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rsi))))
-(defthm undef-of-set-rdi (equal (undef (set-rdi val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rdi))))
-(defthm undef-of-set-r8 (equal (undef (set-r8 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r8))))
-(defthm undef-of-set-r9 (equal (undef (set-r9 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r9))))
-(defthm undef-of-set-r10 (equal (undef (set-r10 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r10))))
-(defthm undef-of-set-r11 (equal (undef (set-r11 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r11))))
-(defthm undef-of-set-r12 (equal (undef (set-r12 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r12))))
-(defthm undef-of-set-r13 (equal (undef (set-r13 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r13))))
-(defthm undef-of-set-r14 (equal (undef (set-r14 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r14))))
-(defthm undef-of-set-r15 (equal (undef (set-r15 val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-r15))))
-(defthm undef-of-set-rsp (equal (undef (set-rsp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rsp))))
-(defthm undef-of-set-rbp (equal (undef (set-rbp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -902,7 +869,6 @@
 (defthm r15-of-if (equal (r15 (if test x y)) (if test (r15 x) (r15 y))))
 (defthm rsp-of-if (equal (rsp (if test x y)) (if test (rsp x) (rsp y))))
 (defthm rbp-of-if (equal (rbp (if test x y)) (if test (rbp x) (rbp y))))
-(defthm undef-of-if (equal (undef (if test x y)) (if test (undef x) (undef y))))
 
 (defthm rip-of-myif (equal (rip (myif test x y)) (myif test (rip x) (rip y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm rax-of-myif (equal (rax (myif test x y)) (myif test (rax x) (rax y))) :hints (("Goal" :in-theory (enable myif))))
@@ -916,7 +882,6 @@
 (defthm r10-of-myif (equal (r10 (myif test x y)) (myif test (r10 x) (r10 y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm rsp-of-myif (equal (rsp (myif test x y)) (myif test (rsp x) (rsp y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm rbp-of-myif (equal (rbp (myif test x y)) (myif test (rbp x) (rbp y))) :hints (("Goal" :in-theory (enable myif))))
-(defthm undef-of-myif (equal (undef (myif test x y)) (myif test (undef x) (undef y))) :hints (("Goal" :in-theory (enable myif))))
 
 ;; These are used to prove some of the read-over-write rules:
 (defthm rax-of-xw (implies (not (equal fld :rgf)) (equal (rax (xw fld index value x86)) (rax x86))) :hints (("Goal" :in-theory (enable rax))))
@@ -935,7 +900,6 @@
 (defthm r15-of-xw (implies (not (equal fld :rgf)) (equal (r15 (xw fld index value x86)) (r15 x86))) :hints (("Goal" :in-theory (enable r15))))
 (defthm rsp-of-xw (implies (not (equal fld :rgf)) (equal (rsp (xw fld index value x86)) (rsp x86))) :hints (("Goal" :in-theory (enable rsp))))
 (defthm rbp-of-xw (implies (not (equal fld :rgf)) (equal (rbp (xw fld index value x86)) (rbp x86))) :hints (("Goal" :in-theory (enable rbp))))
-(defthm undef-of-xw (implies (not (equal fld :undef)) (equal (undef (xw fld index value x86)) (undef x86))) :hints (("Goal" :in-theory (enable undef))))
 
 (defthm set-rip-of-myif (equal (set-rip val (myif test x y)) (myif test (set-rip val x) (set-rip val y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm set-rax-of-myif (equal (set-rax val (myif test x y)) (myif test (set-rax val x) (set-rax val y))) :hints (("Goal" :in-theory (enable myif))))
@@ -950,7 +914,6 @@
 ; todo: add more here?
 (defthm set-rsp-of-myif (equal (set-rsp val (myif test x y)) (myif test (set-rsp val x) (set-rsp val y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm set-rbp-of-myif (equal (set-rbp val (myif test x y)) (myif test (set-rbp val x) (set-rbp val y))) :hints (("Goal" :in-theory (enable myif))))
-(defthm set-undef-of-myif (equal (set-undef val (myif test x y)) (myif test (set-undef val x) (set-undef val y))) :hints (("Goal" :in-theory (enable myif))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1006,11 +969,6 @@
   (equal (set-rip val (if test x y))
          (if test (set-rip val x)
            (set-rip val y))))
-
-(defthm set-undef-of-if
-  (equal (set-undef val (if test x y))
-         (if test (set-undef val x)
-           (set-undef val y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
