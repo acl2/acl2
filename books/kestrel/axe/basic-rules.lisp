@@ -189,3 +189,10 @@
 ;; :type-prescrpiption rule in centaur/fty/basetypes.lisp.
 (defthmd booleanp-of-bool-fix-rewrite
   (booleanp (bool-fix x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Can help resolve whethere there is an error, when the error is a cons and nil means no error
+(defthmd not-of-cons
+  (equal (not (cons x y))
+         nil))

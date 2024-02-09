@@ -244,7 +244,7 @@
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
-;; to XW, WRITE, and SET-FLAG.
+;; to XW, WRITE, and SET-FLAG (todo: update this comment).
 (defun state-rules ()
   (declare (xargs :guard t))
   '(
@@ -265,16 +265,8 @@
     X86ISA::XW-RGF-OF-XR-RGF-SAME
 
     ;; Rules about get-flag
-    get-flag-of-set-eip
     get-flag-of-write-byte-to-segment
     get-flag-of-write-to-segment
-    get-flag-of-set-eax
-    get-flag-of-set-ebx
-    get-flag-of-set-ecx
-    get-flag-of-set-edx
-    get-flag-of-set-esp
-    get-flag-of-set-ebp
-
 
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
@@ -1367,11 +1359,40 @@
             x86isa::undef-flg-logic
             x86isa::undef-read$notinline
             x86isa::undef-read-logic
-            x86isa::!undef x86isa::!undef$a
+            ;x86isa::!undef x86isa::!undef$a
+
+            ;; x86isa::undef x86isa::undef$a
+            xr-becomes-undef ; introduces undef
+            undef-of-set-undef
+            undef-of-set-flag
+            undef-of-myif
+            undef-of-if
+            undef-of-!rflags ; why is !rflags not going away?
+
+            xw-becomes-set-undef ; introduces set-undef
+            x86isa::!undef-becomes-set-undef ; introduces set-undef
+            alignment-checking-enabled-p-of-set-undef
+            64-bit-modep-of-set-undef
+            ctri-of-set-undef
+            msri-of-set-undef
+
+            set-undef-of-set-undef
+            set-undef-of-myif ; todo: think about this
+            set-undef-of-!rflags ; why is !rflags showing up?
+            set-undef-of-set-flag
+
+            rip-of-set-undef ; also used in 32-bit mode?  or not?
+            undef-of-set-rip
+            set-undef-of-set-rip ; move to 64 rules?
+
+            app-view-of-set-undef
+            x86p-of-set-undef
+            xr-of-set-undef-irrel
+            get-flag-of-set-undef
 
             x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
-            x86isa::undef x86isa::undef$a
+
             acl2::bvchop-of-*
             acl2::bvchop-of-bvmult
             acl2::bvmult-of-logext-gen-arg1
@@ -1557,6 +1578,8 @@
 
             ;; Can help resolve overflow conditions in Rust code:
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
+
+            acl2::not-of-cons
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -1736,13 +1759,6 @@
             code-segment-readable-bit-of-set-flag
             code-segment-readable-bit-of-write-byte-to-segment
             code-segment-readable-bit-of-write-to-segment
-            code-segment-readable-bit-of-set-eip
-            code-segment-readable-bit-of-set-eax
-            code-segment-readable-bit-of-set-ebx
-            code-segment-readable-bit-of-set-ecx
-            code-segment-readable-bit-of-set-edx
-            code-segment-readable-bit-of-set-esp
-            code-segment-readable-bit-of-set-ebp
             data-segment-writeable-bit-of-xw-irrel
             data-segment-writeable-bit-of-set-flag
             data-segment-writeable-bit-of-write-byte-to-segment
@@ -1803,7 +1819,40 @@
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 (defun lifter-rules32-new ()
   (declare (xargs :guard t))
-  '(
+  '(;; Introduce register writers:
+    xw-becomes-set-eip
+    xw-becomes-set-eax
+    xw-becomes-set-ebx
+    xw-becomes-set-ecx
+    xw-becomes-set-edx
+    xw-becomes-set-esp
+    xw-becomes-set-ebp
+
+    ;; Introduce register readers:
+    read-*ip-becomes-eip ; add a rule about xr as well?
+    xr-becomes-eax
+    xr-becomes-ebx
+    xr-becomes-ecx
+    xr-becomes-edx
+    xr-becomes-ebp
+    xr-becomes-esp
+
+    get-flag-of-set-eip
+    get-flag-of-set-eax
+    get-flag-of-set-ebx
+    get-flag-of-set-ecx
+    get-flag-of-set-edx
+    get-flag-of-set-esp
+    get-flag-of-set-ebp
+
+    code-segment-readable-bit-of-set-eip
+    code-segment-readable-bit-of-set-eax
+    code-segment-readable-bit-of-set-ebx
+    code-segment-readable-bit-of-set-ecx
+    code-segment-readable-bit-of-set-edx
+    code-segment-readable-bit-of-set-esp
+    code-segment-readable-bit-of-set-ebp
+
     ACL2::BVCHOP-NUMERIC-BOUND
 ;    not-mv-nth-0-of-ea-to-la-of-cs
     not-mv-nth-0-of-rme08
@@ -1849,6 +1898,7 @@
     read-from-segment-of-set-ebp
     read-from-segment-of-xw
     read-from-segment-of-set-flag
+    read-from-segment-of-set-undef
 
     read-from-segment-of-1 ;; simplifies to read-byte-from-segment
 
@@ -1865,7 +1915,6 @@
     acl2::fix-of-ifix
 
     ;; Rules about EIP/SET-EIP:
-    xw-becomes-set-eip
     xw-of-set-eip-irrel
     xr-of-set-eip-irrel
     xr-of-set-eip-same ; or turn xr into eip or get-eip?
@@ -1889,7 +1938,46 @@
     not-mv-nth-0-of-add-to-*ip
 ;mv-nth-1-of-add-to-*ip
     mv-nth-1-of-add-to-*ip-gen
-    read-*ip-becomes-eip
+
+
+    undef-of-set-eip
+    undef-of-set-eax
+    undef-of-set-ebx
+    undef-of-set-ecx
+    undef-of-set-edx
+    undef-of-set-esp
+    undef-of-set-ebp
+
+    ;; bury set-undef deep in the term:
+    set-undef-of-set-eip
+    set-undef-of-set-eax
+    set-undef-of-set-ebx
+    set-undef-of-set-ecx
+    set-undef-of-set-edx
+    ;; set-undef-of-set-edi
+    ;; set-undef-of-set-esi
+    set-undef-of-set-esp
+    set-undef-of-set-ebp
+
+    eax-of-set-flag
+    ebx-of-set-flag
+    ecx-of-set-flag
+    edx-of-set-flag
+    ebp-of-set-flag
+    esp-of-set-flag
+    ;; esi-of-set-flag
+    ;; edi-of-set-flag
+    ;todo: more?
+
+    eax-of-set-undef
+    ebx-of-set-undef
+    ecx-of-set-undef
+    edx-of-set-undef
+    ebp-of-set-undef
+    esp-of-set-undef
+    ;; esi-of-set-undef
+    ;; edi-of-set-undef
+    ;todo: more?
 
     ;; Rules about add-to-*sp
     not-mv-nth-0-of-add-to-*sp
@@ -1921,6 +2009,7 @@
     read-byte-list-from-segment-of-xw
     read-byte-list-from-segment-of-write-to-segment-diff-segments
     read-byte-list-from-segment-of-set-flag
+    read-byte-list-from-segment-of-set-undef
 
     segment-expand-down-bit-of-cs-when-code-segment-well-formedp
     segment-expand-down-bit-of-ss-when-stack-segment-assumptions32
@@ -1958,12 +2047,14 @@
 ;    mv-nth-0-of-ea-to-la ; introduces eff-addrs-okp
 
     eff-addr-okp-of-set-flag
+    eff-addr-okp-of-set-undef
     eff-addr-okp-of-WRITE-TO-SEGMENT
     stack-segment-assumptions32-of-xw-of-rgf
 
     esp-of-xw-of-rgf-and-rsp
     eff-addr-okp-of-+-of-esp
     ea-to-la-of-set-flag
+    ea-to-la-of-set-undef
     ;fix-of-esp
     ;bvchop-32-of-esp
     signed-byte-p-64-of-esp
@@ -1990,6 +2081,7 @@
     segment-is-32-bitsp-of-set-esp
     segment-is-32-bitsp-of-set-ebp
     segment-is-32-bitsp-of-set-flag
+    segment-is-32-bitsp-of-set-undef
     segment-is-32-bitsp-of-xw-irrel
 
     ;;Rules about 32-bit-segment-size
@@ -2003,6 +2095,7 @@
     32-bit-segment-size-of-set-esp
     32-bit-segment-size-of-set-ebp
     32-bit-segment-size-of-set-flag
+    32-bit-segment-size-of-set-undef
     32-bit-segment-size-of-xw
 
     ;;Rules about 32-bit-segment-start
@@ -2016,6 +2109,7 @@
     32-bit-segment-start-of-set-esp
     32-bit-segment-start-of-set-ebp
     32-bit-segment-start-of-set-flag
+    32-bit-segment-start-of-set-undef
     32-bit-segment-start-of-xw
 
     ;; Rules about segment-expand-down-bit
@@ -2029,6 +2123,7 @@
     segment-expand-down-bit-of-set-esp
     segment-expand-down-bit-of-set-ebp
     segment-expand-down-bit-of-set-flag
+    segment-expand-down-bit-of-set-undef
     segment-expand-down-bit-of-xw-irrel
 
     ;; Rules about well-formed-32-bit-segmentp
@@ -2042,7 +2137,9 @@
     well-formed-32-bit-segmentp-of-set-esp
     well-formed-32-bit-segmentp-of-set-ebp
     well-formed-32-bit-segmentp-of-set-flag
+    well-formed-32-bit-segmentp-of-set-undef
     well-formed-32-bit-segmentp-of-xw
+    well-formed-32-bit-segmentp-of-set-undef
 
     ;; Rules about segments-separate
     segments-separate-of-write-byte-to-segment
@@ -2055,6 +2152,7 @@
     segments-separate-of-set-esp
     segments-separate-of-set-ebp
     segments-separate-of-set-flag
+    segments-separate-of-set-undef
     segments-separate-of-xw-irrel
 
     ;; Rules about code-and-stack-segments-separate (todo: do we need these and the rules about segments-separate?)
@@ -2068,6 +2166,7 @@
     code-and-stack-segments-separate-of-set-esp
     code-and-stack-segments-separate-of-set-ebp
     code-and-stack-segments-separate-of-set-flag
+    code-and-stack-segments-separate-of-set-undef
     code-and-stack-segments-separate-of-xw-irrel
 
     ;; Rules about alignment-checking-enabled-p
@@ -2115,6 +2214,7 @@
     ;; Rules about esp
     esp-of-set-eip
     esp-of-set-flag
+    esp-of-set-undef
     esp-of-xw-irrel
     natp-of-esp-when-stack-segment-assumptions32
 
@@ -2128,6 +2228,7 @@
     read-byte-from-segment-of-set-esp
     read-byte-from-segment-of-set-ebp
     read-byte-from-segment-of-set-flag
+    read-byte-from-segment-of-set-undef
 
     ;; Rules about 64-bit-modep
     64-bit-modep-of-write-bytes-to-segment
@@ -2159,7 +2260,8 @@
     code-segment-well-formedp-of-set-esp
     code-segment-well-formedp-of-set-ebp
     code-segment-well-formedp-of-write-to-segment
-    code-segment-well-formedp-OF-set-flag
+    code-segment-well-formedp-of-set-flag
+    code-segment-well-formedp-of-set-undef
 
     ;; Rules about code-segment-assumptions32-for-code
     code-segment-assumptions32-for-code-of-xw
@@ -2172,6 +2274,7 @@
     code-segment-assumptions32-for-code-of-set-esp
     code-segment-assumptions32-for-code-of-set-ebp
     code-segment-assumptions32-for-code-of-set-flag
+    code-segment-assumptions32-for-code-of-set-undef
 
     unsigned-byte-p-of-+-of-esp
     eff-addr-okp-of-+-of-esp-positive-offset
@@ -2190,6 +2293,7 @@
     segments-separate-of-code-and-stack
     write-*ip-inline-becomes-xw
 
+    ;segment-min-eff-addr32-of-set-undef
 ;segment-min-eff-addr32-of-set-eip ;drop?
 ;segment-max-eff-addr32-of-set-eip ;drop?
 
@@ -2207,6 +2311,7 @@
     eff-addrs-okp-of-xw-irrel
     eff-addrs-okp-of-write-to-segment
     eff-addrs-okp-of-set-flag
+    eff-addrs-okp-of-set-undef
     eff-addrs-okp-of-set-eip
     eff-addrs-okp-of-set-eax
     eff-addrs-okp-of-set-ebx
@@ -2238,22 +2343,6 @@
     ;; push memory writes inward:
     write-byte-to-segment-of-xw-rgf
     write-to-segment-of-xw-rgf
-
-    ;; Introduce register writers
-    xw-becomes-set-eax
-    xw-becomes-set-ebx
-    xw-becomes-set-ecx
-    xw-becomes-set-edx
-    xw-becomes-set-esp
-    xw-becomes-set-ebp
-
-    ;; Introduce register readers
-    xr-becomes-eax
-    xr-becomes-ebx
-    xr-becomes-ecx
-    xr-becomes-edx
-    xr-becomes-ebp
-    xr-becomes-esp
 
     eax-of-set-eax
     ebx-of-set-ebx
@@ -2370,7 +2459,9 @@
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
             x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
             x86isa::write-*sp-when-64-bit-modep
-            x86isa::program-at-of-set-flag)))
+            x86isa::program-at-of-set-flag ; not 64-bit specific?
+            ;; x86isa::program-at-of-set-undef ; do we not need something like this?
+            )))
 
 (defun lifter-rules64-new ()
   (declare (xargs :guard t))
@@ -2467,7 +2558,6 @@
     rip-of-set-r15
     rip-of-set-rsp
     rip-of-set-rbp
-    rip-of-set-undef
     rip-of-xw-irrel
 
     rax-of-set-rax
@@ -2486,7 +2576,7 @@
     r15-of-set-r15
     rsp-of-set-rsp
     rbp-of-set-rbp
-    undef-of-set-undef
+
     undef-of-write-byte
     undef-of-write
 
@@ -2507,7 +2597,6 @@
     app-view-of-set-r15
     app-view-of-set-rsp
     app-view-of-set-rbp
-    app-view-of-set-undef
 
     x86p-of-set-rip
     x86p-of-set-rax
@@ -2526,7 +2615,6 @@
     x86p-of-set-r15
     x86p-of-set-rsp
     x86p-of-set-rbp
-    x86p-of-set-undef
 
     ;; needed to resolve (xr ':ms 'nil ...)
     xr-of-set-rip-irrel
@@ -2546,7 +2634,6 @@
     xr-of-set-r15-irrel
     xr-of-set-rsp-irrel
     xr-of-set-rbp-irrel
-    xr-of-set-undef-irrel
 
     read-of-set-rip
     read-of-set-rax
@@ -2566,7 +2653,6 @@
     read-of-set-rsp
     read-of-set-rbp
     read-of-set-undef
-    read-of-set-undef
 
     get-flag-of-set-rip
     get-flag-of-set-rax
@@ -2585,8 +2671,8 @@
     get-flag-of-set-r15
     get-flag-of-set-rsp
     get-flag-of-set-rbp
-    get-flag-of-set-undef
-    get-flag-of-!rflags-of-xr
+
+    get-flag-of-!rflags-of-xr ; move?
 
     rax-of-set-rbx
     rax-of-set-rcx
@@ -2867,7 +2953,6 @@
     r15-of-set-flag
     rsp-of-set-flag
     rbp-of-set-flag
-    undef-of-set-flag
 
     alignment-checking-enabled-p-of-set-rip
     alignment-checking-enabled-p-of-set-rax
@@ -2886,10 +2971,8 @@
     alignment-checking-enabled-p-of-set-r15
     alignment-checking-enabled-p-of-set-rsp
     alignment-checking-enabled-p-of-set-rbp
-    alignment-checking-enabled-p-of-set-undef
     alignment-checking-enabled-p-of-!rflags-of-xr
 
-    undef-of-set-rip
     undef-of-set-rax
     undef-of-set-rbx
     undef-of-set-rcx
@@ -2924,7 +3007,6 @@
     xw-becomes-set-r15
     xw-becomes-set-rsp
     xw-becomes-set-rbp
-    xw-becomes-set-undef
     xw-becomes-set-error
 
     ;xr-becomes-rip
@@ -2944,7 +3026,6 @@
     xr-becomes-r15
     xr-becomes-rsp
     xr-becomes-rbp
-    xr-becomes-undef
 
     ;; Rules about 64-bit-modep
     64-bit-modep-of-set-rip
@@ -2964,7 +3045,6 @@
     64-bit-modep-of-set-r15
     64-bit-modep-of-set-rsp
     64-bit-modep-of-set-rbp
-    64-bit-modep-of-set-undef
 
     ctri-of-set-rip
     ctri-of-set-rax
@@ -2983,7 +3063,6 @@
     ctri-of-set-r15
     ctri-of-set-rsp
     ctri-of-set-rbp
-    ctri-of-set-undef
     ctri-of-!rflags ; rename !rflags?
     ctri-of-xw-irrel ; why?
     ctri-of-write
@@ -3019,7 +3098,6 @@
     r10-of-myif ;todo: more?
     rsp-of-myif
     rbp-of-myif
-    undef-of-myif
 
     rip-of-if
     rax-of-if
@@ -3038,7 +3116,6 @@
     r13-of-if
     r14-of-if
     r15-of-if
-    undef-of-if
 
     set-rip-of-myif
     set-rax-of-myif
@@ -3052,7 +3129,6 @@
     set-r10-of-myif ; todo: more?
     set-rsp-of-myif
     set-rbp-of-myif
-    set-undef-of-myif
 
     write-of-set-rip
     write-of-set-rax
@@ -3075,7 +3151,6 @@
     write-byte-of-set-rip
 
     ;; bury set-undef deep in the term:
-    set-undef-of-set-rip
     set-undef-of-set-rax
     set-undef-of-set-rbx
     set-undef-of-set-rcx
@@ -3092,10 +3167,9 @@
     set-undef-of-set-r15
     set-undef-of-set-rsp
     set-undef-of-set-rbp
-    set-undef-of-set-flag
+
     set-undef-of-write-byte
     set-undef-of-write
-    set-undef-of-!rflags ; why is !rflags showing up?
 
     set-rbx-of-set-rax
     set-rcx-of-set-rax
@@ -3249,7 +3323,6 @@
     set-r15-of-set-r15
     set-rsp-of-set-rsp
     set-rbp-of-set-rbp
-    set-undef-of-set-undef
 
     !RFLAGS-OF-SET-RIP
     !RFLAGS-OF-SET-RAX
@@ -3285,10 +3358,6 @@
     r15-of-!rflags
     rsp-of-!rflags
     rbp-of-!rflags
-    undef-of-!rflags ; why is !rflags not going away?
-
-    xw-becomes-set-undef
-    xr-becomes-undef
 
     integerp-of-rax
     integerp-of-rbx
@@ -3341,7 +3410,6 @@
     msri-of-set-r15
     msri-of-set-rsp
     msri-of-set-rbp
-    msri-of-set-undef
     msri-of-write
     msri-of-set-flag
 
@@ -3364,7 +3432,7 @@
     mv-nth-0-of-rme-size-of-set-r15
     mv-nth-0-of-rme-size-of-set-rsp
     mv-nth-0-of-rme-size-of-set-rbp
-    mv-nth-0-of-rme-size-of-set-undef
+    mv-nth-0-of-rme-size-of-set-undef ; move?
     ))
 
 (defund lifter-rules64-all ()
@@ -3649,7 +3717,7 @@
             ACL2::EQUAL-OF-BOOL-TO-BIT-AND-0 ; alt version needed, or do equals get turned around?
             ACL2::EQUAL-OF-BOOL-TO-BIT-AND-1 ; alt version needed, or do equals get turned around?
             ACL2::EQUAL-OF-1-AND-BITNOT ; todo: add 0 version
-            ;;ACL2::BVIF-OF-1-AND-0-BECOMES-BOOL-TO-BIT ; introduced bool-to-bit?  maybe bad.
+            ;;ACL2::BVIF-OF-1-AND-0-BECOMES-BOOL-TO-BIT ; introduces bool-to-bit?  maybe bad.
             ;; todo: just include boolean-rules?:
             acl2::bool-fix-when-booleanp
             acl2::booland-of-constant-arg1
