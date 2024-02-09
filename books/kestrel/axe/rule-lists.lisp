@@ -753,7 +753,7 @@
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
-     bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
+     bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
