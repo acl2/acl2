@@ -244,7 +244,7 @@
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
-;; to XW, WRITE, and SET-FLAG.
+;; to XW, WRITE, and SET-FLAG (todo: update this comment).
 (defun state-rules ()
   (declare (xargs :guard t))
   '(
@@ -265,16 +265,8 @@
     X86ISA::XW-RGF-OF-XR-RGF-SAME
 
     ;; Rules about get-flag
-    get-flag-of-set-eip
     get-flag-of-write-byte-to-segment
     get-flag-of-write-to-segment
-    get-flag-of-set-eax
-    get-flag-of-set-ebx
-    get-flag-of-set-ecx
-    get-flag-of-set-edx
-    get-flag-of-set-esp
-    get-flag-of-set-ebp
-
 
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
@@ -1586,6 +1578,8 @@
 
             ;; Can help resolve overflow conditions in Rust code:
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
+
+            acl2::not-of-cons
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -1765,13 +1759,6 @@
             code-segment-readable-bit-of-set-flag
             code-segment-readable-bit-of-write-byte-to-segment
             code-segment-readable-bit-of-write-to-segment
-            code-segment-readable-bit-of-set-eip
-            code-segment-readable-bit-of-set-eax
-            code-segment-readable-bit-of-set-ebx
-            code-segment-readable-bit-of-set-ecx
-            code-segment-readable-bit-of-set-edx
-            code-segment-readable-bit-of-set-esp
-            code-segment-readable-bit-of-set-ebp
             data-segment-writeable-bit-of-xw-irrel
             data-segment-writeable-bit-of-set-flag
             data-segment-writeable-bit-of-write-byte-to-segment
@@ -1832,7 +1819,40 @@
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 (defun lifter-rules32-new ()
   (declare (xargs :guard t))
-  '(
+  '(;; Introduce register writers:
+    xw-becomes-set-eip
+    xw-becomes-set-eax
+    xw-becomes-set-ebx
+    xw-becomes-set-ecx
+    xw-becomes-set-edx
+    xw-becomes-set-esp
+    xw-becomes-set-ebp
+
+    ;; Introduce register readers:
+    read-*ip-becomes-eip ; add a rule about xr as well?
+    xr-becomes-eax
+    xr-becomes-ebx
+    xr-becomes-ecx
+    xr-becomes-edx
+    xr-becomes-ebp
+    xr-becomes-esp
+
+    get-flag-of-set-eip
+    get-flag-of-set-eax
+    get-flag-of-set-ebx
+    get-flag-of-set-ecx
+    get-flag-of-set-edx
+    get-flag-of-set-esp
+    get-flag-of-set-ebp
+
+    code-segment-readable-bit-of-set-eip
+    code-segment-readable-bit-of-set-eax
+    code-segment-readable-bit-of-set-ebx
+    code-segment-readable-bit-of-set-ecx
+    code-segment-readable-bit-of-set-edx
+    code-segment-readable-bit-of-set-esp
+    code-segment-readable-bit-of-set-ebp
+
     ACL2::BVCHOP-NUMERIC-BOUND
 ;    not-mv-nth-0-of-ea-to-la-of-cs
     not-mv-nth-0-of-rme08
@@ -1895,7 +1915,6 @@
     acl2::fix-of-ifix
 
     ;; Rules about EIP/SET-EIP:
-    xw-becomes-set-eip
     xw-of-set-eip-irrel
     xr-of-set-eip-irrel
     xr-of-set-eip-same ; or turn xr into eip or get-eip?
@@ -1919,7 +1938,7 @@
     not-mv-nth-0-of-add-to-*ip
 ;mv-nth-1-of-add-to-*ip
     mv-nth-1-of-add-to-*ip-gen
-    read-*ip-becomes-eip
+
 
     undef-of-set-eip
     undef-of-set-eax
@@ -2324,22 +2343,6 @@
     ;; push memory writes inward:
     write-byte-to-segment-of-xw-rgf
     write-to-segment-of-xw-rgf
-
-    ;; Introduce register writers
-    xw-becomes-set-eax
-    xw-becomes-set-ebx
-    xw-becomes-set-ecx
-    xw-becomes-set-edx
-    xw-becomes-set-esp
-    xw-becomes-set-ebp
-
-    ;; Introduce register readers
-    xr-becomes-eax
-    xr-becomes-ebx
-    xr-becomes-ecx
-    xr-becomes-edx
-    xr-becomes-ebp
-    xr-becomes-esp
 
     eax-of-set-eax
     ebx-of-set-ebx
