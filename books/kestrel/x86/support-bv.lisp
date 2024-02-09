@@ -110,8 +110,8 @@
                   (acl2::bvshr 32 (bvand (+ 32 amt) x y) amt)))
   :hints (("Goal" :in-theory (e/d (acl2::bvshr bvand slice acl2::logtail-of-bvchop)
                                   (acl2::slice-of-logand
-                                   acl2::logand-of-bvchop-becomes-bvand-alt
-                                   acl2::logand-of-bvchop-becomes-bvand
+                                   ;acl2::logand-of-bvchop-becomes-bvand-alt
+                                   ;acl2::logand-of-bvchop-becomes-bvand
                                    acl2::bvchop-of-logtail-becomes-slice
                                    acl2::anti-slice
                                    ACL2::BVAND-LOGTAIL-ARG2 ;looped
