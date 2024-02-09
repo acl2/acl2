@@ -511,14 +511,20 @@
     leftrotate32-of-bvchop-5            ;new ;gen!
     sbvlt-of-bvchop-arg2
     sbvlt-of-bvchop-arg3
-    bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017 ; todo: other rule
+    bvlt-of-bvchop-arg2
+    bvlt-of-bvchop-arg3
     bvchop-of-bvchop
     getbit-of-bvchop
     slice-of-bvchop-low-gen
     slice-of-bvchop-too-high
-    ;;todo: bvcat rules
+    bvdiv-of-bvchop-arg2
+    bvdiv-of-bvchop-arg3
+    bvmod-of-bvchop-arg2
+    bvmod-of-bvchop-arg3
+    sbvdiv-of-bvchop-arg2
+    sbvdiv-of-bvchop-arg3
+    ;; todo: sbvmoddown?
     ))
-
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
@@ -753,7 +759,7 @@
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
-     bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
+     bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
@@ -2011,7 +2017,7 @@
     bvlt-when-bound-dag
 ;    bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
     bvlt-of-max-arg2          ;alt version?
-    bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
+    ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
     bvmod-of-power-of-2
     unsigned-byte-p-of-bvmod-gen ;remove since added to big list
 ;    slice-of-bvmult-of-expt
@@ -2359,11 +2365,6 @@
      equal-of-+-of-unary-minus
      subrange-of-cons
 
-     ;move these?
-     bvmod-of-bvchop-arg2
-     bvmod-of-bvchop-arg3
-     bvdiv-of-bvchop-arg2
-     bvdiv-of-bvchop-arg3
      equal-of-bv-array-write-and-bv-array-write-same
      ;;new stuff:
      ;;fixme: this rule seems bad so try without it (or with a replacement?): add a polarity?
@@ -3071,8 +3072,8 @@
              bvxor-subst-arg2
              bvxor-subst-arg3
 
-             bvlt-of-bvchop-arg3
-             bvlt-of-bvchop-arg2
+             ;;bvlt-of-bvchop-arg3
+             ;;bvlt-of-bvchop-arg2
 
              bvcat-subst-constant-arg2
              bvcat-subst-constant-arg4
