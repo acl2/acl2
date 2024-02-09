@@ -168,7 +168,6 @@
     x86isa::rgfi
     x86isa::!rgfi
     x86isa::rip
-    x86isa::ms
     x86isa::x86-run
     x86isa::x86-run-halt
     x86isa::prefixes-slice
@@ -187,9 +186,9 @@
     x86isa::increment-*ip
     x86isa::one-byte-opcode-execute
     x86isa::fault
-    x86isa::fault$inline
+    x86isa::fault$a
     x86isa::ms
-    x86isa::ms$inline
+    x86isa::ms$a
     x86isa::combine-bytes
 
     x86isa::ea-to-la
