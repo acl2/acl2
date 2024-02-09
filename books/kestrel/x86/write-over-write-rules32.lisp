@@ -174,3 +174,15 @@
   (equal (set-ebp ebp (set-eip eip x86))
          (set-eip eip (set-ebp ebp x86)))
   :hints (("Goal" :in-theory (enable set-eip))))
+
+
+;; These push set-undef inward:
+(defthm set-undef-of-set-eip (equal (set-undef undef (set-eip rip x86)) (set-eip rip (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm set-undef-of-set-eax (equal (set-undef undef (set-eax rax x86)) (set-eax rax (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-eax))))
+(defthm set-undef-of-set-ebx (equal (set-undef undef (set-ebx rbx x86)) (set-ebx rbx (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ebx))))
+(defthm set-undef-of-set-ecx (equal (set-undef undef (set-ecx rcx x86)) (set-ecx rcx (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ecx))))
+(defthm set-undef-of-set-edx (equal (set-undef undef (set-edx rdx x86)) (set-edx rdx (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-edx))))
+;; (defthm set-undef-of-set-esi (equal (set-undef undef (set-esi rsi x86)) (set-esi rsi (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-esi))))
+;; (defthm set-undef-of-set-edi (equal (set-undef undef (set-edi rdi x86)) (set-edi rdi (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-edi))))
+(defthm set-undef-of-set-esp (equal (set-undef undef (set-esp rsp x86)) (set-esp rsp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-esp))))
+(defthm set-undef-of-set-ebp (equal (set-undef undef (set-ebp rbp x86)) (set-ebp rbp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ebp))))

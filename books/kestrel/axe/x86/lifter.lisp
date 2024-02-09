@@ -2158,12 +2158,24 @@
        (measure-alist (if (eq :skip measures)
                           :skip
                         (doublets-to-alist measures)))
+       ;; Can't really use the new, nicer normal forms for readers and writers:
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
-                         (lifter-rules32)
-                       (append (lifter-rules64)
-                               '(x86isa::rip x86isa::rip$a) ; todo
+                         (set-difference-eq
+                          (lifter-rules32)
+                          '(xr-becomes-undef
+                            x86isa::!undef-becomes-set-undef
+                            xw-becomes-set-undef))
+                       (set-difference-eq
+                        (append (lifter-rules64)
+                                '(x86isa::rip x86isa::rip$a ; todo
+                                  x86isa::undef x86isa::undef$a ; exposes xr?
+                                  x86isa::!undef x86isa::!undef$a ; exposes xw?
+                                  )
                                ;(lifter-rules64-new); todo
-                               )))
+                                )
+                        '(xr-becomes-undef
+                          x86isa::!undef-becomes-set-undef
+                          xw-becomes-set-undef))))
        ((mv erp dag events
             ;; & ;;rules
             & ;;next-loop-num

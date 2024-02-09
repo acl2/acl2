@@ -16,11 +16,7 @@
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 (include-book "kestrel/utilities/myif" :dir :system)
 
-;; Reads the undef state component.
-;; TODO Just import x86isa::undef into the X package
-(defund undef (x86)
-  (declare (xargs :stobjs x86))
-  (x86isa::undef x86))
+(in-theory (disable undef))
 
 ;; Introduces undef
 (defthmd xr-becomes-undef
@@ -40,6 +36,11 @@
 (defund set-undef (undef x86)
   (declare (xargs :stobjs x86))
   (x86isa::!undef undef x86))
+
+(defthmd x86isa::!undef-becomes-set-undef
+  (equal (x86isa::!undef undef x86)
+         (set-undef undef x86))
+  :hints (("Goal" :in-theory (enable set-undef))))
 
 ;; Introduces set-undef
 (defthmd xw-becomes-set-undef
