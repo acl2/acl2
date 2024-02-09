@@ -261,6 +261,7 @@
     get-flag-of-set-flag
     set-flag-of-set-flag-diff-axe
     set-flag-of-set-flag-same
+    set-flag-of-get-flag-same
     x86isa::alignment-checking-enabled-p-of-set-flag
     X86ISA::XW-RGF-OF-XR-RGF-SAME
 
@@ -3365,7 +3366,8 @@
     mv-nth-0-of-rme-size-of-set-rsp
     mv-nth-0-of-rme-size-of-set-rbp
     mv-nth-0-of-rme-size-of-set-undef
-    ))
+
+    if-of-set-rip-and-set-rip-same))
 
 (defund lifter-rules64-all ()
   (declare (xargs :guard t))

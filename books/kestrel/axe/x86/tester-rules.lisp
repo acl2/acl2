@@ -829,10 +829,6 @@
                     else)))
   :hints (("Goal" :in-theory (disable))))
 
-(defthm if-of-set-flag-and-set-flag
-  (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))
-         (set-flag flag (if test val1 val2) x86)))
-
 ;todo: why is !rflags remaining in some examples like test_popcount_32_one_bit?
 
 ;move

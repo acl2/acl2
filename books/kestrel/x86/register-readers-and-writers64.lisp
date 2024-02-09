@@ -1014,18 +1014,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; We can merge 2 states (push IFs into the individual state components) when they have the same PC and neither is faulted.
+;; todo: make a 32-bit version
+(defun-nx mergeable-states64p (x86a x86b)
+  (declare (xargs :guard (and (x86p x86a)
+                              (x86p x86b))))
+  (and (equal (rip x86a) (rip x86b))
+       (not (ms x86a))
+       (not (fault x86a))
+       (not (ms x86b))
+       (not (fault x86b))))
+
 ;todo: more like this
-;; todo: only do this if the 2 states have the same PC (RIP) and are not faulted or error states
-(defthmd if-of-set-rax-arg2 (equal (if test (set-rax rax x86_1) x86_2) (set-rax (if test rax (rax x86_2)) (if test x86_1 x86_2))))
-(defthmd if-of-set-rbx-arg2 (equal (if test (set-rbx rbx x86_1) x86_2) (set-rbx (if test rbx (rbx x86_2)) (if test x86_1 x86_2))))
-(defthmd if-of-set-rcx-arg2 (equal (if test (set-rcx rcx x86_1) x86_2) (set-rcx (if test rcx (rcx x86_2)) (if test x86_1 x86_2))))
-(defthmd if-of-set-rdx-arg2 (equal (if test (set-rdx rdx x86_1) x86_2) (set-rdx (if test rdx (rdx x86_2)) (if test x86_1 x86_2))))
+(defthmd if-of-set-rax-arg2-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test (set-rax rax x86_1) x86_2) (set-rax (if test rax (rax x86_2)) (if test x86_1 x86_2)))))
+(defthmd if-of-set-rbx-arg2-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test (set-rbx rbx x86_1) x86_2) (set-rbx (if test rbx (rbx x86_2)) (if test x86_1 x86_2)))))
+(defthmd if-of-set-rcx-arg2-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test (set-rcx rcx x86_1) x86_2) (set-rcx (if test rcx (rcx x86_2)) (if test x86_1 x86_2)))))
+(defthmd if-of-set-rdx-arg2-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test (set-rdx rdx x86_1) x86_2) (set-rdx (if test rdx (rdx x86_2)) (if test x86_1 x86_2)))))
+
+;todo: more like this
+(defthmd if-of-set-rax-arg3-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test x86_1 (set-rax rax x86_2)) (set-rax (if test (rax x86_1) rax) (if test x86_1 x86_2)))))
+(defthmd if-of-set-rbx-arg3-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test x86_1 (set-rbx rbx x86_2)) (set-rbx (if test (rbx x86_1) rbx) (if test x86_1 x86_2)))))
+(defthmd if-of-set-rcx-arg3-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test x86_1 (set-rcx rcx x86_2)) (set-rcx (if test (rcx x86_1) rcx) (if test x86_1 x86_2)))))
+(defthmd if-of-set-rdx-arg3-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test x86_1 (set-rdx rdx x86_2)) (set-rdx (if test (rdx x86_1) rdx) (if test x86_1 x86_2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;todo: more like this
-;; todo: only do this if the 2 states have the same PC (RIP) and are not faulted or error states
-(defthmd if-of-set-rax-arg3 (equal (if test x86_1 (set-rax rax x86_2)) (set-rax (if test (rax x86_1) rax) (if test x86_1 x86_2))))
-(defthmd if-of-set-rbx-arg3 (equal (if test x86_1 (set-rbx rbx x86_2)) (set-rbx (if test (rbx x86_1) rbx) (if test x86_1 x86_2))))
-(defthmd if-of-set-rcx-arg3 (equal (if test x86_1 (set-rcx rcx x86_2)) (set-rcx (if test (rcx x86_1) rcx) (if test x86_1 x86_2))))
-(defthmd if-of-set-rdx-arg3 (equal (if test x86_1 (set-rdx rdx x86_2)) (set-rdx (if test (rdx x86_1) rdx) (if test x86_1 x86_2))))
