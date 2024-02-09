@@ -160,7 +160,7 @@
     ;; formals that appear in theorems (or do we want to import these from acl2?):
     x86isa::k
     x86isa::k2
-    x86isa::n
+    ;; x86isa::n ; same as in acl2 package
     x86isa::n2
 
     x86isa::!app-view
@@ -228,8 +228,9 @@
     x86isa::cr4bits->osfxsr
 
     x86isa::msri
+
     x86isa::mxcsrbits-fix
-    ;; todo: more like this:
+    ;; todo: more like this?:
     x86isa::mxcsrbits->daz$inline
     x86isa::mxcsrbits->de$inline
     x86isa::mxcsrbits->im$inline
@@ -242,6 +243,18 @@
     x86isa::mxcsrbits->oe$inline
     x86isa::mxcsrbits->rc$inline
 
+    x86isa::mxcsrbits->daz
+    x86isa::mxcsrbits->de
+    x86isa::mxcsrbits->im
+    x86isa::mxcsrbits->dm
+    x86isa::mxcsrbits->ie
+    x86isa::mxcsrbits->ze
+    x86isa::mxcsrbits->pe
+    x86isa::mxcsrbits->ue
+    x86isa::mxcsrbits->zm
+    x86isa::mxcsrbits->oe
+    x86isa::mxcsrbits->rc
+
     x86isa::feature-flag
 
     ;; floating-point stuff:
@@ -250,12 +263,8 @@
     x86isa::sse-cmp-special
     x86isa::mxcsr
     x86isa::mxcsr$a
-    x86isa::mxcsrbits-fix
-    x86isa::mxcsrbits->daz$inline x86isa::mxcsrbits->daz
-    x86isa::mxcsrbits->dm$inline x86isa::mxcsrbits->dm
-    x86isa::mxcsrbits->im$inline x86isa::mxcsrbits->im
+
     ;; todo: more like the above
-    x86isa::*op-ucomi*
     x86isa::snan
     x86isa::qnan
     x86isa::indef
@@ -295,7 +304,6 @@
     sbvrem
     logtail
     slice ;note that we don't get the slice from x86isa
-    myif
     bool->bit$inline
     bool->bit
     boolif
@@ -340,7 +348,6 @@
     want-to-strengthen ; for polarity-based reasoning
 
     ;; Stuff from ACL2 (TODO: Should these be in *acl2-exports*?):
-    common-lisp::ignorable
     my-sublis-var
     *t*
     *nil*
@@ -436,7 +443,6 @@
     empty-alist
     empty-acc
     defforall-simple
-    untranslate
     subset-eq
     submit-event
 
