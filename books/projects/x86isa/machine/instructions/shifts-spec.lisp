@@ -53,7 +53,7 @@
                        (bitops::logand-with-negated-bitmask
                         force (force)))))
 
-;; Note: SRC (for SAL/SAR/SHL/SHR) or CNT (for SHRD) operand is either an
+;; Note: SRC (for SAL/SAR/SHL/SHR) or CNT (for SHLD/SHRD) operand is either an
 ;; (unsigned-byte 6) or (unsigned-byte 5) since it is masked before the actual
 ;; rotate or shift operations.
 
@@ -99,7 +99,7 @@
            :in-theory (e/d (rflagsbits-p) (rflagsbits-p-of-rflagsbits
                                            unsigned-byte-p)))))
 
-;;;;;;;;;; SAL/SHR:
+;;;;;;;;;; SAL/SHL:
 
 (define sal/shl-spec-gen ((size :type (member 8 16 32 64)))
   :verify-guards nil
@@ -107,7 +107,7 @@
   (b* ((size-1 (1- size))
        (neg-size-1 (- size-1))
        (fn-name (mk-name "SAL/SHL-SPEC-" size))
-       (?str-nbits (if (eql size 8) "08" size)))
+       (str-nbits (if (eql size 8) "08" size)))
 
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
