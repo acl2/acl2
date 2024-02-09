@@ -673,10 +673,10 @@
   (declare (xargs :guard t))
   (append
    (bv-intro-rules)
-  '(acl2::bvlt-of-0-arg3 ;todo: more like this?
-    ACL2::LOGHEAD-BECOMES-BVCHOP
+  '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
+    ACL2::LOGHEAD-BECOMES-BVCHOP ; an intro-rule?
     acl2::logext-of-bvplus-64 ;somewhat unusual
-    logior-becomes-bvor-axe
+    logior-becomes-bvor-axe ; an intro-rule
     x86isa::n08-to-i08$inline ;this is just logext
     x86isa::slice-of-part-install-width-low
     x86isa::bvchop-of-part-install-width-low-becomes-bvcat
@@ -685,14 +685,14 @@
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
-    acl2::bvdiv-of-1-arg3
+;    acl2::bvdiv-of-1-arg3
     acl2::bvdiv-of-bvchop-arg2-same
     acl2::bvdiv-of-bvchop-arg3-same
 
     ;;todo: try core-runes-bv:
-    acl2::slice-of-slice-gen-better ;figure out which bv rules to include
-    acl2::bvcat-of-0-arg1
-    acl2::bvcat-of-0-arg3
+    ;acl2::slice-of-slice-gen-better ;figure out which bv rules to include
+    ;acl2::bvcat-of-0-arg1
+    ;acl2::bvcat-of-0-arg3
 
     bitops::rotate-left-32$inline-constant-opener ;todo: gen to a full rewrite
     acl2::rotate-left-constant-opener
