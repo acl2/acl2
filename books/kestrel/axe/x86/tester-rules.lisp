@@ -1,6 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
+; Copyright (C) 2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -481,9 +482,7 @@
 ;;   (equal (x86isa::feature-flag flag (if test x86 x86_2))
 ;;          (if test (x86isa::feature-flag flag x86) (x86isa::feature-flag flag x86_2))))
 
-(defthm ALIGNMENT-CHECKING-ENABLED-P-of-if
-  (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
-         (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
+
 
 ;; should not be needed
 (defthm xr-of-!rflags-irrel

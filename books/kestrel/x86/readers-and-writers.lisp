@@ -85,6 +85,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd xr-becomes-ms
+  (equal (xr :ms nil x86)
+         (ms x86)))
+
+;; todo: do we want to call it MS or ERROR?
+
 (defund set-error (error x86)
   (declare (xargs :stobjs x86))
   (x86isa::!ms error x86))

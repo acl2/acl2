@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1136,3 +1136,7 @@
 (defthm ctri-of-if
   (equal (ctri i (if test x86 x86_2))
          (if test (ctri i x86) (ctri i x86_2))))
+
+(defthm alignment-checking-enabled-p-of-if
+  (equal (alignment-checking-enabled-p (if test x86 x86_2))
+         (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))

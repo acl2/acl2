@@ -714,25 +714,9 @@
                                      x86isa::!rflagsbits->iopl x86isa::rflagsbits->iopl
                                      x86isa::!rflagsbits->intf x86isa::rflagsbits->intf))))
 
-;todo: dup
-(defun-nx mergeable-states64p (x86a x86b)
-  (declare (xargs :guard (and (x86p x86a)
-                              (x86p x86b))))
-  (and (equal (rip x86a) (rip x86b))
-       (not (ms x86a))
-       (not (fault x86a))
-       (not (ms x86b))
-       (not (fault x86b))))
 
-(defthmd if-of-set-flag-arg2-64
-  (implies (and (mergeable-states64p x86_1 x86_2)
-                (member-equal flag *flags*))
-           (equal (if test (set-flag flag val x86_1) x86_2) (set-flag flag (if test val (get-flag flag x86_2)) (if test x86_1 x86_2)))) )
 
-(defthmd if-of-set-flag-arg3-64
-  (implies (and (mergeable-states64p x86_1 x86_2)
-                (member-equal flag *flags*))
-           (equal (if test x86_1 (set-flag flag val x86_2)) (set-flag flag (if test (get-flag flag x86_1) val) (if test x86_1 x86_2)))) )
+
 
 (defthm if-of-set-flag-and-set-flag
   (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))
