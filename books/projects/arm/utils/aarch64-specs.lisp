@@ -130,6 +130,104 @@
   (common-mode-p (fpscr-rc x))
   :hints (("Goal" :in-theory (enable fpscr-rc))))
 
+(defthm exactp-lpn
+  (implies (and (formatp f)
+                (equal n (prec f)))
+           (exactp (lpn f) n))
+  :hints (("Goal" :in-theory (e/d (exactp2) ()))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d (lpn) ())))))
+
+(defthm exactp-spn
+  (implies (and (formatp f)
+                (posp n))
+           (exactp (spn f) n))
+  :hints (("Goal" :in-theory (e/d (exactp2 spn) ()))))
+
+(defthmd expo-spd
+  (implies (formatp f)
+           (equal (expo (spd f))
+                  (+ 2 (- (bias f)) (- (prec f)))))
+  :hints (("Goal" :in-theory (e/d (spd) ()))))
+
+(defthm exactp-spd
+  (implies (and (formatp f)
+                (posp n))
+           (and (exactp (spd f) n)
+                (exactp (- (spd f)) n)))
+  :hints (("Goal" :in-theory (e/d (spd exactp2) ()))))
+
+(defthmd drnd-tiny-rw
+  (implies (and (formatp f)
+                (rationalp x)
+                (common-mode-p mode)
+                (< x (spd f))
+                (< 0 x))
+           (equal (drnd x mode f)
+                  (if (or (and (< x (* 1/2 (spd f)))
+                               (member mode '(raz rup)))
+                          (and (= x (* 1/2 (spd f)))
+                               (member mode '(raz rup rna)))
+                          (and (> x (* 1/2 (spd f)))
+                               (not (member mode '(rtz rdn)))))
+                      (spd f)
+                    0)))
+  :hints (("Goal" :in-theory (e/d (expo-spd) ())
+                  :use (drnd-tiny-a
+                        drnd-tiny-b
+                        drnd-tiny-c))))
+
+(defthm exactp-0
+  (exactp 0 n)
+  :hints (("Goal" :in-theory (e/d (exactp) ()))))
+
+(local-defthmd exactp-drnd-when-<-spd
+  (implies (and (rationalp x)
+                (formatp f)
+                (< (abs x) (spd f))
+                (posp n))
+           (exactp (drnd x mode f) n))
+  :hints (("Goal" :cases ((or (not (common-mode-p mode))
+                              (= x 0))))
+          ("Subgoal 2"
+           :in-theory (e/d (drnd-minus flip-mode) (exactp-spd))
+           :use ((:instance drnd-tiny-rw
+                  (x (abs x))
+                  (mode (if (> x 0) mode (flip-mode mode))))
+                 (:instance expo-minus
+                  (x (drnd x mode f)))
+                 exactp-spd))
+          ("Subgoal 1"
+           :in-theory (e/d (drnd rnd
+                            common-mode-p ieee-rounding-mode-p) ()))))
+
+(defthm exactp-drnd
+  (implies (and (formatp f)
+                (rationalp u)
+                (< (abs u) (spn f))
+                (equal n (prec f)))
+           (exactp (drnd u mode f) n))
+  :hints (("Goal" :in-theory (e/d (drnd) (rnd-exactp-a))
+                  :cases ((or (= u 0)
+                              (<= (+ -1 (bias f) (expo u) (prec f)) 0))))
+          ("Subgoal 2"
+           :use ((:instance rnd-exactp-a
+                  (x u)
+                  (n (+ -1 (bias f) (expo u) (prec f))))
+                 (:instance exactp-<=
+                  (m (+ -1 (bias f) (expo u) (prec f)))
+                  (n (prec f))
+                  (x (drnd u mode f)))
+                 (:instance expo-monotone
+                  (x u) (y (spn f)))))
+          ("Subgoal 1" :cases ((= u 0)))
+          ("Subgoal 1.2"
+           :in-theory (e/d (expo-spd) ())
+           :use ((:instance exactp-drnd-when-<-spd
+                  (x u))
+                 (:instance expo-monotone
+                  (x (spd f)) (y u))))))
+
 (defun aarch64-post-comp (u fpcr fpsr f)
   (declare (xargs :guard (and (real/rationalp u)
                               (not (= u 0))
@@ -147,17 +245,15 @@
                                         (y (- (lpn f)))
                                         (mode (fpscr-rc fpcr))
                                         (n (prec f)))
-                                       (:instance nrepp-minus
-                                        (x (spn f)))
-                                       (:instance nrepp-minus
-                                        (x (lpn f)))
                                        (:instance drnd-exactp-a
                                         (x u)
                                         (mode (fpscr-rc fpcr)))
                                        (:instance rnd-drnd-up
                                         (x u)
                                         (mode (fpscr-rc fpcr))))
-                                 :in-theory (e/d (sgn set-flag rnd-minus)
+                                 :in-theory (e/d (sgn set-flag
+                                                  rnd-minus
+                                                  nrepp)
                                                  (rationalp-abs
                                                   acl2::|(< x (if a b c))|
                                                   nrepp-minus))))))
@@ -165,7 +261,9 @@
          (r (rnd u rmode (prec f)))
          (d (drnd u rmode f))
          (sgn (if (< u 0) 1 0)))
-    (if (> (abs r) (lpn f))
+    (if (and (not (and (equal f (hp))
+                       (= (bitn fpcr *ahp*) 1)))
+             (> (abs r) (lpn f)))
         (let ((fpsr (set-flag *ofc* (set-flag *ixc* fpsr))))
           (if (or (and (eql rmode 'rdn) (> r 0))
                   (and (eql rmode 'rup) (< r 0))
@@ -173,32 +271,37 @@
               (mv (nencode (* (sgn r) (lpn f)) f)
                   fpsr)
             (mv (iencode sgn f) fpsr)))
-      (if (< (abs u) (spn f))
-          ;; When AH = 1, detection of underflow occurs AFTER rounding with an
-          ;; UNBOUNDED exponent.
-          (if (and (= (bitn fpcr *ah*) 1)
-                   (= (abs r) (spn f)))
-              (mv (nencode d f) ;; should be the same as (nencode r f)
-                  (set-flag *ixc* fpsr))
-            (if (or (and (equal f (hp))
-                         (= (bitn fpcr *fz16*) 1))
-                    (and (not (equal f (hp)))
-                         (= (bitn fpcr *fz*) 1)))
-                (mv (zencode sgn f)
-                    (if (= (bitn fpcr *ah*) 1)
-                        (set-flag *ixc* (set-flag *ufc* fpsr))
-                      (set-flag *ufc* fpsr)))
-              (if (= d u)
-                  (mv (dencode d f) fpsr)
-                (let (;; UFC is set when the result is inexact.
-                      (fpsr (set-flag *ixc* (set-flag *ufc* fpsr))))
-                  (if (= d 0)
-                      (mv (zencode sgn f) fpsr)
-                    (if (= (abs d) (spn f))
-                        (mv (nencode d f) fpsr)
-                      (mv (dencode d f) fpsr)))))))
-        (mv (nencode r f)
-            (if (= r u) fpsr (set-flag *ixc* fpsr)))))))
+      (if (and (equal f (hp))
+               (= (bitn fpcr *ahp*) 1)
+               (>= (abs r) (expt 2 17)))
+          ;; Alternate HP mode
+          (mv (cat sgn 1 #x7FFF 15) (set-flag *ioc* fpsr))
+        (if (< (abs u) (spn f))
+            ;; When AH = 1, detection of underflow occurs AFTER rounding with an
+            ;; UNBOUNDED exponent.
+            (if (and (= (bitn fpcr *ah*) 1)
+                     (= (abs r) (spn f)))
+                (mv (nencode d f) ;; should be the same as (nencode r f)
+                    (set-flag *ixc* fpsr))
+              (if (or (and (equal f (hp))
+                           (= (bitn fpcr *fz16*) 1))
+                      (and (not (equal f (hp)))
+                           (= (bitn fpcr *fz*) 1)))
+                  (mv (zencode sgn f)
+                      (if (= (bitn fpcr *ah*) 1)
+                          (set-flag *ixc* (set-flag *ufc* fpsr))
+                        (set-flag *ufc* fpsr)))
+                (if (= d u)
+                    (mv (dencode d f) fpsr)
+                  (let (;; UFC is set when the result is inexact.
+                        (fpsr (set-flag *ixc* (set-flag *ufc* fpsr))))
+                    (if (= d 0)
+                        (mv (zencode sgn f) fpsr)
+                      (if (= (abs d) (spn f))
+                          (mv (nencode d f) fpsr)
+                        (mv (dencode d f) fpsr)))))))
+          (mv (nencode r f)
+              (if (= r u) fpsr (set-flag *ixc* fpsr))))))))
 
 (defthm ieee-rounding-mode-p-of-fpscr-rc
   (ieee-rounding-mode-p (fpscr-rc x))
@@ -407,7 +510,9 @@
                                    aarch64-fpdot-comp
                                    aarch64-process-nans-4
                                    encodingp
-                                   aarch64-convert-qnan) ()))))
+                                   aarch64-convert-qnan)
+                                  (abs
+                                   acl2::|(< x (if a b c))|)))))
 
 (defthm bvecp-fpsr-aarch64-post-comp
   (implies (bvecp fpsr 32)

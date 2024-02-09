@@ -180,7 +180,7 @@
        (let* ((exponent (log2 rat)))
          (and (<= (emin k p) exponent)
               (<= exponent (emax k p))
-              (let ((possible-significand (/ rat (expt 2 exponent)))) ; will be in the range [1,2]
+              (let ((possible-significand (/ rat (expt 2 exponent)))) ; will be in the range [1,2)
                 ;; Shift left by p-1 places, and ensure there are no 1 bits
                 ;; beyond the p-1 bits immediately to the right of the radix
                 ;; point:
@@ -233,6 +233,29 @@
                 ;; point:
                 (integerp (* possible-significand (expt 2 (- p 1)))))))))
 
+(defthm not-representable-positive-subnormalp-of-0
+  (not (representable-positive-subnormalp k p 0))
+  :hints (("Goal" :in-theory (enable representable-positive-subnormalp))))
+
+(defthmd subnormals-are-smaller
+  (implies (and (rationalp rat1)
+                (rationalp rat2)
+                (representable-positive-subnormalp k p rat1)
+                (representable-positive-normalp k p rat2)
+                (formatp k p))
+           (< rat1 rat2))
+  :hints (("Goal" :in-theory (enable representable-positive-subnormalp representable-positive-normalp))))
+
+;; The normals and subnormals are disjoint.
+(defthm not-and-representable-positive-normalp-and-representable-positive-subnormalp
+  (not (and (representable-positive-normalp k p rat)
+            (representable-positive-subnormalp k p rat)))
+  :rule-classes nil
+  :hints (("Goal" :in-theory (enable representable-positive-normalp
+                                     representable-positive-subnormalp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Checks whether the rational RAT is representable as a subnormal number in
 ;; the floating-point format (K,P).
 (defund representable-subnormalp (k p rat)
@@ -242,8 +265,7 @@
 
 (defthm not-representable-subnormalp-of-0
   (not (representable-subnormalp k p 0))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable representable-positive-subnormalp representable-subnormalp))))
+  :hints (("Goal" :in-theory (enable representable-subnormalp))))
 
 (defthm representable-subnormalp-of--
   (equal (representable-subnormalp k p (- rat))
@@ -256,10 +278,12 @@
   (not (and (representable-normalp k p rat)
             (representable-subnormalp k p rat)))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable representable-normalp
-                                     representable-subnormalp
-                                     representable-positive-normalp
-                                     representable-positive-subnormalp))))
+  :hints (("Goal" :use (:instance not-and-representable-positive-normalp-and-representable-positive-subnormalp
+                                  (rat (abs rat)))
+           :in-theory (enable representable-normalp
+                              representable-subnormalp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks whether RAT is a nonzero rational number representable in the
 ;; floating-point format (K,P).  Note that 0 is represented differently.
@@ -720,6 +744,13 @@
   :hints (("Goal" :in-theory (enable representable-positive-subnormalp smallest-positive-normal decode-normal-number bias emax emin
                                      <=-of-expt-of-2-when-<=-of-log2))))
 
+;; Proof of a claim in Section 3.3
+(defthmd smallest-positive-normal-redef
+  (implies (formatp k p)
+           (equal (smallest-positive-normal k p)
+                  (expt 2 (emin k p))))
+  :hints (("Goal" :in-theory (enable smallest-positive-normal decode-normal-number emin bias))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv sign biased-exponent trailing-significand).
@@ -1056,6 +1087,16 @@
                             bitp
                             encode-normal-number-type)))))
 
+;; Proof of a claim in Section 3.3
+(defthmd largest-normal-redef
+  (implies (formatp k p)
+           (equal (largest-normal k p)
+                  (* (expt 2 (emax k p))
+                     (- 2
+                        (expt 2 (- 1 p))))))
+  :hints (("Goal" :in-theory (enable largest-normal decode-normal-number wfn bias emax))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund largest-subnormal (k p)
@@ -1143,12 +1184,20 @@
   :hints (("Goal" :in-theory (enable smallest-positive-subnormal representable-positive-subnormalp decode-subnormal-number bias emin emax))))
 
 (defthm smallest-positive-subnormal-correct
-  (implies (and (representable-positive-subnormalp k p rat)
+  (implies (and (representable-positive-subnormalp k p rat) ; todo: generalize
                 (rationalp rat)
                 (formatp k p))
            (<= (smallest-positive-subnormal k p) rat))
   :hints (("Goal" :in-theory (enable representable-positive-subnormalp smallest-positive-subnormal decode-subnormal-number bias emax emin
                                      <=-of-expt-of-2-when-<=-of-log2))))
+
+;; Proof of a claim in Section 3.3
+(defthmd smallest-positive-subnormal-redef
+  (implies (formatp k p)
+           (equal (smallest-positive-subnormal k p)
+                  (* (expt 2 (emin k p))
+                     (expt 2 (- 1 p)))))
+  :hints (("Goal" :in-theory (enable smallest-positive-subnormal decode-subnormal-number emin bias))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

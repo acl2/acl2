@@ -20,8 +20,10 @@
 
 (include-book "support-axe")
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
@@ -450,7 +452,10 @@
           (acl2::print-to-hundredths assumption-simp-elapsed)
           (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%"))
-       (- (and print (cw "(Simplified assumptions: ~x0)~%" assumptions)))
+       (- (and print (progn$ (cw "(Simplified assumptions:~%")
+                             (print-list-elided assumptions '(program-at ; the program can be huge
+                                                              )) ; todo: more?
+                             (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (term-to-simulate '(run-until-return x86))
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?

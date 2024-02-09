@@ -676,3 +676,12 @@
      (slice-becomes-getbit bvchop-1-becomes-getbit
                            bvchop-of-logtail-becomes-slice
                            LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
+
+;drop in favor of a general trim rule?
+(defthm bvand-of-bvnot-trim
+  (implies (and (< low size)
+                (integerp size)
+                (natp low))
+           (equal (bvand low x (bvnot size y))
+                  (bvand low x (bvnot low y))))
+  :hints (("Goal" :in-theory (enable bvand))))
