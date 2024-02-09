@@ -72,6 +72,20 @@
                     0)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
+(defthm bvchop-of-bvshr-becomes-slice-safe
+  (implies (and (syntaxp (and (quotep shift-amount) ; not always true
+                              (quotep width)
+                              (quotep n)))
+                (integerp width)
+                (integerp shift-amount))
+           (equal (bvchop n (bvshr width x shift-amount))
+                  (if (natp n)
+                      (if (<= n (- width shift-amount))
+                          (slice (+ -1 n shift-amount) shift-amount x)
+                          (slice (+ -1 width) shift-amount x))
+                    0)))
+  :hints (("Goal" :in-theory (enable bvshr))))
+
 ;yuck?
 ;changes the width depending on the shift amount
 (defthmd bvchop-of-bvshr-new
