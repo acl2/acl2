@@ -643,16 +643,6 @@
                   x86-2))
   :hints (("Goal" :in-theory (enable !rflags))))
 
-(defthm app-view-of-set-flag
-  (equal (app-view (set-flag flag val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable set-flag))))
-
-(defthm x86p-of-set-flag
-  (implies (x86p x86)
-           (x86p (set-flag flag val x86)))
-  :hints (("Goal" :in-theory (enable set-flag))))
-
 (defthm xr-rflags-of-set-flag-af
   (equal (xr :rflags nil (set-flag :af val x86))
          (x86isa::!rflagsbits->af$inline val (xr :rflags nil x86)))
@@ -747,3 +737,8 @@
 (defthm if-of-set-flag-and-set-flag
   (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))
          (set-flag flag (if test val1 val2) x86)))
+
+(defthm get-flag-of-!rflags-of-xr
+  (equal (get-flag flag (!rflags (xr ':rflags 'nil x86_1) x86_2))
+         (get-flag flag x86_1))
+  :hints (("Goal" :in-theory (enable !rflags get-flag))))
