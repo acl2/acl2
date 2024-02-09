@@ -312,7 +312,8 @@
                           (logext n b))))
   :hints (("Goal" :in-theory (e/d (logext
                                    getbit
-                                   slice)
+                                   slice
+                                   bvand)
                                   ( ;gen LOGAND-OF-LOGAPP and drop?
                                    LOGAPP-OF-0-ARG3
                                    BVCHOP-1-BECOMES-GETBIT
