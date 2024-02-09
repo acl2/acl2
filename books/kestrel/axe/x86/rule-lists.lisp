@@ -1064,7 +1064,7 @@
           '(ACL2::BOOLOR-OF-NON-NIL)
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           (float-rules)
-          ;;(acl2::core-rules-bv) ;acl2::not-equal-max-int-when-<= not defined
+          (acl2::core-rules-bv)
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
