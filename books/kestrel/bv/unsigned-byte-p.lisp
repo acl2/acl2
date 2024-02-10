@@ -309,3 +309,11 @@
                 (natp size))
            (unsigned-byte-p size (+ x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+))))
+
+(defthm unsigned-byte-p-of-+-of-expt-and--
+  (implies (integerp x)
+           (equal (unsigned-byte-p size (+ (expt 2 size) (- x)))
+                  (and (< 0 x)
+                       (<= x (expt 2 size))
+                       (natp size))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
