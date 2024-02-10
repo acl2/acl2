@@ -3946,6 +3946,10 @@
 (set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe-gen -10) ;thu mar 25 04:05:09 2010
 (set-axe-rule-priority bv-array-read-of-bv-array-write-same-gen -10)
 
+;; when rotate unrolling is being done, we prefer these rules:
+(set-axe-rule-priority rightrotate-becomes-rightrotate-unroller-strong2 -1)
+(set-axe-rule-priority leftrotate-becomes-leftrotate-unroller-strong2 -1)
+
 ;; (defconst *super-rules*
 ;;   '(
 ;; ;   slice-of-bvplus-low

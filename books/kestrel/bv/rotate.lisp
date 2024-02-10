@@ -393,6 +393,21 @@
 ;; expect leftrotate-unroller-opener to fire next.
 ;; This one puts a MOD around the amt.
 ;todo: compare to the rule just below
+(defthmd leftrotate-becomes-leftrotate-unroller
+  (implies (and (syntaxp (and (not (quotep amt)) ; avoids loops, goal is to make all amounts be quoteps
+                              (quotep width)))
+                (<= amt width)
+                (natp amt)
+                (natp width))
+           (equal (leftrotate width amt val)
+                  (leftrotate-unroller width ;(+ -1 width)
+                                       width amt val)))
+  :hints (("Goal" :in-theory (enable leftrotate-unroller-intro-helper))))
+
+;; This one requires showing that (<= amt width).
+;; When the shift amount is not a constant, split into possible cases.  We
+;; expect leftrotate-unroller-opener to fire next.  TODO: Do we need cases for
+;; both the shift amount itself and 0?
 (defthmd leftrotate-becomes-leftrotate-unroller-strong
   (implies (and (syntaxp (and (not (quotep amt)) ; avoids loops, goal is to make all amounts be quoteps
                               (quotep width)))
@@ -405,20 +420,20 @@
                            (amt (mod amt width))
                            (n (+ -1 width))))))
 
-;; This one requires showing that (<= amt width).
-;; When the shift amount is not a constant, split into possible cases.  We
-;; expect leftrotate-unroller-opener to fire next.  TODO: Do we need cases for
-;; both the shift amount itself and 0?
-(defthmd leftrotate-becomes-leftrotate-unroller
+;; Special case when width is a power of 2
+(defthmd leftrotate-becomes-leftrotate-unroller-strong2
   (implies (and (syntaxp (and (not (quotep amt)) ; avoids loops, goal is to make all amounts be quoteps
                               (quotep width)))
-                (<= amt width)
+                (power-of-2p width)
                 (natp amt)
                 (natp width))
            (equal (leftrotate width amt val)
-                  (leftrotate-unroller width ;(+ -1 width)
-                                       width amt val)))
-  :hints (("Goal" :in-theory (enable leftrotate-unroller-intro-helper))))
+                  (leftrotate-unroller (+ -1 width) width (bvchop (lg width) amt) val)))
+  :hints (("Goal" :cases ((equal 0 width))
+           :in-theory (enable bvchop)
+           :use (:instance leftrotate-unroller-intro-helper
+                           (amt (mod amt width))
+                           (n (+ -1 width))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -463,6 +478,21 @@
                    (rightrotate-unroller n width amt val)))
    :hints (("Goal" :in-theory (enable rightrotate-unroller)))))
 
+;; This one requires showing that (<= amt width).
+;; When the shift amount is not a constant, split into possible cases.  We
+;; expect rightrotate-unroller-opener to fire next.  TODO: Do we need cases for
+;; both the shift amount itself and 0?
+(defthmd rightrotate-becomes-rightrotate-unroller
+  (implies (and (syntaxp (and (not (quotep amt)) ; avoids loops, goal is to make all amounts be quoteps
+                              (quotep width)))
+                (<= amt width)
+                (natp amt)
+                (natp width))
+           (equal (rightrotate width amt val)
+                  (rightrotate-unroller width ;(+ -1 width)
+                                       width amt val)))
+  :hints (("Goal" :in-theory (enable rightrotate-unroller-intro-helper))))
+
 ;; When the shift amount is not a constant, split into possible cases.  We
 ;; expect rightrotate-unroller-opener to fire next.
 ;; This one puts a MOD around the amt.
@@ -479,17 +509,17 @@
                            (amt (mod amt width))
                            (n (+ -1 width))))))
 
-;; This one requires showing that (<= amt width).
-;; When the shift amount is not a constant, split into possible cases.  We
-;; expect rightrotate-unroller-opener to fire next.  TODO: Do we need cases for
-;; both the shift amount itself and 0?
-(defthmd rightrotate-becomes-rightrotate-unroller
+;; Special case when width is a power of 2
+(defthmd rightrotate-becomes-rightrotate-unroller-strong2
   (implies (and (syntaxp (and (not (quotep amt)) ; avoids loops, goal is to make all amounts be quoteps
                               (quotep width)))
-                (<= amt width)
+                (power-of-2p width)
                 (natp amt)
                 (natp width))
            (equal (rightrotate width amt val)
-                  (rightrotate-unroller width ;(+ -1 width)
-                                       width amt val)))
-  :hints (("Goal" :in-theory (enable rightrotate-unroller-intro-helper))))
+                  (rightrotate-unroller (+ -1 width) width (bvchop (lg width) amt) val)))
+  :hints (("Goal" :cases ((equal 0 width))
+           :in-theory (e/d (bvchop) (rightrotate-becomes-leftrotate))
+           :use (:instance rightrotate-unroller-intro-helper
+                           (amt (mod amt width))
+                           (n (+ -1 width))))))
