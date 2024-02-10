@@ -463,7 +463,7 @@
    '(bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
      bvshr-rewrite-for-constant-shift-amount             ; introduces slice
      bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
-     ;; todo: handle more cases.  a general solution?
+     ;; todo: handle more cases.  a general solution? ; see the leftrotate-unroller
      bvshl-16-cases ; todo: do something similar for rotate ops?
      bvshl-32-cases
      bvshl-64-cases

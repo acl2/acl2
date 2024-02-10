@@ -351,7 +351,7 @@
 ;; Only intended for rewriting when we want to split a rotate into cases.
 (defund leftrotate-unroller (n width amt val)
   (if (zp n)
-      (leftrotate width 0 val)
+      (leftrotate width 0 val) ; just bvchop?
     (if (equal n amt)
         (leftrotate width n val)
       (leftrotate-unroller (+ -1 n) width amt val))))
