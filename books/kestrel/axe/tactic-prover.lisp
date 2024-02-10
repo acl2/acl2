@@ -456,6 +456,7 @@
 
 (verify-guards lookup-nodes-in-counterexample)
 
+;move
 ;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
 (defund pre-stp-rules ()
   (declare (xargs :guard t))
@@ -479,7 +480,10 @@
      eql ; introduced by case
      not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
      not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
-     )
+     acl2::bvcat-of-0-arg1
+     acl2::equal-of-bvuminus-and-constant
+     acl2::bvcat-of-bvchop-high
+     acl2::bvcat-of-bvchop-low)
    (type-rules)
    (unsigned-byte-p-forced-rules)))
 
