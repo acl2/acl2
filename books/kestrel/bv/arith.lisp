@@ -345,12 +345,21 @@
 
 ;should be cheap
 ;complete set of these?!
-(defthm <-of-constant-when-<=-of-free
+;rename
+(defthmd <-of-constant-when-<=-of-free
   (implies (and (syntaxp (quotep k1))
                 (<= x free)
                 (syntaxp (quotep free))
                 (<= free k1))
            (not (< k1 x))))
+
+(defthmd not-<-of-constant-when-<-of-free
+  (implies (and (syntaxp (quotep k))
+                (< x free)
+                (syntaxp (quotep free))
+                (<= free k) ; can do better if things are integers
+                )
+           (not (< k x))))
 
 ;; (defthm <-of-sums-cancel
 ;;   (equal (< x (+ x y))
