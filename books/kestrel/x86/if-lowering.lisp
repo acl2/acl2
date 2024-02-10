@@ -1,4 +1,4 @@
-; Testing whether we should merge 2 states
+; Lowering IFs when appropriate
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "X")
+
+;; It seems that certain instruction semantic functions can introduce IFs, so we use this machinery to try to avoid splitting the simulation.
 
 (include-book "flags")
 (include-book "register-readers-and-writers64")
@@ -70,3 +72,15 @@
   (implies (mergeable-states64p x86_1 x86_2)
            (equal (if test x86_1 (write n ad val x86_2))
                   (write n ad (if test (read n ad x86_1) val) (if test x86_1 x86_2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd if-of-write-byte-arg2-64
+  (implies (mergeable-states64p x86_1 x86_2)
+           (equal (if test (write-byte ad val x86_1) x86_2)
+                  (write-byte ad (if test val (read-byte ad x86_2)) (if test x86_1 x86_2)))))
+
+(defthmd if-of-write-byte-arg3-64
+  (implies (mergeable-states64p x86_1 x86_2)
+           (equal (if test x86_1 (write-byte ad val x86_2))
+                  (write-byte ad (if test (read-byte ad x86_1) val) (if test x86_1 x86_2)))))

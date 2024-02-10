@@ -4023,15 +4023,23 @@
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
 
-;; For this strategy, we lower the if when the 2 states have the same PC and no faults (so the execution can continue with just the 1 merged state):
+;; For this strategy, we lower the IF when the 2 states have the same PC and no faults (so the execution can continue with just the 1 merged state):
+;; TODO: If the stack height is different, we might want to refrain (but then it would be a bit odd to have the same RIP).
 (defund if-lowering-rules ()
   (declare (xargs :guard t))
   '(mergeable-states64p
     if-of-set-rip-and-set-rip-same
+
     if-of-set-rax-arg2-64
-    if-of-set-rax-arg3-64
+    if-of-set-rbx-arg2-64
     if-of-set-rcx-arg2-64
+    if-of-set-rdx-arg2-64
+
+    if-of-set-rax-arg3-64
+    if-of-set-rbx-arg3-64
     if-of-set-rcx-arg3-64
+    if-of-set-rdx-arg3-64
+
     if-of-set-flag-arg2-64
     if-of-set-flag-arg3-64
     if-of-set-undef-arg2-64

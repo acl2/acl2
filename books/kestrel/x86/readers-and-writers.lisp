@@ -75,10 +75,6 @@
          x86)
   :hints (("Goal" :in-theory (enable undef set-undef))))
 
-;; These lower the IF:
-(defthmd if-of-set-undef-arg2 (equal (if test (set-undef undef x86_1) x86_2) (set-undef (if test undef (undef x86_2)) (if test x86_1 x86_2))))
-(defthmd if-of-set-undef-arg3 (equal (if test x86_1 (set-undef undef x86_2)) (set-undef (if test (undef x86_1) undef) (if test x86_1 x86_2))) )
-
 (defthm set-undef-of-myif (equal (set-undef val (myif test x y)) (myif test (set-undef val x) (set-undef val y))) :hints (("Goal" :in-theory (enable myif))))
 
 (defthm set-undef-of-if (equal (set-undef val (if test x y)) (if test (set-undef val x) (set-undef val y))))
