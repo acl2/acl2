@@ -91,6 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm rip-of-write (equal (rip (write n base-addr val x86)) (rip x86)) :hints (("Goal" :in-theory (enable write))))
 (defthm rax-of-write (equal (rax (write n base-addr val x86)) (rax x86)) :hints (("Goal" :in-theory (enable write))))
 (defthm rbx-of-write (equal (rbx (write n base-addr val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable write))))
 (defthm rcx-of-write (equal (rcx (write n base-addr val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable write))))

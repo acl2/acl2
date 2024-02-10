@@ -2905,3 +2905,8 @@
                              val)
                     (read 1 addr1 x86))))
   :hints (("Goal" :in-theory (disable read write))))
+
+(defthm write-of-read-same
+  (equal (write n ad (read n ad x86) x86)
+         x86)
+  :hints (("Goal" :in-theory (enable read write))))

@@ -13,6 +13,7 @@
 (include-book "flags")
 (include-book "register-readers-and-writers64")
 (include-book "readers-and-writers")
+(include-book "read-and-write")
 
 ;; We can merge 2 states (push IFs into the individual state components) when they have the same PC and neither is faulted.
 ;; todo: make a 32-bit version
@@ -56,3 +57,16 @@
 ;;todo: replace the others
 (defthmd if-of-set-undef-arg2-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test (set-undef undef x86_1) x86_2) (set-undef (if test undef (undef x86_2)) (if test x86_1 x86_2)))))
 (defthmd if-of-set-undef-arg3-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test x86_1 (set-undef undef x86_2)) (set-undef (if test (undef x86_1) undef) (if test x86_1 x86_2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: add rules for write-byte, etc.
+(defthmd if-of-write-arg2-64
+  (implies (mergeable-states64p x86_1 x86_2)
+           (equal (if test (write n ad val x86_1) x86_2)
+                  (write n ad (if test val (read n ad x86_2)) (if test x86_1 x86_2)))))
+
+(defthmd if-of-write-arg3-64
+  (implies (mergeable-states64p x86_1 x86_2)
+           (equal (if test x86_1 (write n ad val x86_2))
+                  (write n ad (if test (read n ad x86_1) val) (if test x86_1 x86_2)))))

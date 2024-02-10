@@ -2435,6 +2435,7 @@
   (append (lifter-rules32)
           (lifter-rules32-new)))
 
+;; do we ever use this without the new rules below?  maybe for the loop lifter...
 (defun lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
@@ -2561,6 +2562,8 @@
     rip-of-set-rsp
     rip-of-set-rbp
     rip-of-xw-irrel
+    rip-of-write ; todo: more
+    rip-of-set-flag
 
     rax-of-set-rax
     rbx-of-set-rbx
@@ -4019,3 +4022,46 @@
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
+
+;; For this strategy, we lower the if when the 2 states have the same PC and no faults (so the execution can continue with just the 1 merged state):
+(defund if-lowering-rules ()
+  (declare (xargs :guard t))
+  '(mergeable-states64p
+    if-of-set-rip-and-set-rip-same
+    if-of-set-rax-arg2-64
+    if-of-set-rax-arg3-64
+    if-of-set-rcx-arg2-64
+    if-of-set-rcx-arg3-64
+    if-of-set-flag-arg2-64
+    if-of-set-flag-arg3-64
+    if-of-set-undef-arg2-64
+    if-of-set-undef-arg3-64
+    if-of-write-arg2-64
+    if-of-write-arg3-64
+    ))
+
+;; ;; strategy 1: where we lift the ifs (todo: restrict to provably different pcs or fault statuses?):
+                 ;; set-rax-of-if-arg2
+                 ;; set-rdi-of-if-arg2
+                 ;; set-rip-of-if
+                 ;; set-undef-of-if
+                 ;; set-flag-of-if
+                 ;; ;xr-of-if ; overkill?  also one in the x86isa pkg?
+                 ;; ;64-bit-modep-of-if
+
+
+                 ;; ;; Strategy 2b: don't lift or lower the if because the states all have the same pc (instead, we just try to resolve the next instruction).  warning: if some of these rules are missing, very large terms can result:
+                 ;; ;; x86isa::xr-of-if-special-case-for-ms
+                 ;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
+                 ;; ;; x86isa::64-bit-modep-of-if
+                 ;; ;; ;x86isa::rb-of-if-arg2
+                 ;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
+                 ;;   ;;acl2::<-of-+-cancel-1+-1
+                 ;;   ;;acl2::<-minus-zero
+                 ;;   x86isa::64-bit-modep-of-if
+                 ;;   x86isa::app-view-of-if
+                 ;;   x86isa::x86p-of-if
+                 ;;   read-of-if
+                 ;;   ;; or lower ifs with if-of-write
+                 ;;   xr-of-if ; too much?  need ms
+                 ;;   x86isa::alignment-checking-enabled-p-of-if
