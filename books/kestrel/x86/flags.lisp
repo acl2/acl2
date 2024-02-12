@@ -714,13 +714,13 @@
                                      x86isa::!rflagsbits->iopl x86isa::rflagsbits->iopl
                                      x86isa::!rflagsbits->intf x86isa::rflagsbits->intf))))
 
-(defthmd if-of-set-flag-arg2
-  (implies (member-equal flag *flags*)
-           (equal (if test (set-flag flag val x86_1) x86_2) (set-flag flag (if test val (get-flag flag x86_2)) (if test x86_1 x86_2)))) )
 
-(defthmd if-of-set-flag-arg3
-  (implies (member-equal flag *flags*)
-           (equal (if test x86_1 (set-flag flag val x86_2)) (set-flag flag (if test (get-flag flag x86_1) val) (if test x86_1 x86_2)))) )
+
+
+
+(defthm if-of-set-flag-and-set-flag
+  (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))
+         (set-flag flag (if test val1 val2) x86)))
 
 (defthm get-flag-of-!rflags-of-xr
   (equal (get-flag flag (!rflags (xr ':rflags 'nil x86_1) x86_2))

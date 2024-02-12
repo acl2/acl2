@@ -42,6 +42,11 @@
            (unsigned-byte-p size1 (rightrotate size2 x y)))
   :hints (("Goal" :in-theory (enable rightrotate))))
 
+(defthm rightrotate-of-0-arg1
+  (equal (rightrotate 0 amt val)
+         0)
+  :hints (("Goal" :in-theory (enable rightrotate))))
+
 (defthm rightrotate-of-0-arg2
   (equal (rightrotate width 0 val)
          (bvchop width val))
@@ -56,8 +61,8 @@
   (rightrotate 64 amt val))
 
 (defthmd rightrotate-open-when-constant-shift-amount
-  (implies (and (syntaxp (quotep amt))
-                (syntaxp (quotep width)))
+  (implies (syntaxp (and (quotep amt)
+                         (quotep width)))
            (equal (rightrotate width amt val)
                   (if (equal 0 width)
                       0
@@ -66,4 +71,11 @@
                       (bvcat amt (slice (+ -1 amt) 0 val)
                              (- width amt)
                              (slice (+ -1 width) amt val))))))
+  :hints (("Goal" :in-theory (enable rightrotate))))
+
+(defthm rightrotate-of-mod-arg2
+  (implies (and (natp width)
+                (natp amt))
+           (equal (rightrotate width (mod amt width) val)
+                  (rightrotate width amt val)))
   :hints (("Goal" :in-theory (enable rightrotate))))

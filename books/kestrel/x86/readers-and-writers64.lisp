@@ -75,7 +75,11 @@
 
 ;todo: more like this, also try such rules first?
 (defthmd if-of-set-rip-and-set-rip-same
-  (equal (if test (set-rip rip x86_1) (set-rip rip x86_2)) ; same rip on both branches
-         (set-rip rip (if test x86_1 x86_2))))
+  (implies (and (not (ms x86a)) ; only do it if neither state is faulted
+                (not (fault x86a))
+                (not (ms x86b))
+                (not (fault x86b)))
+           (equal (if test (set-rip rip x86a) (set-rip rip x86b)) ; same rip on both branches
+                  (set-rip rip (if test x86a x86b)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

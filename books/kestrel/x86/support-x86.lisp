@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -322,13 +322,13 @@
      x86isa::*VIP*
      x86isa::*ID*))))
 
-(in-theory (disable logcount))
-(in-theory (disable x86isa::WRITE-USER-RFLAGS-AND-XW))
-(in-theory (disable BYTE-LISTP))
-(in-theory (disable x86isa::COMBINE-BYTES))
+(in-theory (disable logcount
+                    x86isa::write-user-rflags-and-xw
+                    byte-listp
+                    x86isa::combine-bytes))
 
 (defthm canonical-address-p-between
-  (implies (and (canonical-address-p low)
+  (implies (and (canonical-address-p low) ; low and high are free vars
                 (canonical-address-p high)
                 (<= low ad)
                 (<= ad high))
@@ -1136,3 +1136,7 @@
 (defthm ctri-of-if
   (equal (ctri i (if test x86 x86_2))
          (if test (ctri i x86) (ctri i x86_2))))
+
+(defthm alignment-checking-enabled-p-of-if
+  (equal (alignment-checking-enabled-p (if test x86 x86_2))
+         (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))
