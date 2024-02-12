@@ -175,9 +175,11 @@
             myif-same-test2
             myif-same-arg1-arg2-when-booleanp-axe
 
+            ;; todo: compare to the myif rules:
             if-of-t
             if-of-nil
             if-same-branches
+            if-of-t-and-nil-when-booleanp
             not-of-if
 
             fix-when-acl2-numberp

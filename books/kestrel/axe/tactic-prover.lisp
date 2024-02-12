@@ -461,7 +461,8 @@
 (defund pre-stp-rules ()
   (declare (xargs :guard t))
   (append
-   '(bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
+   '(;; since we don't translate these shift operations to STP:
+     bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
      bvshr-rewrite-for-constant-shift-amount             ; introduces slice
      bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
      ;; todo: handle more cases.  a general solution? ; see the leftrotate-unroller
@@ -474,16 +475,15 @@
      bvashr-16-cases
      bvashr-32-cases
      bvashr-64-cases
-     ;; these are needed to resolve claims about the indiced being in bounds (todo: generalize the rules above):
+     ;; these are needed to resolve claims about the indices being in bounds (todo: generalize the rules above):
      <-lemma-for-known-operators-axe
      <-lemma-for-known-operators-axe-alt
      eql ; introduced by case
      not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
      not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
      acl2::bvcat-of-0-arg1
-     acl2::equal-of-bvuminus-and-constant
-     acl2::bvcat-of-bvchop-high
-     acl2::bvcat-of-bvchop-low)
+     acl2::equal-of-bvuminus-and-constant)
+   (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))
 
