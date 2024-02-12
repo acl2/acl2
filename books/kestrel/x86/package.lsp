@@ -475,7 +475,9 @@
 
 ;; TODO: Think about this...
 (defconst *common-formals*
-  '(x y m n size i))
+  '(x y z m n size i
+    x86isa::ad x86isa::low x86isa::high
+    ))
 
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
