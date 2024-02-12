@@ -2659,6 +2659,25 @@
     read-of-set-rbp
     read-of-set-undef
 
+    read-byte-of-set-rip
+    read-byte-of-set-rax
+    read-byte-of-set-rbx
+    read-byte-of-set-rcx
+    read-byte-of-set-rdx
+    read-byte-of-set-rsi
+    read-byte-of-set-rdi
+    read-byte-of-set-r8
+    read-byte-of-set-r9
+    read-byte-of-set-r10
+    read-byte-of-set-r11
+    read-byte-of-set-r12
+    read-byte-of-set-r13
+    read-byte-of-set-r14
+    read-byte-of-set-r15
+    read-byte-of-set-rsp
+    read-byte-of-set-rbp
+    read-byte-of-set-undef
+
     get-flag-of-set-rip
     get-flag-of-set-rax
     get-flag-of-set-rbx
@@ -3437,8 +3456,27 @@
     mv-nth-0-of-rme-size-of-set-r15
     mv-nth-0-of-rme-size-of-set-rsp
     mv-nth-0-of-rme-size-of-set-rbp
-
     mv-nth-0-of-rme-size-of-set-undef ; move?
+
+    mv-nth-1-of-rme-size-of-set-rip
+    mv-nth-1-of-rme-size-of-set-rax
+    mv-nth-1-of-rme-size-of-set-rbx
+    mv-nth-1-of-rme-size-of-set-rcx
+    mv-nth-1-of-rme-size-of-set-rdx
+    mv-nth-1-of-rme-size-of-set-rsi
+    mv-nth-1-of-rme-size-of-set-rdi
+    mv-nth-1-of-rme-size-of-set-r8
+    mv-nth-1-of-rme-size-of-set-r9
+    mv-nth-1-of-rme-size-of-set-r10
+    mv-nth-1-of-rme-size-of-set-r11
+    mv-nth-1-of-rme-size-of-set-r12
+    mv-nth-1-of-rme-size-of-set-r13
+    mv-nth-1-of-rme-size-of-set-r14
+    mv-nth-1-of-rme-size-of-set-r15
+    mv-nth-1-of-rme-size-of-set-rsp
+    mv-nth-1-of-rme-size-of-set-rbp
+
+    x86isa::mv-nth-2-of-rme-size-when-app-view ; move?
 
     if-of-set-rip-and-set-rip-same))
 

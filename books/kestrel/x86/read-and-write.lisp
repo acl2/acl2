@@ -324,7 +324,7 @@
              byte))))
 
 (in-theory (disable ;memi$inline
-            n48$inline ; todo
+            ;n48$inline ; todo
             ;;app-view$inline
             ))
 
@@ -1159,13 +1159,11 @@
 
 ;; Handles both cases (same address, different address)
 (defthm read-byte-of-write-byte
-  (implies (and (integerp addr2)
-                (integerp addr1))
-           (equal (read-byte addr1 (write-byte addr2 byte x86))
-                  (if (equal (bvchop 48 addr1)
-                             (bvchop 48 addr2))
-                      (bvchop 8 byte)
-                    (read-byte addr1 x86))))
+  (equal (read-byte addr1 (write-byte addr2 byte x86))
+         (if (equal (bvchop 48 addr1)
+                    (bvchop 48 addr2))
+             (bvchop 8 byte)
+           (read-byte addr1 x86)))
   :hints (("Goal" :in-theory (enable read-byte write-byte))))
 
 (defthm write-byte-of-read-byte-same
@@ -1415,19 +1413,18 @@
                     (:free (addr val x86) (WRITE n ADDR VAL X86))))))
 
 (defthm read-of-write-same
-  (implies (and (canonical-address-p addr)
-                (implies (posp n) (canonical-address-p (+ -1 n addr))) ;drop?
+  (implies (and (<= n 281474976710656) ; 2^48
+                (integerp addr)
                 (integerp n))
            (equal (read n addr (write n addr val x86))
                   (bvchop (* 8 n) val)))
-  :hints (;("subgoal *1/2" :cases ((equal n1 1)))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-;           :expand (WRITE N ADDR VAL X86)
-;           :induct (read n addr x86)
+  :hints (("Goal"
            :in-theory (e/d (read separate canonical-address-p app-view write
-                                     read-byte write-byte
-                                     acl2::bvchop-of-logtail-becomes-slice)
-                           (;X86ISA::!MEMI$INLINE
+                                 read-byte write-byte
+                                 acl2::bvchop-of-logtail-becomes-slice)
+                           ( ;X86ISA::!MEMI$INLINE
+                            memi
+                            (:e expt) ; memory exhaustion
                             )))))
 
 ;; write-of-write:
@@ -1779,10 +1776,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm read-of-write-both-size-1
-  (implies (and (app-view x86) ;drop
-                (canonical-address-p addr)
-                (canonical-address-p addr2)
-                (x86p x86))
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p addr2))
            (equal (read 1 addr (write 1 addr2 val x86))
                   (if (equal addr addr2)
                       (bvchop 8 val)
@@ -1791,17 +1786,27 @@
                           (< addr2 addr))
            :in-theory (e/d (read) (write-of-0)))))
 
+(defthm read-of-write-both-size-1-alt
+  (equal (read 1 addr (write 1 addr2 val x86))
+         (if (equal (bvchop 48 addr) (bvchop 48 addr2))
+             (bvchop 8 val)
+           (read 1 addr x86)))
+  :hints (("Goal" :expand (write 1 addr2 val x86)
+           :in-theory (e/d (read write) (write-of-0)))))
+
+;gen!
 (defthm read-1-of-write-4-same
   (implies (and (natp read-ad)
                 (< read-ad (bvplus 48 4 write-ad))
                 (<= write-ad read-ad)
-                (app-view x86) ;drop
+                ;(app-view x86) ;drop
                 (canonical-address-p read-ad)
                 ;; (canonical-address-p write-ad)
                 (canonical-address-p (+ 3 write-ad))
                 (natp write-ad)
                 (< write-ad 5000000000) ;fixme
-                (X86P X86))
+                ;(X86P X86)
+                )
            (equal (read 1 read-ad (write 4 write-ad val x86))
                   (let ((byte-num (- read-ad write-ad)))
                     (slice (+ 7 (* 8 byte-num))
