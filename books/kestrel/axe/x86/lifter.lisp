@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -46,6 +46,7 @@
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "support-axe")
+;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
@@ -73,6 +74,7 @@
 ;(include-book "kestrel/axe/rules2" :dir :system) ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "axe/basic-rules" :dir :kestrel-acl2)
 (include-book "kestrel/bv/arith" :dir :system) ;todo
+(include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 ;(include-book "kestrel/arithmetic-light/mod" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.

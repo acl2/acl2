@@ -3665,17 +3665,6 @@
 
 (in-theory (disable BVPLUS-3221225472-HACK))
 
-;subsumes the one for 0
-(defthm equal-of-constant-and-bvuminus
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                ;(integerp x)
-                (natp size))
-           (equal (equal k (bvuminus size x))
-                  (and (unsigned-byte-p size k)
-                       (equal (bvuminus size k) (bvchop size x)))))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus) (bvminus-becomes-bvplus-of-bvuminus)))))
-
 ;gen
 ;the lemma is much nicer when we know the top slcie
 (defthm bvlt-of-slice-top

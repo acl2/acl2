@@ -415,12 +415,14 @@
                                        (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1 (work-hardp: ~x2, work-hard-when-instructedp: ~x3).~%" hyp rule-symbol work-hardp work-hard-when-instructedp)
                                                (cw "Reason: Rewrote to:~%")
                                                (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
-                                               (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
+                                               ;; These can be very big (elide big ones?):
+                                               ;; (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
                                                ;;print these better?:
-                                               (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
-                                               (cw "(DAG:~%")
-                                               (print-array2 'dag-array dag-array dag-len)
-                                               (cw "))~%")))
+                                               ;; (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
+                                               ;; (cw "(DAG:~%")
+                                               ;; (print-array2 'dag-array dag-array dag-len)
+                                               ;; (cw ")")
+                                               (cw ")~%")))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))))))))))))))
 
  ;;returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)

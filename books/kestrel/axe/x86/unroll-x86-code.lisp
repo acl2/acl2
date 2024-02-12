@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 ;; second approach here for now.
 
 (include-book "support-axe")
-(include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules64" :dir :system)
@@ -58,6 +58,7 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
+(include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;reduce? for logext-identity
 (include-book "kestrel/arithmetic-light/mod" :dir :system)

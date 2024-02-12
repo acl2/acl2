@@ -13,6 +13,7 @@
 
 (include-book "bvplus")
 (include-book "bvchop")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -197,3 +198,24 @@
            (equal (bvuminus width 1)
                   (- (expt 2 width) 1)))
   :hints (("Goal" :in-theory (enable bvuminus))))
+
+;subsumes the one for 0
+(defthm equal-of-constant-and-bvuminus
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size))
+           (equal (equal k (bvuminus size x))
+                  (and (unsigned-byte-p size k)
+                       (equal (bvuminus size k) (bvchop size x)))))
+  :hints (("Goal" :in-theory (e/d (bvuminus bvchop-of-minus) ()))))
+
+;; Only needed by Axe?
+(defthmd equal-of-bvuminus-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size))
+           (equal (equal (bvuminus size x) k)
+                  (and (unsigned-byte-p size k)
+                       (equal (bvuminus size k) (bvchop size x)))))
+  :hints (("Goal" :use equal-of-constant-and-bvuminus
+           :in-theory (disable equal-of-constant-and-bvuminus))))

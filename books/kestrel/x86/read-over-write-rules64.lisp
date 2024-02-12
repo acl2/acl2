@@ -48,6 +48,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This first one may be rarely needed, since set-rip is moved above set-flag:
+(defthm rip-of-set-flag (equal (rip (set-flag flag val x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-flag))))
+
 (defthm rax-of-set-flag (equal (rax (set-flag flg val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
 (defthm rbx-of-set-flag (equal (rbx (set-flag flg val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
 (defthm rcx-of-set-flag (equal (rcx (set-flag flg val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
@@ -88,6 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm rip-of-write (equal (rip (write n base-addr val x86)) (rip x86)) :hints (("Goal" :in-theory (enable write))))
 (defthm rax-of-write (equal (rax (write n base-addr val x86)) (rax x86)) :hints (("Goal" :in-theory (enable write))))
 (defthm rbx-of-write (equal (rbx (write n base-addr val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable write))))
 (defthm rcx-of-write (equal (rcx (write n base-addr val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable write))))

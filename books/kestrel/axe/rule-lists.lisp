@@ -175,9 +175,11 @@
             myif-same-test2
             myif-same-arg1-arg2-when-booleanp-axe
 
+            ;; todo: compare to the myif rules:
             if-of-t
             if-of-nil
             if-same-branches
+            if-of-t-and-nil-when-booleanp
             not-of-if
 
             fix-when-acl2-numberp
@@ -3945,6 +3947,10 @@
 (set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe -10)
 (set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe-gen -10) ;thu mar 25 04:05:09 2010
 (set-axe-rule-priority bv-array-read-of-bv-array-write-same-gen -10)
+
+;; when rotate unrolling is being done, we prefer these rules:
+(set-axe-rule-priority rightrotate-becomes-rightrotate-unroller-strong2 -1)
+(set-axe-rule-priority leftrotate-becomes-leftrotate-unroller-strong2 -1)
 
 ;; (defconst *super-rules*
 ;;   '(
