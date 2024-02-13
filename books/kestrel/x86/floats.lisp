@@ -103,18 +103,8 @@
          (x86isa::mxcsrbits->daz mxcsr))
   :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->daz x86isa::mxcsrbits-fix))))
 
-(defthm mxcsrbits->daz-of-ifix
-  (equal (x86isa::mxcsrbits->daz (ifix mxcsr))
-         (x86isa::mxcsrbits->daz mxcsr))
-  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->daz x86isa::mxcsrbits-fix))))
-
 (defthm mxcsrbits->dm-of-bvchop-32
   (equal (x86isa::mxcsrbits->dm (acl2::bvchop 32 mxcsr))
-         (x86isa::mxcsrbits->dm mxcsr))
-  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->dm x86isa::mxcsrbits-fix))))
-
-(defthm mxcsrbits->dm-of-ifix
-  (equal (x86isa::mxcsrbits->dm (ifix mxcsr))
          (x86isa::mxcsrbits->dm mxcsr))
   :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->dm x86isa::mxcsrbits-fix))))
 
@@ -123,10 +113,32 @@
          (x86isa::mxcsrbits->im mxcsr))
   :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->im x86isa::mxcsrbits-fix))))
 
+(defthm mxcsrbits->ie-of-bvchop-32
+  (equal (x86isa::mxcsrbits->ie (acl2::bvchop 32 mxcsr))
+         (x86isa::mxcsrbits->ie mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ie x86isa::mxcsrbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm mxcsrbits->daz-of-ifix
+  (equal (x86isa::mxcsrbits->daz (ifix mxcsr))
+         (x86isa::mxcsrbits->daz mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->daz x86isa::mxcsrbits-fix))))
+
+(defthm mxcsrbits->dm-of-ifix
+  (equal (x86isa::mxcsrbits->dm (ifix mxcsr))
+         (x86isa::mxcsrbits->dm mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->dm x86isa::mxcsrbits-fix))))
+
 (defthm mxcsrbits->im-of-ifix
   (equal (x86isa::mxcsrbits->im (ifix mxcsr))
          (x86isa::mxcsrbits->im mxcsr))
   :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->im x86isa::mxcsrbits-fix))))
+
+(defthm mxcsrbits->ie-of-ifix
+  (equal (x86isa::mxcsrbits->ie (ifix mxcsr))
+         (x86isa::mxcsrbits->ie mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ie x86isa::mxcsrbits-fix))))
 
 ;slow?
 (defthm not-mv-nth-0-of-sse-cmp
