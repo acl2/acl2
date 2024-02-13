@@ -401,7 +401,7 @@
     !rflags-of-xr-rflags-of-set-flag
     xr-rflags-of-!rflags
     !rflags-of-xw
-    x86isa::!rflags-of-write
+    !rflags-of-write
     !rflags-of-set-flag
     !rflags-of-!rflags
     !rflags-does-nothing
