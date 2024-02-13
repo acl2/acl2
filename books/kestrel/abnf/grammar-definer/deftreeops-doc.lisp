@@ -213,7 +213,7 @@
     (xdoc::desc
      "@('<prefix>-<rulename>-alt?')"
      (xdoc::p
-      "For each rule name defined in the garmmar by two or more alternatives,
+      "For each rule name defined in the grammar by two or more alternatives,
        a function that, given a tree matching the rule name,
        returns a positive integer
        indicating the alternative matched by the tree,
