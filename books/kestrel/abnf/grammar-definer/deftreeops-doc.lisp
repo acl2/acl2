@@ -216,7 +216,7 @@
       "For each rule name defined in the grammar by two or more alternatives,
        a function that, given a tree matching the rule name,
        returns a positive integer
-       indicating the alternative matched by the tree,
+       indicating the alternative matched by the subtrees,
        in the order in which the alternative appears in the grammar,
        starting from 1 for the first alternative.
        If a rule name is defined by multiple rules
