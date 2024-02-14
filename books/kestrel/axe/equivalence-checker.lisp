@@ -84,6 +84,7 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -7595,16 +7596,15 @@
 (defun make-var-type-alist-from-hyps (hyps)
   (make-var-type-alist-from-hyps-aux hyps hyps nil))
 
-
-
-(defun remove-set-of-unused-nodes (probably-equal-node-sets never-used-nodes acc)
+(defund remove-set-of-unused-nodes (probably-equal-node-sets never-used-nodes acc)
+  (declare (xargs :guard (and (nat-list-listp probably-equal-node-sets)
+                              (nat-listp never-used-nodes)
+                              (nat-list-listp acc))))
   (if (endp probably-equal-node-sets)
-      acc
+      acc ; todo: error?
     (let* ((set (first probably-equal-node-sets))
-           (one-nodenum (first set))
-           ;;(constant-val (assoc one-nodenum probably-constant-node-alist))  ;ffffffffixme should this be lookup?!
-           )
-      (if (member one-nodenum never-used-nodes) ;(eq :unused constant-val)
+           (one-nodenum (first set)))
+      (if (member one-nodenum never-used-nodes)
           ;;drop this set (and stop looking):
           (append (cdr probably-equal-node-sets) acc)
         (remove-set-of-unused-nodes (rest probably-equal-node-sets) never-used-nodes (cons set acc))))))
@@ -7670,6 +7670,12 @@
             (nat-listp (lookup-equal :smaller-nodes-that-might-be-equal sweep-info)))
    :hints (("Goal" :in-theory (enable sweep-infop lookup-equal)))))
 
+(local
+ (defthm nat-listp-of-lookup-equal-when-sweep-infop-2
+   (implies (sweep-infop sweep-info)
+            (nat-listp (lookup-equal :larger-nodes-that-might-be-equal sweep-info)))
+   :hints (("Goal" :in-theory (enable sweep-infop lookup-equal)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;sweep-info-array associates each nodenums with a little alist from tags to their values
@@ -7704,6 +7710,19 @@
                  (natp index)
                  (< index (alen1 'sweep-info-array sweep-info-array)))
             (nat-listp (get-node-tag index :smaller-nodes-that-might-be-equal sweep-info-array)))
+   :hints (("Goal" :use (:instance type-of-aref1-when-sweep-info-arrayp
+                                   (array-name 'sweep-info-array)
+                                   (array sweep-info-array)
+                                   )
+            :in-theory (e/d (get-node-tag sweep-infop)
+                            (type-of-aref1-when-sweep-info-arrayp))))))
+
+(local
+ (defthm nat-listp-of-get-node-tag-of-larger-nodes-that-might-be-equal
+   (implies (and (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                 (natp index)
+                 (< index (alen1 'sweep-info-array sweep-info-array)))
+            (nat-listp (get-node-tag index :larger-nodes-that-might-be-equal sweep-info-array)))
    :hints (("Goal" :use (:instance type-of-aref1-when-sweep-info-arrayp
                                    (array-name 'sweep-info-array)
                                    (array sweep-info-array)
@@ -7746,6 +7765,18 @@
             (equal (alen1 'sweep-info-array (set-tag nodenum tag val sweep-info-array))
                    (alen1 'sweep-info-array sweep-info-array)))
    :hints (("Goal" :in-theory (enable set-tag sweep-infop)))))
+
+(local
+  (defthm get-node-tag-of-set-tag-diff
+    (implies (and (not (equal tag1 tag2))
+                  (array1p 'sweep-info-array sweep-info-array)
+                  (natp nodenum2)
+                  (< nodenum2 (alen1 'sweep-info-array sweep-info-array))
+                  (natp nodenum)
+                  (< nodenum (alen1 'sweep-info-array sweep-info-array)))
+             (equal (get-node-tag nodenum tag1 (set-tag nodenum2 tag2 val sweep-info-array))
+                    (get-node-tag nodenum tag1 sweep-info-array)))
+    :hints (("Goal" :in-theory (enable get-node-tag set-tag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7849,6 +7880,10 @@
     sweep-info-array))
 
 (defun remove-node-from-smaller-nodes-that-might-be-equal-list (nodenums nodenum-to-remove sweep-info-array)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (natp nodenum-to-remove)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (all-< nodenums (alen1 'sweep-info-array sweep-info-array)))))
   (if (endp nodenums)
       sweep-info-array
     (remove-node-from-smaller-nodes-that-might-be-equal-list
@@ -7856,7 +7891,11 @@
      nodenum-to-remove
      (remove-node-from-smaller-nodes-that-might-be-equal (car nodenums) nodenum-to-remove sweep-info-array))))
 
+;; todo: guard (but need the notion of a bounded-sweep-info-array)
 (defun update-tags-for-proved-constant-node (nodenum sweep-info-array)
+  ;; (declare (xargs :guard (and (natp nodenum)
+  ;;                             (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+  ;;                             (< nodenum (alen1 'sweep-info-array sweep-info-array)))))
   (let* ((sweep-info-array (set-tag nodenum *probable-constant* nil sweep-info-array)) ;don't try to prove the node is constant (we just proved it)
          ;;don't try to prove some other node is equal to this one:
          (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-info-array))
@@ -7865,6 +7904,9 @@
 
 ;we failed to prove the node is constant, but we might be able to prove it equal to some other node we think is the same constant..
 (defun update-tags-for-failed-constant-node (nodenum sweep-info-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (< nodenum (alen1 'sweep-info-array sweep-info-array)))))
   (let* ((sweep-info-array (set-tag nodenum *probable-constant* nil sweep-info-array))) ;don't try to prove that it is the constant
     ;;we leave the node among the smaller-nodes-that-might-be-equal for larger nodes in its set
     sweep-info-array))
@@ -7881,6 +7923,10 @@
 ;we failed to prove that nodenum is equal to smaller-nodenum-we-tried-to-prove-it-equal-to
 ;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
 (defun update-tags-for-failed-equal-node (nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-info-array)
+    (declare (xargs :guard (and (natp nodenum)
+                                (natp smaller-nodenum-we-tried-to-prove-it-equal-to)
+                                (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                                (< nodenum (alen1 'sweep-info-array sweep-info-array)))))
   ;;nodenum may still be provably equal to other nodes on the list (if any)
   (let* ((sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-info-array)))
     sweep-info-array))
@@ -7896,7 +7942,6 @@
                               (<= nodenum len)
                               (<= len (alen1 'sweep-info-array sweep-info-array)) ; usually equal??
                               )
-       ;           :verify-guards nil ; todo
                   :measure (+ 1 (nfix (- len nodenum)))
                   :hints (("Goal" :in-theory (enable natp)))))
   (if (or (not (mbt (natp nodenum)))
@@ -9001,21 +9046,21 @@
 ;; (skip -proofs (verify-guards hyps-hold-on-tracesp))
 
 ;based on the function print-each-list-on-one-line
-(defun print-non-constant-probably-equal-sets (sets ;tag-array-name
-                                               tag-array)
-  (declare
-;           (ignore tag-array-name) ;fixme
-           )
+(defund print-non-constant-probably-equal-sets (sets sweep-info-array)
+  (declare (xargs :guard (and (nat-list-listp sets)
+                              (not (member-equal nil sets))
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (all-all-< sets (alen1 'sweep-info-array sweep-info-array)))))
   (if (atom sets)
       nil
     (let* ((set (first sets))
            (node (first set)))
-      (progn$ (if (get-node-tag node *probable-constant* tag-array) ;pass in array name?
+      (progn$ (if (get-node-tag node *probable-constant* sweep-info-array) ;pass in array name?
                   nil ;don't print sets where the nodes are probably-constant (or we could print the constant and then the set!)
                 (prog2$ (print-list-on-one-line (first sets))
                         (cw "~%")))
-              (print-non-constant-probably-equal-sets (rest sets) ;tag-array-name
-                                                      tag-array)))))
+              (print-non-constant-probably-equal-sets (rest sets) ;sweep-info-array-name
+                                                      sweep-info-array)))))
 
 
 (defun remove-equalities-with-lhses (equalities lhses-to-drop)
