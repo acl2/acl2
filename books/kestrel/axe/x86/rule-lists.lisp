@@ -3716,7 +3716,7 @@
             not-equal-of-+-of-+-and-+-when-separate
             not-equal-of-+-of-+-and-+-when-separate-gen
             acl2::<-of-negative-constant-and-bv
-            READ-OF-WRITE-BOTH-SIZE-1
+            READ-1-OF-WRITE-1-BOTH
             ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::<-of-+-cancel-3-1
@@ -3975,8 +3975,9 @@
             boolif-of-bvlt-strengthen-to-equal
             bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
-            read-of-write-1-4
-            read-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
+            read-1-of-write-4
+            read-1-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
+            read-1-of-write-within-new
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
