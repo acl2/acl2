@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bvchop")
 (include-book "getbit")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "unsigned-byte-p"))
 
@@ -440,3 +441,20 @@
            (equal (bvplus size x (expt 2 size))
                   (bvchop size x)))
   :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-subst-smaller-term-arg2
+  (implies (and (equal (bvchop n y) (bvchop n free))
+                (syntaxp (smaller-termp free y)))
+           (equal (bvplus n x y)
+                  (bvplus n x free)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-subst-smaller-term-arg1
+  (implies (and (equal (bvchop n x) (bvchop n free))
+                (syntaxp (smaller-termp free x)))
+           (equal (bvplus n x y)
+                  (bvplus n free y)))
+  :hints (("Goal" :use (:instance bvplus-subst-smaller-term-arg2
+                                  (x y)
+                                  (y x))
+           :in-theory (disable bvplus-subst-smaller-term-arg2))))
