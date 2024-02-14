@@ -38,11 +38,12 @@
                   (log2 (- rat))))
   :hints (("Goal" :in-theory (enable rtl::expo log2))))
 
+;; todo: turn around
 (defthmd representable-normalp-becomes-nrepp
   (implies (and (rationalp rat)
                 (formatp k p))
            (equal (representable-normalp k p rat)
-                  (rtl::nrepp rat (list nil ; formal doesn't store the leading bit of significand
+                  (rtl::nrepp rat (list nil ; format doesn't store the leading bit of significand
                                         p   ; precision
                                         (wfn k p) ; exponent width
                                         ))))
@@ -53,28 +54,30 @@
 
 (local (include-book "ieee-floats-helpers")) ;todo: move up, but that may break a proof
 
-(defthmd *-of-expt-and-/-of-expt
-  (implies (and (integerp i)
-                (integerp j))
-           (equal (* (expt 2 i) (/ (expt 2 j)))
-                  (expt 2 (- i j))))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
+(local
+  (defthmd *-of-expt-and-/-of-expt
+    (implies (and (integerp i)
+                  (integerp j))
+             (equal (* (expt 2 i) (/ (expt 2 j)))
+                    (expt 2 (- i j))))
+    :hints (("Goal" :in-theory (enable expt-of-+)))))
 
-(defthm <=-of-log2-when-<=-of-expt2-linear
-  (implies (and (<= (expt 2 i) rat)
-                (integerp i)
-                (rationalp rat))
-           (<= i (log2 rat)))
-  :rule-classes :linear)
+(local
+  (defthm <=-of-log2-when-<=-of-expt2-linear
+    (implies (and (<= (expt 2 i) rat)
+                  (integerp i)
+                  (rationalp rat))
+             (<= i (log2 rat)))
+    :rule-classes :linear))
 
-(defthm <-of-log2-when-<-of-expt2-linear
-  (implies (and (< rat (expt 2 i))
-                (integerp i)
-                (rationalp rat)
-                (< 0 rat))
-           (< (log2 rat) i))
-  :rule-classes :linear)
-
+(local
+  (defthm <-of-log2-when-<-of-expt2-linear
+    (implies (and (< rat (expt 2 i))
+                  (integerp i)
+                  (rationalp rat)
+                  (< 0 rat))
+             (< (log2 rat) i))
+    :rule-classes :linear))
 
 ;; (defthmd *-of-/-of-expt-and-expt
 ;;   (implies (and (integerp i)
@@ -83,37 +86,42 @@
 ;;                   (expt 2 (- j i))))
 ;;   :hints (("Goal" :in-theory (enable expt-of-+))))
 
-(defthm not-integer-of-*-of-expt2-when-<-of-expt2-of--
-  (implies (and (< rat (expt 2 (- i)))
-                (rationalp rat)
-                (< 0 rat))
-           (not (integerp (* rat (expt 2 i))))))
+(local
+  (defthm not-integer-of-*-of-expt2-when-<-of-expt2-of--
+    (implies (and (< rat (expt 2 (- i)))
+                  (rationalp rat)
+                  (< 0 rat))
+             (not (integerp (* rat (expt 2 i)))))))
 
-(defthm <-of-log2-arg2
-  (implies (and (integerp i)
-                (< 0 rat)
-                (rationalp rat))
-           (equal (< i (log2 rat))
-                  (<= (expt 2 (+ 1 i)) rat))))
+(local
+  (defthm <-of-log2-arg2
+    (implies (and (integerp i)
+                  (< 0 rat)
+                  (rationalp rat))
+             (equal (< i (log2 rat))
+                    (<= (expt 2 (+ 1 i)) rat)))))
 
-(defthm <-of-+-of-log2
-  (implies (and (integerp i1)
-                (integerp i2)
-                (< 0 rat)
-                (rationalp rat))
-           (equal (< i1 (+ (log2 rat) i2))
-                  (<= (expt 2 (+ 1 (- i1 i2))) rat))))
+(local
+  (defthm <-of-+-of-log2
+    (implies (and (integerp i1)
+                  (integerp i2)
+                  (< 0 rat)
+                  (rationalp rat))
+             (equal (< i1 (+ (log2 rat) i2))
+                    (<= (expt 2 (+ 1 (- i1 i2))) rat)))))
 
-(defthm <-of-+-of-log2-arg1
-  (implies (and (integerp i1)
-                (integerp i2)
-                (< 0 rat)
-                (rationalp rat))
-           (equal (< (+ (log2 rat) i1) i2)
-                  (< rat (expt 2 (- i2 i1)))))
-  :hints (("Goal" :use (:instance <-of-log2-arg1 (i (- i2 i1)))
-           :in-theory (disable <-of-log2-arg1))))
+(local
+  (defthm <-of-+-of-log2-arg1
+    (implies (and (integerp i1)
+                  (integerp i2)
+                  (< 0 rat)
+                  (rationalp rat))
+             (equal (< (+ (log2 rat) i1) i2)
+                    (< rat (expt 2 (- i2 i1)))))
+    :hints (("Goal" :use (:instance <-of-log2-arg1 (i (- i2 i1)))
+             :in-theory (disable <-of-log2-arg1)))))
 
+;; todo: turn around
 (defthmd representable-subnormalp-becomes-drepp
   (implies (and (rationalp rat)
                 (formatp k p))

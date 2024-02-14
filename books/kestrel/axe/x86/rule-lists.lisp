@@ -915,15 +915,21 @@
     if-of-equal-of-snan-and-is-nan
     booleanp-of-is-nan
     not-mv-nth-0-of-sse-cmp
+
     mxcsrbits->daz-of-bvchop-32
-    mxcsrbits->daz-of-ifix
     mxcsrbits->dm-of-bvchop-32
-    mxcsrbits->dm-of-ifix
     mxcsrbits->im-of-bvchop-32
+    mxcsrbits->ie-of-bvchop-32
+
+    mxcsrbits->daz-of-ifix
+    mxcsrbits->dm-of-ifix
     mxcsrbits->im-of-ifix
+    mxcsrbits->ie-of-ifix
+
     mxcsrbits->daz-of-mv-nth-2-of-sse-cmp
     mxcsrbits->dm-of-mv-nth-2-of-sse-cmp
     mxcsrbits->im-of-mv-nth-2-of-sse-cmp
+
     sse-cmp-of-bvchop-arg2
     sse-cmp-of-bvchop-arg3
     sse-cmp-of-bvchop-arg4
