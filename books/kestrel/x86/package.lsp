@@ -157,12 +157,6 @@
     ;;my stuff (move this to the X package):
     x86isa::lifter-rules
 
-    ;; formals that appear in theorems (or do we want to import these from acl2?):
-    x86isa::k
-    x86isa::k2
-    ;; x86isa::n ; same as in acl2 package
-    x86isa::n2
-
     x86isa::!app-view
     x86isa::init-x86-state-64
     x86isa::rgfi
@@ -473,9 +467,18 @@
     rtl::nencode
     ))
 
+;; formals that appear in theorems (or do we want to import these from acl2?):
+(defconst *common-x86isa-formals*
+  '(x86isa::k
+    x86isa::k2
+    ;; x86isa::n ; same as in acl2 package
+    x86isa::n2))
+
 ;; TODO: Think about this...
-(defconst *common-formals*
+(defconst *common-acl2-formals*
   '(x y z m n size i
+    acl2::free
+    acl2::freesize
     x86isa::ad x86isa::low x86isa::high
     x86isa::proc-mode
     x86isa::eff-addr
@@ -488,4 +491,5 @@
                     *x86isa-exports*
                     *symbols-from-bitops*
                     *symbols-from-rtl*
-                    *common-formals*))
+                    *common-acl2-formals*
+                    *common-x86isa-formals*))
