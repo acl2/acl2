@@ -150,6 +150,7 @@
 ;;                   (not (equal (bvchop 32 x) k))))
 ;;   :hints (("Goal" :in-theory (enable bvlt))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; x<free and free<=y imply x<y
 (defthmd bvlt-transitive-core-1
@@ -158,14 +159,7 @@
            (bvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;; x<=free and free<y imply x<y
-(defthmd bvlt-transitive-core-2
-  (implies (and (not (bvlt size free x))
-                (bvlt size free y))
-           (bvlt size x y))
-  :hints (("Goal" :in-theory (enable bvlt))))
-
-;fixme what about rules to turn a bvlt into nil?
+;; Special case where x is a constant.
 (defthm bvlt-transitive-1-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -175,15 +169,7 @@
            (bvlt size k y))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
-(defthm bvlt-transitive-2-a
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (bvlt size free y)
-                (syntaxp (quotep free))
-                (not (bvlt size free k)))
-           (bvlt size k y))
-  :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
-
+;; Special case where y is a constant.
 (defthm bvlt-transitive-1-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -193,6 +179,26 @@
            (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; x<=free and free<y imply x<y
+(defthmd bvlt-transitive-core-2
+  (implies (and (not (bvlt size free x))
+                (bvlt size free y))
+           (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;; Special case where x is a constant.
+(defthm bvlt-transitive-2-a
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (bvlt size free y)
+                (syntaxp (quotep free))
+                (not (bvlt size free k)))
+           (bvlt size k y))
+  :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
+
+;; Special case where y is a constant.
 (defthm bvlt-transitive-2-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -202,8 +208,10 @@
            (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
 
-;fixme make a version with a strict < as a hyp (can then weaken the other hyp by 1? what about overflow?)
-;;y<=free and free<=x imply y<=x
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;todo: make a version with a strict < as a hyp (can then weaken the other hyp by 1? what about overflow?)
+;; y<=free and free<=x imply y<=x
 (defthmd bvlt-transitive-core-3
   (implies (and (not (bvlt size free y))
                 (not (bvlt size x free)))

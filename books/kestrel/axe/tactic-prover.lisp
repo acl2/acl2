@@ -466,7 +466,7 @@
      bvshr-rewrite-for-constant-shift-amount             ; introduces slice
      bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
      ;; todo: handle more cases.  a general solution? ; see the leftrotate-unroller
-     bvshl-16-cases ; todo: do something similar for rotate ops?
+     bvshl-16-cases
      bvshl-32-cases
      bvshl-64-cases
      bvshr-16-cases
@@ -482,7 +482,21 @@
      not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
      not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
      acl2::bvcat-of-0-arg1
-     acl2::equal-of-bvuminus-and-constant)
+     acl2::bvcat-of-0-arg3 ; can arise from unrolling a rotate
+     acl2::equal-of-bvuminus-and-constant
+     ;; Rules about rotates (since we don't translate most rotates to STP):
+     leftrotate-open-when-constant-shift-amount
+     rightrotate-open-when-constant-shift-amount
+     rightrotate-becomes-rightrotate-unroller-strong2
+     rightrotate-unroller-opener
+     leftrotate-becomes-leftrotate-unroller-strong2
+     leftrotate-unroller-opener
+     ;; Introduce bvif when we can:
+     acl2::if-becomes-bvif-1-axe
+     acl2::if-becomes-bvif-2-axe
+     acl2::if-becomes-bvif-3-axe
+     acl2::if-becomes-bvif-4-axe
+     )
    (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))
