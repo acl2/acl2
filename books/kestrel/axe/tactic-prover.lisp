@@ -490,7 +490,13 @@
      rightrotate-becomes-rightrotate-unroller-strong2
      rightrotate-unroller-opener
      leftrotate-becomes-leftrotate-unroller-strong2
-     leftrotate-unroller-opener)
+     leftrotate-unroller-opener
+     ;; Introduce bvif when we can:
+     acl2::if-becomes-bvif-1-axe
+     acl2::if-becomes-bvif-2-axe
+     acl2::if-becomes-bvif-3-axe
+     acl2::if-becomes-bvif-4-axe
+     )
    (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))
