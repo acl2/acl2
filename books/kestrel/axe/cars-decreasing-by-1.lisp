@@ -3,7 +3,7 @@
 (include-book "cars-increasing-by-1")
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
-(defun cars-decreasing-by-1 (rev-dag)
+(defund cars-decreasing-by-1 (rev-dag)
   (declare (xargs :guard (weak-dagp-aux rev-dag)))
   (if (endp rev-dag)
       t
