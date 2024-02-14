@@ -574,7 +574,7 @@
      ;; rightrotate-open-when-constant-shift-amount ;bozo just go to leftrotate
      bvchop-of-leftrotate32-does-nothing ;drop since we have bvchop-identity-axe?
      leftrotate32-of-leftrotate32
-     leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it)
+     leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it) ; warning: loops with defn of leftrotate32
      ;;leftrotate-becomes-leftrotate64
      equal-of-leftrotate32-and-leftrotate32
      equal-of-constant-and-leftrotate32

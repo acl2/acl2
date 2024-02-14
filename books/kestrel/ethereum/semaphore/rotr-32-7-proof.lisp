@@ -101,7 +101,8 @@
                 ;;pfield::ifix-when-fep
                 acl2::bvcat-equal-rewrite
                 acl2::bvchop-of-bvcat-cases
-                acl2::leftrotate32
+                ;acl2::leftrotate32 ; looped
+                acl2::leftrotate32-open-when-constant-shift-amount
                 acl2::leftrotate
                 acl2::getbit-0-of-getbit
                 acl2::booleanp-of-equal

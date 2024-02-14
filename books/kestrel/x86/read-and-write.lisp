@@ -27,6 +27,7 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
+(include-book "kestrel/bv/putbits" :dir :system)
 ;(include-book "linear-memory")
 ;(include-book "support") ;reduce?
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
@@ -1098,6 +1099,18 @@
                   x86))
   :hints (("Goal" :in-theory (enable write))))
 
+(defthmd write-of-1-becomes-write-byte
+  (equal (write 1 addr val x86)
+         (write-byte addr val x86))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthmd write-byte-becomes-write-of-1
+  (equal (write-byte addr val x86)
+         (write 1 addr val x86))
+  :hints (("Goal" :in-theory (enable write))))
+
+(theory-invariant (incompatible (:rewrite write-of-1-becomes-write-byte) (:rewrite write-byte-becomes-write-of-1)))
+
 (defun-nx double-write-induct-two-addrs2 (n base-addr base-addr2 val x86)
   (if (zp n)
       (list n base-addr base-addr2 val x86)
@@ -1868,7 +1881,7 @@
                           (< addr2 addr))
            :in-theory (e/d (read) (write-of-0)))))
 
-;; does not require canonical-address-p
+;; does not require canonical-address-p, but has bvchops in the RHS
 (defthm read-1-of-write-1-both-alt
   (equal (read 1 addr (write 1 addr2 val x86))
          (if (equal (bvchop 48 addr) (bvchop 48 addr2))
@@ -1877,7 +1890,7 @@
   :hints (("Goal" :expand (write 1 addr2 val x86)
            :in-theory (e/d (read write) (write-of-0)))))
 
-;gen!
+;gen! can we drop this now?
 (defthm read-1-of-write-4-same
   (implies (and (natp read-ad)
                 (< read-ad (bvplus 48 4 write-ad))
@@ -1955,6 +1968,7 @@
                            (MEMI-OF-WRITE-NOT-IRREL ; todo
                             )))))
 
+;gen
 (defthm write-of-281474976710656
   (equal (write n 281474976710656 val x86)
          (write n 0 val x86))
@@ -2246,89 +2260,7 @@
          x86)
   :hints (("Goal" :in-theory (enable read write))))
 
-(include-book "kestrel/bv/putbits" :dir :system)
-;move
-(defund putbyte (numbytes index byte x)
-  (declare (xargs :guard (and (natp numbytes)
-                              (natp index)
-                              (< index numbytes)
-                              (unsigned-byte-p 8 byte)
-                              (unsigned-byte-p (* 8 numbytes) x))))
-  (acl2::putbits (* 8 numbytes)
-                 (+ 7 (* 8 index))
-                 (* 8 index)
-                 (bvchop 8 byte)
-                 x))
 
-(defthm putbyte-of-1-arg1
-  (implies (natp index)
-           (equal (putbyte 1 index byte x)
-                  (if (equal index 0)
-                      (bvchop 8 byte)
-                    (bvchop 8 x))))
-  :hints (("Goal" :in-theory (enable putbyte))))
-
-(defthmd putbyte-unroll
-  (implies (and (natp numbytes)
-                (natp index)
-                (< index numbytes))
-           (equal (putbyte numbytes index byte x)
-                  (if (equal index (+ -1 numbytes))
-                      (bvcat 8 byte (* 8 (+ -1 numbytes)) (bvchop (* 8 (+ -1 numbytes)) x))
-                    (bvcat 8
-                           (slice (+ 7 (* 8 (+ -1 numbytes)))
-                                  (* 8 (+ -1 numbytes))
-                                  x)
-                           (* 8 (+ -1 numbytes))
-                           (putbyte (+ -1 numbytes) index byte x)))))
-  :hints (("Goal" :in-theory (enable putbyte))))
-
-(defthmd putbyte-unroll-once
-  (implies (and (syntaxp (symbolp numbytes))
-                (natp numbytes)
-                (natp index)
-                (< index numbytes))
-           (equal (putbyte numbytes index byte x)
-                  (if (equal index (+ -1 numbytes))
-                      (bvcat 8 byte (* 8 (+ -1 numbytes)) (bvchop (* 8 (+ -1 numbytes)) x))
-                    (bvcat 8
-                           (slice (+ 7 (* 8 (+ -1 numbytes)))
-                                  (* 8 (+ -1 numbytes))
-                                  x)
-                           (* 8 (+ -1 numbytes))
-                           (putbyte (+ -1 numbytes) index byte x)))))
-  :hints (("Goal" :by putbyte-unroll)))
-
-(defthm putbyte-of-bvcat-of-8-low
-  (implies (and (equal (* 8 n) (+ highsize 8))
-                (natp highsize))
-           (equal (putbyte n 0 val (bvcat highsize highval 8 lowval))
-                  (bvcat highsize highval 8 val)))
-  :hints (("Goal" :in-theory (enable putbyte))))
-
-(defthm bvchop-8-of-putbyte
-  (implies (and (natp numbytes)
-                (natp index)
-                (< index numbytes))
-           (equal (bvchop 8 (putbyte numbytes index byte x))
-                  (if (equal index 0)
-                      (bvchop 8 byte)
-                    (bvchop 8 x))))
-  :hints (("Goal" :in-theory (enable putbyte))))
-
-(defthm unsigned-byte-p-of-putbyte
-  (implies (and (natp numbytes)
-                (<= (* 8 numbytes) size)
-                (natp size)
-                )
-           (unsigned-byte-p size (putbyte numbytes index byte x)))
-  :hints (("Goal" :in-theory (enable putbyte))))
-
-
-(defthmd write-of-1-becomes-write-byte
-  (equal (write 1 addr val x86)
-         (write-byte addr val x86))
-  :hints (("Goal" :in-theory (enable write))))
 
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
 
@@ -2355,36 +2287,6 @@
            (equal (bvchop 8 (read n addr x86))
                   (read 1 addr x86)))
   :hints (("Goal" :in-theory (enable read))))
-
-(local
-  (defthm slice-of-putbyte-all-but-low-helper
-    (implies (and (posp n)
-                  (natp index)
-                  (unsigned-byte-p 8 byte) ; drop! but the proof hangs
-;                (unsigned-byte-p (* 8 n) x)
-                  (< index n))
-             (equal (slice (+ -1 (* 8 n)) 8 (putbyte n index byte x))
-                    (if (equal 0 index)
-                        (slice (+ -1 (* 8 n)) 8 x)
-                      (putbyte (+ -1 n) (+ -1 index) byte (slice (+ -1 (* 8 n)) 8 x)))))
-    :hints (("Goal" :in-theory (e/d (putbyte) ((:e expt)))))))
-
-(defthm putbyte-of-bvchop-8
-  (equal (PUTBYTE N index (BVCHOP 8 BYTE) X)
-         (PUTBYTE N index BYTE X))
-  :hints (("Goal" :in-theory (enable putbyte))))
-
-(defthm slice-of-putbyte-all-but-low
-  (implies (and (posp n)
-                (natp index)
-                (< index n))
-           (equal (slice (+ -1 (* 8 n)) 8 (putbyte n index byte x))
-                  (if (equal 0 index)
-                      (slice (+ -1 (* 8 n)) 8 x)
-                    (putbyte (+ -1 n) (+ -1 index) byte (slice (+ -1 (* 8 n)) 8 x)))))
-  :hints (("Goal" :use (:instance slice-of-putbyte-all-but-low-helper (byte (bvchop 8 byte)))
-           :in-theory (disable slice-of-putbyte-all-but-low-helper)
-           )))
 
 (defthm read-of-write-1-within
   (implies (and (bvlt 48 (bvminus 48 addr2 addr1) n)

@@ -1,7 +1,7 @@
 ; Bit-vector rotations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -509,7 +509,7 @@
                            (amt (mod amt width))
                            (n (+ -1 width))))))
 
-;; Special case when width is a power of 2
+;; Special case when WIDTH is a power of 2, so we can use bvchop instead of mod around AMT.
 (defthmd rightrotate-becomes-rightrotate-unroller-strong2
   (implies (and (syntaxp (and (not (quotep amt)) ; avoids loops, goal is to make all amounts be quoteps
                               (quotep width)))

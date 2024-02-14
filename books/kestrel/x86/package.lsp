@@ -300,6 +300,9 @@
     sbvrem
     logtail
     slice ;note that we don't get the slice from x86isa
+    putbits
+    putbit
+    putbyte
     bool->bit$inline
     bool->bit
     boolif
@@ -441,6 +444,7 @@
     defforall-simple
     subset-eq
     submit-event
+    must-be-redundant
 
     ;; x86 stuff (more to x package?):
     elf-info
