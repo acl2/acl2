@@ -482,7 +482,11 @@
      not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
      not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
      acl2::bvcat-of-0-arg1
-     acl2::equal-of-bvuminus-and-constant)
+     acl2::equal-of-bvuminus-and-constant
+     ;; Rules about rotates (since we don't translate most rotates to STP):
+     leftrotate-open-when-constant-shift-amount
+     rightrotate-open-when-constant-shift-amount
+     )
    (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))
