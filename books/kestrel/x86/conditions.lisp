@@ -1,7 +1,7 @@
 ; An approach to dealing with conditional jumps
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,9 +18,9 @@
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-strengthen
 (include-book "kestrel/bv/defs" :dir :system) ;for bvplus, etc.
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ; not trivial to remove, todo
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules10" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system)) ;todo, maybe for ACL2::FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-LEFT?
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
@@ -729,7 +729,6 @@
                                                     )))))
 
 
-
 (defthm jnle-condition-rewrite-3
   (implies (and (signed-byte-p 64 x)
                 (signed-byte-p 64 y))
@@ -747,7 +746,8 @@
                      (size 64)))
     :IN-THEORY
     (E/D
-     (acl2::bvlt
+     (zf-spec
+      acl2::bvlt
       JNLE-CONDITION
       X86ISA::OF-SPEC64
       X86ISA::SF-SPEC64
