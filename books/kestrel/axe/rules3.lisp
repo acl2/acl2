@@ -80,6 +80,7 @@
                            BVCHOP-UPPER-BOUND-LINEAR-STRONG ;slow
                            <=-OF-BVCHOP-SAME-LINEAR ;slow
                            SBVDIV-REWRITE ;move?
+                           mod-of-*-of-/-arg2-arg2
                            )))
 
 (local (in-theory (enable getbit-when-bvlt-of-small-helper))) ;todo
