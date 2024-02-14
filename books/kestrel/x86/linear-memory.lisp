@@ -1,7 +1,7 @@
 ; Rules about memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 ;; RB-1, RML-size, and RML-<xx> where <xx> is 08/16/32/48/64/80/128.
 
 (include-book "projects/x86isa/machine/linear-memory" :dir :system)
+(include-book "projects/x86isa/machine/top-level-memory" :dir :system) ; for rme-size
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "support-bv")
@@ -32,6 +33,12 @@
   (implies (not (equal :mem fld))
            (equal (mv-nth 0 (rb-1 n addr r-x (xw fld index val x86)))
                   (mv-nth 0 (rb-1 n addr r-x x86))))
+  :hints (("Goal" :in-theory (e/d (rb-1) (x86p-xw)))))
+
+(defthm mv-nth-1-of-rb-1-of-xw
+  (implies (not (equal :mem fld))
+           (equal (mv-nth 1 (rb-1 n addr r-x (xw fld index val x86)))
+                  (mv-nth 1 (rb-1 n addr r-x x86))))
   :hints (("Goal" :in-theory (e/d (rb-1) (x86p-xw)))))
 
 (defthm mv-nth-0-of-rb-of-xw-when-app-view
@@ -243,3 +250,10 @@
                                    BYTE-LISTP)
                                   (;acl2::nth-of-cdr
                                    )))))
+
+;; where should this go?
+(defthm mv-nth-2-of-rme-size-when-app-view
+  (implies (app-view x86)
+           (equal (mv-nth 2 (rme-size p n e s r c x86))
+                  x86))
+  :hints (("Goal" :in-theory (enable rme-size))))
