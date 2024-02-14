@@ -689,6 +689,9 @@
 ;;            :use (:instance <-of-bvchop-and-bvchop-same (s2 bigsize) (s1 size))
 ;;            :in-theory (e/d (bvlt) (<-of-bvchop-and-bvchop-same)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;the bvplus is arg2
 ;this generalizes some other stuff?
 (defthm bvlt-of-bvplus-constant-and-constant
   (implies (and (syntaxp (and (quotep k)
@@ -716,6 +719,40 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvlt bvchop-of-sum-cases bvminus)
                                   (expt)))))
 
+(defthm bvlt-of-bvplus-constant-and-constant-other
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep k2)
+                              (quotep size)))
+                (bvle size k2 k) ;this case
+                (natp size)
+                (natp k))
+           (equal (bvlt size (bvplus size k2 x) k)
+                  (or (bvlt size (bvminus size (+ -1) k2) x)
+                      (bvlt size x (bvminus size k k2)))))
+  :hints (("Goal" :in-theory (enable bvplus bvlt bvchop-of-sum-cases bvminus))))
+
+(defthm bvlt-of-bvplus-constant-and-constant-gen
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep k2)
+                              (quotep size)))
+                (natp size)
+                (natp k))
+           (equal (bvlt size (bvplus size k2 x) k)
+                  (if (bvlt size k k2)
+                      (and (bvle size (- k2) x)
+                           (bvlt size x (- k k2)))
+                    (or (bvlt size (bvminus size (+ -1) k2) x)
+                        (bvlt size x (bvminus size k k2))))))
+  :hints (("Goal" :use (bvlt-of-bvplus-constant-and-constant-other
+                         bvlt-of-bvplus-constant-and-constant)
+           :in-theory (disable bvlt-of-bvplus-constant-and-constant-other
+                               bvlt-of-bvplus-constant-and-constant))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;the bvplus is arg3
 (defthm bvlt-of-bvplus-constant-and-constant-safe2
   (implies (and (syntaxp (and (quotep k)
                               (quotep k2)
@@ -729,17 +766,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvlt bvchop-of-sum-cases bvminus)
                                   (expt)))))
 
-(defthm bvlt-of-bvplus-constant-and-constant-other
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep k2)
-                              (quotep size)))
-                (bvle size k2 k) ;this case
-                (natp size)
-                (natp k))
-           (equal (bvlt size (bvplus size k2 x) k)
-                  (or (bvlt size (bvminus size (+ -1) k2) x)
-                      (bvlt size x (bvminus size k k2)))))
-  :hints (("Goal" :in-theory (enable bvplus bvlt bvchop-of-sum-cases bvminus))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;use polarities
 (defthmd bvlt-when-bvlt-must-be-gen
