@@ -1,7 +1,7 @@
 ; Test cases for the Axe Equivalence Checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,8 +13,7 @@
 (in-package "ACL2")
 
 (include-book "axe-types")
-;(include-book "evaluator") ; todo
-(include-book "evaluator-basic")
+(include-book "evaluator-basic") ; for the :eval type
 (include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
