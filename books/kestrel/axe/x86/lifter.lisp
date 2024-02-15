@@ -2166,12 +2166,17 @@
                           (lifter-rules32)
                           '(xr-becomes-undef
                             x86isa::!undef-becomes-set-undef
-                            xw-becomes-set-undef))
+                            xw-becomes-set-undef
+                            xr-becomes-ms
+                            xw-becomes-set-ms
+                            !ms-becomes-set-ms))
                        (set-difference-eq
                         (append (lifter-rules64)
-                                '(x86isa::rip x86isa::rip$a ; todo
-                                  x86isa::undef x86isa::undef$a ; exposes xr?
-                                  x86isa::!undef x86isa::!undef$a ; exposes xw?
+                                '(x86isa::rip x86isa::rip$a ; todo?
+                                  x86isa::undef x86isa::undef$a ; exposes xr
+                                  x86isa::!undef x86isa::!undef$a ; exposes xw
+                                  x86isa::ms x86isa::ms$a ; exposes xr
+                                  x86isa::!ms x86isa::!ms$a ; exposes xw
                                   )
                                ;(lifter-rules64-new); todo
                                 )

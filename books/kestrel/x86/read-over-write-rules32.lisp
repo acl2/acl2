@@ -1103,7 +1103,6 @@
 ;todo: more?
 
 (defthm undef-of-set-eip (equal (undef (set-eip val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eip))))
-
 (defthm undef-of-set-eax (equal (undef (set-eax val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eax))))
 (defthm undef-of-set-ebx (equal (undef (set-ebx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebx))))
 (defthm undef-of-set-ecx (equal (undef (set-ecx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ecx))))
@@ -1112,3 +1111,34 @@
 ;; (defthm undef-of-set-edi (equal (undef (set-edi val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-edi))))
 (defthm undef-of-set-esp (equal (undef (set-esp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-esp))))
 (defthm undef-of-set-ebp (equal (undef (set-ebp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebp))))
+
+(defthm undef-of-write-byte-to-segment
+  (equal (undef (write-byte-to-segment eff-addr seg-reg val x86))
+         (undef x86))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+
+(defthm undef-of-write-to-segment
+  (equal (undef (write-to-segment n eff-addr seg-reg val x86))
+         (undef x86))
+  :hints (("Goal" :in-theory (enable write-to-segment))))
+
+
+(defthm ms-of-set-eip (equal (ms (set-eip val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-eip))))
+(defthm ms-of-set-eax (equal (ms (set-eax val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-eax))))
+(defthm ms-of-set-ebx (equal (ms (set-ebx val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ebx))))
+(defthm ms-of-set-ecx (equal (ms (set-ecx val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ecx))))
+(defthm ms-of-set-edx (equal (ms (set-edx val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-edx))))
+;; (defthm ms-of-set-esi (equal (ms (set-esi val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-esi))))
+;; (defthm ms-of-set-edi (equal (ms (set-edi val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-edi))))
+(defthm ms-of-set-esp (equal (ms (set-esp val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-esp))))
+(defthm ms-of-set-ebp (equal (ms (set-ebp val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ebp))))
+
+(defthm ms-of-write-byte-to-segment
+  (equal (ms (write-byte-to-segment eff-addr seg-reg val x86))
+         (ms x86))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+
+(defthm ms-of-write-to-segment
+  (equal (ms (write-to-segment n eff-addr seg-reg val x86))
+         (ms x86))
+  :hints (("Goal" :in-theory (enable write-to-segment))))

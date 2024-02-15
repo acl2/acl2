@@ -37,6 +37,7 @@
   (declare (xargs :stobjs x86))
   (x86isa::!undef undef x86))
 
+;; Introduces set-undef
 (defthmd x86isa::!undef-becomes-set-undef
   (equal (x86isa::!undef undef x86)
          (set-undef undef x86))
@@ -81,21 +82,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: do we want to call it MS or ERROR?
+
 (defthmd xr-becomes-ms
   (equal (xr :ms nil x86)
          (ms x86)))
 
-;; todo: do we want to call it MS or ERROR?
+(defthm ms-of-xw (implies (not (equal fld :ms)) (equal (ms (xw fld index value x86)) (ms x86))) :hints (("Goal" :in-theory (enable ms))))
 
-(defund set-error (error x86)
+(defthm ms-of-if (equal (ms (if test x y)) (if test (ms x) (ms y))))
+
+(defthm ms-of-myif (equal (ms (myif test x y)) (myif test (ms x) (ms y))) :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Writes the ms state component.
+(defund set-ms (ms x86)
   (declare (xargs :stobjs x86))
-  (x86isa::!ms error x86))
+  (x86isa::!ms ms x86))
 
-(defthmd xw-becomes-set-error
-  (equal (xw :ms nil error x86)
-         (set-error error x86))
-  :hints (("Goal" :in-theory (enable set-error))))
+(defthmd xw-becomes-set-ms
+  (equal (xw :ms nil ms x86)
+         (set-ms ms x86))
+  :hints (("Goal" :in-theory (enable set-ms))))
 
-;; What is the getter for this state component, or do we not need one?
+(defthmd !ms-becomes-set-ms
+  (equal (!ms ms x86)
+         (set-ms ms x86))
+  :hints (("Goal" :in-theory (enable set-ms))))
+
+(defthm xr-of-set-ms-irrel
+  (implies (or (not (equal fld :ms))
+               ;;(not (equal index *rax*))
+               )
+           (equal (xr fld index (set-ms ms x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable set-ms))))
+
+;; read-of-write rule
+(defthm ms-of-set-ms
+  (equal (ms (set-ms val x86))
+         val)
+  :hints (("Goal" :in-theory (enable ms set-ms))))
+
+;; Not sure whether we need more rules about set-ms, as it generally caused the execution to stop.
+
+
+;; (defund set-error (error x86)
+;;   (declare (xargs :stobjs x86))
+;;   (x86isa::!ms error x86))
+
+;; (defthmd xw-becomes-set-error
+;;   (equal (xw :ms nil error x86)
+;;          (set-error error x86))
+;;   :hints (("Goal" :in-theory (enable set-error))))
+
+;; (defund set-error (ms x86)
+;;   (declare (xargs :stobjs x86))
+;;   (x86isa::!ms ms x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

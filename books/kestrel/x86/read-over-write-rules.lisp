@@ -28,9 +28,15 @@
 (defthm undef-of-!rflags (equal (undef (!rflags flags x86)) (undef x86)) :hints (("Goal" :in-theory (enable !rflags undef))))
 (defthm undef-of-set-flag (equal (undef (set-flag flg val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef))))
 
+(defthm ms-of-!rflags (equal (ms (!rflags flags x86)) (ms x86)) :hints (("Goal" :in-theory (enable !rflags ms))))
+(defthm ms-of-set-flag (equal (ms (set-flag flg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms))))
+(defthm ms-of-set-undef (equal (ms (set-undef undef x86)) (ms x86)) :hints (("Goal" :in-theory (enable set-undef))))
+
 (defthm get-flag-of-set-undef (equal (get-flag flag (set-undef undef x86)) (get-flag flag x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm get-flag-of-set-ms (equal (get-flag flag (set-ms ms x86)) (get-flag flag x86)) :hints (("Goal" :in-theory (enable set-ms))))
 
 (defthm alignment-checking-enabled-p-of-set-undef (equal (alignment-checking-enabled-p (set-undef undef x86)) (alignment-checking-enabled-p x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm alignment-checking-enabled-p-of-set-ms (equal (alignment-checking-enabled-p (set-ms ms x86)) (alignment-checking-enabled-p x86)) :hints (("Goal" :in-theory (enable set-ms))))
 
 ;improve?
 (defthm alignment-checking-enabled-p-of-!rflags-of-xr
@@ -40,10 +46,12 @@
   :hints (("Goal" :in-theory (enable !rflags alignment-checking-enabled-p get-flag))))
 
 (defthm 64-bit-modep-of-set-undef (equal (64-bit-modep (set-undef undef x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm 64-bit-modep-of-set-ms (equal (64-bit-modep (set-ms ms x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-ms))))
 (defthm 64-bit-modep-of-!rflags (equal (64-bit-modep (!rflags v x86)) (64-bit-modep x86)))
 
 (defthm app-view-of-set-flag (equal (app-view (set-flag flag val x86)) (app-view x86)) :hints (("Goal" :in-theory (enable set-flag))))
 (defthm app-view-of-set-undef (equal (app-view (set-undef undef x86)) (app-view x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm app-view-of-set-ms (equal (app-view (set-ms ms x86)) (app-view x86)) :hints (("Goal" :in-theory (enable set-ms))))
 (defthm app-view-of-!rflags (equal (app-view (!rflags v x86)) (app-view x86)))
 
 (defthm ctri-of-xw-irrel
@@ -53,11 +61,13 @@
   :hints (("Goal" :in-theory (enable ctri))))
 
 (defthm ctri-of-set-undef (equal (ctri i (set-undef val x86)) (ctri i x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm ctri-of-set-ms (equal (ctri i (set-ms val x86)) (ctri i x86)) :hints (("Goal" :in-theory (enable set-ms))))
 (defthm ctri-of-set-flag (equal (ctri i (set-flag flag val x86)) (ctri i x86)) :hints (("Goal" :in-theory (enable ctri))))
 ;todo: why is !rflags showing up?
 (defthm ctri-of-!rflags (equal (ctri i (!rflags v x86)) (ctri i x86)))
 
 (defthm msri-of-set-undef (equal (msri i (set-undef val x86)) (msri i x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm msri-of-set-ms (equal (msri i (set-ms val x86)) (msri i x86)) :hints (("Goal" :in-theory (enable set-ms))))
 (defthm msri-of-set-flag (equal (msri i (set-flag flg val x86)) (msri i x86)) :hints (("Goal" :in-theory (enable))))
 
 (defthm segment-base-and-bounds-of-set-flag
@@ -69,3 +79,8 @@
   (equal (segment-base-and-bounds proc-mode seg-reg (set-undef undef x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
   :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm segment-base-and-bounds-of-set-ms
+  (equal (segment-base-and-bounds proc-mode seg-reg (set-ms ms x86))
+         (segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-ms))))

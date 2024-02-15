@@ -269,6 +269,12 @@
     get-flag-of-write-byte-to-segment
     get-flag-of-write-to-segment
 
+    ms-of-write-to-segment
+    ms-of-write-byte-to-segment
+
+    undef-of-write-to-segment
+    undef-of-write-byte-to-segment
+
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
 ;;     ;; x86isa::set-flag-set-flag-different-concrete-indices
@@ -885,6 +891,7 @@
     segment-base-and-bounds-of-set-rdi
     segment-base-and-bounds-of-set-flag
     segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-set-ms
     segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
     ))
@@ -1147,11 +1154,6 @@
             x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the PC
             poor-mans-quotep-constant-opener
 
-            ms x86isa::ms$a                            ;expose the call to xr
-            fault x86isa::fault$a                         ;expose the call to xr
-            ;x86isa::rip
-            ;x86isa::rip$a                           ;expose the call to xr
-;            app-view$inline         ;expose the call to xr
 
             the-check
             ;; get-prefixes:
@@ -1369,6 +1371,27 @@
             x86isa::undef-read-logic
             ;x86isa::!undef x86isa::!undef$a
 
+            fault x86isa::fault$a                         ;expose the call to xr
+            ;x86isa::rip
+            ;x86isa::rip$a                           ;expose the call to xr
+;            app-view$inline         ;expose the call to xr
+
+            ;; Rules about MS:
+            xr-becomes-ms
+            ms-of-set-ms
+            ms-of-set-flag
+            ms-of-myif
+            ms-of-if
+            ms-of-!rflags ; why is !rflags not going away?
+            ms-of-set-rip ; move to 64 rules?
+            ms-of-set-undef
+            ms-of-xw ; currently needed at least for writes to float registers
+
+            ;; Rules about SET-MS:
+            xw-becomes-set-ms
+            !ms-becomes-set-ms
+            ;; set-ms-of-set-rip ; move to 64 rules?
+
             ;; x86isa::undef x86isa::undef$a
             xr-becomes-undef ; introduces undef
             undef-of-set-undef
@@ -1376,6 +1399,7 @@
             undef-of-myif
             undef-of-if
             undef-of-!rflags ; why is !rflags not going away?
+            undef-of-set-rip ; move to 64 rules?
 
             xw-becomes-set-undef ; introduces set-undef
             x86isa::!undef-becomes-set-undef ; introduces set-undef
@@ -1385,18 +1409,23 @@
             msri-of-set-undef
 
             set-undef-of-set-undef
+            set-undef-of-set-flag
             set-undef-of-myif ; todo: think about this
             set-undef-of-!rflags ; why is !rflags showing up?
-            set-undef-of-set-flag
-
-            rip-of-set-undef ; also used in 32-bit mode?  or not?
-            undef-of-set-rip
             set-undef-of-set-rip ; move to 64 rules?
 
+            rip-of-set-undef ; also used in 32-bit mode?  or not?
+
+            rip-of-set-ms ; also used in 32-bit mode?  or not?
+
             app-view-of-set-undef
+            app-view-of-set-ms
             x86p-of-set-undef
+            x86p-of-set-ms
             xr-of-set-undef-irrel
+            xr-of-set-ms-irrel
             get-flag-of-set-undef
+            get-flag-of-set-ms
 
             x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
@@ -1682,7 +1711,6 @@
      acl2::+-commutative-axe
      unicity-of-0
      ;; all-addreses-of-stack-slots
-     ms X86ISA::ms$A
      fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
      x86isa::canonical-address-p$inline-constant-opener
@@ -1698,7 +1726,12 @@
      x86isa::canonical-address-listp-of-nil
      acl2::integerp-of-+-when-integerp-1-cheap
      x86isa::integerp-of-xr-rgf-4
-     x86isa::fix-of-xr-rgf-4)
+     x86isa::fix-of-xr-rgf-4
+
+     ;; Enforce normal forms:
+     xr-becomes-ms
+     ;; ms X86ISA::ms$A
+     )
    (acl2::lookup-rules)))
 
 ;move?
@@ -1907,6 +1940,7 @@
     read-from-segment-of-xw
     read-from-segment-of-set-flag
     read-from-segment-of-set-undef
+    ;; read-from-segment-of-set-ms
 
     read-from-segment-of-1 ;; simplifies to read-byte-from-segment
 
@@ -1955,6 +1989,14 @@
     undef-of-set-edx
     undef-of-set-esp
     undef-of-set-ebp
+
+    ms-of-set-eip
+    ms-of-set-eax
+    ms-of-set-ebx
+    ms-of-set-ecx
+    ms-of-set-edx
+    ms-of-set-esp
+    ms-of-set-ebp
 
     ;; bury set-undef deep in the term:
     set-undef-of-set-eip
@@ -2017,7 +2059,8 @@
     read-byte-list-from-segment-of-xw
     read-byte-list-from-segment-of-write-to-segment-diff-segments
     read-byte-list-from-segment-of-set-flag
-    read-byte-list-from-segment-of-set-undef
+    ;; read-byte-list-from-segment-of-set-undef
+    ;; read-byte-list-from-segment-of-set-ms
 
     segment-expand-down-bit-of-cs-when-code-segment-well-formedp
     segment-expand-down-bit-of-ss-when-stack-segment-assumptions32
@@ -2055,14 +2098,16 @@
 ;    mv-nth-0-of-ea-to-la ; introduces eff-addrs-okp
 
     eff-addr-okp-of-set-flag
-    eff-addr-okp-of-set-undef
+    ;; eff-addr-okp-of-set-undef
+    ;; eff-addr-okp-of-set-ms
     eff-addr-okp-of-WRITE-TO-SEGMENT
     stack-segment-assumptions32-of-xw-of-rgf
 
     esp-of-xw-of-rgf-and-rsp
     eff-addr-okp-of-+-of-esp
     ea-to-la-of-set-flag
-    ea-to-la-of-set-undef
+    ;; ea-to-la-of-set-undef
+    ;; ea-to-la-of-set-ms
     ;fix-of-esp
     ;bvchop-32-of-esp
     signed-byte-p-64-of-esp
@@ -2591,6 +2636,9 @@
     undef-of-write-byte
     undef-of-write
 
+    ms-of-write-byte
+    ms-of-write
+
     app-view-of-set-rip
     app-view-of-set-rax
     app-view-of-set-rbx
@@ -3020,6 +3068,23 @@
     undef-of-set-rsp
     undef-of-set-rbp
 
+    ms-of-set-rax
+    ms-of-set-rbx
+    ms-of-set-rcx
+    ms-of-set-rdx
+    ms-of-set-rdi
+    ms-of-set-r8
+    ms-of-set-r9
+    ms-of-set-r10
+    ms-of-set-r11
+    ms-of-set-r12
+    ms-of-set-r13
+    ms-of-set-r14
+    ms-of-set-r15
+    ms-of-set-rsi
+    ms-of-set-rsp
+    ms-of-set-rbp
+
     xw-becomes-set-rip
     xw-becomes-set-rax
     xw-becomes-set-rbx
@@ -3037,7 +3102,7 @@
     xw-becomes-set-r15
     xw-becomes-set-rsp
     xw-becomes-set-rbp
-    xw-becomes-set-error
+    ;; xw-becomes-set-error
 
     ;xr-becomes-rip
     xr-becomes-rax
