@@ -17694,15 +17694,6 @@
 ;;                                                  test-cases-for-formals
 ;;                                                  state result-array-stobj))))))
 
-;; (deftheory executable-counterparts
-;;   (list-onto-all ':executable-counterpart *axe-evaluator-functions*))
-
-(defun executable-counterparts ()
-  (list-onto-all ':executable-counterpart *axe-evaluator-functions*))
-
-
-
-
 ;; ;FIXME separate the compose and the simplify?
 ;; ;FIXME what if subdag-for-var is a quotep? if we are being consistent in our inlining of constants, we'll have to inline everywhere the variable's nodenum appears
 ;; ;returns (mv result state result-array-stobj)
@@ -18738,6 +18729,9 @@
 ;; ;; ;i guess this binds every subterm in a lambda, even if it is used only once?
 ;; (defun dag-to-term-with-lambdas (dag-lst)
 ;;   (dag-to-term-with-lets-aux (reverse dag-lst)))
+
+(defun executable-counterparts ()
+  (list-onto-all ':executable-counterpart *axe-evaluator-functions*))
 
 ;;function-name must be the name of a defined function
 ;;returns (mv erp new-function-names new-theorem-names state result-array-stobj), perhaps with a new theorem proved in it
