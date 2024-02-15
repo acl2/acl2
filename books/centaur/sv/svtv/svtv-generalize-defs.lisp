@@ -380,3 +380,60 @@ test or value variables of the triplemaps.</li>
             :induct (len vars))))
 
   (local (in-theory (enable svex-env-fix))))
+
+
+
+(define svarlist-delay-p ((x svarlist-p))
+  (if (atom x)
+      t
+    (and (not (equal 0 (svar->delay (car x))))
+         (svarlist-delay-p (cdr x))))
+  ///
+  (defthmd not-svarlist-delay-p-by-member
+    (implies (and (equal xfix (svarlist-fix x))
+                  (member-equal v xfix)
+                  (equal 0 (svar->delay v)))
+             (not (svarlist-delay-p x))))
+
+  (defthmd not-svarlist-delay-p-by-member-nofix
+    (implies (and (member-equal v x)
+                  (equal 0 (svar->delay v)))
+             (not (svarlist-delay-p x)))))
+
+
+(define svarlist-nondelay-p ((x svarlist-p))
+  (if (atom x)
+      t
+    (and (equal 0 (svar->delay (car x)))
+         (svarlist-nondelay-p (cdr x))))
+  ///
+  (defthmd not-svarlist-nondelay-p-by-member
+    (implies (and (equal xfix (svarlist-fix x))
+                  (member-equal v xfix)
+                  (not (equal 0 (svar->delay v))))
+             (not (svarlist-nondelay-p x))))
+
+  (defthmd not-svarlist-nondelay-p-by-member-nofix
+    (implies (and (member-equal v x)
+                  (not (equal 0 (svar->delay v))))
+             (not (svarlist-nondelay-p x))))
+  
+  (defthmd intersectp-of-delay/nondelay
+    (implies (and (svarlist-delay-p x)
+                  (svarlist-nondelay-p y))
+             (not (intersectp-equal x y)))
+    :hints (("goal" :in-theory (e/d (not-svarlist-nondelay-p-by-member-nofix
+                                     (:i svarlist-delay-p))
+                                    ((:d svarlist-delay-p)
+                                     (:d svarlist-nondelay-p)
+                                     acl2::intersectp-equal-commute)))
+            (and stable-under-simplificationp
+                 '(:induct (svarlist-delay-p x)
+                   :expand ((svarlist-delay-p x)
+                            (intersectp-equal x y))))))
+
+  (defthm svarlist-nondelay-p-of-append
+    (iff (svarlist-nondelay-p (append x y))
+         (and (svarlist-nondelay-p x)
+              (svarlist-nondelay-p y)))))
+

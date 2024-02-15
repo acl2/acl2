@@ -252,7 +252,13 @@
   (defcong svex-envlists-equivalent svex-envlists-equivalent (cons a b) 2
     :hints ((witness :ruleset (svex-envlists-equivalent-witnessing))
             (and stable-under-simplificationp
-                 '(:expand ((:free (a) (nth n0 (cons a b)))))))))
+                 '(:expand ((:free (a) (nth n0 (cons a b))))))))
+
+  (defthm alist-keys-of-fsm-final-state
+    (equal (alist-keys (fsm-final-state ins initst nextstate))
+           (svex-alist-keys nextstate))
+    :hints(("Goal" :in-theory (enable fsm-final-state
+                                      fsm-step)))))
 
 
 

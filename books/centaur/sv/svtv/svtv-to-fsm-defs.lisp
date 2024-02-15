@@ -1192,3 +1192,25 @@ to signed values.</p>"
 
   (defrefinement svex-envlists-similar svex-envlists-ovtestsimilar
     :hints(("Goal" :in-theory (enable svex-envlists-similar-rec)))))
+
+(define svtv-spec-cycle-fsm-inputsubsts ((x svtv-spec-p))
+  :returns (substs svex-alistlist-p)
+  (b* (((svtv-spec x)))
+    (svtv-fsm-to-fsm-inputsubsts
+     (take (len (svtv-probealist-outvars x.probes))
+           x.in-alists)
+     x.override-val-alists
+     x.override-test-alists
+     x.namemap))
+  ///
+  (local (defthm take-of-svex-alistlist-eval
+         (equal (take len (svex-alistlist-eval x env))
+                (svex-alistlist-eval (take len x) env))
+         :hints(("Goal" :in-theory (e/d (svex-alistlist-eval
+                                         svex-alist-eval)
+                                        (acl2::take-of-too-many
+                                         acl2::take-when-atom))))))
+  (defretd eval-of-<fn>
+    (equal (svex-alistlist-eval substs env)
+           (svtv-spec-pipe-env->cycle-envs x env))
+    :hints(("Goal" :in-theory (enable svtv-spec-pipe-env->cycle-envs)))))

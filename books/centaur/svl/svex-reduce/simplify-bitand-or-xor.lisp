@@ -1087,7 +1087,7 @@ x
                            )))
           (mv svex nil))
          (res (bitand/or/xor-simple-constant-simplify 'sv::bitxor new-x new-y))
-         (res (if (equal parent-fn 'sv::bitxor) ;; outermost bitxor should clear 1s  
+         (res (if (equal parent-fn 'sv::bitxor) ;; outermost bitxor should clear 1s
                   res
                 (clear-1s-from-bitxor res))))
       (mv res t)))
@@ -2655,7 +2655,6 @@ x
               :in-theory (e/d ()
                               (svex-alist-eval-of-<fn>)))))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; LIGHT-SVEX-ALIST-SIMPLIFY-BITAND/OR/XOR
@@ -2663,8 +2662,8 @@ x
 ;; shared nodes during simplification
 
 (fty::defalist svex-to-natp-alist
-     :key-type sv::svex-p
-     :val-type natp)
+  :key-type sv::svex-p
+  :val-type natp)
 
 (acl2::defines collect-svex-stats
   :prepwork
@@ -2691,7 +2690,7 @@ x
              (if entry
                  (hons-acons svex (1+ (cdr entry)) acc)
                (collect-svexlist-stats (hons-acons svex 1 acc)
-                                            svex.args)))))
+                                       svex.args)))))
 
   (define collect-svexlist-stats ((acc svex-to-natp-alist-p)
                                   (lst sv::svexlist-p))
@@ -2717,7 +2716,6 @@ x
            (acc (collect-svex-alist-stats acc (cdr x))))
         acc))))
 
-
 (define collected-shared-svex-nodes ((svex-alist-stats svex-to-natp-alist-p)
                                      acc)
   (if (atom svex-alist-stats)
@@ -2729,7 +2727,7 @@ x
                                    acc))))
 
 ;; does inside-put and outside-in simplification  of repeated elements but does
-;; not dive into svex nodes that are shared. 
+;; not dive into svex nodes that are shared.
 (define light-svex-alist-simplify-bitand/or/xor ((x sv::svex-alist-p)
                                                  &key
                                                  ((env) 'env)
@@ -2744,7 +2742,7 @@ x
        ;; nodes-to-skip-alist would become quickly useless when the inner nodes
        ;; change.
        (x (svex-alist-simplify-bitand/or/xor-outside-in x))
-       
+
        (- (fast-alist-free nodes-to-skip-alist)))
     x)
   ///
@@ -2802,7 +2800,6 @@ x
               :in-theory (e/d ()
                               (svex-alist-eval-of-<fn>)))))))
 
-       
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3438,6 +3435,7 @@ x
                                          ()))))
   :prepwork ((create-case-match-macro bitand/or-of-one-negated
                                       (fn x y)
+                                      :extra-cond
                                       (and (or (equal fn 'sv::bitor)
                                                (equal fn 'sv::bitand))
                                            (or (or (bitxor-of-1-term-1-p x)
@@ -3446,6 +3444,7 @@ x
                                                    (bitxor-of-1-term-2-p y)))))
              (create-case-match-macro bitand/or-of-double-negated
                                       (fn x y)
+                                      :extra-cond
                                       (and (or (equal fn 'sv::bitor)
                                                (equal fn 'sv::bitand))
                                            (or (and nil (bitand/or-of-one-negated-p x)
@@ -3460,6 +3459,7 @@ x
                                                         (bitxor-of-1-term-2-p y))))))
              (create-case-match-macro bit-neg-of-gate-1
                                       ('sv::bitxor 1 (fn x y))
+                                      :extra-cond
                                       (and (or (equal fn 'sv::bitor)
                                                (equal fn 'sv::bitand))
                                            (or (bitxor-of-1-term-1-p x)
@@ -3468,6 +3468,7 @@ x
                                                (bitxor-of-1-term-2-p y))))
              (create-case-match-macro bit-neg-of-gate-2
                                       ('sv::bitxor (fn x y) 1)
+                                      :extra-cond
                                       (and (or (equal fn 'sv::bitor)
                                                (equal fn 'sv::bitand))
                                            (or (bitxor-of-1-term-1-p x)
@@ -3743,12 +3744,12 @@ x
   :verify-guards nil
   :prepwork ((create-case-match-macro bit-neg-of-bitand/or-1
                                       ('sv::bitxor 1 (fn x y))
-                                      (or (equal fn 'sv::bitor)
-                                          (equal fn 'sv::bitand)))
+                                      :extra-cond (or (equal fn 'sv::bitor)
+                                                      (equal fn 'sv::bitand)))
              (create-case-match-macro bit-neg-of-bitand/or-2
                                       ('sv::bitxor (fn x y) 1)
-                                      (or (equal fn 'sv::bitor)
-                                          (equal fn 'sv::bitand))))
+                                      :extra-cond (or (equal fn 'sv::bitor)
+                                                      (equal fn 'sv::bitand))))
   (define svex-propagate-bit-negations ((svex sv::svex-p)
                                         &key
                                         ((env) 'env)
