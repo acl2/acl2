@@ -52,6 +52,7 @@
     x86isa::sz
     x86isa::alignment-checking-enabled-p
     x86isa::get-prefixes
+    x86isa::!ms
     x86isa::!ms$inline
     x86isa::x86-fetch-decode-execute
 
