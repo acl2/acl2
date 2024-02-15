@@ -220,7 +220,14 @@
   :hints (("Goal" :in-theory (enable bvminus bvplus))))
 
 ;; maybe not needed if we always go to bvuminus
+;; (x+y)-y = x
 (defthm bvminus-of-bvplus-same
   (equal (bvminus size (bvplus size x y) y)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; (y+x)-y = x
+(defthm bvminus-of-bvplus-same-alt
+  (equal (bvminus size (bvplus size y x) y)
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvminus bvplus))))
