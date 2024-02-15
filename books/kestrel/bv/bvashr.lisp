@@ -21,11 +21,13 @@
 ;; NOTE: Currently, the shift amount must be less than the width.
 ;; TODO: Result may may be wrong if we shift all the way out! consider: (bvashr 32 -1 32)
 (defund bvashr (width x shift-amount)
-  (declare (type (integer 0 *) shift-amount)
-           (type integer x)
-           (type integer width)
-           (xargs :guard (< shift-amount width)) ;what happens if they're equal?
-           )
+  (declare (xargs :guard (and (integerp width)
+                              (integerp x)
+                              (natp shift-amount)
+                              (< shift-amount width))  ;what happens if they're equal?
+                  :split-types t)
+           (type (integer 0 *) width shift-amount)
+           (type integer x))
   (bvsx width
         (- width shift-amount)
         (bvshr width x shift-amount)))

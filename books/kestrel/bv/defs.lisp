@@ -39,11 +39,13 @@
 ;perhaps this should be called xshr (for sign-extending shift), but jvm has a function or macro with that name already (get rid of it first!)
 ;ffixme this may be wrong if we shift all the way out! consider: (bvashr 32 -1 32)
 (defun bvashr (width x shift-amount)
-  (declare (type (integer 0 *) shift-amount)
-           (type integer x)
-           (type integer width)
-           (xargs :guard (< shift-amount width)  ;what happens if they're equal?
-                  :guard-hints (("Goal" :in-theory (enable bvshr)))))
+  (declare (xargs :guard (and (integerp width)
+                              (integerp x)
+                              (natp shift-amount)
+                              (< shift-amount width))  ;what happens if they're equal?
+                  :split-types t)
+           (type (integer 0 *) width shift-amount)
+           (type integer x))
   (bvsx width
         (- width shift-amount)
         (bvshr width x shift-amount)))
