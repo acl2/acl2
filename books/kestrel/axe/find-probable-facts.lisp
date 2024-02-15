@@ -529,8 +529,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defun find-val-other-than (val nodenums test-case-array test-case-array-name)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (array1p test-case-array-name test-case-array)
