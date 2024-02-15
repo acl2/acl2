@@ -7656,7 +7656,7 @@
                   (sweep-infop (rest info))))))))
 
 ;(def-typed-acl2-array2 sweep-info-arrayp sweep-infop) ; todo: this should work
-(def-typed-acl2-array2 sweep-info-arrayp (sweep-infop val)) ; todo: reduce output, todo: avoid backtracking to do induction
+(def-typed-acl2-array2 sweep-info-arrayp (sweep-infop val)) ; todo: reduce output
 
 (local
  (defthm alistp-when-sweep-infop
@@ -7732,6 +7732,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;rename to set-node-tag
 (defund set-tag (nodenum tag val sweep-info-array)
   (declare (xargs :guard (and (natp nodenum)
                               (symbolp tag)
@@ -7931,6 +7932,38 @@
   (let* ((sweep-info-array (remove-node-from-smaller-nodes-that-might-be-equal nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-info-array)))
     sweep-info-array))
 
+;based on the function print-each-list-on-one-line
+(defund print-non-constant-probably-equal-sets (sets sweep-info-array)
+  (declare (xargs :guard (and (nat-list-listp sets)
+                              (not (member-equal nil sets))
+                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
+                              (all-all-< sets (alen1 'sweep-info-array sweep-info-array)))))
+  (if (atom sets)
+      nil
+    (let* ((set (first sets))
+           (node (first set)))
+      (progn$ (if (get-node-tag node *probable-constant* sweep-info-array) ;pass in array name?
+                  nil ;don't print sets where the nodes are probably-constant (or we could print the constant and then the set!)
+                (prog2$ (print-list-on-one-line (first sets))
+                        (cw "~%")))
+              (print-non-constant-probably-equal-sets (rest sets) ;sweep-info-array-name
+                                                      sweep-info-array)))))
+
+
+;; TODO: Is this really right, if a set has more than 2 nodes and some of the attempted merges fail?
+(defund count-merges-in-probably-equal-node-sets (sets acc)
+  (declare (xargs :guard (and (true-list-listp sets)
+                              (natp acc))))
+  (if (endp sets)
+      acc
+    (let ((set (first sets)))
+      (if (not (consp set))
+          (er hard? 'count-merges-in-probably-equal-node-sets "Empty set found.")
+        (count-merges-in-probably-equal-node-sets (rest sets)
+                                                  (+ -1 ; a set of 2 contributes 1 merge, and so on
+                                                     (len set)
+                                                     acc))))))
+
 ;;go from the bottom up, looking for the next node to handle (is there guaranteed to always be one? i think so.)
 ;we handle the smallest numbered node that is either 1) an (unhandled) probable constant or 2) the larger of two (unhandled) probably-equal nodes in the same set
 ;returns (mv nodenum probably-constantp other-val) where other-val is the quoted constant or the smaller nodenum that nodenum is probably equal to
@@ -7988,12 +8021,6 @@
           (partition-test-cases (rest test-cases) term interpreted-function-alist true-acc (cons test-case false-acc)))))))
 
 (skip-proofs (verify-guards partition-test-cases))
-
-(defun make-sorted-pair (fn1 fn2)
-  (declare (type symbol fn1 fn2))
-  (if (symbol< fn1 fn2)
-      (cons fn1 fn2)
-    (cons fn2 fn1)))
 
 ;pass in interpreted-function-alist ?
 (defun nodenum-has-both-true-and-false-test-cases (test-cases
@@ -9045,23 +9072,7 @@
 
 ;; (skip -proofs (verify-guards hyps-hold-on-tracesp))
 
-;based on the function print-each-list-on-one-line
-(defund print-non-constant-probably-equal-sets (sets sweep-info-array)
-  (declare (xargs :guard (and (nat-list-listp sets)
-                              (not (member-equal nil sets))
-                              (sweep-info-arrayp 'sweep-info-array sweep-info-array)
-                              (all-all-< sets (alen1 'sweep-info-array sweep-info-array)))))
-  (if (atom sets)
-      nil
-    (let* ((set (first sets))
-           (node (first set)))
-      (progn$ (if (get-node-tag node *probable-constant* sweep-info-array) ;pass in array name?
-                  nil ;don't print sets where the nodes are probably-constant (or we could print the constant and then the set!)
-                (prog2$ (print-list-on-one-line (first sets))
-                        (cw "~%")))
-              (print-non-constant-probably-equal-sets (rest sets) ;sweep-info-array-name
-                                                      sweep-info-array)))))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun remove-equalities-with-lhses (equalities lhses-to-drop)
   (if (endp equalities)
@@ -11739,6 +11750,12 @@
 ;merge-car-< and merge-sort-car-< are newly defined in ACl2 5.0? just use them?
 (defmergesort merge-sort-car-<-2 merge-car-<-2 car-< consp-with-rationalp-car)
 
+(defun make-sorted-pair (fn1 fn2)
+  (declare (type symbol fn1 fn2))
+  (if (symbol< fn1 fn2)
+      (cons fn1 fn2)
+    (cons fn2 fn1)))
+
 ;recently removed this from the main mutual recursion:
 ;returns (mv erp new-runes unchanged-runes new-fns analyzed-function-table rand state result-array-stobj)
 ;before this function is called, any non-trivial base-case (anything other than a single param or a tuple of params) should have been peeled off, and any redundant params should have been dropped.
@@ -12289,20 +12306,6 @@
 ;;
 ;; the main mutual-recursion of the Axe Equivalence Checker (fixme should more stuff above use this to prove goals by mitering?):
 ;;
-
-;; TODO: Is this really right, if a set has more than 2 nodes and some of the attempted merges fail?
-(defund count-merges-in-probably-equal-node-sets (sets acc)
-  (declare (xargs :guard (and (true-list-listp sets)
-                              (natp acc))))
-  (if (endp sets)
-      acc
-    (let ((set (first sets)))
-      (if (not (consp set))
-          (er hard? 'count-merges-in-probably-equal-node-sets "Empty set found.")
-        (count-merges-in-probably-equal-node-sets (rest sets)
-                                                  (+ -1 ; a set of 2 contributes 1 merge, and so on
-                                                     (len set)
-                                                     acc))))))
 
 ;todo: use better erps than t here in the error cases.  maybe get rid of :error since we now have the erp return value
 ;todo: thread through a parent array for the miter and use it to fixup parents when merging constant nodes (could also evaluate ground terms?).  would need to maintain the parent array as we merge...
