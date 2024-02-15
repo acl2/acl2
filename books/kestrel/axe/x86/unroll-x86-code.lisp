@@ -71,10 +71,8 @@
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
-(acl2::ensure-rules-known (lifter-rules32))
-(acl2::ensure-rules-known (lifter-rules32-new))
-(acl2::ensure-rules-known (lifter-rules64))
-(acl2::ensure-rules-known (lifter-rules64-new))
+(acl2::ensure-rules-known (lifter-rules32-all))
+(acl2::ensure-rules-known (lifter-rules64-all))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 
 ;; move to lifter-support?
