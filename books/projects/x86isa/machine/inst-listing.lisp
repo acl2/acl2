@@ -19051,7 +19051,7 @@
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
-          NIL
+          '(X86-SARX/SHLX/SHRX)
           '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SARX"
           (OP :OP #xF38F7
@@ -19060,7 +19060,7 @@
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
-          NIL
+          '(X86-SARX/SHLX/SHRX)
           '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHLX"
           (OP :OP #xF38F7
@@ -19069,7 +19069,7 @@
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
-          NIL
+          '(X86-SARX/SHLX/SHRX)
           '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHLX"
           (OP :OP #xF38F7
@@ -19078,7 +19078,7 @@
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
-          NIL
+          '(X86-SARX/SHLX/SHRX)
           '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHRX"
           (OP :OP #xF38F7
@@ -19087,7 +19087,7 @@
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
-          NIL
+          '(X86-SARX/SHLX/SHRX)
           '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
     (INST "SHRX"
           (OP :OP #xF38F7
@@ -19096,7 +19096,7 @@
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
-          NIL
+          '(X86-SARX/SHLX/SHRX)
           '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))))
 
 (defconst *pre-0f-3a-three-byte-opcode-map*
