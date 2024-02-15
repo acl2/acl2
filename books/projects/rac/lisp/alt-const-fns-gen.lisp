@@ -619,5 +619,6 @@
                   ;; :expand :lambdas
                   ;; :in-theory '(,theory-name ,fn-name)
                   :in-theory nil
+                  :do-not '(preprocess)
                   :clause-processor
-                  (expand-reduce-cp clause '(mv-list ,@theory-list ,fn-name) state)))))))
+                  (expand-reduce-cp clause '(,@theory-list ,fn-name) state)))))))

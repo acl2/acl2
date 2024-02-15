@@ -157,7 +157,9 @@
 ;;Encoding function:
 
 (defund nencode (x f)
-  (declare (xargs :guard (nrepp x f)))
+  (declare (xargs :guard (and (rationalp x)
+                              (formatp f)
+                              (exactp x (prec f)))))
   (cat (if (= (sgn x) 1) 0 1)
        1
        (+ (expo x) (bias f))
