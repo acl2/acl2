@@ -14,4 +14,4 @@
 (include-book "ieee-floats")
 (include-book "ieee-floats-as-bvs")
 (include-book "ieee-floats-validation")
-(include-book "ieee-floats-and-rtl")
+(include-book "rtl")

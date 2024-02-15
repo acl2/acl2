@@ -246,7 +246,7 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
-         ;; TODO: Maybe don't prune if the run has completed?
+         ;; TODO: Maybe don't prune if the run has completed (but do simplify in that case)?
          ((mv erp dag-or-quotep state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
@@ -268,43 +268,79 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
-         (dag-fns (acl2::dag-fns dag)))
-      (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
-          (prog2$ (cw "(The run has completed.)~%")
-                  (mv (erp-nil) dag state))
-        (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
-            (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
-                    (mv (erp-nil) dag state))
-          (if (acl2::equivalent-dagsp dag old-dag) ; todo: can we test equivalence up to xor nest normalization?
-              (prog2$ (cw "Note: Stopping the run because nothing changed.~%")
-                      (mv (erp-nil) dag state))
-            (let* ((total-steps (+ steps-for-this-iteration total-steps))
-                   (state ;; Print as a term unless it would be huge:
-                     (if (acl2::print-level-at-least-tp print)
-                         (if (< (acl2::dag-or-quotep-size dag) 1000)
-                             (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
-                                  (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                             (set-print-base-radix print-base state)
-                                           state))
-                                  (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
-                                  (state (set-print-base-radix 10 state)) ;make event sets it to 10
-                                  (- (cw ")~%")))
-                               state)
-                           (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
-                                (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                           (set-print-base-radix print-base state)
-                                         state))
-                                (- (cw "~X01" dag nil))
-                                (state (set-print-base-radix 10 state))
-                                (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
-                                (- (cw ")~%")))
-                             state))
-                       state)))
-              (repeatedly-run (- steps-left steps-for-this-iteration)
-                              step-increment
-                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
-                              total-steps
-                              state))))))))
+         (dag-fns (acl2::dag-fns dag))
+         ;; Stop if we hit an unimplemented instruction (what if it's on an unreachable branch?):
+         ((when (member-eq 'x86isa::x86-step-unimplemented dag-fns))
+          (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
+                  (mv (erp-nil) dag state))) ; todo: return an error?
+         (nothing-changedp (acl2::equivalent-dagsp dag old-dag)) ; todo: can we test equivalence up to xor nest normalization?
+         ((when nothing-changedp)
+          (cw "Note: Stopping the run because nothing changed.~%")
+          (mv (erp-nil) dag state)) ; todo: return an error?
+         (run-completedp (not (member-eq 'run-until-stack-shorter-than dag-fns))) ;; stop if the run is done
+         (- (and run-completedp (cw "(The run has completed.)~%")))
+         )
+      (if run-completedp
+          ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
+          (b* ((- (cw "(Doing final simplification:~%"))
+               ((mv erp dag-or-quote state)
+                (if (eq :legacy rewriter)
+                    (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                                    :exhaustivep t
+                                    :rule-alist rule-alist
+                                    :assumptions assumptions
+                                    :monitor rules-to-monitor
+                                    :use-internal-contextsp use-internal-contextsp
+                                    ;; pass print, so we can cause rule hits to be printed:
+                                    :print print ; :brief ;nil
+                                    ;; :print-interval 10000 ;todo: pass in
+                                    :limits limits
+                                    :memoizep memoizep
+                                    :check-inputs nil)
+                  (mv-let (erp result)
+                    (acl2::simplify-dag-x86 dag
+                                            assumptions
+                                            nil ; interpreted-function-alist
+                                            limits
+                                            rule-alist
+                                            t ; count-hints ; todo: think about this
+                                            print
+                                            (acl2::known-booleans (w state))
+                                            rules-to-monitor
+                                            t ; normalize-xors
+                                            memoizep)
+                    (mv erp result state))))
+               (- (cw "Done with final simplification.)~%"))
+               ((when erp) (mv erp nil state)))
+            (mv (erp-nil) dag-or-quote state))
+        ;; Continue the symbolic execution:
+        (let* ((total-steps (+ steps-for-this-iteration total-steps))
+               (state ;; Print as a term unless it would be huge:
+                 (if (acl2::print-level-at-least-tp print)
+                     (if (< (acl2::dag-or-quotep-size dag) 1000)
+                         (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
+                              (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                         (set-print-base-radix print-base state)
+                                       state))
+                              (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
+                              (state (set-print-base-radix 10 state)) ;make event sets it to 10
+                              (- (cw ")~%")))
+                           state)
+                       (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
+                            (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                       (set-print-base-radix print-base state)
+                                     state))
+                            (- (cw "~X01" dag nil))
+                            (state (set-print-base-radix 10 state))
+                            (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
+                            (- (cw ")~%")))
+                         state))
+                   state)))
+          (repeatedly-run (- steps-left steps-for-this-iteration)
+                          step-increment
+                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
+                          total-steps
+                          state))))))
 
 ;; Returns (mv erp result-dag-or-quotep lifter-rules-used assumption-rules-used state).
 ;; This is also called by the formal unit tester.

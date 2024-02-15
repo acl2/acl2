@@ -83,6 +83,7 @@
     (floor floor-unguarded)
     (ceiling ceiling-unguarded)
     (lg lg-unguarded)
+    power-of-2p ; unguarded
     (eql eql-unguarded) ; not strictly needed if we turn EQL into EQUAL
     (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded) ; primitive

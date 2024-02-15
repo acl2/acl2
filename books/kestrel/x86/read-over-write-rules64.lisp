@@ -135,6 +135,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm read-byte-of-set-rip (equal (read-byte addr (set-rip rip x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rip))))
+(defthm read-byte-of-set-rax (equal (read-byte addr (set-rax val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rax))))
+(defthm read-byte-of-set-rbx (equal (read-byte addr (set-rbx val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rbx))))
+(defthm read-byte-of-set-rcx (equal (read-byte addr (set-rcx val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rcx))))
+(defthm read-byte-of-set-rdx (equal (read-byte addr (set-rdx val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rdx))))
+(defthm read-byte-of-set-rsi (equal (read-byte addr (set-rsi val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rsi))))
+(defthm read-byte-of-set-rdi (equal (read-byte addr (set-rdi val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rdi))))
+(defthm read-byte-of-set-r8 (equal (read-byte addr (set-r8 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r8))))
+(defthm read-byte-of-set-r9 (equal (read-byte addr (set-r9 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r9))))
+(defthm read-byte-of-set-r10 (equal (read-byte addr (set-r10 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r10))))
+(defthm read-byte-of-set-r11 (equal (read-byte addr (set-r11 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r11))))
+(defthm read-byte-of-set-r12 (equal (read-byte addr (set-r12 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r12))))
+(defthm read-byte-of-set-r13 (equal (read-byte addr (set-r13 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r13))))
+(defthm read-byte-of-set-r14 (equal (read-byte addr (set-r14 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r14))))
+(defthm read-byte-of-set-r15 (equal (read-byte addr (set-r15 val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-r15))))
+(defthm read-byte-of-set-rsp (equal (read-byte addr (set-rsp val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rsp))))
+(defthm read-byte-of-set-rbp (equal (read-byte addr (set-rbp val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rbp))))
+(defthm read-byte-of-set-undef (equal (read-byte addr (set-undef val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm read-byte-of-!rflags (equal (read-byte addr (!rflags v x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable read))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm undef-of-set-rax (equal (undef (set-rax val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rax))))
 (defthm undef-of-set-rbx (equal (undef (set-rbx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rbx))))
 (defthm undef-of-set-rcx (equal (undef (set-rcx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-rcx))))
@@ -846,6 +869,21 @@
                                      rml80
                                      ))))
 
+(defthm mv-nth-1-of-rml-size-when-app-view
+  (implies (and (not (equal :mem fld))
+                (not (equal :app-view fld))
+                (app-view x86) ; why?
+                )
+           (equal (mv-nth 1 (rml-size nbytes addr r-x (xw fld index val x86)))
+                  (mv-nth 1 (rml-size nbytes addr r-x x86))))
+  :hints (("Goal" :in-theory (enable rml-size
+                                     rb ;todo
+                                     rb-1
+                                     rml128
+                                     rml48
+                                     rml80
+                                     rb-1))))
+
 (encapsulate ()
   (local (in-theory (enable rml80
                             rml48
@@ -872,6 +910,25 @@
   (defthm mv-nth-0-of-rme-size-of-set-rsp (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-rsp val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rsp))))
   (defthm mv-nth-0-of-rme-size-of-set-rbp (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-rbp val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rbp))))
   (defthm mv-nth-0-of-rme-size-of-set-undef (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-undef val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-undef))))
+
+  (defthm mv-nth-1-of-rme-size-of-set-rip (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rip rip x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rip))))
+  (defthm mv-nth-1-of-rme-size-of-set-rax (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rax val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rax))))
+  (defthm mv-nth-1-of-rme-size-of-set-rbx (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rbx val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rbx))))
+  (defthm mv-nth-1-of-rme-size-of-set-rcx (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rcx val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rcx))))
+  (defthm mv-nth-1-of-rme-size-of-set-rdx (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rdx val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rdx))))
+  (defthm mv-nth-1-of-rme-size-of-set-rsi (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rsi val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rsi))))
+  (defthm mv-nth-1-of-rme-size-of-set-rdi (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rdi val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rdi))))
+  (defthm mv-nth-1-of-rme-size-of-set-r8 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r8 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r8))))
+  (defthm mv-nth-1-of-rme-size-of-set-r9 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r9 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r9))))
+  (defthm mv-nth-1-of-rme-size-of-set-r10 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r10 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r10))))
+  (defthm mv-nth-1-of-rme-size-of-set-r11 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r11 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r11))))
+  (defthm mv-nth-1-of-rme-size-of-set-r12 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r12 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r12))))
+  (defthm mv-nth-1-of-rme-size-of-set-r13 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r13 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r13))))
+  (defthm mv-nth-1-of-rme-size-of-set-r14 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r14 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r14))))
+  (defthm mv-nth-1-of-rme-size-of-set-r15 (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-r15 val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-r15))))
+  (defthm mv-nth-1-of-rme-size-of-set-rsp (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rsp val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rsp))))
+  (defthm mv-nth-1-of-rme-size-of-set-rbp (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rbp val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rbp))))
+  (defthm mv-nth-1-of-rme-size-of-set-undef (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-undef val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-undef))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

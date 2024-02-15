@@ -203,3 +203,10 @@
            (equal (bvminus size x (+ y1 y2))
                   (bvminus size x (bvplus size y1 y2))))
   :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+(defthmd bvminus-when-equal-of-bvchop-and-bvchop
+  (implies (equal (bvchop size x)
+                  (bvchop size y))
+           (equal (bvminus size x y)
+                  0))
+  :hints (("Goal" :in-theory (enable bvminus bvchop-of-sum-cases))))

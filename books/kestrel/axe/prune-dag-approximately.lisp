@@ -39,7 +39,12 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 
-(local (in-theory (disable state-p natp w)))
+(local (in-theory (disable state-p natp w
+                           ;; for speed:
+                           use-all-rationalp-for-car
+                           consp-from-len-cheap
+                           default-+-2
+                           default-cdr)))
 
 (defthmd integer-listp-of-strip-cars-when-weak-dagp-aux
   (implies (weak-dagp-aux dag)
