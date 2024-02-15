@@ -104,7 +104,8 @@
     :short "Dispatch function for VEX-encoded instructions in the two-byte opcode map"
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
                 (modr/m-p modr/m)
-                (sib-p sib))
+                (sib-p sib)
+                (rip-guard-okp proc-mode temp-rip))
     :guard-hints (("Goal" :do-not '(preprocess)))
     :returns (x86 x86p :hyp (x86p x86))
 
@@ -137,7 +138,8 @@
     three-byte opcode map"
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
                 (modr/m-p modr/m)
-                (sib-p sib))
+                (sib-p sib)
+                (rip-guard-okp proc-mode temp-rip))
     :guard-hints (("Goal" :do-not '(preprocess)))
 
     :returns (x86 x86p :hyp (x86p x86))
@@ -171,7 +173,8 @@
     three-byte opcode map"
     :guard (and (vex-prefixes-byte0-p vex-prefixes)
                 (modr/m-p modr/m)
-                (sib-p sib))
+                (sib-p sib)
+                (rip-guard-okp proc-mode temp-rip))
     :guard-hints (("Goal" :do-not '(preprocess)))
 
     :returns (x86 x86p :hyp (x86p x86))
@@ -207,7 +210,8 @@
     (e/d (modr/m-p
           vex-prefixes-byte0-p
           vex-prefixes-map-p add-to-*ip
-          add-to-*ip-is-i48p-rewrite-rule)
+          add-to-*ip-is-i48p-rewrite-rule
+          unsigned-byte-p)
          (bitops::logand-with-negated-bitmask not (tau-system)))))
   :prepwork
   ((local
@@ -316,6 +320,8 @@
        ((mv flg2 (the (unsigned-byte 8) next-byte) x86)
         (if vex3-prefix?
             (rme08 proc-mode temp-rip #.*cs* :x x86)
+          ;; This 0 assigned to next-byte is ignored if vex3-prefix? is nil
+          ;; (see assignment to opcode a few lines below):
           (mv nil 0 x86)))
        ((when flg2)
         (!!ms-fresh :next-byte-read-error flg2))

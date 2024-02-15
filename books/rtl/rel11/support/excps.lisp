@@ -284,12 +284,31 @@
   :enable (nrepp sgn)
   :use nrepp-lpn))
 
+(local (defrule exactp-lpn-sgn
+  (implies
+    (and
+      (rationalp r)
+      (< (lpn F) (abs r))
+      (formatp f))
+    (exactp (* (lpn f) (sgn r)) (prec f)))
+  :enable (nrepp sgn)
+  :use nrepp-lpn))
+
 (local (defrule nrepp-spn-sgn
   (implies
     (and
       (equal (abs (drnd u mode f)) (spn f))
       (formatp f))
   (nrepp (drnd u mode f) f))
+  :enable nrepp
+  :use nrepp-spn))
+
+(local (defrule exactp-spn-sgn
+  (implies
+    (and
+      (equal (abs (drnd u mode f)) (spn f))
+      (formatp f))
+  (exactp (drnd u mode f) (prec f)))
   :enable nrepp
   :use nrepp-spn))
 
