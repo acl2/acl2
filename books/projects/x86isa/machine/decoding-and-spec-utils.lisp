@@ -1680,7 +1680,7 @@ reference made from privilege level 3.</blockquote>"
 
     (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (equal bound (ash operand-size 3))
-                (member operand-size '(1 2 4 8 16))                
+                (member operand-size '(1 2 4 8 16))
                 (x86p x86))
       :bound bound
       :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
@@ -1693,7 +1693,7 @@ reference made from privilege level 3.</blockquote>"
 
     (defthm-unsigned-byte-p bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (<= (ash operand-size 3) bound)
-                (member operand-size '(1 2 4 8 16))                
+                (member operand-size '(1 2 4 8 16))
                 (integerp bound)
                 (x86p x86))
       :bound bound
@@ -1711,7 +1711,7 @@ reference made from privilege level 3.</blockquote>"
 
     (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand-6-and-10-bytes-read
       :hyp (and (equal bound (ash operand-size 3))
-                (member operand-size '(6 10))                
+                (member operand-size '(6 10))
                 (not (equal mod #b11))
                 (x86p x86))
       :bound bound
@@ -1924,6 +1924,7 @@ reference made from privilege level 3.</blockquote>"
         (dp-to-sp    'nil)
         (high/low    'nil)
         (trunc       'nil)
+        (vex         'nil)
         (evex        'nil)
         (modr/m      'nil)
         body parents short long
@@ -1943,9 +1944,11 @@ reference made from privilege level 3.</blockquote>"
           (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
           (prefixes      :type (unsigned-byte #.*prefixes-width*))
           (rex-byte      :type (unsigned-byte 8))
+          ,@(if vex
+                `((vex-prefixes   :type (unsigned-byte 24)))
+              `())
           ,@(if evex
-                `((vex-prefixes   :type (unsigned-byte 24))
-                  (evex-prefixes  :type (unsigned-byte 32)))
+                `((evex-prefixes  :type (unsigned-byte 32)))
               `())
           (opcode        :type (unsigned-byte 8))
           (modr/m        :type (unsigned-byte 8))

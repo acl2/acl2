@@ -934,7 +934,9 @@
        (exactp x (prec f))))
 
 (defund nencode (x f)
-  (declare (xargs :guard (nrepp x f)
+  (declare (xargs :guard (and (rationalp x)
+                              (formatp f)
+                              (exactp x (prec f)))
                   :verify-guards nil))
   (cat (if (= (sgn x) 1) 0 1)
        1
