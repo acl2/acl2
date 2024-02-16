@@ -396,12 +396,9 @@ opcode maps."
                       `((logbitp #.*w* rex-byte))
                     `((not (logbitp #.*w* rex-byte)))))))
        (caseStmt
-         (if (acl2::all-equalp nil caseStmt)
-             nil
-           (if (< 1 (len (remove-equal 'nil caseStmt)))
-               `(and ,@caseStmt)
-             ;; Remove the final nil.
-             (car caseStmt))))
+        (cond ((< 1 (len caseStmt)) `(and ,@caseStmt))
+              ((consp caseStmt) (car caseStmt))
+              (t ''t)))
        (call (create-call-from-fn-and-exception
               inst.fn inst.excep opcode.feat wrld))
        ((mv & rest)

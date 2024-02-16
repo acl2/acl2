@@ -95,6 +95,11 @@
   :short "Instruction semantic functions for Intel's instructions with two-byte
   opcodes" )
 
+(defsection three-byte-opcodes
+  :parents (instructions)
+  :short "Instruction semantic functions for Intel's instructions with three-byte
+  opcodes" )
+
 (defsection fp-opcodes
   :parents (instructions)
   :short "Instruction semantic functions for Intel's floating-point instructions"

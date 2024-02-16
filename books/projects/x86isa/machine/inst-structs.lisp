@@ -48,7 +48,7 @@
 
 (defsection opcode-maps-structures
   :parents (structures opcode-maps)
-  :short "Structures for representing of Intel's x86 Opcode Maps in ACL2"
+  :short "Structures for representing Intel's x86 Opcode Maps in ACL2"
   )
 
 (local (xdoc::set-default-parents 'opcode-maps-structures))
@@ -84,7 +84,6 @@
        (:doc .
              "The VEX.vvvv field of the VEX prefix selects a general purpose
              register."))
-
 
    '(C (:modr/m? . t) (:vex? . nil)
        (:doc .
