@@ -272,6 +272,9 @@
     ms-of-write-to-segment
     ms-of-write-byte-to-segment
 
+    fault-of-write-to-segment
+    fault-of-write-byte-to-segment
+
     undef-of-write-to-segment
     undef-of-write-byte-to-segment
 
@@ -1371,10 +1374,25 @@
             x86isa::undef-read-logic
             ;x86isa::!undef x86isa::!undef$a
 
-            fault x86isa::fault$a                         ;expose the call to xr
-            ;x86isa::rip
-            ;x86isa::rip$a                           ;expose the call to xr
-;            app-view$inline         ;expose the call to xr
+            ;;x86isa::rip
+            ;;x86isa::rip$a                           ;expose the call to xr
+            ;;app-view$inline         ;expose the call to xr
+
+            ;; Rules about FAULT:
+            xr-becomes-fault
+            ;; fault x86isa::fault$a                         ;expose the call to xr
+            fault-of-set-ms
+            fault-of-set-flag
+            fault-of-myif
+            fault-of-if
+            fault-of-!rflags ; why is !rflags not going away?
+            fault-of-set-rip ; move to 64 rules?
+            fault-of-set-undef
+            fault-of-xw ; currently needed at least for writes to float registers
+
+            ;; Rules about SET-FAULT:
+            xw-becomes-set-fault
+            !fault-becomes-set-fault
 
             ;; Rules about MS:
             xr-becomes-ms
@@ -1711,7 +1729,6 @@
      acl2::+-commutative-axe
      unicity-of-0
      ;; all-addreses-of-stack-slots
-     fault X86ISA::fault$A
      rgfi X86ISA::RGFI$A ;expose xr
      x86isa::canonical-address-p$inline-constant-opener
      addresses-of-subsequent-stack-slots
@@ -1731,6 +1748,7 @@
      ;; Enforce normal forms:
      xr-becomes-ms
      ;; ms X86ISA::ms$A
+     xr-becomes-fault
      )
    (acl2::lookup-rules)))
 
@@ -1997,6 +2015,14 @@
     ms-of-set-edx
     ms-of-set-esp
     ms-of-set-ebp
+
+    fault-of-set-eip
+    fault-of-set-eax
+    fault-of-set-ebx
+    fault-of-set-ecx
+    fault-of-set-edx
+    fault-of-set-esp
+    fault-of-set-ebp
 
     ;; bury set-undef deep in the term:
     set-undef-of-set-eip
@@ -2639,6 +2665,9 @@
     ms-of-write-byte
     ms-of-write
 
+    fault-of-write-byte
+    fault-of-write
+
     app-view-of-set-rip
     app-view-of-set-rax
     app-view-of-set-rbx
@@ -3084,6 +3113,23 @@
     ms-of-set-rsi
     ms-of-set-rsp
     ms-of-set-rbp
+
+    fault-of-set-rax
+    fault-of-set-rbx
+    fault-of-set-rcx
+    fault-of-set-rdx
+    fault-of-set-rdi
+    fault-of-set-r8
+    fault-of-set-r9
+    fault-of-set-r10
+    fault-of-set-r11
+    fault-of-set-r12
+    fault-of-set-r13
+    fault-of-set-r14
+    fault-of-set-r15
+    fault-of-set-rsi
+    fault-of-set-rsp
+    fault-of-set-rbp
 
     xw-becomes-set-rip
     xw-becomes-set-rax

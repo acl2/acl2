@@ -182,6 +182,7 @@
     x86isa::one-byte-opcode-execute
     x86isa::fault
     x86isa::fault$a
+    x86isa::!fault
     x86isa::ms
     x86isa::ms$a
     x86isa::combine-bytes

@@ -1133,12 +1133,19 @@
 (defthm ms-of-set-esp (equal (ms (set-esp val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-esp))))
 (defthm ms-of-set-ebp (equal (ms (set-ebp val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ebp))))
 
-(defthm ms-of-write-byte-to-segment
-  (equal (ms (write-byte-to-segment eff-addr seg-reg val x86))
-         (ms x86))
-  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+(defthm ms-of-write-byte-to-segment (equal (ms (write-byte-to-segment eff-addr seg-reg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+(defthm ms-of-write-to-segment (equal (ms (write-to-segment n eff-addr seg-reg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable write-to-segment))))
 
-(defthm ms-of-write-to-segment
-  (equal (ms (write-to-segment n eff-addr seg-reg val x86))
-         (ms x86))
-  :hints (("Goal" :in-theory (enable write-to-segment))))
+
+(defthm fault-of-set-eip (equal (fault (set-eip val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-eip))))
+(defthm fault-of-set-eax (equal (fault (set-eax val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-eax))))
+(defthm fault-of-set-ebx (equal (fault (set-ebx val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-ebx))))
+(defthm fault-of-set-ecx (equal (fault (set-ecx val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-ecx))))
+(defthm fault-of-set-edx (equal (fault (set-edx val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-edx))))
+;; (defthm fault-of-set-esi (equal (fault (set-esi val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-esi))))
+;; (defthm fault-of-set-edi (equal (fault (set-edi val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-edi))))
+(defthm fault-of-set-esp (equal (fault (set-esp val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-esp))))
+(defthm fault-of-set-ebp (equal (fault (set-ebp val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-ebp))))
+
+(defthm fault-of-write-byte-to-segment (equal (fault (write-byte-to-segment eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+(defthm fault-of-write-to-segment (equal (fault (write-to-segment n eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-to-segment))))

@@ -31,6 +31,12 @@
 (defthm ms-of-!rflags (equal (ms (!rflags flags x86)) (ms x86)) :hints (("Goal" :in-theory (enable !rflags ms))))
 (defthm ms-of-set-flag (equal (ms (set-flag flg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms))))
 (defthm ms-of-set-undef (equal (ms (set-undef undef x86)) (ms x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm ms-of-set-fault (equal (ms (set-fault fault x86)) (ms x86)) :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm fault-of-!rflags (equal (fault (!rflags flags x86)) (fault x86)) :hints (("Goal" :in-theory (enable !rflags fault))))
+(defthm fault-of-set-flag (equal (fault (set-flag flg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault))))
+(defthm fault-of-set-undef (equal (fault (set-undef undef x86)) (fault x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm fault-of-set-ms (equal (fault (set-ms fault x86)) (fault x86)) :hints (("Goal" :in-theory (enable set-ms))))
 
 (defthm get-flag-of-set-undef (equal (get-flag flag (set-undef undef x86)) (get-flag flag x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm get-flag-of-set-ms (equal (get-flag flag (set-ms ms x86)) (get-flag flag x86)) :hints (("Goal" :in-theory (enable set-ms))))
