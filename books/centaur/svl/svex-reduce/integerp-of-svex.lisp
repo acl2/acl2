@@ -107,10 +107,16 @@
   :prepwork ((local
               (in-theory
                (enable rp::is-rp-loose))))
-  (and (rp::is-rp-loose term)
-       (or (equal (cadr term) ''integerp)
-           (equal (cadr term) ''bitp)
-           (has-integerp-rp (caddr term))))
+  (or (and (rp::is-rp-loose term)
+           (or (equal (cadr term) ''integerp)
+               (equal (cadr term) ''bitp)
+               (has-integerp-rp (caddr term))))
+      ;; (case-match term ;; needs formula checks...
+      ;;   (('bits x ('quote start) ('quote size))
+      ;;    (and (natp start)
+      ;;         (natp size)
+      ;;         (has-integerp-rp x))))
+      )
   ///
   (local
    (defthm rp-evlt-of-rp-call

@@ -58,7 +58,6 @@
                            ()))))
 
 
-
 (defthm RULES-ALIST-OUTSIDE-IN-GET-of-update-nth
   (implies (not (equal index *RULES-ALIST-OUTSIDE-IN-GET*))
            (equal (RULES-ALIST-OUTSIDE-IN-GET key
@@ -82,7 +81,6 @@
            :in-theory (e/d (RULES-ALIST-inside-out-GET
                             zp)
                            (rp-statep)))))
-
 
 (defthm valid-rp-statep-of-update-nth
   (implies (and
@@ -143,7 +141,6 @@
                             RULES-ALIST-inside-out-GET)
                            (valid-rp-statep)))))
 
-
 (defthm rp-state-push-to-try-to-rw-stack-is-rp-statep
   (implies (rp-statep rp-state)
            (rp-statep (mv-nth 1 (rp-state-push-to-try-to-rw-stack rule var-bindings
@@ -171,7 +168,7 @@
        (equal (rules-alist-outside-in-get key (rules-used-put k v rp-state))
               (rules-alist-outside-in-get key rp-state))
        #|(equal (rules-alist-outside-in-get key (update-rules-used v rp-state))
-              (rules-alist-outside-in-get key rp-state))||#
+       (rules-alist-outside-in-get key rp-state))||#
 
        (equal (rules-alist-inside-out-get key (update-rw-stack-size v rp-state))
               (rules-alist-inside-out-get key rp-state))
@@ -182,7 +179,7 @@
        (equal (rules-alist-inside-out-get key (rules-used-put k v rp-state))
               (rules-alist-inside-out-get key rp-state))
        #|(equal (rules-alist-inside-out-get key (update-rules-used v rp-state))
-              (rules-alist-inside-out-get key rp-state))||#
+       (rules-alist-inside-out-get key rp-state))||#
        )
   :hints (("goal"
            :in-theory (e/d (rules-alist-outside-in-get
@@ -221,7 +218,6 @@
                             valid-rp-state-syntaxp-aux
                             )))))
 
-
 (defthm true-list-of-update-nth
   (implies (true-listp lst)
            (true-listp (update-nth n x lst))))
@@ -248,7 +244,6 @@
                             EQUAL-OF-LEN-WITH-CONSTANT
                             (:DEFINITION HONS-ASSOC-EQUAL))))))
 
-
 (defret RULES-ALIST-OUTSIDE-IN-GET-of-RP-STATE-PUSH-TO-RESULT-TO-RW-STACK
   (and (equal (RULES-ALIST-OUTSIDE-IN-GET key res-rp-state)
               (RULES-ALIST-OUTSIDE-IN-GET key rp-state))
@@ -266,11 +261,11 @@
            :in-theory (e/d () ()))))
 
 (defthm rp-statep-of-UPDATE-RULE-FRAME-CNTS
-    (implies (and (rp-statep rp-state)
-                  (alistp v))
-             (rp-statep (UPDATE-RULE-FRAME-CNTS v rp-state)))
-    :hints (("Goal"
-             :in-theory (e/d (rp-statep) ()))))
+  (implies (and (rp-statep rp-state)
+                (alistp v))
+           (rp-statep (UPDATE-RULE-FRAME-CNTS v rp-state)))
+  :hints (("Goal"
+           :in-theory (e/d (rp-statep) ()))))
 
 (defthm valid-rp-statep-rp-state-push-to-result-to-rw-stack
   (implies (valid-rp-statep rp-state)
@@ -298,7 +293,7 @@
                            (;;valid-rp-statep
                             update-rule-frame-cnts
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             rp-statep
                             rule-frame-cnts
@@ -314,7 +309,6 @@
                             update-rw-stack)))))
 
 
-
 (defthm alistp-of-rule-frame-cnts
   (implies (rp-statep rp-state)
            (alistp (rule-frame-cnts rp-state)))
@@ -325,7 +319,7 @@
   (implies (rp-statep rp-state)
            (alistp (rw-stack rp-state)))
   :hints (("goal"
-           :in-theory (e/d (rp-statep) ())))) 
+           :in-theory (e/d (rp-statep) ()))))
 
 (defthm valid-rp-state-syntaxp-rp-state-push-to-result-to-rw-stack
   (implies (valid-rp-state-syntaxp rp-state)
@@ -355,21 +349,20 @@
                             rule-list-syntaxp
                             update-rule-frame-cnts
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             rp-statep
                             rule-frame-cnts
                             (:rewrite default-cdr)
                             rw-stack
                             nfix
-                            
+
                             hons-get
                             fix
                             rw-stack-size
                             rp-brr
                             rp-rune$inline
                             update-rw-stack)))))
-
 
 (defthm rp-statep-rp-stat-add-to-rules-used
   (implies (rp-statep rp-state)
@@ -392,22 +385,22 @@
 
                             rules-alist-outside-in-get
                             rules-alist-inside-out-get
-                            
+
                             valid-rp-statep)
                            (rp-statep
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-;;                            (:rewrite acl2::o-p-def-o-finp-1)
+                            ;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
                             (:definition hons-acons)
                             (:definition hons-get)
                             (:definition nfix)
-                           ;; rules-used-get
+                            ;; rules-used-get
                             (:definition not)
                             ;;(:definition rules-used)
                             (:definition show-used-rules-flg)
@@ -430,15 +423,15 @@
 
                             rules-alist-outside-in-get
                             rules-alist-inside-out-get
-                            
+
                             valid-rp-statep)
                            (rp-statep
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-;;                            (:rewrite acl2::o-p-def-o-finp-1)
+                            ;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
@@ -450,7 +443,6 @@
                             (:definition show-used-rules-flg)
                             (:definition rp-rune$inline)
                             )))))
-
 
 (defthm rp-statep-rp-state-new-run
   (implies (rp-statep rp-state)
@@ -472,7 +464,6 @@
                             rp-state-push-meta-to-rw-stack)
                            ()))))
 
-
 (defthm rp-statep-of-rules-used-put
   (implies (rp-statep rp-state)
            (rp-statep (rules-used-put k v rp-state)))
@@ -483,7 +474,6 @@
                             rules-alist-inside-out-get
                             rp-state-preservedp)
                            ()))))
-
 
 (defthm rp-state-preservedp-of-rules-used-put
   (implies (and (rp-state-preservedp rp-state1 rp-state2))
@@ -513,14 +503,13 @@
 
 
 
-
 (defthm rp-state-preservedp-rp-stat-add-to-rules-used
   (implies (rp-state-preservedp rp-state1 rp-state2)
            (rp-state-preservedp rp-state1
                                 (rp-stat-add-to-rules-used rule failed flg
                                                            rp-state2)))
   :hints (("goal"
-           :do-not-induct t 
+           :do-not-induct t
            :in-theory (e/d (rp-stat-add-to-rules-used
                             ;; rules-alist-outside-in-get
                             ;; rules-alist-inside-out-get
@@ -532,23 +521,22 @@
                             rules-used-boundp
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-;;                            (:rewrite acl2::o-p-def-o-finp-1)
+                            ;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
                             (:definition hons-acons)
                             (:definition hons-get)
                             (:definition nfix)
-                           ;; rules-used-get
+                            ;; rules-used-get
                             (:definition not)
                             ;;(:definition rules-used)
                             (:definition show-used-rules-flg)
                             (:definition rp-rune$inline)
                             )))))
-
 
 (defthm rp-statep-of-update-rw-stack-size
   (implies (and (rp-statep rp-state)
@@ -557,7 +545,6 @@
            (rp-statep (update-rw-stack-size v rp-state)))
   :hints (("goal"
            :in-theory (e/d () ()))))
-  
 
 (defthm rp-state-preservedp-of-update-rw-stack-size
   (implies (and (rp-state-preservedp rp-state1 rp-state2)
@@ -604,7 +591,7 @@
            (VALID-RP-STATE-SYNTAXP (update-rw-stack-size v rp-state)))
   :hints (("Goal"
            :do-not-induct t
-           
+
            :in-theory (e/d (RP-STATEP
                             update-rw-stack-size
                             ;;RULES-ALIST-OUTSIDE-IN-GET
@@ -612,7 +599,6 @@
                             valid-rp-statep
                             VALID-RP-STATE-SYNTAXP)
                            ()))))
-
 
 
 (defthm rp-state-preservedp-of-update-rw-stack
@@ -638,7 +624,6 @@
                             rp-statep-of-rules-used-put
                             rp-state-preservedp-sk)))))
 
-
 (defthm valid-rp-statep-of-update-rw-stack
   (implies (and (valid-rp-statep rp-state))
            (valid-rp-statep (update-rw-stack v rp-state)))
@@ -657,11 +642,11 @@
 
 (defthm VALID-RP-STATE-SYNTAXP-of-update-rw-stack
   (implies (and (VALID-RP-STATE-SYNTAXP rp-state)
-                 (ALISTP V))
+                (ALISTP V))
            (VALID-RP-STATE-SYNTAXP (update-rw-stack v rp-state)))
   :hints (("Goal"
            :do-not-induct t
-           
+
            :in-theory (e/d (VALID-RP-STATE-SYNTAXP
                             update-rw-stack
                             RP-STATEP
@@ -683,7 +668,7 @@
                                 (rp-state-push-meta-to-rw-stack meta-rule old-term new-term
                                                                 rp-state2)))
   :hints (("goal"
-           :do-not-induct t 
+           :do-not-induct t
            :in-theory (e/d (rp-state-push-meta-to-rw-stack
                             ;; rules-alist-outside-in-get
                             ;; rules-alist-inside-out-get
@@ -700,18 +685,18 @@
                             rules-used-boundp
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-;;                            (:rewrite acl2::o-p-def-o-finp-1)
+                            ;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
                             (:definition hons-acons)
                             (:definition hons-get)
                             (:definition nfix)
-                           ;; rules-used-get
-                           ;; (:definition not)
+                            ;; rules-used-get
+                            ;; (:definition not)
                             ;;(:definition rules-used)
                             (:definition show-used-rules-flg)
                             (:definition rp-rune$inline)
@@ -721,12 +706,12 @@
   (implies (valid-rp-statep rp-state)
            (valid-rp-statep (rp-state-push-meta-to-rw-stack meta-rule old-term new-term rp-state)))
   :hints (("goal"
-           :do-not-induct t 
+           :do-not-induct t
            :in-theory (e/d (rp-state-push-meta-to-rw-stack
                             ;; rules-alist-outside-in-get
                             ;; rules-alist-inside-out-get
                             ;;rp-state-preservedp
-                            
+
                             alistp)
                            (valid-rp-statep
                             rp-statep
@@ -739,23 +724,22 @@
                             rules-used-boundp
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-;;                            (:rewrite acl2::o-p-def-o-finp-1)
+                            ;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
                             (:definition hons-acons)
                             (:definition hons-get)
                             (:definition nfix)
-                           ;; rules-used-get
-                           ;; (:definition not)
+                            ;; rules-used-get
+                            ;; (:definition not)
                             ;;(:definition rules-used)
                             (:definition show-used-rules-flg)
                             (:definition rp-rune$inline)
                             )))))
-
 
 (local
  (defthm dummy-integerp-lemma
@@ -766,14 +750,14 @@
   (implies (valid-rp-state-syntaxp rp-state)
            (valid-rp-state-syntaxp (rp-state-push-meta-to-rw-stack meta-rule old-term new-term rp-state)))
   :hints (("goal"
-           
-           :do-not-induct t 
+
+           :do-not-induct t
            :in-theory (e/d (rp-state-push-meta-to-rw-stack
-                            
+
                             ;; rules-alist-outside-in-get
                             ;; rules-alist-inside-out-get
                             ;;rp-state-preservedp
-                            
+
                             alistp)
                            (VALID-RP-STATE-SYNTAXP
                             VALID-RP-STATE-SYNTAXP-aux
@@ -788,18 +772,18 @@
                             rules-used-boundp
                             ;;update-rules-used
                             (:definition valid-sc-nt)
-;;                            (:rewrite acl2::o-p-o-infp-car)
+                            ;;                            (:rewrite acl2::o-p-o-infp-car)
                             (:definition eval-and-all-nt)
                             (:rewrite default-cdr)
-;;                            (:rewrite acl2::o-p-def-o-finp-1)
+                            ;;                            (:rewrite acl2::o-p-def-o-finp-1)
                             (:type-prescription o-p)
                             (:definition rp-hyp$inline)
                             (:definition count-used-rules-flg)
                             (:definition hons-acons)
                             (:definition hons-get)
                             (:definition nfix)
-                           ;; rules-used-get
-                           ;; (:definition not)
+                            ;; rules-used-get
+                            ;; (:definition not)
                             ;;(:definition rules-used)
                             (:definition show-used-rules-flg)
                             (:definition rp-rune$inline)
@@ -846,7 +830,6 @@
                             RP-STATEP-of-RULES-USED-PUT
                             rp-state-preservedp-sk)))))
 
-
 (progn
   (defret rp-statep-of-limit-reached-action
     (implies (rp-statep rp-state)
@@ -872,10 +855,7 @@
 
 
 
-
-
 ;;;;;;;;
-
 
 (defthm RULE-LIST-SYNTAXP-of-RULES-ALIST-OUTSIDE-IN-GET/inside-out-get
   (implies (and (valid-rp-state-syntaxp rp-state)
@@ -888,7 +868,6 @@
                             ))
            :in-theory (e/d (valid-rp-state-syntaxp)
                            ()))))
-
 
 
 
@@ -931,7 +910,7 @@
                     (post-backchain-ops BACKCHAIN-ENDS ;
                                         RP-STATE)))))
            :in-theory (e/d (post-backchain-ops
-                            valid-rp-state-syntaxp                        
+                            valid-rp-state-syntaxp
                             rp-statep)
                            (valid-rp-statep
                             rp-statep)))))
@@ -942,7 +921,7 @@
   :fn post-backchain-ops
   :hints (("Goal"
            :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
-                             (UPDATE-NTH *BACKCHAINING-RULE* NIL RP-STATE)))
+                                            (UPDATE-NTH *BACKCHAINING-RULE* NIL RP-STATE)))
            :use ((:instance rp-statep-of-post-backchain-ops)
                  (:instance
                   RP-STATE-PRESERVEDP-SK-necc
@@ -952,19 +931,19 @@
                   (old-rp-state rp-state-old)
                   (new-rp-state rp-state))
                  #|(:instance
-                  RP-STATE-PRESERVEDP-SK-necc
-                  (key
-                   (RP-STATE-PRESERVEDP-SK-WITNESS
-                    RP-STATE-OLD
-                    (UPDATE-NTH *RW-LIMIT-THROWS-ERROR*
-                                OLD-LIMIT-ERROR-SETTING
-                                (UPDATE-NTH *BACKCHAINING-RULE* NIL
-                                            (UPDATE-NTH *BACKCHAINING-JUST-STARTED*
-                                                        NIL RP-STATE)))))
-                  (old-rp-state rp-state-old)
-                  (new-rp-state rp-state))|#)
+                 RP-STATE-PRESERVEDP-SK-necc
+                 (key
+                 (RP-STATE-PRESERVEDP-SK-WITNESS
+                 RP-STATE-OLD
+                 (UPDATE-NTH *RW-LIMIT-THROWS-ERROR*
+                 OLD-LIMIT-ERROR-SETTING
+                 (UPDATE-NTH *BACKCHAINING-RULE* NIL
+                 (UPDATE-NTH *BACKCHAINING-JUST-STARTED*
+                 NIL RP-STATE)))))
+                 (old-rp-state rp-state-old)
+                 (new-rp-state rp-state))|#)
            :in-theory (e/d (post-backchain-ops
-                            RP-STATE-PRESERVEDP                        
+                            RP-STATE-PRESERVEDP
                             UPDATE-RW-LIMIT-THROWS-ERROR
                             )
                            (;;UPDATE-BACKCHAINING-JUST-STARTED
@@ -972,7 +951,6 @@
                             valid-rp-statep
                             RP-STATE-PRESERVEDP-sk
                             rp-statep)))))
-
 
 
 
@@ -1013,13 +991,12 @@
                   (key
                    (valid-rp-state-syntaxp-aux-witness
                     (try-to-update-backchaining-rule rule
-                                        RP-STATE)))))
+                                                     RP-STATE)))))
            :in-theory (e/d (try-to-update-backchaining-rule
-                            valid-rp-state-syntaxp                        
+                            valid-rp-state-syntaxp
                             rp-statep)
                            (valid-rp-statep
                             rp-statep)))))
-
 
 (defret rp-statep-of-INCREMENT-RW-STACK-SIZE
   (implies (and (rp-statep rp-state))
@@ -1059,11 +1036,10 @@
                    (valid-rp-state-syntaxp-aux-witness
                     (INCREMENT-RW-STACK-SIZE RP-STATE)))))
            :in-theory (e/d (INCREMENT-RW-STACK-SIZE
-                            valid-rp-state-syntaxp                        
+                            valid-rp-state-syntaxp
                             rp-statep)
                            (valid-rp-statep
                             rp-statep)))))
-
 
 
 
@@ -1088,12 +1064,11 @@
                   (old-rp-state rp-state-old)
                   (new-rp-state rp-state)))
            :in-theory (e/d (INCREMENT-RW-STACK-SIZE
-                            RP-STATE-PRESERVEDP                        
+                            RP-STATE-PRESERVEDP
                             )
                            (valid-rp-statep
                             RP-STATE-PRESERVEDP-SK
                             rp-statep)))))
-
 
 
 (progn
@@ -1108,7 +1083,7 @@
     (implies (and (valid-rp-state-syntaxp rp-state)
                   (booleanp flg))
              (valid-rp-state-syntaxp (UPDATE-RW-CONTEXT-DISABLED flg
-                                                                   rp-state)))
+                                                                 rp-state)))
     :hints (("Goal"
              :in-theory (e/d (VALID-RP-STATE-SYNTAXP) ()))))
 
@@ -1119,116 +1094,110 @@
     :hints (("Goal"
              :in-theory (e/d () ()))))
 
-
   (defthm RP-STATE-PRESERVEDP-of-UPDATE-RW-CONTEXT-DISABLED
     (implies (and (rp-state-preservedp rp-state-old rp-state)
                   (booleanp flg))
-           (rp-state-preservedp rp-state-old (UPDATE-RW-CONTEXT-DISABLED flg rp-state)))
-  
-  :hints (("Goal"
-           :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
-                            (UPDATE-NTH *RW-CONTEXT-DISABLED* FLG RP-STATE)))
-           :use ((:instance rp-statep-of-update-rw-context-disabled)
-                 (:instance
-                  rp-state-preservedp-sk-necc
-                  (key
-                   (RP-STATE-PRESERVEDP-SK-WITNESS
+             (rp-state-preservedp rp-state-old (UPDATE-RW-CONTEXT-DISABLED flg rp-state)))
+
+    :hints (("Goal"
+             :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
+                                              (UPDATE-NTH *RW-CONTEXT-DISABLED* FLG RP-STATE)))
+             :use ((:instance rp-statep-of-update-rw-context-disabled)
+                   (:instance
+                    rp-state-preservedp-sk-necc
+                    (key
+                     (RP-STATE-PRESERVEDP-SK-WITNESS
                       RP-STATE-OLD
                       (UPDATE-NTH *RW-CONTEXT-DISABLED* FLG RP-STATE)))
-                  (old-rp-state rp-state-old)
-                  (new-rp-state rp-state)))
-           :in-theory (e/d (
-                            RP-STATE-PRESERVEDP                        
-                            UPDATE-RW-CONTEXT-DISABLED)
-                           (valid-rp-statep
-                            RP-STATE-PRESERVEDP-SK
-                            rp-statep)))))
-
+                    (old-rp-state rp-state-old)
+                    (new-rp-state rp-state)))
+             :in-theory (e/d (
+                              RP-STATE-PRESERVEDP
+                              UPDATE-RW-CONTEXT-DISABLED)
+                             (valid-rp-statep
+                              RP-STATE-PRESERVEDP-SK
+                              rp-statep)))))
 
   (in-theory (disable update-rw-context-disabled)))
 
 
-
 (progn
- (defthm UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep
-   (implies (and (rp-statep rp-state)
-                 (booleanp flg))
-            (rp-statep (update-rw-limit-throws-error flg rp-state)))
-   :hints (("Goal"
-            :in-theory (e/d (rp-statep
-                             UPDATE-RW-LIMIT-THROWS-ERROR) ()))))
+  (defthm UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep
+    (implies (and (rp-statep rp-state)
+                  (booleanp flg))
+             (rp-statep (update-rw-limit-throws-error flg rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d (rp-statep
+                              UPDATE-RW-LIMIT-THROWS-ERROR) ()))))
 
- (defthm RP-STATE-PRESERVEDP-of-update-rw-limit-throws-error
+  (defthm RP-STATE-PRESERVEDP-of-update-rw-limit-throws-error
     (implies (and (rp-state-preservedp rp-state-old rp-state)
                   (booleanp flg))
-           (rp-state-preservedp rp-state-old (update-rw-limit-throws-error flg rp-state)))
-  
-  :hints (("Goal"
-           :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
-                          (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
-           :use ((:instance UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep)
-                 (:instance
-                  rp-state-preservedp-sk-necc
-                  (key
-                   (RP-STATE-PRESERVEDP-SK-WITNESS
-                    RP-STATE-OLD
-                    (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
-                  (old-rp-state rp-state-old)
-                  (new-rp-state rp-state)))
-           :in-theory (e/d (
-                            RP-STATE-PRESERVEDP                        
-                            update-rw-limit-throws-error)
-                           (valid-rp-statep
-                            RP-STATE-PRESERVEDP-SK
-                            rp-statep)))))
+             (rp-state-preservedp rp-state-old (update-rw-limit-throws-error flg rp-state)))
 
- )
+    :hints (("Goal"
+             :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
+                                              (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
+             :use ((:instance UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep)
+                   (:instance
+                    rp-state-preservedp-sk-necc
+                    (key
+                     (RP-STATE-PRESERVEDP-SK-WITNESS
+                      RP-STATE-OLD
+                      (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
+                    (old-rp-state rp-state-old)
+                    (new-rp-state rp-state)))
+             :in-theory (e/d (
+                              RP-STATE-PRESERVEDP
+                              update-rw-limit-throws-error)
+                             (valid-rp-statep
+                              RP-STATE-PRESERVEDP-SK
+                              rp-statep)))))
 
+  )
 
 (progn
- (defthm UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep
-   (implies (and (rp-statep rp-state)
-                 (booleanp flg))
-            (rp-statep (update-rw-limit-throws-error flg rp-state)))
-   :hints (("Goal"
-            :in-theory (e/d (rp-statep
-                             UPDATE-RW-LIMIT-THROWS-ERROR) ()))))
+  (defthm UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep
+    (implies (and (rp-statep rp-state)
+                  (booleanp flg))
+             (rp-statep (update-rw-limit-throws-error flg rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d (rp-statep
+                              UPDATE-RW-LIMIT-THROWS-ERROR) ()))))
 
- (defthm RP-STATE-PRESERVEDP-of-update-rw-limit-throws-error
+  (defthm RP-STATE-PRESERVEDP-of-update-rw-limit-throws-error
     (implies (and (rp-state-preservedp rp-state-old rp-state)
                   (booleanp flg))
-           (rp-state-preservedp rp-state-old (update-rw-limit-throws-error flg rp-state)))
-  
-  :hints (("Goal"
-           :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
-                          (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
-           :use ((:instance UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep)
-                 (:instance
-                  rp-state-preservedp-sk-necc
-                  (key
-                   (RP-STATE-PRESERVEDP-SK-WITNESS
-                    RP-STATE-OLD
-                    (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
-                  (old-rp-state rp-state-old)
-                  (new-rp-state rp-state)))
-           :in-theory (e/d (
-                            RP-STATE-PRESERVEDP                        
-                            update-rw-limit-throws-error)
-                           (valid-rp-statep
-                            RP-STATE-PRESERVEDP-SK
-                            rp-statep)))))
+             (rp-state-preservedp rp-state-old (update-rw-limit-throws-error flg rp-state)))
 
- )
+    :hints (("Goal"
+             :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
+                                              (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
+             :use ((:instance UPDATE-RW-LIMIT-THROWS-ERROR-rp-statep)
+                   (:instance
+                    rp-state-preservedp-sk-necc
+                    (key
+                     (RP-STATE-PRESERVEDP-SK-WITNESS
+                      RP-STATE-OLD
+                      (UPDATE-NTH *RW-LIMIT-THROWS-ERROR* FLG RP-STATE)))
+                    (old-rp-state rp-state-old)
+                    (new-rp-state rp-state)))
+             :in-theory (e/d (
+                              RP-STATE-PRESERVEDP
+                              update-rw-limit-throws-error)
+                             (valid-rp-statep
+                              RP-STATE-PRESERVEDP-SK
+                              rp-statep)))))
 
+  )
 
 (progn
-  
 
   (defthm valid-rp-state-syntaxp-UPDATE-RULE-FRAME-CNTS
     (implies (and (valid-rp-state-syntaxp rp-state)
                   (alistp v))
              (valid-rp-state-syntaxp (UPDATE-RULE-FRAME-CNTS v
-                                                                   rp-state)))
+                                                             rp-state)))
     :hints (("Goal"
              :use ((:instance rp-statep-of-UPDATE-RULE-FRAME-CNTS))
              :in-theory (e/d (VALID-RP-STATE-SYNTAXP) ()))))
@@ -1240,12 +1209,11 @@
     :hints (("Goal"
              :in-theory (e/d () ()))))
 
-
   (defthm RP-STATE-PRESERVEDP-of-UPDATE-RULE-FRAME-CNTS
     (implies (and (rp-state-preservedp rp-state-old rp-state)
                   (alistp v))
              (rp-state-preservedp rp-state-old (UPDATE-RULE-FRAME-CNTS v rp-state)))
-  
+
     :hints (("Goal"
              :do-not-induct t
              :expand ((RP-STATE-PRESERVEDP-SK RP-STATE-OLD
@@ -1260,16 +1228,13 @@
                     (old-rp-state rp-state-old)
                     (new-rp-state rp-state)))
              :in-theory (e/d (
-                              RP-STATE-PRESERVEDP                        
+                              RP-STATE-PRESERVEDP
                               UPDATE-RULE-FRAME-CNTS)
                              (valid-rp-statep
                               RP-STATE-PRESERVEDP-SK
                               rp-statep)))))
 
-
   (in-theory (disable UPDATE-RULE-FRAME-CNTS)))
-
-
 
 
 
@@ -1282,7 +1247,7 @@
                                                                                   old-term
                                                                                   new-term
                                                                                   rp-state)))
-  
+
   :hints (("Goal"
            :expand ((RP-STATE-PRESERVEDP RP-STATE-OLD RP-STATE))
            :use ((:instance rp-statep-rp-state-push-to-result-to-rw-stack)
@@ -1306,8 +1271,8 @@
                  (old-rp-state rp-state-old) ;
                  (new-rp-state rp-state))|#)
            :in-theory (e/d (alistp
-                            
-                            ;;RP-STATE-PRESERVEDP                        
+
+                            ;;RP-STATE-PRESERVEDP
                             rp-state-push-to-result-to-rw-stack)
                            (RW-STACK-SIZE
                             RW-STACK
@@ -1319,17 +1284,17 @@
                             rp-statep)))))
 
 (defret RP-STATE-PRESERVEDP-of-limit-reached-action
-    (implies (rp-state-preservedp rp-state-old rp-state)
-             (rp-state-preservedp rp-state-old res-rp-state))
-    :fn limit-reached-action
-    :hints (("Goal"
-             :in-theory (e/d (limit-reached-action
-                              INCREMENT-RW-STACK-SIZE
-                              ;;RP-STATE-PRESERVEDP                        
-                              )
-                             (valid-rp-statep
-                              RP-STATE-PRESERVEDP-SK
-                              rp-statep)))))
+  (implies (rp-state-preservedp rp-state-old rp-state)
+           (rp-state-preservedp rp-state-old res-rp-state))
+  :fn limit-reached-action
+  :hints (("Goal"
+           :in-theory (e/d (limit-reached-action
+                            INCREMENT-RW-STACK-SIZE
+                            ;;RP-STATE-PRESERVEDP
+                            )
+                           (valid-rp-statep
+                            RP-STATE-PRESERVEDP-SK
+                            rp-statep)))))
 
 (defthm rp-statep-of-update-orig-conjecture
   (implies (and (rp-statep rp-state)
@@ -1337,3 +1302,51 @@
            (rp-statep (update-orig-conjecture x rp-state)))
   :hints (("Goal"
            :in-theory (e/d (rp-statep) ()))))
+
+
+
+
+
+(encapsulate
+  nil
+  (local
+   (include-book "arithmetic-3/top" :dir :system))
+
+  (local
+   (in-theory (disable UPDATE-NTH)))
+
+  (defthm RW-RECENT-TERMSP-of-update-nth
+    (implies (RW-RECENT-TERMSP lst)
+             (RW-RECENT-TERMSP (UPDATE-NTH key val lst)))
+    :hints (("Goal"
+             :in-theory (e/d (UPDATE-NTH) ()))))
+
+  (defthm rp-statep-of-PUSH-TO-RW-RECENT-TERMS
+    (implies (and (rp-statep rp-state))
+             (rp-statep (PUSH-TO-RW-RECENT-TERMS x rp-state)))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d (rp-statep
+                              RW-RECENT-TERMSP
+                              PUSH-TO-RW-RECENT-TERMS)
+                             (mod floor)))))
+
+  (defthm valid-rp-state-syntaxp-PUSH-TO-RW-RECENT-TERMS
+    (implies (and (valid-rp-state-syntaxp rp-state))
+             (valid-rp-state-syntaxp (PUSH-TO-RW-RECENT-TERMS x rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d (rp-statep
+                              PUSH-TO-RW-RECENT-TERMS
+                              VALID-RP-STATE-SYNTAXP)
+                             ()))))
+
+  (defthm valid-rp-statep-PUSH-TO-RW-RECENT-TERMS
+    (implies (and (valid-rp-statep rp-state))
+             (valid-rp-statep (PUSH-TO-RW-RECENT-TERMS x rp-state)))
+    :hints (("Goal"
+             :in-theory (e/d (rp-statep
+                              PUSH-TO-RW-RECENT-TERMS
+                              valid-rp-statep)
+                             ()))))
+
+  )
