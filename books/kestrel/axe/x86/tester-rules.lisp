@@ -346,30 +346,6 @@
                   1))
   :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
 
-(defthm cr0bits->ts-of-bvchop
-  (implies (and (< 3 n)
-                (integerp n))
-           (equal (x86isa::cr0bits->ts (bvchop n x))
-                  (x86isa::cr0bits->ts x)))
-  :hints (("Goal" :in-theory (enable x86isa::cr0bits->ts
-                                     x86isa::cr0bits-fix))))
-
-(defthm cr0bits->em-of-bvchop
-  (implies (and (< 2 n)
-                (integerp n))
-           (equal (x86isa::cr0bits->em (bvchop n x))
-                  (x86isa::cr0bits->em x)))
-  :hints (("Goal" :in-theory (enable x86isa::cr0bits->em
-                                     x86isa::cr0bits-fix))))
-
-(defthm cr4bits->OSFXSR-of-bvchop
-  (implies (and (< 9 n)
-                (integerp n))
-           (equal (x86isa::cr4bits->OSFXSR (bvchop n x))
-                  (x86isa::cr4bits->OSFXSR x)))
-  :hints (("Goal" :in-theory (enable x86isa::cr4bits->OSFXSR
-                                     x86isa::cr4bits-fix))))
-
 ; Only needed for Axe.
 (defthmd integerp-of-part-install-width-low$inline
   (integerp (bitops::part-install-width-low$inline val x width low)))
