@@ -210,3 +210,24 @@
            (equal (bvminus size x y)
                   0))
   :hints (("Goal" :in-theory (enable bvminus bvchop-of-sum-cases))))
+
+;; combines the constants
+;; maybe not needed if we always go to bvuminus
+(defthm bvminus-of-bvplus-of-constant-and-bvplus-of-constant
+  (implies (syntaxp (and (quotep k1) (quotep k2)))
+           (equal (bvminus size (bvplus size k1 x) (bvplus size k2 y))
+                  (bvminus size (bvplus size (bvminus size k1 k2) x) y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; maybe not needed if we always go to bvuminus
+;; (x+y)-y = x
+(defthm bvminus-of-bvplus-same
+  (equal (bvminus size (bvplus size x y) y)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; (y+x)-y = x
+(defthm bvminus-of-bvplus-same-alt
+  (equal (bvminus size (bvplus size y x) y)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))

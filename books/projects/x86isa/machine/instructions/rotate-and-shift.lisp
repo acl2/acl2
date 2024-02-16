@@ -541,7 +541,10 @@
                         (reg-index reg rex-byte #.*w*)
                         result
                         rex-byte
-                        x86)))
+                        x86))
+
+       ;; Update the program counter.
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86)
 

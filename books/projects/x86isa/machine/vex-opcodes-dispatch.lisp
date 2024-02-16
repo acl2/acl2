@@ -85,8 +85,10 @@
     ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
      (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
-                             "@('temp-rip') points to the byte following the
-                              opcode byte")
+                             "@('temp-rip') points to the byte following
+                              the SIB byte (if present),
+                              or the ModR/M byte (if present with no SIB byte),
+                              or the opcode byte (if there is no ModR/M byte).")
      (prefixes               :type (unsigned-byte #.*prefixes-width*))
      (rex-byte               :type (unsigned-byte 8))
      (vex-prefixes           :type (unsigned-byte 24)
@@ -118,8 +120,10 @@
     ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
      (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
-                             "@('temp-rip') points to the byte following the
-                             opcode byte")
+                             "@('temp-rip') points to the byte following
+                              the SIB byte (if present),
+                              or the ModR/M byte (if present with no SIB byte),
+                              or the opcode byte (if there is no ModR/M byte).")
      (prefixes               :type (unsigned-byte #.*prefixes-width*))
      (rex-byte               :type (unsigned-byte 8))
      (vex-prefixes           :type (unsigned-byte 24)
@@ -153,8 +157,10 @@
     ((proc-mode              :type (integer 0 #.*num-proc-modes-1*))
      (start-rip              :type (signed-byte   #.*max-linear-address-size*))
      (temp-rip               :type (signed-byte   #.*max-linear-address-size*)
-                             "@('temp-rip') points to the byte following the
-                            opcode byte")
+                             "@('temp-rip') points to the byte following
+                              the SIB byte (if present),
+                              or the ModR/M byte (if present with no SIB byte),
+                              or the opcode byte (if there is no ModR/M byte).")
      (prefixes               :type (unsigned-byte #.*prefixes-width*))
      (rex-byte               :type (unsigned-byte 8))
      (vex-prefixes           :type (unsigned-byte 24)
