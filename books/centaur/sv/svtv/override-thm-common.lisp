@@ -649,14 +649,16 @@
        ((acl2::with-fast x.triple-val-alist))
        (err (svtv-genthm-error x))
        ((when err) (er hard? `(def-svtv-generalized-thm ,x.name) "Error: ~@0" err)))
-    `(defsection ,x.name
-       ,@(and (not x.no-lemmas)
-              (let ((lemma (svtv-genthm-initial-override-lemma x)))
-                (if x.lemma-nonlocal
-                    `(,lemma)
-                  `((local ,lemma)))))
-       ,(svtv-genthm-final-thm x)
-       (table svtv-generalized-thm-table ',x.name ',x))))
+    `(with-output :off (event) :stack :push
+       (defsection ,x.name
+         (with-output :stack :pop
+           (progn ,@(and (not x.no-lemmas)
+                         (let ((lemma (svtv-genthm-initial-override-lemma x)))
+                           (if x.lemma-nonlocal
+                               `(,lemma)
+                             `((local ,lemma)))))))
+         (with-output :stack :pop ,(svtv-genthm-final-thm x))
+         (table svtv-generalized-thm-table ',x.name ',x)))))
 
 
 (defun svtv-genthm-override-svar-widths (override-input-widths triple-val-alist triples-name)

@@ -1601,6 +1601,46 @@
              (equal (nth n new-svtv-chase-data)
                     (nth n svtv-chase-data)))))
 
+
+(define svtv-chase-print-stack-rec ((stack chase-stack-p)
+                                    (index natp)
+                                    &key
+                                    ((moddb moddb-ok) 'moddb)
+                                    (svtv-chase-data 'svtv-chase-data))
+  :guard (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable svtv-chase-datap))))
+  :returns (lines 3col4vecs-p)
+  (b* (((when (atom stack)) nil)
+       ((chase-position pos) (car stack))
+       (var (make-svar :name (make-address :path pos.path)))
+       ((mv var phase) (svtv-chase-normalize-var/phase var pos.phase))
+       (signal-lines (svtv-chase-print-signal index var phase pos.rsh pos.mask pos.mask t))
+       (phase-line (list (3col4vecline
+                          (msg "(Phase ~@0.)"
+                               (b* ((pair (svtv-chase-phase-labelpair
+                                           phase (svtv-chase-data->phaselabels svtv-chase-data))))
+                                 (if (equal pair phase)
+                                     (msg "~x0" phase)
+                                   (msg "~x0 = ~x1" pair phase))))
+                          nil nil)))
+       (rest-lines (svtv-chase-print-stack-rec (cdr stack) (1+ (lnfix index)))))
+    (append (list (3col4vecline
+                   (if (svtv-chase-data->evaldata2 svtv-chase-data)
+                       "----              -----              -----              -----              -----              -----              -----              -----"
+                     "----              -----              -----              -----              -----")
+                   nil nil))
+            signal-lines phase-line rest-lines)))
+    
+(define svtv-chase-print-stack (&key
+                                ((moddb moddb-ok) 'moddb)
+                                (svtv-chase-data 'svtv-chase-data))
+  :guard (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable svtv-chase-datap))))
+  (b* ((lines (svtv-chase-print-stack-rec (svtv-chase-data->stack svtv-chase-data) 0)))
+    (cw! "~@0" (print-3col4vecs lines))))
+
 (defconst *chase-usage*
   "
 What you can enter at the SVTV-CHASE prompt:
@@ -1622,6 +1662,19 @@ What you can enter at the SVTV-CHASE prompt:
 
  Natural number     Select the given choice of next signal
  B                  Go back to the previous signal on the stack.
+ (B N)              Go back N stack frames. (B 1) is the same as just B.
+ STACK              Print the stack, showing the signals you can go back to.
+
+ (FOLLOW-XES N)     For up to N times, if there is a unique driver that has an X
+                    in its care-bits, follow that driver.
+
+ (FOLLOW-DATA N)    For up to N times, if there is a unique driver that matches the
+                    caremask and data value of the current signal (and doesn't seem
+                    to be a clock), follow that driver.
+
+ (FOLLOW-COMPARE N) In compare mode only, for up to N times, if there is a unique
+                    driver which has a different value in the intersection of the
+                    care bits of its two evaluations, follow that driver.
 
  EXPR               Print the assignment for the current signal.
  (EXPR N)           Print the assignment expression, limiting nesting depth to N.
@@ -1725,6 +1778,393 @@ What you can enter at the SVTV-CHASE prompt:
                                            ;; eviscerate-top to logic mode:
                                            acl2::iprint-oracle-updates)))))
 
+
+(define svtv-chase-follow-x-select-var ((vars 4vmask-alist-p)
+                                        (vals 4veclist-p))
+  :returns (chosen-var (iff (svar-p chosen-var) chosen-var))
+  :guard (eql (len vals) (len vars))
+  (b* (((when (atom vars)) nil)
+       ((unless (mbt (consp (car vars))))
+        (svtv-chase-follow-x-select-var (cdr vars) vals))
+       ((cons var mask) (car vars))
+       (val (car vals))
+       ((4vec masked-val) (4vec-mask-to-zero mask val))
+       (has-xes (not (eql 0 (logandc2 masked-val.upper masked-val.lower))))
+       (rest-var (svtv-chase-follow-x-select-var (cdr vars) (cdr vals))))
+    ;; Return a value only if there was a unique variable with masked xes.
+    (if has-xes
+        (and (not rest-var)
+             (svar-fix var))
+      rest-var))
+  ///
+  (defret <fn>-lookup-in-vars
+    (implies (and chosen-var
+                  (4vmask-alist-p vars))
+             (hons-assoc-equal chosen-var vars))))
+
+
+(define svtv-chase-follow-x-step (&key
+                                  ((moddb moddb-ok) 'moddb)
+                                  (svtv-chase-data 'svtv-chase-data))
+  :returns (mv traversedp new-svtv-chase-data)
+  :verify-guards nil
+  :guard (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+  (b* ((vars (svtv-chase-data->vars svtv-chase-data))
+       (stack (svtv-chase-data->stack svtv-chase-data))
+       (evaldata (svtv-chase-data->evaldata svtv-chase-data))
+       ((unless (consp stack))
+        (cw! "Empty stack! Use (G \"path\" phase) to choose a signal, ? for more options.~%")
+        (mv nil svtv-chase-data))
+       ((chase-position pos) (car stack))
+       (pos.var  (make-svar :name (make-address :path pos.path)))
+       ((mv pos.var pos.phase) (svtv-chase-normalize-var/phase pos.var pos.phase))
+       ((mv ?override-mask masked-override-mask ?override-val ?computed-val)
+        (svtv-chase-override-signal-data
+         pos.var pos.phase pos.rsh nil (sparseint-val pos.mask) evaldata nil))
+       ((unless (eql masked-override-mask 0))
+        ;; Stop because our signal was overridden.
+        (mv nil svtv-chase-data))
+       (varnames (alist-keys vars))
+       (vals (svtv-chase-evallist varnames pos.phase evaldata))
+       (chosen-var (svtv-chase-follow-x-select-var vars vals))
+       ((unless chosen-var)
+        ;; Couldn't follow it back, so just stay here
+        (mv nil svtv-chase-data))
+       (new-mask (cdr (hons-assoc-equal chosen-var vars)))
+       ((mv chosen-var phase) (svtv-chase-normalize-var/phase chosen-var pos.phase))
+       (name (svar->name chosen-var))
+       ((unless (address-p name))
+        (cw! "The chosen signal isn't an address, so it must be an ~
+                    auxiliary variable supporting an override.~%Enter P to ~
+                    print current state, ? for more options.~%")
+        (mv nil svtv-chase-data))
+       (svtv-chase-data (svtv-chase-signal-data
+                         (make-chase-position
+                          :path (address->path name)
+                          :phase (- phase (svar->delay chosen-var))
+                          :rsh 0 :mask new-mask))))
+    (mv t svtv-chase-data))
+  ///
+  (verify-guards svtv-chase-follow-x-step-fn
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable svtv-chase-datap)
+                   :do-not-induct t))))
+
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))
+    :hints(("Goal" :in-theory (enable member-equal)))))
+
+(define svtv-chase-follow-xes-rec ((count natp)
+                                   &key
+                                   ((moddb moddb-ok) 'moddb)
+                                   (svtv-chase-data 'svtv-chase-data))
+  :returns (mv (remainder natp :rule-classes :type-prescription)
+               new-svtv-chase-data)
+  :guard (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable svtv-chase-datap)
+                       :do-not-induct t)))
+  (b* (((when (zp count))
+        (mv 0 svtv-chase-data))
+       ((mv keep-going svtv-chase-data)
+        (svtv-chase-follow-x-step))
+       ((when keep-going)
+        (svtv-chase-follow-xes-rec (1- count))))
+    (mv count svtv-chase-data))
+  ///
+
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))
+    :hints(("Goal" :in-theory (enable member-equal)))))
+
+
+
+(define svtv-chase-follow-compare-select-var ((vars 4vmask-alist-p)
+                                              (vals 4veclist-p)
+                                              (vals2 4veclist-p))
+  :returns (chosen-var (iff (svar-p chosen-var) chosen-var))
+  :guard (and (eql (len vals) (len vars))
+              (eql (len vals2) (len vars)))
+  (b* (((when (atom vars)) nil)
+       ((unless (mbt (consp (car vars))))
+        (svtv-chase-follow-compare-select-var (cdr vars) vals vals2))
+       ((cons var mask) (car vars))
+       (val1 (car vals))
+       (val2 (car vals2))
+       (masked-val1 (4vec-mask-to-zero mask val1))
+       (masked-val2 (4vec-mask-to-zero mask val2))
+       (diff (not (equal masked-val1 masked-val2)))
+       (rest-var (svtv-chase-follow-compare-select-var (cdr vars) (cdr vals) (cdr vals2))))
+    ;; Return a value only if there was a unique variable with masked xes.
+    (if diff
+        (and (not rest-var)
+             (svar-fix var))
+      rest-var))
+  ///
+  (defret <fn>-lookup-in-vars
+    (implies (and chosen-var
+                  (4vmask-alist-p vars))
+             (hons-assoc-equal chosen-var vars))))
+
+
+(define svtv-chase-follow-compare-step (&key
+                                  ((moddb moddb-ok) 'moddb)
+                                  (svtv-chase-data 'svtv-chase-data))
+  :returns (mv traversedp new-svtv-chase-data)
+  :verify-guards nil
+  :guard (and (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+              (svtv-chase-data->evaldata2 svtv-chase-data))
+  (b* ((vars (svtv-chase-data->vars svtv-chase-data))
+       (stack (svtv-chase-data->stack svtv-chase-data))
+       (evaldata (svtv-chase-data->evaldata svtv-chase-data))
+       (evaldata2 (svtv-chase-data->evaldata2 svtv-chase-data))
+       ((unless (consp stack))
+        (cw! "Empty stack! Use (G \"path\" phase) to choose a signal, ? for more options.~%")
+        (mv nil svtv-chase-data))
+       ((chase-position pos) (car stack))
+       (pos.var  (make-svar :name (make-address :path pos.path)))
+       ((mv pos.var pos.phase) (svtv-chase-normalize-var/phase pos.var pos.phase))
+       ((mv ?override-mask masked-override-mask ?override-val ?computed-val)
+        (svtv-chase-override-signal-data
+         pos.var pos.phase pos.rsh nil (sparseint-val pos.mask) evaldata nil))
+       ((unless (eql masked-override-mask 0))
+        ;; Stop because our signal was overridden.
+        (mv nil svtv-chase-data))
+       (varnames (alist-keys vars))
+       (vals (svtv-chase-evallist varnames pos.phase evaldata))
+       (vals2 (svtv-chase-evallist varnames pos.phase evaldata2))
+       (chosen-var (svtv-chase-follow-compare-select-var vars vals vals2))
+       ((unless chosen-var)
+        ;; Couldn't follow it back, so just stay here
+        (mv nil svtv-chase-data))
+       (new-mask (cdr (hons-assoc-equal chosen-var vars)))
+       ((mv chosen-var phase) (svtv-chase-normalize-var/phase chosen-var pos.phase))
+       (name (svar->name chosen-var))
+       ((unless (address-p name))
+        (cw! "The chosen signal isn't an address, so it must be an ~
+                    auxiliary variable supporting an override.~%Enter P to ~
+                    print current state, ? for more options.~%")
+        (mv nil svtv-chase-data))
+       (svtv-chase-data (svtv-chase-signal-data
+                         (make-chase-position
+                          :path (address->path name)
+                          :phase (- phase (svar->delay chosen-var))
+                          :rsh 0 :mask new-mask))))
+    (mv t svtv-chase-data))
+  ///
+  (verify-guards svtv-chase-follow-compare-step-fn
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable svtv-chase-datap)
+                   :do-not-induct t))))
+
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))
+    :hints(("Goal" :in-theory (enable member-equal)))))
+
+(define svtv-chase-follow-compare-rec ((count natp)
+                                   &key
+                                   ((moddb moddb-ok) 'moddb)
+                                   (svtv-chase-data 'svtv-chase-data))
+  :returns (mv (remainder natp :rule-classes :type-prescription)
+               new-svtv-chase-data)
+  :guard (and (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+              (svtv-chase-data->evaldata2 svtv-chase-data))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable svtv-chase-datap)
+                       :do-not-induct t)))
+  (b* (((when (zp count))
+        (mv 0 svtv-chase-data))
+       ((mv keep-going svtv-chase-data)
+        (svtv-chase-follow-compare-step))
+       ((when keep-going)
+        (svtv-chase-follow-compare-rec (1- count))))
+    (mv count svtv-chase-data))
+  ///
+
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))
+    :hints(("Goal" :in-theory (enable member-equal)))))
+
+
+
+
+(define svtv-chase-detect-clock-deps ((vars 4vmask-alist-p)
+                                      (all-vars 4vmask-alist-p))
+  :returns (clockvars svarlist-p)
+  (b* (((when (atom vars)) nil)
+       ((unless (mbt (consp (car vars))))
+        (svtv-chase-detect-clock-deps (cdr vars) all-vars))
+       ((cons var mask) (car vars))
+       ((svar var) (svar-fix var))
+       (mask (4vmask-fix mask))
+       ((unless (and (eql var.delay 1)
+                     (or (sparseint-equal mask 1)
+                         (sparseint-equal mask 0))
+                     (let ((look (hons-assoc-equal (change-svar var :delay 0) all-vars)))
+                       (and look
+                            (or (sparseint-equal (4vmask-fix (cdr look)) 1)
+                                (sparseint-equal (4vmask-fix (cdr look)) 0))))))
+        (svtv-chase-detect-clock-deps (cdr vars) all-vars)))
+    (cons var
+          (cons (change-svar var :delay 0)
+                (svtv-chase-detect-clock-deps (cdr vars) all-vars)))))
+       
+    
+
+(define svtv-chase-follow-data-select-var ((in-val 4vec-p)
+                                           (in-mask 4vmask-p)
+                                           (clocks svarlist-p)
+                                           (vars 4vmask-alist-p)
+                                           (vals 4veclist-p))
+  :returns (chosen-var (iff (svar-p chosen-var) chosen-var))
+  :guard (eql (len vals) (len vars))
+  (b* (((when (atom vars)) nil)
+       ((unless (mbt (consp (car vars))))
+        (svtv-chase-follow-x-select-var (cdr vars) vals))
+       ((cons var mask) (car vars))
+       ((when (member-equal (svar-fix var) (svarlist-fix clocks)))
+        (svtv-chase-follow-data-select-var in-val in-mask clocks (cdr vars) (cdr vals)))
+       (mask (4vmask-fix mask))
+       (val (car vals))
+       (mask-rsh (sparseint-trailing-0-count mask))
+       (norm-mask (sparseint-ash mask (- mask-rsh)))
+       (norm-val (4vec-mask-to-zero norm-mask (4vec-rsh (2vec mask-rsh) val)))
+       (match (and (sparseint-equal norm-mask (4vmask-fix in-mask))
+                   (equal norm-val (4vec-fix in-val))))
+       (rest-var (svtv-chase-follow-data-select-var in-val in-mask clocks (cdr vars) (cdr vals))))
+    ;; Return a value only if there was a unique variable with masked xes.
+    (if match
+        (and (not rest-var)
+             (svar-fix var))
+      rest-var))
+  ///
+  (defret <fn>-lookup-in-vars
+    (implies (and chosen-var
+                  (4vmask-alist-p vars))
+             (hons-assoc-equal chosen-var vars))))
+
+
+(define svtv-chase-follow-data-step (&key
+                                     ((moddb moddb-ok) 'moddb)
+                                     (svtv-chase-data 'svtv-chase-data))
+  :returns (mv traversedp new-svtv-chase-data)
+  :verify-guards nil
+  :guard (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+  (b* ((vars (svtv-chase-data->vars svtv-chase-data))
+       (stack (svtv-chase-data->stack svtv-chase-data))
+       (evaldata (svtv-chase-data->evaldata svtv-chase-data))
+       ((unless (consp stack))
+        (cw! "Empty stack! Use (G \"path\" phase) to choose a signal, ? for more options.~%")
+        (mv nil svtv-chase-data))
+       ((chase-position pos) (car stack))
+       (pos.var  (make-svar :name (make-address :path pos.path)))
+       ((mv pos.var pos.phase) (svtv-chase-normalize-var/phase pos.var pos.phase))
+       (mask-rsh (sparseint-trailing-0-count pos.mask))
+       (norm-mask (sparseint-ash pos.mask (- mask-rsh)))
+       (val (4vec-mask-to-zero norm-mask
+                               (4vec-rsh (2vec mask-rsh)
+                                         (svtv-chase-eval pos.var pos.phase evaldata))))
+       ((mv ?override-mask masked-override-mask ?override-val ?computed-val)
+        (svtv-chase-override-signal-data pos.var pos.phase mask-rsh nil (sparseint-val norm-mask)
+                                         evaldata nil))
+       ((unless (eql masked-override-mask 0))
+        ;; Stop because our signal was overridden
+        (mv nil svtv-chase-data))
+       (varnames (alist-keys vars))
+       (vals (svtv-chase-evallist varnames pos.phase evaldata))
+       (clocks (svtv-chase-detect-clock-deps vars vars))
+       (chosen-var (svtv-chase-follow-data-select-var val norm-mask clocks vars vals))
+       ((unless chosen-var)
+        ;; Couldn't follow it back, so just stay here
+        (mv nil svtv-chase-data))
+       (new-mask (cdr (hons-assoc-equal chosen-var vars)))
+       ((mv chosen-var phase) (svtv-chase-normalize-var/phase chosen-var pos.phase))
+       (name (svar->name chosen-var))
+       ((unless (address-p name))
+        (cw! "The chosen signal isn't an address, so it must be an ~
+                    auxiliary variable supporting an override.~%Enter P to ~
+                    print current state, ? for more options.~%")
+        (mv nil svtv-chase-data))
+       (svtv-chase-data (svtv-chase-signal-data
+                         (make-chase-position
+                          :path (address->path name)
+                          :phase (- phase (svar->delay chosen-var))
+                          :rsh 0 :mask new-mask))))
+    (mv t svtv-chase-data))
+  ///
+  (verify-guards svtv-chase-follow-data-step-fn
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable svtv-chase-datap)
+                   :do-not-induct t))))
+
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))
+    :hints(("Goal" :in-theory (enable member-equal)))))
+
+(define svtv-chase-follow-data-rec ((count natp)
+                                   &key
+                                   ((moddb moddb-ok) 'moddb)
+                                   (svtv-chase-data 'svtv-chase-data))
+  :returns (mv (remainder natp :rule-classes :type-prescription)
+               new-svtv-chase-data)
+  :guard (< (svtv-chase-data->modidx svtv-chase-data) (moddb->nmods moddb))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable svtv-chase-datap)
+                       :do-not-induct t)))
+  (b* (((when (zp count))
+        (mv 0 svtv-chase-data))
+       ((mv keep-going svtv-chase-data)
+        (svtv-chase-follow-data-step))
+       ((when keep-going)
+        (svtv-chase-follow-data-rec (1- count))))
+    (mv count svtv-chase-data))
+  ///
+
+  (defret nth-of-<fn>
+    (implies (not (member-equal (nfix n) (list *svtv-chase-data->stack*
+                                               *svtv-chase-data->sigtype*
+                                               *svtv-chase-data->vars*
+                                               *svtv-chase-data->expr*)))
+             (equal (nth n new-svtv-chase-data)
+                    (nth n svtv-chase-data)))
+    :hints(("Goal" :in-theory (enable member-equal)))))
+
+
+
+
+
+(local (defthm chase-stack-p-of-nthcdr
+         (implies (chase-stack-p x)
+                  (chase-stack-p (nthcdr n x)))))
+    
+    
+
+
 (define svtv-chase-rep (&key
                         ((moddb moddb-ok) 'moddb)
                         (svtv-chase-data 'svtv-chase-data)
@@ -1796,6 +2236,9 @@ What you can enter at the SVTV-CHASE prompt:
                     (mv nil svtv-chase-data state))
                    (svtv-chase-data (set-svtv-chase-data->stack (cdr stack) svtv-chase-data)))
                 (svtv-chase-print!)))
+             ((when (equal objname "STACK"))
+              (prog2$ (svtv-chase-print-stack)
+                      (mv nil svtv-chase-data state)))
              ((when (equal objname "X"))
               (mv t svtv-chase-data state))
              ((when (equal objname "SMARTP"))
@@ -1832,6 +2275,55 @@ What you can enter at the SVTV-CHASE prompt:
                    (symbolp (car obj))))
         (b* ((objname (symbol-name (car obj)))
              (args (cdr obj))
+             ((when (equal objname "B"))
+              (b* (((unless (and (consp args)
+                                 (natp (car args))
+                                 (not (cdr args))))
+                    (cw! "B directive with an argument must be of the form (B COUNT) where COUNT is natp.  ? for more options.~%")
+                    (mv nil svtv-chase-data state))
+                   (count (car args))
+                   (stack (svtv-chase-data->stack svtv-chase-data))
+                   ((unless (< count (len stack)))
+                    (cw! "Insufficient stack -- length ~x0~%" (len stack))
+                    (mv nil svtv-chase-data state))
+                   (svtv-chase-data (set-svtv-chase-data->stack (nthcdr count stack) svtv-chase-data)))
+                (svtv-chase-print!)))
+             ((when (equal objname "FOLLOW-XES"))
+              (b* (((unless (and (consp args)
+                                 (natp (car args))
+                                 (not (cdr args))))
+                    (cw! "FOLLOW-XES directive must be of the form (FOLLOW-XES COUNT) where COUNT is natp.  ? for more options.~%")
+                    (mv nil svtv-chase-data state))
+                   (count (car args))
+                   ((mv remaining-count svtv-chase-data)
+                    (svtv-chase-follow-xes-rec count)))
+                (cw! "FOLLOW-XES complete: ~x0 steps.~%" (- count remaining-count))
+                (svtv-chase-print!)))
+             ((when (equal objname "FOLLOW-COMPARE"))
+              (b* (((unless (and (consp args)
+                                 (natp (car args))
+                                 (not (cdr args))))
+                    (cw! "FOLLOW-COMPARE directive must be of the form (FOLLOW-COMPARE COUNT) where COUNT is natp.  ? for more options.~%")
+                    (mv nil svtv-chase-data state))
+                   ((unless (svtv-chase-data->evaldata2 svtv-chase-data))
+                    (cw! "FOLLOW-COMPARE directive can only be run in compare mode. ? for more options.~%")
+                    (mv nil svtv-chase-data state))
+                   (count (car args))
+                   ((mv remaining-count svtv-chase-data)
+                    (svtv-chase-follow-compare-rec count)))
+                (cw! "FOLLOW-XES complete: ~x0 steps.~%" (- count remaining-count))
+                (svtv-chase-print!)))
+             ((when (equal objname "FOLLOW-DATA"))
+              (b* (((unless (and (consp args)
+                                 (natp (car args))
+                                 (not (cdr args))))
+                    (cw! "FOLLOW-DATA directive must be of the form (FOLLOW-DATA COUNT) where COUNT is natp.  ? for more options.~%")
+                    (mv nil svtv-chase-data state))
+                   (count (car args))
+                   ((mv remaining-count svtv-chase-data)
+                    (svtv-chase-follow-data-rec count)))
+                (cw! "FOLLOW-DATA complete: ~x0 steps.~%" (- count remaining-count))
+                (svtv-chase-print!)))
              ((when (equal objname "R"))
               (b* (((unless (and (consp args)
                                  (integerp (car args))
