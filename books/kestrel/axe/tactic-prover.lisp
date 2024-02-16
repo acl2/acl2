@@ -481,9 +481,11 @@
      eql ; introduced by case
      not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
      not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
-     acl2::bvcat-of-0-arg1
-     acl2::bvcat-of-0-arg3 ; can arise from unrolling a rotate
-     acl2::equal-of-bvuminus-and-constant
+     bvcat-of-0-arg1
+     bvcat-of-0-arg3 ; can arise from unrolling a rotate
+     equal-of-bvuminus-and-constant
+     bvcat-of-bvchop-high
+     bvcat-of-bvchop-low
      ;; Rules about rotates (since we don't translate most rotates to STP):
      leftrotate-open-when-constant-shift-amount
      rightrotate-open-when-constant-shift-amount
@@ -492,11 +494,10 @@
      leftrotate-becomes-leftrotate-unroller-strong2
      leftrotate-unroller-opener
      ;; Introduce bvif when we can:
-     acl2::if-becomes-bvif-1-axe
-     acl2::if-becomes-bvif-2-axe
-     acl2::if-becomes-bvif-3-axe
-     acl2::if-becomes-bvif-4-axe
-     )
+     if-becomes-bvif-1-axe
+     if-becomes-bvif-2-axe
+     if-becomes-bvif-3-axe
+     if-becomes-bvif-4-axe)
    (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))

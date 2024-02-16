@@ -537,7 +537,7 @@
     x86isa::vex-prefixes-map-p$inline-constant-opener
     x86isa::vex3-byte1->m-mmmm$inline-constant-opener
     x86isa::vex3-byte1-fix$inline-constant-opener
-    x86isa::vex-decode-and-execute
+    x86isa::vex-decode-and-execute ; restrict to when we can resolve the instruction?
     x86isa::vex-0f38-execute  ; move?
 ))
 
@@ -1635,7 +1635,10 @@
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
 
             acl2::not-of-cons
-            )))
+
+            cr0bits->ts-of-bvchop
+            cr0bits->em-of-bvchop
+            cr4bits->OSFXSR-of-bvchop)))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
@@ -4004,9 +4007,6 @@
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
-            cr0bits->ts-of-bvchop
-            cr0bits->em-of-bvchop
-            cr4bits->OSFXSR-of-bvchop
             X86ISA::WX128$inline
             X86ISA::WZ128$inline
             X86ISA::RX32$inline
