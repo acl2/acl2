@@ -471,3 +471,31 @@
   (equal (rtl::dazify x 0 acl2::f)
          x)
   :hints (("Goal" :in-theory (enable rtl::dazify))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: better place for this stuff?  it's not necessarily for floats
+
+(defthm cr0bits->ts-of-bvchop
+  (implies (and (< 3 n)
+                (integerp n))
+           (equal (x86isa::cr0bits->ts (bvchop n x))
+                  (x86isa::cr0bits->ts x)))
+  :hints (("Goal" :in-theory (enable x86isa::cr0bits->ts
+                                     x86isa::cr0bits-fix))))
+
+(defthm cr0bits->em-of-bvchop
+  (implies (and (< 2 n)
+                (integerp n))
+           (equal (x86isa::cr0bits->em (bvchop n x))
+                  (x86isa::cr0bits->em x)))
+  :hints (("Goal" :in-theory (enable x86isa::cr0bits->em
+                                     x86isa::cr0bits-fix))))
+
+(defthm cr4bits->OSFXSR-of-bvchop
+  (implies (and (< 9 n)
+                (integerp n))
+           (equal (x86isa::cr4bits->OSFXSR (bvchop n x))
+                  (x86isa::cr4bits->OSFXSR x)))
+  :hints (("Goal" :in-theory (enable x86isa::cr4bits->OSFXSR
+                                     x86isa::cr4bits-fix))))
