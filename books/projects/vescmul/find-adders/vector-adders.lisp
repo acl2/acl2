@@ -2094,6 +2094,7 @@
                                (cons :shared-arg2 (svl::bitp-of-svex shared-arg2)))
                          remaining-bitor remaining-bitand
                          config context env)
+                    ;;(hard-error 'nil "" nil)
                     svex))
 
            (new-inner-bitor (ex-adder-fnc-from-unfloat

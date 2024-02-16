@@ -947,7 +947,9 @@ rp-equal))))))|#
             (and (equal (m2 (sum (rp-evlt term a) other))
                         (m2 other))
                  (equal (m2 (sum (rp-evlt (ex-from-rp term) a) other))
-                        (m2 other))))
+                        (m2 other))
+                 (equal (m2 (rp-evlt (ex-from-rp term) a))
+                        0)))
    :fn get-pp-and-coef
    :hints (("goal"
             :do-not-induct t
@@ -1120,7 +1122,11 @@ rp-equal))))))|#
   :hints (("Goal"
            :do-not-induct t
            :expand ((:free (x y)
-                           (sum-list (cons x y))))
+                           (sum-list (cons x y)))
+                    (:free (x y)
+                           (sum-list-eval (cons x y) a))
+                    (SUM-LIST-EVAL PP-LST A)
+                    (SUM-LIST-EVAL NIL A))
            :induct (c-fix-arg-aux pp-lst)
            :do-not '(generalize)
            :in-theory (e/d* (;;CREATE-TIMES-INSTANCE
@@ -1140,6 +1146,8 @@ rp-equal))))))|#
                              )
                             (INCLUDE-FNC
 
+                             SUM-LIST-EVAL
+                             
                              rp-evlt-of-ex-from-rp
                              sum-comm-1
                              sum-comm-2
@@ -1152,10 +1160,10 @@ rp-equal))))))|#
                              (:REWRITE RP-TERMP-IMPLIES-SUBTERMS)
                              F2-OF-TIMES2
                              rp-trans)))
-          ("Subgoal *1/3"
-           :use ((:instance rp-evlt-of-rp-equal
-                            (term1 (EX-FROM-RP (CAR PP-LST)))
-                            (term2 (EX-FROM-RP (CADR PP-LST))))))))
+          (and stable-under-simplificationp
+               '(:use ((:instance rp-evlt-of-rp-equal
+                                  (term1 (EX-FROM-RP (CAR PP-LST)))
+                                  (term2 (EX-FROM-RP (CADR PP-LST)))))))))
 
 (defthm c-fix-arg-aux-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
@@ -1657,7 +1665,10 @@ rp-equal))))))|#
 (defthm sum-list-eval-of-odds-and-evens
   (equal (sum (sum-list-eval (odds lst) a)
               (sum-list-eval (evens lst) a))
-         (sum-list-eval lst a)))
+         (sum-list-eval lst a))
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           (SUM-CANCEL-COMMON)))))
 
 (defthm pp-sum-sort-lst-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
