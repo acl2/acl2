@@ -70,12 +70,40 @@
     :hints (("goal" :in-theory '(counter-phase-fsm-is-data-fsm
                                  fsm-p-of-svtv-data-obj->phase-fsm)))))
 
+;; For each of these tests I want to try this both with and without :initial-state-vars t.
+;; So I first define the sequence of events as a constant, with the :initial-state-vars declaration.
+;; I run with the initial-state-vars just using (make-event *constant*).  Then also
+;; (make-event (remove-initial-state-vars (remove-define-fsm *constant*)))
+(local
+ (defun remove-initial-state-vars (x)
+  (if (atom x)
+      x
+    (case-match x
+      ((':initial-state-vars 't . rest) rest)
+      (& (cons (remove-initial-state-vars (car x))
+               (remove-initial-state-vars (cdr x))))))))
+
+(local
+ (defun remove-define-fsm (x)
+  (if (atom x)
+      x
+    (case-match x
+      ((':define-fsm 't . rest) rest)
+      (& (cons (remove-define-fsm (car x))
+               (remove-define-fsm (cdr x))))))))
+
+
+
+(defconst *counter-invar0-events*
+  '(progn
+                             
 (defsvtv$ counter-invar0-run
   :design *sv-design*
   :cycle-phases (list (make-svtv-cyclephase :constants '(("clk" . 1)))
                       (make-svtv-cyclephase :constants '(("clk" . 0))
                                             :inputs-free t
                                             :outputs-captured t))
+  :initial-state-vars t
   :stages ((:label curr
             :inputs (("inc" inc)
                      ("reset" 0))
@@ -170,16 +198,25 @@
                  :eliminate-override-signals :all
                  :cycle-num-rewrite-strategy :single-var)))
 
+))
+
+(make-event *counter-invar0-events*)
+(make-event
+ (acl2::template-subst-top (remove-initial-state-vars (remove-define-fsm *counter-invar0-events*))
+                           (acl2::make-tmplsubst :strs '(("INVAR0" . "INVAR0A"))
+                                                 :pkg-sym 'sv-package)))
 
 
 
-
+(defconst *counter-invar1-events*
+  '(progn
 (defsvtv$ counter-invar1-run
   :design *sv-design*
   :cycle-phases (list (make-svtv-cyclephase :constants '(("clk" . 1)))
                       (make-svtv-cyclephase :constants '(("clk" . 0))
                                             :inputs-free t
                                             :outputs-captured t))
+  :initial-state-vars t
   :stages ((:label curr
             :inputs (("inc" inc)
                      ("reset" 0))
@@ -275,15 +312,25 @@
         :svtv-spec-thmname counter-invar1-svtv-thm
         :eliminate-override-signals :all
         :cycle-num-rewrite-strategy :single-var))))
+))
+
+(make-event *counter-invar1-events*)
+(make-event
+ (acl2::template-subst-top (remove-initial-state-vars *counter-invar1-events*)
+                           (acl2::make-tmplsubst :strs '(("INVAR1" . "INVAR1A"))
+                                                 :pkg-sym 'sv-package)))
 
 
-
+(defconst *counter-invar2-events*
+  '(progn
+                             
 (defsvtv$ counter-invar2-run
   :design *sv-design*
   :cycle-phases (list (make-svtv-cyclephase :constants '(("clk" . 1)))
                       (make-svtv-cyclephase :constants '(("clk" . 0))
                                             :inputs-free t
                                             :outputs-captured t))
+  ;; :initial-state-vars t
   :stages ((:label curr
             :inputs (("inc" inc)
                      ("reset" 0))
@@ -337,3 +384,10 @@
         :svtv-spec-thmname counter-invar2-svtv-thm
         :eliminate-override-signals :all))))
 
+))
+
+(make-event *counter-invar2-events*)
+(make-event
+ (acl2::template-subst-top (remove-initial-state-vars *counter-invar2-events*)
+                           (acl2::make-tmplsubst :strs '(("INVAR2" . "INVAR2A"))
+                                                 :pkg-sym 'sv-package)))

@@ -96,9 +96,9 @@
 ;;          :hints(("Goal" :in-theory (enable svex-env-extract svex-alist-extract)))))
 
 (define fsm-run-compile-phase ((phase natp)
-                                    (outvars svarlist-p)
-                                    (out-values svex-alist-p)
-                                    (data svtv-composedata-p))
+                               (outvars svarlist-p)
+                               (out-values svex-alist-p)
+                               (data svtv-composedata-p))
   :returns (out-alist svex-alist-p)
   (b* ((alist (svex-alist-extract outvars out-values)))
     (svex-alist-compose-svtv-phases alist phase data))
@@ -170,11 +170,7 @@
 ;;      :fn svexlist-eval-unroll-multienv)
 ;;    :mutual-recursion svex-eval-unroll-multienv))
             
-(defthm alist-keys-of-fsm-final-state
-  (equal (alist-keys (fsm-final-state ins initst nextstate))
-         (svex-alist-keys nextstate))
-  :hints(("Goal" :in-theory (enable fsm-final-state
-                                    fsm-step))))
+
                      
 (local
  (encapsulate nil
@@ -263,6 +259,20 @@
 
 (local (in-theory (disable hons-dups-p)))  
 
+
+(local (include-book "std/lists/sets" :dir :system))
+
+(local (defthm intersectp-set-diff
+         (not (intersectp-equal x (set-difference-equal y x)))
+         :hints(("Goal" ; :induct (len x)
+                 :in-theory (enable acl2::intersectp-witness-rw)))))
+
+(local (defthm set-difference-when-not-intersectp
+         (implies (not (intersectp x y))
+                  (equal (set-difference-equal x y)
+                         (true-list-fix x)))
+         :hints(("Goal" :in-theory (enable intersectp set-difference-equal)))))
+
 (define fsm-run-compile ((ins svex-alistlist-p)
                               (prev-st svex-alist-p)
                               (x fsm-p)
@@ -293,16 +303,115 @@
     (clear-memoize-table 'svtv-precompose-inputs-compose)
     ans)
   ///
-  (local (defthm intersectp-set-diff
-           (not (intersectp-equal x (set-difference-equal y x)))
-           :hints(("Goal" :induct (len x)))))
   
   (defret svex-alistlist-eval-of-<fn>
     (equal (svex-alistlist-eval out-alists env)
            (fsm-run (svex-alistlist-eval ins env)
-                         (svex-alist-eval prev-st env)
-                         x
-                         signals))))
+                    (svex-alist-eval prev-st env)
+                    x
+                    signals))))
+
+(define fsm-final-state-compile ((ins svex-alistlist-p)
+                                 (prev-st svex-alist-p)
+                                 (x fsm-p)
+                                 (precomp-inputs svarlist-p)
+                                 (simp svex-simpconfig-p))
+  :guard (b* ((st-vars (svex-alist-keys (fsm->nextstate x))))
+           (and (equal (svex-alist-keys prev-st) st-vars)
+                (not (acl2::hons-dups-p st-vars))
+                (not (acl2::hons-intersect-p precomp-inputs st-vars))))
+  :prepwork ((local (defthm len-equal-0
+                      (equal (Equal (len x) 0) (not (consp x)))))
+             (local (defthm svex-alist-extract-cdr-when-car-not-member
+                      (implies (or (not (consp (car x)))
+                                   (not (svar-p (caar x)))
+                                   (not (member-equal (caar x) (svarlist-fix keys))))
+                               (equal (svex-alist-extract keys (cdr x))
+                                      (svex-alist-extract keys x)))
+                      :hints(("Goal" :in-theory (enable svex-alist-extract
+                                                        svex-lookup)))))
+                                        
+             (local (defthm svex-alist-extract-when-alist-keys-equal
+                      (implies (and (equal (svex-alist-keys x) keys)
+                                    (no-duplicatesp keys))
+                               (equal (svex-alist-extract keys x)
+                                      (svex-alist-fix x)))
+                      :hints(("Goal" :in-theory (enable svex-alist-extract svex-alist-fix
+                                                        svex-alist-keys no-duplicatesp))
+                             (and stable-under-simplificationp
+                                  (not (access acl2::clause-id id :pool-lst))
+                                  '(:induct t))
+                             (and stable-under-simplificationp
+                                  '(:in-theory (enable svex-lookup)))
+                             ))))
+  :returns (final-state svex-alist-p)
+  (b* (((fsm x))
+       ((unless (consp ins))
+        (mbe :logic (svex-alist-extract (svex-alist-keys x.nextstate) prev-st)
+             :exec prev-st))
+       ((acl2::with-fast x.nextstate prev-st))
+       (composedata
+        (svtv-precompose-phases (len ins)
+                                (make-svtv-precompose-data
+                                 :nextstate x.nextstate
+                                 :input-substs (make-fast-alists ins)
+                                 :initst prev-st
+                                 :simp simp
+                                 :pre-compose-inputs
+                                 (mbe :logic (acl2::hons-set-diff (svarlist-fix precomp-inputs)
+                                                                  (svex-alist-keys x.nextstate))
+                                      :exec precomp-inputs))))
+       (ans  (svex-alist-compose-svtv-phases x.nextstate (1- (len ins)) composedata)))
+    (fast-alistlist-clean ins)
+    (clear-memoize-table 'svex-compose-svtv-phases-call)
+    (clear-memoize-table 'svtv-precompose-inputs-compose)
+    ans)
+  ///
+
+  (local (defthm fsm-final-state-of-atom
+           (implies (atom ins)
+                    (Equal (fsm-final-state ins prev-st x)
+                           (svex-env-extract (svex-alist-keys x) prev-st)))
+           :hints(("Goal" :in-theory (enable fsm-final-state)))))
+  
+  (local (defthm fsm-final-state-expand-from-end
+           (implies (consp ins)
+                    (Equal (fsm-final-state ins prev-st x)
+                           (svex-env-extract (svex-alist-keys x)
+                                             (fsm-step (nth (1- (len ins)) ins)
+                                                       (fsm-final-state (take (1- (len ins)) ins)
+                                                                        prev-st x)
+                                                       x))))
+           :hints(("Goal" :in-theory (enable (:i fsm-final-state))
+                   :induct (fsm-final-state ins prev-st x)
+                   :expand ((fsm-final-state ins prev-st x)
+                            (fsm-final-state nil prev-st x)
+                            (:free (a b) (fsm-final-state (cons a b) prev-st x)))))))
+
+  (local (defthm consp-of-svex-alistlist-eval
+           (equal (Consp (svex-alistlist-eval x env))
+                  (consp x))
+           :hints(("Goal" :in-theory (enable svex-alistlist-eval)))))
+  
+  (defret svex-alist-eval-of-<fn>
+    (implies (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate x)))
+             (equal (svex-alist-eval final-state env)
+                    (fsm-final-state (svex-alistlist-eval ins env)
+                                     (svex-alist-eval prev-st env)
+                                     (fsm->nextstate x))))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable fsm-step fsm-step-env)
+             :expand ((len ins)))))
+
+  (defret svex-alist-eval-of-<fn>-under-svex-envs-equivalent
+    (svex-envs-equivalent
+     (svex-alist-eval final-state env)
+     (fsm-final-state (svex-alistlist-eval ins env)
+                      (svex-alist-eval prev-st env)
+                      (fsm->nextstate x)))
+    :hints (("goal" :do-not-induct t
+             :in-theory (enable fsm-step fsm-step-env)
+             :expand ((len ins))))))
 
 
 ;; (define svtv-fsm-step-compile-extract-outs ((outvars svarlist-p)

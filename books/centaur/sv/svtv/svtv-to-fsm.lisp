@@ -547,7 +547,12 @@ In particular this requires
                     (lhprobe-map-eval x env)))
     :hints(("Goal" :in-theory (enable lhprobe-overridemux-eval-when-overridetype
                                       lhprobe-map-vars
-                                      lhprobe-map-eval)))))
+                                      lhprobe-map-eval))))
+
+  (defthm alist-keys-of-lhprobe-map-overridemux-eval
+    (equal (alist-keys (lhprobe-map-overridemux-eval x env out))
+           (alist-keys (lhprobe-map-fix x)))
+    :hints(("Goal" :in-theory (enable lhprobe-map-fix)))))
 
 
 
@@ -2986,6 +2991,23 @@ In particular this requires
 
   (local (in-theory (enable svex-alist-fix))))
 
+
+(defsection svex-identity-subst-override
+  (defthmd eval-identity-subst-with-disjoint-env-under-svex-envs-similar
+    (implies (not (intersectp-equal (svarlist-fix keys) (alist-keys (svex-env-fix env))))
+             (svex-envs-similar (svex-alist-eval (svex-identity-subst keys) env)
+                                nil))
+    :hints(("Goal" :in-theory (enable svex-envs-similar
+                                      svex-env-lookup-when-not-boundp
+                                      svex-env-boundp-iff-member-alist-keys))))
+
+  (defthm svex-env-x-override-of-nil
+    (svex-envs-similar (svex-env-x-override nil b)
+                       b)))
+
+(defthm append-nil-x
+  (equal (append nil x) x))
+
 (defcong svex-envlists-equivalent equal (svtv-spec-cycle-outs->pipe-out x outs) 2
   :hints(("Goal" :in-theory (enable svtv-spec-cycle-outs->pipe-out))))
 
@@ -3732,6 +3754,11 @@ In particular this requires
           (svex-alistlist-removekeys keys (cdr alists)))))
 
 
+
+(defthm svex-alist-all-xes-p-of-svarlist-x-subst
+  (svex-alist-all-xes-p (svarlist-x-subst x))
+  :hints(("Goal" :in-theory (enable svarlist-x-subst svex-alist-all-xes-p))))
+
 (std::def-primitive-aggregate svtv-to-fsm-thm
   (thmname
    svtv-spec-thmname
@@ -3766,6 +3793,7 @@ In particular this requires
    base-cycle-var
    primary-output-var
    pkg-sym))
+
 
 
 (defconst *svtv-to-fsm-first-thm-template*
@@ -3907,8 +3935,9 @@ In particular this requires
                 (:REWRITE SVARLIST-NONOVERRIDE-P-OF-SVARLIST-REMOVE-OVERRIDE)
                 (:REWRITE
                  SVARLIST-NONOVERRIDE-TEST-OF-<SPECNAME>-CYCLEPHASELIST-KEYS)
-                (:REWRITE SVEX-ALIST-ALL-XES-OF-<SPECNAME>-INITST)
+                (:REWRITE <SPECNAME>-INITST-CHARACTERIZE)
                 (:REWRITE SVEX-ENV-REDUCE-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL)
+                (:rewrite svex-alist-all-xes-p-of-svarlist-x-subst)
                 (:REWRITE SVEX-ENV-X-OVERRIDE-WHEN-SVEX-ALIST-ALL-XES-P)
                 (:REWRITE SVEX-ENVLIST-ALL-KEYS-OF-REMOVE-OVERRIDE)
                 (:REWRITE SVEX-ENVLIST-ALL-KEYS-OF-SVTV-CYCLE-RUN-FSM-INPUTS)
@@ -3948,7 +3977,23 @@ In particular this requires
                 (append)
 
                 (sv::4vec-fix)
-                (unsigned-byte-p)))
+                (unsigned-byte-p)
+
+                eval-identity-subst-with-disjoint-env-under-svex-envs-similar
+                SVEX-ENVS-SIMILAR-IMPLIES-SVEX-ENVS-SIMILAR-SVEX-ENV-X-OVERRIDE-1
+                svex-env-x-override-of-nil
+                append-nil-x
+                svex-env-fix-when-svex-env-p
+                svarlist-fix-when-svarlist-p
+                alist-keys-of-lhprobe-map-overridemux-eval
+                <svtvname>-fsm-bindings-nondelay-p
+                (svarlist-nondelay-p)
+                state-keys-intersect-nondelay-of-<specname>
+                svarlist-p-of-svex-alist-keys
+                SVEX-ENV-P-OF-LHPROBE-MAP-OVERRIDEMUX-EVAL
+                svex-env-fix-of-append
+                alist-keys-of-append
+                svarlist-nondelay-p-of-append))
              (and stable-under-simplificationp
                   '(:use ((:instance <svtv-spec-thmname>
                            (env (b* ((fsm (<fsmname>))
@@ -4586,20 +4631,6 @@ generated names.  Defaults to the theorem name.</li>
 
 ")
 
-(define svtv-spec-cycle-fsm-inputsubsts ((x svtv-spec-p))
-  :returns (substs svex-alistlist-p)
-  (b* (((svtv-spec x)))
-    (svtv-fsm-to-fsm-inputsubsts
-     (take (len (svtv-probealist-outvars x.probes))
-           x.in-alists)
-     x.override-val-alists
-     x.override-test-alists
-     x.namemap))
-  ///
-  (defretd eval-of-<fn>
-    (equal (svex-alistlist-eval substs env)
-           (svtv-spec-pipe-env->cycle-envs x env))
-    :hints(("Goal" :in-theory (enable svtv-spec-pipe-env->cycle-envs)))))
 
 
 (defthmd svtv-spec-pipe-env->cycle-envs-in-terms-of-inputsubst

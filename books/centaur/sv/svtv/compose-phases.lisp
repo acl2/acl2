@@ -688,9 +688,10 @@
          ((svtv-precompose-data data)))
       (implies (and (< (nfix phase) (nfix nphases))
                     (not (intersectp-equal (svex-alist-keys data.nextstate)
-                                           (svarlist-fix data.pre-compose-inputs))))
+                                           (svarlist-fix data.pre-compose-inputs)))
+                    (equal ins  data.input-substs))
                (svex-alist-eval-equiv! (svex-unroll-multistate-phase-state
-                                        phase compose-data.nextstates data.input-substs)
+                                        phase compose-data.nextstates ins)
                                        (svex-unroll-phase-state
                                         phase data.nextstate data.initst data.input-substs))))))
   
@@ -858,6 +859,33 @@
                      (svexlist-compose-svtv-phases (svex-alist-vals x) phase data)))
     :hints(("Goal" :in-theory (enable svexlist-compose-svtv-phases svex-alist-keys svex-alist-vals))))
 
+  (defret eval-of-<fn>
+    (equal (svex-alist-eval new-x env)
+           (b* (((svtv-composedata data)))
+             (svex-alist-eval x
+                              (svex-alist-eval
+                               (append (svex-unroll-multistate-phase-state phase data.nextstates data.input-substs)
+                                       (nth phase data.input-substs))
+                               env))))
+    :hints(("Goal" :in-theory (enable svex-alist-eval
+                                      svex-alist-subst
+                                      svex-acons))))
+
+  (defret svex-alist-keys-of-<fn>
+    (equal (svex-alist-keys new-x)
+           (svex-alist-keys x))
+    :hints(("Goal" :in-theory (enable svex-alist-keys))))
+  
+  (defretd <fn>-under-svex-alist-eval-equiv!
+    (svex-alist-eval-equiv! new-x
+           (b* (((svtv-composedata data)))
+             (svex-alist-subst x
+                               (append (svex-unroll-multistate-phase-state phase data.nextstates data.input-substs)
+                                       (nth phase data.input-substs)))))
+    :hints(("Goal" :in-theory (enable SVEX-ALIST-EVAL-EQUIV!-WHEN-SVEX-ALIST-EVAL-EQUIV
+                                      SVEX-ENVS-EQUIVALENT-IMPLIES-ALIST-EVAL-EQUIV)
+            :do-not-induct t)))
+           
   (deffixequiv svex-alist-compose-svtv-phases :hints(("Goal" :in-theory (enable svex-alist-fix)))))
 
 

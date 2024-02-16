@@ -300,6 +300,24 @@
 (fgl::remove-fgl-rewrite svtv-spec-run-fn)
 
 
+(local (in-theory (disable acl2::hons-subset)))
+(local (include-book "centaur/misc/hons-sets" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
+(defthmd set-equiv-of-consts
+  (implies (syntaxp (and (quotep x)
+                         (quotep y)))
+           (equal (set-equiv x y)
+                  (force-execute (and (acl2::hons-subset x y)
+                                      (acl2::hons-subset y x)))))
+  :hints(("Goal" :in-theory (enable force-execute)
+          :cases ((set-equiv x y)))
+         (acl2::set-reasoning)))
+
+(defthmd intersectp-equal-execute
+  (implies (syntaxp (and (quotep x) (quotep y)))
+           (iff (intersectp-equal x y)
+                (force-execute (acl2::hons-intersect-p x y)))))
+
 
 (defconst *svtv-generalize-template*
   '(defsection <name>-refinement
@@ -559,6 +577,8 @@
                   (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-LIST-ALL-KEYS)
                   (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-OUTVARS)
                   (:EXECUTABLE-COUNTERPART TAKE)
+                  (:meta cmr::force-execute-force-execute)
+                  (:rewrite set-equiv-of-consts)
                   ;; set-equiv-by-mergesort-equal
                   (mergesort)
                   (append)
@@ -971,7 +991,31 @@
      ;;                                       ))
 
      (:@ :svtv-spec
-      (defret no-duplicate-state-keys-of-<specname>
+      (defthm no-duplicate-state-keys-of-<specname>
+        (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))))
+        :hints (("goal" :in-theory '(<data>-facts
+                                     <data>-correct
+                                     <specname>-def
+                                     fields-of-svtv-data-obj->ideal-spec
+                                     alist-keys-of-flatnorm->ideal-fsm
+                                     svex-alist-keys-of-delays-of-flatnorm-add-overrides
+                                     delays-of-design->flatnorm-of-svtv-data-obj))
+                (and stable-under-simplificationp
+                     '(:in-theory '(hons-dups-p-when-variable-free
+                                    no-duplicatesp-by-hons-dups-p)))
+                ))
+
+      (defthm state-keys-intersect-nondelay-of-<specname>
+        (implies (svarlist-nondelay-p x)
+                 (not (intersectp-equal (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))) x)))
+        :hints (("goal" :in-theory '(intersectp-of-delay/nondelay
+                                     (svarlist-delay-p)
+                                     (svex-alist-keys)
+                                     (fsm->nextstate)
+                                     (svtv-spec->fsm)
+                                     (<specname>)))))
+
+      (defret svarlist-delay-p-state-keys-of-<specname>
         (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
@@ -1005,8 +1049,7 @@
                                     (pipeline-setup->initst)
                                     (fsm->nextstate)
                                     (svtv-data-obj->phase-fsm)
-                                    (svtv-data-obj->pipeline-setup))))
-                )
+                                    (svtv-data-obj->pipeline-setup)))))
         :fn <specname>)
 
       (defret probe-keys-of-<specname>
@@ -1086,12 +1129,19 @@
                                     (svtv-spec-fsm-syntax-check)))))
 
 
-
-      (defthm svex-alist-all-xes-of-<specname>-initst
-        (svex-alist-all-xes-p (svtv-spec->initst-alist (<specname>)))
-        :hints(("Goal" :in-theory '((svex-alist-all-xes-p)
-                                    (svtv-spec->initst-alist)
-                                    (<specname>)))))
+      (make-event
+       `(defthmd <specname>-initst-characterize
+          (equal (svtv-spec->initst-alist (<specname>))
+                 ,(if (svex-alist-all-xes-p (svtv-spec->initst-alist (<specname>)))
+                      '(svarlist-x-subst (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))))
+                    '(svex-identity-subst (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))))))
+          :hints(("Goal" :in-theory '((svarlist-x-subst)
+                                      (svex-identity-subst)
+                                      (fsm->nextstate)
+                                      (svtv-spec->fsm)
+                                      (svex-alist-keys)
+                                      (svtv-spec->initst-alist)
+                                      (<specname>))))))
 
       (defthm svarlist-nonoverride-test-of-<specname>-cyclephaselist-keys
         (svarlist-nonoverride-p (svtv-cyclephaselist-keys (svtv-spec->cycle-phases (<specname>))) :test)
@@ -1434,7 +1484,14 @@
                                                         <name>-fsm-bindings))))
         :guard-hints (("goal" :in-theory '(svtv-spec-fsm-syntax-check-of-<specname>
                                            svtv-spec-p-of-<specname>)))
-        (svtv-spec-fsm-bindings (<specname>)))
+        (svtv-spec-fsm-bindings (<specname>))
+        ///
+        (defthm <name>-fsm-bindings-nondelay-p
+          (svarlist-nondelay-p (alist-keys (svtv-spec-fsm-bindings (<specname>))))
+          :hints (("goal" :in-theory '((svarlist-nondelay-p)
+                                       (alist-keys)
+                                       (svtv-spec-fsm-bindings)
+                                       (<specname>))))))
 
       (define <name>-fsm-constraints ()
         :returns (constrants lhprobe-constraintlist-p
