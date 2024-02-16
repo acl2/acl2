@@ -713,10 +713,11 @@ falist-consistent
 
   (local
    (defthm eval-of-binary-?
-     (implies (and (mult-formula-checks state)
-                   (rp-evl-meta-extract-global-facts)
-                   (equal (car (ex-from-rp term))
+     (implies (and (equal (car (ex-from-rp term))
                           'binary-?)
+                   (mult-formula-checks state)
+                   (rp-evl-meta-extract-global-facts)
+                   
                    (consp (ex-from-rp term))
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
@@ -751,10 +752,10 @@ falist-consistent
 
   (local
    (defthm eval-of-binary-or
-     (implies (and (mult-formula-checks state)
-                   (rp-evl-meta-extract-global-facts)
-                   (equal (car (ex-from-rp term))
+     (implies (and (equal (car (ex-from-rp term))
                           'binary-or)
+                   (mult-formula-checks state)
+                   (rp-evl-meta-extract-global-facts)
                    (consp (ex-from-rp term))
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
@@ -787,10 +788,10 @@ falist-consistent
 
   (local
    (defthm eval-of-binary-xor
-     (implies (and (mult-formula-checks state)
-                   (rp-evl-meta-extract-global-facts)
-                   (equal (car (ex-from-rp term))
+     (implies (and (equal (car (ex-from-rp term))
                           'binary-xor)
+                   (mult-formula-checks state)
+                   (rp-evl-meta-extract-global-facts)
                    (consp (ex-from-rp term))
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
@@ -806,10 +807,10 @@ falist-consistent
 (progn
   (local
    (defthmd eval-of-binary-and-1
-     (implies (and (mult-formula-checks state)
-                   (rp-evl-meta-extract-global-facts)
-                   (equal (car term)
+     (implies (and (equal (car term)
                           'binary-and)
+                   (mult-formula-checks state)
+                   (rp-evl-meta-extract-global-facts)
                    (consp term)
                    (consp (cdr term))
                    (consp (cddr term))
@@ -823,10 +824,10 @@ falist-consistent
 
   (local
    (defthm eval-of-binary-and
-     (implies (and (mult-formula-checks state)
-                   (rp-evl-meta-extract-global-facts)
-                   (equal (car (ex-from-rp term))
+     (implies (and (equal (car (ex-from-rp term))
                           'binary-and)
+                   (mult-formula-checks state)
+                   (rp-evl-meta-extract-global-facts)
                    (consp (ex-from-rp term))
                    (consp (cdr (ex-from-rp term)))
                    (consp (cddr (ex-from-rp term)))
@@ -3277,33 +3278,55 @@ t)))|#
 
 (defthm bitp-of-binary-?-form
   (implies (and (bitp x) (bitp y) (bitp z))
-           (bitp (SUM z
-                      (TIMES x y)
-                      (- (TIMES x z)))))
+           (and (bitp (SUM z
+                           (TIMES x y)
+                           (- (TIMES x z))))
+                (bitp (SUM z
+                           (TIMES x y)
+                           (-- (TIMES x z))))))
   :hints (("Goal"
            :in-theory (e/d () ()))))
 
 (defthm bitp-of-binary-xor-form
   (implies (and (bitp x) (bitp y))
-           (bitp (SUM x
-                      y
-                      (- (TIMES x y))
-                      (- (TIMES x y)))))
+           (and (bitp (SUM x
+                           y
+                           (- (TIMES x y))
+                           (- (TIMES x y))))
+                (bitp (SUM x
+                           y
+                           (-- (TIMES x y))
+                           (-- (TIMES x y))))))
   :hints (("Goal"
-           :in-theory (e/d () ()))))
+           :in-theory (e/d (--) ()))))
 
 (defthm bitp-of-binary-or-form
   (implies (and (bitp x) (bitp y))
-           (bitp (SUM x y
-                      (- (TIMES x y)))))
+           (and (bitp (SUM x y
+                           (- (TIMES x y))))
+                (bitp (SUM x y
+                           (-- (TIMES x y))))))
   :hints (("Goal"
-           :in-theory (e/d () ()))))
+           :in-theory (e/d (--) ()))))
 
 (defthmd times-with-coef=2
   (equal (times 2 x)
          (sum x x))
   :hints (("Goal"
            :in-theory (e/d (times sum) ()))))
+
+(local
+ (defthm unary-to---
+   (implies (integerp x)
+            (equal (- x) (-- x)))
+   :hints (("Goal"
+            :in-theory (e/d (--) ())))))
+
+(create-regular-eval-lemma binary-sum 2 mult-formula-checks)
+(create-regular-eval-lemma binary-? 3 mult-formula-checks)
+(create-regular-eval-lemma binary-or 2 mult-formula-checks)
+(create-regular-eval-lemma binary-xor 2 mult-formula-checks)
+(create-regular-eval-lemma binary-and 2 mult-formula-checks)
 
 ;; MAIN LEMMA1.
 (defret rp-evlt_of_pp-e-list-to-term_of_pp-term-to-pp-e-list
@@ -3320,31 +3343,81 @@ t)))|#
            (equal (rp-evlt (pp-e-list-to-term-p+ result) a)
                   (times coef (rp-evlt term a))
                   ))
+  :otf-flg t
   :fn pp-term-to-pp-e-list
-  :hints (("goal"
+  :hints (
+          ("goal"
            :do-not-induct t
-           :expand ((:free (term) (RP-TERM-LISTP (LIST TERM)))
-                    (PP-TERM-P TERM :STRICT NIL))
            :induct (pp-term-to-pp-e-list term coef)
+           :expand ((:free (x y) (pp-e-list-to-term-p+ (cons x y)))
+                    (:free (coef) (PP-TERM-TO-PP-E-LIST TERM coef))
+                    (:free (term) (RP-TERM-LISTP (LIST TERM)))
+                    (PP-TERM-P TERM :STRICT NIL)
+                    )
            :in-theory (e/d* (times-with-coef=2
                              -of-sum
                              *-is-times
                              and$-is-times
                              RP-TERM-LIST-FIX
-                             pp-term-to-pp-e-list
+
+                             (:induction pp-term-to-pp-e-list-fn)
+                             
                              not$-to-pp-sum
                              or$-to-pp-sum
                              binary-xor-to-pp-sum
                              binary-?-to-pp-sum
                              ---of-pp-sum
-                             pp-e-list-to-term-and$
-                             pp-e-list-to-term-p+
-                             APPLY-COEF-TO-PP-E-LIST
-                             regular-eval-lemmas
+                             ;;pp-e-list-to-term-and$
+                             ;;pp-e-list-to-term-p+
+                             ;;APPLY-COEF-TO-PP-E-LIST
+                             
+                             ;;regular-eval-lemmas
+                             
                              len
-                             --
-                             times-of--)
-                            (times-of-times
+                             ;;--
+                             times-of--
+
+                             (:REWRITE REGULAR-RP-EVL-OF_BINARY-AND_WHEN_MULT-FORMULA-CHECKS)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_BINARY-AND_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE REGULAR-RP-EVL-OF_BINARY-SUM_WHEN_MULT-FORMULA-CHECKS)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_BIT-FIX_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE
+                              REGULAR-RP-EVL-OF_PP_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             (:REWRITE REGULAR-RP-EVL-OF_TIMES_WHEN_MULT-FORMULA-CHECKS)
+
+                             ;; (:REWRITE
+                             ;;  REGULAR-RP-EVL-OF_binary-?_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             ;; (:REWRITE
+                             ;;  REGULAR-RP-EVL-OF_binary-?_WHEN_MULT-FORMULA-CHECKS)
+
+                             ;; (:REWRITE
+                             ;;  REGULAR-RP-EVL-OF_binary-or_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
+                             ;; (:REWRITE
+                             ;;  REGULAR-RP-EVL-OF_binary-or_WHEN_MULT-FORMULA-CHECKS)
+
+                             
+                             )
+                            (;;unary-to---
+
+                             (:e tau-system)
+
+                             RP-TERM-LISTP
+
+                             ;;(:REWRITE EVAL-OF-BINARY-?)
+                             ;;EVAL-OF-BINARY-OR
+                             
+                             (:TYPE-PRESCRIPTION RP-TERMP)
+                             times-of-times
+
+                             ;;sum-assoc
+                             sum-cancel-common
+
+                             (:REWRITE *-IS-TIMES)
+                             (:META BINARY-OR**/AND**-GUARD-META-CORRECT)
+
+                             rp-trans
 
                              (:rewrite bit-listp-lemma-2)
                              (:rewrite rationalp-implies-acl2-numberp)
@@ -3396,7 +3469,12 @@ t)))|#
                              (:meta acl2::mv-nth-cons-meta)
                              (:rewrite pp-e-list-p-implies-true-listp)
                              (:rewrite default-car)
-                             integerp)))))
+                             integerp)))
+          (and stable-under-simplificationp
+               '(:expand (;;(:free (term) (RP-TERM-LISTP (LIST TERM)))
+                    ;;(PP-TERM-P TERM :STRICT NIL)
+                    )))
+          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3982,48 +4060,48 @@ A)||#
 
   (local
    (std::defretd
-     not-consp-SORT-SUM-META-AUX-AUX-means
-     (implies (and valid)
-              (and #|(implies (and (not (consp e))
-               (rp-termp cur))
-               (equal (rp-evlt cur a) 0))|#
-               (implies (not (quotep (ex-from-rp cur)))
-                        (consp cur))
-               (implies (not (consp cur))
-                        (quotep (ex-from-rp cur)))
-               ;;(not (pp-e->sign e))
-               ))
-     :fn SORT-SUM-META-AUX-AUX
-     :hints (("Goal"
-              :in-theory (e/d (PP-E
-                               RP-TERM-LIST-FIX
-                               ;;PP-E->SIGN
-                               std::PROD-CONS
-                               SORT-SUM-META-AUX-AUX)
-                              (rp-termp ex-from-rp is-rp
-                                        rp-trans-lst
-                                        rp-trans
-                                        (:TYPE-PRESCRIPTION O<)
-                                        EX-FROM-RP
-                                        (:REWRITE NOT-INCLUDE-RP)
-                                        (:DEFINITION INCLUDE-FNC-fn)
-                                        (:REWRITE DEFAULT-CDR)
-                                        (:REWRITE DEFAULT-CAR)
-                                        (:DEFINITION QUOTEP)
-                                        (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
-                                        (:TYPE-PRESCRIPTION O-P)
-                                        (:TYPE-PRESCRIPTION IS-RP$INLINE)
-                                        ;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
-                                        ;;                              (:FORWARD-CHAINING
-                                        ;;                               ACL2::|a <= b & b <= c  =>  a <= c|)
-                                        ;;                              (:FORWARD-CHAINING
-                                        ;;                               ACL2::|a <= b & b < c  =>  a < c|)
-                                        ;;                              (:FORWARD-CHAINING
-                                        ;;                               ACL2::|a <= b & ~(a = b)  =>  a < b|)
-                                        (:REWRITE
-                                         REGULAR-RP-EVL-OF_IFIX_WHEN_MULT-FORMULA-CHECKS)
-                                        (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
-                                        ))))))
+    not-consp-SORT-SUM-META-AUX-AUX-means
+    (implies (and valid)
+             (and #|(implies (and (not (consp e))
+              (rp-termp cur))
+              (equal (rp-evlt cur a) 0))|#
+              (implies (not (quotep (ex-from-rp cur)))
+                       (consp cur))
+              (implies (not (consp cur))
+                       (quotep (ex-from-rp cur)))
+              ;;(not (pp-e->sign e))
+              ))
+    :fn SORT-SUM-META-AUX-AUX
+    :hints (("Goal"
+             :in-theory (e/d (PP-E
+                              RP-TERM-LIST-FIX
+                              ;;PP-E->SIGN
+                              std::PROD-CONS
+                              SORT-SUM-META-AUX-AUX)
+                             (rp-termp ex-from-rp is-rp
+                                       rp-trans-lst
+                                       rp-trans
+                                       (:TYPE-PRESCRIPTION O<)
+                                       EX-FROM-RP
+                                       (:REWRITE NOT-INCLUDE-RP)
+                                       (:DEFINITION INCLUDE-FNC-fn)
+                                       (:REWRITE DEFAULT-CDR)
+                                       (:REWRITE DEFAULT-CAR)
+                                       (:DEFINITION QUOTEP)
+                                       (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
+                                       (:TYPE-PRESCRIPTION O-P)
+                                       (:TYPE-PRESCRIPTION IS-RP$INLINE)
+                                       ;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
+                                       ;;                              (:FORWARD-CHAINING
+                                       ;;                               ACL2::|a <= b & b <= c  =>  a <= c|)
+                                       ;;                              (:FORWARD-CHAINING
+                                       ;;                               ACL2::|a <= b & b < c  =>  a < c|)
+                                       ;;                              (:FORWARD-CHAINING
+                                       ;;                               ACL2::|a <= b & ~(a = b)  =>  a < b|)
+                                       (:REWRITE
+                                        REGULAR-RP-EVL-OF_IFIX_WHEN_MULT-FORMULA-CHECKS)
+                                       (:TYPE-PRESCRIPTION INCLUDE-FNC-SUBTERMS-fn)
+                                       ))))))
 
   (local
    (defthmd and-list-to-binary-and-2
@@ -4148,8 +4226,8 @@ A)||#
   rp-trans
   rp-trans-lst
   (:DEFINITION EX-FROM-RP)
-;(:REWRITE VALID-SC-CADR) ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
-;(:REWRITE VALID-SC-CADDR) ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+;(:REWRITE VALID-SC-CADR) ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+;(:REWRITE VALID-SC-CADDR) ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
   (:DEFINITION EVAL-AND-ALL)
   (:REWRITE DEFAULT-CDR)
   (:REWRITE DEFAULT-CAR)
@@ -4163,7 +4241,7 @@ A)||#
   (:REWRITE EVAL-OF-BINARY-OR)
   (:DEFINITION INCLUDE-FNC-fn)
   (:DEFINITION RP-TERMP)
-;VALID-SC-EX-FROM-RP-2 ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+;VALID-SC-EX-FROM-RP-2 ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
   rp-evl-of-ex-from-rp-reverse
   bitp
   TYPE-FIX-WHEN-BITP

@@ -68,39 +68,50 @@
   use-equal-by-logbitp
   :disabled t))
 
-(create-case-match-macro de-morgan-pattern-1
-                         ('sv::bitnot ('sv::bitor ('sv::bitnot x)
-                                                  ('sv::bitnot y))))
+(define all-nodes-have-bitnot? (svex &key ((depth natp) 'depth))
+  (if (zp depth)
+      nil
+    (let* ((depth (1- depth)))
+      (case-match svex
+        (('sv::bitnot &)
+         t)
+        (('sv::bitor x y)
+         (and (all-nodes-have-bitnot? x)
+              (all-nodes-have-bitnot? y)))
+        (('sv::bitand x y)
+         (and (all-nodes-have-bitnot? x)
+              (all-nodes-have-bitnot? y)))
+        (('sv::bitxor x y)
+         (or (all-nodes-have-bitnot? x)
+             (all-nodes-have-bitnot? y))))))
+  ///
+  (memoize 'all-nodes-have-bitnot?))
 
-(create-case-match-macro de-morgan-pattern-2
-                         ('sv::bitnot ('sv::bitand ('sv::bitnot x)
-                                                   ('sv::bitnot y))))
+;; (create-case-match-macro de-morgan-pattern-1
+;;                          ('sv::bitnot ('sv::bitor ('sv::bitnot x)
+;;                                                   ('sv::bitnot y))))
 
-(progn
-  (create-case-match-macro deep1-de-morgan-pattern-1a
-                           ('sv::bitnot ('sv::bitand ('sv::bitnot x) y))
-                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
-                                         (or (de-morgan-pattern-1-p not-y)
-                                             (de-morgan-pattern-2-p not-y)))
-                           :inline nil)
-  (create-case-match-macro deep1-de-morgan-pattern-1b
-                           ('sv::bitnot ('sv::bitand y ('sv::bitnot x)))
-                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
-                                         (or (de-morgan-pattern-1-p not-y)
-                                             (de-morgan-pattern-2-p not-y)))
-                           :inline nil)
-  (create-case-match-macro deep1-de-morgan-pattern-2a
-                           ('sv::bitnot ('sv::bitor ('sv::bitnot x) y))
-                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
-                                         (or (de-morgan-pattern-1-p not-y)
-                                             (de-morgan-pattern-2-p not-y)))
-                           :inline nil)
-  (create-case-match-macro deep1-de-morgan-pattern-2b
-                           ('sv::bitnot ('sv::bitor y ('sv::bitnot x)))
-                           :extra-cond (b* ((not-y (hons-list 'sv::bitnot y)))
-                                         (or (de-morgan-pattern-1-p not-y)
-                                             (de-morgan-pattern-2-p not-y)))
-                           :inline nil))
+;; (create-case-match-macro de-morgan-pattern-2
+;;                          ('sv::bitnot ('sv::bitand ('sv::bitnot x)
+;;                                                    ('sv::bitnot y))))
+
+;; (progn
+;;   (create-case-match-macro deep1-de-morgan-pattern-1a
+;;                            ('sv::bitnot ('sv::bitand ('sv::bitnot x) y))
+;;                            :extra-cond (all-nodes-have-bitnot? y)
+;;                            )
+;;   (create-case-match-macro deep1-de-morgan-pattern-1b
+;;                            ('sv::bitnot ('sv::bitand y ('sv::bitnot x)))
+;;                            :extra-cond (all-nodes-have-bitnot? y)
+;;                            )
+;;   (create-case-match-macro deep1-de-morgan-pattern-2a
+;;                            ('sv::bitnot ('sv::bitor ('sv::bitnot x) y))
+;;                            :extra-cond (all-nodes-have-bitnot? y)
+;;                            )
+;;   (create-case-match-macro deep1-de-morgan-pattern-2b
+;;                            ('sv::bitnot ('sv::bitor y ('sv::bitnot x)))
+;;                            :extra-cond (all-nodes-have-bitnot? y)
+;;                            ))
 
 (create-case-match-macro xor-pattern-1
                          ('sv::bitand ('sv::bitor x y)
@@ -111,6 +122,15 @@
                          ('sv::bitand ('sv::bitnot
                                        ('sv::bitand x y))
                                       ('sv::bitor x y)))
+
+(create-case-match-macro bitnot-pattern
+                         ('sv::bitnot xx))
+
+(create-case-match-macro bitand-pattern
+                         ('sv::bitand x y))
+
+(create-case-match-macro bitor-pattern
+                         ('sv::bitor x y))
 
 (progn
   (create-case-match-macro xor-pattern-3a
@@ -125,6 +145,16 @@
   (create-case-match-macro xor-pattern-3d
                            ('sv::bitor ('sv::bitand y ('sv::bitnot x))
                                        ('sv::bitand ('sv::bitnot y) x))))
+
+(progn
+  (create-case-match-macro xor-pattern-4a
+                           ('sv::bitnot
+                            ('sv::bitor ('sv::bitand x1 y1)
+                                        ('sv::bitnot ('sv::bitor x2 y2))))
+                           :extra-cond (or (and (equal x1 x2)
+                                                (equal y1 y2))
+                                           (and (equal y1 x2)
+                                                (equal x1 y2)))))
 
 (local
  (defsection proofs-with-logbitp
@@ -187,7 +217,6 @@
                  (:type-prescription acl2::binary-logior)
                  (:type-prescription acl2::binary-logxor)
                  (:type-prescription acl2::binary-logand)
-
 
                  SV::4VEC->UPPER
                  SV::4VEC->LOWER
@@ -290,8 +319,78 @@
                                4VEC-BITOR
                                4VEC-BITAND)))))
 
+
+
+   ;; (defthmd equiv-by-negating
+   ;;   (implies (and (syntaxp (and (consp x) (consp y)
+   ;;                               (or (case-match x
+   ;;                                     (('sv::4vec-bitxor & &) t))
+   ;;                                   (case-match y
+   ;;                                     (('sv::4vec-bitxor & &) t)))))
+   ;;                 (sv::3vec-p x)
+   ;;                 (sv::3vec-p y)
+   ;;                 (equal (sv::4vec-bitxor -1 x)
+   ;;                        (sv::4vec-bitxor -1 y)))
+   ;;            (equal (equal x y) t))
+   ;;   :hints (("Goal"
+   ;;            :in-theory (e/d (SV::3VEC-P
+   ;;                             SV::4VEC-BITXOR)
+   ;;                            ()))))
+
    ))
 
+(local
+ (in-theory (disable (:DEFINITION SUBSETP-EQUAL)
+                     (:REWRITE SV::SVEXLIST-P-WHEN-SUBSETP-EQUAL)
+
+                     (:REWRITE
+                      ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                     (:DEFINITION MEMBER-EQUAL)
+                     (:DEFINITION ACL2::LOOP$-AS)
+                     (:TYPE-PRESCRIPTION MEMBER-EQUAL)
+
+                     (:REWRITE
+                      ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-3)
+                     (:DEFINITION ACL2::EMPTY-LOOP$-AS-TUPLEP)
+                     (:DEFINITION ACL2::CDR-LOOP$-AS-TUPLE)
+                     (:DEFINITION ACL2::CAR-LOOP$-AS-TUPLE)
+                     (:REWRITE
+                      ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-2)
+                     (:DEFINITION ACL2::APPLY$-BADGEP)
+                     (:TYPE-PRESCRIPTION ACL2::LOOP$-AS)
+
+                     (:TYPE-PRESCRIPTION SUBSETP-EQUAL))))
+
+(define svex-convert-bitnot-to-bitxor-negate? (svex
+                                               &key
+                                               (negate 'negate))
+  :inline t
+  ;;:enabled t
+  :returns (res svex-p :hyp (svex-p svex))
+  (if negate
+      (svex-reduce-w/-env-apply 'sv::bitxor (hons-list -1 svex))
+    svex)
+  ///
+
+  (local
+   (in-theory (disable SV::SVEX-APPLY$-IS-SVEX-APPLY)))
+
+  (svex-eval-lemma-tmpl
+   (defret svex-eval-of-<fn>
+     (equal (svex-eval res a)
+            (if negate
+                (sv::4vec-bitxor -1 (svex-eval svex a))
+              (svex-eval svex a)))
+     :hints (("Goal"
+              :expand ((SVEX-APPLY 'BITXOR
+                                   (LIST -1 (SVEX-EVAL SVEX A))))
+              :in-theory (e/d (SVEX-EVAL
+                               SVEX-CALL->FN
+                               SVEX-CALL->args
+                               SVEX-APPLY
+                               svex-kind)
+                              ())))
+     :fn svex-convert-bitnot-to-bitxor-negate?)))
 
 (defines svex-convert-bitnot-to-bitxor
   :hints (("Goal"
@@ -306,109 +405,188 @@
                             sv::svex-count)
                            ())))
   :verify-guards nil
-  (define svex-convert-bitnot-to-bitxor ((svex svex-p))
+  (define svex-convert-bitnot-to-bitxor ((svex svex-p)
+                                         &key
+                                         ((depth natp) 'depth)
+                                         ;; depth: how   far  we   should  look   when
+                                         ;; deciding to apply de-morgan. 0 does
+                                         ;; not  do any  de-morgan.  1 is  only
+                                         ;; level and so forth.
+                                         (negate ''nil)
+                                         (under-bitnot 'under-bitnot))
     :measure (sv::svex-count svex)
     :returns (res)
-    (cond ((not (equal (sv::svex-kind svex) :call))
-           svex)
-          ((de-morgan-pattern-1-p svex)
-           (de-morgan-pattern-1-body
-            svex
-            (sv::svex-call 'sv::bitand
-                           (hons-list
-                            (svex-convert-bitnot-to-bitxor x)
-                            (svex-convert-bitnot-to-bitxor y)))))
-          ((de-morgan-pattern-2-p svex)
-           (de-morgan-pattern-2-body
-            svex
-            (sv::svex-call 'sv::bitor
-                           (hons-list
-                            (svex-convert-bitnot-to-bitxor x)
-                            (svex-convert-bitnot-to-bitxor y)))))
 
-          ;; ((deep1-de-morgan-pattern-1a-p svex)
-          ;;  (deep1-de-morgan-pattern-1a-body
-          ;;   svex
-          ;;   (sv::svex-call 'sv::bitor
-          ;;                  (hons-list
-          ;;                   (svex-convert-bitnot-to-bitxor x)
-          ;;                   (svex-convert-bitnot-to-bitxor
-          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))))))
-          ;; ((deep1-de-morgan-pattern-1b-p svex)
-          ;;  (deep1-de-morgan-pattern-1b-body
-          ;;   svex
-          ;;   (sv::svex-call 'sv::bitor
-          ;;                  (hons-list
-          ;;                   (svex-convert-bitnot-to-bitxor
-          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))
-          ;;                   (svex-convert-bitnot-to-bitxor x)))))
-          ;; ((deep1-de-morgan-pattern-2a-p svex)
-          ;;  (deep1-de-morgan-pattern-2a-body
-          ;;   svex
-          ;;   (sv::svex-call 'sv::bitand
-          ;;                  (hons-list
-          ;;                   (svex-convert-bitnot-to-bitxor x)
-          ;;                   (svex-convert-bitnot-to-bitxor
-          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))))))
-          ;; ((deep1-de-morgan-pattern-2b-p svex)
-          ;;  (deep1-de-morgan-pattern-2b-body
-          ;;   svex
-          ;;   (sv::svex-call 'sv::bitand
-          ;;                  (hons-list
-          ;;                   (svex-convert-bitnot-to-bitxor
-          ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))
-          ;;                   (svex-convert-bitnot-to-bitxor x)))))
+    ;; under-bitnot will be set when the  current term is under a "bitnot" term
+    ;; and we  want to  feel its  effects. Only  "bitxor" carries  through this
+    ;; value.
 
+    ;; This function implements a complex demorgan structure where it goes down
+    ;; many levels and applies de-morgan on all the levels when necessary.
+    
+    
+    (b* (((when (not (equal (sv::svex-kind svex) :call)))
+          (svex-convert-bitnot-to-bitxor-negate? svex)))
+      (cond ;; ((de-morgan-pattern-1-p svex)
+            ;;  (de-morgan-pattern-1-body
+            ;;   svex
+            ;;   (sv::svex-call (if negate 'sv::bitor 'sv::bitand)
+            ;;                  (hons-list
+            ;;                   (svex-convert-bitnot-to-bitxor x
+            ;;                                                  :under-bitnot nil
+            ;;                                                  :negate negate)
+            ;;                   (svex-convert-bitnot-to-bitxor y
+            ;;                                                  :under-bitnot nil
+            ;;                                                  :negate negate)))))
+            ;; ((de-morgan-pattern-2-p svex)
+            ;;  (de-morgan-pattern-2-body
+            ;;   svex
+            ;;   (sv::svex-call (if negate 'sv::bitand 'sv::bitor)
+            ;;                  (hons-list
+            ;;                   (svex-convert-bitnot-to-bitxor x
+            ;;                                                  :under-bitnot nil
+            ;;                                                  :negate negate)
+            ;;                   (svex-convert-bitnot-to-bitxor y
+            ;;                                                  :under-bitnot nil
+            ;;                                                  :negate negate)))))
 
-          ((xor-pattern-1-p svex)
-           (xor-pattern-1-body
-            svex
-            (svex-reduce-w/-env-apply 'sv::bitxor
-                                      (hons-list (svex-convert-bitnot-to-bitxor x)
-                                                 (svex-convert-bitnot-to-bitxor y)))))
-          ((xor-pattern-2-p svex)
-           (xor-pattern-2-body
-            svex
-            (svex-reduce-w/-env-apply 'sv::bitxor
-                                      (hons-list (svex-convert-bitnot-to-bitxor x)
-                                                 (svex-convert-bitnot-to-bitxor y)))))
+            ;; ((deep1-de-morgan-pattern-1a-p svex)
+            ;;  (deep1-de-morgan-pattern-1a-body
+            ;;   svex
+            ;;   (sv::svex-call 'sv::bitor
+            ;;                  (hons-list
+            ;;                   (svex-convert-bitnot-to-bitxor x)
+            ;;                   (svex-convert-bitnot-to-bitxor
+            ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))))))
+            ;; ((deep1-de-morgan-pattern-1b-p svex)
+            ;;  (deep1-de-morgan-pattern-1b-body
+            ;;   svex
+            ;;   (sv::svex-call 'sv::bitor
+            ;;                  (hons-list
+            ;;                   (svex-convert-bitnot-to-bitxor
+            ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))
+            ;;                   (svex-convert-bitnot-to-bitxor x)))))
+            ;; ((deep1-de-morgan-pattern-2a-p svex)
+            ;;  (deep1-de-morgan-pattern-2a-body
+            ;;   svex
+            ;;   (sv::svex-call 'sv::bitand
+            ;;                  (hons-list
+            ;;                   (svex-convert-bitnot-to-bitxor x)
+            ;;                   (svex-convert-bitnot-to-bitxor
+            ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))))))
+            ;; ((deep1-de-morgan-pattern-2b-p svex)
+            ;;  (deep1-de-morgan-pattern-2b-body
+            ;;   svex
+            ;;   (sv::svex-call 'sv::bitand
+            ;;                  (hons-list
+            ;;                   (svex-convert-bitnot-to-bitxor
+            ;;                    (sv::svex-call 'sv::bitnot (hons-list y)))
+            ;;                   (svex-convert-bitnot-to-bitxor x)))))
 
-          ((xor-pattern-3a-p svex)
-           (xor-pattern-3a-body
-            svex
-            (svex-reduce-w/-env-apply 'sv::bitxor
-                                      (hons-list (svex-convert-bitnot-to-bitxor x)
-                                                 (svex-convert-bitnot-to-bitxor y)))))
-          ((xor-pattern-3b-p svex)
-           (xor-pattern-3b-body
-            svex
-            (svex-reduce-w/-env-apply 'sv::bitxor
-                                      (hons-list (svex-convert-bitnot-to-bitxor x)
-                                                 (svex-convert-bitnot-to-bitxor y)))))
-          ((xor-pattern-3c-p svex)
-           (xor-pattern-3c-body
-            svex
-            (svex-reduce-w/-env-apply 'sv::bitxor
-                                      (hons-list (svex-convert-bitnot-to-bitxor x)
-                                                 (svex-convert-bitnot-to-bitxor y)))))
-          ((xor-pattern-3d-p svex)
-           (xor-pattern-3d-body
-            svex
-            (svex-reduce-w/-env-apply 'sv::bitxor
-                                      (hons-list (svex-convert-bitnot-to-bitxor x)
-                                                 (svex-convert-bitnot-to-bitxor y)))))
+            ((xor-pattern-1-p svex)
+             (xor-pattern-1-body
+              svex
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply 'sv::bitxor
+                                         (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                    (svex-convert-bitnot-to-bitxor y))))))
+            ((xor-pattern-2-p svex)
+             (xor-pattern-2-body
+              svex
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply 'sv::bitxor
+                                         (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                    (svex-convert-bitnot-to-bitxor y))))))
+            ((xor-pattern-3a-p svex)
+             (xor-pattern-3a-body
+              svex
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply 'sv::bitxor
+                                         (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                    (svex-convert-bitnot-to-bitxor y))))))
+            ((xor-pattern-3b-p svex)
+             (xor-pattern-3b-body
+              svex
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply 'sv::bitxor
+                                         (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                    (svex-convert-bitnot-to-bitxor y))))))
+            ((xor-pattern-3c-p svex)
+             (xor-pattern-3c-body
+              svex
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply 'sv::bitxor
+                                         (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                    (svex-convert-bitnot-to-bitxor y))))))
+            ((xor-pattern-3d-p svex)
+             (xor-pattern-3d-body
+              svex
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply 'sv::bitxor
+                                         (hons-list (svex-convert-bitnot-to-bitxor x)
+                                                    (svex-convert-bitnot-to-bitxor y))))))
+            ((xor-pattern-4a-p svex)
+             (xor-pattern-4a-body
+              svex
+              (declare (ignorable x2 y2))
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply 'sv::bitxor
+                                         (hons-list (svex-convert-bitnot-to-bitxor x1)
+                                                    (svex-convert-bitnot-to-bitxor y1))))))
+            ((bitnot-pattern-p svex)
+             (bitnot-pattern-body
+              svex
+              (cond
+               (negate
+                (svex-reduce-w/-env-apply
+                 'sv::unfloat
+                 (hons-list (svex-convert-bitnot-to-bitxor xx
+                                                           :under-bitnot nil
+                                                           :negate nil))))
+               (under-bitnot ;; if it is  under bitnot, likely bitxor negations
+                             ;; will  cancel each  other later,  so ignore  the
+                             ;; complex  de-morgan   chain  for  the   sake  of
+                             ;; conservativeness
+                (svex-convert-bitnot-to-bitxor-negate?
+                 (svex-convert-bitnot-to-bitxor xx :negate nil :under-bitnot nil)
+                 :negate t))
+               ((rp::and*-exec (all-nodes-have-bitnot? xx)
+                               (rp::or*-exec (bitand-pattern-p xx)
+                                             (bitor-pattern-p xx)))
+                (bitand-pattern-body
+                 xx
+                 (svex-reduce-w/-env-apply
+                  (if (bitand-pattern-p xx) 'sv::bitor 'sv::bitand)
+                  (hons-list (svex-convert-bitnot-to-bitxor x :negate t)
+                             (svex-convert-bitnot-to-bitxor y :negate t)))))
+               (t
+                (svex-convert-bitnot-to-bitxor xx
+                                               :under-bitnot t
+                                               :negate t)))))
 
-          ((and (equal (sv::svex-call->fn svex) 'sv::bitnot)
-                (equal (len (sv::svex-call->args svex)) 1))
-           (svex-reduce-w/-env-apply 'sv::bitxor
-                                     (hons-list -1
-                                                (svex-convert-bitnot-to-bitxor
-                                                 (car (sv::svex-call->args svex))))))
-          (t
-           (sv::svex-call (sv::svex-call->fn svex)
-                          (svexlist-convert-bitnot-to-bitxor
-                           (sv::svex-call->args svex))))))
-  (define svexlist-convert-bitnot-to-bitxor ((lst svexlist-p))
+            ((rp::and*-exec (rp::or*-exec under-bitnot negate)
+                            (all-nodes-have-bitnot? svex)
+                            (rp::or*-exec (bitand-pattern-p svex)
+                                          (bitor-pattern-p svex)
+                                          ))
+             (bitand-pattern-body
+              svex
+              (svex-convert-bitnot-to-bitxor-negate?
+               (svex-reduce-w/-env-apply
+                (if (bitand-pattern-p svex) 'sv::bitor 'sv::bitand)
+                (hons-list (svex-convert-bitnot-to-bitxor x :negate t :under-bitnot t)
+                           (svex-convert-bitnot-to-bitxor y :negate t :under-bitnot t)))
+               :negate (not negate))))
+            (t
+             (b* (((sv::Svex-call svex))
+                  (under-bitnot (and*-exec under-bitnot (equal svex.fn 'sv::bitxor))))
+               (svex-convert-bitnot-to-bitxor-negate?
+                (sv::svex-call svex.fn
+                               (svexlist-convert-bitnot-to-bitxor svex.args))))))))
+  (define svexlist-convert-bitnot-to-bitxor ((lst svexlist-p)
+                                             &key
+                                             ((depth natp) 'depth)
+                                             (under-bitnot 'under-bitnot))
     :measure (sv::svexlist-count lst)
     :returns (res)
     (if (atom lst)
@@ -416,6 +594,7 @@
       (hons (svex-convert-bitnot-to-bitxor (car lst))
             (svexlist-convert-bitnot-to-bitxor (cdr lst)))))
   ///
+
 
   (defret-mutual ret-val
     (defret svex-p-of-<fn>
@@ -427,29 +606,57 @@
                (svexlist-p res))
       :fn svexlist-convert-bitnot-to-bitxor)
     :hints (("Goal"
-             :expand ((svex-p svex)
-                      (SVEXLIST-P (CDR (CADR SVEX)))
-                      (SVEX-P (CADR (CADR SVEX)))
-                      (SVEX-P (CADR SVEX))
-                      (SVEXLIST-P (CDDR SVEX))
-                      (SVEX-P (CADDR SVEX))
-                      (SVEXLIST-P (CDR SVEX)))
-             :in-theory (e/d () ()))))
+             ;;:CASE-SPLIT-LIMITATIONS (4 3)
+             :in-theory (e/d ()
+                             ((:REWRITE DEFAULT-CDR)
+                              SV::SVEX-P-WHEN-MEMBER-EQUAL-OF-SVEXLIST-P
+                              (:DEFINITION ACL2::LOOP$-AS)
+                              (:REWRITE ACL2::AND*-REM-FIRST)
+                              (:REWRITE DEFAULT-CAR)
+                              SV::SVEX-P-WHEN-MAYBE-SVEX-P
+                              SUBSETP-EQUAL
+                              SV::SVEXLIST-P-WHEN-SUBSETP-EQUAL
+                              SV::MAYBE-SVEX-P-WHEN-SVEX-P
+                              MEMBER-EQUAL)))
+            (and stable-under-simplificationp
+                 '(:expand ((svex-p svex)
+                            (SVEXLIST-P (CDR (CADR SVEX)))
+                            (SVEX-P (CADR (CADR SVEX)))
+                            (SVEX-P (CADR SVEX))
+                            (SVEXLIST-P (CDDR SVEX))
+                            (SVEX-P (CADDR SVEX))
+                            (SVEXLIST-P (CDR SVEX))
+                            (SVEX-CONVERT-BITNOT-TO-BITXOR SVEX))))))
 
-  (verify-guards svex-convert-bitnot-to-bitxor
+  (verify-guards svex-convert-bitnot-to-bitxor-fn
     :hints (("goal"
-             :expand ((svex-p svex)
-                      (svexlist-p (cdr svex))
-                      (svex-p (cadr svex))
-                      (svexlist-p (cdr (cadr svex)))
-                      (svex-p (cadr (cadr svex)))
-                      (svexlist-p (cdr (cadr (cadr svex))))
-                      (svexlist-p (cddr (cadr svex)))
-                      (svex-p (caddr (cadr svex))))
-             :in-theory (e/d () ()))))
+             ;; :expand ((svex-p svex)
+             ;;          (SVEXLIST-P (CDDR SVEX))
+             ;;          (svexlist-p (cdr svex))
+             ;;          (svex-p (cadr svex))
+             ;;          (svexlist-p (cdr (cadr svex)))
+             ;;          (svex-p (cadr (cadr svex)))
+             ;;          (svexlist-p (cdr (cadr (cadr svex))))
+             ;;          (svexlist-p (cddr (cadr svex)))
+             ;;          (SVEXLIST-P (CDR (CADDR (CADR SVEX))))
+             ;;          (svex-p (caddr (cadr svex))))
+             :in-theory (e/d (sv::svex-kind)
+                             ((:e tau-system))))
+            (and stable-under-simplificationp
+                 '(:expand ((svex-p svex)
+                            (SVEXLIST-P (CDDR SVEX))
+                            (SVEXLIST-P (CDDR (CADR (CADR SVEX))))
+                            (svexlist-p (cdr svex))
+                            (svex-p (cadr svex))
+                            (svexlist-p (cdr (cadr svex)))
+                            (svex-p (cadr (cadr svex)))
+                            (svexlist-p (cdr (cadr (cadr svex))))
+                            (svexlist-p (cddr (cadr svex)))
+                            (SVEXLIST-P (CDR (CADDR (CADR SVEX))))
+                            (svex-p (caddr (cadr svex))))))))
 
   (memoize 'svex-convert-bitnot-to-bitxor
-           :condition '(equal (svex-kind svex) :call)
+           ;;:condition '(equal (svex-kind svex) :call)
            ;;:aokp t
            )
 
@@ -470,33 +677,24 @@
              :in-theory (e/d (4vec-bitnot-to-4vec-bitxor)
                              (4vec-and-de-morgans)))))
 
+
+
   (svex-eval-lemma-tmpl
    (defret-mutual <fn>-correct
      (defret svex-eval-of-<fn>-correct
        (equal (svex-eval res a)
-              (svex-eval svex a))
+              (if negate
+                  (sv::4vec-bitnot (svex-eval svex a))
+                (svex-eval svex a)))
        :fn svex-convert-bitnot-to-bitxor)
      (defret svexlist-eval-<fn>-correct
        (equal (svexlist-eval res a)
               (svexlist-eval lst a))
        :fn svexlist-convert-bitnot-to-bitxor)
      :hints (("Goal"
-              :expand ((:free (x)
-                              (svex-apply 'bitnot x))
-                       (:free (x)
-                              (svex-apply 'bitor x))
-                       (:free (x)
-                              (svex-apply 'bitand x))
-                       (:free (x)
-                              (svex-eval (cons 'bitxor x) a))
-                       (:free (x)
-                              (svex-eval (cons 'bitnot x) a))
-                       (:free (x)
-                              (svex-apply 'sv::bitxor x))
-                       (:free (x)
-                              (nth 1 x))
-                       (svex-convert-bitnot-to-bitxor svex)
-                       (svexlist-convert-bitnot-to-bitxor LST))
+              :do-not-induct t
+              :expand ((SVEX-CONVERT-BITNOT-TO-BITXOR SVEX
+                                                      :NEGATE NEGATE))
               :in-theory (e/d (4vec-bitxor-of-minus-and-bitor/bitand
                                4vec-bitnot-to-4vec-bitxor
                                4VEC-BITAND-ASSOC-AND-COMM
@@ -504,15 +702,41 @@
                                svex-kind
                                SVEX-CALL->FN
                                4VECLIST-NTH-SAFE)
-                              ()))))))
+                              ()))
+             (and stable-under-simplificationp
+                  '(:expand ((XOR-PATTERN-4A-P SVEX)
+                             (:free (x)
+                                    (svex-apply 'bitnot x))
+                             (:free (x)
+                                    (svex-apply 'bitor x))
+                             (:free (x)
+                                    (svex-apply 'bitand x))
+                             (:free (x)
+                                    (svex-apply 'sv::unfloat x))
+                             (:free (x)
+                                    (svex-eval (cons 'bitxor x) a))
+                             (:free (x)
+                                    (svex-eval (cons 'bitnot x) a))
+                             (:free (x)
+                                    (svex-apply 'sv::bitxor x))
+                             (:free (x)
+                                    (svex-apply 'bitnot x))
+                             (:free (x)
+                                    (svex-apply 'bitor x))
+                             (:free (x)
+                                    (nth 1 x)))))))))
 
-(define svexalist-convert-bitnot-to-bitxor ((alist sv::svex-alist-p))
+(define svexalist-convert-bitnot-to-bitxor ((alist sv::svex-alist-p)
+                                            &key
+                                            ;; depth: see svex-convert-bitnot-to-bitxor
+                                            ((depth natp) 'depth))
   :returns (res sv::svex-alist-p :hyp (sv::svex-alist-p alist))
   (if (atom alist)
       (progn$ (clear-memoize-table 'svex-convert-bitnot-to-bitxor)
               nil)
     (acons (caar alist)
-           (svex-convert-bitnot-to-bitxor (cdar alist))
+           (svex-convert-bitnot-to-bitxor (cdar alist)
+                                          :under-bitnot nil)
            (svexalist-convert-bitnot-to-bitxor (cdr alist))))
   ///
   (local
