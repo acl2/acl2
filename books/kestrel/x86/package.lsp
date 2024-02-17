@@ -58,9 +58,17 @@
     x86isa::64-bit-modep
     x86isa::*compatibility-mode*
     x86isa::*64-bit-mode*
+    X86ISA::X86-OPERATION-MODE
 
     x86isa::rme-size
     x86isa::rme-size$inline
+    x86isa::rme08$inline
+    x86isa::rme16$inline
+    x86isa::rme32$inline
+    x86isa::rme48$inline
+    x86isa::rme64$inline
+    x86isa::rme80$inline
+    x86isa::rme128$inline
 
     x86isa::rml-size
     x86isa::rml-size$inline
@@ -275,6 +283,8 @@
     x86isa::*op-comi*
 
     x86isa::undef
+
+    X86ISA::READ-*IP$INLINE
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -330,6 +340,8 @@
     rightrotate
     leftrotate32
     rightrotate32
+
+    unsigned-byte-p-forced
 
     ceiling-of-lg
     lg
@@ -476,7 +488,13 @@
   '(x86isa::k
     x86isa::k2
     ;; x86isa::n ; same as in acl2 package
-    x86isa::n2))
+    x86isa::n2
+    x86isa::ad1
+    x86isa::ad2
+    x86isa::ad3
+    x86isa::ad4
+    x86isa::rwx
+    ))
 
 ;; TODO: Think about this...
 (defconst *common-acl2-formals*
