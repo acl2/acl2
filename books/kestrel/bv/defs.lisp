@@ -161,7 +161,6 @@
       1
     0))
 
-
 ;note that the test is a boolean, not a bit vector
 (defund bvif (size test thenpart elsepart)
   (declare (xargs :guard (and (natp size)
@@ -183,20 +182,6 @@
   (declare (type integer i)
            (type (integer 0 *) size))
   (bvchop size i))
-
-;dup
-;; (defun bool-fix (x)
-;;   (declare (xargs :guard t))
-;;   (and x t))
-
-;Changed this to match the version in the std library.
-;maybe this should not be hyphenated by analogy with nfix, etc.
-(DEFUN BOOL-FIX$INLINE (X)
-  (DECLARE (XARGS :GUARD T))
-  (AND X T))
-
-(DEFMACRO BOOL-FIX (X)
-  (LIST 'BOOL-FIX$INLINE X))
 
 ; a totalized version of sbvdiv, where division by 0 yields 0
 ;logically this is equal to sbvdiv (see theorem sbvdiv-total-becomes-sbvdiv)
