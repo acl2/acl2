@@ -49,6 +49,7 @@
 (include-book "../prune-dag-approximately")
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
+(include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
@@ -390,6 +391,7 @@
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       (state (acl2::widen-margins state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (acl2::ensure-x86 parsed-executable))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
@@ -481,6 +483,7 @@
          assumption-rule-alist
          rules-to-monitor ; do we want to monitor here?  What if some rules are not incldued?
          nil ; don't memoize (avoids time spent making empty-memoizations)
+         t ; todo: warn just once
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
@@ -514,6 +517,7 @@
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil state))
+       (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw " (Lifting took ")
           (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
