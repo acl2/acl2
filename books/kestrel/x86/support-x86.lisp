@@ -23,7 +23,8 @@
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-weaken
 (include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
 (include-book "kestrel/bv/slice-def" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;for bvashr
+(include-book "kestrel/bv/bvashr-def" :dir :system)
+(include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (local (include-book "kestrel/bv/rules10" :dir :system))

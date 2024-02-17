@@ -119,6 +119,7 @@
 ;; Shift operations:
 (include-book "bvshl")
 (include-book "bvshr")
+(include-book "bvashr-def")
 (include-book "bvashr")
 
 ;; Counting one bits:
