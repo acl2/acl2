@@ -105,8 +105,7 @@
                                 (concatenate 'string
                                              (subseq s 0 p2)
                                              "E+"
-                                             (subseq s (1+ p2) (length s))))
-                               (t s)))
+                                             (subseq s (1+ p2) (length s))))))
                         (p2 (concatenate 'string
                                          (subseq s 0 p2)
                                          "E"
@@ -237,10 +236,10 @@
 (defmacro defun-df-*1*-from-function-sigs ()
   (cons
    'progn
-   (loop for tuple in *df-function-sigs-exec*
+   (loop with tmp
+         for tuple in *df-function-sigs-exec*
          as fn = (car tuple)
          as args = (cadr tuple)
-         with tmp
          when (setq tmp (cond ((null args) ; df-pi
                                nil)
                               ((null (cdr args))

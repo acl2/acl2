@@ -91,12 +91,35 @@
 
 ; This section is about a concern raised by Pete Manolios and Eric Smith in a
 ; talk on 2/8/2024, which amounts to the question of whether overflow with a df
-; operation could result in a value that violates the axioms.  In short, we
-; don't think that the Common Lisp specification guarantees the absence of such
-; a disaster, but we find it very unlikely that any Common Lisp implementer
-; would take advantage of that leniency.  See :DOC generalized-booleans for
-; discussion of an analogous issue, where the CL spec does not tie things down
-; but we pretend that it does.
+; operation could result in a value that violates the axioms, by returning
+; other than a double-float.  In short, we think that the Common Lisp
+; specification guarantees the absence of such a disaster because of the
+; following Key Passage from the Common Lisp Hyperspec.
+
+;   [Key Passage]
+
+;   12.1.4.4 Rule of Float Precision Contagion
+
+;   The result of a numerical function is a float of the largest format among
+;   all the floating-point arguments to the function.
+
+; That passage seems to rule out the possibility that, for example, (* x y)
+; could evaluate to the string "nan" or the symbol 'nan, thus violating the
+; provable theorem (dfp (df* x y)).
+
+; Even without that Key Passage, we find it very unlikely that any Common Lisp
+; implementer would return a non-float upon overflow.  See :DOC
+; generalized-booleans for discussion of an analogous issue, where the CL spec
+; does not tie things down but we pretend that it does.
+
+; The remainder of this Section provides alternate justification for ACL2's
+; assumption that floating-point overflow either causes an error or returns a
+; double-float value, without depending on the Key Passage above.
+
+; (So perhaps the remainder of this Section is unnecessary.  But it provided
+; our initial justification, it contains relevant information, and it provides
+; backup in case there are (unforeseen) challenges to the relevance of the Key
+; Passage.)
 
 ; We start with the following quote from HyperSpec Section
 ; 12.1.4.3, "Rule of Float Underflow and Overflow"
@@ -162,16 +185,17 @@
 
 ; So, it looks like both CCL and SBCL produce fp overflow exceptions by
 ; default.  Both provide a way to change that, but of course ACL2 wouldn't make
-; that capability available (without a trust tag).
+; such a capability available (without a trust tag).
 
 ; We haven't done similar investigations for the other Lisps that can host
-; ACL2.  But we already believe that SBCL could, in principle, cause (* x y) to
-; evaluate to "nan", say, simply by changing the initial floating-point-modes.
-; So further investigation won't lock down a guarantee of floating-point
-; overflow errors for all host Lisps.
+; ACL2.  But we can already imagine that SBCL may cause (* x y) to evaluate to
+; "nan", say, by changing the initial floating-point-modes.  So further
+; investigation won't lock down a guarantee of floating-point overflow errors
+; for all host Lisps (if we didn't have the Key Passage noted above).
 
-; It would be thus be safest for us to do one of the following, at least for
-; SBCL and other Lisps that don't have documented guarantees.
+; We could address this concern by having ACL2 do one of the following, at
+; least for SBCL and other Lisps that don't have documented guarantees like the
+; one for CCL.
 
 ;   - Check at runtime that df+ etc. produce a double-float;
 ;   OR
@@ -188,12 +212,12 @@
 ; and Allegro CL).  While that check does not provide an ironclad guarantee, it
 ; does provide extra confidence; and anyhow, as noted above, we find it very
 ; unlikely that floating-point overflow would ever return a value that violates
-; ACL2 axioms.
+; ACL2 axioms (even if we didn't have the Key Passage shown above).
 
 ; By the way, even if overflow errors were somehow defeated, the following logs
-; provide some hope that the values returned would still be consistent with the
-; ACL2 axioms.  These logs are with SBCL and CCL as they start up, without an
-; ACL2 build.
+; provide additional evidence that the values returned would still be
+; consistent with the ACL2 axioms.  These logs are with SBCL and CCL as they
+; start up, without an ACL2 build.
 
 ; SBCL
 
