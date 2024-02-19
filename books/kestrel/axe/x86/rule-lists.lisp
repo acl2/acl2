@@ -1063,6 +1063,61 @@
     ;;x86isa::not-equal-when-separate-alt
     ))
 
+;; For this strategy, we lower the IF when the 2 states have the same PC and no
+;; faults. This allows the symbolic execution to continue with just the single
+;; merged state.  (The need for this may be due to an instruction semantic
+;; function that introduces an unnecessary IF on states.)
+;; TODO: If the stack height is different, we might want to refrain (but then
+;; it would be a bit odd to have the same RIP).
+(defund if-lowering-rules ()
+  (declare (xargs :guard t))
+  '(mergeable-states64p
+    if-of-set-rip-and-set-rip-same
+
+    if-of-set-rax-arg2-64
+    if-of-set-rbx-arg2-64
+    if-of-set-rcx-arg2-64
+    if-of-set-rdx-arg2-64
+
+    if-of-set-rax-arg3-64
+    if-of-set-rbx-arg3-64
+    if-of-set-rcx-arg3-64
+    if-of-set-rdx-arg3-64
+
+    if-of-set-flag-arg2-64
+    if-of-set-flag-arg3-64
+    if-of-set-undef-arg2-64
+    if-of-set-undef-arg3-64
+    if-of-write-arg2-64
+    if-of-write-arg3-64
+    ))
+
+;; if-lifting strategy: where we lift the ifs (todo: restrict to provably different pcs or fault statuses?):
+;; set-rax-of-if-arg2
+;; set-rdi-of-if-arg2
+;; set-rip-of-if
+;; set-undef-of-if
+;; set-flag-of-if
+;; ;xr-of-if ; overkill?  also one in the x86isa pkg?
+;; ;64-bit-modep-of-if
+
+
+;; ;; Strategy 2b: don't lift or lower the if because the states all have the same pc (instead, we just try to resolve the next instruction).  warning: if some of these rules are missing, very large terms can result:
+;; ;; x86isa::xr-of-if-special-case-for-ms
+;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
+;; ;; x86isa::64-bit-modep-of-if
+;; ;; ;x86isa::rb-of-if-arg2
+;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
+;;   ;;acl2::<-of-+-cancel-1+-1
+;;   ;;acl2::<-minus-zero
+;;   x86isa::64-bit-modep-of-if
+;;   x86isa::app-view-of-if
+;;   x86isa::x86p-of-if
+;;   read-of-if
+;;   ;; or lower ifs with if-of-write
+;;   xr-of-if ; too much?  need ms
+;;   x86isa::alignment-checking-enabled-p-of-if
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
@@ -1094,6 +1149,7 @@
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           (float-rules)
           (acl2::core-rules-bv)
+          (if-lowering-rules)
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
@@ -4197,54 +4253,3 @@
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
-
-;; For this strategy, we lower the IF when the 2 states have the same PC and no faults (so the execution can continue with just the 1 merged state):
-;; TODO: If the stack height is different, we might want to refrain (but then it would be a bit odd to have the same RIP).
-(defund if-lowering-rules ()
-  (declare (xargs :guard t))
-  '(mergeable-states64p
-    if-of-set-rip-and-set-rip-same
-
-    if-of-set-rax-arg2-64
-    if-of-set-rbx-arg2-64
-    if-of-set-rcx-arg2-64
-    if-of-set-rdx-arg2-64
-
-    if-of-set-rax-arg3-64
-    if-of-set-rbx-arg3-64
-    if-of-set-rcx-arg3-64
-    if-of-set-rdx-arg3-64
-
-    if-of-set-flag-arg2-64
-    if-of-set-flag-arg3-64
-    if-of-set-undef-arg2-64
-    if-of-set-undef-arg3-64
-    if-of-write-arg2-64
-    if-of-write-arg3-64
-    ))
-
-;; ;; strategy 1: where we lift the ifs (todo: restrict to provably different pcs or fault statuses?):
-                 ;; set-rax-of-if-arg2
-                 ;; set-rdi-of-if-arg2
-                 ;; set-rip-of-if
-                 ;; set-undef-of-if
-                 ;; set-flag-of-if
-                 ;; ;xr-of-if ; overkill?  also one in the x86isa pkg?
-                 ;; ;64-bit-modep-of-if
-
-
-                 ;; ;; Strategy 2b: don't lift or lower the if because the states all have the same pc (instead, we just try to resolve the next instruction).  warning: if some of these rules are missing, very large terms can result:
-                 ;; ;; x86isa::xr-of-if-special-case-for-ms
-                 ;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
-                 ;; ;; x86isa::64-bit-modep-of-if
-                 ;; ;; ;x86isa::rb-of-if-arg2
-                 ;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
-                 ;;   ;;acl2::<-of-+-cancel-1+-1
-                 ;;   ;;acl2::<-minus-zero
-                 ;;   x86isa::64-bit-modep-of-if
-                 ;;   x86isa::app-view-of-if
-                 ;;   x86isa::x86p-of-if
-                 ;;   read-of-if
-                 ;;   ;; or lower ifs with if-of-write
-                 ;;   xr-of-if ; too much?  need ms
-                 ;;   x86isa::alignment-checking-enabled-p-of-if

@@ -64,6 +64,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
+(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
