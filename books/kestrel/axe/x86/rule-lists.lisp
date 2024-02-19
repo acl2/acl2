@@ -526,17 +526,36 @@
     x86isa::!prefixes->seg$inline-constant-opener
     X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
 
+    x86isa::vex-opcode-modr/m-p$inline-constant-opener
+    x86isa::vex-prefixes-map-p$inline-constant-opener
+
+    x86isa::vex->w$inline-constant-opener
+    x86isa::vex->l$inline-constant-opener
+    x86isa::vex->pp$inline-constant-opener
+    x86isa::vex->vvvv$inline-constant-opener
+
     x86isa::vex-prefixes-fix$inline-constant-opener
     x86isa::vex-prefixes->byte0$inline-constant-opener
     x86isa::vex-prefixes->byte1$inline-constant-opener
     x86isa::vex-prefixes->byte2$inline-constant-opener
-    x86isa::!vex-prefixes->byte0$inline-constant-opener
+    x86isa::!vex-prefixes->byte0$inline-constant-opener ; kind of surprised that we are writing into such a struct
     x86isa::!vex-prefixes->byte1$inline-constant-opener
     x86isa::!vex-prefixes->byte2$inline-constant-opener
-    x86isa::vex-opcode-modr/m-p$inline-constant-opener
-    x86isa::vex-prefixes-map-p$inline-constant-opener
-    x86isa::vex3-byte1->m-mmmm$inline-constant-opener
+
     x86isa::vex3-byte1-fix$inline-constant-opener
+    x86isa::vex3-byte1->m-mmmm$inline-constant-opener
+    x86isa::vex3-byte1->b$inline-constant-opener
+    x86isa::vex3-byte1->x$inline-constant-opener
+    x86isa::vex3-byte1->r$inline-constant-opener
+
+    x86isa::vex3-byte2-fix$inline-constant-opener
+    x86isa::vex3-byte2->pp$inline-constant-opener
+    x86isa::vex3-byte2->l$inline-constant-opener
+    x86isa::vex3-byte2->vvvv$inline-constant-opener
+    x86isa::vex3-byte2->w$inline-constant-opener
+
+    ;; todo: more constant-openers for the bitstructs (or add to evaluator)
+
     x86isa::vex-decode-and-execute ; restrict to when we can resolve the instruction?
     x86isa::vex-0f38-execute  ; move?
 ))

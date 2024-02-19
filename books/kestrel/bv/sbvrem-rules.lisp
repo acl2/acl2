@@ -21,6 +21,7 @@
 (local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -125,7 +126,8 @@
                                             ;;bvchop-of-sum-cases
                                             bvchop-when-top-bit-1
                                             bvchop-when-top-bit-not-1
-                                            rem-becomes-mod)
+                                            rem-becomes-mod
+                                            unsigned-byte-p)
                                   (;bvminus-becomes-bvplus-of-bvuminus
                                    ;mod-type ;led to forcing
                                    )))))
