@@ -37,6 +37,7 @@
   (declare (xargs :stobjs x86))
   (x86isa::!undef undef x86))
 
+;; Introduces set-undef
 (defthmd x86isa::!undef-becomes-set-undef
   (equal (x86isa::!undef undef x86)
          (set-undef undef x86))
@@ -81,21 +82,112 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: do we want to call it MS or ERROR?
+
 (defthmd xr-becomes-ms
   (equal (xr :ms nil x86)
          (ms x86)))
 
-;; todo: do we want to call it MS or ERROR?
+(defthm ms-of-xw (implies (not (equal fld :ms)) (equal (ms (xw fld index value x86)) (ms x86))) :hints (("Goal" :in-theory (enable ms))))
 
-(defund set-error (error x86)
-  (declare (xargs :stobjs x86))
-  (x86isa::!ms error x86))
+(defthm ms-of-if (equal (ms (if test x y)) (if test (ms x) (ms y))))
 
-(defthmd xw-becomes-set-error
-  (equal (xw :ms nil error x86)
-         (set-error error x86))
-  :hints (("Goal" :in-theory (enable set-error))))
-
-;; What is the getter for this state component, or do we not need one?
+(defthm ms-of-myif (equal (ms (myif test x y)) (myif test (ms x) (ms y))) :hints (("Goal" :in-theory (enable myif))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Writes the ms state component.
+(defund set-ms (ms x86)
+  (declare (xargs :stobjs x86))
+  (x86isa::!ms ms x86))
+
+;; Introduces set-ms.
+(defthmd xw-becomes-set-ms
+  (equal (xw :ms nil ms x86)
+         (set-ms ms x86))
+  :hints (("Goal" :in-theory (enable set-ms))))
+
+;; Introduces set-ms.
+(defthmd !ms-becomes-set-ms
+  (equal (!ms ms x86)
+         (set-ms ms x86))
+  :hints (("Goal" :in-theory (enable set-ms))))
+
+(defthm xr-of-set-ms-irrel
+  (implies (or (not (equal fld :ms))
+               ;;(not (equal index *rax*))
+               )
+           (equal (xr fld index (set-ms ms x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable set-ms))))
+
+;; read-of-write rule
+(defthm ms-of-set-ms
+  (equal (ms (set-ms val x86))
+         val)
+  :hints (("Goal" :in-theory (enable ms set-ms))))
+
+;; Not sure whether we need more rules about set-ms, as it generally caused the execution to stop.
+
+
+;; (defund set-error (error x86)
+;;   (declare (xargs :stobjs x86))
+;;   (x86isa::!ms error x86))
+
+;; (defthmd xw-becomes-set-error
+;;   (equal (xw :ms nil error x86)
+;;          (set-error error x86))
+;;   :hints (("Goal" :in-theory (enable set-error))))
+
+;; (defund set-error (ms x86)
+;;   (declare (xargs :stobjs x86))
+;;   (x86isa::!ms ms x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable fault))
+
+;; Introduces fault
+(defthmd xr-becomes-fault
+  (equal (xr :fault nil x86)
+         (fault x86))
+  :hints (("Goal" :in-theory (enable fault))))
+
+(defthm fault-of-xw (implies (not (equal fld :fault)) (equal (fault (xw fld index value x86)) (fault x86))) :hints (("Goal" :in-theory (enable fault))))
+
+(defthm fault-of-if (equal (fault (if test x y)) (if test (fault x) (fault y))))
+
+(defthm fault-of-myif (equal (fault (myif test x y)) (myif test (fault x) (fault y))) :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Writes the fault state component.
+(defund set-fault (fault x86)
+  (declare (xargs :stobjs x86))
+  (x86isa::!fault fault x86))
+
+;; Introduces set-fault.
+(defthmd xw-becomes-set-fault
+  (equal (xw :fault nil fault x86)
+         (set-fault fault x86))
+  :hints (("Goal" :in-theory (enable set-fault))))
+
+;; Introduces set-fault.
+(defthmd !fault-becomes-set-fault
+  (equal (!fault fault x86)
+         (set-fault fault x86))
+  :hints (("Goal" :in-theory (enable set-fault))))
+
+(defthm xr-of-set-fault-irrel
+  (implies (or (not (equal fld :fault))
+               ;;(not (equal index *rax*))
+               )
+           (equal (xr fld index (set-fault fault x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable set-fault))))
+
+;; read-of-write rule
+(defthm fault-of-set-fault
+  (equal (fault (set-fault val x86))
+         val)
+  :hints (("Goal" :in-theory (enable fault set-fault))))
