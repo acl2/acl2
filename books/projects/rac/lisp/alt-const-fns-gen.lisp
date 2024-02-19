@@ -14,7 +14,7 @@
 ;; annotated by appending a colon ":" character to it -- for example VAR can be
 ;; annotated as :VAR, in which case, a constant function named VAR will be
 ;; generated. To generate a function with a different name, a suffix can be
-;; used -- for example, :VAR:VAR-RENAMED to generate function named
+;; used -- for example, :VAR@VAR-RENAMED to generate function named
 ;; VAR-RENAMED.
 ;;
 ;; Before applying ALT-CONST-FNS-GEN, the user needs to introduce constant
@@ -90,9 +90,9 @@
 (define parse-kwd-names ((symb keywordp))
   ;; Return two strings extracted from a keyword.
   ;; E.g. :VAR -> "VAR" "VAR"
-  ;; E.g. :VAR:VAR-ALT -> "VAR" "VAR-ALT"
+  ;; E.g. :VAR@VAR-ALT -> "VAR" "VAR-ALT"
   (b* ((sname (symbol-name symb))
-       (names (str::strtok sname '(#\:))))
+       (names (str::strtok sname '(#\: #\@))))
     (if (and (consp names)
              (not (consp (cdr names))))
         (mv (car names) (car names))
@@ -249,7 +249,8 @@
                  (if1 (intern$ "IF1" pkg-name))
                  (body `(,if1 ,condition ,then ,else))
                  (free-vars (union-free-vars-of-pterms (list condition then else))))
-              (pterm body nil free-vars)))
+              ;; Add bindings back to if-expr
+              (add-bindings p.context (pterm body nil free-vars) pkg-name)))
            ((and (true-listp p.body)
                  (eql (car p.body) 'case))
             ;; Similar simplification to the if1 term
@@ -260,10 +261,11 @@
                           ,@simplified-lst))
                  (free-vars (union-free-vars-of-pterms simplified-lst))
                  (free-vars (union$ (pterm->free case-on) free-vars)))
-              (pterm body nil free-vars)))
+              ;; Add bindings back to case-expr
+              (add-bindings p.context (pterm body nil free-vars) pkg-name)))
            (t (b* ((body `(mv-nth ,(pterm cvar-idx nil nil)
                                   ,(pterm `(mv-list ,(pterm len nil nil) ,rhs-pterm) nil p.free))))
-                (pterm body nil p.free))))))
+                (pterm body p.context p.free))))))
 
  (defun simplify-cvar-pterms (cvar-idxs len rhs-pterm pkg-name)
    ;;; Create multiple pterms with body of the form
@@ -502,6 +504,32 @@
      (mv (append rhs-fns mv-fn-defs cdr-fns)
          cdr-pterm)))
 
+ (defun extract-fns-from-case-alts (rest pkg-name)
+   ;; Generate fns from case alternatives
+   (if (consp rest)
+       (b* (((list test result) (car rest))
+            ((mv test-fns test-pterm) (extract-fns-from-term test pkg-name))
+            ((mv result-fns result-pterm) (extract-fns-from-term result pkg-name))
+            ((mv rest-fns rest-pterms)
+             (extract-fns-from-case-alts (cdr rest) pkg-name))
+            (fns (append test-fns result-fns rest-fns))
+            (body `(,test-pterm ,result-pterm))
+            (free-vars (union$ (pterm->free test-pterm) (pterm->free result-pterm))))
+         (mv fns (cons (pterm body nil free-vars) rest-pterms)))
+     (mv nil nil)))
+
+ (defun extract-fns-from-case-expr (term pkg-name)
+   ;; Generate a list of functions from a case-expression
+   (b* (((list* ? expr rest) term)
+        ((mv expr-fns expr-pterm) (extract-fns-from-term expr pkg-name))
+        ((mv case-alts-fns case-alt-pterms)
+         (extract-fns-from-case-alts rest pkg-name))
+        (body `(case ,expr-pterm ,@case-alt-pterms))
+        (free-vars (union$ (pterm->free expr-pterm)
+                           (union-free-vars-of-pterms case-alt-pterms))))
+     (mv (append expr-fns case-alts-fns)
+         (pterm body nil free-vars))))
+
  (defun extract-fns-from-fn-app-args (fn-args pkg-name)
    ;;; Generate a list of pterms for each arguments of a function.
    (if (consp fn-args)
@@ -533,6 +561,9 @@
          ((and (true-listp term)
                (eql (car term) 'mv-let))
           (extract-fns-from-mv-let term pkg-name))
+         ((and (true-listp term)
+              (eql (car term) 'case))
+          (extract-fns-from-case-expr term pkg-name))
          ((and (true-listp term) term)
           (extract-fns-from-fn-app term pkg-name))
          ((and (symbolp term) term (not (eql term 't)))
@@ -560,11 +591,28 @@
        (cons (flatten-pterm (car pterms)) (flatten-pterms (cdr pterms)))
      nil))
 
+ (defun flatten-case-alts (alts)
+   (if (consp alts)
+       (b* (((list test result) (flatten-pterm (car alts)))
+            (test (flatten-pterm test))
+            (result (flatten-pterm result))
+            (rest (flatten-case-alts (cdr alts))))
+         (cons `(,test ,result) rest))
+     nil))
+
+ (defun flatten-case-expr (body)
+   (b* (((list* ? expr alts) body)
+        (expr (flatten-pterm expr))
+        (alts (flatten-case-alts alts)))
+     `(case ,expr ,@alts)))
+
  (defun flatten-body (body)
    (if (pterm-p body)
        (flatten-body (pterm->body body))
      (if (and (true-listp body) body)
-         `(,(car body) ,@(flatten-pterms (cdr body)))
+         (if (eql (car body) 'case)
+             (flatten-case-expr body)
+           `(,(car body) ,@(flatten-pterms (cdr body))))
        body)))
 
  (defun flatten-pterm (p)
@@ -580,8 +628,9 @@
 (defun flatten-fn (fn)
   ;;; Function to create a function definition from a fn structure.
   (b* (((cons fn-name p) fn)
-       ((when (pterm->free p)) (er hard 'flatten-fn "Free variables exist for
-~x0: ~x1~%" fn-name (pterm->free p))))
+       ((when (pterm->free p)) (er hard 'flatten-fn
+                                   "Free variables exist for ~x0: ~x1~%~x2~%"
+                                   fn-name (pterm->free p) p)))
     `(defundd ,fn-name nil
        ,(flatten-pterm p))))
 
