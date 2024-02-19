@@ -52,6 +52,7 @@
     x86isa::sz
     x86isa::alignment-checking-enabled-p
     x86isa::get-prefixes
+    x86isa::!ms
     x86isa::!ms$inline
     x86isa::x86-fetch-decode-execute
 
@@ -189,6 +190,7 @@
     x86isa::one-byte-opcode-execute
     x86isa::fault
     x86isa::fault$a
+    x86isa::!fault
     x86isa::ms
     x86isa::ms$a
     x86isa::combine-bytes

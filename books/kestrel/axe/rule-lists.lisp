@@ -784,6 +784,12 @@
      bvlt-transitive-1-b
      bvlt-transitive-2-a
      bvlt-transitive-2-b
+     bvlt-transitive-3-a
+     bvlt-transitive-3-b
+     bvlt-transitive-4-a
+     bvlt-transitive-4-b
+     bvlt-transitive-5-a
+     bvlt-transitive-5-b
 
      not-equal-max-int-when-<=      ;new, rename
 
@@ -3951,6 +3957,19 @@
 ;; when rotate unrolling is being done, we prefer these rules:
 (set-axe-rule-priority rightrotate-becomes-rightrotate-unroller-strong2 -1)
 (set-axe-rule-priority leftrotate-becomes-leftrotate-unroller-strong2 -1)
+
+;; We try these late, since they involve free vars:
+(set-axe-rule-priority bvlt-transitive-1-a 1)
+(set-axe-rule-priority bvlt-transitive-1-b 1)
+(set-axe-rule-priority bvlt-transitive-2-a 1)
+(set-axe-rule-priority bvlt-transitive-2-b 1)
+(set-axe-rule-priority bvlt-transitive-3-a 1)
+(set-axe-rule-priority bvlt-transitive-3-b 1)
+(set-axe-rule-priority bvlt-transitive-4-a 1)
+(set-axe-rule-priority bvlt-transitive-4-b 1)
+(set-axe-rule-priority bvlt-transitive-5-a 1)
+(set-axe-rule-priority bvlt-transitive-5-b 1)
+
 
 ;; (defconst *super-rules*
 ;;   '(
