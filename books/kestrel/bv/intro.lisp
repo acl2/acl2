@@ -16,6 +16,8 @@
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bv-syntax")
+(include-book "bvcat-def")
+(include-book "unsigned-byte-p-forced")
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 
@@ -77,3 +79,20 @@
                   (bvand width y x)))
   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
            :in-theory (disable logand-becomes-bvand))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd logapp-becomes-bvcat-when-unsigned-byte-p-1
+  (implies (unsigned-byte-p 1 j)
+           (equal (logapp size i j)
+                  (bvcat 1 j size i)))
+  :hints (("Goal" :in-theory (enable bvcat))))
+
+;; logapp does not indicate the size of the high bits, so we have to try to
+;; figure it out.
+(defthmd logapp-becomes-bvcat-when-bv
+  (implies (and (bind-free (acl2::bind-var-to-bv-term-size 'jsize j) (jsize))
+                (unsigned-byte-p-forced jsize j))
+           (equal (logapp size i j)
+                  (bvcat jsize j size i)))
+  :hints (("Goal" :in-theory (enable bvcat))))
