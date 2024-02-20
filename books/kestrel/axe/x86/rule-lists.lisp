@@ -117,6 +117,17 @@
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
             x86isa::idiv-spec-64-trim-arg1-axe-all
 
+            x86isa::shrx-spec$inline         ; just a dispatch
+            x86isa::shlx-spec$inline         ; just a dispatch
+            x86isa::sarx-spec$inline         ; just a dispatch
+
+            x86isa::shlx-spec-32-redef
+            x86isa::shlx-spec-64-redef
+            x86isa::shrx-spec-32-redef
+            x86isa::shrx-spec-64-redef
+            x86isa::sarx-spec-32-redef
+            x86isa::sarx-spec-64-redef
+
             x86isa::sar-spec$inline
             ;x86isa::sar-spec-32-nice
             ;x86isa::sar-spec-64-nice
