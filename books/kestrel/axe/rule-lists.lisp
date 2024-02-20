@@ -1820,7 +1820,7 @@
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
-            ;; logtail-becomes-slice-dag       ;drop?
+            ;; logtail-becomes-slice-bind-free-axe       ;drop?
 
             bvmult-of-2-gen
 ;trying these:

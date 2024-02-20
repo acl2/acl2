@@ -688,12 +688,16 @@
 ;; Rules to introduce our BV operators (todo: move these):
 (defund logops-to-bv-rules ()
   (declare (xargs :guard t))
-  '(acl2::logand-becomes-bvand-axe-arg1-axe
-    acl2::logand-becomes-bvand-axe-arg2-axe
+  '(acl2::logand-becomes-bvand-arg1-axe
+    acl2::logand-becomes-bvand-arg2-axe
     acl2::logior-becomes-bvor-axe
     acl2::logxor-becomes-bvxor-axe
+    acl2::loghead-becomes-bvchop
+    acl2::bvchop-of-lognot-becomes-bvnot
+    acl2::bvchop-of-logand-becomes-bvand
+    acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
-    acl2::loghead-becomes-bvchop))
+    ))
 
 ;; Rules to introduce our BV operators (todo: move these):
 (defund bitops-to-bv-rules ()
@@ -3939,7 +3943,6 @@
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
             acl2::bvchop-of-bvshr-same
-            acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
             acl2::bvif-of-if-constants-nonnil-nil

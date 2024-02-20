@@ -16,6 +16,9 @@
 ;;; axe-rewrite-objective.  They are for use with Axe but not with the ACL2
 ;;; Rewriter.  Many of these are versions of pre-existing rules.
 
+;; See also ../bv/intro.lisp for rules like these that do not use
+;; axe-bind-free, etc.
+
 ;; TODO: Rename rules that end in -dag to instead end in -axe.
 
 ;todo: reduce:
@@ -31,7 +34,7 @@
 (local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;for *-becomes-bvmult-non-dag
+(local (include-book "kestrel/bv/rules3" :dir :system)) ;for *-becomes-bvmult
 ;(local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
 ;(local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 ;(local (include-book "kestrel/bv/sbvdiv" :dir :system))
@@ -203,10 +206,29 @@
                 (unsigned-byte-p-forced m y))
            (equal (* x y)
                   (bvmult (+ m n) x y)))
-  :hints (("Goal" :use (:instance *-becomes-bvmult-non-dag)
-           :in-theory (disable *-becomes-bvmult-non-dag))))
+  :hints (("Goal" :use (:instance *-becomes-bvmult)
+           :in-theory (disable *-becomes-bvmult))))
 
-(defthmd logand-becomes-bvand-axe-arg1-axe
+(defthmd *-becomes-bvmult-2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p ysize y)
+                (unsigned-byte-p-forced xsize x)
+                )
+           (equal (* x y) (bvmult (+ ysize xsize) x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
+           :use (:instance *-becomes-bvmult (n xsize) (m ysize)))))
+
+(defthmd *-becomes-bvmult-3-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p ysize y)
+                (unsigned-byte-p-forced xsize x))
+           (equal (* y x) (bvmult (+ ysize xsize) x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
+           :use (:instance *-becomes-bvmult (n xsize) (m ysize)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd logand-becomes-bvand-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
                 (unsigned-byte-p xsize x)
                 (natp y))
@@ -215,7 +237,7 @@
   :hints (("Goal" :use (:instance acl2::logand-becomes-bvand (size xsize) (acl2::y y))
            :in-theory (disable acl2::logand-becomes-bvand))))
 
-(defthmd logand-becomes-bvand-axe-arg2-axe
+(defthmd logand-becomes-bvand-arg2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
                 (unsigned-byte-p xsize x)
                 (natp y))
@@ -242,15 +264,15 @@
                   (bvxor (max xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-;drop? rename?
-(defthmd logtail-becomes-slice-dag
+;rename?
+(defthmd logtail-becomes-slice-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'newsize dag-array) '(newsize))
                 (<= n newsize) ;drop?
                 (integerp newsize)
                 (unsigned-byte-p-forced newsize x) ;switched to usb-forced? (also elsewhere!)
                 (integerp x) ;drop
                 (natp n))
-           (equal (LOGTAIL N X)
+           (equal (logtail n x)
                   (slice (+ -1 newsize) n x)))
-  :hints (("Goal" :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE)
-           :in-theory (e/d (unsigned-byte-p-forced)(LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
+  :hints (("Goal" :use (:instance logtail-becomes-slice-bind-free)
+           :in-theory (e/d (unsigned-byte-p-forced) (logtail-becomes-slice-bind-free)))))

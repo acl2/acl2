@@ -17,12 +17,20 @@
 (include-book "bvminus")
 (include-book "bv-syntax")
 (include-book "bvcat-def")
+(include-book "defs-bitwise")
 (include-book "unsigned-byte-p-forced")
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 
+;; See also ../axe/bv-intro-rules.lisp
+
 ;; We'll keep these disabled as they may conflict with opening up the BV
 ;; functions.
+
+(defthm bvchop-of-lognot-becomes-bvnot
+  (equal (bvchop size (lognot x))
+         (bvnot size x))
+  :hints (("Goal" :in-theory (enable bvnot))))
 
 (defthmd bvchop-of-logand-becomes-bvand
   (equal (bvchop size (logand x y))

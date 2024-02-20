@@ -1,6 +1,6 @@
 ; Trim-based rules to convert functions to BV functions
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,8 +92,3 @@
 ;;   (equal (bvxor size x (lognot y))
 ;;          (bvxor size x (bvnot size y)))
 ;;   :hints (("Goal" :in-theory (enable bvnot))))
-
-(defthm bvchop-of-lognot
-  (equal (bvchop size (lognot x))
-         (bvnot size x))
-  :hints (("Goal" :in-theory (enable bvnot))))
