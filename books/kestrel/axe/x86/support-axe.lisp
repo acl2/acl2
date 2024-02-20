@@ -245,6 +245,7 @@
 (def-constant-opener x86isa::vex->vvvv$inline)
 (def-constant-opener x86isa::vex->l$inline)
 (def-constant-opener x86isa::vex->pp$inline)
+(def-constant-opener x86isa::vex->r$inline)
 (def-constant-opener x86isa::vex->w$inline)
 
 ;; can we optimize these by avoiding introducing the fix?
