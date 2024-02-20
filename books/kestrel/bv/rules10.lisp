@@ -49,17 +49,17 @@
            (equal (+ (- y) x)
                   k)))
 
-(defthm getbit-of-ash
-  (implies (and (natp c)
-                (natp i)
-                (natp n))
-           (equal (getbit n (ash i c))
-                  (getbit n (bvcat (+ 1 n (- C)) i c 0))))
-  :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
-                                       BVCHOP-OF-LOGTAIL)
-                                  (BVCHOP-1-BECOMES-GETBIT
-                                   SLICE-BECOMES-GETBIT
-                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+;; (defthm getbit-of-ash
+;;   (implies (and (natp c)
+;;                 (natp i)
+;;                 (natp n))
+;;            (equal (getbit n (ash i c))
+;;                   (getbit n (bvcat (+ 1 n (- C)) i c 0))))
+;;   :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
+;;                                        BVCHOP-OF-LOGTAIL)
+;;                                   (BVCHOP-1-BECOMES-GETBIT
+;;                                    SLICE-BECOMES-GETBIT
+;;                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 ;(in-theory (enable logext-of-sum-trim-constant))
 
@@ -83,20 +83,6 @@
                                    (high high)
                                    (n n)))
            :in-theory (disable getbit-of-slice))))
-
-;; or got to getbit of bvnot first?
-(defthm getbit-of-lognot
-  (implies (natp m)
-           (equal (getbit m (lognot x))
-                  (bvnot 1 (getbit m x))))
-  :hints (("Goal" :in-theory (e/d (lognot
-                                   getbit
-                                   SLICE-OF-SUM-CASES
-                                   ifix)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
-                                   BITXOR-OF-SLICE-ARG2
-                                   )))))
 
 ;gen the -1
 (defthm ash-of-bvchop-32-and-minus1
@@ -246,14 +232,6 @@
                                0)))
   :hints (("Goal" :in-theory (enable bvcat ash))))
 
-(defthm slice-of-lognot
-  (implies (and (natp high) ;drop?
-                (natp low))
-           (equal (slice high low (lognot x))
-                  (slice high low (bvnot (+ 1 high) x))))
-  :hints (("Goal" ;:cases ((natp high))
-           :in-theory (enable bvnot))))
-
 (defthm ash-of-ones
   (implies (and (natp n)
                 (natp low))
@@ -397,14 +375,6 @@
            (equal (getbit m (bvchop n x))
                   (if (< m n)
                       (getbit m x)
-                    0))))
-
-(defthm getbit-of-logmask
-  (implies (and (natp n)
-                (integerp width))
-           (equal (GETBIT n (LOGMASK WIDTH))
-                  (if (< n width)
-                      1
                     0))))
 
 ;todo: think about this

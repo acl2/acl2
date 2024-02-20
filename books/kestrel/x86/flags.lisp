@@ -19,6 +19,8 @@
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system)) ; to tighten a bvcat?
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 (set-compile-fns t) ; Matt K. mod for GCL to avoid exhausting storage
 

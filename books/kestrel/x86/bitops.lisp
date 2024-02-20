@@ -12,28 +12,26 @@
 (in-package "ACL2")
 
 ;TODO: Move this to the books/kestrel/bv (and change the package)?
-;TODO: Reduce deps
 
 (include-book "centaur/bitops/part-install" :dir :system)
-(include-book "kestrel/bv/rules10" :dir :system)
-(include-book "kestrel/bv/rules3" :dir :system)
+(include-book "kestrel/bv/bvcat-def" :dir :system)
+(include-book "kestrel/bv/slice-def" :dir :system)
+(include-book "kestrel/bv/getbit-def" :dir :system)
+(local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
-(local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
 (local (include-book "kestrel/bv/intro" :dir :system))
-(local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "meta/meta-plus-lessp" :dir :system))
 
+(in-theory (disable bitops::part-select-width-low
+                    bitops::part-install-width-low))
+
+;move or make local
 (defthm <=-of-*-same-linear-special
   (implies (and (<= 1 y)
-                (< 0 x)
+                (<= 0 x)
                 (rationalp x)
                 (rationalp y))
            (<= x (* x y)))
@@ -95,14 +93,14 @@
                 (integerp width))
            (equal (bitops::part-select-width-low x width low)
                   (acl2::slice (+ low width -1) low x)))
-  :hints (("Goal" :in-theory (e/d (acl2::slice)
+  :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low acl2::slice)
                                   (acl2::bvchop-of-logtail-becomes-slice)))))
 
 (defthmd getbit-of-part-install-width-low-helper
   (implies (and (natp m)
                 (natp low)
                 (natp width)
-                (integerp x)   ;drop
+;                (integerp x)   ;drop
                 )
            (equal (acl2::getbit m (bitops::part-install-width-low val x width low))
                   ;; not simplified; i just want to get rid of the part-install:
@@ -117,7 +115,7 @@
                                                             x)))))
 
   :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
-           :in-theory (e/d (ifix acl2::getbit-of-logand)
+           :in-theory (e/d (bitops::part-install-width-low ifix acl2::getbit-of-logand)
                            (ash logmask)))))
 
 (defthm getbit-of-part-install-width-low
@@ -138,9 +136,6 @@
   :hints (("Goal" :use (:instance getbit-of-part-install-width-low-helper (x (ifix x)))
            :in-theory (disable BITOPS::PART-INSTALL-WIDTH-LOW$INLINE))))
 
-(in-theory (disable BITOPS::PART-SELECT-WIDTH-LOW))
-(in-theory (disable BITOPS::PART-INSTALL-WIDTH-LOW))
-
 ;; Unfortunately, PART-INSTALL-WIDTH-LOW does not indicate any size for X.
 (defthm part-install-width-low-becomes-bvcat
   (implies (and (unsigned-byte-p xsize x) ; xsize is a free var
@@ -157,15 +152,19 @@
                                                                   ACL2::SLICE-TOO-HIGH-IS-0-NEW
                                                                   acl2::bvnot-of-0
                                                                   acl2::bvuminus-of-1-arg2
-                                                                  ACL2::BVNOT-TRIM-ALL
+                                                                  ;ACL2::BVNOT-TRIM-ALL
                                                                   ACL2::SLICE-TOO-HIGH-IS-0-NEW
-                                                                  acl2::expt-of-+)
+                                                                  acl2::expt-of-+
+                                                                  ACL2::BVCHOP-OF-LOGNOT-BECOMES-BVNOT
+                                                                  ACL2::LOGAND-BECOMES-BVAND
+                                                                  ACL2::LOGAND-BECOMES-BVAND-alt)
                                   (;ACL2::EXPONENTS-ADD
-                                   ACL2::SLICE-OF-+
+                                   ;ACL2::SLICE-OF-+
                                    ACL2::BVPLUS-RECOLLAPSE ;looped
-                                   ACL2::BVCAT-OF-+-HIGH   ;looped
-                                   acl2::BVAND-OF-+-ARG3 ;looped (we should treat a mask of 2^n-1 differently from a generic +
-                                   ACL2::BVCAT-OF-+-LOW)))))
+                                   ;ACL2::BVCAT-OF-+-HIGH   ;looped
+                                   ;acl2::BVAND-OF-+-ARG3 ;looped (we should treat a mask of 2^n-1 differently from a generic +
+                                   ;ACL2::BVCAT-OF-+-LOW
+                                   )))))
 
 (defthm bvchop-of-part-install-width-low-becomes-bvcat
   (implies (and (<= (+ low width) size)
@@ -178,16 +177,19 @@
                                (+ width low)
                                (acl2::bvcat width val low x))))
   :hints (("Goal" :cases ((equal size (+ low width)))
-           :in-theory (e/d (bitops::part-install-width-low ACL2::REPEATBIT-OF-1-ARG2
-                                                                  acl2::BVNOT-OF-0)
-                                  ( ;ACL2::SLICE-OF-BVAND
-                                   ACL2::BVPLUS-RECOLLAPSE ;looped
-                                   ACL2::BVCAT-OF-+-HIGH
-                                   ;ACL2::EXPONENTS-ADD
-                                   ACL2::BVCAT-OF-+-LOW ;looped
-                                   acl2::SLICE-OF-+           ;looped
-                                   acl2::BVAND-OF-+-ARG3      ;looped
-                                   )))))
+           :in-theory (e/d (bitops::part-install-width-low
+                            ACL2::REPEATBIT-OF-1-ARG2
+                            acl2::BVNOT-OF-0
+                            ACL2::LOGAND-BECOMES-BVAND
+                            ACL2::BVCHOP-OF-LOGNOT-BECOMES-BVNOT)
+                           ( ;ACL2::SLICE-OF-BVAND
+                            ACL2::BVPLUS-RECOLLAPSE ;looped
+                            ;ACL2::BVCAT-OF-+-HIGH
+;ACL2::EXPONENTS-ADD
+                            ;ACL2::BVCAT-OF-+-LOW         ;looped
+                            ;acl2::SLICE-OF-+             ;looped
+                            ;acl2::BVAND-OF-+-ARG3        ;looped
+                            )))))
 
 ;replace part-install-width-low with bvcat when inside a slice
 ;slow proof?
@@ -210,8 +212,8 @@
                                    ;;for speed:
                                    ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;ACL2::UNSIGNED-BYTE-P-PLUS
-                                   ACL2::UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
-                                   ACL2::BOUND-FROM-NATP-FACT ;seems bad?
+                                   ;ACL2::UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
+                                   ;ACL2::BOUND-FROM-NATP-FACT ;seems bad?
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT
                                    ACL2::BVCAT-EQUAL-REWRITE
                                    )))))
