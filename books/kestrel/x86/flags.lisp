@@ -21,6 +21,7 @@
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; to tighten a bvcat?
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system))
 
 (set-compile-fns t) ; Matt K. mod for GCL to avoid exhausting storage
 
@@ -263,8 +264,6 @@
            (equal (set-flag flag val1 (xw fld index val2 x86))
                   (xw fld index val2 (set-flag flag val1 x86))))
   :hints (("Goal" :in-theory (enable set-flag))))
-
-(local (include-book "bitops"))
 
 (defthm set-flag-of-set-flag-same
   (equal (set-flag flag val1 (set-flag flag val2 x86))

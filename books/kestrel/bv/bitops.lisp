@@ -11,8 +11,6 @@
 
 (in-package "ACL2")
 
-;TODO: Move this to the books/kestrel/bv (and change the package)?
-
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "kestrel/bv/bvcat-def" :dir :system)
 (include-book "kestrel/bv/slice-def" :dir :system)

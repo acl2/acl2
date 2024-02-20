@@ -14,7 +14,6 @@
 (include-book "parsers/top")
 (include-book "tools/top")
 
-(include-book "bitops")
 (include-book "linear-memory")
 (include-book "register-readers-and-writers32")
 (include-book "register-readers-and-writers64")
