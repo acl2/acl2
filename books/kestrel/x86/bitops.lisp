@@ -1,7 +1,7 @@
 ; Rules to convert bitops operations to operations from the Kestrel BV library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "X86ISA") ; todo
+(in-package "ACL2")
 
 ;TODO: Move this to the books/kestrel/bv (and change the package)?
 ;TODO: Reduce deps
@@ -52,12 +52,12 @@
 ;;                   (< b 1))))
 
 ;gen
-(defthm <-of-*-cancel-2
-  (implies (and (posp a)
-                (posp b)
-                (posp c))
-           (equal (< (* a b) (* c a))
-                  (< b c))))
+;; (defthm <-of-*-cancel-2
+;;   (implies (and (posp a)
+;;                 (posp b)
+;;                 (posp c))
+;;            (equal (< (* a b) (* c a))
+;;                   (< b c))))
 
 (defthm slice-mask
   (implies (and (natp low)
@@ -76,7 +76,7 @@
 ;;            (equal (< (EXPT '2 i) (EXPT '2 j))
 ;;                   (< i j))))
 
-(defthm slice-too-high-lemma
+(defthm slice-too-high-lemma-2
   (implies (and (natp low)
                 (natp width)
                 (natp size))
