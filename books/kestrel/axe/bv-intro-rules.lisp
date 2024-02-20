@@ -28,6 +28,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 ;(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 ;(include-book "known-booleans")
+(local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ;drop?
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;for *-becomes-bvmult-non-dag
@@ -204,6 +205,33 @@
                   (bvmult (+ m n) x y)))
   :hints (("Goal" :use (:instance *-becomes-bvmult-non-dag)
            :in-theory (disable *-becomes-bvmult-non-dag))))
+
+(defthmd logand-becomes-bvand-axe-arg1-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
+                (unsigned-byte-p xsize x)
+                (natp y))
+           (equal (logand x y)
+                  (bvand xsize x y)))
+  :hints (("Goal" :use (:instance acl2::logand-becomes-bvand (size xsize) (acl2::y y))
+           :in-theory (disable acl2::logand-becomes-bvand))))
+
+(defthmd logand-becomes-bvand-axe-arg2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
+                (unsigned-byte-p xsize x)
+                (natp y))
+           (equal (logand y x)
+                  (bvand xsize y x)))
+  :hints (("Goal":use (:instance acl2::logand-becomes-bvand (size xsize) (acl2::y y))
+           :in-theory (disable acl2::logand-becomes-bvand))))
+
+(defthmd logior-becomes-bvor-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
+                (unsigned-byte-p xsize x)
+                (unsigned-byte-p ysize y))
+           (equal (logior x y)
+                  (bvor (max xsize ysize) x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
 
 (defthmd logxor-becomes-bvxor-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))

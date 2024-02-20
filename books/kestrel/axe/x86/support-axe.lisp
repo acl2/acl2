@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -87,34 +87,6 @@
            (equal (ash x n)
                   (slice (+ -1 xsize) (- n) x)))
   :hints (("Goal" :use (:instance acl2::ash-negative-becomes-slice (acl2::x x) (acl2::n n) (acl2::xsize xsize)))))
-
-(defthmd logand-becomes-bvand-axe-arg1-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
-                (natp y))
-           (equal (logand x y)
-                  (bvand xsize x y)))
-  :hints (("Goal" :use (:instance acl2::LOGAND-BECOMES-BVAND (size xsize) (acl2::y y))
-           :in-theory (disable acl2::LOGAND-BECOMES-BVAND))))
-
-(defthmd logand-becomes-bvand-axe-arg2-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
-                (natp y))
-           (equal (logand y x)
-                  (bvand xsize y x)))
-  :hints (("Goal":use (:instance acl2::LOGAND-BECOMES-BVAND (size xsize) (acl2::y y))
-           :in-theory (disable acl2::LOGAND-BECOMES-BVAND))))
-
-;move this and similar stuff?
-(defthmd logior-becomes-bvor-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
-                (unsigned-byte-p xsize x)
-                (unsigned-byte-p ysize y))
-           (equal (logior x y)
-                  (bvor (max xsize ysize) x y)))
-  :hints (("Goal" :in-theory (enable bvor))))
 
 ;todo: move
 (defthm not-member-p-canonical-address-listp-when-disjoint-p-alt

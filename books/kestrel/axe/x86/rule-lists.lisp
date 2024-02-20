@@ -688,7 +688,10 @@
 ;; Rules to introduce our BV operators (todo: move these):
 (defund logops-to-bv-rules ()
   (declare (xargs :guard t))
-  '(acl2::logxor-becomes-bvxor-axe ;todo: more like this!
+  '(acl2::logand-becomes-bvand-axe-arg1-axe
+    acl2::logand-becomes-bvand-axe-arg2-axe
+    acl2::logior-becomes-bvor-axe
+    acl2::logxor-becomes-bvxor-axe
     acl2::bvchop-of-logxor-becomes-bvxor
     acl2::loghead-becomes-bvchop))
 
@@ -711,10 +714,7 @@
   '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     acl2::logext-of-bvplus-64 ;somewhat unusual
-    logior-becomes-bvor-axe ; an intro-rule
     x86isa::n08-to-i08$inline ;this is just logext
-
-
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
@@ -1339,8 +1339,6 @@
             acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
-            logand-becomes-bvand-axe-arg1-axe
-            logand-becomes-bvand-axe-arg2-axe
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             acl2::fix-when-acl2-numberp
@@ -1422,7 +1420,6 @@
             x86isa::cdr-create-canonical-address-list
             x86isa::combine-bytes-unroll
             x86isa::combine-bytes-base
-            logior-becomes-bvor-axe
             x86isa::if-of-xr-app-view
             x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
 
