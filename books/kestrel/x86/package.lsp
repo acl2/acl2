@@ -21,7 +21,7 @@
 ;; A Package for x86 analysis tools and proofs
 
 ;; TODO: Add a bunch of x86 ISA stuff here
-(defconst *x86isa-exports*
+(defconst *symbols-from-x86isa*
   '(x86isa::x86 ;the stobj name
     x86isa::memi$inline
     x86isa::memi
@@ -148,6 +148,11 @@
     x86isa::sub-of-spec32
     x86isa::sub-of-spec64
 
+    x86isa::ror-spec-8
+    x86isa::ror-spec-16
+    x86isa::ror-spec-32
+    x86isa::ror-spec-64
+
     ;; do we want to include stuff like this?
     x86isa::x86-one-byte-opcode-modr/m-p$inline
 
@@ -205,18 +210,98 @@
     x86isa::rflags
     x86isa::rflagsbits
     x86isa::!rflags
-    x86isa::rflagsbits->of$inline
-    x86isa::rflagsbits->sf$inline
-    x86isa::rflagsbits->cf$inline
-    x86isa::rflagsbits->af$inline
-    x86isa::rflagsbits->zf$inline
-    x86isa::rflagsbits->pf$inline
-    x86isa::rflagsbits->of
-    x86isa::rflagsbits->sf
+
     x86isa::rflagsbits->cf
-    x86isa::rflagsbits->af
-    x86isa::rflagsbits->zf
+    x86isa::rflagsbits->res1
     x86isa::rflagsbits->pf
+    x86isa::rflagsbits->res2
+    x86isa::rflagsbits->af
+    x86isa::rflagsbits->res3
+    x86isa::rflagsbits->zf
+    x86isa::rflagsbits->sf
+    x86isa::rflagsbits->tf
+    x86isa::rflagsbits->intf
+    x86isa::rflagsbits->df
+    x86isa::rflagsbits->of
+    x86isa::rflagsbits->iopl
+    x86isa::rflagsbits->nt
+    x86isa::rflagsbits->res4
+    x86isa::rflagsbits->rf
+    x86isa::rflagsbits->vm
+    x86isa::rflagsbits->ac
+    x86isa::rflagsbits->vif
+    x86isa::rflagsbits->vip
+    x86isa::rflagsbits->id
+    x86isa::rflagsbits->res5
+
+    x86isa::rflagsbits->cf$inline
+    x86isa::rflagsbits->res1$inline
+    x86isa::rflagsbits->pf$inline
+    x86isa::rflagsbits->res2$inline
+    x86isa::rflagsbits->af$inline
+    x86isa::rflagsbits->res3$inline
+    x86isa::rflagsbits->zf$inline
+    x86isa::rflagsbits->sf$inline
+    x86isa::rflagsbits->tf$inline
+    x86isa::rflagsbits->intf$inline
+    x86isa::rflagsbits->df$inline
+    x86isa::rflagsbits->of$inline
+    x86isa::rflagsbits->iopl$inline
+    x86isa::rflagsbits->nt$inline
+    x86isa::rflagsbits->res4$inline
+    x86isa::rflagsbits->rf$inline
+    x86isa::rflagsbits->vm$inline
+    x86isa::rflagsbits->ac$inline
+    x86isa::rflagsbits->vif$inline
+    x86isa::rflagsbits->vip$inline
+    x86isa::rflagsbits->id$inline
+    x86isa::rflagsbits->res5$inline
+
+    x86isa::!rflagsbits->cf
+    x86isa::!rflagsbits->res1
+    x86isa::!rflagsbits->pf
+    x86isa::!rflagsbits->res2
+    x86isa::!rflagsbits->af
+    x86isa::!rflagsbits->res3
+    x86isa::!rflagsbits->zf
+    x86isa::!rflagsbits->sf
+    x86isa::!rflagsbits->tf
+    x86isa::!rflagsbits->intf
+    x86isa::!rflagsbits->df
+    x86isa::!rflagsbits->of
+    x86isa::!rflagsbits->iopl
+    x86isa::!rflagsbits->nt
+    x86isa::!rflagsbits->res4
+    x86isa::!rflagsbits->rf
+    x86isa::!rflagsbits->vm
+    x86isa::!rflagsbits->ac
+    x86isa::!rflagsbits->vif
+    x86isa::!rflagsbits->vip
+    x86isa::!rflagsbits->id
+    x86isa::!rflagsbits->res5
+
+    x86isa::!rflagsbits->cf$inline
+    x86isa::!rflagsbits->res1$inline
+    x86isa::!rflagsbits->pf$inline
+    x86isa::!rflagsbits->res2$inline
+    x86isa::!rflagsbits->af$inline
+    x86isa::!rflagsbits->res3$inline
+    x86isa::!rflagsbits->zf$inline
+    x86isa::!rflagsbits->sf$inline
+    x86isa::!rflagsbits->tf$inline
+    x86isa::!rflagsbits->intf$inline
+    x86isa::!rflagsbits->df$inline
+    x86isa::!rflagsbits->of$inline
+    x86isa::!rflagsbits->iopl$inline
+    x86isa::!rflagsbits->nt$inline
+    x86isa::!rflagsbits->res4$inline
+    x86isa::!rflagsbits->rf$inline
+    x86isa::!rflagsbits->vm$inline
+    x86isa::!rflagsbits->ac$inline
+    x86isa::!rflagsbits->vif$inline
+    x86isa::!rflagsbits->vip$inline
+    x86isa::!rflagsbits->id$inline
+    x86isa::!rflagsbits->res5$inline
 
     x86isa::!seg-hidden-attri
     x86isa::seg-hidden-attri
@@ -287,6 +372,19 @@
     x86isa::undef
 
     X86ISA::READ-*IP$INLINE
+
+    x86isa::vex->vvvv$inline
+    x86isa::vex->l$inline
+    x86isa::vex->pp$inline
+    x86isa::vex->r$inline
+    x86isa::vex->w$inline
+
+    x86isa::vex->vvvv
+    x86isa::vex->l
+    x86isa::vex->pp
+    x86isa::vex->r
+    x86isa::vex->w
+
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -466,7 +564,9 @@
 
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
-  '(bitops::part-install-width-low$inline))
+  '(bitops::part-install-width-low$inline
+    b-xor ; from ihs, via bitops
+    ))
 
 ;; Ideally, these would all be rewritten away
 (defconst *symbols-from-rtl*
@@ -482,10 +582,10 @@
     rtl::zencode
     rtl::iencode
     rtl::dencode
-    rtl::nencode
-    ))
+    rtl::nencode))
 
 ;; formals that appear in theorems (or do we want to import these from acl2?):
+;; also includes some vars that are let-bound in definitions
 (defconst *common-x86isa-formals*
   '(x86isa::k
     x86isa::k2
@@ -496,13 +596,9 @@
     x86isa::ad3
     x86isa::ad4
     x86isa::rwx
-    ))
-
-;; TODO: Think about this...
-(defconst *common-acl2-formals*
-  '(x y z m n size i
-    acl2::free
-    acl2::freesize
+    x86isa::input-rflags
+    x86isa::cf
+    x86isa::of
     x86isa::ad x86isa::low x86isa::high
     x86isa::proc-mode
     x86isa::eff-addr
@@ -510,9 +606,16 @@
     x86isa::seg-reg
     x86isa::flg))
 
+;; TODO: Think about this...
+(defconst *common-acl2-formals*
+  '(x y z m n size i
+    free
+    freesize
+    ))
+
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
-                    *x86isa-exports*
+                    *symbols-from-x86isa*
                     *symbols-from-bitops*
                     *symbols-from-rtl*
                     *common-acl2-formals*
