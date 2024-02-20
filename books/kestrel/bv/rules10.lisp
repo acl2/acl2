@@ -222,16 +222,6 @@
                                0)))
   :hints (("Goal" :in-theory (enable bvcat ash))))
 
-(defthm ash-of-bvchop-becomes-bvcat
-  (implies (and (natp amt)
-                (natp xsize))
-           (equal (ash (bvchop xsize x) amt)
-                  (bvcat (+ xsize amt)
-                               (bvchop xsize x)
-                               amt
-                               0)))
-  :hints (("Goal" :in-theory (enable bvcat ash))))
-
 (defthm ash-of-ones
   (implies (and (natp n)
                 (natp low))
