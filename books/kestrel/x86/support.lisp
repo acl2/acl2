@@ -1,7 +1,7 @@
 ; Mixed x86 supporting material
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,7 +24,7 @@
 (include-book "kestrel/axe/rules2" :dir :system) ;drop?
 (include-book "kestrel/bv/rules3" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system)
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/arith" :dir :system)) ; todo
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -174,13 +174,6 @@
                       (equal k1 k3) ;gets computed
                     (equal k2 k3))))) ;gets computed
 
-;perhaps restrict
-(defthm mv-nth-of-if
-  (equal (mv-nth n (if test l1 l2))
-         (if test
-             (mv-nth n l1)
-           (mv-nth n l2))))
-
 ;todo: seems odd that we need this (I saw an access to bit 2)
 (defthm getbit-of-sub-af-spec64$inline
   (implies (posp n)
@@ -213,7 +206,7 @@
   (implies (and (integerp x)
                 (natp shift-amount)
                 (integerp width))
-           (equal (ACL2::BVSHL width x shift-amount)
+           (equal (acl2::bvshl width x shift-amount)
                   (acl2::bvchop width (* (expt 2 shift-amount) x))))
   :hints (("Goal" :in-theory (enable acl2::bvshl acl2::bvcat))))
 
@@ -348,11 +341,11 @@
 ;;                             bitops::part-select-width-low
 ;;                             bitops::part-install-width-low)))))
 
-;sign flag
-(defthmd sf-spec32-rewrite
-  (equal (x86isa::sf-spec32 x)
-         (acl2::getbit 31 x))
-  :hints (("Goal" :in-theory (enable x86isa::sf-spec32))))
+;; ;sign flag
+;; (defthmd sf-spec32-rewrite
+;;   (equal (x86isa::sf-spec32 x)
+;;          (acl2::getbit 31 x))
+;;   :hints (("Goal" :in-theory (enable x86isa::sf-spec32))))
 
 ;TODO: need lemmas about logand, ash, etc. in order to prove the
 ;theorem that justifies the lift (why?)  TODO: try simpify-defun?
@@ -373,22 +366,10 @@
 (in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2))
 (in-theory (disable ACL2::BOUND-FROM-NATP-FACT)) ;slow
 
-;see also mv-nth-cons-meta, but axe can't use it
-(defthm mv-nth-of-cons
-  (implies (and (syntaxp (quotep n))
-                (natp n))
-           (equal (mv-nth n (cons a b))
-                  (if (zp n)
-                      a
-                    (mv-nth (+ -1 n) b))))
-  :hints (("Goal" :in-theory (enable mv-nth))))
-
 ;; (defthm rb-of-nil
 ;;   (equal (rb nil r-w-x x86)
 ;;          (mv nil nil x86))
 ;;   :hints (("Goal" :in-theory (enable rb))))
-
-
 
 ;is there a way to limit this?
 
@@ -404,12 +385,12 @@
   :hints (("Goal" :expand (x86isa::combine-bytes lst)
            :in-theory (enable x86isa::combine-bytes))))
 
-;move or drop?
-(defthm acl2::assoc-equal-of-cons-irrel
-  (implies (not (equal acl2::key (car a)))
-           (equal (assoc-equal acl2::key (cons a acl2::rst))
-                  (assoc-equal acl2::key acl2::rst)))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+;; ;move or drop?
+;; (defthm acl2::assoc-equal-of-cons-irrel
+;;   (implies (not (equal acl2::key (car a)))
+;;            (equal (assoc-equal acl2::key (cons a acl2::rst))
+;;                   (assoc-equal acl2::key acl2::rst)))
+;;   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 (defthm get-one-byte-prefix-array-code-rewrite-quotep
   (implies (syntaxp (quotep byte))
@@ -614,12 +595,11 @@
 ;todo: make defopeners use the untranslated body
 ;todo: make defopeners check for redundancy
 ;todo: make defopeners suppress printing
-;todo: use def-constant-opener?
 (acl2::defopeners one-byte-opcode-execute :hyps ((syntaxp (and (quotep x86isa::prefixes)
-                                                                (quotep x86isa::rex-byte)
-                                                                (quotep x86isa::opcode)
-                                                                (quotep x86isa::modr/m)
-                                                                (quotep x86isa::sib)))))
+                                                               (quotep x86isa::rex-byte)
+                                                               (quotep x86isa::opcode)
+                                                               (quotep x86isa::modr/m)
+                                                               (quotep x86isa::sib)))))
 
 (in-theory (disable x86isa::one-byte-opcode-execute))
 
@@ -630,7 +610,7 @@
 ;looped?
 (defthmd not-member-p-canonical-address-listp-when-disjoint-p-alt
   (implies (and (x86isa::disjoint-p (x86isa::create-canonical-address-list m addr)
-                            (x86isa::create-canonical-address-list n prog-addr))
+                                    (x86isa::create-canonical-address-list n prog-addr))
                 (x86isa::member-p e (x86isa::create-canonical-address-list m addr)))
            (equal (x86isa::member-p e (x86isa::create-canonical-address-list n prog-addr))
                   nil)))
@@ -1052,7 +1032,7 @@
                             CANONICAL-ADDRESS-P-BETWEEN
                             ;x86isa::PART-SELECT-WIDTH-LOW-BECOMES-SLICE
                             ;x86isa::SLICE-OF-PART-INSTALL-WIDTH-LOW
-                            MV-NTH-OF-IF
+                            acl2::MV-NTH-OF-IF
                             x86isa::GET-PREFIXES-OPENER-LEMMA-NO-PREFIX-BYTE
                             )))))
 
@@ -1075,7 +1055,7 @@
                                    x86isa::get-prefixes-opener-lemma-no-prefix-byte ;for speed
                                    ;x86isa::part-select-width-low-becomes-slice ;for speed
                                    ACL2::ZP-OPEN
-                                   MV-NTH-OF-IF
+                                   acl2::MV-NTH-OF-IF
                                    )))))
 
 ;; A guess as to how the 32 bytes of shadow space for PE files looks: (TODO: Figure this all out!)
@@ -2137,44 +2117,6 @@
 
 (in-theory (enable x86isa::x86-operation-mode)) ;for non-axe symbolic execution
 
-(acl2::def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
-(acl2::def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
-
-(acl2::def-constant-opener x86isa::rflagsbits->ac$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->af$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->cf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->of$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->pf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->sf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->zf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res1$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res2$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res3$inline)
-
-(acl2::def-constant-opener x86isa::rflagsbits->tf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->intf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->df$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->iopl$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->nt$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res4$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->rf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->vm$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->vif$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->vip$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->id$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res5$inline)
-(acl2::def-constant-opener x86isa::rflagsbits$inline)
-
-(acl2::def-constant-opener x86isa::!rflagsbits->af$inline)
-
-(acl2::def-constant-opener x86isa::10bits-fix)
-(acl2::def-constant-opener x86isa::2bits-fix)
-(acl2::def-constant-opener logapp)
-(acl2::def-constant-opener acl2::expt2$inline)
-
-
-(acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
-
 (defthm x86isa::rflagsbits->of$inline-of-if-safe
   (implies (syntaxp (if (quotep tp)
                         t
@@ -2242,9 +2184,6 @@
 (defthm x86isa::rflagsbits->pf$inline-of-if
   (equal (rflagsbits->pf$inline (if test tp ep))
          (if test (rflagsbits->pf$inline tp) (rflagsbits->pf$inline ep))))
-
-
-(acl2::def-constant-opener x86isa::feature-flags)
 
 ;pretty gross (due to gross behaviour of bfix)
 (defthm RFLAGSBITS-rewrite

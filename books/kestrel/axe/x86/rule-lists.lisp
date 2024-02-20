@@ -769,7 +769,7 @@
 ;todo: try always including these?  these help with conditional branches
 (defun if-lifting-rules ()
   (declare (xargs :guard t))
-  '(x86isa::mv-nth-of-if          ;could restrict to when both branches are cons nests
+  '(acl2::mv-nth-of-if          ;could restrict to when both branches are cons nests
    x86isa::equal-of-if-constants ;seems safe
    x86isa::equal-of-if-constants-alt ;seems safe
    x86isa::canonical-address-p-of-if
@@ -1252,7 +1252,7 @@
             x86isa::mv-nth-0-of-get-prefixes-of-xw-of-irrel
             x86isa::mv-nth-1-of-get-prefixes-of-xw-of-irrel
 
-            x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
+            ;x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
 
             x86isa::canonical-address-p-of-logext-48
             x86isa::logext-48-does-nothing-when-canonical-address-p
@@ -1566,7 +1566,7 @@
             x86isa::canonical-address-p-of-i48
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
-            x86isa::mv-nth-of-if
+            ;; acl2::mv-nth-of-if ; also in if-lifting-rules
             x86isa::canonical-address-p-of-if
             read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
@@ -1806,8 +1806,8 @@
      acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
 ;     app-view$inline
      rml64
-     x86isa::mv-nth-of-if
-     x86isa::mv-nth-of-cons
+     acl2::mv-nth-of-if
+     acl2::mv-nth-of-cons-safe
      x86isa::canonical-address-p-of-if
      the-check
      acl2::lookup-eq-safe
@@ -1871,7 +1871,6 @@
             x86isa::i48$inline
             x86isa::<-of-if-arg2
             acl2::<-of-if-arg1
-            x86isa::mv-nth-of-if
             x86isa::if-of-if-of-nil-and-consp
             acl2::ubp-longer-better
             x86isa::canonical-address-p-when-unsigned-byte-p

@@ -59,10 +59,10 @@
 (add-known-boolean eff-addr-okp)
 (add-known-boolean segments-separate)
 
-(add-known-boolean bitp)
 (add-known-boolean return-address-okp)
 
-;move
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd acl2::part-install-width-low-becomes-bvcat-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)
                 (unsigned-byte-p xsize x)
@@ -89,11 +89,11 @@
   :hints (("Goal" :use (:instance acl2::ash-negative-becomes-slice (acl2::x x) (acl2::n n) (acl2::xsize xsize)))))
 
 ;todo: move
-(defthm not-member-p-canonical-address-listp-when-disjoint-p-alt
-  (implies (and (disjoint-p (create-canonical-address-list m addr) ;this hyp is commuted
-                            (create-canonical-address-list n prog-addr))
-                (member-p e (create-canonical-address-list m addr)))
-           (not (member-p e (create-canonical-address-list n prog-addr)))))
+;; (defthm not-member-p-canonical-address-listp-when-disjoint-p-alt
+;;   (implies (and (disjoint-p (create-canonical-address-list m addr) ;this hyp is commuted
+;;                             (create-canonical-address-list n prog-addr))
+;;                 (member-p e (create-canonical-address-list m addr)))
+;;            (not (member-p e (create-canonical-address-list n prog-addr)))))
 
 ;We'll use aref1-rewrite to handle the aref1s.
 (defthmd aref1-rewrite ;for axe
@@ -193,6 +193,45 @@
 (def-constant-opener x86isa::!rflagsbits->sf$inline)
 (def-constant-opener x86isa::!rflagsbits->zf$inline)
 
+(acl2::def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
+(acl2::def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
+
+(acl2::def-constant-opener x86isa::rflagsbits->ac$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->af$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->cf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->of$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->pf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->sf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->zf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res1$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res2$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res3$inline)
+
+(acl2::def-constant-opener x86isa::rflagsbits->tf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->intf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->df$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->iopl$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->nt$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res4$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->rf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vm$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vif$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vip$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->id$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res5$inline)
+(acl2::def-constant-opener x86isa::rflagsbits$inline)
+
+(acl2::def-constant-opener x86isa::!rflagsbits->af$inline)
+
+(acl2::def-constant-opener x86isa::10bits-fix)
+(acl2::def-constant-opener x86isa::2bits-fix)
+(acl2::def-constant-opener logapp)
+(acl2::def-constant-opener acl2::expt2$inline)
+
+(acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+
+(acl2::def-constant-opener x86isa::feature-flags); needed?
+
 
 (def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
 (def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
@@ -234,7 +273,6 @@
 (def-constant-opener x86isa::vex3-byte2->vvvv$inline)
 (def-constant-opener x86isa::vex3-byte2->w$inline)
 
-
 (def-constant-opener acl2::bool->bit$inline)
 
 (def-constant-opener canonical-address-p$inline)
@@ -242,6 +280,9 @@
 ;(defopeners byte-ify :hyps ((syntaxp (and (quotep n) (quotep val)))))
 
 (def-constant-opener byte-listp)
+
+(def-constant-opener bitops::rotate-left-32$inline) ; todo: more, or rewrite away
+(def-constant-opener acl2::rotate-left)
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
@@ -257,10 +298,6 @@
 ;;  (equal (bitops::rotate-left-32 x places)
 ;;         (acl2::leftrotate32 places x))
 ;;  :hints (("Goal" :in-theory (enable bitops::rotate-left-32 ACL2::ROTATE-LEFT acl2::leftrotate32 acl2::leftrotate))))
-
-(def-constant-opener bitops::rotate-left-32$inline)
-
-(def-constant-opener acl2::rotate-left)
 
 (defthm set-flag-of-set-flag-diff-axe
   (implies (and (syntaxp (and (quotep flag1)

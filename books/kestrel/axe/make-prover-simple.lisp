@@ -1,7 +1,7 @@
 ; A tool to make an Axe Prover for a given purpose
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -417,7 +417,7 @@
     (:REWRITE LOOKUP-EQ-BECOMES-LOOKUP-EQUAL)
     (:REWRITE MAXELEM-OF-CONS)
     ;; (:REWRITE MV-NTH-6-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
-    (:REWRITE MV-NTH-OF-CONS)
+    (:REWRITE MV-NTH-OF-CONS-safe)
     ;; (:REWRITE MYQUOTEP-OF-REPLACE-NODENUM-USING-ASSUMPTIONS-FOR-AXE-PROVER)
     (:REWRITE NAT-LISTP-WHEN-ALL-NATP)
     (:REWRITE NATP-OF-+-OF-1-ALT)
