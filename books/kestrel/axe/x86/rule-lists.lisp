@@ -685,26 +685,36 @@
     acl2::integerp-of-logext
     acl2::integerp-of--))
 
-(defund bv-intro-rules ()
+;; Rules to introduce our BV operators (todo: move these):
+(defund logops-to-bv-rules ()
   (declare (xargs :guard t))
   '(acl2::logxor-becomes-bvxor-axe ;todo: more like this!
     acl2::bvchop-of-logxor-becomes-bvxor
     acl2::loghead-becomes-bvchop))
 
+;; Rules to introduce our BV operators (todo: move these):
+(defund bitops-to-bv-rules ()
+  (declare (xargs :guard t))
+  '(acl2::part-select-width-low-becomes-slice
+    acl2::slice-of-part-install-width-low ; introduces bvcat
+    acl2::bvchop-of-part-install-width-low-becomes-bvcat
+    acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
+    acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
+    acl2::part-install-width-low-becomes-bvcat-32))
+
 ;todo: classify these
 (defun x86-bv-rules ()
   (declare (xargs :guard t))
   (append
-   (bv-intro-rules)
+   (logops-to-bv-rules)
+   (bitops-to-bv-rules)
   '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     acl2::logext-of-bvplus-64 ;somewhat unusual
     logior-becomes-bvor-axe ; an intro-rule
     x86isa::n08-to-i08$inline ;this is just logext
-    x86isa::slice-of-part-install-width-low
-    x86isa::bvchop-of-part-install-width-low-becomes-bvcat
-    x86isa::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
-    part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
+
+
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
@@ -1207,9 +1217,6 @@
             jcc/cmovcc/setcc-spec-rewrite-jle
             jcc/cmovcc/setcc-spec-rewrite-jnle
 
-            ;; Rules to introduce our BV operators:
-            x86isa::part-select-width-low-becomes-slice
-
             ;; State component read-over-write rules:
 ;            x86isa::xr-set-flag ;this is the -diff rule
 
@@ -1545,7 +1552,6 @@
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
-            x86isa::part-install-width-low-becomes-bvcat-32
             x86isa::rflags-is-n32p-unforced
              ;targets unsigned-byte-p-of-rflags
 ;                    acl2::bvcat-trim-arg4-axe-all

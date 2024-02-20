@@ -62,7 +62,8 @@
 (add-known-boolean bitp)
 (add-known-boolean return-address-okp)
 
-(defthmd part-install-width-low-becomes-bvcat-axe
+;move
+(defthmd acl2::part-install-width-low-becomes-bvcat-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)
                 (unsigned-byte-p xsize x)
                 (natp xsize)              ;drop?
