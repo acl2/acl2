@@ -941,6 +941,7 @@
              assumptions rule-alist
              nil ; monitored-rules
              t ; memoizep
+             t ; warn-missingp
              state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))

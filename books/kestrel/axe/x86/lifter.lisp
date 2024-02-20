@@ -2021,6 +2021,7 @@
          ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
          (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
                                           nil ; don't memoize (avoids time spent making empty-memoizations)
+                                          t ; todo: do this warning just once?
                                           state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
@@ -2164,14 +2165,25 @@
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
                          (set-difference-eq
                           (lifter-rules32)
+                          ;; todo: move these rule-lists:
                           '(xr-becomes-undef
                             x86isa::!undef-becomes-set-undef
-                            xw-becomes-set-undef))
+                            xw-becomes-set-undef
+                            xr-becomes-ms
+                            xw-becomes-set-ms
+                            !ms-becomes-set-ms
+                            xr-becomes-fault
+                            xw-becomes-set-fault
+                            !fault-becomes-set-fault))
                        (set-difference-eq
                         (append (lifter-rules64)
-                                '(x86isa::rip x86isa::rip$a ; todo
-                                  x86isa::undef x86isa::undef$a ; exposes xr?
-                                  x86isa::!undef x86isa::!undef$a ; exposes xw?
+                                '(x86isa::rip x86isa::rip$a ; todo?
+                                  x86isa::undef x86isa::undef$a ; exposes xr
+                                  x86isa::!undef x86isa::!undef$a ; exposes xw
+                                  x86isa::ms x86isa::ms$a ; exposes xr
+                                  x86isa::!ms x86isa::!ms$a ; exposes xw
+                                  x86isa::fault x86isa::fault$a ; exposes xr
+                                  x86isa::!fault x86isa::!fault$a ; exposes xw
                                   )
                                ;(lifter-rules64-new); todo
                                 )

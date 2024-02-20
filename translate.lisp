@@ -26946,9 +26946,9 @@
                 (cond
                  (user-stobjs-modified-warning
                   (warning$ ctx "User-stobjs-modified"
-                            "A call of the ACL2 evaluator on the term ~x0 has ~
-                            modified the user stobj~#1~[~/s~] ~&1.  See :DOC ~
-                            user-stobjs-modified-warnings."
+                            "A call of the ACL2 evaluator on the term ~x0 may ~
+                             have modified the user stobj~#1~[~/s~] ~&1.  See ~
+                             :DOC user-stobjs-modified-warnings."
                             trans
                             user-stobjs))
                  (t state))))

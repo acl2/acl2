@@ -16249,6 +16249,14 @@
                                (t env-var)))))))))
             (t ; should be an integer value
              (cond
+
+; In ACL2(r), i.e., when #+non-standard-analysis, useless-runes-r/w is nil.
+; Therefore the first COND branch below can be ignored in that case.  We would
+; leave it there unconditionally anyhow, to avoid having an extra readtime
+; conditional, but Allegro CL warns otherwise when building ACL2: "Warning:
+; Type NULL is incompatible for numeric operation."
+
+              #-non-standard-analysis
               ((and (integerp useless-runes-r/w)
                     (not (zerop useless-runes-r/w))
                     (<= -100 useless-runes-r/w)

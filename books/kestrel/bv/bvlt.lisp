@@ -165,7 +165,8 @@
                               (quotep size)))
                 (not (bvlt size y free))
                 (syntaxp (quotep free))
-                (bvlt size k free))
+                (bvlt size k free) ; gets computed
+                )
            (bvlt size k y))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
@@ -175,7 +176,8 @@
                               (quotep size)))
                 (bvlt size x free)
                 (syntaxp (quotep free))
-                (not (bvlt size k free)))
+                (not (bvlt size k free)) ; gets computed
+                )
            (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-1))))
 
@@ -194,7 +196,8 @@
                               (quotep size)))
                 (bvlt size free y)
                 (syntaxp (quotep free))
-                (not (bvlt size free k)))
+                (not (bvlt size free k)) ; gets computed
+                )
            (bvlt size k y))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
 
@@ -204,7 +207,8 @@
                               (quotep size)))
                 (not (bvlt size free x))
                 (syntaxp (quotep free))
-                (bvlt size free k))
+                (bvlt size free k) ; gets computed
+                )
            (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-2))))
 
@@ -218,56 +222,64 @@
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;; Special case where x is a constant.
 (defthm bvlt-transitive-3-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (bvlt size free y))
                 (syntaxp (quotep free))
-                (not (bvlt size k free)))
+                (not (bvlt size k free)) ; gets computed
+                )
            (not (bvlt size k y)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
+;; Special case where y is a constant.
 (defthm bvlt-transitive-3-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (bvlt size x free))
                 (syntaxp (quotep free))
-                (not (bvlt size free k)))
+                (not (bvlt size free k)) ; gets computed
+                )
            (not (bvlt size x k)))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;y<free and free-1<=x imply y<=x
 (defthmd bvlt-transitive-core-4
   (implies (and (bvlt size y free)
-                (not (bvlt size x (+ -1 free)))
+                (not (bvlt size x (+ -1 free))) ; if free=0, then (bvlt size y free) above will be false
                 (integerp free)
-                (natp size)
-                )
+                (natp size))
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
+;; Special case where x is a constant.
 (defthm bvlt-transitive-4-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (bvlt size y free)
+                (bvlt size y free) ; y<free
                 (syntaxp (quotep free))
-                (not (bvlt size k (+ -1 free))) ;gets computed (what if free=0?  well, (bvlt size y free) above should not hold)
-                (integerp free)
+                (not (bvlt size k (+ -1 free))) ;gets computed ; free-1<=k
+                (integerp free) ; gets computed
                 (natp size))
            (not (bvlt size k y)))
   :hints (("Goal" :in-theory (enable bvlt-transitive-core-4))))
 
+;; Special case where y is a constant and we rephrase to match the free var better.
 (defthm bvlt-transitive-4-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (bvlt size x free))
+                (not (bvlt size x free)) ; free<=x
                 (syntaxp (quotep free))
-                (bvle size k free) ;gets computed
-                (integerp free)
-                (natp size)
-                )
+                (bvle size k free) ;gets computed, k<=free
+                (integerp free) ; gets computed
+                (natp size))
            (not (bvlt size x k)))
-  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases)  :use (:instance bvlt-transitive-core-4 (free (+ 1 free)) (y k)))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases) :use (:instance bvlt-transitive-core-4 (free (+ 1 free)) (y k)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;y<=free+1 and free<x imply y<=x
 (defthmd bvlt-transitive-core-5
@@ -278,10 +290,11 @@
            (not (bvlt size x y)))
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
+;; Special case where x is a constant and we rephrase to match the free var better.
 (defthm bvlt-transitive-5-a
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (not (bvlt size free y))
+                (not (bvlt size free y)) ; y<=free
                 (syntaxp (quotep free))
                 ;(bvlt size (+ -1 free) k) ;gets computed
                 (bvle size free k) ;gets computed
@@ -291,6 +304,7 @@
   :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases)
            :use (:instance bvlt-transitive-core-5 (x k) (free (+ -1 free))))))
 
+;; Special case where y is a constant
 (defthm bvlt-transitive-5-b
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -514,7 +528,8 @@
 (theory-invariant (incompatible (:definition bvlt) (:rewrite <-becomes-bvlt-free)))
 (theory-invariant (incompatible (:definition bvlt) (:rewrite <-becomes-bvlt-free-alt)))
 
-;fixme
+; y<=free and free2<=x and free = free2 imply y<=x
+;todo: do we need this?
 (defthm bvlt-transitive-free2-back
   (implies (and (not (bvlt size free y))
                 (bvle size free2 x)

@@ -148,16 +148,16 @@
 ;;   (mv erp (dag-to-term res) state))
 
 (test-simp-form
- (simplify-terms-repeatedly '((if (equal x '3) y z)  (equal x '3)) nil nil t state)
+ (simplify-terms-repeatedly '((if (equal x '3) y z)  (equal x '3)) nil nil t t state)
  '(y (equal x '3)))
 
 (test-simp-form
- (simplify-terms-repeatedly '((equal (car (cons x y)) '3) (equal x '4)) (make-rule-alist! '(car-cons) (w state)) nil t state)
+ (simplify-terms-repeatedly '((equal (car (cons x y)) '3) (equal x '4)) (make-rule-alist! '(car-cons) (w state)) nil t t state)
  '('NIL (EQUAL X '4)))
 
 (deftest
   (defun foo2 (x) x)
   (test-simp-form
    ;; foo opens, then the result is flattened, giving conjuncts of (equal x '3) and y, then (equal x '3) is used to simplify (if (equal x '3) w v)
-   (simplify-terms-repeatedly '((foo2 (if (equal x '3) y 'nil)) (if (equal x '3) w v)) (make-rule-alist! '(foo2) (w state)) nil t state)
+   (simplify-terms-repeatedly '((foo2 (if (equal x '3) y 'nil)) (if (equal x '3) w v)) (make-rule-alist! '(foo2) (w state)) nil t t state)
    '(y (equal x '3) w)))

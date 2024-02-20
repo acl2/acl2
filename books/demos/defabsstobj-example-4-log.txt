@@ -338,8 +338,8 @@ ACL2 !>>(MAKE-EVENT (MV-LET (ERP VAL STATE)
                       (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE-FLD-NIL-BAD ST) has modified the user stobj ST.
-See :DOC user-stobjs-modified-warnings.
+on the term (UPDATE-FLD-NIL-BAD ST) may have modified the user stobj
+ST.  See :DOC user-stobjs-modified-warnings.
 
 
 
@@ -388,8 +388,8 @@ ACL2 !>>(MAKE-EVENT (MV-LET (ERP VAL STATE)
                       (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE-FLD-NIL-GOOD ST) has modified the user stobj ST.
-See :DOC user-stobjs-modified-warnings.
+on the term (UPDATE-FLD-NIL-GOOD ST) may have modified the user stobj
+ST.  See :DOC user-stobjs-modified-warnings.
 
 
 Summary
@@ -409,8 +409,8 @@ ACL2 !>>(MAKE-EVENT (MV-LET (ERP VAL STATE)
                       (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE-FLD-NIL-BAD ST) has modified the user stobj ST.
-See :DOC user-stobjs-modified-warnings.
+on the term (UPDATE-FLD-NIL-BAD ST) may have modified the user stobj
+ST.  See :DOC user-stobjs-modified-warnings.
 
 
 

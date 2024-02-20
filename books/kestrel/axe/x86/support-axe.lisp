@@ -224,6 +224,13 @@
 (def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
 (def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
 
+;; TODO: Think about whether to use regular rules, constant opener rules, or build into the evaluator.
+
+(def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
+(def-constant-opener X86ISA::!PREFIXES->REP$inline)
+(def-constant-opener X86ISA::PREFIXES->REP$INLINE)
+(def-constant-opener x86isa::!prefixes->seg$inline)
+
 (def-constant-opener x86isa::vex-prefixes-fix$inline)
 (def-constant-opener x86isa::vex-prefixes->byte0$inline)
 (def-constant-opener x86isa::vex-prefixes->byte1$inline)
@@ -234,8 +241,25 @@
 (def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
 (def-constant-opener x86isa::vex-prefixes-map-p$inline)
 (def-constant-opener x86isa::prefixes->rep$inline)
-(def-constant-opener x86isa::vex3-byte1->m-mmmm$inline)
+
+(def-constant-opener x86isa::vex->vvvv$inline)
+(def-constant-opener x86isa::vex->l$inline)
+(def-constant-opener x86isa::vex->pp$inline)
+(def-constant-opener x86isa::vex->w$inline)
+
+;; can we optimize these by avoiding introducing the fix?
 (def-constant-opener x86isa::vex3-byte1-fix$inline)
+(def-constant-opener x86isa::vex3-byte1->m-mmmm$inline)
+(def-constant-opener x86isa::vex3-byte1->b$inline)
+(def-constant-opener x86isa::vex3-byte1->x$inline)
+(def-constant-opener x86isa::vex3-byte1->r$inline)
+
+(def-constant-opener x86isa::vex3-byte2-fix$inline)
+(def-constant-opener x86isa::vex3-byte2->pp$inline)
+(def-constant-opener x86isa::vex3-byte2->l$inline)
+(def-constant-opener x86isa::vex3-byte2->vvvv$inline)
+(def-constant-opener x86isa::vex3-byte2->w$inline)
+
 
 (def-constant-opener acl2::bool->bit$inline)
 
@@ -306,11 +330,6 @@
            (equal (run-until-stack-shorter-than old-rsp x86)
                   (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-opener))))
-
-(def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
-(def-constant-opener X86ISA::!PREFIXES->REP$inline)
-(def-constant-opener X86ISA::PREFIXES->REP$INLINE)
-(def-constant-opener x86isa::!prefixes->seg$inline)
 
 ;; probably only needed for axe
 (defthmd integerp-of-ctri

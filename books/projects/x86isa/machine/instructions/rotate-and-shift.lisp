@@ -460,7 +460,7 @@
        (vex.r (vex3-byte1->r vex-byte1))
        (vex.x (vex3-byte1->x vex-byte1))
        (vex.b (vex3-byte1->b vex-byte1))
-       (rex-byte (+ #b10000 ; 40h-4Fh
+       (rex-byte (+ #x40 ; 40h-4Fh
                     (if (= vex.w 0) 0 #b1000)
                     (if (= vex.r 1) 0 #b0100)
                     (if (= vex.x 1) 0 #b0010)
@@ -538,10 +538,13 @@
        ;; (not an opcode extension).
        ;; So we store the result into that register.
        (x86 (!rgfi-size operand-size
-                        (reg-index reg rex-byte #.*w*)
+                        (reg-index reg rex-byte #.*r*)
                         result
                         rex-byte
-                        x86)))
+                        x86))
+
+       ;; Update the program counter.
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86)
 
