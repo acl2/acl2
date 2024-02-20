@@ -456,8 +456,8 @@
        ;; Note that the R, X, B bits are encoded negated,
        ;; while the W is encoded directly (not negated).
        (vex.w (vex->w vex-prefixes))
+       (vex.r (vex->r vex-prefixes))
        (vex-byte1 (vex-prefixes->byte1 vex-prefixes))
-       (vex.r (vex3-byte1->r vex-byte1))
        (vex.x (vex3-byte1->x vex-byte1))
        (vex.b (vex3-byte1->b vex-byte1))
        (rex-byte (+ #x40 ; 40h-4Fh

@@ -282,6 +282,20 @@
        (vex3-byte2->pp (vex-prefixes->byte2 vex-prefixes)))
       (otherwise -1)))
 
+  (define vex->r ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+    :short "Get the @('R') field of @('vex-prefixes'); cognizant of the two- or
+    three-byte VEX prefixes form"
+    :guard (vex-prefixes-byte0-p vex-prefixes)
+    :returns (r (unsigned-byte-p 1 r)
+                :hyp (vex-prefixes-byte0-p vex-prefixes)
+                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex2-byte0*
+       (vex2-byte1->r (vex-prefixes->byte1 vex-prefixes)))
+      (#.*vex3-byte0*
+       (vex3-byte1->r (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise -1)))
+
   (define vex->w ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('W') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
