@@ -46,6 +46,7 @@
 (include-book "bv-list-rules-axe")
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
+(include-book "bv-intro-rules")
 (include-book "cars-increasing-by-1")
 (include-book "check-equivs")
 (include-book "concretize-with-contexts")

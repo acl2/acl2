@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -821,82 +821,18 @@
                   (bitor y (bitor x z))))
   :hints (("Goal" :use (:instance bitor-commutative-2))))
 
+;not a bv rule
 (defthmd +-commutative-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'binary-+ x y dag-array))
            (equal (+ x y)
                   (+ y x))))
 
+;not a bv rule
 (defthmd +-commutative-2-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'binary-+ x y dag-array))
            (equal (+ x (+ y z))
                   (+ y (+ x z))))
   :hints (("Goal" :in-theory (enable))))
-
-(defthmd if-becomes-bvif-1-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
-           (equal (if test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
-
-(defthmd if-becomes-bvif-2-axe
-  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y))
-           (equal (if test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif unsigned-byte-p-forced))))
-
-(defthmd if-becomes-bvif-3-axe
-  (implies (and (unsigned-byte-p ysize y) ; ysize is a free variable
-                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x))
-           (equal (if test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif unsigned-byte-p-forced))))
-
-(defthmd if-becomes-bvif-4-axe
-  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
-                (unsigned-byte-p ysize y) ; ysize is a free variable
-                )
-           (equal (if test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif))))
-
-(defthmd myif-becomes-bvif-1-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
-           (equal (myif test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
-
-(defthmd myif-becomes-bvif-2-axe
-  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y))
-           (equal (myif test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
-
-(defthmd myif-becomes-bvif-3-axe
-  (implies (and (unsigned-byte-p ysize y) ; ysize is a free variable
-                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x))
-           (equal (myif test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
-
-(defthmd myif-becomes-bvif-4-axe
-  (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
-                (unsigned-byte-p ysize y) ; ysize is a free variable
-                )
-           (equal (myif test x y)
-                  (bvif (max xsize ysize) test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthmd slice-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -906,39 +842,6 @@
            (equal (slice high low x)
                   0))
   :hints (("Goal" :in-theory (enable slice-too-high-is-0 unsigned-byte-p-forced))))
-
-;
-; converting < to bvlt :
-;
-
-;cheap
-(defthmd <-becomes-bvlt-axe-both
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
-           (equal (< x y)
-                  (bvlt (max xsize ysize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance <-becomes-bvlt (k x) (x y)  (free (max xsize ysize))))))
-
-;cheap
-(defthmd <-becomes-bvlt-axe-2
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p freeysize y)
-                (unsigned-byte-p-forced xsize x))
-           (equal (< x y)
-                  (bvlt (max xsize freeysize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvlt))))
-
-;cheap
-(defthmd <-becomes-bvlt-axe-3
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize axe-array) '(ysize))
-                (unsigned-byte-p freexsize x)
-                (unsigned-byte-p-forced ysize y))
-           (equal (< x y)
-                  (bvlt (max freexsize ysize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvlt))))
 
 ;fixme what if there are assumptions of usb for x and/or y
 ;gen the 32
@@ -994,50 +897,6 @@
                   nil))
   :rule-classes nil ; because of xsize
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-;fixme more rules like this?
-(defthmd mod-becomes-bvmod
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y)
-                (unsigned-byte-p ysize x) ;new..
-                )
-           (equal (mod x y)
-                  (bvmod ysize x y)))
-  :hints (("Goal" :in-theory (enable mod-becomes-bvmod-core unsigned-byte-p-forced))))
-
-(defthmd mod-becomes-bvmod-better-dag
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
-           (equal (mod x y)
-                  (bvmod (max xsize ysize) x y)))
-  :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
-
-(defthmd mod-becomes-bvmod-better-bind-free-and-free
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p ysize y)) ;ysize is a freevar
-           (equal (mod x y)
-                  (bvmod (max xsize ysize) x y)))
-  :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
-
-(defthmd mod-becomes-bvmod-better-free-and-bind-free
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced ysize y)
-                (unsigned-byte-p xsize x)) ;xsize is a freevar
-           (equal (mod x y)
-                  (bvmod (max xsize ysize) x y)))
-  :hints (("Goal"
-           :use (:instance mod-becomes-bvmod-core (size (max xsize ysize)))
-           :in-theory (enable ;mod-becomes-bvmod-core
-                       unsigned-byte-p-forced))))
 
 ;a cheap case of logext-identity
 (defthmd logext-identity-when-usb-smaller-dag
@@ -1262,22 +1121,6 @@
                 (unsigned-byte-p-forced xsize x))
            (not (equal nil x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-
-
-;drop? rename?
-(defthmd logtail-becomes-slice-dag
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'newsize dag-array) '(newsize))
-                (<= n newsize) ;drop?
-                (integerp newsize)
-                (unsigned-byte-p-forced newsize x) ;switched to usb-forced? (also elsewhere!)
-                (integerp x) ;drop
-                (natp n))
-           (equal (LOGTAIL N X)
-                  (slice (+ -1 newsize) n x)))
-  :hints (("Goal" :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE)
-           :in-theory (e/d (unsigned-byte-p-forced)(LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
-
 
 (defthmd bvcat-blast-low
   (implies (and (syntaxp (not (quotep lowval))) ;prevents loops ;Fri Mar  4 20:18:21 2011
@@ -1634,16 +1477,6 @@
                 (unsigned-byte-p-forced xsize x))
            (< k x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthmd *-becomes-bvmult-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'n dag-array) '(n))
-                (axe-bind-free (bind-bv-size-axe y 'm dag-array) '(m))
-                (unsigned-byte-p-forced n x)
-                (unsigned-byte-p-forced m y))
-           (equal (* x y)
-                  (bvmult (+ m n) x y)))
-  :hints (("Goal" :use (:instance *-becomes-bvmult-non-dag)
-           :in-theory (disable *-becomes-bvmult-non-dag))))
 
 (defthmd bvplus-tighten-better
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -2155,17 +1988,6 @@
                   (bvmod (+ -1 size) x y)))
   :hints (("Goal" :use (:instance sbvrem-when-positive)
            :in-theory (disable sbvrem-when-positive))))
-
-
-
-(defthmd logxor-becomes-bvxor-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p xsize x)
-                (unsigned-byte-p ysize y))
-           (equal (logxor x y)
-                  (bvxor (max xsize ysize) x y)))
-  :hints (("Goal" :in-theory (enable bvxor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
