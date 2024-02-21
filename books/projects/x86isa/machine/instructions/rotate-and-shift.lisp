@@ -457,9 +457,8 @@
        ;; while the W is encoded directly (not negated).
        (vex.w (vex->w vex-prefixes))
        (vex.r (vex->r vex-prefixes))
-       (vex-byte1 (vex-prefixes->byte1 vex-prefixes))
-       (vex.x (vex3-byte1->x vex-byte1))
-       (vex.b (vex3-byte1->b vex-byte1))
+       (vex.x (vex->x vex-prefixes))
+       (vex.b (vex->b vex-prefixes))
        (rex-byte (+ #x40 ; 40h-4Fh
                     (if (= vex.w 0) 0 #b1000)
                     (if (= vex.r 1) 0 #b0100)
