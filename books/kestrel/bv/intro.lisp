@@ -155,7 +155,7 @@
 ;; logapp does not indicate the size of the high bits, so we have to try to
 ;; figure it out.
 (defthmd logapp-becomes-bvcat-when-bv
-  (implies (and (bind-free (acl2::bind-var-to-bv-term-size 'jsize j) (jsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'jsize j) (jsize))
                 (unsigned-byte-p-forced jsize j))
            (equal (logapp size i j)
                   (bvcat jsize j size i)))
