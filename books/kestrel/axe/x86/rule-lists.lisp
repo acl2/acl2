@@ -113,9 +113,28 @@
             x86isa::gpr-add-spec-4$inline
             x86isa::gpr-add-spec-8$inline
 
+            x86isa::div-spec$inline ; just a dispatch on the size
+            ;; These recharacterize divide in terms of bvops:
+            x86isa::mv-nth-0-of-div-spec-8
+            x86isa::mv-nth-1-of-div-spec-8
+            x86isa::mv-nth-2-of-div-spec-8
+            x86isa::mv-nth-0-of-div-spec-16
+            x86isa::mv-nth-1-of-div-spec-16
+            x86isa::mv-nth-2-of-div-spec-16
+            x86isa::mv-nth-0-of-div-spec-32
+            x86isa::mv-nth-1-of-div-spec-32
+            x86isa::mv-nth-2-of-div-spec-32
+            x86isa::mv-nth-0-of-div-spec-64
+            x86isa::mv-nth-1-of-div-spec-64
+            x86isa::mv-nth-2-of-div-spec-64
+
             x86isa::idiv-spec$inline
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
             x86isa::idiv-spec-64-trim-arg1-axe-all
+            x86isa::mv-nth-0-of-idiv-spec-32 ; more?
+            x86isa::mv-nth-1-of-idiv-spec-32
+            x86isa::mv-nth-0-of-idiv-spec-64
+            x86isa::mv-nth-1-of-idiv-spec-64
 
             x86isa::shrx-spec$inline         ; just a dispatch
             x86isa::shlx-spec$inline         ; just a dispatch
@@ -135,20 +154,7 @@
             x86isa::sar-spec-16-redef
             x86isa::sar-spec-32-redef
             x86isa::sar-spec-64-redef
-
-            ;; These recharacterize divide in terms of bvops:
-            x86isa::mv-nth-0-of-div-spec-8
-            x86isa::mv-nth-1-of-div-spec-8
-            x86isa::mv-nth-2-of-div-spec-8
-            x86isa::mv-nth-0-of-div-spec-16
-            x86isa::mv-nth-1-of-div-spec-16
-            x86isa::mv-nth-2-of-div-spec-16
-            x86isa::mv-nth-0-of-div-spec-32
-            x86isa::mv-nth-1-of-div-spec-32
-            x86isa::mv-nth-2-of-div-spec-32
-            x86isa::mv-nth-0-of-div-spec-64
-            x86isa::mv-nth-1-of-div-spec-64
-            x86isa::mv-nth-2-of-div-spec-64)
+            )
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
@@ -1732,7 +1738,10 @@
 
             cr0bits->ts-of-bvchop
             cr0bits->em-of-bvchop
-            cr4bits->OSFXSR-of-bvchop)))
+            cr4bits->OSFXSR-of-bvchop
+
+            x86isa::chk-exc-fn ; for floating point and/or avx/vex?
+            )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
@@ -4014,7 +4023,6 @@
             ;; ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP
             ACL2::EQUAL-OF-IF-ARG1-WHEN-QUOTEP
             ACL2::EQUAL-OF-IF-ARG2-WHEN-QUOTEP
-            eq
             X86ISA::SSE-CMP-SPECIAL ; scary
             X86ISA::FP-DECODE-CONSTANT-OPENER
             X86ISA::FP-to-rat-CONSTANT-OPENER
@@ -4060,7 +4068,7 @@
             ACL2::BVCHOP-OF-MYIF
             XR-OF-IF ;restrict?
             ;ACL2::SLICE-OUT-OF-ORDER
-            X86ISA::DIV-SPEC$inline ; just a dispatch on the size
+
             ;ACL2::BVCAT-OF-0-arg2
             bvmod-tighten-64-32
             bvdiv-tighten-64-32
@@ -4093,7 +4101,7 @@
             of-spec64-of-logext-64
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
-            X86ISA::CHK-EXC-FN ; for floating point?
+
             ;eql
 
             X86ISA::XMMI-SIZE$inline ;trying
@@ -4130,10 +4138,7 @@
             ACL2::BVLT-OF-BVPLUS-1-CANCEL-ALT ; optional
             ;X86ISA::IDIV-SPEC-32 ; trying
             ACL2::BVCHOP-WHEN-SIZE-IS-NOT-POSP
-            mv-nth-0-of-idiv-spec-32
-            mv-nth-1-of-idiv-spec-32
-            mv-nth-0-of-idiv-spec-64
-            mv-nth-1-of-idiv-spec-64
+
             acl2::bvcat-of-if-arg2
             acl2::bvcat-of-if-arg4
             ACL2::BVIF-OF-0-ARG1

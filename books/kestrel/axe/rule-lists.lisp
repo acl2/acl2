@@ -187,6 +187,7 @@
             acl2-numberp-of-fix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
+            eq ; introduces EQUAL
 
             double-rewrite
             return-last
@@ -954,8 +955,7 @@
      getbit-of-bitand-all-cases ;covered by the too-high and identity rules if n is a constant
      ;; getbit-of-bvchop-too-high ; covered by getbit-too-high-is-0-bind-free-axe
 
-
-     slice-out-of-order ;trying the real version
+     slice-out-of-order
      slice-too-high-is-0-bind-free-axe
      ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
