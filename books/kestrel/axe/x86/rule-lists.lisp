@@ -4032,9 +4032,9 @@
             x86isa::ctri-of-if
             ;; feature-flag-of-if
             read-of-if
-            bvle
-            ACL2::INTEGERP-OF-BVPLUS ;todo: more
-            ACL2::INTEGERP-OF-BVCHOP
+            ;bvle
+            ;ACL2::INTEGERP-OF-BVPLUS ;todo: more
+            ;ACL2::INTEGERP-OF-BVCHOP
 
             ;zf-spec$inline     ; needed for unsigned_add_associates -- but does this ruin rules about jle-condition? zf-spec seems to be used in more things that just the conditional branches?
 
@@ -4056,12 +4056,12 @@
 ;            bvxor-of-logxor-arg2                      ; introduce bvxor
             integerp-of-logxor                        ;todo: more
             acl2::unsigned-byte-p-of-if
-            acl2::unsigned-byte-p-of-bvplus ;todo: more
+            ;acl2::unsigned-byte-p-of-bvplus ;todo: more
             ACL2::BVCHOP-OF-MYIF
             XR-OF-IF ;restrict?
-            ACL2::SLICE-OUT-OF-ORDER
+            ;ACL2::SLICE-OUT-OF-ORDER
             X86ISA::DIV-SPEC$inline ; just a dispatch on the size
-            ACL2::BVCAT-OF-0-arg2
+            ;ACL2::BVCAT-OF-0-arg2
             bvmod-tighten-64-32
             bvdiv-tighten-64-32
             not-bvlt-of-max-when-unsiged-byte-p
@@ -4073,17 +4073,17 @@
             jnl-condition-rewrite-16
             jnl-condition-rewrite-16b
             bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
-            ACL2::BVSX-WHEN-SIZES-MATCH
+            ;ACL2::BVSX-WHEN-SIZES-MATCH
             ACL2::BVCHOP-OF-BVSX
-            ACL2::BVCHOP-OF-BVCHOP
-            ACL2::BVPLUS-OF-BVCHOP-ARG2
+            ;ACL2::BVCHOP-OF-BVCHOP
+            ;ACL2::BVPLUS-OF-BVCHOP-ARG2
             bvchop-of-zf-spec
             logext-of-zf-spec
             integerp-of-zf-spec
-            sbvle ; expand to sbvlt
-            ACL2::SBVLT-OF-BVCHOP-ARG2
-            ACL2::BVUMINUS-OF-BVUMINUS
-            ACL2::BVPLUS-OF-BVUMINUS-SAME
+            ;sbvle ; expand to sbvlt
+            ;ACL2::SBVLT-OF-BVCHOP-ARG2
+            ;ACL2::BVUMINUS-OF-BVUMINUS
+            ;ACL2::BVPLUS-OF-BVUMINUS-SAME
             ACL2::BVCHOP-NUMERIC-BOUND
             ;;acl2::bvuminus-of-bvsx-low ; todo: other cases? todo: push back
             SF-SPEC64-of-bvchop-64
@@ -4094,7 +4094,7 @@
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
             X86ISA::CHK-EXC-FN ; for floating point?
-            eql
+            ;eql
 
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
@@ -4137,7 +4137,7 @@
             acl2::bvcat-of-if-arg2
             acl2::bvcat-of-if-arg4
             ACL2::BVIF-OF-0-ARG1
-            ACL2::BVPLUS-WHEN-SIZE-IS-NOT-POSITIVE ; todo: more like this, make a rule-list
+            ;ACL2::BVPLUS-WHEN-SIZE-IS-NOT-POSITIVE ; todo: more like this, make a rule-list
             x86isa::X86-CWD/CDQ/CQO-alt-def
             acl2::bvcat-of-slice-of-bvsx-same
             not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
@@ -4147,11 +4147,11 @@
             ACL2::BVPLUS-COMMUTATIVE-2-INCREASING-AXE
             ;;acl2::equal-same
             ;; bvcat-of-minus-becomes-bvshl ; except STP doesn't support the shift operators
-            acl2::<-lemma-for-known-operators-axe
-            acl2::bvlt-of-bvchop-arg2
-            acl2::bvlt-of-bvchop-arg3
-            acl2::sbvlt-of-bvchop-arg2
-            acl2::sbvlt-of-bvchop-arg3
+            ;acl2::<-lemma-for-known-operators-axe
+            ;acl2::bvlt-of-bvchop-arg2
+            ;acl2::bvlt-of-bvchop-arg3
+            ;acl2::sbvlt-of-bvchop-arg2
+            ;acl2::sbvlt-of-bvchop-arg3
             ;; todo: more like this?:
             X86ISA::RFLAGSBITS->CF$inline-of-if
             X86ISA::RFLAGSBITS->PF$inline-of-if
@@ -4159,12 +4159,12 @@
             X86ISA::RFLAGSBITS->SF$inline-of-if
             X86ISA::RFLAGSBITS->ZF$inline-of-if
             X86ISA::RFLAGSBITS->AF$inline-of-if
-            acl2::bvand-of-bvchop-1 ;rename
-            acl2::bvand-of-bvchop-2 ;rename
+            ;acl2::bvand-of-bvchop-1 ;rename
+            ;acl2::bvand-of-bvchop-2 ;rename
             ACL2::BVCHOP-OF-MINUS-BECOMES-BVUMINUS ; todo: or re-characterize the subl instruction
             ACL2::BVPLUS-OF-PLUS-ARG2 ; todo: drop once we characterize long negation?
             ACL2::BVPLUS-OF-PLUS-ARG3 ; todo: drop once we characterize long negation?
-            acl2::integerp-when-unsigned-byte-p-free ; needed for the BVPLUS-OF-PLUS rules.
+            ;acl2::integerp-when-unsigned-byte-p-free ; needed for the BVPLUS-OF-PLUS rules.
             ACL2::BVUMINUS-OF-+
             X86ISA::INTEGERP-OF-XR-RGF
             ACL2::NATP-OF-+-OF-- ; trying, or simplify (NATP (BINARY-+ '32 (UNARY-- (BVCHOP '5 x))))
@@ -4185,7 +4185,7 @@
             bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
             read-1-of-write-4
-            read-1-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
+            ;read-1-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
             read-1-of-write-within-new
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
