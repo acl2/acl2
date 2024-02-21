@@ -77,20 +77,11 @@
          (bvplus '48 (bvplus '48 x y) z))
   :hints (("Goal" :in-theory (e/d (bvplus) (acl2::bvplus-recollapse)))))
 
-
 (defthm bvplus-combine-constants-hack
   (implies (and (integerp x)
                 (integerp y))
            (equal (bvplus 48 (+ 1 x) (+ -1 y))
                   (bvplus 48 x y)))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-;rename, or drop
-(defthm bvuminus-of-+
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvuminus 48 (+ x y))
-                  (bvuminus 48 (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
 (theory-invariant (incompatible (:rewrite acl2::bvminus-of-+-arg3) (:rewrite acl2::bvchop-of-sum-cases)))
@@ -2239,7 +2230,8 @@
                          (* 8 (bvminus 48 addr1 addr2))
                          val)))
   :hints (("Goal" :induct (write n addr2 val x86)
-           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases))))
+           :in-theory (enable read write bvminus bvlt acl2::bvchop-of-sum-cases
+                              acl2::bvuminus-of-+))))
 
 ;; todo: gen the 1?
 (defthm read-1-of-write-both

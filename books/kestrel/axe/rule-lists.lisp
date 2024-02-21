@@ -188,6 +188,7 @@
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
+            /= ; "not equal"
 
             double-rewrite
             return-last

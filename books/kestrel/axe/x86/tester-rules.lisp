@@ -219,7 +219,7 @@
 
 ;; or commute the 1 forward first
 ;; or use the fact that 1 is a mask of all 1s
-(defthm logand-of-1-arg2
+(defthm logand-of-1-becomes-getbit-arg2
   (equal (logand x 1)
          (getbit 0 x))
   :hints (("Goal" :cases ((integerp x)))))

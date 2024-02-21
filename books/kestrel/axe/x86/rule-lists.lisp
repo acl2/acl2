@@ -311,7 +311,6 @@
     x86isa::rflagsbits$inline-constant-opener
     x86isa::10bits-fix-constant-opener
     x86isa::2bits-fix-constant-opener
-    acl2::logapp-constant-opener
     acl2::expt2$inline-constant-opener
 
     x86isa::!rflagsbits->af$inline-constant-opener
@@ -705,6 +704,8 @@
     acl2::integerp-of--))
 
 ;; Rules to introduce our BV operators (todo: move these):
+;rename bv-intro-rules-logops?
+;move?  maybe only needed for x86 (for now?)
 (defund logops-to-bv-rules ()
   (declare (xargs :guard t))
   '(acl2::logand-becomes-bvand-arg1-axe
@@ -716,6 +717,7 @@
     acl2::bvchop-of-logand-becomes-bvand
     acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
+    acl2::bvuminus-of-+
     ))
 
 ;; Rules to introduce our BV operators (todo: move these):
@@ -728,30 +730,36 @@
     acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
     acl2::part-install-width-low-becomes-bvcat-32))
 
+;; See also bitops-to-bv-rules.
+;; todo: add more constant openers
+(defund bitops-rules ()
+  (declare (xargs :guard t))
+  '(bitops::rotate-left-8$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-16$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-32$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-64$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-8$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-16$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-32$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-64$inline ; rewrites to the non-fast rotate
+    acl2::rotate-left-constant-opener
+    acl2::rotate-right-constant-opener))
+
+(defund logops-rules ()
+  (declare (xargs :guard t))
+  '(acl2::logapp-constant-opener
+    common-lisp::lognot-constant-opener
+    common-lisp::logcount-constant-opener))
+
 ;todo: classify these
 (defun x86-bv-rules ()
   (declare (xargs :guard t))
-  (append
-   (logops-to-bv-rules)
-   (bitops-to-bv-rules)
-  '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
+  '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     acl2::logext-of-bvplus-64 ;somewhat unusual
-    x86isa::n08-to-i08$inline ;this is just logext
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
-;    acl2::bvdiv-of-1-arg3
-    ;; acl2::bvdiv-of-bvchop-arg2-same
-    ;; acl2::bvdiv-of-bvchop-arg3-same
-
-    ;;todo: try core-runes-bv:
-    ;acl2::slice-of-slice-gen-better ;figure out which bv rules to include
-    ;acl2::bvcat-of-0-arg1
-    ;acl2::bvcat-of-0-arg3
-
-    bitops::rotate-left-32$inline-constant-opener ;todo: gen to a full rewrite
-    acl2::rotate-left-constant-opener
     acl2::logext-trim-arg-axe-all
 
     acl2::bvuminus-of-logext
@@ -761,7 +769,7 @@
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
     acl2::bvlt-of-bvplus-1-cancel
-    acl2::bvlt-of-bvplus-1-cancel-alt)))
+    acl2::bvlt-of-bvplus-1-cancel-alt))
 
 ;; ;not used?
 ;; (defun canonical-address-rules ()
@@ -1174,6 +1182,8 @@
           (get-prefixes-openers)
           (separate-rules)
           (x86-type-rules)
+          (logops-to-bv-rules)
+          (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
@@ -1183,9 +1193,10 @@
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           (float-rules)
           (acl2::core-rules-bv)
+          (bitops-rules)
+          (logops-rules)
           (if-lowering-rules)
-          '(
-            ;; Reading/writing registers (or parts of registers).  We leave
+          '(;; Reading/writing registers (or parts of registers).  We leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
             ;; to xr and xw.  Shilpi seems to do the same.
             x86isa::rr08$inline
@@ -1198,8 +1209,8 @@
             x86isa::wr64$inline
             x86isa::rgfi-size$inline ;dispatches to rr08, etc.
             x86isa::!rgfi-size$inline ; dispatches to wr08, etc.
-            x86isa::rgfi X86ISA::RGFI$A ;expose the call to xr
-            x86isa::!rgfi X86ISA::!RGFI$A ;expose the call to xw
+            x86isa::rgfi x86isa::rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            x86isa::!rgfi x86isa::!rgfi$a ;expose the call to xw ; todo: go directly to the right writer
 
             ;; Chopping operators (these are just bvchop):
             x86isa::n01$inline
@@ -1210,8 +1221,12 @@
             x86isa::n32$inline
             x86isa::n64$inline
 
-            ;; This is just logext:
+            ;; These are just logext:
+            x86isa::i08$inline
+            x86isa::i16$inline
+            x86isa::i32$inline
             x86isa::i64$inline
+            x86isa::i128$inline
 
             ;; These are just logext:
             x86isa::n08-to-i08$inline
@@ -1312,8 +1327,6 @@
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
             x86isa::one-byte-opcode-execute-base
-            eql ; move
-            = ; move
 
             acl2::binary-+-bring-constant-forward ;improve to disallow the other arg to be constant
 
@@ -1364,8 +1377,8 @@
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
-            acl2::fix-when-acl2-numberp
-            acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
+            ;acl2::fix-when-acl2-numberp
+            ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
             x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
             x86isa::rb-wb-disjoint-eric
@@ -1381,9 +1394,9 @@
 ;            assoc-list-of-rev-of-create-addr-bytes-alist
 ;            true-listp-of-byte-ify
             x86isa::no-duplicates-p-create-canonical-address-list
-            acl2::slice-becomes-bvchop
-            acl2::bvchop-of-bvchop
-            acl2::bvchop-of-bvplus
+            ;acl2::slice-becomes-bvchop
+            ;acl2::bvchop-of-bvchop
+            ;acl2::bvchop-of-bvplus
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
             acl2::open-ash-positive-constants
@@ -1400,17 +1413,15 @@
 
             x86isa::check-instruction-length$inline
 
-            acl2::bvchop-of-bvcat-cases
-            acl2::slice-becomes-getbit
-            acl2::getbit-of-bvcat-all
+            ;acl2::bvchop-of-bvcat-cases
+            ;acl2::slice-becomes-getbit
+            ;acl2::getbit-of-bvcat-all
             ;; x86isa::program-at-set-flag
             ;; x86isa::alignment-checking-enabled-p-and-set-flag
 
 ;            x86isa::rb-set-flag-in-app-view
             acl2::getbit-of-slice-both
 
-            acl2::bvplus-of-bvchop-arg2 ; drop, once we include core-rules-bv
-            acl2::bvplus-of-bvchop-arg3 ; drop, once we include core-rules-bv
 ;            x86isa::set-flag-and-wb-in-app-view ;shilpi leaves this enabled
 
             acl2::getbit-identity ;might be slow
@@ -1420,21 +1431,21 @@
 
             ;; stuff from the timessix example:
             acl2::bvchop-of-logext
-            acl2::getbit-of-bvchop
+            ;acl2::getbit-of-bvchop
 
             x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
-            x86isa::disjoint-p-nil-1
+            ;x86isa::disjoint-p-nil-1
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
 ; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             acl2::bvplus-of-logext-arg2
             acl2::bvplus-of-logext-arg3
-            acl2::bvplus-combine-constants
+            ;acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
 ;<-when-canonical-address-p
 
-            acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
+            ;acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
 
             x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
             x86isa::write-canonical-address-to-memory
@@ -1552,7 +1563,7 @@
             x86isa::wb-xw-in-app-view
 
             acl2::bvchop-of-*
-            acl2::bvchop-of-bvmult
+            ;acl2::bvchop-of-bvmult
             acl2::bvmult-of-logext-gen-arg1
             acl2::bvmult-of-logext-gen-arg2
             acl2::bvchop-of-ash
@@ -1586,7 +1597,7 @@
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
             ;; acl2::mv-nth-of-if ; also in if-lifting-rules
-            x86isa::canonical-address-p-of-if
+            ;x86isa::canonical-address-p-of-if
             read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
             read-in-terms-of-nth-and-pos-eric-8-bytes
@@ -1692,8 +1703,8 @@
             x86isa::address-aligned-p-of-8-and-nil
             x86isa::address-aligned-p-of-4-and-nil
 
-            acl2::bvplus-trim-leading-constant
-            acl2::bvplus-of-0-arg2
+            ;acl2::bvplus-trim-leading-constant
+            ;acl2::bvplus-of-0-arg2
             acl2::bvchop-subst-constant
             x86isa::byte-listp-becomes-all-unsigned-byte-p
             acl2::lnfix$inline
@@ -1701,8 +1712,7 @@
 
             x86isa::x86-operation-mode
             x86isa::alignment-checking-enabled-p-of-xw-irrel
-            acl2::slice-of-bvcat-gen
-            /= ;"not equal"
+            ;acl2::slice-of-bvcat-gen
 
             acl2::truncate-becomes-floor-gen ;it might be better to avoid explosing truncate in the first place
 
@@ -1710,7 +1720,7 @@
             acl2::<-of-constant-when-<=-of-constant-integer
             acl2::bvplus-of-+-combine-constants
 
-            common-lisp::logcount-constant-opener ; for flags
+            ;common-lisp::logcount-constant-opener ; for flags
             common-lisp::evenp-constant-opener ; appears in parity flag
             acl2::nonnegative-integer-quotient-constant-opener ; appears in parity flag
             acl2::zip-constant-opener ; for flags
@@ -4057,7 +4067,7 @@
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
 
-            logand-of-1-arg2
+            logand-of-1-becomes-getbit-arg2 ;move
             acl2::ifix-does-nothing
             of-spec-of-logext-32
             ACL2::LOGXOR-BVCHOP-BVCHOP        ; introduce bvxor
@@ -4172,7 +4182,6 @@
             ACL2::BVPLUS-OF-PLUS-ARG2 ; todo: drop once we characterize long negation?
             ACL2::BVPLUS-OF-PLUS-ARG3 ; todo: drop once we characterize long negation?
             ;acl2::integerp-when-unsigned-byte-p-free ; needed for the BVPLUS-OF-PLUS rules.
-            ACL2::BVUMINUS-OF-+
             X86ISA::INTEGERP-OF-XR-RGF
             ACL2::NATP-OF-+-OF-- ; trying, or simplify (NATP (BINARY-+ '32 (UNARY-- (BVCHOP '5 x))))
             min ; why is min arising?  or add min-same
