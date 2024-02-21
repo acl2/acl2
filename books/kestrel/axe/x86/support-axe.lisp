@@ -259,6 +259,8 @@
 (def-constant-opener x86isa::vex->pp$inline)
 (def-constant-opener x86isa::vex->r$inline)
 (def-constant-opener x86isa::vex->w$inline)
+(def-constant-opener x86isa::vex->b$inline)
+(def-constant-opener x86isa::vex->x$inline)
 
 ;; can we optimize these by avoiding introducing the fix?
 (def-constant-opener x86isa::vex3-byte1-fix$inline)

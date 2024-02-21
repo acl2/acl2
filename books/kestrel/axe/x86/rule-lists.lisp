@@ -551,6 +551,8 @@
     x86isa::vex->pp$inline-constant-opener
     x86isa::vex->r$inline-constant-opener
     x86isa::vex->w$inline-constant-opener
+    x86isa::vex->b$inline-constant-opener
+    x86isa::vex->x$inline-constant-opener
 
     x86isa::vex-prefixes-fix$inline-constant-opener
     x86isa::vex-prefixes->byte0$inline-constant-opener
