@@ -178,6 +178,7 @@
 (include-book "if-becomes-bvif-rules")
 
 (include-book "intro")
+(include-book "bitops")
 
 (include-book "validation-stp")
 (include-book "validation-smt-lib")

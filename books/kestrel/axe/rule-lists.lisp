@@ -145,7 +145,7 @@
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
-  '(mv-nth-of-cons-alt ; since mv expands to cons
+  '(mv-nth-of-cons-safe ; since mv expands to cons
     mv-nth-of-myif))
 
 (defun base-rules ()
@@ -1820,7 +1820,7 @@
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
-            ;; logtail-becomes-slice-dag       ;drop?
+            ;; logtail-becomes-slice-bind-free-axe       ;drop?
 
             bvmult-of-2-gen
 ;trying these:
@@ -2663,7 +2663,7 @@
 ;;   (declare (xargs :guard t))
 ;;   '(equal-same
 ;;     nth-of-cons-constant-version
-;;     mv-nth-of-cons-alt))
+;;     mv-nth-of-cons-safe))
 
 (defun reassemble-bv-rules ()
   (declare (xargs :guard t))
@@ -3872,7 +3872,7 @@
 (set-axe-rule-priority bitxor-associative -10)
 
 (set-axe-rule-priority nth-of-cons-constant-version -1) ;this hits a lot in some proofs, so let's check it first
-(set-axe-rule-priority mv-nth-of-cons-alt -1)
+(set-axe-rule-priority mv-nth-of-cons-safe -1)
 
 ;bit-blasting should be the last thing we try (otherwise we may try to bit-blast (bvchop 8 <bit-blasted-8-bit-thing>)
 (set-axe-rule-priority bvchop-blast 10)

@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 
 ;; TODO: Make sure there are non-axe versions of all of these.
 
-(include-book "kestrel/x86/bitops" :dir :system) ; needed for part-install-width-low-becomes-bvcat-axe
+(include-book "kestrel/bv/bitops" :dir :system) ; needed for part-install-width-low-becomes-bvcat-axe
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
@@ -59,10 +59,11 @@
 (add-known-boolean eff-addr-okp)
 (add-known-boolean segments-separate)
 
-(add-known-boolean bitp)
 (add-known-boolean return-address-okp)
 
-(defthmd part-install-width-low-becomes-bvcat-axe
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd acl2::part-install-width-low-becomes-bvcat-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)
                 (unsigned-byte-p xsize x)
                 (natp xsize)              ;drop?
@@ -87,40 +88,12 @@
                   (slice (+ -1 xsize) (- n) x)))
   :hints (("Goal" :use (:instance acl2::ash-negative-becomes-slice (acl2::x x) (acl2::n n) (acl2::xsize xsize)))))
 
-(defthmd logand-becomes-bvand-axe-arg1-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
-                (natp y))
-           (equal (logand x y)
-                  (bvand xsize x y)))
-  :hints (("Goal" :use (:instance acl2::LOGAND-BECOMES-BVAND (size xsize) (acl2::y y))
-           :in-theory (disable acl2::LOGAND-BECOMES-BVAND))))
-
-(defthmd logand-becomes-bvand-axe-arg2-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
-                (natp y))
-           (equal (logand y x)
-                  (bvand xsize y x)))
-  :hints (("Goal":use (:instance acl2::LOGAND-BECOMES-BVAND (size xsize) (acl2::y y))
-           :in-theory (disable acl2::LOGAND-BECOMES-BVAND))))
-
-;move this and similar stuff?
-(defthmd logior-becomes-bvor-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
-                (unsigned-byte-p xsize x)
-                (unsigned-byte-p ysize y))
-           (equal (logior x y)
-                  (bvor (max xsize ysize) x y)))
-  :hints (("Goal" :in-theory (enable bvor))))
-
 ;todo: move
-(defthm not-member-p-canonical-address-listp-when-disjoint-p-alt
-  (implies (and (disjoint-p (create-canonical-address-list m addr) ;this hyp is commuted
-                            (create-canonical-address-list n prog-addr))
-                (member-p e (create-canonical-address-list m addr)))
-           (not (member-p e (create-canonical-address-list n prog-addr)))))
+;; (defthm not-member-p-canonical-address-listp-when-disjoint-p-alt
+;;   (implies (and (disjoint-p (create-canonical-address-list m addr) ;this hyp is commuted
+;;                             (create-canonical-address-list n prog-addr))
+;;                 (member-p e (create-canonical-address-list m addr)))
+;;            (not (member-p e (create-canonical-address-list n prog-addr)))))
 
 ;We'll use aref1-rewrite to handle the aref1s.
 (defthmd aref1-rewrite ;for axe
@@ -220,6 +193,45 @@
 (def-constant-opener x86isa::!rflagsbits->sf$inline)
 (def-constant-opener x86isa::!rflagsbits->zf$inline)
 
+(acl2::def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
+(acl2::def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
+
+(acl2::def-constant-opener x86isa::rflagsbits->ac$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->af$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->cf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->of$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->pf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->sf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->zf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res1$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res2$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res3$inline)
+
+(acl2::def-constant-opener x86isa::rflagsbits->tf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->intf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->df$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->iopl$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->nt$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res4$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->rf$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vm$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vif$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->vip$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->id$inline)
+(acl2::def-constant-opener x86isa::rflagsbits->res5$inline)
+(acl2::def-constant-opener x86isa::rflagsbits$inline)
+
+(acl2::def-constant-opener x86isa::!rflagsbits->af$inline)
+
+(acl2::def-constant-opener x86isa::10bits-fix)
+(acl2::def-constant-opener x86isa::2bits-fix)
+(acl2::def-constant-opener logapp)
+(acl2::def-constant-opener acl2::expt2$inline)
+
+(acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+
+(acl2::def-constant-opener x86isa::feature-flags); needed?
+
 
 (def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
 (def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
@@ -245,6 +257,7 @@
 (def-constant-opener x86isa::vex->vvvv$inline)
 (def-constant-opener x86isa::vex->l$inline)
 (def-constant-opener x86isa::vex->pp$inline)
+(def-constant-opener x86isa::vex->r$inline)
 (def-constant-opener x86isa::vex->w$inline)
 
 ;; can we optimize these by avoiding introducing the fix?
@@ -260,7 +273,6 @@
 (def-constant-opener x86isa::vex3-byte2->vvvv$inline)
 (def-constant-opener x86isa::vex3-byte2->w$inline)
 
-
 (def-constant-opener acl2::bool->bit$inline)
 
 (def-constant-opener canonical-address-p$inline)
@@ -268,6 +280,9 @@
 ;(defopeners byte-ify :hyps ((syntaxp (and (quotep n) (quotep val)))))
 
 (def-constant-opener byte-listp)
+
+(def-constant-opener bitops::rotate-left-32$inline) ; todo: more, or rewrite away
+(def-constant-opener acl2::rotate-left)
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
@@ -283,10 +298,6 @@
 ;;  (equal (bitops::rotate-left-32 x places)
 ;;         (acl2::leftrotate32 places x))
 ;;  :hints (("Goal" :in-theory (enable bitops::rotate-left-32 ACL2::ROTATE-LEFT acl2::leftrotate32 acl2::leftrotate))))
-
-(def-constant-opener bitops::rotate-left-32$inline)
-
-(def-constant-opener acl2::rotate-left)
 
 (defthm set-flag-of-set-flag-diff-axe
   (implies (and (syntaxp (and (quotep flag1)

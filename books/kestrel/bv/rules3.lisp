@@ -2589,9 +2589,9 @@
          (not (equal 0 (bvchop size y))))
   :hints (("Goal" :in-theory (enable bvlt bvmod))))
 
-(defthmd *-becomes-bvmult-non-dag
-  (implies (and (unsigned-byte-p-forced n x)
-                (unsigned-byte-p-forced m y))
+(defthmd *-becomes-bvmult
+  (implies (and (unsigned-byte-p n x)
+                (unsigned-byte-p m y))
            (equal (* x y)
                   (bvmult (+ m n) x y)))
   :hints (("Goal"

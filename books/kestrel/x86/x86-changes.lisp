@@ -31,6 +31,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
+(local (include-book "kestrel/bv/intro" :dir :system))
 ;(local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ;reduce, for loghead-becomes-bvchop
 (local (include-book "kestrel/bv/rules" :dir :system))
@@ -2714,3 +2715,43 @@
                                   (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm shlx-spec-32-redef
+  (equal (x86isa::shlx-spec-32 src cnt)
+         (acl2::bvshl 32 src (acl2::bvchop 6 cnt))) ; could change the model to chop to 5 bits
+  :hints (("Goal" :in-theory (enable x86isa::shlx-spec-32 acl2::bvshl))))
+
+(defthm shlx-spec-64-redef
+  (equal (x86isa::shlx-spec-64 src cnt)
+         (acl2::bvshl 64 src (acl2::bvchop 6 cnt)))
+  :hints (("Goal" :in-theory (enable x86isa::shlx-spec-64 acl2::bvshl))))
+
+(defthm shrx-spec-32-redef
+  (equal (x86isa::shrx-spec-32 src cnt)
+         (acl2::bvshr 32 src (acl2::bvchop 6 cnt))) ; could change the model to chop to 5 bits
+  :hints (("Goal" :in-theory (enable x86isa::shrx-spec-32 acl2::bvshr acl2::logtail-of-bvchop-becomes-slice))))
+
+(defthm shrx-spec-64-redef
+  (equal (x86isa::shrx-spec-64 src cnt)
+         (acl2::bvshr 64 src (acl2::bvchop 6 cnt)))
+  :hints (("Goal" :in-theory (enable x86isa::shrx-spec-64 acl2::bvshr acl2::logtail-of-bvchop-becomes-slice))))
+
+;;todo: redefining bvashr could make this nicer
+;; or could change the model to chop CNT to 5 bits, since the caller already does that
+(defthm sarx-spec-32-redef
+  (equal (x86isa::sarx-spec-32 src cnt)
+         (if (< (acl2::bvchop 6 cnt) 32) ; should always be true, since the caller chops it
+             (acl2::bvashr 32 src (acl2::bvchop 6 cnt))
+           (if (equal (acl2::getbit 31 src) 0)
+               0
+             4294967295)))
+  :hints (("Goal" :in-theory (enable x86isa::sarx-spec-32 acl2::bvashr acl2::bvshr acl2::bvsx
+                                     acl2::logtail-of-bvchop-becomes-slice
+                                     acl2::bvchop-of-logtail-becomes-slice))))
+
+(defthm sarx-spec-64-redef
+  (equal (x86isa::sarx-spec-64 src cnt)
+         (acl2::bvashr 64 src (acl2::bvchop 6 cnt)))
+  :hints (("Goal" :in-theory (enable x86isa::sarx-spec-64 acl2::bvashr acl2::bvshr acl2::bvsx
+                                     acl2::logtail-of-bvchop-becomes-slice
+                                     acl2::bvchop-of-logtail-becomes-slice))))

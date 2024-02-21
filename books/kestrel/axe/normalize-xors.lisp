@@ -69,9 +69,10 @@
                            NOT-<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-2
                            <=-OF-NTH-WHEN-ALL-<= ;disable globally?
                            rational-listp
-                           strip-cdrs)))
+                           strip-cdrs
 
-(local (in-theory (disable RATIONAL-LISTP MAXELEM))) ;prevent inductions
+                           RATIONAL-LISTP MAXELEM ;prevent inductions
+                           )))
 
 (local (in-theory (enable consp-of-cdr
                           nth-of-cdr
@@ -548,8 +549,7 @@
                 (let ((args (dargs expr)))
                   (if (not (= 2 (len args)))
                       (prog2$ (er hard? 'bitxor-nest-leaves-aux "bitxor with wrong number of args.")
-                              (mv (append pending-list acc)
-                                  accumulated-constant))
+                              (mv (append pending-list acc) accumulated-constant))
                     (let* ((left-child (first args))
                            (right-child (second args)))
                       ;; next check is for termination
@@ -677,8 +677,9 @@
 
 ;; KEEP IN SYNC WITH BVXOR-NEST-LEAVES
 ;nodenum is the root of a bitxor nest
-;; Returns a list of nodenums and constants (possibly one constant, followed by nodenums in descending order) which, when all combined with bitxor, yields a value equivalent to nodenum, but with assuming the old leaves have fixed up according to translation-array.
+;; Returns a list of nodenums and constants (possibly one constant, followed by nodenums in descending order) which, when all combined with bitxor, yields a value equivalent to nodenum, but assuming the old leaves have fixed up according to translation-array.
 ;; This should not blow up, given how duplicates are removed as we discover the leaves.
+;; TODO: Add something about translation/renumbering to the name.
 (defund bitxor-nest-leaves (nodenum dag-array dag-len translation-array)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)

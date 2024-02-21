@@ -117,6 +117,17 @@
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
             x86isa::idiv-spec-64-trim-arg1-axe-all
 
+            x86isa::shrx-spec$inline         ; just a dispatch
+            x86isa::shlx-spec$inline         ; just a dispatch
+            x86isa::sarx-spec$inline         ; just a dispatch
+
+            x86isa::shlx-spec-32-redef
+            x86isa::shlx-spec-64-redef
+            x86isa::shrx-spec-32-redef
+            x86isa::shrx-spec-64-redef
+            x86isa::sarx-spec-32-redef
+            x86isa::sarx-spec-64-redef
+
             x86isa::sar-spec$inline
             ;x86isa::sar-spec-32-nice
             ;x86isa::sar-spec-64-nice
@@ -529,10 +540,11 @@
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
 
-    x86isa::vex->w$inline-constant-opener
+    x86isa::vex->vvvv$inline-constant-opener
     x86isa::vex->l$inline-constant-opener
     x86isa::vex->pp$inline-constant-opener
-    x86isa::vex->vvvv$inline-constant-opener
+    x86isa::vex->r$inline-constant-opener
+    x86isa::vex->w$inline-constant-opener
 
     x86isa::vex-prefixes-fix$inline-constant-opener
     x86isa::vex-prefixes->byte0$inline-constant-opener
@@ -684,26 +696,40 @@
     acl2::integerp-of-logext
     acl2::integerp-of--))
 
-(defund bv-intro-rules ()
+;; Rules to introduce our BV operators (todo: move these):
+(defund logops-to-bv-rules ()
   (declare (xargs :guard t))
-  '(acl2::logxor-becomes-bvxor-axe ;todo: more like this!
+  '(acl2::logand-becomes-bvand-arg1-axe
+    acl2::logand-becomes-bvand-arg2-axe
+    acl2::logior-becomes-bvor-axe
+    acl2::logxor-becomes-bvxor-axe
+    acl2::loghead-becomes-bvchop
+    acl2::bvchop-of-lognot-becomes-bvnot
+    acl2::bvchop-of-logand-becomes-bvand
+    acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
-    acl2::loghead-becomes-bvchop))
+    ))
+
+;; Rules to introduce our BV operators (todo: move these):
+(defund bitops-to-bv-rules ()
+  (declare (xargs :guard t))
+  '(acl2::part-select-width-low-becomes-slice
+    acl2::slice-of-part-install-width-low ; introduces bvcat
+    acl2::bvchop-of-part-install-width-low-becomes-bvcat
+    acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
+    acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
+    acl2::part-install-width-low-becomes-bvcat-32))
 
 ;todo: classify these
 (defun x86-bv-rules ()
   (declare (xargs :guard t))
   (append
-   (bv-intro-rules)
+   (logops-to-bv-rules)
+   (bitops-to-bv-rules)
   '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     acl2::logext-of-bvplus-64 ;somewhat unusual
-    logior-becomes-bvor-axe ; an intro-rule
     x86isa::n08-to-i08$inline ;this is just logext
-    x86isa::slice-of-part-install-width-low
-    x86isa::bvchop-of-part-install-width-low-becomes-bvcat
-    x86isa::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
-    part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
@@ -754,7 +780,7 @@
 ;todo: try always including these?  these help with conditional branches
 (defun if-lifting-rules ()
   (declare (xargs :guard t))
-  '(x86isa::mv-nth-of-if          ;could restrict to when both branches are cons nests
+  '(acl2::mv-nth-of-if          ;could restrict to when both branches are cons nests
    x86isa::equal-of-if-constants ;seems safe
    x86isa::equal-of-if-constants-alt ;seems safe
    x86isa::canonical-address-p-of-if
@@ -1063,6 +1089,61 @@
     ;;x86isa::not-equal-when-separate-alt
     ))
 
+;; For this strategy, we lower the IF when the 2 states have the same PC and no
+;; faults. This allows the symbolic execution to continue with just the single
+;; merged state.  (The need for this may be due to an instruction semantic
+;; function that introduces an unnecessary IF on states.)
+;; TODO: If the stack height is different, we might want to refrain (but then
+;; it would be a bit odd to have the same RIP).
+(defund if-lowering-rules ()
+  (declare (xargs :guard t))
+  '(mergeable-states64p
+    if-of-set-rip-and-set-rip-same
+
+    if-of-set-rax-arg2-64
+    if-of-set-rbx-arg2-64
+    if-of-set-rcx-arg2-64
+    if-of-set-rdx-arg2-64
+
+    if-of-set-rax-arg3-64
+    if-of-set-rbx-arg3-64
+    if-of-set-rcx-arg3-64
+    if-of-set-rdx-arg3-64
+
+    if-of-set-flag-arg2-64
+    if-of-set-flag-arg3-64
+    if-of-set-undef-arg2-64
+    if-of-set-undef-arg3-64
+    if-of-write-arg2-64
+    if-of-write-arg3-64
+    ))
+
+;; if-lifting strategy: where we lift the ifs (todo: restrict to provably different pcs or fault statuses?):
+;; set-rax-of-if-arg2
+;; set-rdi-of-if-arg2
+;; set-rip-of-if
+;; set-undef-of-if
+;; set-flag-of-if
+;; ;xr-of-if ; overkill?  also one in the x86isa pkg?
+;; ;64-bit-modep-of-if
+
+
+;; ;; Strategy 2b: don't lift or lower the if because the states all have the same pc (instead, we just try to resolve the next instruction).  warning: if some of these rules are missing, very large terms can result:
+;; ;; x86isa::xr-of-if-special-case-for-ms
+;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
+;; ;; x86isa::64-bit-modep-of-if
+;; ;; ;x86isa::rb-of-if-arg2
+;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
+;;   ;;acl2::<-of-+-cancel-1+-1
+;;   ;;acl2::<-minus-zero
+;;   x86isa::64-bit-modep-of-if
+;;   x86isa::app-view-of-if
+;;   x86isa::x86p-of-if
+;;   read-of-if
+;;   ;; or lower ifs with if-of-write
+;;   xr-of-if ; too much?  need ms
+;;   x86isa::alignment-checking-enabled-p-of-if
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defun lifter-rules-common ()
@@ -1094,6 +1175,7 @@
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           (float-rules)
           (acl2::core-rules-bv)
+          (if-lowering-rules)
           '(
             ;; Reading/writing registers (or parts of registers).  We leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
@@ -1150,9 +1232,6 @@
             jcc/cmovcc/setcc-spec-rewrite-jle
             jcc/cmovcc/setcc-spec-rewrite-jnle
 
-            ;; Rules to introduce our BV operators:
-            x86isa::part-select-width-low-becomes-slice
-
             ;; State component read-over-write rules:
 ;            x86isa::xr-set-flag ;this is the -diff rule
 
@@ -1184,7 +1263,7 @@
             x86isa::mv-nth-0-of-get-prefixes-of-xw-of-irrel
             x86isa::mv-nth-1-of-get-prefixes-of-xw-of-irrel
 
-            x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
+            ;x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
 
             x86isa::canonical-address-p-of-logext-48
             x86isa::logext-48-does-nothing-when-canonical-address-p
@@ -1275,8 +1354,6 @@
             acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
-            logand-becomes-bvand-axe-arg1-axe
-            logand-becomes-bvand-axe-arg2-axe
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             acl2::fix-when-acl2-numberp
@@ -1358,7 +1435,6 @@
             x86isa::cdr-create-canonical-address-list
             x86isa::combine-bytes-unroll
             x86isa::combine-bytes-base
-            logior-becomes-bvor-axe
             x86isa::if-of-xr-app-view
             x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
 
@@ -1488,7 +1564,6 @@
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
-            x86isa::part-install-width-low-becomes-bvcat-32
             x86isa::rflags-is-n32p-unforced
              ;targets unsigned-byte-p-of-rflags
 ;                    acl2::bvcat-trim-arg4-axe-all
@@ -1502,7 +1577,7 @@
             x86isa::canonical-address-p-of-i48
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
-            x86isa::mv-nth-of-if
+            ;; acl2::mv-nth-of-if ; also in if-lifting-rules
             x86isa::canonical-address-p-of-if
             read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
@@ -1742,8 +1817,8 @@
      acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
 ;     app-view$inline
      rml64
-     x86isa::mv-nth-of-if
-     x86isa::mv-nth-of-cons
+     acl2::mv-nth-of-if
+     acl2::mv-nth-of-cons-safe
      x86isa::canonical-address-p-of-if
      the-check
      acl2::lookup-eq-safe
@@ -1807,7 +1882,6 @@
             x86isa::i48$inline
             x86isa::<-of-if-arg2
             acl2::<-of-if-arg1
-            x86isa::mv-nth-of-if
             x86isa::if-of-if-of-nil-and-consp
             acl2::ubp-longer-better
             x86isa::canonical-address-p-when-unsigned-byte-p
@@ -3879,7 +3953,6 @@
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
             acl2::bvchop-of-bvshr-same
-            acl2::bvchop-of-lognot
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
             acl2::bvif-of-if-constants-nonnil-nil
@@ -4197,54 +4270,3 @@
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
-
-;; For this strategy, we lower the IF when the 2 states have the same PC and no faults (so the execution can continue with just the 1 merged state):
-;; TODO: If the stack height is different, we might want to refrain (but then it would be a bit odd to have the same RIP).
-(defund if-lowering-rules ()
-  (declare (xargs :guard t))
-  '(mergeable-states64p
-    if-of-set-rip-and-set-rip-same
-
-    if-of-set-rax-arg2-64
-    if-of-set-rbx-arg2-64
-    if-of-set-rcx-arg2-64
-    if-of-set-rdx-arg2-64
-
-    if-of-set-rax-arg3-64
-    if-of-set-rbx-arg3-64
-    if-of-set-rcx-arg3-64
-    if-of-set-rdx-arg3-64
-
-    if-of-set-flag-arg2-64
-    if-of-set-flag-arg3-64
-    if-of-set-undef-arg2-64
-    if-of-set-undef-arg3-64
-    if-of-write-arg2-64
-    if-of-write-arg3-64
-    ))
-
-;; ;; strategy 1: where we lift the ifs (todo: restrict to provably different pcs or fault statuses?):
-                 ;; set-rax-of-if-arg2
-                 ;; set-rdi-of-if-arg2
-                 ;; set-rip-of-if
-                 ;; set-undef-of-if
-                 ;; set-flag-of-if
-                 ;; ;xr-of-if ; overkill?  also one in the x86isa pkg?
-                 ;; ;64-bit-modep-of-if
-
-
-                 ;; ;; Strategy 2b: don't lift or lower the if because the states all have the same pc (instead, we just try to resolve the next instruction).  warning: if some of these rules are missing, very large terms can result:
-                 ;; ;; x86isa::xr-of-if-special-case-for-ms
-                 ;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
-                 ;; ;; x86isa::64-bit-modep-of-if
-                 ;; ;; ;x86isa::rb-of-if-arg2
-                 ;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
-                 ;;   ;;acl2::<-of-+-cancel-1+-1
-                 ;;   ;;acl2::<-minus-zero
-                 ;;   x86isa::64-bit-modep-of-if
-                 ;;   x86isa::app-view-of-if
-                 ;;   x86isa::x86p-of-if
-                 ;;   read-of-if
-                 ;;   ;; or lower ifs with if-of-write
-                 ;;   xr-of-if ; too much?  need ms
-                 ;;   x86isa::alignment-checking-enabled-p-of-if

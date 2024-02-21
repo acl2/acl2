@@ -38,6 +38,7 @@
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
+(include-book "bv-intro-rules")
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)

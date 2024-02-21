@@ -1,7 +1,7 @@
 ; Bitwise and
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -407,11 +407,6 @@
   (implies (natp y)
            (<= (bvand size x y) y))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable bvand))))
-
-(defthmd bvchop-of-logand-becomes-bvand
-  (equal (bvchop size (logand x y))
-         (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))
 
 ;; -1 is a mask of all ones
