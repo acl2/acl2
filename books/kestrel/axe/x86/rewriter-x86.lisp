@@ -17,9 +17,15 @@
 (include-book "syntaxp-evaluator-x86")
 (include-book "bind-free-evaluator-x86")
 
-;; these break the proofs below:
-(local (in-theory (disable acl2::nth-when-zp ; loops with ACL2::CAR-OF-DARGS-BECOMES-NTH-0-OF-DARGS
+(local (in-theory (disable ;; these break the proofs below:
+                           acl2::nth-when-zp ; loops with ACL2::CAR-OF-DARGS-BECOMES-NTH-0-OF-DARGS
                            reverse-removal ; introduces REV (not our normal form)
+                           ;; for speed:
+                           acl2::len-when-atom
+                           acl2::|(< 0 (len x))|
+                           assoc-keyword ; why are these arising?
+                           (:t assoc-keyword)
+                           KEYWORD-VALUE-LISTP
                            )))
 
 ;; these slow down the proofs below:
@@ -36,7 +42,9 @@
                            X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE2-P
                            X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE1-P
                            X86ISA::UNSIGNED-BYTE-P-WHEN-8BITS-P
-                           ACL2::ACL2-NUMBERP-OF-CAR-WHEN-ACL2-NUMBER-LISTP)))
+                           ACL2::ACL2-NUMBERP-OF-CAR-WHEN-ACL2-NUMBER-LISTP
+                           ;; (:EXECUTABLE-COUNTERPART TAU-SYSTEM) ; todo
+                           )))
 
 ;; Create the "x86" rewriter.  Here, "x86" refers to the set of functions to
 ;; evaluate and to the sets of axe-syntaxp and axe-bind-free functions that the
