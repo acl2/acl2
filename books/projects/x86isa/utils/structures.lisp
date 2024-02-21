@@ -318,7 +318,39 @@
 
     (defret if-not-vex3-byte0-then-vex-w=0
       (implies (not (equal (vex-prefixes->byte0 vex-prefixes) #.*vex3-byte0*))
-               (equal (vex->w vex-prefixes) 0)))))
+               (equal (vex->w vex-prefixes) 0))))
+
+  ;; Some convenient accessor functions for those fields of the VEX prefixes
+  ;; that only apply to the three-byte forms, but that can be extended to
+  ;; the two-byte forms:
+
+  (define vex->x ((vex-prefixes vex-prefixes-p))
+    :short "Get the @('X') field of @('vex-prefixes') for the three-byte form,
+            or 1 for the two-byte form"
+    :long "<p>Although the two-byte form has no @('X') bit,
+           as far as the VEX encoding of the REX byte is concerned,
+           the two-byte form can be regarded as encoding the value 0
+           for the @('X') bit of the REX byte.
+           Since the REX.X encoding in VEX is negated,
+           this function returns 1 for the two-byte form.</p>
+           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex3-byte0* (vex3-byte1->x (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise 1)))
+
+  (define vex->b ((vex-prefixes vex-prefixes-p))
+    :short "Get the @('B') field of @('vex-prefixes') for the three-byte form,
+            or 1 for the two-byte form"
+    :long "<p>Although the two-byte form has no @('B') bit,
+           as far as the VEX encoding of the REX byte is concerned,
+           the two-byte form can be regarded as encoding the value 0
+           for the @('B') bit of the REX byte.
+           Since the REX.B encoding in VEX is negated,
+           this function returns 1 for the two-byte form.</p>
+           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex3-byte0* (vex3-byte1->b (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise 1))))
 
 (defsection evex-prefixes-layout-structures
 
