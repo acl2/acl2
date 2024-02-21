@@ -230,7 +230,7 @@
 
 (defthmd logand-becomes-bvand-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
+                (unsigned-byte-p-forced xsize x)
                 (natp y))
            (equal (logand x y)
                   (bvand xsize x y)))
@@ -239,7 +239,7 @@
 
 (defthmd logand-becomes-bvand-arg2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
+                (unsigned-byte-p-forced xsize x)
                 (natp y))
            (equal (logand y x)
                   (bvand xsize y x)))
@@ -249,8 +249,8 @@
 (defthmd logior-becomes-bvor-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
-                (unsigned-byte-p xsize x)
-                (unsigned-byte-p ysize y))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y))
            (equal (logior x y)
                   (bvor (max xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable bvor))))
@@ -258,8 +258,8 @@
 (defthmd logxor-becomes-bvxor-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p xsize x)
-                (unsigned-byte-p ysize y))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y))
            (equal (logxor x y)
                   (bvxor (max xsize ysize) x y)))
   :hints (("Goal" :in-theory (enable bvxor))))

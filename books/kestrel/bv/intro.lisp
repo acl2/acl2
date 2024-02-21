@@ -117,7 +117,7 @@
 ;; We only need to get the size of one argument for logand
 (defthm logand-becomes-bvand
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-                (unsigned-byte-p size x)
+                (unsigned-byte-p-forced size x)
                 (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
@@ -125,7 +125,7 @@
 
 (defthm logand-becomes-bvand-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p size y)
+                (unsigned-byte-p-forced size y)
                 (integerp x))
            (equal (logand x y)
                   (bvand size x y)))
