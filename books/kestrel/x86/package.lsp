@@ -148,10 +148,17 @@
     x86isa::sub-of-spec32
     x86isa::sub-of-spec64
 
+    x86isa::ror-spec
     x86isa::ror-spec-8
     x86isa::ror-spec-16
     x86isa::ror-spec-32
     x86isa::ror-spec-64
+
+    x86isa::rol-spec
+    x86isa::rol-spec-8
+    x86isa::rol-spec-16
+    x86isa::rol-spec-32
+    x86isa::rol-spec-64
 
     ;; do we want to include stuff like this?
     x86isa::x86-one-byte-opcode-modr/m-p$inline
@@ -604,7 +611,9 @@
     x86isa::eff-addr
     x86isa::nbytes
     x86isa::seg-reg
-    x86isa::flg))
+    x86isa::flg
+    x86isa::dst
+    x86isa::src))
 
 ;; TODO: Think about this...
 (defconst *common-acl2-formals*
