@@ -513,6 +513,10 @@
     bvashr-of-bvchop ;gen?
     leftrotate32-of-bvchop-arg2
     leftrotate32-of-bvchop-5            ;new ;gen!
+    leftrotate-of-bvchop-arg2
+    leftrotate-of-bvchop-arg3
+    rightrotate-of-bvchop-arg2
+    rightrotate-of-bvchop-arg3
     sbvlt-of-bvchop-arg2
     sbvlt-of-bvchop-arg3
     bvlt-of-bvchop-arg2

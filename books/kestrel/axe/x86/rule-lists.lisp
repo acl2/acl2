@@ -136,9 +136,11 @@
             x86isa::mv-nth-0-of-idiv-spec-64
             x86isa::mv-nth-1-of-idiv-spec-64
 
-            x86isa::shrx-spec$inline         ; just a dispatch
-            x86isa::shlx-spec$inline         ; just a dispatch
-            x86isa::sarx-spec$inline         ; just a dispatch
+            x86isa::shrx-spec$inline ; just a dispatch
+            x86isa::shlx-spec$inline ; just a dispatch
+            x86isa::sarx-spec$inline ; just a dispatch
+            x86isa::ror-spec$inline ; just a dispatch
+            x86isa::rol-spec$inline ; just a dispatch
 
             x86isa::shlx-spec-32-redef
             x86isa::shlx-spec-64-redef
@@ -728,7 +730,9 @@
     acl2::bvchop-of-part-install-width-low-becomes-bvcat
     acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
     acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
-    acl2::part-install-width-low-becomes-bvcat-32))
+    acl2::part-install-width-low-becomes-bvcat-32
+    acl2::rotate-right-becomes-rightrotate
+    acl2::rotate-left-becomes-leftrotate))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
