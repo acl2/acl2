@@ -2867,7 +2867,7 @@
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus bvplus bvcat logapp) (anti-bvplus bvminus-becomes-bvplus-of-bvuminus PLUS-BECOMES-BVPLUS)))))
 
 ;-alt?
-(defthm bvlt-tighten-non-dag
+(defthm bvlt-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (bind-free (bind-var-to-bv-term-size 'ysize y))
                 (< (max xsize ysize) size)
@@ -2978,7 +2978,7 @@
                                                   <-of-bvplus-becomes-bvlt-arg1
                                                   <-of-bvplus-becomes-bvlt-arg2)))))
 
-(defthm bvlt-tighten-non-dag-strong-arg3
+(defthm bvlt-tighten-strong-arg3
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize size)
                 (natp size)
@@ -2995,7 +2995,7 @@
                                     <-of-bvplus-becomes-bvlt-arg1
                                     <-of-bvplus-becomes-bvlt-arg2)))))
 
-(defthm bvlt-tighten-non-dag-strong-arg2
+(defthm bvlt-tighten-strong-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize size)
                 (natp size)
@@ -3559,7 +3559,7 @@
 ;sometimes we don't want these, e.g. (equal 0 (bvchop 2 x)) when we also know (equal 0 (getbit 1 x))
 (in-theory (disable BVCHOP-CONTRACT-HACK-GEN SLICE-TIGHTEN-WHEN-TOP-BIT-0))
 
-(in-theory (disable bvlt-tighten-non-dag-strong-arg3 bvlt-tighten-non-dag-strong-arg2)) ;do these cause the cases?
+(in-theory (disable bvlt-tighten-strong-arg3 bvlt-tighten-strong-arg2)) ;do these cause the cases?
 
 (defthm unsigned-byte-p-when-bound-tighten-hack
   (implies (NOT (BVLT 6 16 GARG0))
@@ -4583,8 +4583,8 @@
 
 (in-theory (enable SLICE-OF-BVUMINUS))
 
-(in-theory (enable BVLT-TIGHTEN-NON-DAG-STRONG-ARG2
-                   BVLT-TIGHTEN-NON-DAG-STRONG-ARG3))
+(in-theory (enable BVLT-TIGHTEN-STRONG-ARG2
+                   BVLT-TIGHTEN-STRONG-ARG3))
 
 (defthm bvlt-of-bvplus-and-bvplus-hack
   (equal (BVLT 3 (BVPLUS 3 4 x) (BVPLUS 3 5 x))
@@ -4927,8 +4927,8 @@
 ;enable them when stable?
 (in-theory (disable BVPLUS-OF-BVPLUS-CONSTANTS-SIZE-DIFFERS-BETTER
                     SLICE-OF-BVUMINUS
-                    BVLT-TIGHTEN-NON-DAG-STRONG-ARG2
-                    BVLT-TIGHTEN-NON-DAG-STRONG-ARG3
+                    BVLT-TIGHTEN-STRONG-ARG2
+                    BVLT-TIGHTEN-STRONG-ARG3
                     BVLT-OF-SLICE-TOP-GEN))
 
 (in-theory (disable bv-array-read-of-bv-array-write-both-better
