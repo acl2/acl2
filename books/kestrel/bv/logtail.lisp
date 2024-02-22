@@ -366,3 +366,10 @@
   :hints (("Goal" :in-theory (enable logtail ifix))))
 
 (theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
+
+(defthmd ash-of-negative-becomes-logtail
+  (implies (and (<= amt 0)
+                (integerp amt))
+           (equal (ash x amt)
+                  (logtail (- amt) x)))
+  :hints (("Goal" :in-theory (enable logtail ash))))
