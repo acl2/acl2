@@ -11,7 +11,7 @@
 
 (in-package "X86ISA") ;todo: use X package
 
-;TODO: Separate out the x86 rules in this file from liter utilities like normal-output-indicatorp
+;TODO: Organize this material.
 
 (include-book "support-x86") ;drop? for stuff about create-canonical-address-list
 (include-book "flags") ; reduce?
@@ -201,14 +201,14 @@
                   0))
   :hints (("Goal" :in-theory (enable x86isa::sf-spec32 bool->bit))))
 
-;move
-(defthmd bvshl-becomes-*-of-expt
-  (implies (and (integerp x)
-                (natp shift-amount)
-                (integerp width))
-           (equal (acl2::bvshl width x shift-amount)
-                  (acl2::bvchop width (* (expt 2 shift-amount) x))))
-  :hints (("Goal" :in-theory (enable acl2::bvshl acl2::bvcat))))
+(local
+  (defthmd bvshl-becomes-*-of-expt
+    (implies (and (integerp x)
+                  (natp shift-amount)
+                  (integerp width))
+             (equal (acl2::bvshl width x shift-amount)
+                    (acl2::bvchop width (* (expt 2 shift-amount) x))))
+    :hints (("Goal" :in-theory (enable acl2::bvshl acl2::bvcat)))))
 
 ;slow?
 (defthmd rb-split
@@ -2262,38 +2262,43 @@
 
 (defthm 64-bit-modep-of-if (equal (64-bit-modep (if test x y)) (if test (64-bit-modep x) (64-bit-modep y))))
 
-(defthm unsigned-byte-p-1-of-rflagsbits->cf$inline (unsigned-byte-p '1 (x86isa::rflagsbits->cf$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->res1$inline (unsigned-byte-p '1 (x86isa::rflagsbits->res1$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->pf$inline (unsigned-byte-p '1 (x86isa::rflagsbits->pf$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->ID$inline (unsigned-byte-p '1 (x86isa::rflagsbits->ID$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->VIP$inline (unsigned-byte-p '1 (x86isa::rflagsbits->VIP$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->VIF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->VIF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->AC$inline (unsigned-byte-p '1 (x86isa::rflagsbits->AC$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->VM$inline (unsigned-byte-p '1 (x86isa::rflagsbits->VM$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RES4$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RES4$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->NT$inline (unsigned-byte-p '1 (x86isa::rflagsbits->NT$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->OF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->OF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->DF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->DF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->INTF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->INTF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->TF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->TF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->SF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->SF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->ZF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->ZF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RES3$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RES3$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->AF$inline (unsigned-byte-p '1 (x86isa::rflagsbits->AF$inline rflags)))
-(defthm unsigned-byte-p-1-of-rflagsbits->RES2$inline (unsigned-byte-p '1 (x86isa::rflagsbits->RES2$inline rflags)))
-(defthm unsigned-byte-p-2-of-rflagsbits->iopl$inline (unsigned-byte-p '2 (x86isa::rflagsbits->iopl$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->cf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->cf$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->res1$inline (unsigned-byte-p 1 (x86isa::rflagsbits->res1$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->pf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->pf$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->ID$inline (unsigned-byte-p 1 (x86isa::rflagsbits->ID$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VIP$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VIP$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VIF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VIF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->AC$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AC$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VM$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VM$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES4$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES4$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->NT$inline (unsigned-byte-p 1 (x86isa::rflagsbits->NT$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->OF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->OF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->DF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->DF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->INTF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->INTF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->TF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->TF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->SF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->SF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->ZF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->ZF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES3$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES3$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->AF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES2$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES2$inline rflags)))
+(defthm unsigned-byte-p-2-of-rflagsbits->iopl$inline (unsigned-byte-p 2 (x86isa::rflagsbits->iopl$inline rflags)))
 
-(defthm 64-bit-modep-of-set-flag
-  (equal (64-bit-modep (x::set-flag flag val x86))
-         (64-bit-modep x86))
-  :hints (("Goal" :in-theory (enable x::set-flag))))
-
-(defthm getbit-of-ash-low
-  (implies (posp c)
-           (equal (acl2::getbit 0 (ash x c))
-                  0))
-  :hints (("Goal" :in-theory (enable ash))))
+;apparently the AC flag affects alignment checking
+;todo: avoid get-flag here
+(defthm alignment-checking-enabled-p-of-xw-irrel
+  (implies (and (not (member-equal fld '(:ctr :seg-visible)))
+                (not (and (equal fld :rflags)
+                          (not (equal (x::get-flag :ac x86)
+                                      (x86isa::rflagsbits->ac val))))))
+           (equal (alignment-checking-enabled-p (xw fld index val x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (enable alignment-checking-enabled-p
+                                     x86isa::segment-selectorbits->rpl
+                                     x86isa::rflags
+                                     x86isa::rflagsbits->ac
+                                     x86isa::rflagsbits-fix
+                                     x::get-flag))))
 
 (defthm alignment-checking-enabled-p-of-set-flag
   (implies (and (member-equal flag x::*flags*) ;drop?
@@ -2326,6 +2331,7 @@
                                      acl2::getbit-of-logand))))
 
 ;; goes to set-flag instead of exposing details of the flags
+;; todo: avoid IFs on states here
 (defthm write-user-rflags-rewrite
   (equal (write-user-rflags user-flags-vector undefined-mask x86)
          (b* ((user-flags-vector (n32 user-flags-vector))
@@ -2357,24 +2363,3 @@
                      (x::set-flag :of (rflagsbits->of user-flags-vector) x86))))
            x86))
   :hints (("Goal" :in-theory (enable x::set-flag))))
-
-(defthm program-at-of-set-flag
-  (implies (app-view x86)
-           (equal (program-at prog-addr x86isa::bytes (x::set-flag flag val x86))
-                  (program-at prog-addr x86isa::bytes x86)))
-  :hints (("Goal" :in-theory (enable x::set-flag program-at))))
-
-;apparently the AC flag affects alignment checking
-(defthm alignment-checking-enabled-p-of-xw-irrel
-  (implies (and (not (member-equal fld '(:ctr :seg-visible)))
-                (not (and (equal fld :rflags)
-                          (not (equal (x::get-flag :ac x86)
-                                      (x86isa::rflagsbits->ac val))))))
-           (equal (alignment-checking-enabled-p (xw fld index val x86))
-                  (alignment-checking-enabled-p x86)))
-  :hints (("Goal" :in-theory (enable alignment-checking-enabled-p
-                                     x86isa::segment-selectorbits->rpl
-                                     x86isa::rflags
-                                     x86isa::rflagsbits->ac
-                                     x86isa::rflagsbits-fix
-                                     x::get-flag))))

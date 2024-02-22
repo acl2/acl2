@@ -1590,7 +1590,7 @@
 
             x86isa::64-bit-modep-of-xw
             x86isa::64-bit-modep-of-mv-nth-1-of-wb
-            x86isa::64-bit-modep-of-set-flag
+            64-bit-modep-of-set-flag
 
             ;;todo: include all of the lifter rules:
             x86isa::canonical-address-p-of-i48
@@ -1753,6 +1753,8 @@
             cr4bits->OSFXSR-of-bvchop
 
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
+
+            program-at-of-set-flag
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -2656,7 +2658,6 @@
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
             x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
             x86isa::write-*sp-when-64-bit-modep
-            x86isa::program-at-of-set-flag ; not 64-bit specific?
             ;; x86isa::program-at-of-set-undef ; do we not need something like this?
             )))
 

@@ -939,11 +939,6 @@
                   (xr fld index x86)))
   :hints (("Goal" :in-theory (enable write-byte))))
 
-(defthm x86p-of-write-byte
-  (implies (x86p x86)
-           (x86p (write-byte base-addr byte x86)))
-  :hints (("Goal" :in-theory (enable write-byte))))
-
 (defthm 64-bit-modep-of-write-byte
   (equal (64-bit-modep (write-byte base-addr byte x86))
          (64-bit-modep x86))
@@ -1198,11 +1193,6 @@
                   (write n base-addr val x86)))
   :hints (("Goal" :in-theory (e/d (wb app-view)
                                   (wb-1 write)))))
-
-(defthm x86p-of-write
-  (implies (x86p x86)
-           (x86p (write n base-addr val x86)))
-  :hints (("Goal" :in-theory (enable write))))
 
 (defthm 64-bit-modep-of-write
   (equal (64-bit-modep (write n addr val x86))
@@ -1502,23 +1492,7 @@
   :hints (("Goal" :use (:instance read-of-write-disjoint)
            :in-theory (e/d (separate) (read-of-write-disjoint)))))
 
-(defthm program-at-of-write
-  (implies (and (separate :r (len bytes) prog-addr :r n addr) ; gen the :r
-                (app-view x86)
-                (canonical-address-p prog-addr)
-                (canonical-address-p (+ -1 (len bytes) prog-addr))
-                (canonical-address-p addr)
-                (implies (posp n)
-                         (canonical-address-p (+ -1 n addr)))
-;                (natp n)
-                (x86p x86)
-                )
-           (equal (program-at prog-addr bytes (write n addr val x86))
-                  (program-at prog-addr bytes x86)))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (e/d (program-at ;app-view$inline
-                            )
-                           (rb wb)))))
+
 
 (defthmd write-of-!memi-high
   (implies (and (< (+ addr2 n -1) addr)
@@ -2381,11 +2355,6 @@
   (implies (not (equal :mem fld))
            (equal (xr fld index (write-bytes base-addr vals x86))
                   (xr fld index x86)))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm x86p-of-write-bytes
-  (implies (x86p x86)
-           (x86p (write-bytes base-addr vals x86)))
   :hints (("Goal" :in-theory (enable write-bytes))))
 
 (defthm 64-bit-modep-of-write-bytes
