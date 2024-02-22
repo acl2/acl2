@@ -170,7 +170,7 @@
              (repeatbit size1 i)
              (repeatbit size i)))
   :hints (("Goal" :in-theory (e/d (trim repeatbit)
-                                  (bvplus-recollapse)))))
+                                  ()))))
 
 ;; ;not true?
 ;; (defthm bvchop-of-bvdiv2

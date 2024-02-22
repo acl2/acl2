@@ -1997,7 +1997,7 @@
     bvplus-of-*-arg2
     bvuminus-of-+
     bvplus-of-unary-minus
-    bvplus-recollapse ;rename?
+    bvchop-of-+-becomes-bvplus
     ;move these to type-rules:
     integerp-of-*
     acl2-numberp-of-+

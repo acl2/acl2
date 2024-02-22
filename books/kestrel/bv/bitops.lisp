@@ -158,7 +158,6 @@
                                                                   ACL2::LOGAND-BECOMES-BVAND-alt)
                                   (;ACL2::EXPONENTS-ADD
                                    ;ACL2::SLICE-OF-+
-                                   ACL2::BVPLUS-RECOLLAPSE ;looped
                                    ;ACL2::BVCAT-OF-+-HIGH   ;looped
                                    ;acl2::BVAND-OF-+-ARG3 ;looped (we should treat a mask of 2^n-1 differently from a generic +
                                    ;ACL2::BVCAT-OF-+-LOW
@@ -181,9 +180,8 @@
                             ACL2::LOGAND-BECOMES-BVAND
                             ACL2::BVCHOP-OF-LOGNOT-BECOMES-BVNOT)
                            ( ;ACL2::SLICE-OF-BVAND
-                            ACL2::BVPLUS-RECOLLAPSE ;looped
                             ;ACL2::BVCAT-OF-+-HIGH
-;ACL2::EXPONENTS-ADD
+                            ;;ACL2::EXPONENTS-ADD
                             ;ACL2::BVCAT-OF-+-LOW         ;looped
                             ;acl2::SLICE-OF-+             ;looped
                             ;acl2::BVAND-OF-+-ARG3        ;looped

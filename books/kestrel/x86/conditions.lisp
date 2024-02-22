@@ -527,7 +527,7 @@
                             acl2::sbvlt
                             acl2::bvlt
                             )
-                           ( ;acl2::bvplus-recollapse
+                           ( ;
                             acl2::bvminus-becomes-bvplus-of-bvuminus
 ;acl2::plus-bvcat-with-0 ;looped
 ;acl2::plus-bvcat-with-0-alt ;looped
@@ -574,7 +574,7 @@
                             acl2::sbvlt
                             acl2::bvlt
                             )
-                           ( ;acl2::bvplus-recollapse
+                           ( ;
                             acl2::bvminus-becomes-bvplus-of-bvuminus
                             ;;acl2::plus-bvcat-with-0 ;looped
                             ;;acl2::plus-bvcat-with-0-alt ;looped
@@ -680,7 +680,7 @@
                                                    acl2::bvcat
                                                    logapp
                                                    logext)
-                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                           ( acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     acl2::plus-bvcat-with-0 ;looped
                                                     acl2::plus-bvcat-with-0-alt ;looped
                                                     acl2::sbvlt-rewrite
@@ -722,7 +722,7 @@
                                                    acl2::bvcat
                                                    logapp
                                                    logext)
-                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                           ( acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     acl2::plus-bvcat-with-0 ;looped
                                                     acl2::plus-bvcat-with-0-alt ;looped
                                                     acl2::sbvlt-rewrite
@@ -759,7 +759,7 @@
      (ACL2::GETBIT-OF-* ;looped
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
-      ACL2::BVPLUS-RECOLLAPSE
+
       ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
       ACL2::PLUS-BVCAT-WITH-0
       ACL2::PLUS-BVCAT-WITH-0-ALT
@@ -789,7 +789,7 @@
      (ACL2::GETBIT-OF-* ;looped
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
-      ACL2::BVPLUS-RECOLLAPSE
+
       ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
       ACL2::PLUS-BVCAT-WITH-0
       ACL2::PLUS-BVCAT-WITH-0-ALT
@@ -817,7 +817,7 @@
                          (bvchop 8 x)))))
  :hints (("Goal" :in-theory (e/d (jnbe-condition
                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                 (acl2::bvplus-recollapse)))))
+                                 ()))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -927,7 +927,7 @@
   :hints (("Goal" :in-theory (e/d (jnb-condition
                                    X86ISA::SUB-CF-SPEC8
                                    bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
+                                  ()))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC16
@@ -938,7 +938,7 @@
   :hints (("Goal" :in-theory (e/d (jnb-condition
                                    X86ISA::SUB-CF-SPEC16
                                    bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
+                                  ()))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC32
@@ -949,7 +949,7 @@
   :hints (("Goal" :in-theory (e/d (jnb-condition
                                    X86ISA::SUB-CF-SPEC32
                                    bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
+                                  ()))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC64
@@ -960,7 +960,7 @@
   :hints (("Goal" :in-theory (e/d (jnb-condition
                                    X86ISA::SUB-CF-SPEC64
                                    bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse)))))
+                                  ()))))
 
 ;; fixme; add the rest of these condition rules from tester-rules.
 

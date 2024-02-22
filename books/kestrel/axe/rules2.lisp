@@ -2610,8 +2610,6 @@
 ;(in-theory (disable LEN-OF-UPDATE-NTH-REWRITE-2)) ;bozo think about this...
 ;(in-theory (disable FIRSTN-OF-ONE-MORE)) ;think about this more...
 
-;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
-
 ;; (defun indu (n start vals)
 ;;   (if (endp vals)
 ;;       (list n start vals)

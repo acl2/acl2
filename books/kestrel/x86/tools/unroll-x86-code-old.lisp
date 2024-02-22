@@ -183,7 +183,7 @@
                  state)))
 
 ;needed after some x86 model changes:
-(in-theory (enable acl2::bvplus-recollapse))
+(in-theory (enable acl2::bvchop-of-+-becomes-bvplus))
 
 (defthm bvchop-of-if
   (equal (bvchop n (if test tp ep))

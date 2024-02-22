@@ -413,15 +413,14 @@
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
 
-;rename
-(defthmd bvplus-recollapse
+(defthmd bvchop-of-+-becomes-bvplus
   (implies (and (integerp x) ;these are new, since bvplus ifixes its args
                 (integerp y))
            (equal (bvchop size (+ x y))
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(theory-invariant (incompatible (:definition bvplus) (:rewrite bvplus-recollapse)))
+(theory-invariant (incompatible (:definition bvplus) (:rewrite bvchop-of-+-becomes-bvplus)))
 
 
 ;todo: instead, introduce bvminus
