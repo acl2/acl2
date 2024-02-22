@@ -65,18 +65,6 @@
   :hints (("Goal" ;:cases ((natp high))
            :in-theory (enable bvnot))))
 
-
-(defthm getbit-of-ash
-  (implies (and (natp c) ; left shift
-                (integerp i)
-                (natp n))
-           (equal (getbit n (ash i c))
-                  (if (<= c n)
-                      (getbit (- n c) i)
-                    0)))
-  :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
-
 (defthm getbit-of-logmask
   (implies (and (natp n)
                 (integerp width))
