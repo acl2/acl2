@@ -1,7 +1,7 @@
 ; A function to multiply two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -191,3 +191,21 @@
                 (natp size))
            (equal (bvmult size z x)
                   (bvmult size z y))))
+
+(defthmd bvchop-of-*
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (* x y))
+                  (bvmult size x y)))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+(theory-invariant (incompatible (:rewrite bvchop-of-*) (:definition bvmult)))
+
+;saves us from having to chose a prefered form.  maybe i'm just being a wimp
+(defthm bvmult-equal-bvchop-times-rewrite
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (equal (bvmult 32 x y)
+                         (bvchop 32 (* x y)))
+                  t))
+  :hints (("Goal" :in-theory (enable bvmult))))

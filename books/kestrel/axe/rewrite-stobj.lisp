@@ -50,3 +50,10 @@
              (rule-alistp rule-alist-fieldp) ; since rule-alistp is already used!  can we suppress the recognizer in this case?
              (rule-alist get-rule-alist)
              (update-rule-alist put-rule-alist)))
+
+;; In case we turn off tau.
+(defthm true-listp-of-get-monitored-symbols
+  (implies (rewrite-stobjp rewrite-stobj)
+           (true-listp (get-monitored-symbols rewrite-stobj)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable rewrite-stobjp get-monitored-symbols))))

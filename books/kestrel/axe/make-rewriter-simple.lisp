@@ -474,7 +474,8 @@
                           pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-disabled
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
-                          myquotep-when-dag-exprp-and-quote)))
+                          myquotep-when-dag-exprp-and-quote
+                          rationalp-of-sub-tries)))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)

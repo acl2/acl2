@@ -219,7 +219,7 @@
 
 ;; or commute the 1 forward first
 ;; or use the fact that 1 is a mask of all 1s
-(defthm logand-of-1-arg2
+(defthm logand-of-1-becomes-getbit-arg2
   (equal (logand x 1)
          (getbit 0 x))
   :hints (("Goal" :cases ((integerp x)))))
@@ -531,67 +531,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: add versions for other sizes
-(defthm mv-nth-1-of-idiv-spec-32
-  (equal (mv-nth 1 (x86isa::idiv-spec-32 dst src))
-         (let ((res (sbvdiv 64 dst (acl2::bvsx 64 32 src))))
-           (if (sbvlt 64 res -2147483648)
-               0
-             (if (sbvlt 64 2147483647 res)
-                 0
-               (bvchop 32 res)))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-32 sbvdiv sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
 
-(defthm mv-nth-0-of-idiv-spec-32
-  (equal (mv-nth 0 (x86isa::idiv-spec-32 dst src))
-         (let ((res (sbvdiv 64 dst (acl2::bvsx 64 32 src))))
-           (if (sbvlt 64 res -2147483648)
-               (LIST (CONS 'X86ISA::QUOTIENT-INT
-                           (TRUNCATE (LOGEXT 64 DST)
-                                     (LOGEXT 32 SRC)))
-                     (CONS 'X86ISA::REMAINDER-INT
-                           (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
-             (if (sbvlt 64 2147483647 res)
-                 (LIST (CONS 'X86ISA::QUOTIENT-INT
-                             (TRUNCATE (LOGEXT 64 DST)
-                                       (LOGEXT 32 SRC)))
-                       (CONS 'X86ISA::REMAINDER-INT
-                             (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
-               nil))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-32 sbvdiv sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
-
-;todo: add versions for other sizes
-(defthm mv-nth-1-of-idiv-spec-64
-  (equal (mv-nth 1 (x86isa::idiv-spec-64 dst src))
-         (let ((res (sbvdiv 128 dst (acl2::bvsx 128 64 src))))
-           (if (sbvlt 128 res (- (expt 2 63)))
-               0
-             (if (sbvlt 128 (+ -1 (expt 2 63)) res)
-                 0
-               (bvchop 64 res)))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-64 sbvdiv sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
-
-(defthm mv-nth-0-of-idiv-spec-64
-  (equal (mv-nth 0 (x86isa::idiv-spec-64 dst src))
-         (let ((res (sbvdiv 128 dst (acl2::bvsx 128 64 src))))
-           (if (sbvlt 128 res (- (expt 2 63)))
-               (LIST (CONS 'X86ISA::QUOTIENT-INT
-                           (TRUNCATE (LOGEXT 128 DST)
-                                     (LOGEXT 64 SRC)))
-                     (CONS 'X86ISA::REMAINDER-INT
-                           (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
-             (if (sbvlt 128 (+ -1 (expt 2 63)) res)
-                 (LIST (CONS 'X86ISA::QUOTIENT-INT
-                             (TRUNCATE (LOGEXT 128 DST)
-                                       (LOGEXT 64 SRC)))
-                       (CONS 'X86ISA::REMAINDER-INT
-                             (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
-               nil))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-64 sbvdiv sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
 
 (DEFthm x86isa::X86-CWD/CDQ/CQO-alt-def
   (equal (x86isa::X86-CWD/CDQ/CQO PROC-MODE START-RIP TEMP-RIP PREFIXES REX-BYTE OPCODE MODR/M SIB x86)

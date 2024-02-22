@@ -120,8 +120,10 @@
 ;;  functions:
 
 (def-constant-opener logcount)
+(def-constant-opener logapp)
+(def-constant-opener lognot)
+
 (def-constant-opener zip)
-(def-constant-opener logcount)
 (def-constant-opener separate)
 (def-constant-opener nonnegative-integer-quotient)
 (def-constant-opener evenp)
@@ -225,13 +227,11 @@
 
 (def-constant-opener x86isa::10bits-fix)
 (def-constant-opener x86isa::2bits-fix)
-(def-constant-opener logapp)
 (def-constant-opener acl2::expt2$inline)
 
 (def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
 
 (def-constant-opener x86isa::feature-flags); needed?
-
 
 (def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
 (def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
@@ -283,8 +283,8 @@
 
 (def-constant-opener byte-listp)
 
-(def-constant-opener bitops::rotate-left-32$inline) ; todo: more, or rewrite away
 (def-constant-opener acl2::rotate-left)
+(def-constant-opener acl2::rotate-right)
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)

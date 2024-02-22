@@ -89,11 +89,11 @@
                               (< index numbytes)
                               (unsigned-byte-p 8 byte)
                               (unsigned-byte-p (* 8 numbytes) x))))
-  (acl2::putbits (* 8 numbytes)
-                 (+ 7 (* 8 index))
-                 (* 8 index)
-                 (bvchop 8 byte)
-                 x))
+  (putbits (* 8 numbytes)
+           (+ 7 (* 8 index))
+           (* 8 index)
+           (bvchop 8 byte)
+           x))
 
 (defthm putbyte-of-1-arg1
   (implies (natp index)

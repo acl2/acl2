@@ -486,14 +486,6 @@
                       (bvchop n k1)
                     (bvchop n k2)))))
 
-(defthm ash-of-negative-becomes-logtail
-  (implies (and (<= amt 0)
-                (integerp amt))
-           (equal (ash x amt)
-                  (logtail (- amt) x)))
-  :hints (("Goal" :in-theory (enable logtail ash))))
-
-
 ;todo: or go to bvplus of bvplus
 (defthm bvplus-of-+-combine-constants
   (implies (and (syntaxp (and (quotep k1)

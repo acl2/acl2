@@ -21,6 +21,13 @@
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for alignment-checking-enabled-p
 (include-book "readers-and-writers")
 (include-book "flags")
+(local (include-book "linear-memory"))
+
+(defthm program-at-of-set-flag
+  (implies (app-view x86)
+           (equal (program-at prog-addr bytes (set-flag flag val x86))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal" :in-theory (enable set-flag program-at))))
 
 (defthm x86p-of-set-flag (implies (x86p x86) (x86p (set-flag flag val x86))) :hints (("Goal" :in-theory (enable set-flag))))
 (defthm x86p-of-!rflags (implies (x86p x86) (x86p (!rflags v x86))))
@@ -54,6 +61,7 @@
 (defthm 64-bit-modep-of-set-undef (equal (64-bit-modep (set-undef undef x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm 64-bit-modep-of-set-ms (equal (64-bit-modep (set-ms ms x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-ms))))
 (defthm 64-bit-modep-of-!rflags (equal (64-bit-modep (!rflags v x86)) (64-bit-modep x86)))
+(defthm 64-bit-modep-of-set-flag (equal (64-bit-modep (set-flag flag val x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm app-view-of-set-flag (equal (app-view (set-flag flag val x86)) (app-view x86)) :hints (("Goal" :in-theory (enable set-flag))))
 (defthm app-view-of-set-undef (equal (app-view (set-undef undef x86)) (app-view x86)) :hints (("Goal" :in-theory (enable set-undef))))
