@@ -12,16 +12,23 @@
 (in-package "ACL2")
 
 (include-book "centaur/bitops/part-install" :dir :system)
-(include-book "kestrel/bv/bvcat-def" :dir :system)
-(include-book "kestrel/bv/slice-def" :dir :system)
-(include-book "kestrel/bv/getbit-def" :dir :system)
-(local (include-book "kestrel/bv/rules" :dir :system))
-(local (include-book "kestrel/bv/logior-b" :dir :system))
-(local (include-book "kestrel/bv/intro" :dir :system))
+(include-book "centaur/bitops/rotate" :dir :system)
+(include-book "bvcat-def")
+(include-book "slice-def")
+(include-book "getbit-def")
+(include-book "rightrotate")
+(include-book "leftrotate")
+(local (include-book "rules"))
+(local (include-book "logior-b"))
+(local (include-book "intro"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (in-theory (disable bitops::part-select-width-low
                     bitops::part-install-width-low))
@@ -148,16 +155,18 @@
                          (slice (+ -1 xsize) (+ low width) x)
                          (+ width low)
                          (bvcat width val low x))))
-  :hints (("Goal" :in-theory (e/d (BITOPS::PART-INSTALL-WIDTH-LOW BVCAT-EQUAL-REWRITE
-                                                                  SLICE-TOO-HIGH-IS-0-NEW
-                                                                  bvnot-of-0
-                                                                  bvuminus-of-1-arg2
-                                                                  ;BVNOT-TRIM-ALL
-                                                                  SLICE-TOO-HIGH-IS-0-NEW
-                                                                  expt-of-+
-                                                                  BVCHOP-OF-LOGNOT-BECOMES-BVNOT
-                                                                  LOGAND-BECOMES-BVAND
-                                                                  LOGAND-BECOMES-BVAND-alt)
+  :hints (("Goal" :in-theory (e/d (BITOPS::PART-INSTALL-WIDTH-LOW
+                                   BVCAT-EQUAL-REWRITE
+                                   SLICE-TOO-HIGH-IS-0-NEW
+                                   bvnot-of-0
+                                   bvuminus-of-1-arg2
+;BVNOT-TRIM-ALL
+                                   SLICE-TOO-HIGH-IS-0-NEW
+                                   expt-of-+
+                                   BVCHOP-OF-LOGNOT-BECOMES-BVNOT
+                                   LOGAND-BECOMES-BVAND
+                                   LOGAND-BECOMES-BVAND-alt
+                                   ash)
                                   (;EXPONENTS-ADD
                                    ;SLICE-OF-+
                                    BVPLUS-RECOLLAPSE ;looped
@@ -181,7 +190,8 @@
                             REPEATBIT-OF-1-ARG2
                             BVNOT-OF-0
                             LOGAND-BECOMES-BVAND
-                            BVCHOP-OF-LOGNOT-BECOMES-BVNOT)
+                            BVCHOP-OF-LOGNOT-BECOMES-BVNOT
+                            ash)
                            (                  ;SLICE-OF-BVAND
                             BVPLUS-RECOLLAPSE ;looped
                             ;;BVCAT-OF-+-HIGH
@@ -228,3 +238,41 @@
                          (slice (+ -1 32) (+ low width) x)
                          (+ width low)
                          (bvcat width val low x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Introduces the BV function
+(defthm rotate-right-becomes-rightrotate
+  (implies (and (natp width)
+                (natp x)
+                (natp places))
+           (equal (acl2::rotate-right x width places)
+                  (acl2::rightrotate width places x)))
+  :hints (("Goal"
+           :in-theory (enable acl2::rotate-right
+                              acl2::rightrotate
+                              acl2::bvchop-of-logior-becomes-bvor
+                              ash-of-negative-becomes-logtail
+                              logtail-of-bvchop-becomes-slice
+                              acl2::logtail-becomes-0
+                              acl2::bvchop-of-logior-becomes-bvor
+                              ifix
+                              logand-of-bvchop-becomes-bvand-alt))))
+
+;; Introduces the BV function
+(defthm rotate-left-becomes-leftrotate
+  (implies (and (natp width)
+                (natp x)
+                (natp places))
+           (equal (acl2::rotate-left x width places)
+                  (acl2::leftrotate width places x)))
+  :hints (("Goal"
+           :in-theory (enable acl2::rotate-left
+                              acl2::leftrotate
+                              acl2::bvchop-of-logior-becomes-bvor
+                              ash-of-negative-becomes-logtail
+                              logtail-of-bvchop-becomes-slice
+                              acl2::logtail-becomes-0
+                              acl2::bvchop-of-logior-becomes-bvor
+                              ifix
+                              logand-of-bvchop-becomes-bvand-alt))))
