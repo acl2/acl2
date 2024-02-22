@@ -14,6 +14,8 @@
 (include-book "bvcat-def")
 (include-book "slice-def")
 (include-book "getbit-def")
+(include-book "../arithmetic-light/power-of-2p")
+(include-book "../arithmetic-light/lg")
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/plus-and-minus"))
 (local (include-book "../arithmetic-light/minus"))
@@ -268,3 +270,26 @@
 
 (theory-invariant (incompatible (:definition leftrotate)
                                 (:rewrite bvcat-of-getbit-becomes-leftrotate)))
+
+(defthm leftrotate-of-bvchop-arg2-core
+  (implies (and (power-of-2p width)
+                (natp amt))
+           (equal (leftrotate width (bvchop (lg width) amt) x)
+                  (leftrotate width amt x)))
+  :hints (("Goal" :in-theory (enable leftrotate BVCHOP))))
+
+(defthm leftrotate-of-bvchop-arg2
+  (implies (and (syntaxp (and (quotep width)
+                              (quotep size)))
+                (equal size (lg width))
+                (power-of-2p width)
+                (natp amt))
+           (equal (leftrotate width (bvchop size amt) x)
+                  (leftrotate width amt x)))
+  :hints (("Goal" :in-theory (enable leftrotate BVCHOP))))
+
+(defthm leftrotate-of-bvchop-arg3
+  (implies (natp width)
+           (equal (leftrotate width amt (bvchop width x))
+                  (leftrotate width amt x)))
+  :hints (("Goal" :in-theory (enable leftrotate))))
