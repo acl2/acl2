@@ -239,7 +239,7 @@ constants and functions; it also proves some associated lemmas.</p>")
         (mbe :logic (logext ,n x)
              :exec (bitops::fast-logext ,n x)))
 
-     `(define ,ntoi
+     `(define ,ntoi ((x ,nXYp :type (unsigned-byte ,n)))
         ;; Convert natural number to integer
         :inline t
         :no-function t
@@ -248,14 +248,12 @@ constants and functions; it also proves some associated lemmas.</p>")
         :guard-hints (("Goal"
                        :in-theory
                        (enable logext-when-unsigned-byte-p-and-sign-changes)))
-        ((x ,nXYp :type (unsigned-byte ,n)))
-
         (mbe :logic (logext ,n x)
              :exec (if (< x ,(expt 2 (1- n)))
                        x
                      (- x ,(expt 2 n)))))
 
-     `(define ,iton
+     `(define ,iton ((x ,iXYp :type (signed-byte ,n)))
         ;; Convert integer to natural number
         :inline t
         :no-function t
@@ -264,8 +262,6 @@ constants and functions; it also proves some associated lemmas.</p>")
         :guard-hints (("Goal"
                        :in-theory
                        (enable loghead-when-signed-byte-p-and-sign-changes)))
-        ((x ,iXYp :type (signed-byte ,n)))
-
         (mbe :logic (loghead ,n x)
              :exec (if (>= x 0)
                        x
