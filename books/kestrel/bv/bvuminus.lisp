@@ -208,7 +208,7 @@
            (equal (equal k (bvuminus size x))
                   (and (unsigned-byte-p size k)
                        (equal (bvuminus size k) (bvchop size x)))))
-  :hints (("Goal" :in-theory (e/d (bvuminus bvchop-of-minus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus bvchop-of-minus))))
 
 ;; Only needed by Axe?
 (defthmd equal-of-bvuminus-and-constant

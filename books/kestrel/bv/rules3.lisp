@@ -1209,8 +1209,7 @@
                 )
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (leftrotate size amt1 x)))
-  :hints (("Goal" :in-theory (e/d (bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate))))
 
 (defthm bvor-of-bvashr-and-bvshl
   (implies (and (equal size (+ amt1 amt2))
@@ -1448,7 +1447,7 @@
   (implies (posp n)
            (equal (getbit 0 (bvminus n x y))
                   (bvminus 1 x y)))
-  :hints (("Goal" :in-theory (e/d (bvminus) ()))))
+  :hints (("Goal" :in-theory (enable bvminus))))
 
 ;replace other
 ;see BVPLUS-DISJOINT-ONES-32-24-8-TWO
@@ -2083,7 +2082,7 @@
 ;;                 )
 ;;            (equal (bvplus size (* y z) x)
 ;;                   (bvplus size (bvmult size y z) x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+;;   :hints (("Goal" :in-theory (enable bvmult))))
 
 ;fixme gen
 (defthm bvplus-of-bvcat-of-0-hack

@@ -949,5 +949,4 @@
   (implies (and (bvlt size free x)
                 (bvle size k free))
            (not (bvlt size x k)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
