@@ -35,6 +35,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 
 (in-theory (disable acl2::loghead))
 
@@ -210,13 +211,6 @@
            (equal (sse-cmp operation op1 op2 (bvchop size mxcsr) exp-width frac-width)
                   (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
   :hints (("Goal" :in-theory (enable sse-cmp))))
-
-;move
-(defthm ash-of-1-becomes-expt2
-  (implies (natp c)
-           (equal (ash 1 c)
-                  (expt 2 c)))
-  :hints (("Goal" :in-theory (enable ash))))
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
