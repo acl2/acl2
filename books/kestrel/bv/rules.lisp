@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -2870,22 +2870,12 @@
                   (unsigned-byte-p size (* x y))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-;move
-(defthmd bvchop-of-*
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvchop size (* x y))
-                  (bvmult size x y)))
-  :hints (("Goal" :in-theory (enable bvmult))))
-
-(theory-invariant (incompatible (:rewrite bvchop-of-*) (:definition bvmult)))
-
 ;gen one of the sizes
 (defthm bvmult-of-expt
   (implies (natp size)
            (equal (bvmult size (expt 2 size) x)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm bvmult-of-expt-alt
   (implies (natp size)
@@ -2950,7 +2940,7 @@
            (equal (bvmod size (bvmult size (expt 2 n) x) (expt 2 n))
                   0))
   :hints (("Goal" :in-theory (e/d (bvmult bvmod)
-                                  (BVCHOP-OF-*
+                                  (
                                    ;BVLT-OF-*-ARG3
                                    ;*-OF-2-BECOMES-BVMULT
                                    ;MOD-BECOMES-BVMOD-BETTER
@@ -3200,7 +3190,7 @@
                 (syntaxp (quotep k)))
            (equal (bvmult 9 8 x)
                   (bvmult 9 8 k)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm unsigned-byte-p-of-floor-25-64
   (implies (natp x)
@@ -3592,7 +3582,7 @@
                 (integerp high))
            (equal (slice high low (bvmult size (expt 2 m) x))
                   (slice (- high m) (- low m) x)))
-  :hints (("Goal" :in-theory (e/d (bvmult SLICE-WHEN-VAL-IS-NOT-AN-INTEGER) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult SLICE-WHEN-VAL-IS-NOT-AN-INTEGER) ()))))
 
 (defthm slice-of-bvmult-of-expt-gen-alt
   (implies (and (<= m low) ;gen?
@@ -3622,9 +3612,6 @@
                   (slice (- high (lg k)) (- low (lg k)) x)))
   :hints (("Goal" :use (:instance slice-of-bvmult-of-expt-gen (m (lg k)))
            :in-theory (e/d (power-of-2p) ( slice-of-bvmult-of-expt-gen)))))
-
-;new:
-(in-theory (disable BVCHOP-OF-*))
 
 ;kill the special purpose versions
 ;rename bvmult-of-expt and use that name for this:
@@ -4152,7 +4139,7 @@
                 )
            (equal (bvmult size x (logext size2 y))
                   (bvmult size x y)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 ;BOZO add to meta.lisp for bvmult and bvplus...??
 (defthm bvmult-of-logext-alt
@@ -4164,7 +4151,7 @@
                 )
            (equal (bvmult size (logext size2 y) x)
                   (bvmult size y x)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 ;BOZO gen
 (defthm bvplus-constant-equal-constant
@@ -4445,7 +4432,7 @@
                 (integerp size2))
            (equal (bvmult size x (logext size2 y))
                   (bvmult size x y)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm bvmult-of-logext-gen-arg1
   (implies (and (<= size size2)
@@ -6877,7 +6864,7 @@
                (- (expt 2 size)
                   pow)))
   :rule-classes ((:linear :trigger-terms ((bvchop size (* pow x)))))
-  :hints (("Goal" :in-theory (enable  bvchop-of-*-when-power-of-2p)
+  :hints (("Goal" :in-theory (enable bvchop-of-*-when-power-of-2p)
            :use (:instance <-of-*-when-power-of-2p
                            (x pow)
                            (y (bvchop (+ size (- (lg pow))) x))

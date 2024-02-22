@@ -204,8 +204,7 @@
                                    split-when-low-bit-0-hack
 ;bvchop
                                    times-of-2-and-bvchop-of-sub-1)
-                           (bvchop-of-*
-                            BVCHOP-SHIFT-GEN-CONSTANT-VERSION
+                           (BVCHOP-SHIFT-GEN-CONSTANT-VERSION
                             BVCHOP-SHIFT
                             anti-slice
 ;                            anti-bvplus
@@ -1731,8 +1730,7 @@
                          1
                          0)))
   :hints (("Goal" :in-theory (e/d (bvmult bvcat GETBIT)
-                                  (bvchop-of-*
-                                   BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
+                                  (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
 
 ;(EQUAL y (BITOR X y))
 
@@ -1979,7 +1977,7 @@
 ;;                 (natp x))
 ;;            (equal (* 2 x)
 ;;                   (bvmult (ceiling-of-lg free) 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult)(bvchop-of-* BVMULT-OF-2-GEN)))))
+;;   :hints (("Goal" :in-theory (e/d (bvmult)( BVMULT-OF-2-GEN)))))
 
 ;put this back (may need to repair it?)
 ;; (defthm *-of-2-becomes-bvmult->=
@@ -1990,7 +1988,7 @@
 ;;            (equal (* 2 x)
 ;;                   ;is this as tight as we can make the mult?
 ;;                   (bvmult (ceiling-of-lg (+ 1 free)) 2 x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult)(bvchop-of-* BVMULT-OF-2-GEN)))))
+;;   :hints (("Goal" :in-theory (e/d (bvmult)( BVMULT-OF-2-GEN)))))
 
 ;; ;yuck
 ;; (defthm bvcat-hack22
@@ -2024,7 +2022,7 @@
                 )
            (equal (bvcat highsize (* x y) lowsize lowval)
                   (bvcat highsize (bvmult highsize x y) lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm bvcat-of-*-low
   (implies (and (integerp x)
@@ -2034,7 +2032,7 @@
                 )
            (equal (bvcat highsize highval lowsize (* x y))
                   (bvcat highsize highval lowsize (bvmult lowsize x y))))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthmd logext-of-+
   (implies (and (integerp x)
@@ -2076,7 +2074,7 @@
                 )
            (equal (bvplus size x (* y z))
                   (bvplus size x (bvmult size y z))))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvplus-recollapse bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) (bvplus-recollapse)))))
 
 ;add in:
 ;; (defthm bvplus-of-*-arg1
@@ -2141,7 +2139,7 @@
   (implies (natp size)
            (equal (* 2 (bvplus size x y))
                   (bvmult (+ 1 size) 2 (bvplus size x y))))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm ifix-does-nothing
   (implies (integerp x)
@@ -2328,7 +2326,6 @@
            (equal (BVPLUS 6 y (BVMULT 5 4 x))
                   (BVPLUS 5 y (BVMULT 5 4 x))))
   :hints (("Goal" :in-theory (e/d (bvmult bvplus) (;anti-bvplus
-                                                   bvchop-of-*
 ;                                                   BVLT-OF-PLUS-ARG1
 ;                                                  BVLT-OF-PLUS-ARG2
 ;                                                 SLICE-OF-+ ; fixme looped with meta rule?
@@ -2357,7 +2354,7 @@
   (equal (bvuminus '16 (bvcat '8 x '8 '0))
          (bvcat '8 (bvuminus 8 x) '8 '0))
   :hints (("Goal" :in-theory (e/d (bvuminus bvcat bvminus) (bvminus-becomes-bvplus-of-bvuminus
-                                                            bvchop-of-*)))))
+                                                            )))))
 
 ;gen or add non-dag trim rule?
 (defthm bvplus-of-bvcat
@@ -2604,8 +2601,7 @@
                    (and (equal 0 y) (equal 0 x)))
            :in-theory (e/d (BVMULT UNSIGNED-BYTE-P unsigned-byte-p-forced
                                    expt-of-+)
-                           (<-of-*-and-*
-                            bvchop-of-*)))))
+                           (<-of-*-and-*)))))
 
 ;todo move to bv library
 (defthm sbvlt-of-bvplus-of-1-when-sbvlt-rev
@@ -2782,15 +2778,6 @@
                            (bvif size test c d))
                   (bvif size test (bvxor size a c) (bvxor size b d))))
   :hints (("Goal" :in-theory (enable bvif myif bvxor))))
-
-;saves us from having to chose a prefered form.  maybe i'm just being a wimp
-(defthm bvmult-equal-bvchop-times-rewrite
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (equal (bvmult 32 x y)
-                         (bvchop 32 (* x y)))
-                  t))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
 
 (defthm sbvlt-of-bvsx-and-constant
   (implies (and (syntaxp (quotep k))

@@ -33,8 +33,8 @@
 
 ;gen
 (defthm rightrotate32-of-bvchop-32
-  (equal (rightrotate32 amd (bvchop 32 x))
-         (rightrotate32 amd x))
+  (equal (rightrotate32 amt (bvchop 32 x))
+         (rightrotate32 amt x))
   :hints (("Goal" :in-theory (enable rightrotate32 RIGHTROTATE))))
 
 (defthm rightrotate32-of-0

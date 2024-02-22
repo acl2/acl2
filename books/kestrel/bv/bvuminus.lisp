@@ -228,3 +228,10 @@
            (equal (bvuminus size x)
                   (bvuminus size y)))
   :hints (("Goal" :in-theory (enable bvuminus))))
+
+(defthmd bvuminus-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvuminus size (+ x y))
+                  (bvuminus size (bvplus size x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))

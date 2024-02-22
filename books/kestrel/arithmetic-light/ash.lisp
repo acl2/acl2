@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function ash
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,6 +26,11 @@
 (defthm ash-of-0
   (equal (ash i 0)
          (ifix i))
+  :hints (("Goal" :in-theory (enable ash))))
+
+(defthm ash-of-0-arg1
+  (equal (ash 0 c)
+         0)
   :hints (("Goal" :in-theory (enable ash))))
 
 (defthm integerp-of-ash
@@ -164,3 +169,9 @@
   :hints (("Goal" :use (:instance <=-of-ash-when-<=-free-linear
                                   (free (+ -1 free)))
            :in-theory (disable <-of-*-of-expt-and-ash))))
+
+(defthm ash-of-1-becomes-expt2
+  (implies (natp c)
+           (equal (ash 1 c)
+                  (expt 2 c)))
+  :hints (("Goal" :in-theory (enable ash))))

@@ -113,13 +113,34 @@
             x86isa::gpr-add-spec-4$inline
             x86isa::gpr-add-spec-8$inline
 
+            x86isa::div-spec$inline ; just a dispatch on the size
+            ;; These recharacterize divide in terms of bvops:
+            x86isa::mv-nth-0-of-div-spec-8
+            x86isa::mv-nth-1-of-div-spec-8
+            x86isa::mv-nth-2-of-div-spec-8
+            x86isa::mv-nth-0-of-div-spec-16
+            x86isa::mv-nth-1-of-div-spec-16
+            x86isa::mv-nth-2-of-div-spec-16
+            x86isa::mv-nth-0-of-div-spec-32
+            x86isa::mv-nth-1-of-div-spec-32
+            x86isa::mv-nth-2-of-div-spec-32
+            x86isa::mv-nth-0-of-div-spec-64
+            x86isa::mv-nth-1-of-div-spec-64
+            x86isa::mv-nth-2-of-div-spec-64
+
             x86isa::idiv-spec$inline
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
             x86isa::idiv-spec-64-trim-arg1-axe-all
+            x86isa::mv-nth-0-of-idiv-spec-32 ; more?
+            x86isa::mv-nth-1-of-idiv-spec-32
+            x86isa::mv-nth-0-of-idiv-spec-64
+            x86isa::mv-nth-1-of-idiv-spec-64
 
-            x86isa::shrx-spec$inline         ; just a dispatch
-            x86isa::shlx-spec$inline         ; just a dispatch
-            x86isa::sarx-spec$inline         ; just a dispatch
+            x86isa::shrx-spec$inline ; just a dispatch
+            x86isa::shlx-spec$inline ; just a dispatch
+            x86isa::sarx-spec$inline ; just a dispatch
+            x86isa::ror-spec$inline ; just a dispatch
+            x86isa::rol-spec$inline ; just a dispatch
 
             x86isa::shlx-spec-32-redef
             x86isa::shlx-spec-64-redef
@@ -135,20 +156,7 @@
             x86isa::sar-spec-16-redef
             x86isa::sar-spec-32-redef
             x86isa::sar-spec-64-redef
-
-            ;; These recharacterize divide in terms of bvops:
-            x86isa::mv-nth-0-of-div-spec-8
-            x86isa::mv-nth-1-of-div-spec-8
-            x86isa::mv-nth-2-of-div-spec-8
-            x86isa::mv-nth-0-of-div-spec-16
-            x86isa::mv-nth-1-of-div-spec-16
-            x86isa::mv-nth-2-of-div-spec-16
-            x86isa::mv-nth-0-of-div-spec-32
-            x86isa::mv-nth-1-of-div-spec-32
-            x86isa::mv-nth-2-of-div-spec-32
-            x86isa::mv-nth-0-of-div-spec-64
-            x86isa::mv-nth-1-of-div-spec-64
-            x86isa::mv-nth-2-of-div-spec-64)
+            )
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
@@ -305,7 +313,6 @@
     x86isa::rflagsbits$inline-constant-opener
     x86isa::10bits-fix-constant-opener
     x86isa::2bits-fix-constant-opener
-    acl2::logapp-constant-opener
     acl2::expt2$inline-constant-opener
 
     x86isa::!rflagsbits->af$inline-constant-opener
@@ -699,6 +706,8 @@
     acl2::integerp-of--))
 
 ;; Rules to introduce our BV operators (todo: move these):
+;rename bv-intro-rules-logops?
+;move?  maybe only needed for x86 (for now?)
 (defund logops-to-bv-rules ()
   (declare (xargs :guard t))
   '(acl2::logand-becomes-bvand-arg1-axe
@@ -710,6 +719,7 @@
     acl2::bvchop-of-logand-becomes-bvand
     acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
+    acl2::bvuminus-of-+
     ))
 
 ;; Rules to introduce our BV operators (todo: move these):
@@ -720,32 +730,40 @@
     acl2::bvchop-of-part-install-width-low-becomes-bvcat
     acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
     acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
-    acl2::part-install-width-low-becomes-bvcat-32))
+    acl2::part-install-width-low-becomes-bvcat-32
+    acl2::rotate-right-becomes-rightrotate
+    acl2::rotate-left-becomes-leftrotate))
+
+;; See also bitops-to-bv-rules.
+;; todo: add more constant openers
+(defund bitops-rules ()
+  (declare (xargs :guard t))
+  '(bitops::rotate-left-8$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-16$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-32$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-64$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-8$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-16$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-32$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-64$inline ; rewrites to the non-fast rotate
+    acl2::rotate-left-constant-opener
+    acl2::rotate-right-constant-opener))
+
+(defund logops-rules ()
+  (declare (xargs :guard t))
+  '(acl2::logapp-constant-opener
+    common-lisp::lognot-constant-opener
+    common-lisp::logcount-constant-opener))
 
 ;todo: classify these
 (defun x86-bv-rules ()
   (declare (xargs :guard t))
-  (append
-   (logops-to-bv-rules)
-   (bitops-to-bv-rules)
-  '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
+  '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     acl2::logext-of-bvplus-64 ;somewhat unusual
-    x86isa::n08-to-i08$inline ;this is just logext
 
     acl2::bvlt-of-constant-when-unsigned-byte-p-tighter
 
-;    acl2::bvdiv-of-1-arg3
-    ;; acl2::bvdiv-of-bvchop-arg2-same
-    ;; acl2::bvdiv-of-bvchop-arg3-same
-
-    ;;todo: try core-runes-bv:
-    ;acl2::slice-of-slice-gen-better ;figure out which bv rules to include
-    ;acl2::bvcat-of-0-arg1
-    ;acl2::bvcat-of-0-arg3
-
-    bitops::rotate-left-32$inline-constant-opener ;todo: gen to a full rewrite
-    acl2::rotate-left-constant-opener
     acl2::logext-trim-arg-axe-all
 
     acl2::bvuminus-of-logext
@@ -755,7 +773,7 @@
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
     acl2::bvlt-of-bvplus-1-cancel
-    acl2::bvlt-of-bvplus-1-cancel-alt)))
+    acl2::bvlt-of-bvplus-1-cancel-alt))
 
 ;; ;not used?
 ;; (defun canonical-address-rules ()
@@ -1168,6 +1186,8 @@
           (get-prefixes-openers)
           (separate-rules)
           (x86-type-rules)
+          (logops-to-bv-rules)
+          (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
@@ -1177,9 +1197,10 @@
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           (float-rules)
           (acl2::core-rules-bv)
+          (bitops-rules)
+          (logops-rules)
           (if-lowering-rules)
-          '(
-            ;; Reading/writing registers (or parts of registers).  We leave
+          '(;; Reading/writing registers (or parts of registers).  We leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
             ;; to xr and xw.  Shilpi seems to do the same.
             x86isa::rr08$inline
@@ -1192,8 +1213,8 @@
             x86isa::wr64$inline
             x86isa::rgfi-size$inline ;dispatches to rr08, etc.
             x86isa::!rgfi-size$inline ; dispatches to wr08, etc.
-            x86isa::rgfi X86ISA::RGFI$A ;expose the call to xr
-            x86isa::!rgfi X86ISA::!RGFI$A ;expose the call to xw
+            x86isa::rgfi x86isa::rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            x86isa::!rgfi x86isa::!rgfi$a ;expose the call to xw ; todo: go directly to the right writer
 
             ;; Chopping operators (these are just bvchop):
             x86isa::n01$inline
@@ -1204,8 +1225,12 @@
             x86isa::n32$inline
             x86isa::n64$inline
 
-            ;; This is just logext:
+            ;; These are just logext:
+            x86isa::i08$inline
+            x86isa::i16$inline
+            x86isa::i32$inline
             x86isa::i64$inline
+            x86isa::i128$inline
 
             ;; These are just logext:
             x86isa::n08-to-i08$inline
@@ -1306,8 +1331,6 @@
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
             x86isa::one-byte-opcode-execute-base
-            eql ; move
-            = ; move
 
             acl2::binary-+-bring-constant-forward ;improve to disallow the other arg to be constant
 
@@ -1358,8 +1381,8 @@
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
-            acl2::fix-when-acl2-numberp
-            acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
+            ;acl2::fix-when-acl2-numberp
+            ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
             x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
             x86isa::rb-wb-disjoint-eric
@@ -1375,9 +1398,9 @@
 ;            assoc-list-of-rev-of-create-addr-bytes-alist
 ;            true-listp-of-byte-ify
             x86isa::no-duplicates-p-create-canonical-address-list
-            acl2::slice-becomes-bvchop
-            acl2::bvchop-of-bvchop
-            acl2::bvchop-of-bvplus
+            ;acl2::slice-becomes-bvchop
+            ;acl2::bvchop-of-bvchop
+            ;acl2::bvchop-of-bvplus
             acl2::bvchop-identity
 ;            combine-bytes-and-byte-ify
             acl2::open-ash-positive-constants
@@ -1394,17 +1417,15 @@
 
             x86isa::check-instruction-length$inline
 
-            acl2::bvchop-of-bvcat-cases
-            acl2::slice-becomes-getbit
-            acl2::getbit-of-bvcat-all
+            ;acl2::bvchop-of-bvcat-cases
+            ;acl2::slice-becomes-getbit
+            ;acl2::getbit-of-bvcat-all
             ;; x86isa::program-at-set-flag
             ;; x86isa::alignment-checking-enabled-p-and-set-flag
 
 ;            x86isa::rb-set-flag-in-app-view
             acl2::getbit-of-slice-both
 
-            acl2::bvplus-of-bvchop-arg2 ; drop, once we include core-rules-bv
-            acl2::bvplus-of-bvchop-arg3 ; drop, once we include core-rules-bv
 ;            x86isa::set-flag-and-wb-in-app-view ;shilpi leaves this enabled
 
             acl2::getbit-identity ;might be slow
@@ -1414,21 +1435,21 @@
 
             ;; stuff from the timessix example:
             acl2::bvchop-of-logext
-            acl2::getbit-of-bvchop
+            ;acl2::getbit-of-bvchop
 
             x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
-            x86isa::disjoint-p-nil-1
+            ;x86isa::disjoint-p-nil-1
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
 ; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             acl2::bvplus-of-logext-arg2
             acl2::bvplus-of-logext-arg3
-            acl2::bvplus-combine-constants
+            ;acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
 ;<-when-canonical-address-p
 
-            acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
+            ;acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
 
             x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
             x86isa::write-canonical-address-to-memory
@@ -1546,7 +1567,7 @@
             x86isa::wb-xw-in-app-view
 
             acl2::bvchop-of-*
-            acl2::bvchop-of-bvmult
+            ;acl2::bvchop-of-bvmult
             acl2::bvmult-of-logext-gen-arg1
             acl2::bvmult-of-logext-gen-arg2
             acl2::bvchop-of-ash
@@ -1573,14 +1594,14 @@
 
             x86isa::64-bit-modep-of-xw
             x86isa::64-bit-modep-of-mv-nth-1-of-wb
-            x86isa::64-bit-modep-of-set-flag
+            64-bit-modep-of-set-flag
 
             ;;todo: include all of the lifter rules:
             x86isa::canonical-address-p-of-i48
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
             ;; acl2::mv-nth-of-if ; also in if-lifting-rules
-            x86isa::canonical-address-p-of-if
+            ;x86isa::canonical-address-p-of-if
             read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
             read-in-terms-of-nth-and-pos-eric-8-bytes
@@ -1686,8 +1707,8 @@
             x86isa::address-aligned-p-of-8-and-nil
             x86isa::address-aligned-p-of-4-and-nil
 
-            acl2::bvplus-trim-leading-constant
-            acl2::bvplus-of-0-arg2
+            ;acl2::bvplus-trim-leading-constant
+            ;acl2::bvplus-of-0-arg2
             acl2::bvchop-subst-constant
             x86isa::byte-listp-becomes-all-unsigned-byte-p
             acl2::lnfix$inline
@@ -1695,8 +1716,7 @@
 
             x86isa::x86-operation-mode
             x86isa::alignment-checking-enabled-p-of-xw-irrel
-            acl2::slice-of-bvcat-gen
-            /= ;"not equal"
+            ;acl2::slice-of-bvcat-gen
 
             acl2::truncate-becomes-floor-gen ;it might be better to avoid explosing truncate in the first place
 
@@ -1704,7 +1724,7 @@
             acl2::<-of-constant-when-<=-of-constant-integer
             acl2::bvplus-of-+-combine-constants
 
-            common-lisp::logcount-constant-opener ; for flags
+            ;common-lisp::logcount-constant-opener ; for flags
             common-lisp::evenp-constant-opener ; appears in parity flag
             acl2::nonnegative-integer-quotient-constant-opener ; appears in parity flag
             acl2::zip-constant-opener ; for flags
@@ -1734,7 +1754,12 @@
 
             cr0bits->ts-of-bvchop
             cr0bits->em-of-bvchop
-            cr4bits->OSFXSR-of-bvchop)))
+            cr4bits->OSFXSR-of-bvchop
+
+            x86isa::chk-exc-fn ; for floating point and/or avx/vex?
+
+            program-at-of-set-flag
+            )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
@@ -2637,7 +2662,6 @@
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
             x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
             x86isa::write-*sp-when-64-bit-modep
-            x86isa::program-at-of-set-flag ; not 64-bit specific?
             ;; x86isa::program-at-of-set-undef ; do we not need something like this?
             )))
 
@@ -4016,7 +4040,6 @@
             ;; ACL2::IF-OF-T-AND-NIL-WHEN-BOOLEANP
             ACL2::EQUAL-OF-IF-ARG1-WHEN-QUOTEP
             ACL2::EQUAL-OF-IF-ARG2-WHEN-QUOTEP
-            eq
             X86ISA::SSE-CMP-SPECIAL ; scary
             X86ISA::FP-DECODE-CONSTANT-OPENER
             X86ISA::FP-to-rat-CONSTANT-OPENER
@@ -4034,9 +4057,9 @@
             x86isa::ctri-of-if
             ;; feature-flag-of-if
             read-of-if
-            bvle
-            ACL2::INTEGERP-OF-BVPLUS ;todo: more
-            ACL2::INTEGERP-OF-BVCHOP
+            ;bvle
+            ;ACL2::INTEGERP-OF-BVPLUS ;todo: more
+            ;ACL2::INTEGERP-OF-BVCHOP
 
             ;zf-spec$inline     ; needed for unsigned_add_associates -- but does this ruin rules about jle-condition? zf-spec seems to be used in more things that just the conditional branches?
 
@@ -4049,7 +4072,7 @@
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
 
-            logand-of-1-arg2
+            logand-of-1-becomes-getbit-arg2 ;move
             acl2::ifix-does-nothing
             of-spec-of-logext-32
             ACL2::LOGXOR-BVCHOP-BVCHOP        ; introduce bvxor
@@ -4058,12 +4081,12 @@
 ;            bvxor-of-logxor-arg2                      ; introduce bvxor
             integerp-of-logxor                        ;todo: more
             acl2::unsigned-byte-p-of-if
-            acl2::unsigned-byte-p-of-bvplus ;todo: more
+            ;acl2::unsigned-byte-p-of-bvplus ;todo: more
             ACL2::BVCHOP-OF-MYIF
             XR-OF-IF ;restrict?
-            ACL2::SLICE-OUT-OF-ORDER
-            X86ISA::DIV-SPEC$inline ; just a dispatch on the size
-            ACL2::BVCAT-OF-0-arg2
+            ;ACL2::SLICE-OUT-OF-ORDER
+
+            ;ACL2::BVCAT-OF-0-arg2
             bvmod-tighten-64-32
             bvdiv-tighten-64-32
             not-bvlt-of-max-when-unsiged-byte-p
@@ -4075,17 +4098,17 @@
             jnl-condition-rewrite-16
             jnl-condition-rewrite-16b
             bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
-            ACL2::BVSX-WHEN-SIZES-MATCH
+            ;ACL2::BVSX-WHEN-SIZES-MATCH
             ACL2::BVCHOP-OF-BVSX
-            ACL2::BVCHOP-OF-BVCHOP
-            ACL2::BVPLUS-OF-BVCHOP-ARG2
+            ;ACL2::BVCHOP-OF-BVCHOP
+            ;ACL2::BVPLUS-OF-BVCHOP-ARG2
             bvchop-of-zf-spec
             logext-of-zf-spec
             integerp-of-zf-spec
-            sbvle ; expand to sbvlt
-            ACL2::SBVLT-OF-BVCHOP-ARG2
-            ACL2::BVUMINUS-OF-BVUMINUS
-            ACL2::BVPLUS-OF-BVUMINUS-SAME
+            ;sbvle ; expand to sbvlt
+            ;ACL2::SBVLT-OF-BVCHOP-ARG2
+            ;ACL2::BVUMINUS-OF-BVUMINUS
+            ;ACL2::BVPLUS-OF-BVUMINUS-SAME
             ACL2::BVCHOP-NUMERIC-BOUND
             ;;acl2::bvuminus-of-bvsx-low ; todo: other cases? todo: push back
             SF-SPEC64-of-bvchop-64
@@ -4095,8 +4118,8 @@
             of-spec64-of-logext-64
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
-            X86ISA::CHK-EXC-FN ; for floating point?
-            eql
+
+            ;eql
 
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
@@ -4132,14 +4155,11 @@
             ACL2::BVLT-OF-BVPLUS-1-CANCEL-ALT ; optional
             ;X86ISA::IDIV-SPEC-32 ; trying
             ACL2::BVCHOP-WHEN-SIZE-IS-NOT-POSP
-            mv-nth-0-of-idiv-spec-32
-            mv-nth-1-of-idiv-spec-32
-            mv-nth-0-of-idiv-spec-64
-            mv-nth-1-of-idiv-spec-64
+
             acl2::bvcat-of-if-arg2
             acl2::bvcat-of-if-arg4
             ACL2::BVIF-OF-0-ARG1
-            ACL2::BVPLUS-WHEN-SIZE-IS-NOT-POSITIVE ; todo: more like this, make a rule-list
+            ;ACL2::BVPLUS-WHEN-SIZE-IS-NOT-POSITIVE ; todo: more like this, make a rule-list
             x86isa::X86-CWD/CDQ/CQO-alt-def
             acl2::bvcat-of-slice-of-bvsx-same
             not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
@@ -4149,11 +4169,11 @@
             ACL2::BVPLUS-COMMUTATIVE-2-INCREASING-AXE
             ;;acl2::equal-same
             ;; bvcat-of-minus-becomes-bvshl ; except STP doesn't support the shift operators
-            acl2::<-lemma-for-known-operators-axe
-            acl2::bvlt-of-bvchop-arg2
-            acl2::bvlt-of-bvchop-arg3
-            acl2::sbvlt-of-bvchop-arg2
-            acl2::sbvlt-of-bvchop-arg3
+            ;acl2::<-lemma-for-known-operators-axe
+            ;acl2::bvlt-of-bvchop-arg2
+            ;acl2::bvlt-of-bvchop-arg3
+            ;acl2::sbvlt-of-bvchop-arg2
+            ;acl2::sbvlt-of-bvchop-arg3
             ;; todo: more like this?:
             X86ISA::RFLAGSBITS->CF$inline-of-if
             X86ISA::RFLAGSBITS->PF$inline-of-if
@@ -4161,13 +4181,12 @@
             X86ISA::RFLAGSBITS->SF$inline-of-if
             X86ISA::RFLAGSBITS->ZF$inline-of-if
             X86ISA::RFLAGSBITS->AF$inline-of-if
-            acl2::bvand-of-bvchop-1 ;rename
-            acl2::bvand-of-bvchop-2 ;rename
+            ;acl2::bvand-of-bvchop-1 ;rename
+            ;acl2::bvand-of-bvchop-2 ;rename
             ACL2::BVCHOP-OF-MINUS-BECOMES-BVUMINUS ; todo: or re-characterize the subl instruction
             ACL2::BVPLUS-OF-PLUS-ARG2 ; todo: drop once we characterize long negation?
             ACL2::BVPLUS-OF-PLUS-ARG3 ; todo: drop once we characterize long negation?
-            acl2::integerp-when-unsigned-byte-p-free ; needed for the BVPLUS-OF-PLUS rules.
-            ACL2::BVUMINUS-OF-+
+            ;acl2::integerp-when-unsigned-byte-p-free ; needed for the BVPLUS-OF-PLUS rules.
             X86ISA::INTEGERP-OF-XR-RGF
             ACL2::NATP-OF-+-OF-- ; trying, or simplify (NATP (BINARY-+ '32 (UNARY-- (BVCHOP '5 x))))
             min ; why is min arising?  or add min-same
@@ -4187,7 +4206,7 @@
             bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
             read-1-of-write-4
-            read-1-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
+            ;read-1-of-write-1-both ; can make things, like failure to resolve RIP, hard to debug
             read-1-of-write-within-new
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt

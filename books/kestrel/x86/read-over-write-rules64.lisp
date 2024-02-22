@@ -265,6 +265,10 @@
 (defthm x86p-of-set-undef (implies (x86p x86) (x86p (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm x86p-of-set-ms (implies (x86p x86) (x86p (set-ms ms x86))) :hints (("Goal" :in-theory (enable set-ms))))
 
+(defthm x86p-of-write-byte (implies (x86p x86) (x86p (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte))))
+(defthm x86p-of-write (implies (x86p x86) (x86p (write n base-addr val x86))) :hints (("Goal" :in-theory (enable write))))
+(defthm x86p-of-write-bytes (implies (x86p x86) (x86p (write-bytes base-addr vals x86))) :hints (("Goal" :in-theory (enable write-bytes))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defthm rip-of-set-rax
@@ -1126,3 +1130,20 @@
   (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rbp rbp x86)))
          (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
   :hints (("Goal" :in-theory (enable set-rbp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm program-at-of-write
+  (implies (and (separate :r (len bytes) prog-addr :r n addr) ; todo: gen the :rs
+                (canonical-address-p prog-addr)
+                (canonical-address-p (+ -1 (len bytes) prog-addr))
+                (canonical-address-p addr)
+                (implies (posp n)
+                         (canonical-address-p (+ -1 n addr)))
+                (app-view x86)
+                (x86p x86))
+           (equal (program-at prog-addr bytes (write n addr val x86))
+                  (program-at prog-addr bytes x86)))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d (program-at)
+                           (rb wb app-view)))))

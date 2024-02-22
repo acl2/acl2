@@ -22,23 +22,38 @@
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system)
-;(include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/bv/sbvdiv" :dir :system)
+(include-book "kestrel/bv/sbvlt" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
+(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/intro" :dir :system))
 ;(local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ;reduce, for loghead-becomes-bvchop
 (local (include-book "kestrel/bv/rules" :dir :system))
+(local (include-book "kestrel/bv/rules3" :dir :system)) ;for logext-of-bvsx
+(local (include-book "kestrel/bv/bvsx-rules" :dir :system)) ;needed?
 
 (in-theory (disable X86ISA::ZF-SPEC-THM)) ;bad?
 
-(local (in-theory (enable acl2::slice-becomes-getbit)))
+(local (in-theory (disable ACL2::LOGTAIL-OF-ONE-MORE ACL2::LOGTAIL-OF-ONE-LESS ; bad, matches a constant
+                           ACL2::PLUS-BVCAT-WITH-0 ;looped
+                           ACL2::PLUS-BVCAT-WITH-0-ALT ;looped
+                           )))
+
+
+
+(local (in-theory (enable acl2::slice-becomes-getbit
+                          ;logapp ;todo looped
+                          )))
 
 (local
  (defthm not-equal-when-<-cheap
@@ -2518,12 +2533,14 @@
                                    ACL2::BVaSHR
                                    ACL2::BVSX-REWRITE
                                    ACL2::BVSHR
-                                   acl2::bvcat
+                                   ;acl2::bvcat
                                    acl2::slice
                                    ACL2::BVCHOP-OF-LOGTAIL
                                    RFLAGSBITS
                                    zf-spec
-                                   logext)
+                                   logext
+                                   ;ACL2::LOGAPP-BECOMES-BVCAT-WHEN-BV
+                                   )
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2755,3 +2772,109 @@
   :hints (("Goal" :in-theory (enable x86isa::sarx-spec-64 acl2::bvashr acl2::bvshr acl2::bvsx
                                      acl2::logtail-of-bvchop-becomes-slice
                                      acl2::bvchop-of-logtail-becomes-slice))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;todo: make these local:
+
+;gen!
+(defthm *-of-/-linear-when-both-negative-free-linear
+  (implies (and (< free i)
+                (integerp free)
+                (< free 0)
+                (<= j -1)
+                (integerp i)
+                (integerp j)
+                (< i 0)
+                )
+           (< (* i (/ j)) (- free)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (disable acl2::<-of-*-of-/-arg1))))
+
+;gen!
+(defthm *-of-/-linear-when-i-negative-and-positive-linear
+  (implies (and (< i free)
+                (integerp free)
+                (< free 0)
+                (<= j -1)
+                (integerp i)
+                (integerp j)
+                (<= 0 i))
+           (< (- free) (* i (/ j))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (disable acl2::<-of-*-of-/-arg1))))
+
+;(in-theory (disable X86ISA::<-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE X86ISA::<-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
+
+(defthm acl2::logext-of-truncate
+  (implies (and (signed-byte-p acl2::size acl2::i)
+                (posp acl2::size)
+                (integerp acl2::j))
+           (equal (logext acl2::size (truncate acl2::i acl2::j))
+                  (if (and (equal (- (expt 2 (+ -1 acl2::size)))
+                                  acl2::i)
+                           (equal -1 acl2::j))
+                      (- (expt 2 (+ -1 acl2::size)))
+                    (truncate acl2::i acl2::j)))))
+
+;todo: add versions for other sizes
+(defthm mv-nth-1-of-idiv-spec-32
+  (equal (mv-nth 1 (x86isa::idiv-spec-32 dst src))
+         (let ((res (acl2::sbvdiv 64 dst (acl2::bvsx 64 32 src))))
+           (if (acl2::sbvlt 64 res -2147483648)
+               0
+             (if (acl2::sbvlt 64 2147483647 res)
+                 0
+               (acl2::bvchop 32 res)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-32 acl2::sbvdiv acl2::sbvlt)
+                                  (acl2::sbvlt-rewrite)))))
+
+(defthm mv-nth-0-of-idiv-spec-32
+  (equal (mv-nth 0 (x86isa::idiv-spec-32 dst src))
+         (let ((res (acl2::sbvdiv 64 dst (acl2::bvsx 64 32 src))))
+           (if (acl2::sbvlt 64 res -2147483648)
+               (LIST (CONS 'X86ISA::QUOTIENT-INT
+                           (TRUNCATE (LOGEXT 64 DST)
+                                     (LOGEXT 32 SRC)))
+                     (CONS 'X86ISA::REMAINDER-INT
+                           (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
+             (if (acl2::sbvlt 64 2147483647 res)
+                 (LIST (CONS 'X86ISA::QUOTIENT-INT
+                             (TRUNCATE (LOGEXT 64 DST)
+                                       (LOGEXT 32 SRC)))
+                       (CONS 'X86ISA::REMAINDER-INT
+                             (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
+               nil))))
+  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-32 acl2::sbvdiv acl2::sbvlt)
+                                  (acl2::sbvlt-rewrite)))))
+
+;todo: add versions for other sizes
+(defthm mv-nth-1-of-idiv-spec-64
+  (equal (mv-nth 1 (x86isa::idiv-spec-64 dst src))
+         (let ((res (acl2::sbvdiv 128 dst (acl2::bvsx 128 64 src))))
+           (if (acl2::sbvlt 128 res (- (expt 2 63)))
+               0
+             (if (acl2::sbvlt 128 (+ -1 (expt 2 63)) res)
+                 0
+               (acl2::bvchop 64 res)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
+                                  (acl2::sbvlt-rewrite)))))
+
+(defthm mv-nth-0-of-idiv-spec-64
+  (equal (mv-nth 0 (x86isa::idiv-spec-64 dst src))
+         (let ((res (acl2::sbvdiv 128 dst (acl2::bvsx 128 64 src))))
+           (if (acl2::sbvlt 128 res (- (expt 2 63)))
+               (LIST (CONS 'X86ISA::QUOTIENT-INT
+                           (TRUNCATE (LOGEXT 128 DST)
+                                     (LOGEXT 64 SRC)))
+                     (CONS 'X86ISA::REMAINDER-INT
+                           (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
+             (if (acl2::sbvlt 128 (+ -1 (expt 2 63)) res)
+                 (LIST (CONS 'X86ISA::QUOTIENT-INT
+                             (TRUNCATE (LOGEXT 128 DST)
+                                       (LOGEXT 64 SRC)))
+                       (CONS 'X86ISA::REMAINDER-INT
+                             (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
+               nil))))
+  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
+                                  (acl2::sbvlt-rewrite)))))

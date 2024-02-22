@@ -439,15 +439,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvuminus) (bvminus-becomes-bvplus-of-bvuminus))
 ;;            :cases ((natp size)))))
 
-;; ;kill
-;; (defthm bvuminus-of-plus
-;;   (implies (and (integerp x)
-;;                 (integerp y))
-;;            (equal (bvuminus 32 (+ y x))
-;;                   (bvuminus 32 (bvplus 32 y x))))
-;;   :hints (("Goal" :in-theory (e/d (bvplus bvuminus ;bvminus
-;;                                    ;bvchop-of-sum-cases
-;;                                    ) ( bvminus-becomes-bvplus-of-bvuminus anti-bvplus )))))
 
 (defthm sbvlt-cancel-hack2
   (implies (integerp x)
@@ -3459,18 +3450,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (sbvle) (anti-bvplus PLUS-BECOMES-BVPLUS
 ;;                                                        BVLT-OF-PLUS-ARG1
 ;;                                                        BVLT-OF-PLUS-ARG2)))))
-
-;see the -of-plus version
-(defthm bvuminus-of-+
-  (implies (and (natp n)
-                (integerp x)
-                (integerp y))
-           (equal (bvuminus n (+ x y))
-                  (bvuminus n (bvplus n x y))))
-  :hints (("Goal" :in-theory (e/d (bvplus) (anti-bvplus PLUS-BECOMES-BVPLUS
-                                                        GETBIT-OF-+
-                                                        BVLT-OF-PLUS-ARG1
-                                                        BVLT-OF-PLUS-ARG2)))))
 
 (defthm bvlt-of-bvcat-hack-99
   (equal (bvlt 4 (bvcat 2 x 2 0) 12)
@@ -9130,7 +9109,6 @@
                             <-when-unsigned-byte-p-alt
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -9174,7 +9152,6 @@
                             <-when-unsigned-byte-p-alt
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -9216,7 +9193,6 @@
                             <-when-unsigned-byte-p-alt
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -9392,7 +9368,6 @@
                             +-OF-MINUS-1-AND-BV2
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -9457,7 +9432,6 @@
                             +-of-minus-1-and-bv2
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -9501,7 +9475,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9541,7 +9514,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9588,7 +9560,6 @@
                                                      +-of-minus-1-and-bv2
                                                      minus-becomes-bv
                                                      plus-becomes-bvplus-arg1-free
-                                                     bvuminus-of-+
                                                      bvplus-of-plus-arg3
                                                      plus-1-and-bvchop-becomes-bvplus ;fixme
                                                      bvminus-becomes-bvplus-of-bvuminus
@@ -9633,7 +9604,6 @@
 ;                            minus-becomes-bv-2
                                                      minus-becomes-bv
                                                      plus-becomes-bvplus-arg1-free
-                                                     bvuminus-of-+
                                                      bvplus-of-plus-arg3
                                                      plus-1-and-bvchop-becomes-bvplus ;fixme
                                                      bvminus-becomes-bvplus-of-bvuminus
@@ -9677,7 +9647,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9721,7 +9690,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9770,7 +9738,6 @@
                             +-of-minus-1-and-bv2
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -9814,7 +9781,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9854,7 +9820,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9900,7 +9865,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9945,7 +9909,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -9993,7 +9956,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10034,7 +9996,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10073,7 +10034,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10133,7 +10093,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10280,7 +10239,6 @@
                             +-of-minus-1-and-bv2
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -10351,7 +10309,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10450,7 +10407,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10486,7 +10442,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10526,7 +10481,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10568,7 +10522,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10629,7 +10582,6 @@
                             +-of-minus-1-and-bv2
                             minus-becomes-bv
                             plus-becomes-bvplus-arg1-free
-                            bvuminus-of-+
                             bvplus-of-plus-arg3
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
@@ -10709,7 +10661,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10753,7 +10704,6 @@
                                          +-of-minus-1-and-bv2
                                          minus-becomes-bv
                                          plus-becomes-bvplus-arg1-free
-                                         bvuminus-of-+
                                          bvplus-of-plus-arg3
                                          plus-1-and-bvchop-becomes-bvplus ;fixme
                                          bvminus-becomes-bvplus-of-bvuminus
@@ -10818,8 +10768,6 @@
 (in-theory (disable PLUS-BECOMES-BVPLUS-FREE))
 
 (in-theory (disable BVPLUS-OF-PLUS BVPLUS-OF-PLUS2 SLICE-OF-+ PLUS-1-AND-BVCHOP-BECOMES-BVPLUS
-                    BVUMINUS-OF-+
-                    ;BVUMINUS-OF-PLUS
                     MINUS-BECOMES-BV
                     TIMES-4-OF-SLICE-BECOMES-LOGAPP))
 
