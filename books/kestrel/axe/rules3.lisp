@@ -5781,7 +5781,7 @@
 
 
 ;alternate version?
-(defthm bvlt-tighten
+(defthm bvlt-of-constant-arg1-weaken
   (implies (and (syntaxp (want-to-weaken (bvlt size k x)))
                 (not (equal k x))
                 (unsigned-byte-p size x)

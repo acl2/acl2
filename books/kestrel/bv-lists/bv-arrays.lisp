@@ -917,8 +917,8 @@
                     (BVCHOP-LIST ELEMENT-SIZE (TAKE N LST)))))
   :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write ceiling-of-lg))))
 
-;see <-LEMMA-FOR-KNOWN-OPERATORS-NON-DAG
-;bozo gen
+;see <-of-bv-and-constant
+;todo: gen
 (defthm bv-array-read-numeric-bound
   (< (bv-array-read 8 len index data) 256)
   :hints (("Goal" :in-theory (enable bv-array-read))))
