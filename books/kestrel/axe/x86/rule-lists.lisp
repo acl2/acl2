@@ -973,6 +973,23 @@
     booleanp-of-is-nan
     not-mv-nth-0-of-sse-cmp
 
+    x86isa::mxcsrbits-fix-constant-opener
+    x86isa::mxcsrbits->ie$inline-constant-opener
+    x86isa::mxcsrbits->de$inline-constant-opener
+    x86isa::mxcsrbits->ze$inline-constant-opener
+    x86isa::mxcsrbits->oe$inline-constant-opener
+    x86isa::mxcsrbits->ue$inline-constant-opener
+    x86isa::mxcsrbits->pe$inline-constant-opener
+    x86isa::mxcsrbits->daz$inline-constant-opener
+    x86isa::mxcsrbits->im$inline-constant-opener
+    x86isa::mxcsrbits->dm$inline-constant-opener
+    x86isa::mxcsrbits->zm$inline-constant-opener
+    x86isa::mxcsrbits->om$inline-constant-opener
+    x86isa::mxcsrbits->um$inline-constant-opener
+    x86isa::mxcsrbits->pm$inline-constant-opener
+    x86isa::mxcsrbits->rc$inline-constant-opener
+    x86isa::mxcsrbits->fz$inline-constant-opener
+
     mxcsrbits->daz-of-bvchop-32
     mxcsrbits->dm-of-bvchop-32
     mxcsrbits->im-of-bvchop-32
