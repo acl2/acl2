@@ -245,9 +245,7 @@
            (equal (getbit 0 (+ x y))
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (getbit bitxor-split)
-                                  (bvchop-1-becomes-getbit slice-becomes-getbit
-;bvplus-recollapse
-                                                            )))))
+                                  (bvchop-1-becomes-getbit slice-becomes-getbit)))))
 
 ;gen? go to bvplus?
 (defthm bvchop-1-of-plus
@@ -256,9 +254,7 @@
            (equal (bvchop 1 (+ X Y))
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (getbit bitxor-split)
-                                  (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT
-;                                                          BVPLUS-RECOLLAPSE
-)))))
+                                  (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
 
 
 (defthmd logtail-1-of-+
@@ -1212,8 +1208,7 @@
                 )
            (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
                   (leftrotate size amt1 x)))
-  :hints (("Goal" :in-theory (e/d (bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvsx bvashr bvshr bvshl-rewrite-with-bvchop leftrotate))))
 
 (defthm bvor-of-bvashr-and-bvshl
   (implies (and (equal size (+ amt1 amt2))
@@ -1451,7 +1446,7 @@
   (implies (posp n)
            (equal (getbit 0 (bvminus n x y))
                   (bvminus 1 x y)))
-  :hints (("Goal" :in-theory (e/d (bvminus) (BVPLUS-RECOLLAPSE)))))
+  :hints (("Goal" :in-theory (enable bvminus))))
 
 ;replace other
 ;see BVPLUS-DISJOINT-ONES-32-24-8-TWO
@@ -2074,7 +2069,7 @@
                 )
            (equal (bvplus size x (* y z))
                   (bvplus size x (bvmult size y z))))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvplus-recollapse)))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 ;add in:
 ;; (defthm bvplus-of-*-arg1
@@ -2085,7 +2080,7 @@
 ;;                 )
 ;;            (equal (bvplus size (* y z) x)
 ;;                   (bvplus size (bvmult size y z) x)))
-;;   :hints (("Goal" :in-theory (e/d (bvmult) (bvplus-recollapse)))))
+;;   :hints (("Goal" :in-theory (enable bvmult))))
 
 ;fixme gen
 (defthm bvplus-of-bvcat-of-0-hack
@@ -2192,7 +2187,7 @@
            :in-theory (e/d (logext logapp bvchop-of-sum-cases slice ;getbit
                                    REPEATBIT
                                    posp
-                                   ) (BVCAT-OF-GETBIT-AND-X-ADJACENT bvplus-recollapse anti-slice
+                                   ) (BVCAT-OF-GETBIT-AND-X-ADJACENT  anti-slice
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    BVCAT-OF-GETBIT-AND-X-ADJACENT
@@ -2242,7 +2237,7 @@
                     (getbit 31 x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bvchop-of-sum-cases
                                         bvchop-32-split-hack
-                                        ) (anti-slice bvplus-recollapse BVCAT-OF-GETBIT-AND-X-ADJACENT
+                                        ) (anti-slice  BVCAT-OF-GETBIT-AND-X-ADJACENT
                                                       BVCHOP-1-OF-PLUS
                                         BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
 
@@ -2794,4 +2789,4 @@
   :hints (("Goal" :in-theory (enable bvlt bvsx sbvlt-rewrite))))
 
 ;; Rules that conflict wth bvplus:
-(defthy anti-bvplus '(bvplus-recollapse bvplus-of-plus bvplus-of-plus2))
+(defthy anti-bvplus '(bvchop-of-+-becomes-bvplus bvplus-of-plus bvplus-of-plus2))

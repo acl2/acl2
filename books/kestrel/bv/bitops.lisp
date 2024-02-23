@@ -169,7 +169,6 @@
                                    ash)
                                   (;EXPONENTS-ADD
                                    ;SLICE-OF-+
-                                   BVPLUS-RECOLLAPSE ;looped
                                    ;BVCAT-OF-+-HIGH   ;looped
                                    ;BVAND-OF-+-ARG3 ;looped (we should treat a mask of 2^n-1 differently from a generic +
                                    ;BVCAT-OF-+-LOW
@@ -193,8 +192,7 @@
                             BVCHOP-OF-LOGNOT-BECOMES-BVNOT
                             ash)
                            (                  ;SLICE-OF-BVAND
-                            BVPLUS-RECOLLAPSE ;looped
-                            ;;BVCAT-OF-+-HIGH
+                                                        ;;BVCAT-OF-+-HIGH
                             ;;EXPONENTS-ADD
                             ;;BVCAT-OF-+-LOW         ;looped
                             ;;SLICE-OF-+             ;looped

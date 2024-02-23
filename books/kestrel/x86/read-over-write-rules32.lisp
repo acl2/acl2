@@ -1001,7 +1001,7 @@
                             unsigned-byte-p)
                            (sep-eff-addr-ranges
                             acl2::bvcat-equal-rewrite-alt
-                            acl2::bvplus-recollapse
+
                             acl2::bvcat-equal-rewrite)))))
 
 (defthm write-to-segment-of-write-to-segment-included
@@ -1020,7 +1020,7 @@
                             unsigned-byte-p)
                            (sep-eff-addr-ranges
                             acl2::bvcat-equal-rewrite-alt
-                            acl2::bvplus-recollapse
+
                             acl2::bvcat-equal-rewrite)))))
 
 ;;;

@@ -88,13 +88,6 @@
          (bvxor size x y))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-(defthmd bvchop-of-+-becomes-bvplus
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvchop size (+ x y))
-                  (bvplus size x y)))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
 (defthmd bvchop-of---becomes-bvminus
   (implies (and (integerp x)
                 (integerp y))

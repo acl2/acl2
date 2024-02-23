@@ -195,44 +195,43 @@
 (def-constant-opener x86isa::!rflagsbits->sf$inline)
 (def-constant-opener x86isa::!rflagsbits->zf$inline)
 
-(acl2::def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
-(acl2::def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
+(def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
+(def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
 
-(acl2::def-constant-opener x86isa::rflagsbits->ac$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->af$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->cf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->of$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->pf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->sf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->zf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res1$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res2$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res3$inline)
+(def-constant-opener x86isa::rflagsbits->ac$inline)
+(def-constant-opener x86isa::rflagsbits->af$inline)
+(def-constant-opener x86isa::rflagsbits->cf$inline)
+(def-constant-opener x86isa::rflagsbits->of$inline)
+(def-constant-opener x86isa::rflagsbits->pf$inline)
+(def-constant-opener x86isa::rflagsbits->sf$inline)
+(def-constant-opener x86isa::rflagsbits->zf$inline)
+(def-constant-opener x86isa::rflagsbits->res1$inline)
+(def-constant-opener x86isa::rflagsbits->res2$inline)
+(def-constant-opener x86isa::rflagsbits->res3$inline)
 
-(acl2::def-constant-opener x86isa::rflagsbits->tf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->intf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->df$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->iopl$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->nt$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res4$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->rf$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->vm$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->vif$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->vip$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->id$inline)
-(acl2::def-constant-opener x86isa::rflagsbits->res5$inline)
-(acl2::def-constant-opener x86isa::rflagsbits$inline)
+(def-constant-opener x86isa::rflagsbits->tf$inline)
+(def-constant-opener x86isa::rflagsbits->intf$inline)
+(def-constant-opener x86isa::rflagsbits->df$inline)
+(def-constant-opener x86isa::rflagsbits->iopl$inline)
+(def-constant-opener x86isa::rflagsbits->nt$inline)
+(def-constant-opener x86isa::rflagsbits->res4$inline)
+(def-constant-opener x86isa::rflagsbits->rf$inline)
+(def-constant-opener x86isa::rflagsbits->vm$inline)
+(def-constant-opener x86isa::rflagsbits->vif$inline)
+(def-constant-opener x86isa::rflagsbits->vip$inline)
+(def-constant-opener x86isa::rflagsbits->id$inline)
+(def-constant-opener x86isa::rflagsbits->res5$inline)
+(def-constant-opener x86isa::rflagsbits$inline)
 
-(acl2::def-constant-opener x86isa::!rflagsbits->af$inline)
+(def-constant-opener x86isa::!rflagsbits->af$inline)
 
-(acl2::def-constant-opener x86isa::10bits-fix)
-(acl2::def-constant-opener x86isa::2bits-fix)
-(acl2::def-constant-opener acl2::expt2$inline)
+(def-constant-opener x86isa::10bits-fix)
+(def-constant-opener x86isa::2bits-fix)
+(def-constant-opener acl2::expt2$inline)
 
-(acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+(def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
 
-(acl2::def-constant-opener x86isa::feature-flags); needed?
-
+(def-constant-opener x86isa::feature-flags); needed?
 
 (def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
 (def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
@@ -413,12 +412,27 @@
          (not (ms x86))
          (not (fault x86))))
 
-(acl2::def-constant-opener x86isa::mxcsrbits-fix)
-;; todo: more like this?:
-(acl2::def-constant-opener x86isa::mxcsrbits->ue$inline)
-(acl2::def-constant-opener x86isa::mxcsrbits->pe$inline)
+(def-constant-opener x86isa::mxcsrbits-fix)
 
-(acl2::def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
-(acl2::def-constant-opener x86isa::feature-flag)
-;(acl2::def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
-(acl2::def-constant-opener rtl::set-flag) ; drop?
+;; these expose part-select
+(def-constant-opener x86isa::mxcsrbits->ie$inline)
+(def-constant-opener x86isa::mxcsrbits->de$inline)
+(def-constant-opener x86isa::mxcsrbits->ze$inline)
+(def-constant-opener x86isa::mxcsrbits->oe$inline)
+(def-constant-opener x86isa::mxcsrbits->ue$inline)
+(def-constant-opener x86isa::mxcsrbits->pe$inline)
+(def-constant-opener x86isa::mxcsrbits->daz$inline)
+(def-constant-opener x86isa::mxcsrbits->im$inline)
+(def-constant-opener x86isa::mxcsrbits->dm$inline)
+(def-constant-opener x86isa::mxcsrbits->zm$inline)
+(def-constant-opener x86isa::mxcsrbits->om$inline)
+(def-constant-opener x86isa::mxcsrbits->um$inline)
+(def-constant-opener x86isa::mxcsrbits->pm$inline)
+(def-constant-opener x86isa::mxcsrbits->rc$inline)
+(def-constant-opener x86isa::mxcsrbits->fz$inline)
+(def-constant-opener x86isa::mxcsrbits->reserved$inline)
+
+(def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
+(def-constant-opener x86isa::feature-flag)
+;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
+(def-constant-opener rtl::set-flag) ; drop?

@@ -807,7 +807,7 @@
 
     acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
-    acl2::bvplus-recollapse ;rename
+    acl2::bvchop-of-+-becomes-bvplus ; move to logops-to-bv-rules
 
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
@@ -1097,6 +1097,23 @@
     if-of-equal-of-snan-and-is-nan
     booleanp-of-is-nan
     not-mv-nth-0-of-sse-cmp
+
+    x86isa::mxcsrbits-fix-constant-opener
+    x86isa::mxcsrbits->ie$inline-constant-opener
+    x86isa::mxcsrbits->de$inline-constant-opener
+    x86isa::mxcsrbits->ze$inline-constant-opener
+    x86isa::mxcsrbits->oe$inline-constant-opener
+    x86isa::mxcsrbits->ue$inline-constant-opener
+    x86isa::mxcsrbits->pe$inline-constant-opener
+    x86isa::mxcsrbits->daz$inline-constant-opener
+    x86isa::mxcsrbits->im$inline-constant-opener
+    x86isa::mxcsrbits->dm$inline-constant-opener
+    x86isa::mxcsrbits->zm$inline-constant-opener
+    x86isa::mxcsrbits->om$inline-constant-opener
+    x86isa::mxcsrbits->um$inline-constant-opener
+    x86isa::mxcsrbits->pm$inline-constant-opener
+    x86isa::mxcsrbits->rc$inline-constant-opener
+    x86isa::mxcsrbits->fz$inline-constant-opener
 
     mxcsrbits->daz-of-bvchop-32
     mxcsrbits->dm-of-bvchop-32

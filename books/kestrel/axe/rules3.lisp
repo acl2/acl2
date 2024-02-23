@@ -976,7 +976,7 @@
   (equal (bvdiv 32 x 4)
          (slice 31 2 x))
   :hints (("Goal" :in-theory (e/d (bvdiv slice bvchop-of-logtail floor-of-4-becomes-logtail)
-                                  (anti-slice bvplus-recollapse rewrite-floor-mod)))))
+                                  (anti-slice  rewrite-floor-mod)))))
 
 ;rename?
 ;bad rule?
@@ -1302,7 +1302,7 @@
                   (if (< x 4)
                       1073741823
                     (bvplus 30 -1 (slice 31 2 x)))))
-  :hints (("Goal" :in-theory (e/d (bvplus-recollapse slice LOGTAIL-OF-BVCHOP) (anti-slice BVCHOP-OF-LOGTAIL)))))
+  :hints (("Goal" :in-theory (e/d (bvchop-of-+-becomes-bvplus slice LOGTAIL-OF-BVCHOP) (anti-slice BVCHOP-OF-LOGTAIL)))))
 
 ;; (defthm slice-when-bvlt
 ;;   (implies (bvlt 32 x 4)
@@ -1757,7 +1757,7 @@
   (equal (bvdiv 31 x 4)
          (slice 30 2 x))
   :hints (("Goal" :in-theory (e/d (bvdiv slice bvchop-of-logtail floor-of-4-becomes-logtail)
-                                  (anti-slice bvplus-recollapse rewrite-floor-mod)))))
+                                  (anti-slice rewrite-floor-mod)))))
 
 (defthm high-slice-equal-1-rewrite
   (implies (unsigned-byte-p 32 x)

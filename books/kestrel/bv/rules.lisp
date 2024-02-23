@@ -4814,7 +4814,7 @@
                 (natp n))
            (equal (BVCHOP n (+ (- (BVCHOP n x)) y))
                   (BVCHOP n (+ (- x) y))))
-  :hints (("Goal" :in-theory (e/d (bvminus) (;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (e/d (bvminus) (;
                                              )))))
 
 (defthm bvchop-sum-minus-bvchop-arg2-of-2
@@ -4885,7 +4885,7 @@
                  (:instance BVCHOP-SUM-SUBST (x z) (free (+ x y)) (y (- y))))
 
            :in-theory (e/d (bvminus )
-                           (;BVPLUS-RECOLLAPSE ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
+                           (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                             )))))
 
 (defthm equal-bvchop-bvchop-move-minus2
@@ -4900,7 +4900,7 @@
                  (:instance BVCHOP-SUM-SUBST (x z) (free (+ x y)) (y (- y))))
 
            :in-theory (e/d (bvminus )
-                           (;BVPLUS-RECOLLAPSE ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
+                           (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                             )))))
 
 ;fixme drop hyps
@@ -4921,7 +4921,7 @@
            :use ((:instance equal-bvchop-bvchop-move-minus (x x) (y k) (z k2))
                  (:instance equal-bvchop-bvchop-move-minus (x k) (y x) (z k2)))
            :in-theory (e/d (bvminus )
-                           (;BVPLUS-RECOLLAPSE
+                           (;
                             BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                                               EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2
                             equal-bvchop-bvchop-move-minus
@@ -4946,7 +4946,7 @@
            :in-theory (e/d (bvminus
                             bvplus
                                     )
-                           (;BVPLUS-RECOLLAPSE ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
+                           (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
 ;                            bvminus
                             equal-bvchop-bvchop-move-minus
                             ;anti-bvplus
@@ -4983,7 +4983,7 @@
            (equal (equal k1 (bvchop n (+ x k2)))
                   (and (unsigned-byte-p n k1)
                        (equal (bvchop n x) (bvchop n (- k1 k2))))))
-  :hints (("Goal" :in-theory (disable ;bvplus-recollapse
+  :hints (("Goal" :in-theory (disable ;
                               ))))
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg2
@@ -4995,7 +4995,7 @@
                 )
            (equal (bvchop size (+ x (- (bvchop size2 y))))
                   (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2))))
 
 ;no hyps about size
@@ -5005,7 +5005,7 @@
                 )
            (equal (bvchop size (+ x (- (bvchop size y))))
                   (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2))))
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg3
@@ -5018,7 +5018,7 @@
                 )
            (equal (bvchop size (+ w x (- (bvchop size2 y))))
                   (bvchop size (+ w x (- y)))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               ))))
 
 ;no hyps on size
@@ -5041,7 +5041,7 @@
                 )
            (equal (bvchop size (+ w x (bvchop size2 y)))
                   (bvchop size (+ w x y))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               ))))
 
 ;no hyps on size
@@ -6505,7 +6505,7 @@
          (and (equal (getbit 31 x) 0)
               (not (equal 0 (bvchop 31 x)))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
-                                  (;bvplus-recollapse
+                                  (;
                                    )))))
 
 ;; do we need these?

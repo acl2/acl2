@@ -230,9 +230,7 @@
                                low 0)))
   :hints (("Goal" :in-theory (e/d (bvcat ash BVUMINUS BVMINUS)
                                   (;BVPLUS-OF-UNARY-MINUS-ARG2
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   ;BVPLUS-RECOLLAPSE ;looped!
-                                   )))))
+                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -406,7 +404,7 @@
                      (- x))
                   (bvchop 32 k)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvlt)
-                                  (;bvplus-recollapse
+                                  (;
                                    )))))
 
 ;In case we don't want to commit to a normal form

@@ -326,30 +326,74 @@
     x86isa::msri
 
     x86isa::mxcsrbits-fix
-    ;; todo: more like this?:
-    x86isa::mxcsrbits->daz$inline
+
+    x86isa::mxcsrbits->ie$inline
     x86isa::mxcsrbits->de$inline
+    x86isa::mxcsrbits->ze$inline
+    x86isa::mxcsrbits->oe$inline
+    x86isa::mxcsrbits->ue$inline
+    x86isa::mxcsrbits->pe$inline
+    x86isa::mxcsrbits->daz$inline
     x86isa::mxcsrbits->im$inline
     x86isa::mxcsrbits->dm$inline
-    x86isa::mxcsrbits->ie$inline
-    x86isa::mxcsrbits->ze$inline
-    x86isa::mxcsrbits->pe$inline
-    x86isa::mxcsrbits->ue$inline
     x86isa::mxcsrbits->zm$inline
-    x86isa::mxcsrbits->oe$inline
+    x86isa::mxcsrbits->om$inline
+    x86isa::mxcsrbits->um$inline
+    x86isa::mxcsrbits->pm$inline
     x86isa::mxcsrbits->rc$inline
+    x86isa::mxcsrbits->fz$inline
+    x86isa::mxcsrbits->reserved$inline
 
-    x86isa::mxcsrbits->daz
+    x86isa::mxcsrbits->ie
     x86isa::mxcsrbits->de
+    x86isa::mxcsrbits->ze
+    x86isa::mxcsrbits->oe
+    x86isa::mxcsrbits->ue
+    x86isa::mxcsrbits->pe
+    x86isa::mxcsrbits->daz
     x86isa::mxcsrbits->im
     x86isa::mxcsrbits->dm
-    x86isa::mxcsrbits->ie
-    x86isa::mxcsrbits->ze
-    x86isa::mxcsrbits->pe
-    x86isa::mxcsrbits->ue
     x86isa::mxcsrbits->zm
-    x86isa::mxcsrbits->oe
+    x86isa::mxcsrbits->om
+    x86isa::mxcsrbits->um
+    x86isa::mxcsrbits->pm
     x86isa::mxcsrbits->rc
+    x86isa::mxcsrbits->fz
+    x86isa::mxcsrbits->reserved
+
+    x86isa::!mxcsrbits->ie$inline
+    x86isa::!mxcsrbits->de$inline
+    x86isa::!mxcsrbits->ze$inline
+    x86isa::!mxcsrbits->oe$inline
+    x86isa::!mxcsrbits->ue$inline
+    x86isa::!mxcsrbits->pe$inline
+    x86isa::!mxcsrbits->daz$inline
+    x86isa::!mxcsrbits->im$inline
+    x86isa::!mxcsrbits->dm$inline
+    x86isa::!mxcsrbits->zm$inline
+    x86isa::!mxcsrbits->om$inline
+    x86isa::!mxcsrbits->um$inline
+    x86isa::!mxcsrbits->pm$inline
+    x86isa::!mxcsrbits->rc$inline
+    x86isa::!mxcsrbits->fz$inline
+    x86isa::!mxcsrbits->reserved$inline
+
+    x86isa::!mxcsrbits->ie
+    x86isa::!mxcsrbits->de
+    x86isa::!mxcsrbits->ze
+    x86isa::!mxcsrbits->oe
+    x86isa::!mxcsrbits->ue
+    x86isa::!mxcsrbits->pe
+    x86isa::!mxcsrbits->daz
+    x86isa::!mxcsrbits->im
+    x86isa::!mxcsrbits->dm
+    x86isa::!mxcsrbits->zm
+    x86isa::!mxcsrbits->om
+    x86isa::!mxcsrbits->um
+    x86isa::!mxcsrbits->pm
+    x86isa::!mxcsrbits->rc
+    x86isa::!mxcsrbits->fz
+    x86isa::!mxcsrbits->reserved
 
     x86isa::feature-flag
 
