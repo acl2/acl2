@@ -1572,7 +1572,7 @@
            :in-theory (disable bvand-of-constant-tighten))))
 
 ; not really an axe rule
-(defthmd bvshl-32-cases-dag ;just use the non-dag-version?
+(defthmd bvshl-32-cases-dag ;just use the non-axe-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
            (equal (BVSHL 32 x shift-AMOUNT)
@@ -1680,7 +1680,7 @@
 )))))
 
 ; not really an axe rule
-(defthmd bvshr-32-cases-dag;just use the non-dag-version?
+(defthmd bvshr-32-cases-dag;just use the non-axe-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
            (equal (BVSHR 32 x shift-AMOUNT)
@@ -1781,7 +1781,7 @@
                                                            '31))))))))))))))))))))))))))))))))))
   :hints (("Goal" :in-theory (e/d (bvif bvshr) (unsigned-byte-p-from-bounds)))))
 
-(defthmd bvshl-32-cases-dag-barrel-shifter ;just use a non-dag-version?
+(defthmd bvshl-32-cases-dag-barrel-shifter ;just use a non-axe-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshl to chop its shift amount?
            (equal (BVSHL 32 x shift-AMOUNT)
@@ -1836,7 +1836,7 @@
                    (equal 31 shift-amount))
            :in-theory (e/d (BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT) (BVSHL-REWRITE-WITH-BVCHOP)))))
 
-(defthmd bvshr-32-cases-dag-barrel-shifter ;just use a non-dag-version?
+(defthmd bvshr-32-cases-dag-barrel-shifter ;just use a non-axe-version?
   (implies (and (syntaxp (not (quotep shift-amount)))
                 (unsigned-byte-p 5 shift-amount)) ;bozo redefine bvshr to chop its shift amount?
            (equal (BVSHR 32 x shift-AMOUNT)
@@ -1956,7 +1956,7 @@
 ;;            )))
 
 ;drop?  mentioned in rule-lists.lisp
-(defthmd recollapse-hack-slice-version  ;just use a non-dag-version?
+(defthmd recollapse-hack-slice-version  ;just use a non-axe-version?
   (implies (and (syntaxp (not (quotep x)))
                 (equal free1 (bvchop size x))
                 (natp size)

@@ -415,13 +415,20 @@
                   (logxor (myif test 0 k) x)))
   :hints (("Goal" :in-theory (enable myif))))
 
-;rename
-(DEFTHM <-LEMMA-FOR-KNOWN-OPERATORS-alt-non-dag
-  (IMPLIES (AND (syntaxp (QUOTEP K))
+(defthm <-of-bv-and-constant
+  (implies (and (syntaxp (quotep k))
                 (bind-free (bind-var-to-bv-term-size 'xsize x))
-                (<= (+ -1 (EXPT 2 XSIZE)) K)
-                (UNSIGNED-BYTE-P XSIZE X))
-           (not (< K X)))
+                (<= (expt 2 xsize) k)
+                (unsigned-byte-p xsize x))
+           (< x k))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+(defthm not-<-of-constant-and-bv
+  (implies (and (syntaxp (quotep k))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (<= (+ -1 (expt 2 xsize)) k)
+                (unsigned-byte-p xsize x))
+           (not (< k x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 
@@ -433,14 +440,7 @@
            (equal (bvchop size1 (bvminus size2 y z))
                   (bvminus size2 y z))))
 
-(DEFTHM <-LEMMA-FOR-KNOWN-OPERATORS-NON-DAG
-  (IMPLIES (AND (SYNTAXP (QUOTEP K))
-                (BIND-FREE (BIND-VAR-TO-BV-TERM-SIZE 'XSIZE
-                                                           X))
-                (<= (EXPT 2 XSIZE) K)
-                (UNSIGNED-BYTE-P XSIZE X))
-           (< X K))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 
 ;skips the syntaxp hyp...
 (defthm slice-bound-2
