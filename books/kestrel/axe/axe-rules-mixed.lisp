@@ -169,8 +169,8 @@
                 (posp xsize))
            (equal (bvlt size x y)
                   (bvlt (max xsize ysize) x y)))
-  :hints (("Goal" :use (:instance bvlt-tighten-non-dag)
-           :in-theory (disable bvlt-tighten-non-dag))))
+  :hints (("Goal" :use (:instance bvlt-tighten)
+           :in-theory (disable bvlt-tighten))))
 
 (defthmd <-becomes-bvlt-dag-gen
   (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
@@ -350,7 +350,7 @@
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bvlt
                                                           ;unsigned-byte-p
                                                           )
-                                  (bvlt-tighten-non-dag
+                                  (bvlt-tighten
                                    UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 
@@ -375,7 +375,7 @@
                                                    )
                            (<-of-bvchop-and-bvchop-same
                             BVCHOP-WHEN-<-TIGHTEN
-                            bvlt-tighten-non-dag
+                            bvlt-tighten
                             UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 (defthmd bvmult-tighten-dag-power-of-2

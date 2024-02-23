@@ -1,7 +1,7 @@
 ; BV Library: getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -653,3 +653,13 @@
   :hints (("Goal" :in-theory (e/d (getbit slice logtail)
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit)))))
+
+(defthm getbit-of-ash
+  (implies (and (natp c) ; left shift
+                (natp n))
+           (equal (getbit n (ash i c))
+                  (if (<= c n)
+                      (getbit (- n c) i)
+                    0)))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (bvchop-1-becomes-getbit)))))

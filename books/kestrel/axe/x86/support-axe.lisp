@@ -120,8 +120,10 @@
 ;;  functions:
 
 (def-constant-opener logcount)
+(def-constant-opener logapp)
+(def-constant-opener lognot)
+
 (def-constant-opener zip)
-(def-constant-opener logcount)
 (def-constant-opener separate)
 (def-constant-opener nonnegative-integer-quotient)
 (def-constant-opener evenp)
@@ -225,7 +227,6 @@
 
 (acl2::def-constant-opener x86isa::10bits-fix)
 (acl2::def-constant-opener x86isa::2bits-fix)
-(acl2::def-constant-opener logapp)
 (acl2::def-constant-opener acl2::expt2$inline)
 
 (acl2::def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
@@ -259,6 +260,8 @@
 (def-constant-opener x86isa::vex->pp$inline)
 (def-constant-opener x86isa::vex->r$inline)
 (def-constant-opener x86isa::vex->w$inline)
+(def-constant-opener x86isa::vex->b$inline)
+(def-constant-opener x86isa::vex->x$inline)
 
 ;; can we optimize these by avoiding introducing the fix?
 (def-constant-opener x86isa::vex3-byte1-fix$inline)
@@ -281,8 +284,8 @@
 
 (def-constant-opener byte-listp)
 
-(def-constant-opener bitops::rotate-left-32$inline) ; todo: more, or rewrite away
 (def-constant-opener acl2::rotate-left)
+(def-constant-opener acl2::rotate-right)
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)

@@ -60,3 +60,9 @@
                 (triesp tries2))
            (integerp (sub-tries tries1 tries2)))
   :hints (("Goal" :in-theory (enable sub-tries))))
+
+(defthmd rationalp-of-sub-tries
+  (implies (and (triesp tries1)
+                (triesp tries2))
+           (rationalp (sub-tries tries1 tries2)))
+  :hints (("Goal" :in-theory (enable sub-tries))))

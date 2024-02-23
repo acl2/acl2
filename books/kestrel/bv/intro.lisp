@@ -65,18 +65,6 @@
   :hints (("Goal" ;:cases ((natp high))
            :in-theory (enable bvnot))))
 
-
-(defthm getbit-of-ash
-  (implies (and (natp c) ; left shift
-                (integerp i)
-                (natp n))
-           (equal (getbit n (ash i c))
-                  (if (<= c n)
-                      (getbit (- n c) i)
-                    0)))
-  :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit)))))
-
 (defthm getbit-of-logmask
   (implies (and (natp n)
                 (integerp width))
@@ -114,39 +102,33 @@
                   (bvminus size x y)))
   :hints (("Goal" :in-theory (enable bvminus))))
 
+;; We only need to get the size of one argument for logand
 (defthm logand-becomes-bvand
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-;                (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p size x)
-;               (unsigned-byte-p size y)
-                (natp y)
-                )
+                (unsigned-byte-p-forced size x)
+                (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
   :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
 
 (defthm logand-becomes-bvand-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p size y)
-                (natp x))
+                (unsigned-byte-p-forced size y)
+                (integerp x))
            (equal (logand x y)
                   (bvand size x y)))
   :hints (("Goal" :use (:instance logand-becomes-bvand (x y) (y x))
            :in-theory (disable logand-becomes-bvand))))
 
 (defthmd logand-of-bvchop-becomes-bvand
-  (implies (and (natp width)
-                (natp y)) ;gen
-           (equal (logand y (bvchop width x))
-                  (bvand width y x)))
+  (equal (logand y (bvchop width x))
+         (bvand width y x))
   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
            :in-theory (disable logand-becomes-bvand))))
 
 (defthmd logand-of-bvchop-becomes-bvand-alt
-  (implies (and (natp width)
-                (natp y)) ;gen
-           (equal (logand (bvchop width x) y)
-                  (bvand width y x)))
+  (equal (logand (bvchop width x) y)
+         (bvand width y x))
   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
            :in-theory (disable logand-becomes-bvand))))
 
@@ -161,7 +143,7 @@
 ;; logapp does not indicate the size of the high bits, so we have to try to
 ;; figure it out.
 (defthmd logapp-becomes-bvcat-when-bv
-  (implies (and (bind-free (acl2::bind-var-to-bv-term-size 'jsize j) (jsize))
+  (implies (and (bind-free (bind-var-to-bv-term-size 'jsize j) (jsize))
                 (unsigned-byte-p-forced jsize j))
            (equal (logapp size i j)
                   (bvcat jsize j size i)))

@@ -108,7 +108,8 @@
   :hints (("Goal" :in-theory (enable logtail))))
 
 (defthm logtail-of-times-2
-  (implies (and (natp n)
+  (implies (and (syntaxp (not (quotep x))) ; prevent ACL2 from unifying (* 2 x) with a constant
+                (natp n)
                 (integerp x))
            (equal (logtail n (* 2 x))
                   (if (equal 0 n)
@@ -365,3 +366,10 @@
   :hints (("Goal" :in-theory (enable logtail ifix))))
 
 (theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
+
+(defthmd ash-of-negative-becomes-logtail
+  (implies (and (<= amt 0)
+                (integerp amt))
+           (equal (ash x amt)
+                  (logtail (- amt) x)))
+  :hints (("Goal" :in-theory (enable logtail ash))))
