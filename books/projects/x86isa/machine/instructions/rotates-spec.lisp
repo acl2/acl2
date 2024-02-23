@@ -711,12 +711,12 @@ the result.</p>"
                 ;; CF is affected, OF is undefined.
                 ;; All other flags are unaffected.
                 (b* ((cf ;; CF = MSB of the result.
-                      (mbe :logic
-                           (part-select result :low 0 :width 1)
-                           :exec
-                           (the (unsigned-byte 1)
-                             (logand 1 (the (unsigned-byte ,size)
-                                         result)))))
+                      (mbe :logic (logbit ,size-1 result)
+                           :exec (logand 1
+                                         (the (unsigned-byte 1)
+                                           (ash (the (unsigned-byte ,size)
+                                                  result)
+                                                ,neg-size-1)))))
                      (output-rflags (the (unsigned-byte 32)
                                       (!rflagsBits->cf cf input-rflags)))
                      (undefined-flags (the (unsigned-byte 32)
