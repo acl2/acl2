@@ -350,11 +350,6 @@
 (defthmd integerp-of-part-install-width-low$inline
   (integerp (bitops::part-install-width-low$inline val x width low)))
 
-(defthm 64-bit-modep-of-if
-  (equal (64-bit-modep (if test x86_1 x86_2))
-         (if test (64-bit-modep x86_1)
-           (64-bit-modep x86_2))))
-
 ;; ;todo!
 ;; ;or use a defun-sk to state that all states have the same cpuid
 ;; (skip-proofs
@@ -449,10 +444,6 @@
 (defthm ifix-of-if
   (equal (ifix (if test x86 x86_2))
          (if test (ifix x86) (ifix x86_2))))
-
-(defthm get-flag-of-if
-  (equal (get-flag flag (if test x86 x86_2))
-         (if test (get-flag flag x86) (get-flag flag x86_2))))
 
 ;; (defthm feature-flag-of-if
 ;;   (equal (x86isa::feature-flag flag (if test x86 x86_2))

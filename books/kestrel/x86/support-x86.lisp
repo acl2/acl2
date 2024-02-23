@@ -1126,6 +1126,11 @@
   (equal (app-view (if test x86 x86_2))
          (if test (app-view x86) (app-view x86_2))))
 
+(defthm 64-bit-modep-of-if
+  (equal (64-bit-modep (if test x86_1 x86_2))
+         (if test (64-bit-modep x86_1)
+           (64-bit-modep x86_2))))
+
 (defthm program-at-of-if
   (equal (program-at prog-addr bytes (if test x86 x86_2))
          (if test (program-at prog-addr bytes x86) (program-at prog-addr bytes x86_2))))

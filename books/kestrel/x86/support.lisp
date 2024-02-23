@@ -2260,8 +2260,6 @@
 ;;   (equal (set-rax (if test val1 val2) x86)
 ;;          (if test (set-rax val1 x86) (set-rax val2 x86))))
 
-(defthm 64-bit-modep-of-if (equal (64-bit-modep (if test x y)) (if test (64-bit-modep x) (64-bit-modep y))))
-
 (defthm unsigned-byte-p-1-of-rflagsbits->cf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->cf$inline rflags)))
 (defthm unsigned-byte-p-1-of-rflagsbits->res1$inline (unsigned-byte-p 1 (x86isa::rflagsbits->res1$inline rflags)))
 (defthm unsigned-byte-p-1-of-rflagsbits->pf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->pf$inline rflags)))

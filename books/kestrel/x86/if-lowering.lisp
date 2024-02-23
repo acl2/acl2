@@ -56,7 +56,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;todo: replace the others
 (defthmd if-of-set-undef-arg2-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test (set-undef undef x86_1) x86_2) (set-undef (if test undef (undef x86_2)) (if test x86_1 x86_2)))))
 (defthmd if-of-set-undef-arg3-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test x86_1 (set-undef undef x86_2)) (set-undef (if test (undef x86_1) undef) (if test x86_1 x86_2)))))
 
