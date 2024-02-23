@@ -514,19 +514,79 @@
     ;; x86isa::two-byte-opcode-modr/m-and-mandatory-prefix
     x86isa::compute-mandatory-prefix-for-two-byte-opcode$inline
     x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline
-    x86isa::prefixes->lck$inline
-    x86isa::prefixes->nxt$inline
+
+    x86isa::prefixes-fix$inline ; or use constant-openers for these
     x86isa::prefixes->num$inline
-    x86isa::!prefixes->nxt$inline
-    x86isa::!prefixes->num$inline
-    x86isa::!prefixes->opr$inline
-;    x86isa::num-prefixes-fix$inline
-    x86isa::prefixes-fix$inline
-;    x86isa::next-byte-fix
-;    x86isa::opr-fix
+    x86isa::prefixes->lck$inline
+    x86isa::prefixes->rep$inline
+    x86isa::prefixes->seg$inline
     x86isa::prefixes->opr$inline
     x86isa::prefixes->adr$inline
-    x86isa::prefixes->seg$inline
+    x86isa::prefixes->nxt$inline
+    ;; x86isa::prefixes->rep$inline-constant-opener ; for floating point?
+
+    x86isa::!prefixes->nxt$inline ; why are these needed?
+    x86isa::!prefixes->num$inline
+    x86isa::!prefixes->opr$inline
+    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
+    x86isa::!prefixes->seg$inline-constant-opener
+
+    x86isa::vex-prefixes-fix$inline-constant-opener
+    x86isa::vex-prefixes->byte0$inline-constant-opener
+    x86isa::vex-prefixes->byte1$inline-constant-opener
+    x86isa::vex-prefixes->byte2$inline-constant-opener
+    x86isa::!vex-prefixes->byte0$inline-constant-opener ; kind of surprised that we are writing into such a struct
+    x86isa::!vex-prefixes->byte1$inline-constant-opener
+    x86isa::!vex-prefixes->byte2$inline-constant-opener
+
+    x86isa::vex2-byte1-fix$inline-constant-opener
+    x86isa::vex2-byte1->pp$inline-constant-opener
+    x86isa::vex2-byte1->l$inline-constant-opener
+    x86isa::vex2-byte1->vvvv$inline-constant-opener
+    x86isa::vex2-byte1->r$inline-constant-opener
+
+    x86isa::vex3-byte1-fix$inline-constant-opener
+    x86isa::vex3-byte1->m-mmmm$inline-constant-opener
+    x86isa::vex3-byte1->b$inline-constant-opener
+    x86isa::vex3-byte1->x$inline-constant-opener
+    x86isa::vex3-byte1->r$inline-constant-opener
+
+    x86isa::vex3-byte2-fix$inline-constant-opener
+    x86isa::vex3-byte2->pp$inline-constant-opener
+    x86isa::vex3-byte2->l$inline-constant-opener
+    x86isa::vex3-byte2->vvvv$inline-constant-opener
+    x86isa::vex3-byte2->w$inline-constant-opener
+
+    x86isa::evex-prefixes->byte0$inline-constant-opener
+    x86isa::evex-prefixes->byte1$inline-constant-opener
+    x86isa::evex-prefixes->byte2$inline-constant-opener
+    x86isa::evex-prefixes->byte3$inline-constant-opener
+    x86isa::!evex-prefixes->byte0$inline-constant-opener
+
+    x86isa::evex-byte1->mm$inline-constant-opener
+    x86isa::evex-byte1->res$inline-constant-opener
+    x86isa::evex-byte1->r-prime$inline-constant-opener
+    x86isa::evex-byte1->b$inline-constant-opener
+    x86isa::evex-byte1->x$inline-constant-opener
+    x86isa::evex-byte1->r$inline-constant-opener
+
+    x86isa::evex-byte2->pp$inline-constant-opener
+    x86isa::evex-byte2->res$inline-constant-opener
+    x86isa::evex-byte2->vvvv$inline-constant-opener
+    x86isa::evex-byte2->w$inline-constant-opener
+
+    x86isa::evex-byte3->aaa$inline-constant-opener
+    x86isa::evex-byte3->v-prime$inline-constant-opener
+    x86isa::evex-byte3->b$inline-constant-opener
+    x86isa::evex-byte3->vl/rc$inline-constant-opener
+    x86isa::evex-byte3->z$inline-constant-opener
+
+
+;    x86isa::num-prefixes-fix$inline
+
+;    x86isa::next-byte-fix
+;    x86isa::opr-fix
     x86isa::modr/m->mod$inline
     x86isa::modr/m->reg$inline
     x86isa::modr/m->r/m$inline
@@ -538,11 +598,7 @@
     x86isa::4bits-fix
     x86isa::8bits-fix
 
-    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
-    X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
-    X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
-    x86isa::!prefixes->seg$inline-constant-opener
-    X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
+
 
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
@@ -555,31 +611,7 @@
     x86isa::vex->b$inline-constant-opener
     x86isa::vex->x$inline-constant-opener
 
-    x86isa::vex-prefixes-fix$inline-constant-opener
-    x86isa::vex-prefixes->byte0$inline-constant-opener
-    x86isa::vex-prefixes->byte1$inline-constant-opener
-    x86isa::vex-prefixes->byte2$inline-constant-opener
-    x86isa::!vex-prefixes->byte0$inline-constant-opener ; kind of surprised that we are writing into such a struct
-    x86isa::!vex-prefixes->byte1$inline-constant-opener
-    x86isa::!vex-prefixes->byte2$inline-constant-opener
 
-    x86isa::vex3-byte1-fix$inline-constant-opener
-    x86isa::vex3-byte1->m-mmmm$inline-constant-opener
-    x86isa::vex3-byte1->b$inline-constant-opener
-    x86isa::vex3-byte1->x$inline-constant-opener
-    x86isa::vex3-byte1->r$inline-constant-opener
-
-    x86isa::vex2-byte1-fix$inline-constant-opener
-    x86isa::vex2-byte1->pp$inline-constant-opener
-    x86isa::vex2-byte1->l$inline-constant-opener
-    x86isa::vex2-byte1->vvvv$inline-constant-opener
-    x86isa::vex2-byte1->r$inline-constant-opener
-
-    x86isa::vex3-byte2-fix$inline-constant-opener
-    x86isa::vex3-byte2->pp$inline-constant-opener
-    x86isa::vex3-byte2->l$inline-constant-opener
-    x86isa::vex3-byte2->vvvv$inline-constant-opener
-    x86isa::vex3-byte2->w$inline-constant-opener
 
     ;; todo: more constant-openers for the bitstructs (or add to evaluator)
 

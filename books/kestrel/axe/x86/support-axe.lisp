@@ -239,10 +239,26 @@
 
 ;; TODO: Think about whether to use regular rules, constant opener rules, or build into the evaluator.
 
-(def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
-(def-constant-opener X86ISA::!PREFIXES->REP$inline)
-(def-constant-opener X86ISA::PREFIXES->REP$INLINE)
+(def-constant-opener x86isa::prefixes->num$inline)
+(def-constant-opener x86isa::prefixes->lck$inline)
+(def-constant-opener x86isa::prefixes->rep$inline)
+(def-constant-opener x86isa::prefixes->seg$inline)
+(def-constant-opener x86isa::prefixes->opr$inline)
+(def-constant-opener x86isa::prefixes->adr$inline)
+(def-constant-opener x86isa::prefixes->nxt$inline)
+
+(def-constant-opener x86isa::!prefixes->rep$inline)
 (def-constant-opener x86isa::!prefixes->seg$inline)
+
+(def-constant-opener x86isa::evex-prefixes->byte0$inline)
+(def-constant-opener x86isa::evex-prefixes->byte1$inline)
+(def-constant-opener x86isa::evex-prefixes->byte2$inline)
+(def-constant-opener x86isa::evex-prefixes->byte3$inline)
+
+(def-constant-opener x86isa::!evex-prefixes->byte0$inline)
+(def-constant-opener x86isa::!evex-prefixes->byte1$inline)
+(def-constant-opener x86isa::!evex-prefixes->byte2$inline)
+(def-constant-opener x86isa::!evex-prefixes->byte3$inline)
 
 (def-constant-opener x86isa::vex-prefixes-fix$inline)
 (def-constant-opener x86isa::vex-prefixes->byte0$inline)
@@ -253,7 +269,24 @@
 (def-constant-opener x86isa::!vex-prefixes->byte2$inline)
 (def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
 (def-constant-opener x86isa::vex-prefixes-map-p$inline)
-(def-constant-opener x86isa::prefixes->rep$inline)
+
+(def-constant-opener x86isa::evex-byte1->mm$inline)
+(def-constant-opener x86isa::evex-byte1->res$inline)
+(def-constant-opener x86isa::evex-byte1->r-prime$inline)
+(def-constant-opener x86isa::evex-byte1->b$inline)
+(def-constant-opener x86isa::evex-byte1->x$inline)
+(def-constant-opener x86isa::evex-byte1->r$inline)
+
+(def-constant-opener x86isa::evex-byte2->pp$inline)
+(def-constant-opener x86isa::evex-byte2->res$inline)
+(def-constant-opener x86isa::evex-byte2->vvvv$inline)
+(def-constant-opener x86isa::evex-byte2->w$inline)
+
+(def-constant-opener x86isa::evex-byte3->aaa$inline)
+(def-constant-opener x86isa::evex-byte3->v-prime$inline)
+(def-constant-opener x86isa::evex-byte3->b$inline)
+(def-constant-opener x86isa::evex-byte3->vl/rc$inline)
+(def-constant-opener x86isa::evex-byte3->z$inline)
 
 (def-constant-opener x86isa::vex->vvvv$inline)
 (def-constant-opener x86isa::vex->l$inline)
