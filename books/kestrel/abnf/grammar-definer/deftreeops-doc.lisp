@@ -192,7 +192,8 @@
        if a list of lists of trees matches
        the alternation that defines the rule name
        then the list of lists of trees matches
-       one of the alternatives (each of which is a concatenation)."))
+       one of the alternatives (each of which is a concatenation).
+       This is a disjunctive theorem, unless there is just one alternative."))
 
     (xdoc::desc
      "@('<prefix>-alt-equivs-when-<rulename>')"
@@ -205,6 +206,8 @@
        that discriminates among the alternatives;
        there is an equivalence for each alternative,
        and the theorem consists of the conjunction of the equivalences.
+       This theorem is a conjunction of
+       an equivalence for each alternative that defines the rule name.
        For now we only generate this theorem
        when each alternative is
        a singleton concatenation of
@@ -213,10 +216,10 @@
     (xdoc::desc
      "@('<prefix>-<rulename>-alt?')"
      (xdoc::p
-      "For each rule name defined in the garmmar by two or more alternatives,
+      "For each rule name defined in the grammar by two or more alternatives,
        a function that, given a tree matching the rule name,
        returns a positive integer
-       indicating the alternative matched by the tree,
+       indicating the alternative matched by the subtrees,
        in the order in which the alternative appears in the grammar,
        starting from 1 for the first alternative.
        If a rule name is defined by multiple rules
@@ -257,4 +260,5 @@
        and each tree matches
        the element of the repetition.
        For now we only generate this theorem
-       when the repetition has a range of 1.")))))
+       when the repetition has a range of 1,
+       and when the alternative is a singleton concatenation.")))))
