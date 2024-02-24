@@ -164,7 +164,7 @@
      "The information about the repetitions that form the alternative.
       This is @('nil') if the alternative is not a singleton concatenation,
       because in that case the matching theorem for the repetition
-      is not generated (see @(tse deftreeops-rep-info)).")))
+      is not generated (see @(tsee deftreeops-rep-info)).")))
   ((alt concatenationp)
    (discriminant-term "A term.")
    (match-thm acl2::symbol)
