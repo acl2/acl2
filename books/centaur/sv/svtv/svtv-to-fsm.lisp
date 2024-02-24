@@ -4052,7 +4052,7 @@ In particular this requires
                               x.bindings nil 'outs)
                              (svtv-to-fsm-first-thm-input-var-bindings x.output-vars x.outmap nil 'outs)))
        (test-env (svtv-genthm-override-test-alist
-                  x.new-eliminated-override-vars
+                  x.new-eliminated-override-vars nil;;x.override-var-masks
                   x.triple-val-alist x.triples-name))
        ;; (run-length (len (svtv-probealist-outvars spec.probes)))
        )
@@ -4413,7 +4413,7 @@ In particular this requires
                                              new-eliminated-override-vars))
 
        (override-test-svtv-env (svtv-genthm-override-test-alist
-                                remaining-override-vars
+                                remaining-override-vars nil
                                 svtv-thm.triple-val-alist svtv-thm.triples-name))
        (override-test-envs (if eliminate-all-overrides
                                (make-list (len svtv-spec-val.override-test-alists) :initial-element nil)
