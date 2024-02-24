@@ -696,7 +696,6 @@
   :hints (("Goal" :in-theory (e/d (logext logapp getbit slice logtail-of-bvchop bvchop-32-split-hack)
                                   (;anti-slice
                                    bvchop-1-becomes-getbit slice-becomes-getbit
-                                                           ;bvplus-recollapse
                                                            bvchop-of-logtail)))))
 
 (defthm bvchop-subst-constant-from-logext

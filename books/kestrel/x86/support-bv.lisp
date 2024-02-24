@@ -91,7 +91,7 @@
                       -1
                     (bvcat highsize (+ -1 highval) lowsize (+ -1 (expt 2 lowsize))))))
   :hints (("Goal" :in-theory (e/d (bvcat bvplus acl2::bvchop-of-sum-cases)
-                                  (acl2::bvplus-recollapse
+                                  (
                                    ;acl2::equal-of-+-when-negative-constant
                                    )))))
 
@@ -205,7 +205,7 @@
                   (equal (bvchop size n) 0)))
   :hints (("Goal"
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
-                           (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+                           ( acl2::bvminus-becomes-bvplus-of-bvuminus
                                                     acl2::slice-of-+ ;looped
                                                     ;; acl2::bvcat-of-+-high
    ;                                                    ACL2::NTH-OF-CDR

@@ -155,7 +155,7 @@
                            ( floor-of-minus-and-minus
                              ;floor-minus
                              ;PLUS-BVCAT-WITH-0
-                             ;bvplus-recollapse
+                             ;
                              ;BVCAT-OF-+-LOW
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              ;<-Y-*-Y-X

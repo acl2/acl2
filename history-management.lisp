@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -18263,14 +18263,30 @@
                            name key val)))
             ((if mvp (car ev-result) ev-result)
              (value nil))
-            ((and mvp (cadr ev-result))
+            ((and mvp
+                  (msgp (cadr ev-result)))
              (er soft ctx
                  "~@0"
                  (cadr ev-result)))
             (t (er soft ctx
                    "The TABLE :guard for ~x0 disallows the combination of key ~
-                   ~x1 and value ~x2.  The :guard is ~x3.  See :DOC table."
-                   name key val (untranslate term t wrld)))))
+                    ~x1 and value ~x2.  The :guard~#3~[~/~@4~] is ~x5.  See :DOC ~
+                    table.~#6~[~/~@7~]"
+                   name key val
+                   (if mvp 1 0)
+                   ", representing multiple values (mv okp msg),"
+                   (untranslate term t wrld)
+                   (if (and mvp ; not (msgp (cadr ev-result))
+                            (cadr ev-result))
+                       1
+                     0)
+                   (msg "  Note:  You are seeing this generic error message ~
+                         even though the TABLE guard for ~x0 evaluated to ~
+                         multiple values ~x1, because the second value does ~
+                         not satisfy ~x2."
+                        name
+                        (list 'mv (car ev-result) (cadr ev-result))
+                        'msgp)))))
          (if (and (eq name 'acl2-defaults-table)
                   (eq key :ttag))
              (chk-acceptable-ttag val nil ctx wrld state)

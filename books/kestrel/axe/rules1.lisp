@@ -214,7 +214,7 @@
 ;;                            (x (bvcat highsize highval lowsize lowval))
 ;;                            (y x))
 ;;            :in-theory (e/d ( ;bvmult
-;;                             ) ( BVPLUS-RECOLLAPSE BVMULT-OF-BVCHOP-arg3)))))
+;;                             ) (  BVMULT-OF-BVCHOP-arg3)))))
 
 ;; (defthm bvmult-8-27-blast
 ;;   (equal (bvmult 8 27 (getbit n x))
@@ -603,7 +603,7 @@
                             bv-array-read ceiling-of-lg
 ;                                        car-of-both-sides-alt
 ;                                       car-of-both-sides
-                            ;bvplus-recollapse
+                            ;bvchop-of-+-becomes-bvplus
                             EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
                             subrange
                             )
@@ -819,8 +819,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 BV-ARRAY-WRITE)
 ;;                                   (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER)))))
 
-;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
-
 (defthm all-unsigned-byte-p-of-bvchop-list-gen2
   (implies (and ;(<= element-size size)
             (all-unsigned-byte-p size lst)
@@ -967,7 +965,7 @@
            (equal (BV-ARRAY-READ esize '128 n (UPDATE-SUBRANGE start end vals lst))
                   (BV-ARRAY-READ esize (+ 1 end (- start)) (+ N (- START)) vals)))
   :hints (("Goal" :in-theory (e/d (bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg)
-                                  (;BVPLUS-RECOLLAPSE
+                                  (;
                                    unsigned-byte-p-of-+-of-minus-alt
                                    unsigned-byte-p-of-+-of-minus)))))
 
@@ -1437,7 +1435,7 @@
                   (bv-array-read element-size (+ 1 end) (+ start index) lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener bvchop-when-i-is-not-an-integer subrange)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   ;;BVPLUS-RECOLLAPSE
+                                   ;;
                                    )))))
 
 ;; (defthm logext-list-of-myif-of-logext-list-arg2
@@ -3059,9 +3057,7 @@
   (("Goal"
     :IN-THEORY
     (E/D (BV-ARRAY-READ-OPENER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-         (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-          ;;BVPLUS-RECOLLAPSE
-          )))))
+         (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 (defthm bv-array-write-of-bv-array-write-diff-constant-indices-work-hard
   (implies (and (syntaxp (quotep index1))

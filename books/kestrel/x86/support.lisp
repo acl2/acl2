@@ -723,7 +723,7 @@
                                    acl2::getbit-of-plus
                                    acl2::bvchop-when-top-bit-1-cheap
                                    bvchop-when-signed-byte-p-one-more-and-negative-linear)
-                                  (acl2::bvplus-recollapse
+                                  (
                                    acl2::bvchop-identity-cheap
                                    acl2::bvchop-identity
                                    ;acl2::trim-to-n-bits-meta-rule-for-bvcat ;looped
@@ -870,7 +870,7 @@
   :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::LOGEXT-CASES
                                                 acl2::bvcat ACL2::LOGAPP
                                                 ACL2::LOGEXT-OF-PLUS)
-                                  (ACL2::BVPLUS-RECOLLAPSE
+                                  (
                                    ACL2::BVCHOP-IDENTITY-CHEAP
                                    ACL2::BVCHOP-IDENTITY
                                    ;ACL2::TRIM-TO-N-BITS-META-RULE-FOR-BVCAT ;looped
@@ -994,7 +994,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (ACL2::BVPLUS-RECOLLAPSE
+;;                                  (
 ;;                                   ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
@@ -1010,7 +1010,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (ACL2::BVPLUS-RECOLLAPSE
+;;                                  (
 ;;                                   ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
@@ -2113,7 +2113,7 @@
 ;;                   (if (equal x (+ -1 (expt 2 32)))
 ;;                       (- x)
 ;;                     1)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases) (ACL2::BVPLUS-RECOLLAPSE)))))
+;;   :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases) ()))))
 
 (in-theory (enable x86isa::x86-operation-mode)) ;for non-axe symbolic execution
 

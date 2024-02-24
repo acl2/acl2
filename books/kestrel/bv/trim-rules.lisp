@@ -169,8 +169,7 @@
          (if (< (ifix size1) (ifix size))
              (repeatbit size1 i)
              (repeatbit size i)))
-  :hints (("Goal" :in-theory (e/d (trim repeatbit)
-                                  (bvplus-recollapse)))))
+  :hints (("Goal" :in-theory (enable trim repeatbit))))
 
 ;; ;not true?
 ;; (defthm bvchop-of-bvdiv2
