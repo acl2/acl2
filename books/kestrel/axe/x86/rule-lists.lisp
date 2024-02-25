@@ -1352,6 +1352,7 @@
             x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the PC
             poor-mans-quotep-constant-opener
 
+            booleanp-of-canonical-address-p
 
             the-check
             ;; get-prefixes:
@@ -4083,7 +4084,6 @@
             ;; acl2::bvplus-of-bvmult-when-power-of-2p-tighten ; todo: uncomment
             bvchop-of-bool-to-bit ;todo: drop
             logext-of-bool-to-bit
-            acl2::bool-fix-when-booleanp
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
             acl2::bvif-of-logext-1
