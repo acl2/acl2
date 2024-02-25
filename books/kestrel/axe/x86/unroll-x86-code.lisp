@@ -491,8 +491,10 @@
           (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%"))
        (- (and print (progn$ (cw "(Simplified assumptions:~%")
-                             (print-list-elided assumptions '(program-at ; the program can be huge
-                                                              )) ; todo: more?
+                             (if (acl2::print-level-at-least-tp print)
+                                 (acl2::print-list assumptions)
+                               (print-list-elided assumptions '(program-at ; the program can be huge
+                                                                )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (term-to-simulate '(run-until-return x86))
