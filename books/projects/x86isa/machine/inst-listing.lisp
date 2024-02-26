@@ -3608,8 +3608,9 @@
     (INST "RESERVEDNOP" (OP :OP #xF1D)
           NIL 'NIL
           'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF1E)
-          NIL 'NIL
+    (INST "ENDBR32/ENDBR64" (OP :OP #xF1E)
+          NIL
+          '(x86-endbr32/endbr64)
           'NIL)
     (INST "NOP" (OP :OP #xF1F)
           (ARG :OP1 '(E V))
