@@ -233,19 +233,18 @@
        The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
-     "@('<prefix>-match-alt<i>-<rulename>')"
+     "@('<prefix>-match-conc<i>-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar,
-       and for each alternative @('<i>') (starting from 1)
-       that defines the rule name,
+       and for each concatenation @('<i>') (starting from 1)
+       that forma the alternation that defines the rule name,
        a theorem saying that
-       if a list of lists of trees matches that alternative
-       (which is a concatenation)
+       if a list of lists of trees matches that concatenation
        then the list of lists of trees has the same length as the concatenation
        and each list of trees matches
        the corresponding repetition of the concatenation.
        For now we only generate this theorem
-       when the alternative is a singleton concatenation."))
+       when the concatenation is a singleton."))
 
     (xdoc::desc
      "@('<prefix>-match-alt<i>-rep<j>-<rulename>')"

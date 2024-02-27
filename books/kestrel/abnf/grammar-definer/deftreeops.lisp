@@ -147,7 +147,7 @@
       described in @(tsee deftreeops).
       This is @('nil') if the rule name has just one alternative.")
     (xdoc::li
-     "The name of the @('<prefix>-match-alt<i>-<rulename>') theorem
+     "The name of the @('<prefix>-match-conc<i>-<rulename>') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if the alternative is not a singleton concatenation.")
@@ -690,7 +690,7 @@
                              (not (consp (cdr conc)))))
        (match-thm
         (and conc-singletonp
-             (packn-pos (list prefix '-match-alt i '- rulename-upstring)
+             (packn-pos (list prefix '-match-conc i '- rulename-upstring)
                         prefix)))
        (check-alt-fn-equiv-thm
         (and check-alt-fn
