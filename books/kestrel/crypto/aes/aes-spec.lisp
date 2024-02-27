@@ -1,7 +1,7 @@
 ; Formal specification of the AES block cipher
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -556,7 +556,7 @@
                 ;(< round 11)
                 )
            (statep (apply-round round state nk w)))
-  :hints (("Goal" :in-theory (e/d (apply-round) ()))))
+  :hints (("Goal" :in-theory (enable apply-round))))
 
 (defund apply-rounds (round max state nk w)
   (declare (xargs :guard (and (acl2::member nk '(4 6 8))
@@ -580,7 +580,7 @@
                 ;(< round 11)
                 )
            (statep (apply-rounds round max state nk w)))
-  :hints (("Goal" :in-theory (e/d (apply-rounds) ()))))
+  :hints (("Goal" :in-theory (enable apply-rounds))))
 
 (defund copyarraytostate (in)
   (declare (xargs :guard (byte-arrayp (* 4 *nb*) in)))
@@ -813,7 +813,7 @@
                      ;(expanded-keyp (keyexpansion key nk) nk)
            (expanded-keyp (KEYEXPANSION KEY NK) nk))
   :hints (("Goal"    ;:expand (:free (x y) (KEYEXPANSIONLOOP2 x y))
-           :in-theory (e/d (keyexpansion (acl2::repeat)) ()))))
+           :in-theory (enable keyexpansion (:e acl2::repeat)))))
 
 ;prove that it returns the right type
 
@@ -846,7 +846,7 @@
                 ;(< round 11)
                 )
            (statep (invapply-round round state nk w)))
-  :hints (("Goal" :in-theory (e/d (invapply-round) ()))))
+  :hints (("Goal" :in-theory (enable invapply-round))))
 
 ;;todo: make tailrecursive?
 (defund invapply-rounds (currentround state w nk)
@@ -872,7 +872,7 @@
                 (acl2::member nk '(4 6 8))
                 )
            (statep (invapply-rounds round state w nk)))
-  :hints (("Goal" :in-theory (e/d (invapply-rounds) ()))))
+  :hints (("Goal" :in-theory (enable invapply-rounds))))
 
 (acl2::verify-guards invapply-rounds)
 

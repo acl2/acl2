@@ -1808,8 +1808,8 @@
                    (- size lowsize)
                    (bvxor (- size lowsize) (slice (+ -1 size) lowsize x) (bvchop highsize highval)) lowsize
                    (bvxor lowsize (bvchop lowsize x) lowval)))) ;could tighetn the slice?
-  :hints (("Goal" :in-theory (e/d (                              ;bvcat bvxor
-                                   ) ( )))))
+  :hints (("Goal" :in-theory (enable ;bvcat bvxor
+                                   ))))
 
 ;fixme what does repeatbit do if not given a bit??
 

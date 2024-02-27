@@ -1558,16 +1558,14 @@
                              (bvchop 32 eff-addr2))
                       (write-byte-to-segment eff-addr1 seg-reg val1 x86)
                     (write-byte-to-segment eff-addr2 seg-reg val2 (write-byte-to-segment eff-addr1 seg-reg val1 x86)))))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment ACL2::BVCHOP-OF-+-BECOMES-BVPLUS)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment acl2::bvchop-of-+-becomes-bvplus))))
 
 (defthm write-byte-to-segment-of-write-byte-to-segment-same
   (implies (and (integerp eff-addr)
                 (x86p x86))
            (equal (write-byte-to-segment eff-addr seg-reg val1 (write-byte-to-segment eff-addr seg-reg val2 x86))
                   (write-byte-to-segment eff-addr seg-reg val1 x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment ACL2::BVCHOP-OF-+-BECOMES-BVPLUS)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment acl2::bvchop-of-+-becomes-bvplus))))
 
 (defthmd write-to-segment-of-write-byte-to-segment
   (implies (and (integerp eff-addr1)
@@ -1664,7 +1662,6 @@
                                                           acl2::bvchop-identity)
                                   ( ;acl2::bvchop-+-cancel-seconds
                                    ;x86isa::msri$inline
-
                                    acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 

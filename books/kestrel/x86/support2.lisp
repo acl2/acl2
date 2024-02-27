@@ -453,8 +453,6 @@
 ;;                                                     ACL2::BVCAT-OF-+-HIGH
 ;;                                                     )))))
 
-;(in-theory (disable acl2::bvchop-of-+-becomes-bvplus)) ; move
-
 ;; (defthm write-bytes-of-281474976710656
 ;;   (equal (write-bytes 281474976710656 vals x86)
 ;;          (write-bytes 0 vals x86))

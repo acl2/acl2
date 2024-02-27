@@ -897,17 +897,17 @@
   (implies (unsigned-byte-p 31 z)
            (equal (BVLT 32 (BVUMINUS 31 x) z)
                   (BVLT 31 (BVUMINUS 31 x) z)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ( )))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-of-bvuminus-tighten-arg2
   (equal (BVLT 31 z (BVUMINUS 32 x))
          (BVLT 31 z (BVUMINUS 31 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ( )))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-of-bvuminus-tighten-arg1
   (equal (BVLT 31 (BVUMINUS 32 x) z)
          (BVLT 31 (BVUMINUS 31 x) z))
-  :hints (("Goal" :in-theory (e/d (bvlt) ( )))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;can we split into fewer cases? maybe not?
 (defthm bvlt-of-bvuminus-and-constant
@@ -924,7 +924,6 @@
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus
                                         BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                                   (anti-bvplus bvminus-becomes-bvplus-of-bvuminus
-
                                                ;;BVLT-OF-PLUS-ARG1
                                                ;;BVLT-OF-PLUS-ARG2
                                                 )))))
@@ -935,7 +934,7 @@
                 (integerp size))
            (equal (BVLT size (BVCHOP 31 x) y)
                   (BVLT 31 (BVCHOP 31 x) y)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ( )))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;better way to handle this?  should a < in some rule somewhere be a bvlt?
 (defthm <-of-bvuminus-becomes-bvlt
@@ -944,7 +943,7 @@
                 )
            (equal (< (bvuminus size x) y)
                   (bvlt size (bvuminus size x) y)))
-  :hints (("Goal" :in-theory (e/d (bvlt) ( )))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-of-bvuminus-and-constant-alt
   (implies (and (syntaxp (and (quotep k)
@@ -1036,9 +1035,9 @@
                       (bvlt size x (bvplus size y (bvuminus size k1)))))))
   :hints (("Goal" :use (:instance bvlt-add-to-both-sides (x (bvplus size k1 x)) (z (bvuminus size k1)))
            :in-theory (e/d (bvlt-of-0-arg2)
-                           ( bvlt-add-to-both-sides
-                               BVLT-OF-PLUS-ARG2
-                               BVLT-OF-PLUS-ARG1)))))
+                           (bvlt-add-to-both-sides
+                            bvlt-of-plus-arg2
+                            bvlt-of-plus-arg1)))))
 
 ;; (defthm bvplus-when-bvchop-known-subst-alt
 ;;   (implies (and (equal (bvchop size x) free)

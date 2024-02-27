@@ -2017,7 +2017,7 @@
                 )
            (equal (bvcat highsize (* x y) lowsize lowval)
                   (bvcat highsize (bvmult highsize x y) lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm bvcat-of-*-low
   (implies (and (integerp x)
@@ -2027,7 +2027,7 @@
                 )
            (equal (bvcat highsize highval lowsize (* x y))
                   (bvcat highsize highval lowsize (bvmult lowsize x y))))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthmd logext-of-+
   (implies (and (integerp x)
@@ -2035,8 +2035,7 @@
                 (posp size))
            (equal (logext size (+ x y))
                   (logext size (bvplus size x y))))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
-                                            )))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;do this better with congruences?
 (defthmd bvcat-of-+-high
