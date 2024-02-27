@@ -185,15 +185,16 @@
        then its branches match the alternation that defines the rule name."))
 
     (xdoc::desc
-     "@('<prefix>-alternatives-when-<rulename>')"
+     "@('<prefix>-concs-when-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that
        if a list of lists of trees matches
        the alternation that defines the rule name
        then the list of lists of trees matches
-       one of the alternatives (each of which is a concatenation).
-       This is a disjunctive theorem, unless there is just one alternative."))
+       one of the concatenarions that form the alternation.
+       This is a disjunctive theorem,
+       unless the alternation consists of just one concatenation."))
 
     (xdoc::desc
      "@('<prefix>-alt-equivs-when-<rulename>')"

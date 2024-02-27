@@ -201,7 +201,7 @@
      "The name of the @('<prefix>-branches-match-alt-when-<rulename>') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
-     "The name of the @('<prefix>-alternatives-when-<rulename>') theorem
+     "The name of the @('<prefix>-concs-when-<rulename>') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
      "The name of the @('<prefix>-alt-equivs-when-<rulename>') theorem
@@ -219,7 +219,7 @@
   ((nonleaf-thm acl2::symbol)
    (rulename-thm acl2::symbol)
    (match-thm acl2::symbol)
-   (alt-disj-thm acl2::symbol)
+   (concs-thm acl2::symbol)
    (alt-equiv-thm acl2::symbol)
    (check-alt-fn acl2::symbol)
    (alt-infos deftreeops-alt-info-list))
@@ -773,8 +773,8 @@
        (match-thm
         (packn-pos (list prefix '-branches-match-alt-when- rulename-upstring)
                    prefix))
-       (alt-disj-thm
-        (packn-pos (list prefix '-alternatives-when- rulename-upstring)
+       (concs-thm
+        (packn-pos (list prefix '-concs-when- rulename-upstring)
                    prefix))
        ((mv okp terms) (deftreeops-gen-discriminant-terms alt))
        (terms (if okp terms (repeat (len alt) nil)))
@@ -793,7 +793,7 @@
               :nonleaf-thm nonleaf-thm
               :rulename-thm rulename-thm
               :match-thm match-thm
-              :alt-disj-thm alt-disj-thm
+              :concs-thm concs-thm
               :alt-equiv-thm alt-equiv-thm
               :check-alt-fn check-alt-fn
               :alt-infos alt-infos)))
@@ -1037,7 +1037,7 @@
   :returns (mv (nonleaf-thm-event pseudo-event-formp)
                (rulename-thm-event pseudo-event-formp)
                (match-thm-event pseudo-event-formp)
-               (alt-disj-thm-event pseudo-event-formp)
+               (concs-thm-event pseudo-event-formp)
                (alt-equiv-thm-event? pseudo-event-form-listp)
                (check-alt-fn-event? pseudo-event-form-listp)
                (alt-match-thm-events pseudo-event-form-listp)
@@ -1090,8 +1090,8 @@
                         (:e element-rulename->get)
                         (:e lookup-rulename))
            :use ,info.nonleaf-thm))
-       (alt-disj-thm-event
-        `(defruled ,info.alt-disj-thm
+       (concs-thm-event
+        `(defruled ,info.concs-thm
            (implies (,alt-matchp cstss ,alt-string)
                     (or ,@(deftreeops-gen-rulename-events-aux1
                             alt conc-matchp)))
@@ -1113,7 +1113,7 @@
                :in-theory '((:e rulename)
                             ,info.match-thm
                             ,@rules)
-               :use ((:instance ,info.alt-disj-thm
+               :use ((:instance ,info.concs-thm
                                 (cstss (tree-nonleaf->branches cst)))
                      ,@lemma-instances))))))
        (check-alt-fn-event?
@@ -1144,7 +1144,7 @@
                    ,info.match-thm
                    ,@rules)
                  :use
-                 ((:instance ,info.alt-disj-thm
+                 ((:instance ,info.concs-thm
                              (cstss (tree-nonleaf->branches cst))))))
                ///
                (more-returns
@@ -1167,7 +1167,7 @@
     (mv nonleaf-thm-event
         rulename-thm-event
         match-thm-event
-        alt-disj-thm-event
+        concs-thm-event
         alt-equiv-thm-event?
         check-alt-fn-event?
         alt-match-thm-events
@@ -1304,7 +1304,7 @@
   :returns (mv (nonleaf-thm-events pseudo-event-form-listp)
                (rulename-thm-events pseudo-event-form-listp)
                (match-thm-events pseudo-event-form-listp)
-               (alt-disj-thm-events pseudo-event-form-listp)
+               (concs-thm-events pseudo-event-form-listp)
                (alt-equiv-thm-events pseudo-event-form-listp)
                (check-alt-fn-events pseudo-event-form-listp)
                (alt-match-thm-events pseudo-event-form-listp)
@@ -1322,7 +1322,7 @@
      :returns (mv (nonleaf-thm-events pseudo-event-form-listp)
                   (rulename-thm-events pseudo-event-form-listp)
                   (match-thm-events pseudo-event-form-listp)
-                  (alt-disj-thm-events pseudo-event-form-listp)
+                  (concs-thm-events pseudo-event-form-listp)
                   (alt-equiv-thm-events pseudo-event-form-listp)
                   (check-alt-fn-events pseudo-event-form-listp)
                   (alt-match-thm-events pseudo-event-form-listp)
@@ -1335,7 +1335,7 @@
           ((mv nonleaf-thm-event
                rulename-thm-event
                match-thm-event
-               alt-disj-thm-event
+               concs-thm-event
                alt-equiv-thm-event?
                check-alt-fn-event?
                alt-match-thm-events
@@ -1345,7 +1345,7 @@
           ((mv more-nonleaf-thm-events
                more-rulename-thm-events
                more-match-thm-events
-               more-alt-disj-thm-events
+               more-concs-thm-events
                more-alt-equiv-thm-events
                more-check-alt-fn-events
                more-alt-match-thm-events
@@ -1355,7 +1355,7 @@
        (mv (cons nonleaf-thm-event more-nonleaf-thm-events)
            (cons rulename-thm-event more-rulename-thm-events)
            (cons match-thm-event more-match-thm-events)
-           (cons alt-disj-thm-event more-alt-disj-thm-events)
+           (cons concs-thm-event more-concs-thm-events)
            (append alt-equiv-thm-event? more-alt-equiv-thm-events)
            (append check-alt-fn-event? more-check-alt-fn-events)
            (append alt-match-thm-events more-alt-match-thm-events)
@@ -1379,7 +1379,7 @@
        ((mv nonleaf-thm-events
             rulename-thm-events
             match-thm-events
-            alt-disj-thm-events
+            concs-thm-events
             alt-equiv-thm-events
             check-alt-fn-events
             alt-match-thm-events
@@ -1388,7 +1388,7 @@
        (events (append nonleaf-thm-events
                        rulename-thm-events
                        match-thm-events
-                       alt-disj-thm-events
+                       concs-thm-events
                        alt-match-thm-events
                        rep-match-thm-events
                        alt-equiv-thm-events
