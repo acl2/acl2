@@ -192,7 +192,7 @@
        if a list of lists of trees matches
        the alternation that defines the rule name
        then the list of lists of trees matches
-       one of the concatenarions that form the alternation.
+       one of the concatenations in the alternation.
        This is a disjunctive theorem,
        unless the alternation consists of just one concatenation."))
 
@@ -200,7 +200,7 @@
      "@('<prefix>-conc-equivs-when-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar
-       by an alternation consisting of two or more concatenations,
+       by an alternation of two or more concatenations,
        a theorem stating equivalences between
        (i) the branches (of a tree matching the rule name)
        matching each concatenation and
@@ -237,7 +237,7 @@
      (xdoc::p
       "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (starting from 1)
-       that forma the alternation that defines the rule name,
+       in the alternation that defines the rule name,
        a theorem saying that
        if a list of lists of trees matches that concatenation
        then the list of lists of trees has the same length as the concatenation
@@ -247,13 +247,13 @@
        when the concatenation is a singleton."))
 
     (xdoc::desc
-     "@('<prefix>-match-alt<i>-rep<j>-<rulename>')"
+     "@('<prefix>-match-conc<i>-rep<j>-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar,
-       for each alternative @('<i>') (starting from 1)
-       that defines the rule name,
+       for each concatenation @('<i>') (starting from 1)
+       in the alternation that defines the rule name,
        and for each repetition @('<j>') (starting from 1)
-       of that alternative,
+       of that concatenation,
        a theorem saying that
        if a list of trees matches that repetition
        then the list of trees has a length
@@ -262,4 +262,4 @@
        the element of the repetition.
        For now we only generate this theorem
        when the repetition has a range of 1,
-       and when the alternative is a singleton concatenation.")))))
+       and when the concatenation is a singleton.")))))
