@@ -157,7 +157,7 @@
       (@('check-alt-fn') in @(tsee deftreeops-rulename-info))
       returns the positive integer corresponding to this alternative and
       (2) the discriminant term in @('discriminant-term').
-      This is generated as part of the @('<prefix>-<rulename>-alt?') function
+      This is generated as part of the @('<prefix>-<rulename>-conc?') function
       described in @(tsee deftreeops).
       This is @('nil') if the rule name has just one alternative.")
     (xdoc::li
@@ -210,7 +210,7 @@
       i.e. if some alternative is not a singleton concatenation
       of a singleton repetition of a rulename element.")
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-alt?') function
+     "The name of the @('<prefix>-<rulename>-conc?') function
       described in @(tsee deftreeops).
       This is @('nil') if the function is not generated,
       i.e. if the rule name is defined by just one alternative.")
@@ -785,7 +785,7 @@
                         prefix)))
        (check-alt-fn
         (and two-or-more-alts-p
-             (packn-pos (list prefix '- rulename-upstring '-alt?)
+             (packn-pos (list prefix '- rulename-upstring '-conc?)
                         prefix)))
        (alt-infos (deftreeops-gen-alt-info-list
                     alt terms check-alt-fn rulename-upstring prefix))

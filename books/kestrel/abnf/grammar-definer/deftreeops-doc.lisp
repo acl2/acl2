@@ -215,20 +215,21 @@
        a singleton of a singleton repetition of a rulename element."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-alt?')"
+     "@('<prefix>-<rulename>-conc?')"
      (xdoc::p
-      "For each rule name defined in the grammar by two or more alternatives,
+      "For each rule name defined in the grammar by
+       an alternation of two or more concatenations,
        a function that, given a tree matching the rule name,
        returns a positive integer
-       indicating the alternative matched by the subtrees,
-       in the order in which the alternative appears in the grammar,
-       starting from 1 for the first alternative.
+       indicating the concatenation matched by the subtrees,
+       in the order in which the concatenation appears in the alternation,
+       starting from 1 for the first concatenation.
        If a rule name is defined by multiple rules
        (the first one non-incremental, the other ones incremental),
-       the order of the alternatives
+       the order of the concatenations
        indicated by the integer returned by this function
        is lexicographic, based first on the order of the rules
-       and then on the order of the alternatives within each rule.
+       and then on the order of the concatenations within each rule.
        The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
