@@ -143,7 +143,7 @@
      "The alternative, which is a concatenation.")
     (xdoc::li
      "The discriminant term used in
-      the @('<prefix>-alt-equivs-when-<rulename>') theorem
+      the @('<prefix>-conc-equivs-when-<rulename>') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the rule name has just one alternative.")
     (xdoc::li
@@ -204,7 +204,7 @@
      "The name of the @('<prefix>-concs-when-<rulename>') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
-     "The name of the @('<prefix>-alt-equivs-when-<rulename>') theorem
+     "The name of the @('<prefix>-conc-equivs-when-<rulename>') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if some alternative is not a singleton concatenation
@@ -220,7 +220,7 @@
    (rulename-thm acl2::symbol)
    (match-thm acl2::symbol)
    (concs-thm acl2::symbol)
-   (alt-equiv-thm acl2::symbol)
+   (conc-equivs-thm acl2::symbol)
    (check-alt-fn acl2::symbol)
    (alt-infos deftreeops-alt-info-list))
   :pred deftreeops-rulename-infop)
@@ -581,7 +581,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are the terms used in
-     the @('<prefix>-alt-equivs-when-<rulename>') theorem
+     the @('<prefix>-conc-equivs-when-<rulename>') theorem
      described in @(tsee deftreeops).")
    (xdoc::p
     "For now we only support alternations of certain forms.
@@ -779,9 +779,9 @@
        ((mv okp terms) (deftreeops-gen-discriminant-terms alt))
        (terms (if okp terms (repeat (len alt) nil)))
        (two-or-more-alts-p (and okp (> (len alt) 1)))
-       (alt-equiv-thm
+       (conc-equivs-thm
         (and two-or-more-alts-p
-             (packn-pos (list prefix '-alt-equivs-when- rulename-upstring)
+             (packn-pos (list prefix '-conc-equivs-when- rulename-upstring)
                         prefix)))
        (check-alt-fn
         (and two-or-more-alts-p
@@ -794,7 +794,7 @@
               :rulename-thm rulename-thm
               :match-thm match-thm
               :concs-thm concs-thm
-              :alt-equiv-thm alt-equiv-thm
+              :conc-equivs-thm conc-equivs-thm
               :check-alt-fn check-alt-fn
               :alt-infos alt-infos)))
     info))
@@ -894,7 +894,7 @@
 (define deftreeops-gen-alt-events ((conc concatenationp)
                                    (info deftreeops-alt-infop)
                                    (i posp)
-                                   (alt-equiv-thm acl2::symbolp)
+                                   (conc-equivs-thm acl2::symbolp)
                                    (check-alt-fn acl2::symbolp)
                                    (rulename rulenamep)
                                    (prefix acl2::symbolp))
@@ -958,7 +958,7 @@
                                (tree-nonleaf->branches cst)
                                ,(pretty-print-concatenation info.alt))))
                 :in-theory '(,check-alt-fn
-                             ,alt-equiv-thm
+                             ,conc-equivs-thm
                              (:e rulename))
                 :use (:guard-theorem ,check-alt-fn)))))))
        (conc-singletonp (and (consp conc)
@@ -979,7 +979,7 @@
 
 (define deftreeops-gen-alt-list-events ((alt alternationp)
                                         (infos deftreeops-alt-info-listp)
-                                        (alt-equiv-thm acl2::symbolp)
+                                        (conc-equivs-thm acl2::symbolp)
                                         (check-alt-fn acl2::symbolp)
                                         (rulename rulenamep)
                                         (prefix acl2::symbolp))
@@ -989,14 +989,14 @@
                (rep-events pseudo-event-form-listp))
   :short "Lift @(tsee deftreeops-gen-alt-events) to lists."
   (deftreeops-gen-alt-list-events-aux
-    alt infos 1 alt-equiv-thm check-alt-fn rulename prefix)
+    alt infos 1 conc-equivs-thm check-alt-fn rulename prefix)
 
   :prepwork
   ((define deftreeops-gen-alt-list-events-aux
      ((alt alternationp)
       (infos deftreeops-alt-info-listp)
       (i posp)
-      (alt-equiv-thm acl2::symbolp)
+      (conc-equivs-thm acl2::symbolp)
       (check-alt-fn acl2::symbolp)
       (rulename rulenamep)
       (prefix acl2::symbolp))
@@ -1011,13 +1011,13 @@
                rep-events)
            (deftreeops-gen-alt-events
              (car alt) (car infos) i
-             alt-equiv-thm check-alt-fn rulename prefix))
+             conc-equivs-thm check-alt-fn rulename prefix))
           ((mv more-match-thm-events
                more-check-alt-fn-equiv-thm-events
                more-rep-events)
            (deftreeops-gen-alt-list-events-aux
              (cdr alt) (cdr infos) (1+ i)
-             alt-equiv-thm check-alt-fn rulename prefix)))
+             conc-equivs-thm check-alt-fn rulename prefix)))
        (mv (append match-thm-event?
                    more-match-thm-events)
            (append check-alt-fn-equiv-thm-event?
@@ -1038,7 +1038,7 @@
                (rulename-thm-event pseudo-event-formp)
                (match-thm-event pseudo-event-formp)
                (concs-thm-event pseudo-event-formp)
-               (alt-equiv-thm-event? pseudo-event-form-listp)
+               (conc-equivs-thm-event? pseudo-event-form-listp)
                (check-alt-fn-event? pseudo-event-form-listp)
                (alt-match-thm-events pseudo-event-form-listp)
                (rep-match-thm-events pseudo-event-form-listp))
@@ -1057,7 +1057,7 @@
             check-alt-fn-equiv-thm-events
             rep-match-thm-events)
         (deftreeops-gen-alt-list-events
-          alt info.alt-infos info.alt-equiv-thm info.check-alt-fn
+          alt info.alt-infos info.conc-equivs-thm info.check-alt-fn
           rulename prefix))
        (nonleaf-thm-event
         `(defruled ,info.nonleaf-thm
@@ -1101,13 +1101,13 @@
              ,conc-matchp
              tree-list-list-match-alternation-p-when-atom-alternation
              tree-list-list-match-alternation-p-of-cons-alternation)))
-       (alt-equiv-thm-event?
+       (conc-equivs-thm-event?
         (and
-         info.alt-equiv-thm
+         info.conc-equivs-thm
          (b* (((mv conjuncts rules lemma-instances)
                (deftreeops-gen-rulename-events-aux2
                  alt info.alt-infos rulename-infos conc-matchp)))
-           `((defruled ,info.alt-equiv-thm
+           `((defruled ,info.conc-equivs-thm
                (implies (,matchp cst ,rulename-string)
                         (and ,@conjuncts))
                :in-theory '((:e rulename)
@@ -1168,7 +1168,7 @@
         rulename-thm-event
         match-thm-event
         concs-thm-event
-        alt-equiv-thm-event?
+        conc-equivs-thm-event?
         check-alt-fn-event?
         alt-match-thm-events
         rep-match-thm-events))
@@ -1305,7 +1305,7 @@
                (rulename-thm-events pseudo-event-form-listp)
                (match-thm-events pseudo-event-form-listp)
                (concs-thm-events pseudo-event-form-listp)
-               (alt-equiv-thm-events pseudo-event-form-listp)
+               (conc-equivs-thm-events pseudo-event-form-listp)
                (check-alt-fn-events pseudo-event-form-listp)
                (alt-match-thm-events pseudo-event-form-listp)
                (rep-match-thm-events pseudo-event-form-listp))
@@ -1323,7 +1323,7 @@
                   (rulename-thm-events pseudo-event-form-listp)
                   (match-thm-events pseudo-event-form-listp)
                   (concs-thm-events pseudo-event-form-listp)
-                  (alt-equiv-thm-events pseudo-event-form-listp)
+                  (conc-equivs-thm-events pseudo-event-form-listp)
                   (check-alt-fn-events pseudo-event-form-listp)
                   (alt-match-thm-events pseudo-event-form-listp)
                   (rep-match-thm-events pseudo-event-form-listp))
@@ -1336,7 +1336,7 @@
                rulename-thm-event
                match-thm-event
                concs-thm-event
-               alt-equiv-thm-event?
+               conc-equivs-thm-event?
                check-alt-fn-event?
                alt-match-thm-events
                rep-match-thm-events)
@@ -1346,7 +1346,7 @@
                more-rulename-thm-events
                more-match-thm-events
                more-concs-thm-events
-               more-alt-equiv-thm-events
+               more-conc-equivs-thm-events
                more-check-alt-fn-events
                more-alt-match-thm-events
                more-rep-match-thm-events)
@@ -1356,7 +1356,7 @@
            (cons rulename-thm-event more-rulename-thm-events)
            (cons match-thm-event more-match-thm-events)
            (cons concs-thm-event more-concs-thm-events)
-           (append alt-equiv-thm-event? more-alt-equiv-thm-events)
+           (append conc-equivs-thm-event? more-conc-equivs-thm-events)
            (append check-alt-fn-event? more-check-alt-fn-events)
            (append alt-match-thm-events more-alt-match-thm-events)
            (append rep-match-thm-events more-rep-match-thm-events))))))
@@ -1380,7 +1380,7 @@
             rulename-thm-events
             match-thm-events
             concs-thm-events
-            alt-equiv-thm-events
+            conc-equivs-thm-events
             check-alt-fn-events
             alt-match-thm-events
             rep-match-thm-events)
@@ -1391,7 +1391,7 @@
                        concs-thm-events
                        alt-match-thm-events
                        rep-match-thm-events
-                       alt-equiv-thm-events
+                       conc-equivs-thm-events
                        check-alt-fn-events)))
     (mv infos events)))
 

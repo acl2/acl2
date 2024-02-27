@@ -197,22 +197,22 @@
        unless the alternation consists of just one concatenation."))
 
     (xdoc::desc
-     "@('<prefix>-alt-equivs-when-<rulename>')"
+     "@('<prefix>-conc-equivs-when-<rulename>')"
      (xdoc::p
-      "For each rule name defined in the grammar by two or more alternatives,
+      "For each rule name defined in the grammar
+       by an alternation consisting of two or more concatenations,
        a theorem stating equivalences between
        (i) the branches (of a tree matching the rule name)
-       matching each alternative that defines the rule name and
+       matching each concatenation and
        (ii) some term over the branches
-       that discriminates among the alternatives;
-       there is an equivalence for each alternative,
+       that discriminates among the concatenations that define the rule name;
+       there is an equivalence for each concatenation,
        and the theorem consists of the conjunction of the equivalences.
-       This theorem is a conjunction of
-       an equivalence for each alternative that defines the rule name.
+       This theorem is a conjunction of equivalences,
+       one for each concatenation that defines the rule name.
        For now we only generate this theorem
-       when each alternative is
-       a singleton concatenation of
-       a singleton repetition of a rulename element."))
+       when each concatenation is
+       a singleton of a singleton repetition of a rulename element."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-alt?')"
