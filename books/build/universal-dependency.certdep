@@ -2,10 +2,10 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Forcing recertification 6/27/2023 for commit 5e894873ac, "Eliminated
-all traces of infix printing."  A fresh regression-everything
-completed without error before commiting that change and pushing it to
-master, yet testing failed for master.  I didn't see an obvious
-recertification to force so that books/kestrel/helpers,
-books/acl2s/mode-acl2s-dependencies, and books/acl2s/ccg/ccg would
-certify.
+Forcing recertification 2/27/2024 for commit f05d08b989, "Added a way
+to specify that a stobj array field has element type t."  A fresh
+regression-everything completed without error before commiting that
+change and pushing it to master.  I'm forcing all books to recertify
+because the defstobj-field-template record has changed and I can
+imagine that causing certification failures for some books unless
+a fresh regression is performed.
