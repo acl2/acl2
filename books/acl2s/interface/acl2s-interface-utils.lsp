@@ -212,7 +212,7 @@ can't be a macro."
 ;;(assert (equal (acl2s-arity 'append) nil)) ;; is nil since append is a macro
 ;;(assert (equal (acl2s-arity 'binary-append) 2))
 
-(declaim (ftype (function (symbol) bool) is-theorem?))
+(declaim (ftype (function (symbol) boolean) is-theorem?))
 (defun is-theorem? (sym)
   "Determine if the given symbol symbol names a theorem."
   (let* ((query `(acl2::theorem-namep ',sym (w state)))
