@@ -2270,7 +2270,7 @@
 ;sbvlt-becomes-bvlt
 ;     sbvlt-becomes-bvlt-better
      bv-array-write-of-0
-     bvplus-of-plus
+     ;bvplus-of-plus
 
      bvlt-when-unsigned-byte-p-better-helper
 ;;     recollapse-hack ;sun mar 28 15:19:01 2010

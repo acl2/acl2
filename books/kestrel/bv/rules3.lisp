@@ -1439,8 +1439,7 @@
                                    expt-of-+)
                            (;hack-6 ;yuck!
                             BVXOR-1-BECOMES-BITXOR
-                            BITXOR-OF-UNARY-MINUS-ARG1
-                            BVPLUS-OF-PLUS2 BVPLUS-OF-PLUS)))))
+                            BITXOR-OF-UNARY-MINUS-ARG1)))))
 ;bbozo
 (defthm getbit-0-of-bvminus
   (implies (posp n)
@@ -2788,4 +2787,4 @@
   :hints (("Goal" :in-theory (enable bvlt bvsx sbvlt-rewrite))))
 
 ;; Rules that conflict wth bvplus:
-(defthy anti-bvplus '(bvchop-of-+-becomes-bvplus bvplus-of-plus bvplus-of-plus2))
+(defthy anti-bvplus '(bvchop-of-+-becomes-bvplus))
