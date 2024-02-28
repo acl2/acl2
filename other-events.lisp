@@ -18948,7 +18948,7 @@
                                (equal element-type etype))))
                  (er soft ctx
                      "When the :element-type keyword is specified for a stobj ~
-                      array field,it must be either T or the type specified ~
+                      array field, it must be either T or the type specified ~
                       for the elements of the array by its :type keyword.  ~
                       The :element-type of ~x0 is thus illegal for :type ~x1."
                      element-type type))
