@@ -39,6 +39,7 @@
 
                     (acl2::ifdef "OS_HAS_IPASIR"
                                  (include-book "centaur/sv/tutorial/sums" :dir :system)
+                                 (include-book "centaur/sv/tutorial/srt-div/proof" :dir :system)
                                  :endif)
                     :endif))
 (local (acl2::ifndef "OS_HAS_GLUCOSE"

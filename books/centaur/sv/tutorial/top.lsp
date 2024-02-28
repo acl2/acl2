@@ -33,6 +33,7 @@
 
 (include-book "alu")
 (include-book "boothpipe")
+(include-book "srt-div/proof")
 
 (include-book "xdoc/save" :dir :system)
 
