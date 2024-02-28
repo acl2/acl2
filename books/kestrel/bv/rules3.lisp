@@ -1439,8 +1439,7 @@
                                    expt-of-+)
                            (;hack-6 ;yuck!
                             BVXOR-1-BECOMES-BITXOR
-                            BITXOR-OF-UNARY-MINUS-ARG1
-                            BVPLUS-OF-PLUS2 BVPLUS-OF-PLUS)))))
+                            BITXOR-OF-UNARY-MINUS-ARG1)))))
 ;bbozo
 (defthm getbit-0-of-bvminus
   (implies (posp n)
@@ -2017,7 +2016,7 @@
                 )
            (equal (bvcat highsize (* x y) lowsize lowval)
                   (bvcat highsize (bvmult highsize x y) lowsize lowval)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm bvcat-of-*-low
   (implies (and (integerp x)
@@ -2027,7 +2026,7 @@
                 )
            (equal (bvcat highsize highval lowsize (* x y))
                   (bvcat highsize highval lowsize (bvmult lowsize x y))))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthmd logext-of-+
   (implies (and (integerp x)
@@ -2035,8 +2034,7 @@
                 (posp size))
            (equal (logext size (+ x y))
                   (logext size (bvplus size x y))))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
-                                            )))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;do this better with congruences?
 (defthmd bvcat-of-+-high
@@ -2789,4 +2787,4 @@
   :hints (("Goal" :in-theory (enable bvlt bvsx sbvlt-rewrite))))
 
 ;; Rules that conflict wth bvplus:
-(defthy anti-bvplus '(bvchop-of-+-becomes-bvplus bvplus-of-plus bvplus-of-plus2))
+(defthy anti-bvplus '(bvchop-of-+-becomes-bvplus))

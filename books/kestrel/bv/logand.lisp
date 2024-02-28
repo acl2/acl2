@@ -579,8 +579,7 @@
            :in-theory (e/d (expt-of-+ ;fl
                             ;mod-=-0
                             mod-expt-split)
-                           (
-                            floor-unique-equal-version
+                           (floor-unique-equal-version
                             floor-weak-monotone ;hack-6
                             )))
           ("Goal" :do-not '(generalize eliminate-destructors)

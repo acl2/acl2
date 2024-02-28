@@ -54,7 +54,6 @@
                             ;minus-becomes-bv
                             ;plus-becomes-bvplus-arg1-free
                             ;bvuminus-of-+
-                            bvplus-of-plus-arg3
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
                             <-of-bvplus-becomes-bvlt-arg1
