@@ -78,3 +78,13 @@
 (defthm if-x-y-x
   (equal (if x y x)
          (if x y nil)))
+
+(defthm equal-of-constant-and-if
+  (implies (syntaxp (quotep k))
+           (equal (equal k (if x y z))
+                  (if x (equal k y) (equal k z)))))
+
+(defthm equal-of-if-and-constant
+  (implies (syntaxp (quotep k))
+           (equal (equal (if x y z) k)
+                  (if x (equal y k) (equal z k)))))
