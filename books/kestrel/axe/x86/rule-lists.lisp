@@ -514,46 +514,23 @@
     ;; x86isa::two-byte-opcode-modr/m-and-mandatory-prefix
     x86isa::compute-mandatory-prefix-for-two-byte-opcode$inline
     x86isa::64-bit-compute-mandatory-prefix-for-two-byte-opcode$inline
-    x86isa::prefixes->lck$inline
-    x86isa::prefixes->nxt$inline
+
+    x86isa::prefixes-fix$inline ; or use constant-openers for these
     x86isa::prefixes->num$inline
-    x86isa::!prefixes->nxt$inline
-    x86isa::!prefixes->num$inline
-    x86isa::!prefixes->opr$inline
-;    x86isa::num-prefixes-fix$inline
-    x86isa::prefixes-fix$inline
-;    x86isa::next-byte-fix
-;    x86isa::opr-fix
+    x86isa::prefixes->lck$inline
+    x86isa::prefixes->rep$inline
+    x86isa::prefixes->seg$inline
     x86isa::prefixes->opr$inline
     x86isa::prefixes->adr$inline
-    x86isa::prefixes->seg$inline
-    x86isa::modr/m->mod$inline
-    x86isa::modr/m->reg$inline
-    x86isa::modr/m->r/m$inline
-    x86isa::modr/m-fix$inline
-    x86isa::sib->scale$inline
-    x86isa::sib->base$inline
-    x86isa::sib->index$inline
-    x86isa::sib-fix$inline
-    x86isa::4bits-fix
-    x86isa::8bits-fix
+    x86isa::prefixes->nxt$inline
+    ;; x86isa::prefixes->rep$inline-constant-opener ; for floating point?
 
+    x86isa::!prefixes->nxt$inline ; why are these needed?
+    x86isa::!prefixes->num$inline
+    x86isa::!prefixes->opr$inline
     ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
-    X86ISA::PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
-    X86ISA::!EVEX-PREFIXES->BYTE0$INLINE-CONSTANT-OPENER
-
-    x86isa::vex-opcode-modr/m-p$inline-constant-opener
-    x86isa::vex-prefixes-map-p$inline-constant-opener
-
-    x86isa::vex->vvvv$inline-constant-opener
-    x86isa::vex->l$inline-constant-opener
-    x86isa::vex->pp$inline-constant-opener
-    x86isa::vex->r$inline-constant-opener
-    x86isa::vex->w$inline-constant-opener
-    x86isa::vex->b$inline-constant-opener
-    x86isa::vex->x$inline-constant-opener
 
     x86isa::vex-prefixes-fix$inline-constant-opener
     x86isa::vex-prefixes->byte0$inline-constant-opener
@@ -562,6 +539,12 @@
     x86isa::!vex-prefixes->byte0$inline-constant-opener ; kind of surprised that we are writing into such a struct
     x86isa::!vex-prefixes->byte1$inline-constant-opener
     x86isa::!vex-prefixes->byte2$inline-constant-opener
+
+    x86isa::vex2-byte1-fix$inline-constant-opener
+    x86isa::vex2-byte1->pp$inline-constant-opener
+    x86isa::vex2-byte1->l$inline-constant-opener
+    x86isa::vex2-byte1->vvvv$inline-constant-opener
+    x86isa::vex2-byte1->r$inline-constant-opener
 
     x86isa::vex3-byte1-fix$inline-constant-opener
     x86isa::vex3-byte1->m-mmmm$inline-constant-opener
@@ -575,10 +558,66 @@
     x86isa::vex3-byte2->vvvv$inline-constant-opener
     x86isa::vex3-byte2->w$inline-constant-opener
 
+    x86isa::evex-prefixes->byte0$inline-constant-opener
+    x86isa::evex-prefixes->byte1$inline-constant-opener
+    x86isa::evex-prefixes->byte2$inline-constant-opener
+    x86isa::evex-prefixes->byte3$inline-constant-opener
+    x86isa::!evex-prefixes->byte0$inline-constant-opener
+
+    x86isa::evex-byte1->mm$inline-constant-opener
+    x86isa::evex-byte1->res$inline-constant-opener
+    x86isa::evex-byte1->r-prime$inline-constant-opener
+    x86isa::evex-byte1->b$inline-constant-opener
+    x86isa::evex-byte1->x$inline-constant-opener
+    x86isa::evex-byte1->r$inline-constant-opener
+
+    x86isa::evex-byte2->pp$inline-constant-opener
+    x86isa::evex-byte2->res$inline-constant-opener
+    x86isa::evex-byte2->vvvv$inline-constant-opener
+    x86isa::evex-byte2->w$inline-constant-opener
+
+    x86isa::evex-byte3->aaa$inline-constant-opener
+    x86isa::evex-byte3->v-prime$inline-constant-opener
+    x86isa::evex-byte3->b$inline-constant-opener
+    x86isa::evex-byte3->vl/rc$inline-constant-opener
+    x86isa::evex-byte3->z$inline-constant-opener
+
+
+;    x86isa::num-prefixes-fix$inline
+
+;    x86isa::next-byte-fix
+;    x86isa::opr-fix
+    x86isa::modr/m->mod$inline
+    x86isa::modr/m->reg$inline
+    x86isa::modr/m->r/m$inline
+    x86isa::modr/m-fix$inline
+    x86isa::sib->scale$inline
+    x86isa::sib->base$inline
+    x86isa::sib->index$inline
+    x86isa::sib-fix$inline
+    x86isa::4bits-fix
+    x86isa::8bits-fix
+
+
+
+    x86isa::vex-opcode-modr/m-p$inline-constant-opener
+    x86isa::vex-prefixes-map-p$inline-constant-opener
+
+    x86isa::vex->vvvv$inline-constant-opener
+    x86isa::vex->l$inline-constant-opener
+    x86isa::vex->pp$inline-constant-opener
+    x86isa::vex->r$inline-constant-opener
+    x86isa::vex->w$inline-constant-opener
+    x86isa::vex->b$inline-constant-opener
+    x86isa::vex->x$inline-constant-opener
+
+
+
     ;; todo: more constant-openers for the bitstructs (or add to evaluator)
 
     x86isa::vex-decode-and-execute ; restrict to when we can resolve the instruction?
     x86isa::vex-0f38-execute  ; move?
+    x86isa::vex-0f-execute
 ))
 
 (defun x86-type-rules ()
@@ -797,24 +836,92 @@
     x86isa::if-of-if-arg3-same
     ))
 
-;todo: try always including these?  these help with conditional branches
+;; For this strategy, we lower the IF when the 2 states have the same PC and no
+;; faults. This allows the symbolic execution to continue with just the single
+;; merged state.  (The need for this may be due to an instruction semantic
+;; function, or a rewrite rule, that introduces an unnecessary IF on states.)
+;; TODO: If the stack height is different, we might want to refrain (but then
+;; it would be a bit odd to have the same RIP).
+(defund if-lowering-rules64 ()
+  (declare (xargs :guard t))
+  '(mergeable-states64p
+    if-of-set-rip-and-set-rip-same
+
+    if-of-set-rax-arg2-64
+    if-of-set-rbx-arg2-64
+    if-of-set-rcx-arg2-64
+    if-of-set-rdx-arg2-64 ; todo: more
+
+    if-of-set-rax-arg3-64
+    if-of-set-rbx-arg3-64
+    if-of-set-rcx-arg3-64
+    if-of-set-rdx-arg3-64
+
+    if-of-set-flag-arg2-64
+    if-of-set-flag-arg3-64
+    if-of-set-undef-arg2-64
+    if-of-set-undef-arg3-64
+    if-of-write-byte-arg2-64
+    if-of-write-byte-arg3-64
+    if-of-write-arg2-64
+    if-of-write-arg3-64 ; todo: more?
+    ))
+
+;these help with conditional branches
+;but see if-lifting strategies below for ifs on state transformers.
 (defun if-lifting-rules ()
   (declare (xargs :guard t))
-  '(acl2::mv-nth-of-if          ;could restrict to when both branches are cons nests
-   x86isa::equal-of-if-constants ;seems safe
-   x86isa::equal-of-if-constants-alt ;seems safe
-   x86isa::canonical-address-p-of-if
-   x86isa::combine-bytes-of-if-when-constants
-   x86isa::member-p-of-if-arg1
-   x86isa::+-of-if-arg1
-   x86isa::+-of-if-arg2
-   acl2::nth-of-if-arg1
-   x86isa::cons-of-if-when-constants
-   ;; x86isa::one-byte-opcode-execute-of-if-arg1 ; drop?
-   ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg2 ;do we need this?
-   ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
-   x86isa::<-of-if-arg2                              ;could be dangerous
-   x86isa::logext-of-if-arg2))
+  '(x86isa::app-view-of-if
+    x86isa::program-at-of-if
+    x86isa::x86p-of-if
+    x86isa::alignment-checking-enabled-p-of-if
+    x86isa::64-bit-modep-of-if
+    x86isa::ctri-of-if
+    x86isa::canonical-address-p-of-if
+    get-flag-of-if
+    ;; feature-flag-of-if
+    read-of-if
+    undef-of-if
+    ms-of-if
+    fault-of-if
+    acl2::mv-nth-of-if ;could restrict to when both branches are cons nests
+    x86isa::equal-of-if-constants    ;seems safe
+    x86isa::equal-of-if-constants-alt ;seems safe
+    x86isa::combine-bytes-of-if-when-constants
+    x86isa::member-p-of-if-arg1
+    x86isa::+-of-if-arg1
+    x86isa::+-of-if-arg2
+    acl2::nth-of-if-arg1
+    x86isa::cons-of-if-when-constants
+    ;; x86isa::one-byte-opcode-execute-of-if-arg1 ; drop?
+    ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg2 ;do we need this?
+    ;; x86isa::if-of-one-byte-opcode-execute-of-if-arg5 ;do we need this?
+    x86isa::<-of-if-arg2 ;could be dangerous
+    x86isa::logext-of-if-arg2))
+
+;; if-lifting strategy: where we lift the ifs (todo: restrict to provably different pcs or fault statuses?):
+;; set-rax-of-if-arg2
+;; set-rdi-of-if-arg2
+;; set-rip-of-if
+;; set-undef-of-if
+;; set-flag-of-if
+;; ;xr-of-if ; overkill?  also one in the x86isa pkg?
+
+;; ;; Strategy 2b: don't lift or lower the if because the states all have the same pc (instead, we just try to resolve the next instruction).  warning: if some of these rules are missing, very large terms can result:
+;; ;; x86isa::xr-of-if-special-case-for-ms
+;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
+;; ;; ;x86isa::rb-of-if-arg2
+;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
+;;   ;;acl2::<-of-+-cancel-1+-1
+;;   ;;acl2::<-minus-zero
+;;   x86isa::64-bit-modep-of-if
+;;   x86isa::app-view-of-if
+;;   x86isa::x86p-of-if
+;;   read-of-if
+;;   ;; or lower ifs with if-of-write
+;;   xr-of-if ; too much?  need ms
+;;   x86isa::alignment-checking-enabled-p-of-if
+
 
 (defun simple-opener-rules ()
   (declare (xargs :guard t))
@@ -1076,7 +1183,6 @@
 ;; Or we could recharacterize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
 (set-axe-rule-priority acl2::bvchop-identity 1)
 
-
 (defund symbolic-execution-rules ()
   (declare (xargs :guard t))
   '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
@@ -1126,60 +1232,8 @@
     ;;x86isa::not-equal-when-separate-alt
     ))
 
-;; For this strategy, we lower the IF when the 2 states have the same PC and no
-;; faults. This allows the symbolic execution to continue with just the single
-;; merged state.  (The need for this may be due to an instruction semantic
-;; function that introduces an unnecessary IF on states.)
-;; TODO: If the stack height is different, we might want to refrain (but then
-;; it would be a bit odd to have the same RIP).
-(defund if-lowering-rules ()
-  (declare (xargs :guard t))
-  '(mergeable-states64p
-    if-of-set-rip-and-set-rip-same
-
-    if-of-set-rax-arg2-64
-    if-of-set-rbx-arg2-64
-    if-of-set-rcx-arg2-64
-    if-of-set-rdx-arg2-64
-
-    if-of-set-rax-arg3-64
-    if-of-set-rbx-arg3-64
-    if-of-set-rcx-arg3-64
-    if-of-set-rdx-arg3-64
-
-    if-of-set-flag-arg2-64
-    if-of-set-flag-arg3-64
-    if-of-set-undef-arg2-64
-    if-of-set-undef-arg3-64
-    if-of-write-arg2-64
-    if-of-write-arg3-64
-    ))
-
-;; if-lifting strategy: where we lift the ifs (todo: restrict to provably different pcs or fault statuses?):
-;; set-rax-of-if-arg2
-;; set-rdi-of-if-arg2
-;; set-rip-of-if
-;; set-undef-of-if
-;; set-flag-of-if
-;; ;xr-of-if ; overkill?  also one in the x86isa pkg?
-;; ;64-bit-modep-of-if
 
 
-;; ;; Strategy 2b: don't lift or lower the if because the states all have the same pc (instead, we just try to resolve the next instruction).  warning: if some of these rules are missing, very large terms can result:
-;; ;; x86isa::xr-of-if-special-case-for-ms
-;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
-;; ;; x86isa::64-bit-modep-of-if
-;; ;; ;x86isa::rb-of-if-arg2
-;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
-;;   ;;acl2::<-of-+-cancel-1+-1
-;;   ;;acl2::<-minus-zero
-;;   x86isa::64-bit-modep-of-if
-;;   x86isa::app-view-of-if
-;;   x86isa::x86p-of-if
-;;   read-of-if
-;;   ;; or lower ifs with if-of-write
-;;   xr-of-if ; too much?  need ms
-;;   x86isa::alignment-checking-enabled-p-of-if
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
@@ -1216,7 +1270,6 @@
           (acl2::core-rules-bv)
           (bitops-rules)
           (logops-rules)
-          (if-lowering-rules)
           '(;; Reading/writing registers (or parts of registers).  We leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
             ;; to xr and xw.  Shilpi seems to do the same.
@@ -1299,6 +1352,7 @@
             x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the PC
             poor-mans-quotep-constant-opener
 
+            booleanp-of-canonical-address-p
 
             the-check
             ;; get-prefixes:
@@ -1519,7 +1573,6 @@
             fault-of-set-ms
             fault-of-set-flag
             fault-of-myif
-            fault-of-if
             fault-of-!rflags ; why is !rflags not going away?
             fault-of-set-rip ; move to 64 rules?
             fault-of-set-undef
@@ -1534,7 +1587,6 @@
             ms-of-set-ms
             ms-of-set-flag
             ms-of-myif
-            ms-of-if
             ms-of-!rflags ; why is !rflags not going away?
             ms-of-set-rip ; move to 64 rules?
             ms-of-set-undef
@@ -1550,7 +1602,6 @@
             undef-of-set-undef
             undef-of-set-flag
             undef-of-myif
-            undef-of-if
             undef-of-!rflags ; why is !rflags not going away?
             undef-of-set-rip ; move to 64 rules?
 
@@ -1617,7 +1668,6 @@
             x86isa::canonical-address-p-of-i48
             x86isa::i48-when-canonical-address-p
             x86isa::select-address-size$inline
-            ;; acl2::mv-nth-of-if ; also in if-lifting-rules
             ;x86isa::canonical-address-p-of-if
             read-in-terms-of-nth-and-pos-eric-2-bytes
             read-in-terms-of-nth-and-pos-eric-4-bytes
@@ -2656,6 +2706,7 @@
 (defun lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
+          (if-lowering-rules64)
           (read-introduction-rules)
           (write-introduction-rules)
           (read-rules)
@@ -3375,7 +3426,12 @@
     rdi-of-myif
     r8-of-myif
     r9-of-myif
-    r10-of-myif ;todo: more?
+    r10-of-myif
+    r11-of-myif
+    r12-of-myif
+    r13-of-myif
+    r14-of-myif
+    r15-of-myif
     rsp-of-myif
     rbp-of-myif
 
@@ -4028,7 +4084,6 @@
             ;; acl2::bvplus-of-bvmult-when-power-of-2p-tighten ; todo: uncomment
             bvchop-of-bool-to-bit ;todo: drop
             logext-of-bool-to-bit
-            acl2::bool-fix-when-booleanp
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
             acl2::bvif-of-logext-1
@@ -4066,14 +4121,6 @@
             ifix-of-if
 
             ;; move all of these:
-            x86isa::app-view-of-if
-            x86isa::program-at-of-if
-            x86isa::x86p-of-if
-            x86isa::alignment-checking-enabled-p-of-if
-            get-flag-of-if
-            x86isa::ctri-of-if
-            ;; feature-flag-of-if
-            read-of-if
             ;bvle
             ;ACL2::INTEGERP-OF-BVPLUS ;todo: more
             ;ACL2::INTEGERP-OF-BVCHOP
@@ -4161,7 +4208,6 @@
             X86ISA::MXCSR$A
             X86ISA::!MXCSR
             X86ISA::!MXCSR$A
-            64-BIT-MODEP-of-if
             ;; FEATURE-FLAG-sse-of-xw
             ;; FEATURE-FLAG-sse-of-write
             ;; FEATURE-FLAG-sse-of-set-flag

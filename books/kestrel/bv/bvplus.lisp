@@ -39,11 +39,19 @@
            :use ((:instance bvplus-associative)
                  (:instance bvplus-associative (x y) (y x))))))
 
+;; not needed if we are commuting more generally
 (defthmd bvplus-commute-constant
   (implies (syntaxp (and (quotep k)
                          (not (quotep x))))
            (equal (bvplus size x k)
                   (bvplus size k x))))
+
+;; not needed if we are commuting more generally
+(defthmd bvplus-commute-constant2
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvplus size x (bvplus size k y))
+                  (bvplus size k (bvplus size x y)))))
 
 ;; The (bvplus size x y) in the conclusion gets computed.
 (defthm bvplus-combine-constants

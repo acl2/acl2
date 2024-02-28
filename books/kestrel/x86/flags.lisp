@@ -247,6 +247,10 @@
                                           x86isa::vif x86isa::vip id x86isa::res5))
   :hints (("Goal" :in-theory (e/d (X86ISA::RFLAGSBITS) (UNSIGNED-BYTE-P logapp)))))
 
+(defthm get-flag-of-if
+  (equal (get-flag flag (if test x86 x86_2))
+         (if test (get-flag flag x86) (get-flag flag x86_2))))
+
 (defthm get-flag-of-xw
   (implies (not (equal fld :rflags))
            (equal (get-flag flag (xw fld index val x86))

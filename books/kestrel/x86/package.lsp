@@ -657,7 +657,15 @@
     x86isa::seg-reg
     x86isa::flg
     x86isa::dst
-    x86isa::src))
+    x86isa::src
+    x86isa::cnt
+    x86isa::rex-byte
+    x86isa::prefixes
+    x86isa::start-rip
+    x86isa::rex?
+
+    ;; more like this:
+    x86isa::!prefixes->nxt$inline))
 
 ;; TODO: Think about this...
 (defconst *common-acl2-formals*

@@ -881,6 +881,11 @@
 (defthm r8-of-myif (equal (r8 (myif test x y)) (myif test (r8 x) (r8 y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm r9-of-myif (equal (r9 (myif test x y)) (myif test (r9 x) (r9 y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm r10-of-myif (equal (r10 (myif test x y)) (myif test (r10 x) (r10 y))) :hints (("Goal" :in-theory (enable myif))))
+(defthm r11-of-myif (equal (r11 (myif test x y)) (myif test (r11 x) (r11 y))) :hints (("Goal" :in-theory (enable myif))))
+(defthm r12-of-myif (equal (r12 (myif test x y)) (myif test (r12 x) (r12 y))) :hints (("Goal" :in-theory (enable myif))))
+(defthm r13-of-myif (equal (r13 (myif test x y)) (myif test (r13 x) (r13 y))) :hints (("Goal" :in-theory (enable myif))))
+(defthm r14-of-myif (equal (r14 (myif test x y)) (myif test (r14 x) (r14 y))) :hints (("Goal" :in-theory (enable myif))))
+(defthm r15-of-myif (equal (r15 (myif test x y)) (myif test (r15 x) (r15 y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm rsp-of-myif (equal (rsp (myif test x y)) (myif test (rsp x) (rsp y))) :hints (("Goal" :in-theory (enable myif))))
 (defthm rbp-of-myif (equal (rbp (myif test x y)) (myif test (rbp x) (rbp y))) :hints (("Goal" :in-theory (enable myif))))
 
