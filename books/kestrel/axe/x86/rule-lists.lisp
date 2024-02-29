@@ -3970,7 +3970,7 @@
             acl2::collect-constants-over-<-2
             acl2::commutativity-of-*-when-constant
             <-of-*-of-constant-and-constant
-            rationalp-when-integerp
+            acl2::rationalp-when-integerp
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed

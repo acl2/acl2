@@ -129,10 +129,6 @@
   (implies (BVLT '32 x '4)
            (UNSIGNED-BYTE-P '2 (BVCHOP '32 x))))
 
-(defthmd rationalp-when-integerp
-  (implies (integerp x)
-           (rationalp x)))
-
 ;gen!
 (defthm acl2::bvsx-when-bvlt
   (implies (BVLT '32 x '4)
