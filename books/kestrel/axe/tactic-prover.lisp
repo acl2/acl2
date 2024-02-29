@@ -638,7 +638,8 @@
               (if (call-of *possible-counterexample* result)
                   (prog2$ (and print (cw "STP returned a possible counterexample.)~%"))
                           (mv *no-change*
-                              result ;; return the counterexample in the info
+                              (append result ;; return the counterexample in the info
+                                      (list :dag dag-array :disjuncts disjunct-nodenums))
                               state))
                 (prog2$ (er hard? 'apply-tactic-stp "Bad result: ~x0." result)
                         (mv *error* nil state))))))))))
@@ -1040,7 +1041,7 @@
           (mv (erp-nil)
               (extend-progn defthm `(table prove-with-tactics-table ',whole-form ',defthm))
               state))
-      (progn$ (cw "Failure info: ~x0." info-acc)
+      (progn$ (cw "Failure info: ~X01." info-acc nil)
               (er hard 'prove-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 
@@ -1184,7 +1185,7 @@
           (mv (erp-nil)
               (extend-progn defthm `(table prove-equal-with-tactics-table ',whole-form ',defthm))
               state))
-      (progn$ (cw "Failure info: ~x0." info-acc)
+      (progn$ (cw "Failure info: ~X01." info-acc nil)
               (er hard 'prove-equal-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 
