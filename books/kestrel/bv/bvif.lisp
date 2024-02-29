@@ -1,7 +1,7 @@
 ; An if-then-else function over bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,7 +63,7 @@
          (bvif size test y x))
   :hints (("Goal" :in-theory (enable bvif))))
 
-;fixme what if there is just one constant?
+;todo: what if there is just one constant?
 (defthm equal-of-constant-and-bvif-of-constant-and-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)
@@ -323,22 +323,51 @@
          (bvif size test w (bvif size test2 z x)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
+; or we could turn the < into bvlt
+;todo: make this one like <-of-bvif-and-constant?
 (defthmd <-of-bvif-constants-false
-  (implies (and (syntaxp (quotep k1))
-                (syntaxp (quotep k2))
-                (syntaxp (quotep k3))
-                (<= (BVCHOP size K2) k1)
-                (<= (BVCHOP size K3) k1))
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep k3)))
+                (<= (bvchop size k2) k1)
+                (<= (bvchop size k3) k1))
            (not (< k1 (bvif size test k2 k3))))
   :hints (("Goal" :in-theory (enable bvif))))
 
+; or we could turn the < into bvlt
 (defthmd <-of-bvif-constants-true
-  (implies (and (syntaxp (quotep k1))
-                (syntaxp (quotep k2))
-                (syntaxp (quotep k3))
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep k3)))
                 (< k1 (bvchop size k2))
                 (< k1 (bvchop size k3)))
            (< k1 (bvif size test k2 k3)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+; or we could turn the < into bvlt
+(defthm <-of-constant-and-bvif-safe
+  (implies (syntaxp (and (quotep k1)
+                         (or (quotep k2)
+                             (quotep k3))
+                         (quotep size)))
+           (equal (< k1 (bvif size test k2 k3))
+                  ;; at least one branch should be resolved to a constant
+                  (if test
+                      (< k1 (bvchop size k2))
+                    (< k1 (bvchop size k3)))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+; or we could turn the < into bvlt
+(defthm <-of-bvif-and-constant-safe
+  (implies (syntaxp (and (quotep k1)
+                         (or (quotep k2)
+                             (quotep k3))
+                         (quotep size)))
+           (equal (< (bvif size test k2 k3) k1)
+                  ;; at least one branch should be resolved to a constant
+                  (if test
+                      (< (bvchop size k2) k1)
+                    (< (bvchop size k3) k1))))
   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm bvif-of-bvif-same-1
