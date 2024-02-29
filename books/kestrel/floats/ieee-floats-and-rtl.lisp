@@ -11,12 +11,17 @@
 (in-package "ACL2")
 
 (include-book "ieee-floats")
+(include-book "ieee-floats-as-bvs")
 (include-book "rtl/rel11/lib/reps" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/bv/rtl" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (defthm expo-becomes-log2
@@ -33,7 +38,7 @@
                   (log2 (- rat))))
   :hints (("Goal" :in-theory (enable rtl::expo log2))))
 
-(defthm representable-normalp-becomes-nrepp
+(defthmd representable-normalp-becomes-nrepp
   (implies (and (rationalp rat)
                 (formatp k p))
            (equal (representable-normalp k p rat)
@@ -109,7 +114,7 @@
   :hints (("Goal" :use (:instance <-of-log2-arg1 (i (- i2 i1)))
            :in-theory (disable <-of-log2-arg1))))
 
-(defthm representable-subnormalp-becomes-drepp
+(defthmd representable-subnormalp-becomes-drepp
   (implies (and (rationalp rat)
                 (formatp k p))
            (equal (representable-subnormalp k p rat)
@@ -128,3 +133,170 @@
                                      *-of-expt-and-/-of-expt
                                      *-of-/-of-expt-and-expt)
                            (not-integer-of-*-of-expt2-when-<-of-expt2-of--)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Our notion of smallest positive normal agrees with RTL.
+(defthm spn-becomes-smallest-positive-normal
+  (implies (rtl::formatp f)
+           (equal (rtl::spn f)
+                  (smallest-positive-normal (+ (rtl::prec f)
+                                               (rtl::expw f))
+                                            (rtl::prec f))))
+  :hints (("Goal" :in-theory (enable rtl::spn rtl::bias rtl::expw rtl::prec
+                                     smallest-positive-normal
+                                     decode-normal-number
+                                     bias
+                                     emax))))
+
+;; Our notion of largest (positive) normal agrees with RTL.
+(defthm lpn-becomes-largest-normal
+  (implies (rtl::formatp f)
+           (equal (rtl::lpn f)
+                  (largest-normal (+ (rtl::prec f)
+                                     (rtl::expw f))
+                                  (rtl::prec f))))
+  :hints (("Goal" :in-theory (enable rtl::lpn rtl::bias rtl::expw rtl::prec rtl::formatp
+                                     largest-normal
+                                     decode-normal-number
+                                     bias
+                                     emax
+                                     wfn
+                                     expt-of-+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Decoding a non-zero number (not an infinity or a NAN):
+(defthm decode-becomes-decode-bv-float-usual-case
+  (implies (and (rtl::formatp f)
+                (rtl::encodingp x f)
+                (not (rtl::explicitp f))
+                (equal k (+ (rtl::prec f) (rtl::expw f)))
+                (equal p (rtl::prec f))
+                ;; Decoding does not give one of the 5 special kinds of floating-point-datump:
+                (not (rtl::infp x f)) ; see below for this case
+                (not (rtl::nanp x f)) ; see below for this case
+                (not (rtl::zerp x f)) ; see below for this case
+                )
+           (equal (rtl::decode x f)
+                  (decode-bv-float k p x)))
+  :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
+                                     emin emax bias
+                                     rtl::decode rtl::ndecode rtl::ddecode
+                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::encodingp
+                                     rtl::formatp
+                                     rtl::expw rtl::sigw
+                                     rtl::prec
+                                     rtl::manf
+                                     rtl::bias
+                                     rtl::explicitp
+                                     rtl::sigf
+                                     expt-of-+
+                                     representable-nonzero-rationalp
+                                     representable-subnormalp
+                                     representable-positive-subnormalp
+                                     rtl::infp
+                                     rtl::nanp
+                                     rtl::unsupp
+                                     rtl::zerp))))
+
+;; Decoding an infinity
+(defthm decode-bv-float-infinity-case
+  (implies (and (rtl::formatp f)
+                (rtl::encodingp x f)
+                (not (rtl::explicitp f))
+                (equal k (+ (rtl::prec f) (rtl::expw f)))
+                (equal p (rtl::prec f))
+                (rtl::infp x f) ; this case
+                )
+           (equal (decode-bv-float k p x)
+                  (if (equal (rtl::sgnf x f) 1)
+                      *float-negative-infinity*
+                    *float-positive-infinity*)))
+  :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
+                                     emin emax bias
+                                     rtl::decode rtl::ndecode rtl::ddecode
+                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::encodingp
+                                     rtl::formatp
+                                     rtl::expw rtl::sigw
+                                     rtl::prec
+                                     rtl::manf
+                                     rtl::bias
+                                     rtl::explicitp
+                                     rtl::sigf
+                                     expt-of-+
+                                     representable-nonzero-rationalp
+                                     representable-subnormalp
+                                     representable-positive-subnormalp
+                                     rtl::infp
+                                     rtl::nanp
+                                     rtl::unsupp
+                                     rtl::zerp))))
+
+;; Decoding a NAN
+(defthm decode-bv-float-nan-case
+  (implies (and (rtl::formatp f)
+                (rtl::encodingp x f)
+                (not (rtl::explicitp f))
+                (equal k (+ (rtl::prec f) (rtl::expw f)))
+                (equal p (rtl::prec f))
+                (rtl::nanp x f) ; this case
+                )
+           (equal (decode-bv-float k p x)
+                  *float-nan*))
+  :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
+                                     emin emax bias
+                                     rtl::decode rtl::ndecode rtl::ddecode
+                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::encodingp
+                                     rtl::formatp
+                                     rtl::expw rtl::sigw
+                                     rtl::prec
+                                     rtl::manf
+                                     rtl::bias
+                                     rtl::explicitp
+                                     rtl::sigf
+                                     expt-of-+
+                                     representable-nonzero-rationalp
+                                     representable-subnormalp
+                                     representable-positive-subnormalp
+                                     rtl::infp
+                                     rtl::nanp
+                                     rtl::unsupp
+                                     rtl::zerp))))
+
+;; Decoding a zero
+(defthm decode-bv-float-zero-case
+  (implies (and (rtl::formatp f)
+                (rtl::encodingp x f)
+                (not (rtl::explicitp f))
+                (equal k (+ (rtl::prec f) (rtl::expw f)))
+                (equal p (rtl::prec f))
+                (rtl::zerp x f) ; this case
+                )
+           (equal (decode-bv-float k p x)
+                  (if (equal (rtl::sgnf x f) 1)
+                      *float-negative-zero*
+                    *float-positive-zero*)))
+  :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
+                                     emin emax bias
+                                     rtl::decode rtl::ndecode rtl::ddecode
+                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::encodingp
+                                     rtl::formatp
+                                     rtl::expw rtl::sigw
+                                     rtl::prec
+                                     rtl::manf
+                                     rtl::bias
+                                     rtl::explicitp
+                                     rtl::sigf
+                                     expt-of-+
+                                     representable-nonzero-rationalp
+                                     representable-subnormalp
+                                     representable-positive-subnormalp
+                                     rtl::infp
+                                     rtl::nanp
+                                     rtl::unsupp
+                                     rtl::zerp))))

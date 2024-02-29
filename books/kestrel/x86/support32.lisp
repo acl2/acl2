@@ -16,7 +16,7 @@
 (include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
 (include-book "linear-memory")
 (include-book "flags" )
-(include-book "register-readers-and-writers")
+(include-book "register-readers-and-writers32")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)

@@ -34,6 +34,11 @@
 
 (local (in-theory (disable unsigned-byte-p)))
 
+; Added by Matt K. 2/2/2024, in analogy to a similar addition already made to
+; equal-by-logbitp.lisp:
+(local (include-book "std/system/non-parallel-book" :dir :system))
+(local (non-parallel-book)) ; probably need not be local
+
 (local (defthmd loghead-decomp
          (implies (<= (nfix m) (nfix n))
                   (iff (equal 0 (loghead n x))
@@ -70,12 +75,12 @@
            :hints (("goal" :use ((:instance loghead-decomp
                                   (x (logtail m x))
                                   (m 32)))))))
-                         
+
   (local (defthm loghead-of-zp
            (implies (zp n)
                     (Equal (loghead n x) 0))
            :hints(("Goal" :in-theory (enable bitops::loghead**)))))
-  
+
   (defretd range-is-0-rec-in-terms-of-logtail-of-loghead
     (iff is-0
          (equal 0 (logtail (* 32 (nfix slice-idx)) (loghead top-bit x))))

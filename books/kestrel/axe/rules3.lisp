@@ -2535,19 +2535,19 @@
          (bvlt 30 X 1073741820))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthm bvlt-hack-1
-  (implies (and (equal size 31)
-                (not (bvlt size free x))
-                (bvle size free 15)
-;               (unsigned-byte-p 15 size)
-;              (unsigned-byte-p 16 size)
-                (natp size)
-                )
-           (bvlt size x 16))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (REWRITE-<-WHEN-SIZES-DONT-MATCH
-                                   REWRITE-<-WHEN-SIZES-DONT-MATCH2
-                                   )))))
+;; (defthm bvlt-hack-1
+;;   (implies (and (equal size 31)
+;;                 (not (bvlt size free x))
+;;                 (bvle size free 15)
+;; ;               (unsigned-byte-p 15 size)
+;; ;              (unsigned-byte-p 16 size)
+;;                 (natp size)
+;;                 )
+;;            (bvlt size x 16))
+;;   :hints (("Goal" :in-theory (e/d (bvlt)
+;;                                   (REWRITE-<-WHEN-SIZES-DONT-MATCH
+;;                                    REWRITE-<-WHEN-SIZES-DONT-MATCH2
+;;                                    )))))
 
 ;non-dag
 (defthm slice-trim

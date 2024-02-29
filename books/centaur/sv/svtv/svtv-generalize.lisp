@@ -2268,6 +2268,38 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
   :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
                                     4vec-override-mux-ok))))
 
+(local
+ (defthm 4vec-bitmux-of-4vec-mask-to-zero-lemma
+   (implies (and (equal (sparseint-val impl-test) impl-test) )
+            (equal (4vec-bitmux impl-test
+                                (4vec-mask-to-zero impl-test impl-val)
+                                other)
+                   (4vec-bitmux impl-test impl-val other)))
+   :hints (("goal"
+            :do-not-induct t
+            :in-theory (e/d (4vmask-fix
+                             4vec-bitmux 4vec-mask-to-zero)
+                            ()))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (b-ite)))))))
+
+(defthm 4vec-override-mux-ok-ok-when-impl-val-is-masked-by-impl-test
+  (implies (and (4vec-muxtest-subsetp spec-test impl-test)
+                ref-p
+                (equal (sparseint-val impl-test) impl-test))
+           (equal (4vec-override-mux-ok impl-test
+                                        (sv::4vec-mask-to-zero impl-test impl-val)
+                                        spec-test spec-val ref-p ref-val)
+                  (4vec-override-mux-ok impl-test
+                                        impl-val
+                                        spec-test spec-val ref-p ref-val)))
+  :hints (("goal"
+           :in-theory (e/d* (4vec-1mask
+                             4vec 4vec-override-mux-<<=
+                             4vec-bit?! 4vec->lower 4vec->upper 
+                             4vec-override-mux-ok)
+                            ()))))
 
 
 (def-ruleset! svtv-generalized-thm-rules
@@ -2349,10 +2381,14 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     ;; (:rewrite SVTV-OVERRIDE-TRIPLELIST-MUXES-<<=-OF-CONS)
     ;; (:rewrite SVTV-OVERRIDE-TRIPLELIST-MUXES-<<=-OF-nil)
 
-    (:rewrite 4VEC-OVERRIDE-MUX-OK-OF-SAME)
-    (:rewrite 4VEC-OVERRIDE-MUX-<<=-OF-4vec-fix-impl-val)
-    (:rewrite 4vec-override-MUX-ok-when-no-spec-override-and-impl-val-same-as-ref)
-
+    (:rewrite 4vec-override-mux-ok-of-same)
+    (:rewrite 4vec-override-mux-<<=-of-4vec-fix-impl-val)
+    (:rewrite 4vec-override-mux-ok-when-no-spec-override-and-impl-val-same-as-ref)
+    (:rewrite 4vec-override-mux-ok-ok-when-impl-val-is-masked-by-impl-test)
+    (:e logmask)
+    (:e bitops::sparseint-val)
+    (:e 4vec-muxtest-subsetp)
+    
     (:rewrite svex-env-lookup-of-svex-env-reduce)
     (:executable-counterpart member-equal)
     (:executable-counterpart svarlist-fix$inline)
@@ -2981,6 +3017,7 @@ lemma proved using the original generalized theorem.</p>
    :input-vars input-variable-list
    :input-var-bindings input-variable-binding-list
    :override-vars override-variable-list
+   :override-var-masks override-var-mask-alist
    :x-override-vars x-override-variable-list
    :override-var-bindings override-variable-binding-list
    :spec-override-vars override-variable-list
@@ -3076,6 +3113,13 @@ is a list of override-value variables of the SVTV to be
 overridden in the FGL lemma but not overridden in the generalized theorem.
 Each such variable must have a corresponding output sampling the same signal at
 the same time so as to support eliminating the override.</li>
+
+<li>@(':override-var-masks) 
+is an alist of override-value variables bind to a mask value, which will be
+used to override only a portion of the designated variable. Example call:
+@(':override-var-masks ((mul-sum . (logmask 16))
+		     (mul-carry . (logmask 16)))')
+</li>
 
 <li>@(':override-var-bindings') (appended with @(':more-override-var-bindings'))
 is a list of @('let')-like bindings of override

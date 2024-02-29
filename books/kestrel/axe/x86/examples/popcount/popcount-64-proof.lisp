@@ -29,7 +29,7 @@
 (def-unrolled popcount_64 "popcount-macho-64.executable"
   :target "_popcount_64"
   :stack-slots 8
-  :output (:register 0)
+  :output :rax
   :produce-function nil ; just make the DAG
   ;; Introduce x as the input var:
   :assumptions '((equal (xr :rgf *rdi* x86) x)))

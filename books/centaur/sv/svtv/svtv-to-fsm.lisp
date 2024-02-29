@@ -150,7 +150,7 @@ in different times) in our FSM envs.
 This sort of assumption suffices to prove essentially the same theorem about
 the FSM as was proved about the SVTV-spec.  Under the lhprobe-constraint-eval
 assumption, we can show that the svtv-spec-run with the inputs set as above
-produces the same results as those of the FSM 
+produces the same results as those of the FSM
 
 
  The input assumptions for an SVTV theorem consist of the implicit
@@ -294,7 +294,7 @@ In particular this requires
 (defxdoc svtv-to-fsm
   :parents (svtv)
   :short "Umbrella topic about proving FSM properties from SVTV properties")
-  
+
 (local (xdoc::set-default-parents svtv-to-fsm))
 
 
@@ -313,6 +313,8 @@ In particular this requires
                 (svex-env-fix (nth n x)))
          :hints(("Goal" :in-theory (enable svex-envlist-fix)))))
 
+; Matt K. mod: Avoid ACL2(p) error.
+(acl2::set-waterfall-parallelism nil)
 
 (local (defthm 4vec-bit?!-of-4vec-concat
          (equal (4vec-bit?! (4vec-concat n test1 test2)
@@ -360,6 +362,7 @@ In particular this requires
                                       svar-override-p-when-other)
                                    (svar-overridetype-equiv))))
     :otf-flg t)
+
   
   (defthm lhs-overridemux-eval-signx-split-on-var-overridetype
     (implies (and (syntaxp (quotep x))
@@ -413,7 +416,7 @@ In particular this requires
                                       svar-override-p-when-other)
                                    (svar-overridetype-equiv))))
     :otf-flg t)
-  
+
   (defthm lhs-overridemux-eval-zero-split-on-var-overridetype
     (implies (and (syntaxp (quotep x))
                   (equal vars (lhs-vars x))
@@ -470,7 +473,7 @@ In particular this requires
                                lhprobe-eval
                                lhprobe-vars)))
     :otf-flg t)
-  
+
   (defthm lhprobe-overridemux-eval-split-on-var-overridetype
     (implies (and (syntaxp (quotep x))
                   (equal vars (lhprobe-vars x))
@@ -515,7 +518,7 @@ In particular this requires
                                lhprobe/4vec-eval
                                lhprobe/4vec-vars)))
     :otf-flg t)
-  
+
   (defthm lhprobe/4vec-overridemux-eval-split-on-var-overridetype
     (implies (and (syntaxp (quotep x))
                   (equal vars (lhprobe/4vec-vars x))
@@ -556,11 +559,11 @@ In particular this requires
 
 
 
-    
 
 
-    
-    
+
+
+
 
 
 
@@ -612,7 +615,7 @@ In particular this requires
 ;;                                  svex-envs-1mask-equiv-implies-4vec-1mask-equiv-svex-env-lookup-2))))
 
 ;;   (defequiv svex-envs-ovtestsimilar)
-  
+
 ;;   (defrefinement svex-envs-similar svex-envs-ovtestsimilar))
 
 
@@ -628,7 +631,7 @@ In particular this requires
     :rewrite :direct)
 
   (in-theory (disable svex-envs-ovtestsubsetp))
-  
+
   (defcong svex-envs-ovtestsimilar iff (svex-envs-ovtestsubsetp x y) 1
     :hints ((and stable-under-simplificationp
                  (let* ((lit (assoc 'svex-envs-ovtestsubsetp clause))
@@ -684,7 +687,7 @@ In particular this requires
     :rewrite :direct)
 
   (in-theory (disable svex-envs-ovtests-ok))
-  
+
   (defcong svex-envs-ovtestsimilar iff (svex-envs-ovtests-ok x y overridekeys) 1
     :hints ((and stable-under-simplificationp
                  (let* ((lit (assoc 'svex-envs-ovtests-ok clause))
@@ -747,8 +750,8 @@ In particular this requires
     :hints(("Goal" :in-theory (enable svex-envlists-ovtestsimilar))))
   (defcong svex-envlists-ovtestsimilar iff (svex-envlists-ovtests-ok x y overridekeys) 2
     :hints(("Goal" :in-theory (enable svex-envlists-ovtestsimilar)))))
-    
-  
+
+
 
 (local (local (include-book "svtv-spec-override-transparency")))
 
@@ -836,7 +839,7 @@ In particular this requires
 ;;            :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
 ;;                                              svtv-name-lhs-map-eval-signx
 ;;                                              alist-keys))))
-  
+
 ;;   (local (in-theory (enable svtv-name-lhs-map-fix))))
 
 
@@ -936,7 +939,7 @@ In particular this requires
   ;; (equal (lhprobe-constraintlist-overridemux-eval constraints envs outs)
   ;;            (equal (lhprobe-overridemux-eval lhprobe envs outs)
   ;;                   (svar/4vec-eval binding (lhprobe-map-overridemux-eval bindings envs outs))))
-  
+
   (defretd constraints-overridemux-eval-of-<fn>
     (implies (and (lhprobe-constraintlist-overridemux-eval constraints envs outs)
                   ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
@@ -997,14 +1000,14 @@ In particular this requires
                      (:free (lhs signedp) (lhprobe-overridemux-eval (lhprobe lhs stage signedp) envs outs))
                      (:free (overridetype) <call>)))))
 
-  
+
   (local (defthm subsetp-equal-lhs-vars-of-svtv-name-lhs-map-lookup
            (implies (and (hons-assoc-equal key namemap)
                          (svar-p key))
                     (subsetp-equal (lhs-vars (cdr (hons-assoc-equal key namemap)))
                                    (svtv-name-lhs-map-vars namemap)))
            :hints(("Goal" :in-theory (enable svtv-name-lhs-map-vars alist-keys)))))
-  
+
   (local (defthm subsetp-svtv-name-lhs-map-vars-of-fal-extract
            (subsetp-equal (svtv-name-lhs-map-vars (fal-extract keys (svtv-name-lhs-map-fix namemap)))
                           (svtv-name-lhs-map-vars namemap))
@@ -1025,13 +1028,13 @@ In particular this requires
                    :expand ((svarlist-fix y)
                             (svarlist-override-p y type))
                    :induct (svarlist-override-p y type)))))
-  
+
   (local (defthm svarlist-override-p-svtv-name-lhs-map-vars-of-fal-extract
            (implies (svarlist-override-p (svtv-name-lhs-map-vars namemap) type)
                     (svarlist-override-p (svtv-name-lhs-map-vars (fal-extract keys (svtv-name-lhs-map-fix namemap))) type))
            :hints(("Goal" :in-theory (disable subsetp-svtv-name-lhs-map-vars-of-fal-extract)
                    :use subsetp-svtv-name-lhs-map-vars-of-fal-extract))))
-  
+
   (local
    (defthm alist-keys-of-fast-alist-clean-under-set-equiv
      (set-equiv (alist-keys (fast-alist-clean x))
@@ -1040,7 +1043,7 @@ In particular this requires
                                      acl2::alist-keys-member-hons-assoc-equal)
                                     (acl2::hons-assoc-equal-iff-member-alist-keys))))))
 
-  
+
   (local (defthm hons-assoc-equal-of-svar-change-override-lhs-map-keys-change-override
            (implies (svarlist-override-p (alist-keys (svtv-name-lhs-map-fix map)) nil)
                     (equal (cdr (hons-assoc-equal (svar-change-override v type)
@@ -1148,7 +1151,7 @@ In particular this requires
   (local (defthm subsetp-alist-keys-fal-extract
            (subsetp-equal (alist-keys (fal-extract keys x)) (alist-keys x))
            :hints(("Goal" :in-theory (enable alist-keys fal-extract)))))
-  
+
   (local
    (defret <fn>-lookup-lemma3
      (implies (and (lhbit-case lhbit :var)
@@ -1190,15 +1193,15 @@ In particular this requires
                            (x (fal-extract keys x))))
              :in-theory (disable svtv-name-lhs-map-var/idx-find-lookup-width)))
      :fn svtv-name-lhs-map-var/idx-find))
-  
-  
+
+
   ;; (defretd constraints-eval-of-<fn>-implies
   ;;   (implies (and (lhprobe-constraintlist-eval constraints envs)
   ;;                 ;; x maps namemap names to consts/svtv vars
   ;;                 ;; namemap maps namemap names to fsm lhses
   ;;                 ;; envs each map fsm vars to values
   ;;                 ;; bindings maps svtv vars to fsm lhprobes
-                  
+
   ;;                 ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
   ;;                 ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
   ;;                 (no-duplicatesp-equal (alist-keys (svar/4vec-alist-fix x)))
@@ -1242,7 +1245,7 @@ In particular this requires
                               (svarlist-member-nonoverride v x))))
            :hints(("Goal" :in-theory (enable svarlist-change-override
                                              equal-of-svar-change-override)))))
-  
+
   (local (defthm hons-assoc-equal-when-not-member-alist-keys
            (implies (not (member-equal k (alist-keys x)))
                     (equal (hons-assoc-equal k x) nil))))
@@ -1258,7 +1261,7 @@ In particular this requires
                     (equal (4vec-1mask (4vec-bit-index bit x)) 0))
            :hints(("Goal" :in-theory (enable 4vec-muxtest-subsetp 4vec-1mask 4vec-bit-index bool->bit))
                   (logbitp-reasoning))))
-  
+
   (local (defthm 4vec-1mask-of-bit-index-lookup-when-svex-envs-ovtests-ok
            (implies (and (svex-envs-ovtests-ok x y overridekeys)
                          (svar-override-p key :test)
@@ -1293,7 +1296,7 @@ In particular this requires
                     :in-theory (e/d (4vec-1mask-equiv
                                      4vec-1mask-of-4vec-bit-index-is-bit-index-of-1mask)
                                     (svex-envs-ovtests-ok-necc))))))
-  
+
   (local (defthm bit-index-lookup-when-svex-envs-ovtests-ok
            (implies (and (svex-envs-ovtests-ok x y overridekeys)
                          (svar-override-p key :test)
@@ -1355,7 +1358,7 @@ In particular this requires
            (implies (not (member-equal v (svtv-name-lhs-map-vars namemap)))
                     (not (member-equal v (svtv-name-lhs-map-vars
                                           (fal-extract vars (svtv-name-lhs-map-fix namemap))))))))
-    
+
   ;; (local (defthmd equal-of-4vec-1mask-bit-index
   ;;          (equal (equal (4vec-1mask (4vec-bit-index n x))
   ;;                        (4vec-1mask (4vec-bit-index m y)))
@@ -1394,8 +1397,8 @@ In particular this requires
                                   (a 0)
                                   (b (4vec-bit?! x y z))))
                     :in-theory (disable 4vec-bit-index-of-4vec-bit?!)))))
-  
-  
+
+
   (defthmd constraints-overridemux-eval-of-svtv-spec-fsm-constraints-for-alist-implies
     (b* ((in-constraints (svtv-spec-fsm-constraints-for-alist in-alist stage namemap nil bindings))
          (val-constraints (svtv-spec-fsm-constraints-for-alist val-alist stage namemap :val bindings))
@@ -1410,7 +1413,7 @@ In particular this requires
                     ;; namemap maps namemap names to fsm lhses
                     ;; envs each map fsm vars to values
                     ;; bindings maps svtv vars to fsm lhprobes
-                  
+
                     ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
                     ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
                     (no-duplicatesp-equal (alist-keys (svar/4vec-alist-fix in-alist)))
@@ -1479,7 +1482,7 @@ In particular this requires
                         `(:clause-processor (acl2::generalize-with-alist-cp clause '((,call . badbit)))))))
             ))
 
-  
+
 
   (defret lhprobe-constraintlist-max-stage-of-<fn>
     (implies (and (<= (nfix stage) bound)
@@ -1487,21 +1490,21 @@ In particular this requires
              (<= (lhprobe-constraintlist-max-stage constraints) bound))
     :hints(("Goal" :in-theory (enable lhprobe-constraintlist-max-stage
                                       lhprobe-constraint-max-stage))))
-  
+
   (local (in-theory (enable svar/4vec-alist-fix))))
 
 
 (defsection svtv-spec-fsm-constraints-for-alists
   (local (in-theory (enable svtv-spec-fsm-constraints-for-alists)))
   (local (std::set-define-current-function svtv-spec-fsm-constraints-for-alists))
-  
+
   (local (include-book "std/lists/nthcdr" :dir :system))
 
   (local (defun ind (in-alists val-alists test-alists stage)
            (if (Atom in-alists)
                (list val-alists test-alists stage )
              (ind (cdr in-alists) (cdr val-alists) (cdr test-alists) (1+ (nfix stage))))))
-  
+
   (local (defthm fal-extract-of-append
            (equal (fal-extract (append x y) z)
                   (append (fal-extract x z)
@@ -1529,7 +1532,7 @@ In particular this requires
                                              svex-alist-noncall-p
                                              alist-keys
                                              svar/4vec-alist-fix)))))
-  
+
   (defthmd constraints-overridemux-eval-of-svtv-spec-fsm-constraints-for-alists-implies
     (b* ((in-constraints (svtv-spec-fsm-constraints-for-alists in-alists stage namemap nil bindings))
          (val-constraints (svtv-spec-fsm-constraints-for-alists val-alists stage namemap :val bindings))
@@ -1544,7 +1547,7 @@ In particular this requires
                     ;; namemap maps namemap names to fsm lhses
                     ;; envs each map fsm vars to values
                     ;; bindings maps svtv vars to fsm lhprobes
-                  
+
                     ;; (subsetp-equal (alist-keys (svar/4vec-alist-fix x))
                     ;;                (alist-keys (svtv-name-lhs-map-fix namemap)))
                     (svex-alistlist-noncall-p in-alists)
@@ -1593,7 +1596,7 @@ In particular this requires
             :induct (ind in-alists val-alists test-envs stage)
             :do-not-induct t)))
 
-  
+
 
   (defret lhprobe-constraintlist-max-stage-of-<fn>
     (implies (and (<= (+ -1 (len x) (nfix stage)) bound)
@@ -1646,7 +1649,7 @@ In particular this requires
                                                             svarlist-fix
                                                             svex-env-boundp-iff-member-alist-keys)
                                           (acl2::alist-keys-member-hons-assoc-equal))))))
-  
+
   (local (defthm svex-alistlist-eval-of-append-non-intersect
            (implies (not (intersectp-equal (svex-alistlist-vars x) (alist-keys (svex-env-fix env1))))
                     (equal (Svex-alistlist-eval x (append env1 env2))
@@ -1654,7 +1657,7 @@ In particular this requires
            :hints(("Goal" :in-theory (enable svex-alistlist-eval
                                              svex-alistlist-vars
                                              svex-alist-eval-equal-when-extract-vars-similar)))))
-  
+
   (defretd constraints-eval-of-<fn>-implies
     (implies (and (lhprobe-constraintlist-overridemux-eval constraints envs outs)
                   (svtv-spec-fsm-syntax-check x))
@@ -1750,7 +1753,7 @@ In particular this requires
                     (not (member-equal v x)))
            :hints(("Goal" :in-theory (enable svarlist-override-p
                                              svar-override-p-when-other)))))
-  
+
   (local (defthmd not-member-by-svar-override-p
            (implies (and (svarlist-equiv x-equiv (double-rewrite x))
                          (svarlist-override-p x-equiv type1)
@@ -1767,7 +1770,7 @@ In particular this requires
                     (not (member-equal (svar-change-override v type2) x)))
            :hints(("Goal" :use ((:instance not-member-by-svar-override-p-lemma
                                  (v (svar-change-override v type2))))))))
-                                 
+
 
 
   (local (defthm overridekeys-envs-agree-of-append-nonoverride
@@ -1803,7 +1806,7 @@ In particular this requires
   ;;            (equal (svex-alist-eval x impl-env)
   ;;                   (svex-alist-eval x spec-env)))
   ;;   :hints(("Goal" :use svex-alist-overridekey-transparent-p-necc)))
-           
+
 
   ;; (defthm svtv-cycle-step-phase-nextsts-when-svex-alist-overridekey-transparent-p
   ;;   (implies (and (svex-alist-overridekey-transparent-p nextst overridekeys values)
@@ -1896,7 +1899,7 @@ In particular this requires
              (equal (svtv-cycle-step-phase-nextsts env prev-st phase x)
                     (svtv-cycle-step-phase-nextsts nil prev-st phase x)))
     :hints(("Goal" :in-theory (enable svtv-cycle-step-phase-nextsts))))
-  
+
   (defthm svtv-cycle-eval-nextst-when-svex-alist-overridekey-transparent-p-no-i/o-phase
     (b* (((fsm x)))
       (implies (and (syntaxp (not (equal env ''nil)))
@@ -1949,7 +1952,7 @@ In particular this requires
     (equal (svtv-cycle-step-phase-nextsts env (svex-env-extract (svex-alist-keys nextst) prev-st) phase nextst)
            (svtv-cycle-step-phase-nextsts env prev-st phase nextst))
     :hints(("Goal" :in-theory (enable svtv-cycle-step-phase-nextsts))))
-  
+
   (defthm svtv-cycle-eval-outs-of-extract-initst-keys
     (b* (((fsm x)))
       (equal (svtv-cycle-eval-outs env (svex-env-extract (svex-alist-keys x.nextstate) prev-st) phases x)
@@ -2018,7 +2021,7 @@ In particular this requires
            :hints (("goal" :use ((:instance member-equal-when-nonoverride-p
                                   (v (svar-change-override v type))))
                     :in-theory (disable member-equal-when-nonoverride-p)))))
-  
+
 
   (local
    (defthm svex-envs-ovsimilar-of-append
@@ -2045,7 +2048,7 @@ In particular this requires
                     (svarlist-nonoverride-p x type2))
            :hints(("Goal" :in-theory (enable svarlist-nonoverride-p svarlist-override-p
                                              svar-override-p-when-other)))))
-  
+
   (local
    (defthm svex-envs-ovsimilar-of-append-2
      (implies (And (svex-envs-ovsimilar c d)
@@ -2079,7 +2082,7 @@ In particular this requires
                    (env2 (append (svex-env-extract (svex-alist-keys (fsm->nextstate x)) prev-st)
                                  (svtv-cyclephase->constants phase)
                                  env2)))))))
-  
+
   (defthm svtv-cycle-step-phase-outs-when-ovcongruent
     (b* (((fsm x)))
       (implies (and (fsm-ovcongruent x)
@@ -2116,7 +2119,7 @@ In particular this requires
                  '(:use ((:instance svex-envs-ovsimilar-necc
                           (v (car keys)) (x env1) (y env2)))
                    :in-theory (enable svar-override-p-when-other))))))
-  
+
   (defthm svtv-cycle-step-phase-outs-when-ovcongruent-2
     (b* (((fsm x)))
       (implies (and (fsm-ovcongruent x)
@@ -2166,7 +2169,7 @@ In particular this requires
                    (keys (svex-alist-keys (fsm->nextstate x)))))
             )))
 
-  
+
   (defthm svtv-cycle-eval-outs-when-ovcongruent
     (b* (((fsm x)))
       (implies (and (fsm-ovcongruent x)
@@ -2309,8 +2312,8 @@ In particular this requires
                       (b* ((lit (car (last clause))))
                         `(:expand (,lit)
                           :in-theory (enable svex-env-lookup-of-cons-split)))))))
-                           
-                       
+
+
 
 (defcong svex-envs-1mask-equiv svex-envs-1mask-equiv (svtv-name-lhs-map-eval x env) 2
   :hints(("Goal" :in-theory (enable svtv-name-lhs-map-eval))))
@@ -2468,7 +2471,7 @@ In particular this requires
                         (svar-override-p v type))
                    (not (member-equal (svar-fix v) x)))
           :hints(("Goal" :in-theory (enable svarlist-nonoverride-p)))))
- 
+
  (local (defthm svex-envs-ovtestsimilar-to-nil-when-nonoverride-p
           (implies (svarlist-nonoverride-p (alist-keys (svex-env-fix x)) :test)
                    (equal (svex-envs-ovtestsimilar x nil) t))
@@ -2499,11 +2502,11 @@ In particular this requires
            :hints(("Goal" :in-theory (enable svtv-name-lhs-map-fix
                                              svtv-name-lhs-map-vals-change-override
                                              alist-keys)))))
- 
+
   (local (defthm svarlist-override-p-alist-keys-of-svtv-fsm-namemap-env
           (svarlist-override-p (alist-keys (svtv-fsm-namemap-env alist map type)) type)
           :hints(("Goal" :in-theory (enable svtv-fsm-namemap-env)))))
- 
+
  (local (defthm svarlist-nonoverride-p-when-svarlist-override-p
            (implies (and (svarlist-override-p x type)
                          (not (equal (svar-overridetype-fix type) (svar-overridetype-fix type2))))
@@ -2516,12 +2519,12 @@ In particular this requires
                    (svarlist-nonoverride-p (alist-keys (svtv-fsm-namemap-env alist map type)) type2))
           :hints (("Goal" :use ((:instance svarlist-override-p-alist-keys-of-svtv-fsm-namemap-env))
                    :in-theory (disable svarlist-override-p-alist-keys-of-svtv-fsm-namemap-env)))))
- 
- 
+
+
   (defthm svtv-fsm-namemap-env-under-svex-envs-ovtestsimilar
     (implies (not (equal (svar-overridetype-fix type) :test))
              (svex-envs-ovtestsimilar (svtv-fsm-namemap-env alist map type) nil)))
-  
+
   (defthm svtv-fsm-phase-inputs-under-svex-envs-ovtestsimilar
     (svex-envs-ovtestsimilar (svtv-fsm-phase-inputs inputs override-vals override-tests map)
                              (svtv-fsm-namemap-env override-tests map :test))
@@ -2545,7 +2548,7 @@ In particular this requires
     :hints(("Goal" :in-theory (enable svtv-spec-pipe-env->cycle-envs
                                       svtv-spec->override-test-alists*
                                       take-of-svex-alistlist-eval))))
-  
+
   (local (defthm lhprobe-map-overridemux-eval-of-fal-extract
            (implies (svarlist-p vars)
                     (equal (lhprobe-map-overridemux-eval (fal-extract vars bindings) envs outs)
@@ -2585,7 +2588,7 @@ In particular this requires
 ;;       (SVTV-SPEC->NAMEMAP (COUNTER-INVAR-SPEC))
 ;;       :TEST)
 ;;  (COUNTER-INVAR-RUN-OVERRIDEKEYS))
-           
+
   (defthm alistlist-eval-of-test-alists-under-bindings
     (implies (And (syntaxp (and (consp test-alists)
                                 (equal (car test-alists) 'svtv-spec->override-test-alists*)))
@@ -2630,7 +2633,7 @@ In particular this requires
                               force-execute)
                              (lhprobe-map-overridemux-eval-of-fal-extract)))))
 
-  
+
   (local (defthm svex-envs-agree-of-append-same
            (iff (svex-envs-agree vars (append env1 env2) (append env1 env3))
                 (svex-envs-agree (set-difference-equal (svarlist-fix vars)
@@ -2654,7 +2657,7 @@ In particular this requires
            :hints ((and stable-under-simplificationp
                         `(:expand (,(car (last clause)))
                           :in-theory (enable svex-env-lookup-of-append))))))
-  
+
   (defthm alistlist-eval-of-test-alists-under-bindings-gen
     (implies (And (syntaxp (and (consp test-alists)
                                 (equal (car test-alists) 'svtv-spec->override-test-alists*)
@@ -2739,7 +2742,7 @@ In particular this requires
            (implies (equal (4vec-fix x) (svex-env-lookup v y))
                     (4vec-equiv x (svex-env-lookup v y)))
            :rule-classes :forward-chaining))
-  
+
   (local (defthm svex-envs-ovtests-ok-of-cons
            (implies (and (iff (svex-env-boundp k x) (svex-env-boundp k y))
                          (or (not (svex-env-boundp k x))
@@ -2767,7 +2770,7 @@ In particular this requires
                           `(,@(and lit `(:expand (,lit)))
                             :use ((:instance svex-envs-ovtests-ok-necc
                                    (k ,wit) (x ,other-x) (y ,other-y)))))))))
-                
+
 
   (local (Defthm member-of-svarlist-change-override-rw
            (implies (syntaxp (not (equal type ''nil)))
@@ -2781,7 +2784,7 @@ In particular this requires
   (defthm svex-envs-ovtests-ok-of-nils
     (svex-envs-ovtests-ok nil nil keys)
     :hints(("Goal" :in-theory (enable svex-envs-ovtests-ok))))
-  
+
   (defthm svex-envs-check-ovtests-ok-rec-correct
     (iff (svex-envs-check-ovtests-ok-rec keys x y (pairlis$ (svarlist-change-override overridekeys :test) nil))
          (svex-envs-ovtests-ok (svex-env-extract keys x)
@@ -2960,7 +2963,7 @@ In particular this requires
 (defsection svex-alist-all-xes-p
   (local (std::set-define-current-function svex-alist-all-xes-p))
   (local (in-theory (enable svex-alist-all-xes-p)))
-  
+
   (defthmd lookup-when-svex-alist-all-xes-p
     (implies (and (svex-alist-all-xes-p x)
                   (svex-lookup k x))
@@ -2972,7 +2975,7 @@ In particular this requires
              (svex-envs-similar (svex-alist-eval x env) nil))
     :hints(("Goal" :in-theory (enable lookup-when-svex-alist-all-xes-p
                                       svex-envs-similar))))
-  
+
   (defthm svex-alist-<<=-when-svex-alist-all-xes-p
     (implies (svex-alist-all-xes-p x)
              (svex-alist-<<= x y))
@@ -3470,7 +3473,7 @@ In particular this requires
 (defsection svtv-probe-to-lhprobe
   (local (in-theory (enable svtv-probe-to-lhprobe)))
   (local (std::set-define-current-function svtv-probe-to-lhprobe))
-  
+
   (defret lhprobe-eval-of-<fn>
     (b* (((svtv-probe x)))
       (implies (hons-assoc-equal x.signal (svtv-name-lhs-map-fix namemap))
@@ -3547,7 +3550,7 @@ In particular this requires
                     (equal (Svtv-probealist-outvars x) nil))
            :hints(("Goal" :in-theory (enable svtv-probealist-outvars
                                              svtv-probealist-fix)))))
-  
+
   (defret lhprobe-map-max-stage-of-<fn>
     (equal (lhprobe-map-max-stage map)
            (+ -1 (len (svtv-probealist-outvars x))))
@@ -3555,7 +3558,7 @@ In particular this requires
                                       svtv-probealist-outvars
                                       svtv-probealist-fix
                                       svtv-probe-to-lhprobe))))
-  
+
   (local (in-theory (enable svtv-probealist-fix))))
 
 
@@ -3611,8 +3614,8 @@ In particular this requires
            (equal (hons-assoc-equal k (svtv-spec-fsm-bindings spec))
                   (hons-assoc-equal k (svtv-spec-fsm-bindings svtv-spec))))
   :hints(("Goal" :in-theory (enable force-execute))))
-                         
-                         
+
+
 
 (defthm lhs-eval-zx-nth-under-ovtestequiv
   (implies (and (syntaxp (Quotep lhs))
@@ -3672,7 +3675,7 @@ In particular this requires
            (implies (and (2vec-p mask)
                          (2vec-p w)
                          (natp (2vec->val w))
-                         (case-split 
+                         (case-split
                            (equal (loghead (2vec->val w) (2vec->val mask))
                                   (logmask (2vec->val w)))))
                     (equal (4vec-concat w (4vec-bit?! mask a b) c)
@@ -3766,7 +3769,7 @@ In particular this requires
    svtv
    svtv-spec
    triples-name
-                               
+
    input-vars
    output-vars
    override-vars
@@ -3779,12 +3782,12 @@ In particular this requires
    new-eliminated-override-vars
    all-eliminated-override-vars
    override-test-envs
-   
+
    outmap
    bindings
    triple-val-alist
    run-length
-   
+
    hyp
    concl
    rule-classes
@@ -4005,8 +4008,8 @@ In particular this requires
                                        (svex-envlist-remove-override envs :test) :val)
                                       (svtv-spec->cycle-phases (<specname>)))))))))
      :rule-classes nil))
-                                  
-                                      
+
+
 
 
 
@@ -4028,7 +4031,7 @@ In particular this requires
           (svtv-to-fsm-first-thm-input-var-bindings (cdr input-vars) bindings overridetype envs-var))))
 
 
-  
+
 
 ;; (append (svtv-to-fsm-first-thm-input-var-bindings '(inc) (counter-invar-run-fsm-bindings) nil 'envs)
 ;;         (svtv-to-fsm-first-thm-input-var-bindings '(sum1) (counter-invar-run-fsm-bindings) :val 'envs)
@@ -4049,7 +4052,7 @@ In particular this requires
                               x.bindings nil 'outs)
                              (svtv-to-fsm-first-thm-input-var-bindings x.output-vars x.outmap nil 'outs)))
        (test-env (svtv-genthm-override-test-alist
-                  x.new-eliminated-override-vars
+                  x.new-eliminated-override-vars nil;;x.override-var-masks
                   x.triple-val-alist x.triples-name))
        ;; (run-length (len (svtv-probealist-outvars spec.probes)))
        )
@@ -4155,8 +4158,8 @@ In particular this requires
                            acl2::natp-when-integerp)
               ))
      :rule-classes <rule-classes>))
-                                  
-                                      
+
+
 
 
 
@@ -4232,7 +4235,7 @@ In particular this requires
         equations)))
 
 
-  
+
 
 ;; (append (svtv-to-fsm-final-thm-var-bindings '(inc) (counter-invar-run-fsm-bindings) nil 'envs)
 ;;         (svtv-to-fsm-final-thm-var-bindings '(sum1) (counter-invar-run-fsm-bindings) :val 'envs)
@@ -4303,14 +4306,14 @@ In particular this requires
          :defaults defaults
          :ctx ctx
          svtv-spec-thmname
-                               
+
          eliminate-override-vars
          eliminate-override-signals
          ;; outmap
          ;; bindings
          ;; triple-val-alist
          ;; run-length
-   
+
          ;; hyp
          ;; concl
          (rule-classes ':rewrite)
@@ -4336,7 +4339,7 @@ In particular this requires
        ((unless (member-eq cycle-num-rewrite-strategy '(:all-free :by-cycle :single-var)))
         (er hard ctx "Unknown :cycle-num-rewrite-strategy argument ~x0: possible values are ~&1~%"
             cycle-num-rewrite-strategy '(:all-free :by-cycle :single-var)))
-       
+
        ((svtv-generalized-thm svtv-thm))
 
        ((with-fast svtv-thm.triple-val-alist))
@@ -4350,7 +4353,7 @@ In particular this requires
                       have an associated FSM. Ensure that the svtv-spec was ~
                       defined using ~x2 with the ~x3 option."
             svtv-thm.svtv-spec svtv-spec-thmname 'def-svtv-refinement :fsm))
-       
+
        ;; We only use the SVTV to get variable names (which we could do by
        ;; scanning the svtv-spec alists instead) and to get the names of
        ;; functions/theorems.
@@ -4361,13 +4364,13 @@ In particular this requires
        ((when err) (er hard ctx "Couldn't evaluate ~x0" (list svtv-thm.svtv-spec)))
        ((svtv-spec svtv-spec-val))
        ((acl2::with-fast svtv-spec-val.namemap))
-       
+
        (primary-output-var (or primary-output-var (car svtv-thm.output-vars)))
 
        (svtv-actual-override-vars (svex-alistlist-vars svtv-spec-val.override-val-alists))
        (svtv-actual-input-vars  (svex-alistlist-vars svtv-spec-val.in-alists))
        (svtv-actual-override-signals (svex-alistlist-all-keys svtv-spec-val.override-val-alists))
-       
+
        (thm-spec-override-vars (append (strip-cars svtv-thm.spec-override-var-bindings) svtv-thm.spec-override-vars))
        (thm-input-vars (append (strip-cars svtv-thm.input-var-bindings) svtv-thm.input-vars))
        (thm-override-vars (append (strip-cars svtv-thm.override-var-bindings) svtv-thm.override-vars))
@@ -4378,11 +4381,11 @@ In particular this requires
                                  svtv-actual-override-vars))
        (real-input-vars (acl2::hons-intersection thm-input-vars svtv-actual-input-vars))
 
-       
+
 
        (eliminate-all-overrides (or (eq eliminate-override-signals :all)
                                     (eq eliminate-override-vars :all)))
-       
+
        ((unless (or eliminate-all-overrides
                     (acl2::hons-subset eliminate-override-vars real-spec-override-vars)))
         (let ((missing (hons-set-diff eliminate-override-vars real-spec-override-vars)))
@@ -4410,7 +4413,7 @@ In particular this requires
                                              new-eliminated-override-vars))
 
        (override-test-svtv-env (svtv-genthm-override-test-alist
-                                remaining-override-vars
+                                remaining-override-vars nil
                                 svtv-thm.triple-val-alist svtv-thm.triples-name))
        (override-test-envs (if eliminate-all-overrides
                                (make-list (len svtv-spec-val.override-test-alists) :initial-element nil)
@@ -4443,7 +4446,7 @@ In particular this requires
      :all-eliminated-override-vars all-eliminated-override-vars
 
      :override-test-envs override-test-envs
-         
+
      :outmap (svtv-probealist-to-lhprobe-map svtv-spec-val.probes svtv-spec-val.namemap)
      :bindings (svtv-spec-fsm-bindings svtv-spec-val)
      :triple-val-alist svtv-thm.triple-val-alist
@@ -4468,7 +4471,7 @@ In particular this requires
 (defmacro def-svtv-to-fsm-thm (thmname &rest args)
   `(make-event
     (svtv-to-fsm-thm-fn ',thmname ',args state)))
-       
+
 
 
 
@@ -4620,7 +4623,7 @@ of the FSM. This will determine the time offset (here @('(+ 3 k)') minus the
 time offset of this output variable in the SVTV) for this application of the
 theorem.  If not specified, we pick an arbitrary variable from the SVTV
 theorem's output-vars.</li>
-   
+
  <li>@(':base-cycle-var'): A variable name to be used in the final theorem;
 it's only important that it doesn't conflict with other variable names.  The
 default is @('sv::base-cycle').</li>

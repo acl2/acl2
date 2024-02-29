@@ -459,7 +459,8 @@ rewrite-bounds) to find an upper and lower bound for the resulting expression.
 Then it replicates these steps in a @('defthm') to prove the bounds, creating a
 linear rule by default (but the rule-classes may be overridden).</p>")
 
-
+; Matt K. mod 2/2/2024 to avoid ACL2(p) error:
+(set-waterfall-parallelism nil)
 
 ;; Move to a tests book
 (local

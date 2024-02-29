@@ -1,7 +1,7 @@
 ; A package for x86 proof work
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 
 ;(include-book "std/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
+(include-book "rtl/rel11/portcullis" :dir :system)
 
 ;; A Package for x86 analysis tools and proofs
 
@@ -59,9 +60,18 @@
     x86isa::*compatibility-mode*
     x86isa::*64-bit-mode*
 
+    x86isa::rme-size
+    x86isa::rme-size$inline
+
+    x86isa::rml-size
+    x86isa::rml-size$inline
     x86isa::rml08
+    x86isa::rml16
     x86isa::rml32
+    x86isa::rml48
     x86isa::rml64
+    x86isa::rml80
+    x86isa::rml128
 
     ;; registers (the order is odd but follows the numeric values):
     x86isa::*rax*
@@ -105,6 +115,10 @@
     x86isa::pf-spec32$inline
     x86isa::pf-spec64
     x86isa::pf-spec64$inline
+    x86isa::of-spec8
+    x86isa::of-spec8$inline
+    x86isa::of-spec16
+    x86isa::of-spec16$inline
     x86isa::of-spec32
     x86isa::of-spec32$inline
     x86isa::of-spec64
@@ -121,6 +135,10 @@
     x86isa::sub-af-spec32$inline
     x86isa::sub-af-spec64
     x86isa::sub-af-spec64$inline
+    x86isa::sub-of-spec8
+    x86isa::sub-of-spec16
+    x86isa::sub-of-spec32
+    x86isa::sub-of-spec64
 
     ;; do we want to include stuff like this?
     x86isa::x86-one-byte-opcode-modr/m-p$inline
@@ -190,14 +208,39 @@
     x86isa::!rip
 
     x86isa::ctri
+    ;; todo: more like this:
+    x86isa::cr0bits->ts
+    x86isa::cr0bits->em
+    x86isa::cr4bits->osfxsr
+
+    x86isa::msri
+    x86isa::mxcsrbits-fix
+    ;; todo: more like this:
+    x86isa::mxcsrbits->daz$inline
+    x86isa::mxcsrbits->de$inline
+    x86isa::mxcsrbits->im$inline
+    x86isa::mxcsrbits->dm$inline
+    x86isa::mxcsrbits->ie$inline
+    x86isa::mxcsrbits->ze$inline
+    x86isa::mxcsrbits->pe$inline
+    x86isa::mxcsrbits->ue$inline
+    x86isa::mxcsrbits->zm$inline
+    x86isa::mxcsrbits->oe$inline
+    x86isa::mxcsrbits->rc$inline
+
+    x86isa::feature-flag
 
     ;; floating-point stuff:
     x86isa::fp-decode
     x86isa::sse-cmp
     x86isa::sse-cmp-special
-    x86isa::mxcsrbits->daz$inline x86isa::mxcsrbits->daz$
-    x86isa::mxcsrbits->dm$inline x86isa::mxcsrbits->dm$
-    x86isa::mxcsrbits->im$inline x86isa::mxcsrbits->im$
+    x86isa::mxcsr
+    x86isa::mxcsr$a
+    x86isa::mxcsrbits-fix
+    x86isa::mxcsrbits->daz$inline x86isa::mxcsrbits->daz
+    x86isa::mxcsrbits->dm$inline x86isa::mxcsrbits->dm
+    x86isa::mxcsrbits->im$inline x86isa::mxcsrbits->im
+    ;; todo: more like the above
     x86isa::*op-ucomi*
     x86isa::snan
     x86isa::qnan
@@ -262,6 +305,10 @@
     bvif
     bvsx
     repeatbit
+    leftrotate
+    rightrotate
+    leftrotate32
+    rightrotate32
 
     ceiling-of-lg
     lg
@@ -291,6 +338,8 @@
     erp-t
 
     def-constant-opener
+    defopeners
+    add-known-boolean
 
     defconst-computed
     defconst-computed2 ;drop?
@@ -315,7 +364,13 @@
     dagify-term2
     axe-syntaxp
     axe-bind-free
+
+    ;; axe-syntaxp and axe-bind-free functions:
+    bind-bv-size-axe
+    heavier-dag-term
+
     prove-equivalence
+    prove-equal-with-tactics
     symbolic-byte-assumptions
     symbolic-list
     ;rule lists:
@@ -370,6 +425,30 @@
     untranslate
     subset-eq
     submit-event
+
+    ;; x86 stuff (more to x package?):
+    elf-info
+    ))
+
+;; Ideally, these would all be rewritten to BV ops
+(defconst *symbols-from-bitops*
+  '(bitops::part-install-width-low$inline))
+
+;; Ideally, these would all be rewritten away
+(defconst *symbols-from-rtl*
+  '(rtl::bitn
+    rtl::bits
+    rtl::bvecp
+    rtl::daz
+    rtl::snanp
+    rtl::qnanp
+    rtl::denormp
+    rtl::infp
+    rtl::mxcsr-masks
+    rtl::zencode
+    rtl::iencode
+    rtl::dencode
+    rtl::nencode
     ))
 
 ;; TODO: Think about this...
@@ -379,4 +458,6 @@
 (defpkg "X" (append *acl2-exports*
                     *symbols-from-acl2-package*
                     *x86isa-exports*
+                    *symbols-from-bitops*
+                    *symbols-from-rtl*
                     *common-formals*))

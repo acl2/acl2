@@ -324,6 +324,8 @@ test or value variables of the triplemaps.</li>
   ///
   (local (in-theory (enable svtv-override-triplemaplist-fix))))
 
+; Matt K. mod: Avoid ACL2(p) error.
+(acl2::set-waterfall-parallelism nil)
 
 (define 4vec-non-x-p ((x 4vec-p))
   (b* (((4vec x)))

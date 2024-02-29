@@ -148,9 +148,10 @@
          (add x y p))
   :hints (("Goal" :in-theory (enable add))))
 
-;dup?
-(defthm acl2::integerp-of-ifix
-  (integerp (ifix p)))
+;move
+;only needed for Axe?
+(defthmd acl2::integerp-of-ifix
+  (integerp (ifix acl2::x)))
 
 (defthm fep-of-ifix
   (implies (fep x p)

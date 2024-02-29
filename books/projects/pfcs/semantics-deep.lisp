@@ -221,7 +221,7 @@
     :induct t
     :enable (len
              omap::from-lists
-             nat-listp-when-fe-listp)))
+             pfield::nat-listp-when-fe-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -825,4 +825,4 @@
                 :name name
                 :args (expression-var-list para))))
     (constraint-satp constr defs asg p))
-  :guard-hints (("Goal" :in-theory (enable nat-listp-when-fe-listp))))
+  :guard-hints (("Goal" :in-theory (enable pfield::nat-listp-when-fe-listp))))

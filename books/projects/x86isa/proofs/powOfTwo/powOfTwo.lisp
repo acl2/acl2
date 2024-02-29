@@ -99,7 +99,7 @@
           nil))))
 
   (defun compute-log-2 (x count)
-    (declare (xargs :measure (log-2-measure x)
+    (declare (xargs :measure (nfix x)
                     :guard (natp count)))
     ;; Find the number n such that x approx.== 2^n.
     (if (natp x)

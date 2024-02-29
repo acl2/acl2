@@ -2339,13 +2339,19 @@
                                          (list ,@formals)
                                          ,safe-form))))
               (early-exit-code-main
-               (let* ((*1*guard
+               (let* ((df-inputs-p
+                       (member-eq :df
+                                  (stobjs-in fn (w *the-live-state*))))
+                      (*1*guard
                        (cond
                         ((and cl-compliant-p-optimization
-                              (not live-stobjp-test))
+                              (not live-stobjp-test)
+                              (not df-inputs-p))
                          (assert$ (not guard-is-t) ; already handled way above
                                   :unused))        ; optimization
                         (t (oneify guard nil wrld program-p))))
+                      (guard0 (cond (df-inputs-p *1*guard)
+                                    (t guard)))
                       (cl-compliant-code-guard-not-t
                        (and (not program-only) ; optimization
 
@@ -2366,7 +2372,7 @@
                             `(cond
                               ,(cond
                                 ((eq live-stobjp-test t)
-                                 `(,guard
+                                 `(,guard0
                                    (return-from ,*1*fn
                                                 ,(df-call fn formals))))
                                 (t
@@ -2457,10 +2463,10 @@
                                              ((and stobjs-out ; property is there
                                                    (all-nils-or-dfs
                                                     stobjs-out))
-                                              guard)
+                                              guard0)
                                              (t `(let ((*aokp* nil))
-                                                   ,guard)))
-                                          guard)
+                                                   ,guard0)))
+                                          guard0)
                                      ,*1*guard)
                                    ,(assert$
 

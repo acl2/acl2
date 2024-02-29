@@ -3194,7 +3194,7 @@ reducedp)
                              simplify-s/c-list-from-e-lst
                              )
                             (rp-trans)))))
-     
+
 (defret create-and-times-list-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)
                 (mult-formula-checks state)
@@ -3506,7 +3506,7 @@ reducedp)
    (defthm ifix-of-bitp
      (implies (bitp x)
               (equal (ifix x) x))))
-  
+
   (defret break-down-two-arg-c-is-correct
     (implies (and (rp-evl-meta-extract-global-facts :state state)
                   (mult-formula-checks state)
@@ -3531,7 +3531,7 @@ reducedp)
                       (:free (x y)
                              (AND-LIST 0 (CONS 1 y))))
              :in-theory (e/d* (f2-of-two-bitps
-                               
+
                                dummy-bitp-lemma
                                and$ ;;bitp
                                ;;regular-eval-lemmas-with-ex-from-rp
@@ -8245,6 +8245,9 @@ rp-evlt-of-ex-from-rp-reverse-only-atom-and-car)
                   x))
   :hints (("Goal"
            :in-theory (e/d (bitp) ()))))
+
+; Matt K. mod: Avoid ACL2(p) error.
+(acl2::set-waterfall-parallelism nil)
 
 (defret s-c-spec-meta-correct
   (implies (and (rp-evl-meta-extract-global-facts :state state)

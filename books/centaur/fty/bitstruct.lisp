@@ -1150,7 +1150,7 @@
 (defxdoc defbitstruct
   :parents (fty)
   :short "Define a bitvector type with accessors for its fields."
-  :long "<p>This macto defines a bitstruct type.  A bitstruct can either be a
+  :long "<p>This macro defines a bitstruct type.  A bitstruct can either be a
 base type, which is a single fixed-width integer, or a product type containing
 fields that are bits, Booleans, or other bitstructs.  Such a product is
 represented as a single integer produced by concatenating all the fields

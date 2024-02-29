@@ -1,0 +1,28 @@
+This contains a proof of correctness for a simple 32-bit radix-4 SRT
+divider. To run this proof, you need to separately download the
+divider implementation.  This can be done by running the following git
+command in this directory:
+
+   git clone https://github.com/solswords/SRT-4-DIVISION SRT-4-DIVISION -b v0.0
+
+or equivalently:
+
+  ./getdivider.sh
+
+This will put the RTL for the divider where it is expected by the
+proof scripts.  Additionally, you need to then set environment
+variable SRTDIV_HAS_IMPLEMENTATION to a nonempty string -- otherwise,
+proofs.lisp will certify with nothing in it since the whole proof will
+be IFDEF'd out:
+
+  # bash:
+  export SRTDIV_HAS_IMPLEMENTATION=1
+  
+  # csh:
+  setenv SRTDIV_HAS_IMPLEMENTATION 1
+
+Attribution: the divider implementation was forked from
+https://github.com/wzc810049078/SRT-4-DIVISION, which has an Apache
+2.0 open source license.  We modified it to produce the result at a
+fixed latency rather than as soon as possible.
+

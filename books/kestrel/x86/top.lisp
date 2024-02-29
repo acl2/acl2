@@ -16,7 +16,7 @@
 
 (include-book "bitops")
 (include-book "linear-memory")
-(include-book "register-readers-and-writers")
+(include-book "register-readers-and-writers32")
 (include-book "register-readers-and-writers64")
 (include-book "readers-and-writers64")
 (include-book "flags")

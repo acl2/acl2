@@ -17,6 +17,9 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 
+; Matt K. mod: Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
+
 (deftest
   (defthm-axe-basic test
     (equal (car (cons x y))

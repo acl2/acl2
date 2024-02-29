@@ -6462,20 +6462,24 @@
                     (declare (ignore erp val))
                     state))))
 
-(defun print-ldd-formula-column ()
-  14)
+(defmacro print-ldd-formula-column (&optional (skip-ldd-n 'nil skip-ldd-n-p))
+  (cond (skip-ldd-n-p `(if ,skip-ldd-n 7 14))
+        (t '(if (eq (f-get-global 'script-mode state) 'skip-ldd-n)
+                7
+              14))))
 
 (defun print-ldd (ldd channel state)
 
 ; This is the general purpose function for printing out an ldd.
 
   (with-base-10
-   (let ((formula-col
-          (if (eq (access-ldd-class ldd) 'command)
-              (print-ldd-formula-column)
-            (+ (print-ldd-formula-column)
-               (access-ldd-n ldd))))
-         (status (access-ldd-status ldd)))
+   (let* ((skip-ldd-n (eq (f-get-global 'script-mode state) 'skip-ldd-n))
+          (formula-col
+           (if (eq (access-ldd-class ldd) 'command)
+               (print-ldd-formula-column skip-ldd-n)
+             (+ (print-ldd-formula-column skip-ldd-n)
+                (access-ldd-n ldd))))
+          (status (access-ldd-status ldd)))
      (declare (type (signed-byte 30) formula-col))
      (pprogn
       (princ$ (if (access-ldd-markp ldd)
@@ -6495,33 +6499,38 @@
       (let ((cur-col 5))
         (if (eq (access-ldd-class ldd) 'command)
             (mv-let
-             (col state)
-             (fmt1 "~c0~s1"
-                   (list
-                    (cons #\0 (cons (access-ldd-n ldd) 7))
-                    (cons #\1 (cond
-                               ((= (access-ldd-n ldd)
-                                   (absolute-to-relative-command-number
-                                    (max-absolute-command-number (w state))
-                                    (w state)))
-                                ":x")
-                               (t "  "))))
-                   cur-col channel state nil)
-             (declare (ignore col))
-             state)
+              (col state)
+              (let ((arg1 (cond
+                           ((= (access-ldd-n ldd)
+                               (absolute-to-relative-command-number
+                                (max-absolute-command-number (w state))
+                                (w state)))
+                            ":x")
+                           (t "  "))))
+                (if skip-ldd-n
+                    (fmt1 "~s1"
+                          (list (cons #\1 arg1))
+                          cur-col channel state nil)
+                  (fmt1 "~c0~s1"
+                        (list
+                         (cons #\0 (cons (access-ldd-n ldd) 7))
+                         (cons #\1 arg1))
+                        cur-col channel state nil)))
+              (declare (ignore col))
+              state)
           (spaces (- formula-col cur-col) cur-col channel state)))
       (mv-let
-       (form state)
-       (print-ldd-full-or-sketch (access-ldd-fullp ldd)
-                                 (access-ldd-form ldd)
-                                 state)
-       (fmt-ppr
-        form
-        (+f (fmt-hard-right-margin state) (-f formula-col))
-        0
-        formula-col channel state
-        (not (and (access-ldd-fullp ldd)
-                  (null (ld-evisc-tuple state))))))
+        (form state)
+        (print-ldd-full-or-sketch (access-ldd-fullp ldd)
+                                  (access-ldd-form ldd)
+                                  state)
+        (fmt-ppr
+         form
+         (+f (fmt-hard-right-margin state) (-f formula-col))
+         0
+         formula-col channel state
+         (not (and (access-ldd-fullp ldd)
+                   (null (ld-evisc-tuple state))))))
       (newline channel state)))))
 
 (defun print-ldds (ldds channel state)

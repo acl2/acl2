@@ -1370,6 +1370,9 @@
      (t (value nil))))
    (t (value nil))))
 
+; Avoid ACL2(p) error.
+(set-waterfall-parallelism nil)
+
 (defthm-flag-ppr1
   (defthm ppr-tuple-p-ppr1
     (implies (and

@@ -139,13 +139,14 @@
  :hints (("Goal" :in-theory (enable BVSX))))
 
 
-(defthmd bvlt-hack-1
-  (implies (not (bvlt 16 x 1))
-           (equal (bvlt 16 x 2)
-                  (equal (bvchop 16 x) 1)))
-  :hints (("Goal" :in-theory (enable bvlt))))
+;; (defthmd bvlt-hack-1
+;;   (implies (not (bvlt 16 x 1))
+;;            (equal (bvlt 16 x 2)
+;;                   (equal (bvchop 16 x) 1)))
+;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;loops with boolif-of-bvlt-strengthen-to-equal?
+;rename
 (defthmd bvlt-hack-1-gen
   (implies (and (syntaxp (quotep k))
                 (not (bvlt 16 x (+ -1 k)))
@@ -166,8 +167,8 @@
                 (not (bvlt 16 x (+ -1 k)))
                 (< k (expt 2 16))
                 (posp k))
-           (equal (acl2::boolif (bvlt 16 x k) then else)
-                  (acl2::boolif (equal (bvchop 16 x) (+ -1 k)) then else)))
+           (equal (boolif (bvlt 16 x k) then else)
+                  (boolif (equal (bvchop 16 x) (+ -1 k)) then else)))
   :hints (("Goal" :in-theory (enable acl2::boolor
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
@@ -179,8 +180,8 @@
                 (not (bvlt 16 x (+ -1 k)))
                 (< k (expt 2 16))
                 (posp k))
-           (equal (acl2::boolif (bvlt 16 x k) t else)
-                  (acl2::boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
+           (equal (boolif (bvlt 16 x k) t else)
+                  (boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
   :hints (("Goal" :in-theory (enable acl2::boolor boolif
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
@@ -329,10 +330,6 @@
          0)
   :hints (("Goal" :in-theory (enable of-spec64))))
 
-
-(acl2::def-constant-opener X86ISA::!PREFIXES->REP$inline)
-(acl2::def-constant-opener X86ISA::PREFIXES->REP$INLINE)
-
 (defthm X86ISA::FEATURE-FLAGS-opener
   (implies (consp features)
            (equal (X86ISA::FEATURE-FLAGS features)
@@ -346,10 +343,6 @@
            (equal (X86ISA::FEATURE-FLAGS features)
                   1))
   :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
-
-;; probably only needed for axe
-(defthmd integerp-of-ctri
-  (integerp (ctri acl2::i x86)))
 
 (defthm cr0bits->ts-of-bvchop
   (implies (and (< 3 n)
@@ -479,25 +472,9 @@
   (equal (ifix (if test x86 x86_2))
          (if test (ifix x86) (ifix x86_2))))
 
-(defthm app-view-of-if
-  (equal (app-view (if test x86 x86_2))
-         (if test (app-view x86) (app-view x86_2))))
-
-(defthm program-at-of-if
-  (equal (program-at prog-addr bytes (if test x86 x86_2))
-         (if test (program-at prog-addr bytes x86) (program-at prog-addr bytes x86_2))))
-
-(defthm x86p-of-if
-  (equal (x86p (if test x86 x86_2))
-         (if test (x86p x86) (x86p x86_2))))
-
 (defthm get-flag-of-if
   (equal (get-flag flag (if test x86 x86_2))
          (if test (get-flag flag x86) (get-flag flag x86_2))))
-
-(defthm ctri-of-if
-  (equal (ctri i (if test x86 x86_2))
-         (if test (ctri i x86) (ctri i x86_2))))
 
 ;; (defthm feature-flag-of-if
 ;;   (equal (x86isa::feature-flag flag (if test x86 x86_2))
@@ -520,8 +497,6 @@
 (defthm !RFLAGS-of-if-arg2
   (equal (X86ISA::!RFLAGS v (if test x86_1 x86_2))
          (if test (X86ISA::!RFLAGS v x86_1) (X86ISA::!RFLAGS v x86_2))))
-
-(acl2::def-constant-opener X86ISA::!EVEX-PREFIXES->BYTE0$INLINE)
 
 ;; (thm
 ;;  (IMPLIES (AND (< J 0)
@@ -1217,8 +1192,6 @@
                                   (;acl2::logand-of-bvchop-becomes-bvand-alt ;loop
                                    ;acl2::logand-of-bvchop-becomes-bvand ;loop
                                    )))))
-
-(def-constant-opener x86isa::!prefixes->seg$inline)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
