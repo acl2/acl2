@@ -32,6 +32,7 @@
 (include-book "centaur/fgl/simplify-defs" :dir :system)
 (include-book "centaur/fgl/checks" :dir :system)
 (include-book "centaur/fgl/make-isomorphic-def" :dir :system)
+(include-book "centaur/fgl/list-to-tree" :dir :system)
 (local (include-book "alist-thms"))
 ;; (include-book "centaur/aignet/transforms" :dir :System)
 
@@ -1010,6 +1011,8 @@ in two symbolic SVEX environments."
 
 
 
+
+
 (define svexlist-evals-equal-with-transforms ((x svexlist-p)
                                               (env1 svex-env-p)
                                               (env2 svex-env-p)
@@ -1173,6 +1176,8 @@ in two symbolic SVEX environments."
                 ;; We are going to allow equivalences between the two
                 ;; evaluations as well as the upper/lowers of the same
                 ;; evaluation.  
+                (aigs-eval1 (acl2::list-to-tree aigs-eval1))
+                (aigs-eval2 (acl2::list-to-tree aigs-eval2))
                 ((mv iso-ok hint-iso1 hint-iso2) (time$ (fgl::fgl-make-isomorphic iso-ok aigs-eval1 aigs-eval2)))
                 ((unless iso-ok)
                  (b* ((?ign (cw "ERROR: the equivalence hint objects couldn't be made isomorphic!~%"))
@@ -1269,8 +1274,12 @@ in two symbolic SVEX environments."
                 ;; We are going to allow equivalences between the two
                 ;; evaluations as well as the upper/lowers of the same
                 ;; evaluation.  
-                (hint1 (list upper-eval1 upper-eval2 subnodes-eval1))
-                (hint2 (list lower-eval1 lower-eval2 subnodes-eval2))
+                (hint1 (list (time$ (acl2::list-to-tree upper-eval1))
+                             (time$ (acl2::list-to-tree upper-eval2))
+                             (time$ (acl2::list-to-tree subnodes-eval1))))
+                (hint2 (list (time$ (acl2::list-to-tree lower-eval1))
+                             (time$ (acl2::list-to-tree lower-eval2))
+                             (time$ (acl2::list-to-tree subnodes-eval2))))
                 ((mv iso-ok hint-iso1 hint-iso2) (time$ (fgl::fgl-make-isomorphic iso-ok hint1 hint2)))
                 ((unless iso-ok)
                  (b* ((?ign (cw "ERROR: the equivalence hint objects couldn't be made isomorphic!~%"))
