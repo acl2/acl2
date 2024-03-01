@@ -21,6 +21,7 @@
 (include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system)
 (include-book "projects/x86isa/machine/state" :dir :system) ; for xr
 (include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
@@ -62,6 +63,11 @@
          (is-nan val))
   :hints (("Goal" :in-theory (enable is-nan))))
 
+(defthmd is-nan-intro-from-boolif
+  (equal (boolif (equal 'snan val) 't (boolif (equal 'qnan val) 't (equal 'indef val)))
+         (is-nan val))
+  :hints (("Goal" :in-theory (enable boolif))))
+
 (theory-invariant (incompatible (:rewrite is-nan-intro) (:definition is-nan)))
 
 (defthm if-of-equal-of-indef-and-is-nan
@@ -83,17 +89,17 @@
 
 ;todo: more
 (defthm mxcsrbits->im-of-loghead-32
-  (equal (mxcsrbits->im (acl2::loghead 32 mxcsr))
+  (equal (mxcsrbits->im (loghead 32 mxcsr))
          (mxcsrbits->im mxcsr))
   :hints (("Goal" :in-theory (enable mxcsrbits->im mxcsrbits-fix))))
 
 (defthm mxcsrbits->dm-of-loghead-32
-  (equal (mxcsrbits->dm (acl2::loghead 32 mxcsr))
+  (equal (mxcsrbits->dm (loghead 32 mxcsr))
          (mxcsrbits->dm mxcsr))
   :hints (("Goal" :in-theory (enable mxcsrbits->dm mxcsrbits-fix))))
 
 (defthm mxcsrbits->daz-of-loghead-32
-  (equal (mxcsrbits->daz (acl2::loghead 32 mxcsr))
+  (equal (mxcsrbits->daz (loghead 32 mxcsr))
          (mxcsrbits->daz mxcsr))
   :hints (("Goal" :in-theory (enable mxcsrbits->daz mxcsrbits-fix))))
 
@@ -150,8 +156,8 @@
                 (equal (mxcsrbits->im$inline mxcsr) 1))
            (not (mv-nth 0 (sse-cmp operation op1 op2 mxcsr exp-width frac-width))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (sse-cmp x86isa::sse-cmp-special x86isa::sse-daz
-                                                   x86isa::denormal-exception
+  :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special sse-daz
+                                                   denormal-exception
                                                    is-nan)
                                   (acl2::loghead-becomes-bvchop)))))
 
@@ -159,20 +165,20 @@
 (defthm mxcsrbits->daz-of-mv-nth-2-of-sse-cmp
   (equal (mxcsrbits->daz (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
          (mxcsrbits->daz mxcsr))
-  :hints (("Goal" :in-theory (e/d (sse-cmp x86isa::sse-cmp-special x86isa::denormal-exception)
+  :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special denormal-exception)
                                   (acl2::loghead-becomes-bvchop)))))
 
 ;gen?
 (defthm mxcsrbits->dm-of-mv-nth-2-of-sse-cmp
   (equal (mxcsrbits->dm (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
          (mxcsrbits->dm mxcsr))
-    :hints (("Goal" :in-theory (e/d (sse-cmp x86isa::sse-cmp-special x86isa::denormal-exception)
+    :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special denormal-exception)
                                   (acl2::loghead-becomes-bvchop)))))
 
 (defthm mxcsrbits->im-of-mv-nth-2-of-sse-cmp
   (equal (mxcsrbits->im (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width)))
          (mxcsrbits->im mxcsr))
-  :hints (("Goal" :in-theory (e/d (sse-cmp x86isa::sse-cmp-special x86isa::denormal-exception)
+  :hints (("Goal" :in-theory (e/d (sse-cmp sse-cmp-special denormal-exception)
                                   (acl2::loghead-becomes-bvchop)))))
 
 (defthm integerp-of-mv-nth-2-of-sse-cmp
@@ -183,9 +189,9 @@
                 (posp frac-width)
                 (natp exp-width)
                 (natp size))
-           (equal (x86isa::fp-decode (bvchop size x) exp-width frac-width)
-                  (x86isa::fp-decode x exp-width frac-width)))
-  :hints (("Goal" :in-theory (enable x86isa::fp-decode))))
+           (equal (fp-decode (bvchop size x) exp-width frac-width)
+                  (fp-decode x exp-width frac-width)))
+  :hints (("Goal" :in-theory (enable fp-decode))))
 
 (defthm sse-cmp-of-bvchop-arg2
   (implies (and (< (+ exp-width frac-width) size)
@@ -233,8 +239,8 @@
                 (posp frac-width)
                 (natp exp-width)
                 (natp size))
-           (unsigned-byte-p size (mv-nth 1 (x86isa::sse-cmp-special kind1 sign1 kind2 sign2 exp-width frac-width operation))))
-  :hints (("Goal" :in-theory (e/d (x86isa::sse-cmp-special) (expt)))))
+           (unsigned-byte-p size (mv-nth 1 (sse-cmp-special kind1 sign1 kind2 sign2 exp-width frac-width operation))))
+  :hints (("Goal" :in-theory (e/d (sse-cmp-special) (expt)))))
 
 ;gen
 (defthm unsigned-byte-p-of-mv-nth-1-of-sse-cmp-32
@@ -249,7 +255,7 @@
 (defthm unsigned-byte-p-of-mv-nth-1-of-sse-cmp-of-OP-UCOMI
   (implies (and (<= 3 size)
                 (natp size))
-           (unsigned-byte-p size (mv-nth 1 (sse-cmp x86isa::*OP-UCOMI* op1 op2 mxcsr exp-width frac-width))))
+           (unsigned-byte-p size (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width))))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 (defthm mv-nth-1-of-sse-cmp-of-mv-nth-2-of-sse-cmp
@@ -262,26 +268,26 @@
   (implies (and (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
-           (equal (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op op mxcsr exp-width frac-width))
-                  (if (equal (mv-nth 0 (x86isa::fp-decode op exp-width frac-width)) 'x86isa::snan)
+           (equal (mv-nth 1 (sse-cmp *op-ucomi* op op mxcsr exp-width frac-width))
+                  (if (equal (mv-nth 0 (fp-decode op exp-width frac-width)) 'snan)
                       7
-                    (if (equal (mv-nth 0 (x86isa::fp-decode op exp-width frac-width)) 'x86isa::qnan)
+                    (if (equal (mv-nth 0 (fp-decode op exp-width frac-width)) 'qnan)
                         7
-                      (if (equal (mv-nth 0 (x86isa::fp-decode op exp-width frac-width)) 'x86isa::indef)
+                      (if (equal (mv-nth 0 (fp-decode op exp-width frac-width)) 'indef)
                           7
                         4)))))
   :hints (("Goal" :in-theory (enable sse-cmp
-                                     x86isa::sse-cmp-special
-                                     X86ISA::SSE-DAZ ;todo
+                                     sse-cmp-special
+                                     SSE-DAZ ;todo
                                      ))))
 
 ;; introduces X86ISA::SSE-CMP-BASE (rename?)
 ;; the mxcsr will often not be constant
-(acl2::defopeners x86isa::sse-cmp :hyps ((syntaxp (and (quotep x86isa::operation)
-                                                       (quotep x86isa::op1)
-                                                       (quotep x86isa::op2)
-                                                       (quotep x86isa::exp-width)
-                                                       (quotep x86isa::frac-width)))))
+(acl2::defopeners sse-cmp :hyps ((syntaxp (and (quotep x86isa::operation)
+                                               (quotep x86isa::op1)
+                                               (quotep x86isa::op2)
+                                               (quotep x86isa::exp-width)
+                                               (quotep x86isa::frac-width)))))
 
 ;; todo: move some of these:
 
@@ -295,14 +301,14 @@
   :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm not-denormal-exception-when-nan
-  (implies (or (equal kind1 'x86isa::snan)
-               (equal kind1 'x86isa::qnan)
-               (equal kind1 'x86isa::indef)
-               (equal kind2 'x86isa::snan)
-               (equal kind2 'x86isa::qnan)
-               (equal kind2 'x86isa::indef))
-           (not (x86isa::denormal-exception kind1 kind2)))
-  :hints (("Goal" :in-theory (enable x86isa::denormal-exception))))
+  (implies (or (equal kind1 'snan)
+               (equal kind1 'qnan)
+               (equal kind1 'indef)
+               (equal kind2 'snan)
+               (equal kind2 'qnan)
+               (equal kind2 'indef))
+           (not (denormal-exception kind1 kind2)))
+  :hints (("Goal" :in-theory (enable denormal-exception))))
 
 ;;(defstub stub (x y) t)
 ;; (thm
@@ -321,8 +327,8 @@
   (implies (and (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
-           (equal (equal 0 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 1 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+           (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 ;; this puts the syntactically smaller op first
@@ -331,8 +337,8 @@
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
-           (equal (equal 0 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 1 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+           (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 ;; this puts the syntactically smaller op first
@@ -341,8 +347,8 @@
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
-           (equal (equal 1 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 0 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+           (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 ;; this puts the syntactically smaller op first
@@ -351,43 +357,43 @@
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
-           (equal (equal 1 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 0 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+           (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
 
 ;non-axe
 (defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
   (implies (syntaxp (acl2::smaller-termp op1 op2))
-           (equal (equal 7 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 7 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+           (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 (defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
   (implies (axe-syntaxp (acl2::heavier-dag-term op1 op2))
-           (equal (equal 7 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 7 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+           (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
            :in-theory (disable equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi))))
 
 ;dup??
 (defthm sse-daz-of-nil-arg4
-  (equal (X86ISA::SSE-DAZ kind exp frac nil)
+  (equal (SSE-DAZ kind exp frac nil)
          (mv kind exp frac))
-  :hints (("Goal" :in-theory (enable X86ISA::SSE-DAZ))))
+  :hints (("Goal" :in-theory (enable SSE-DAZ))))
 
 ;strengthen?
 (defthm not-equal-of-7-and-mv-nth-1-of-sse-cmp
   (implies (and (not (is-nan (mv-nth 0 (fp-decode x exp-width frac-width))))
                 (not (is-nan (mv-nth 0 (fp-decode y exp-width frac-width))))
                 (equal (mxcsrbits->daz$inline mxcsr) 0))
-           (not (equal 7 (mv-nth 1 (sse-cmp x86isa::*op-ucomi* y x mxcsr exp-width frac-width)))))
+           (not (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* y x mxcsr exp-width frac-width)))))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special is-nan))))
 
 (defthm sse-daz-of-nil
-  (equal (X86ISA::SSE-DAZ kind exp frac nil)
+  (equal (SSE-DAZ kind exp frac nil)
          (mv kind exp frac))
-  :hints (("Goal" :in-theory (enable X86ISA::SSE-DAZ))))
+  :hints (("Goal" :in-theory (enable SSE-DAZ))))
 
 (defthm X86ISA::MXCSRBITS->IM-of-if
   (equal (MXCSRBITS->IM (if test x86 x86_2))
@@ -403,43 +409,43 @@
 
 ;todo: more like this, or look at how this is proved
 (defthm MXCSRBITS->IM-of-!MXCSRBITS->IE
-  (equal (MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
+  (equal (MXCSRBITS->IM$INLINE (!mxcsrbits->IE$INLINE bit mxcsr))
          (MXCSRBITS->IM$INLINE mxcsr)))
 
 (defthm MXCSRBITS->IM-of-!MXCSRBITS->DE
-  (equal (MXCSRBITS->IM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
+  (equal (MXCSRBITS->IM$INLINE (!MXCSRBITS->DE$INLINE bit mxcsr))
          (MXCSRBITS->IM$INLINE mxcsr)))
 
 (defthm MXCSRBITS->DM-of-!MXCSRBITS->DE
-  (equal (MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
+  (equal (MXCSRBITS->DM$INLINE (!MXCSRBITS->DE$INLINE bit mxcsr))
          (MXCSRBITS->DM$INLINE mxcsr)))
 
 (defthm MXCSRBITS->DM-of-!MXCSRBITS->IE
-  (equal (MXCSRBITS->DM$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
+  (equal (MXCSRBITS->DM$INLINE (!MXCSRBITS->IE$INLINE bit mxcsr))
          (MXCSRBITS->DM$INLINE mxcsr)))
 
 (defthm MXCSRBITS->DAZ-of-!MXCSRBITS->IE
-  (equal (MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr))
+  (equal (MXCSRBITS->DAZ$INLINE (!MXCSRBITS->IE$INLINE bit mxcsr))
          (MXCSRBITS->DAZ$INLINE mxcsr)))
 
 (defthm MXCSRBITS->DAZ-of-!MXCSRBITS->DE
-  (equal (MXCSRBITS->DAZ$INLINE (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr))
+  (equal (MXCSRBITS->DAZ$INLINE (!MXCSRBITS->DE$INLINE bit mxcsr))
          (MXCSRBITS->DAZ$INLINE mxcsr)))
 
 (defthm integerp-of-!MXCSRBITS->IE
-  (integerp (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
+  (integerp (!MXCSRBITS->IE$INLINE bit mxcsr)))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->IE
-  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->IE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->IE$INLINE bit mxcsr)))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->DE
-  (unsigned-byte-p 32 (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->DE$INLINE bit mxcsr)))
 
 (defthm integerp-of-!MXCSRBITS->DE
-  (integerp (X86ISA::!MXCSRBITS->DE$INLINE bit mxcsr)))
+  (integerp (!MXCSRBITS->DE$INLINE bit mxcsr)))
 
-(acl2::def-constant-opener X86ISA::FP-DECODE)
-(acl2::def-constant-opener X86ISA::FP-TO-RAT)
+(acl2::def-constant-opener FP-DECODE)
+(acl2::def-constant-opener fp-to-rat)
 (acl2::def-constant-opener rtl::bias)
 (acl2::def-constant-opener rtl::expw)
 
@@ -451,12 +457,12 @@
                 (natp frac-width)
                 (equal 8 exp-width) ; todo: gen
                 )
-           (equal (< (x86isa::fp-to-rat sign exp frac bias exp-width frac-width) 0)
+           (equal (< (fp-to-rat sign exp frac bias exp-width frac-width) 0)
                   (and (not (equal 0 sign))
                        (if (equal 0 exp)
                            (not (equal 0 frac))
                          (<= exp (x86isa::fp-max-finite-exp exp-width))))))
-  :hints (("Goal" :in-theory (enable x86isa::fp-to-rat))))
+  :hints (("Goal" :in-theory (enable fp-to-rat))))
 
 (defthm integerp-of-xr-mxcsr
   (INTEGERP (XR :MXCSR NIL X86)))

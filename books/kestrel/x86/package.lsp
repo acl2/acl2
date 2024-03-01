@@ -399,10 +399,14 @@
 
     ;; floating-point stuff:
     x86isa::fp-decode
+    x86isa::fp-to-rat
     x86isa::sse-cmp
     x86isa::sse-cmp-special
     x86isa::mxcsr
     x86isa::mxcsr$a
+    x86isa::sse-daz
+    x86isa::denormal-exception
+    x86isa::*OP-UCOMI*
 
     ;; todo: more like the above
     x86isa::snan
