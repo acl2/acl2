@@ -580,7 +580,7 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp produce-function)
-                              (booleanp non-executable)
+                              (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
                               (booleanp restrict-theory))
@@ -672,6 +672,12 @@
                 (mv :problem-with-function-body nil))
                ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
                ;;use defun-nx by default because stobj updates are not all let-bound to x86
+               (non-executable (if (eq :auto non-executable)
+                                   (if (member-eq 'x86 fn-formals) ; there may be writes to the stobj (perhaps with unresolved reads around them), so we use defun-nx (todo: do a more precise check)
+                                       ;; (eq :all output) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
+                                       t
+                                     nil)
+                                 non-executable))
                (defun-variant (if non-executable 'defun-nx 'defun))
                (defun `(,defun-variant ,lifted-name (,@fn-formals)
                          (declare (xargs ,@(if (member-eq 'x86 fn-formals)
@@ -741,7 +747,7 @@
                                (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
-                               (non-executable 't)  ;since stobj updates will not be let-bound      ;allow :auto?  only use for :output :all ?
+                               (non-executable ':auto)  ;since stobj updates will not be let-bound
                                (produce-theorem 't) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
                                (prove-theorem 'nil) ;whether to try to prove the theorem with ACL2 (rarely works)
                                (restrict-theory 't)       ;todo: deprecate
