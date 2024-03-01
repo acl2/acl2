@@ -235,17 +235,17 @@
   (b* (((when (atom x)) nil)
        ((unless (mbt (and (consp (car x)) (svar-p (caar x)))))
         (svtv-name-lhs-map-eval (cdr x) env)))
-    (cons (cons (caar x) (lhs-eval-zero (cdar x) env))
+    (cons (cons (caar x) (lhs-eval-zx (cdar x) env))
           (svtv-name-lhs-map-eval (cdr x) env)))
   ///
   (defret lookup-in-<fn>
     (equal (hons-assoc-equal var res)
            (let ((pair (hons-assoc-equal var (svtv-name-lhs-map-fix x))))
              (and pair
-                  (cons var (lhs-eval-zero (cdr pair) env))))))
+                  (cons var (lhs-eval-zx (cdr pair) env))))))
 
-  (defcong svex-envs-similar equal (lhs-eval-zero x env) 2
-    :hints(("Goal" :in-theory (enable lhs-eval-zero lhatom-eval-zero))))
+  (defcong svex-envs-similar equal (lhs-eval-zx x env) 2
+    :hints(("Goal" :in-theory (enable lhs-eval-zx lhatom-eval-zero))))
 
   (defcong svex-envs-similar equal (svtv-name-lhs-map-eval x env) 2)
 
@@ -1784,13 +1784,13 @@
                                   (4vec-rsh sh x)
                                   (4vec-rsh sh y))))))
 
-   (defthm lhs-mask-distribute-value-of-lhs-eval-zero
-     (Equal (lhs-var-distribute-value (lhs-eval-zero x env) v x prev)
+   (defthm lhs-mask-distribute-value-of-lhs-eval-zx
+     (Equal (lhs-var-distribute-value (lhs-eval-zx x env) v x prev)
             (4vec-bit?! (2vec (var-lhs-mask v x))
                         (svex-env-lookup v env)
                         prev))
          :hints (("goal" :expand ((var-lhs-mask v x)
-                                  (lhs-eval-zero x env)
+                                  (lhs-eval-zx x env)
                                   (:free (val) (lhs-var-distribute-value val v x prev)))
                   :in-theory (e/d (bitops::part-install-in-terms-of-logapp
                                    4vec-part-install
@@ -1987,23 +1987,23 @@
 
 ;; Mapping between SVTV (pipeline) inputs and phase FSM inputs has some
 ;; subtleties.  The basic operation we want is to take an SVTV input alist and
-;; produce a list of base-fsm input alists.  The first step of this is to
+;; produce a list of fsm input alists.  The first step of this is to
 ;; transform a flat alist of inputs into svtv-fsm inputs: a list of
 ;; input/override-value alists (one for each phase) and a list of override-test
 ;; alists.  The subtle part is the second step: mapping these svtv-fsm inputs
-;; to base-fsm inputs using the namemap.  (There's also the step of mapping
+;; to fsm inputs using the namemap.  (There's also the step of mapping
 ;; cycle fsm inputs to phase fsm inputs -- this could be either before the
 ;; svtv-fsm -> base fsm step, translating cycle svtv-fsm inputs to phase
-;; svtv-fsm-inputs, or after that step, translate cycle base-fsm inputs to
-;; phase base-fsm inputs.  Probably the latter, but either way this doesn't
+;; svtv-fsm-inputs, or after that step, translate cycle fsm inputs to
+;; phase fsm inputs.  Probably the latter, but either way this doesn't
 ;; seem as hard.)
 
 ;; The namemap maps svtv-fsm input variables (domain) to LHSes in terms of the
-;; base-fsm input variables.  (It may be that we can assume these LHSes free of
-;; Zs.)  To create base-fsm inputs from svtv-fsm inputs we essentially reverse
-;; the map, assigning the parts of the base-fsm variables used in the LHSes to
+;; fsm input variables.  (It may be that we can assume these LHSes free of
+;; Zs.)  To create fsm inputs from svtv-fsm inputs we essentially reverse
+;; the map, assigning the parts of the fsm variables used in the LHSes to
 ;; the corresponding parts of the svtv-fsm inputs according to their position
-;; in the LHS.  To be most general, any parts of base-fsm input variables that
+;; in the LHS.  To be most general, any parts of fsm input variables that
 ;; aren't used in the namemap should be set to Xes.  Additionally, we need to
 ;; decide what to do about collisions: probably the logical story should be
 ;; that the first range mentioned shadows the other, but that we check for
@@ -2014,13 +2014,13 @@
 ;; Where it gets complicated:
 
 ;; We want to prove lemmas about the SVTV and extrapolate from these lemmas
-;; facts about the underlying base-fsm (or an idealized version of it),
+;; facts about the underlying fsm (or an idealized version of it),
 ;; preferably automatically.  In the SVTV lemma, we'll have various hypotheses
 ;; about values of the SVTV variables, which we'll need to translate to
 ;; hypotheses about the svtv-fsm inputs -- there may be some subtleties here
 ;; about what happens when the same input variable is used in multiple places
 ;; but we'll deal with those elsewhere.  The tricky part is translating the
-;; hypotheses about the svtv-fsm inputs to hypotheses about the base-fsm
+;; hypotheses about the svtv-fsm inputs to hypotheses about the fsm
 ;; inputs.  Suppose we have an assumption
 
 ;; (assum-p (svex-env-lookup 'myvar (nth 5 svtv-fsm-inputs)))
@@ -2028,8 +2028,8 @@
 ;; Then to be most general, what we'd have to assume about the base fsm inputs
 ;; would be something like:
 
-;; (implies (and (env-matches-parts (cdr (hons-get 'myvar *svtv-fsm/base-fsm-input-mapping*))
-;;                                  myvar (nth 5 base-fsm-inputs))
+;; (implies (and (env-matches-parts (cdr (hons-get 'myvar *svtv-fsm/fsm-input-mapping*))
+;;                                  myvar (nth 5 fsm-inputs))
 ;;               (assum-p myvar)
 ;;               ...)
 ;;          ...)
@@ -2044,25 +2044,25 @@
 
 ;;  We'd like to be able to get rid of the free variable.  E.g.
 
-;; (let ((myvar (extract-from-env (cdr (hons-get 'myvar *svtv-fsm/base-fsm-input-mapping*))
-;;                                (nth 5 base-fsm-inputs))))
+;; (let ((myvar (extract-from-env (cdr (hons-get 'myvar *svtv-fsm/fsm-input-mapping*))
+;;                                (nth 5 fsm-inputs))))
 ;;   (implies (and (assum-p myvar)
 ;;                 ...)
 ;;            ...))
 
 ;; For the unsigned-byte-p case, maybe this could be OK if extract-from-env put
-;; 0s in the unmapped parts (i.e. lhs-eval-zero). But then for the signed-byte-p case, that hyp
+;; 0s in the unmapped parts (i.e. lhs-eval-zx). But then for the signed-byte-p case, that hyp
 ;; would be unsatisfiable and we'd actually have a vacuous theorem.
 
 ;; Can we somehow check that this is OK?  Note it's not enough to just check
 ;; that the hyps are satisfiable; what we really want to show is that each
 ;; value assigned to myvar in the svtv-fsm theorem has a corresponding value
-;; base-fsm theorem where the hyps are satisfied.  That is:
+;; fsm theorem where the hyps are satisfied.  That is:
 
 ;; (implies (and (assum-p myvar)
 ;;               (4vec-p myvar))
-;;          (exists base-fsm-env
-;;                  (let ((myvar2 (lhs-eval-zero ... base-fsm-env)))
+;;          (exists fsm-env
+;;                  (let ((myvar2 (lhs-eval-zx ... fsm-env)))
 ;;                    (and (assum-p myvar2)
 ;;                         (equal (relevant-parts myvar) (relevant-parts myvar2))))))
 
@@ -2095,7 +2095,7 @@
 
 ;; So it seems this leads to a system where the user can specify the extraction
 ;; and fixing function on a per-variable basis.  We can provide the
-;; lhs-eval-zero/4vec-bitand version as a default and maybe one supporting
+;; lhs-eval-zx/4vec-bitand version as a default and maybe one supporting
 ;; signed-byte-p.  For truly weird and specific hypotheses -- e.g., (equal
 ;; (logtail 8 myvar) 135) when only 5 bits of myvar are actually relevant --
 ;; well, users probably shouldn't do that, or if they have a really good reason
@@ -2186,7 +2186,7 @@
 ;;     (dout "{ dh[4:3], dl[3:2] }" . 4)))
 
 
-;; (def-svtv-fancy-base-fsm-thm my-thmname
+;; (def-svtv-fancy-fsm-thm my-thmname
 ;;   :inputs (ain bin)
 ;;   :overrides (qovr rovr)
 ;;   :outputs (cout dout)
@@ -2194,7 +2194,7 @@
 ;;   :concl (outputs-correct cout dout ain bin qovr rovr)
 ;;   :svtv (my-svtv)
 
-;;   :base-fsm-extraction-functions ((bin lhs-eval-zero-signext)
+;;   :fsm-extraction-functions ((bin lhs-eval-zx-signext)
 ;;                                   (rovr lhs-eval-with-weird-upper-bits)))
 
 ;; ;; SVTV lemma:
@@ -2212,29 +2212,29 @@
 ;;                              (rovr-ovr . -1)))))
 ;;              (outputs-correct cout dout ain bin qovr rovr))))
 
-;; ;; Idealized base-fsm theorem:
+;; ;; Idealized fsm theorem:
 ;; (defthm my-thmname
-;;   (b* ((outenvs (base-fsm-eval inenvs initst (my-svtv-base-fsm)))
-;;        (ain (lhs-eval-zero '((5 . "a")) (nth 0 inenvs))) ;; entry for "a" in the namemap
-;;        (bin (lhs-eval-zero-signext '((3 "bpartouter" . 5) ;; entry for "b" in the namemap
+;;   (b* ((outenvs (fsm-eval inenvs initst (my-svtv-fsm)))
+;;        (ain (lhs-eval-zx '((5 . "a")) (nth 0 inenvs))) ;; entry for "a" in the namemap
+;;        (bin (lhs-eval-zx-signext '((3 "bpartouter" . 5) ;; entry for "b" in the namemap
 ;;                                        (3 . "bpartmid")
 ;;                                        (4 . "bpartouter"))
 ;;                                      (nth 0 inenvs)))
-;;        (qovr (lhs-eval-zero '((5 . "q")) (nth 1 outenvs)))
+;;        (qovr (lhs-eval-zx '((5 . "q")) (nth 1 outenvs)))
 ;;        (rovr (lhs-eval-with-weird-upper-bits '((3 "rl" . 3)
 ;;                                                (3 . "rh")) (nth 1 outenvs))))
 ;;     (implies (and (lhs-eval-matches-const '("clk") 0 (nth 0 inenvs))
 ;;                   (lhs-eval-matches-const '((16 . "opcode")) #xfeed (nth 0 inenvs))
 ;;                   (inputs-and-overrides-hyp ain bin qovr rovr))
-;;              (b* ((cout (lhs-eval-zero '((4 . "c")) (nth 2 outenvs)))
-;;                   (dout (lhs-eval-zero '((2 "dl" . 2) ;; rsh 2, width 2
+;;              (b* ((cout (lhs-eval-zx '((4 . "c")) (nth 2 outenvs)))
+;;                   (dout (lhs-eval-zx '((2 "dl" . 2) ;; rsh 2, width 2
 ;;                                                      (2 "dh" . 3))
 ;;                                                    (nth 2 outenvs))))
 ;;                (outputs-correct cout dout ain bin qovr rovr)))))
 
 ;; Somewhere in some table we have this mapping
-;;   ((lhs-eval-zero . (4vec-bitand mask x))
-;;    (lhs-eval-zero-signext . (4vec-sign-extend width (4vec-bitand mask x)))
+;;   ((lhs-eval-zx . (4vec-bitand mask x))
+;;    (lhs-eval-zx-signext . (4vec-sign-extend width (4vec-bitand mask x)))
 ;;    (lhs-eval-with-weird-upper-bits . (4vec-concat width (4vec-bit?! mask x (4vec-z)) #xabc)))
 
 
@@ -2250,13 +2250,13 @@
 
 
 ;; Question: Should we even support alternative extraction/fixing functions
-;; besides the lhs-eval-zero/bitand version that supports unsigned-byte hyps?
+;; besides the lhs-eval-zx/bitand version that supports unsigned-byte hyps?
 ;; We're not (at least currently) offering an option for how outputs should be
-;; extracted -- they use lhs-eval-zero, basically -- so for composition to work
+;; extracted -- they use lhs-eval-zx, basically -- so for composition to work
 ;; smoothly arguably the inputs and especially overrides should be conceived
 ;; the same ways.
 
-;; For now we'll build in the assumption that lhs-eval-zero is what we're
+;; For now we'll build in the assumption that lhs-eval-zx is what we're
 ;; using; if we need others they can be added later.
 
 

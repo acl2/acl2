@@ -374,14 +374,14 @@
      :var svex
      :quote svex
      :call
-     (b* ((adder-p (or (equal svex.fn 'ha-c-chain)
-                       (equal svex.fn 'ha-s-chain)
-                       (equal svex.fn 'ha+1-c-chain)
-                       (equal svex.fn 'ha+1-s-chain)))
-          (to-remove (and adder-p
-                          (if (equal svex.fn 'ha+1-s-chain)
-                              (hons-get (cdr svex.args) collected)
-                            (hons-get svex.args collected))))
+     (b* ((adder-p (or*-exec (equal svex.fn 'ha-c-chain)
+                             (equal svex.fn 'ha-s-chain)
+                             (equal svex.fn 'ha+1-c-chain)
+                             (equal svex.fn 'ha+1-s-chain)))
+          (to-remove (and*-exec adder-p
+                                (if (equal svex.fn 'ha+1-s-chain)
+                                    (hons-get (cdr svex.args) collected)
+                                  (hons-get svex.args collected))))
           ((unless to-remove)
 
            (shuffle-gates-after-removing-ha-under-gates
@@ -480,15 +480,43 @@
       :fn remove-ha-under-gates-lst)
     :hints (("Goal"
              :do-not-induct t
-             :in-theory (e/d (sv::svex-apply$
-                              sv::svex-apply
+             :expand ((remove-ha-under-gates svex)
+                      (REMOVE-HA-UNDER-GATES NIL)
+                      (remove-ha-under-gates svex :wrap-with-id nil)
+                      (:free (x)
+                             (sv::svex-apply$ 'ha+1-s-chain x))
+                      (:free (x)
+                             (sv::svex-apply$ 'ha-s-chain x))
+                      (:free (x)
+                             (sv::svex-apply$ 'ha-c-chain x))
+                      (:free (x)
+                             (sv::svex-apply$ 'ha+1-c-chain x))
+                      (:free (x)
+                             (sv::svex-apply$ 'sv::bitxor x))
+                      (:free (x)
+                             (sv::svex-apply$ 'sv::bitor x))
+                      (:free (x)
+                             (sv::svex-apply$ 'sv::bitand x))
+                      (:free (x)
+                             (sv::svex-apply$ 'sv::bitnot x))
+                      (:free (x)
+                             (sv::svex-apply$ 'id x)))
+             :in-theory (e/d (;;sv::svex-apply$
+                              ;;sv::svex-apply
                               sv::svex-call->fn
                               ha-c-chain
                               ha-s-chain
                               sv::svex-call->args
                               ha+1-s-chain
                               ha+1-c-chain)
-                             ()))))
+                             ((:DEFINITION ACL2::APPLY$-BADGEP)
+                              (:REWRITE SV::SVEX-EVAL$-WHEN-QUOTE)
+                              (:DEFINITION SUBSETP-EQUAL)
+                              (:DEFINITION MEMBER-EQUAL)
+                              REMOVE-HA-UNDER-GATES-FN
+                              SV::SVEX-APPLY$-IS-SVEX-APPLY
+                              (:e WARRANTS-FOR-ADDER-PATTERN-MATCH)
+                              warrants-for-adder-pattern-match)))))
 
   (define remove-ha-under-gates-alist ((lst sv::svex-alist-p)
                                        &key
@@ -1273,19 +1301,27 @@
                                      ((context rp-term-listp) 'context)
                                      ((config svl::svex-reduce-config-p) 'config))
 
-  :returns (res acl2::maybe-natp)
+  :returns (res acl2::maybe-natp
+                :hints (("Goal"
+                         :in-theory (e/d ((:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-INTEGERP-BASE)
+                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-NONNEGATIVE-BASE)
+                                          (:TYPE-PRESCRIPTION ACL2::EXPT-TYPE-PRESCRIPTION-POSITIVE-BASE)
+                                          ACL2::|(integerp (expt x n))|)
+                                         ()))))
   :prepwork ((local
               (in-theory (e/d (natp
                                acl2::maybe-natp) ())))
              ;; (local
              ;;  (include-book "centaur/bitops/top" :dir :system))
 
-             (local
-              (use-arithmetic-5 t))
              )
   :guard-hints (("Goal"
                  :do-not-induct t
-                 :in-theory (e/d () ())))
+                 :in-theory (e/d ()
+                                 ())))
+  :measure (cons-count x)
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas) ())))
   (case-match x
     (('int-vector-adder arg1 arg2)
      (b* ((max1 (max-val-of-int-vector-adder arg1))
@@ -1317,6 +1353,9 @@
                   (1- (expt 2 width))))))
 
   ///
+  
+
+  
 
   (local
    (defthm lemma1
@@ -1329,7 +1368,6 @@
      :hints (("Goal"
               :in-theory (e/d (ifix) ())))))
 
-  
   (local
    (defthm loghead-upper-lemma
      (implies (and (natp max1)
@@ -1348,6 +1386,9 @@
                    (<= a b))
               (<= (+ x a)
                   (+ y b)))))
+
+  (local
+   (use-arithmetic-5 t))
   
   (local
    (defthm logapp-upper-lemma
@@ -1363,29 +1404,26 @@
                   (+ max1 (ash max2 size))))
      :hints (("Goal"
               :use ((:instance loghead-upper-lemma))
-              :in-theory (e/d* (logapp 
+              :in-theory (e/d* (logapp
                                 )
                                (loghead-upper-lemma))))))
-  
 
   (local
    (defthm left-shift-of-logtail-same-size
-      (implies (natp size)
-               (<= (* (EXPT 2 size) (logtail size x))
-                   (ifix x)))
-      :hints (("Goal"
-               :in-theory (e/d (logtail ifix) ())))))
+     (implies (natp size)
+              (<= (* (EXPT 2 size) (logtail size x))
+                  (ifix x)))
+     :hints (("Goal"
+              :in-theory (e/d (logtail ifix) ())))))
 
   (local
    (defthm dummy-equiv-rw
      (implies (and (<= x big)
                    (<= med x))
               (<= med big))))
-              
-  
+
   (local
    (use-arithmetic-5 nil))
-  
 
   (local
    (defthmd to-unsigned-byte-p
@@ -1402,9 +1440,7 @@
               :in-theory (e/d (sv::svex-p sv::4vec-p) ())))))
 
 
-  
-   
-  
+
   ;; (local
   ;;  (defthm logtail-to-ash
   ;;    (implies (natp size)
@@ -1428,7 +1464,6 @@
                              (MAX-VAL-OF-INT-VECTOR-ADDER
                               MAYBE-NATP-OF-MAX-VAL-OF-INT-VECTOR-ADDER))))
     :fn MAX-VAL-OF-INT-VECTOR-ADDER)
-  
 
   (defret <fn>-is-correct
     (implies (and (sv::svex-p x)
@@ -1452,7 +1487,8 @@
                       (:free (args) (SV::SVEX-APPLY$ 'INT-VECTOR-ADDER args))
                       (:free (args) (SV::SVEX-APPLY 'sv::concat args))
                       (:free (args) (SV::SVEX-APPLY 'sv::Rsh args)))
-             :in-theory (e/d (sv::4vec-part-select
+             :in-theory (e/d ((:INDUCTION MAX-VAL-OF-INT-VECTOR-ADDER-FN)
+                              sv::4vec-part-select
                               sv::4vec
                               sv::svex-call->fn
                               sv::svex-call->args
@@ -1460,7 +1496,7 @@
                               int-vector-adder
                               sv::4vec-concat
                               sv::4vec-rsh
-                              sv::4vec-shift-core 
+                              sv::4vec-shift-core
                               (:type-prescription acl2::expt-type-prescription-integerp-base)
                               (:type-prescription acl2::expt-type-prescription-nonnegative-base)
                               (:type-prescription acl2::expt-type-prescription-positive-base)
@@ -1470,6 +1506,16 @@
                               )
                              (;;RIGHT-SHIFT-TO-LOGTAIL
                               ;;sv::4vec-equal
+                              (:REWRITE DEFAULT-CDR)
+                              (:DEFINITION SVL::WIDTH-OF-SVEX-EXTN-CORRECT$-LST)
+                              (:TYPE-PRESCRIPTION SV::INTEGERP-OF-4VEC->UPPER)
+                              (:DEFINITION FALIST-CONSISTENT-AUX)
+                              (:DEFINITION EVAL-AND-ALL)
+                              (:DEFINITION SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$)
+                              (:DEFINITION SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$-LST)
+                              (:definition MAX-VAL-OF-INT-VECTOR-ADDER-FN)
+                              INTEGER-LISTP valid-sc
+                              unsigned-byte-p
                               left-shift-of-logtail-same-size
                               svl::svex-eval$-of-integerp-of-svex-is-correct
                               svl::svex-eval$-width-of-svex-is-correct)))
@@ -1493,9 +1539,8 @@
                  '(:use ((:instance left-shift-of-logtail-same-size
                                     (size (cadr x))
                                     (x (SV::SVEX-EVAL$ (CADDR X)
-                                         (RP-EVLT ENV-TERM A)))))))
+                                                       (RP-EVLT ENV-TERM A)))))))
             )))
-
 
 (local
  (defthm 4vec-rsh-to-4vec-part-select-equiv
@@ -1516,9 +1561,9 @@
 
    (create-case-match-macro partsel-of-int-vector-adder
                             ('sv::partsel start size term)
-                            (and (natp size)
-                                 (natp start)
-                                 (case-match term (('int-vector-adder & &) t))))
+                            :extra-cond (and (natp size)
+                                             (natp start)
+                                             (case-match term (('int-vector-adder & &) t))))
 
    (create-case-match-macro xdet-pattern
                             ('sv::xdet arg1)))
@@ -1546,8 +1591,8 @@
                  (cond ((<= max-size (+ start size))
                         (if (= start 0)
                             term
-                          (hons-list 'sv::rsh start term))) 
-                       (t 
+                          (hons-list 'sv::rsh start term)))
+                       (t
                         x)))))
              ((and*-exec (+-pattern-p x)
                          (+-pattern-body x
@@ -1686,7 +1731,7 @@
                                sv::4vec-part-select)
                               (unsigned-byte-p
                                unsigned-byte-p-of-integer-length))))))
-
+  
   (defret-mutual svex-eval$-correctness
     (defret <fn>-is-correct
       (implies (and (sv::svex-p x)
@@ -1738,13 +1783,28 @@
                               +-pattern-p
                               XDET-PATTERN-P
                               partsel-of-int-vector-adder-p)
-                             (ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP
+                             (remove-partsels-around-plus
+                              WARRANTS-FOR-ADDER-PATTERN-MATCH
+                              (:e WARRANTS-FOR-ADDER-PATTERN-MATCH)
+                              ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP
                               ACL2::SYMBOL-LISTP-OF-CDR-WHEN-SYMBOL-LISTP
                               SYMBOL-LISTP
                               (:TYPE-PRESCRIPTION SYMBOL-LISTP)
-                              
+
                               ;;SV::SVEX-KIND$INLINE
-                              
+
+                              (:DEFINITION ACL2::APPLY$-BADGEP)
+
+                              (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 1)
+                              (:DEFINITION SUBSETP-EQUAL)
+                              (:DEFINITION MEMBER-EQUAL)
+                              (:REWRITE
+                               ACL2::MEMBER-EQUAL-NEWVAR-COMPONENTS-1)
+                              (:DEFINITION
+                               SVL::WIDTH-OF-SVEX-EXTN-CORRECT$-LST)
+                              (:DEFINITION SVL::WIDTH-OF-SVEX-EXTN-CORRECT$)
+                              (:REWRITE
+                                    ACL2::INTEGERP-OF-CAR-WHEN-INTEGER-LISTP)
                               eval-and-all
                               (:DEFINITION VALID-SC)
                               (:DEFINITION

@@ -387,7 +387,7 @@
                 ((mv overridden-assigns ?overridden-delays)
                  (svtv-flatnorm-apply-overrides
                   flatnorm config.override-config))
-                ((base-fsm phase-fsm)))
+                ((fsm phase-fsm)))
              (set-equiv (svex-alist-keys phase-fsm.values)
                         (Svex-alist-keys overridden-assigns))))
   :hints(("Goal" :in-theory (enable phase-fsm-composition-p))))
@@ -398,7 +398,7 @@
                 ((mv ?overridden-assigns overridden-delays)
                  (svtv-flatnorm-apply-overrides
                   flatnorm config.override-config))
-                ((base-fsm phase-fsm)))
+                ((fsm phase-fsm)))
              (svex-alist-eval-equiv!
               phase-fsm.nextstate
               (svex-alist-compose overridden-delays phase-fsm.values))))
@@ -410,7 +410,7 @@
            (b* (((phase-fsm-config config))
                 ((mv overridden-assigns ?overridden-delays)
                  (svtv-flatnorm-apply-overrides flatnorm config.override-config))
-                ((base-fsm phase-fsm)))
+                ((fsm phase-fsm)))
              (netevalcomp-p phase-fsm.values overridden-assigns)))
   :hints (("goal" :in-theory (enable phase-fsm-composition-p))))
 
@@ -428,7 +428,7 @@
                                          (phase-fsm-config->override-config
                                           (svtv-data-obj->phase-fsm-setup obj)))
              :test)
-            (base-fsm->values (svtv-data-obj->phase-fsm obj))))
+            (fsm->values (svtv-data-obj->phase-fsm obj))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-netevalcomp-p
                          (config (svtv-data-obj->phase-fsm-setup obj))
@@ -449,7 +449,7 @@
                 (svtv-data-obj->flatten-validp obj)
                 (svtv-data-obj->phase-fsm-validp obj))
            (svarlist-addr-p
-                 (svex-alist-keys (base-fsm->values (svtv-data-obj->phase-fsm obj)))))
+                 (svex-alist-keys (fsm->values (svtv-data-obj->phase-fsm obj)))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) ))
            :in-theory (e/d (svex-alist-partial-monotonic-when-netevalcomp-p
                             phase-fsm-composition-p-implies-values-keys)
@@ -489,7 +489,7 @@
                 (svtv-data-obj->flatten-validp obj)
                 (svtv-data-obj->phase-fsm-validp obj))
            (svarlist-addr-p
-            (svex-alist-keys (base-fsm->nextstate (svtv-data-obj->phase-fsm obj)))))
+            (svex-alist-keys (fsm->nextstate (svtv-data-obj->phase-fsm obj)))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) ))
            :in-theory (e/d (svex-alist-partial-monotonic-when-netevalcomp-p
                             phase-fsm-composition-p-implies-nextstate)
@@ -512,7 +512,7 @@
                                               (phase-fsm-config->override-config
                                                (svtv-data-obj->phase-fsm-setup obj)))
                   :test)
-                 (svex-alist-keys (base-fsm->values (svtv-data-obj->phase-fsm obj))))))
+                 (svex-alist-keys (fsm->values (svtv-data-obj->phase-fsm obj))))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-netevalcomp-p
                          (config (svtv-data-obj->phase-fsm-setup obj))
@@ -536,7 +536,7 @@
                                               (phase-fsm-config->override-config
                                                (svtv-data-obj->phase-fsm-setup obj)))
                   :test)
-                 (svex-alist-keys (base-fsm->nextstate (svtv-data-obj->phase-fsm obj))))))
+                 (svex-alist-keys (fsm->nextstate (svtv-data-obj->phase-fsm obj))))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-nextstate
                          (config (svtv-data-obj->phase-fsm-setup obj))
@@ -650,7 +650,7 @@
                                          (phase-fsm-config->override-config
                                           (svtv-data-obj->phase-fsm-setup obj)))
              :test)
-            (base-fsm->nextstate (svtv-data-obj->phase-fsm obj))))
+            (fsm->nextstate (svtv-data-obj->phase-fsm obj))))
   :hints (("Goal" :use ((:instance phase-fsm-validp-of-svtv-data-obj (x obj) )
                         (:instance phase-fsm-composition-p-implies-nextstate
                          (config (svtv-data-obj->phase-fsm-setup obj))
@@ -764,19 +764,19 @@
 
 (defthm svex-alist-partial-monotonic-of-cycle-compile
   (implies (and (svex-alist-partial-monotonic params
-                                              (base-fsm->values phase-fsm))
+                                              (fsm->values phase-fsm))
                 (svex-alist-partial-monotonic params
-                                              (base-fsm->nextstate phase-fsm))
+                                              (fsm->nextstate phase-fsm))
                 (svex-alist-partial-monotonic params prev-st)
-                (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (base-fsm->values phase-fsm))))
+                (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (fsm->values phase-fsm))))
                 (not (intersectp-equal (svarlist-fix params) (svex-alist-keys prev-st)))
-                (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (base-fsm->nextstate phase-fsm)))))
+                (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (fsm->nextstate phase-fsm)))))
            (b* (((mv outs nextst) (svtv-cycle-compile prev-st phases phase-fsm simp)))
              (and (svex-alist-partial-monotonic params outs)
                   (svex-alist-partial-monotonic params nextst))))
   :hints(("Goal" :in-theory (enable svtv-cycle-compile
                                     svtv-cycle-step-phase-exprs
-                                    base-fsm-step-subst))))
+                                    fsm-step-subst))))
 
 
 (defthm svex-alist-monotonic-p-of-identity-subst
@@ -793,15 +793,15 @@
 (defthm cycle-fsm-okp-implies-values-partial-monotonic
   (implies (and (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm)
                 (svex-alist-partial-monotonic (svarlist-change-override keys :test)
-                                              (base-fsm->values (svtv-data$c->phase-fsm svtv-data)))
+                                              (fsm->values (svtv-data$c->phase-fsm svtv-data)))
                 (svex-alist-partial-monotonic (svarlist-change-override keys :test)
-                                              (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))
-                (svarlist-addr-p (svex-alist-keys (base-fsm->values (svtv-data$c->phase-fsm svtv-data))))
-                (svarlist-addr-p (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
+                                              (fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))
+                (svarlist-addr-p (svex-alist-keys (fsm->values (svtv-data$c->phase-fsm svtv-data))))
+                (svarlist-addr-p (svex-alist-keys (fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
            (and (svex-alist-partial-monotonic (svarlist-change-override keys :test)
-                                              (base-fsm->values cycle-fsm))
+                                              (fsm->values cycle-fsm))
                 (svex-alist-partial-monotonic (svarlist-change-override keys :test)
-                                              (base-fsm->nextstate cycle-fsm))))
+                                              (fsm->nextstate cycle-fsm))))
   :hints(("Goal" :use ((:instance cycle-fsm-okp-implies-cycle-compile-values-equiv)))))
 
 
@@ -823,7 +823,7 @@
                                          (phase-fsm-config->override-config
                                           (svtv-data-obj->phase-fsm-setup obj)))
              :test)
-            (base-fsm->values (svtv-data-obj->cycle-fsm obj))))
+            (fsm->values (svtv-data-obj->cycle-fsm obj))))
   :hints (("goal" :use ((:instance svtv-data$ap-implies-cycle-fsm-okp
                          (x (svtv-data-obj-to-stobj-logic obj)))))))
 
@@ -841,7 +841,7 @@
                                          (phase-fsm-config->override-config
                                           (svtv-data-obj->phase-fsm-setup obj)))
              :test)
-            (base-fsm->nextstate (svtv-data-obj->cycle-fsm obj))))
+            (fsm->nextstate (svtv-data-obj->cycle-fsm obj))))
   :hints (("goal" :use ((:instance svtv-data$ap-implies-cycle-fsm-okp
                          (x (svtv-data-obj-to-stobj-logic obj)))))))
 
@@ -877,35 +877,35 @@
 
 (encapsulate nil
   (local
-   (defun base-fsm-eval-mono-ind (ins1 ins2 prev-st1 prev-st2 x)
+   (defun fsm-eval-mono-ind (ins1 ins2 prev-st1 prev-st2 x)
      (if (atom ins1)
          (list ins2 prev-st1 prev-st2)
-       (base-fsm-eval-mono-ind (cdr ins1)
+       (fsm-eval-mono-ind (cdr ins1)
                                (cdr ins2)
-                               (base-fsm-step (car ins1) prev-st1 (base-fsm->nextstate x))
-                               (base-fsm-step (car ins2) prev-st2 (base-fsm->nextstate x))
+                               (fsm-step (car ins1) prev-st1 (fsm->nextstate x))
+                               (fsm-step (car ins2) prev-st2 (fsm->nextstate x))
                                x))))
 
-  (defthm partial-monotonicity-of-base-fsm-eval
-    (implies (and (svex-alist-partial-monotonic params (base-fsm->values x))
-                  (svex-alist-partial-monotonic params (base-fsm->nextstate x))
+  (defthm partial-monotonicity-of-fsm-eval
+    (implies (and (svex-alist-partial-monotonic params (fsm->values x))
+                  (svex-alist-partial-monotonic params (fsm->nextstate x))
                   (svex-env-<<= prev-st1 prev-st2)
                   (svex-envlist-<<= ins1 ins2)
                   (svex-envlists-agree params ins1 ins2)
                   (equal (len ins1) (len ins2))
-                  (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (base-fsm->nextstate x)))))
-             (svex-envlist-<<= (base-fsm-eval ins1 prev-st1 x)
-                               (base-fsm-eval ins2 prev-st2 x)))
-    :hints(("Goal" :in-theory (enable base-fsm-eval
-                                      base-fsm-step-outs
-                                      base-fsm-step
-                                      base-fsm-step-env)
-            :expand ((base-fsm-eval ins1 prev-st1 x)
-                     (base-fsm-eval ins2 prev-st2 x)
+                  (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (fsm->nextstate x)))))
+             (svex-envlist-<<= (fsm-eval ins1 prev-st1 x)
+                               (fsm-eval ins2 prev-st2 x)))
+    :hints(("Goal" :in-theory (enable fsm-eval
+                                      fsm-step-outs
+                                      fsm-step
+                                      fsm-step-env)
+            :expand ((fsm-eval ins1 prev-st1 x)
+                     (fsm-eval ins2 prev-st2 x)
                      (svex-envlist-<<= ins1 ins2)
                      (svex-envlists-agree params ins1 ins2)
                      (:free (a b c) (svex-envlist-<<= (cons a b) c)))
-            :induct (base-fsm-eval-mono-ind ins1 ins2 prev-st1 prev-st2 x)))))
+            :induct (fsm-eval-mono-ind ins1 ins2 prev-st1 prev-st2 x)))))
 
 
 
@@ -1012,7 +1012,7 @@
   :returns (substs svex-alistlist-p)
   (b* (((pipeline-setup setup) (svtv-data-obj->pipeline-setup obj))
        (outvars (svtv-probealist-outvars setup.probes)))
-    (svtv-fsm-to-base-fsm-inputsubsts (take (len outvars) setup.inputs)
+    (svtv-fsm-to-fsm-inputsubsts (take (len outvars) setup.inputs)
                                       setup.override-vals setup.override-tests
                                       (svtv-data-obj->namemap obj))))
 
@@ -1057,7 +1057,7 @@
 
 
 (encapsulate nil
-  (local (defthm partial-monotonicity-of-base-fsm-eval-bind
+  (local (defthm partial-monotonicity-of-fsm-eval-bind
            (implies (and (bind-free '((params . (SVARLIST-CHANGE-OVERRIDE
                                                  (SVTV-ASSIGNS-OVERRIDE-VARS
                                                   (FLATNORM-RES->ASSIGNS$INLINE (SVTV-DATA-OBJ->FLATNORM$INLINE OBJ))
@@ -1065,15 +1065,15 @@
                                                    (SVTV-DATA-OBJ->PHASE-FSM-SETUP$INLINE OBJ)))
                                                  ':test)))
                                     (params))
-                         (svex-alist-partial-monotonic params (base-fsm->values x))
-                         (svex-alist-partial-monotonic params (base-fsm->nextstate x))
+                         (svex-alist-partial-monotonic params (fsm->values x))
+                         (svex-alist-partial-monotonic params (fsm->nextstate x))
                          (svex-env-<<= prev-st1 prev-st2)
                          (svex-envlist-<<= ins1 ins2)
                          (svex-envlists-agree params ins1 ins2)
                          (equal (len ins1) (len ins2))
-                         (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (base-fsm->nextstate x)))))
-                    (svex-envlist-<<= (base-fsm-eval ins1 prev-st1 x)
-                                      (base-fsm-eval ins2 prev-st2 x)))))
+                         (not (intersectp-equal (svarlist-fix params) (svex-alist-keys (fsm->nextstate x)))))
+                    (svex-envlist-<<= (fsm-eval ins1 prev-st1 x)
+                                      (fsm-eval ins2 prev-st2 x)))))
   (local (defthm svex-alistlist-eval-of-take
            (equal (svex-alistlist-eval (take n x) env)
                   (take n (svex-alistlist-eval x env)))
@@ -1083,13 +1083,13 @@
                    :induct (take n x)
                    :expand ((svex-alist-eval nil env))))))
   
-  (local (defthm my-svtv-fsm-run-is-base-fsm-run
+  (local (defthm my-svtv-fsm-run-is-fsm-run
            (equal (svtv-fsm-run (svex-alistlist-eval ins env)
                                 prev-st x outvars
                                 :override-vals (svex-alistlist-eval override-vals env)
                                 :override-tests (svex-alistlist-eval override-tests env))
-                  (base-fsm-run
-                   (svex-alistlist-eval (svtv-fsm-to-base-fsm-inputsubsts
+                  (fsm-run
+                   (svex-alistlist-eval (svtv-fsm-to-fsm-inputsubsts
                                          (take (len outvars) ins)
                                          override-vals override-tests
                                          (svtv-fsm->namemap x))
@@ -1097,7 +1097,7 @@
                    prev-st
                    (svtv-fsm->renamed-fsm x)
                    outvars))
-           :hints(("Goal" :in-theory (enable svtv-fsm-run-is-base-fsm-run)
+           :hints(("Goal" :in-theory (enable svtv-fsm-run-is-fsm-run)
                    :do-not-induct t))))
 
   (local (defun take-n-x-y-ind (n x y)
@@ -1140,11 +1140,11 @@
                (svtv-data-obj-pipeline-substs obj))
               (svtv-data-obj->pipeline obj)))
     :hints (("goal"
-             :in-theory (e/d ;; svtv-fsm-run-is-base-fsm-run
-                         (base-fsm-run
+             :in-theory (e/d ;; svtv-fsm-run-is-fsm-run
+                         (fsm-run
                           svtv-data-obj-pipeline-substs
                           svtv-fsm->renamed-fsm)
-                         (eval-of-svtv-fsm-to-base-fsm-inputsubsts)))
+                         (eval-of-svtv-fsm-to-fsm-inputsubsts)))
             (and stable-under-simplificationp
                  `(:expand ((:with svex-alist-partial-monotonic-by-eval
                              ,(car (last clause)))))))))

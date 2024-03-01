@@ -57,7 +57,7 @@ names in SystemVerilog hierarchical syntax (strings)."
   )
 
 
-(defprod base-fsm
+(defprod fsm
   ((values svex-alist-p
             "Functions of internal signals of the design, using canonical
              names as input and output variables.")
@@ -69,7 +69,7 @@ names in SystemVerilog hierarchical syntax (strings)."
 
 
 (defprod svtv-fsm
-  ((base-fsm base-fsm-p)
+  ((fsm fsm-p)
    ;; (design design-p
    ;;         "Original design from which the FSM was derived.")
    ;; (user-names svtv-namemap-p
@@ -80,11 +80,11 @@ names in SystemVerilog hierarchical syntax (strings)."
 
 (define svtv-fsm->values ((x svtv-fsm-p))
   :enabled t
-  (base-fsm->values (svtv-fsm->base-fsm x)))
+  (fsm->values (svtv-fsm->fsm x)))
 
 (define svtv-fsm->nextstate ((x svtv-fsm-p))
   :enabled t
-  (base-fsm->nextstate (svtv-fsm->base-fsm x)))
+  (fsm->nextstate (svtv-fsm->fsm x)))
 
 
 (define make-fast-alists (x)

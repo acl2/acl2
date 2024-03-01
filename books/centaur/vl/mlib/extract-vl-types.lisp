@@ -780,6 +780,16 @@
                      (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                        (list ',debug-fn-name value (list 'quote excludes)
                              depth-limit)))
+
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-coretype)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:changer-macro-name ,changer-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)))
+                   
                    ;;  )
                    ))))
            (mv events size)))
@@ -848,6 +858,16 @@
                        (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
                    ;;)
 
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-struct)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:changer-macro-name ,changer-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)
+                            ))
+                   
                    ))))
            (mv (append member-events this-events) size)))
         (:vl-union
@@ -913,6 +933,17 @@
                      (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                        (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
                    ;;)
+
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-union)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:changer-macro-name ,changer-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)
+                            ))
+                   
                    ))))
            (mv (append member-events this-events) size)))
         (:vl-enum
@@ -982,7 +1013,18 @@
                                                                       pkg-sym)
 
                    (defmacro ,debug-macro-name (value &key (depth-limit '1000))
-                     (list ',debug-fn-name value nil depth-limit))))))
+                     (list ',debug-fn-name value nil depth-limit))
+
+
+                   (table extracted-vl-types ',symbol
+                          '((:type :vl-enum)
+                            (:accessor-macro-name ,accessor-macro-name)
+                            (:ranges-fn-name ,ranges-fn-name)
+                            (:debug-macro-name ,debug-macro-name)
+                            (:debug-fn-name ,debug-fn-name)
+                            (:debug-vector-fn-name ,debug-vector-fn-name)
+                            ))
+                   ))))
            (mv this-events size)))
 
         (:vl-usertype
@@ -1033,6 +1075,17 @@
                                                ,@(and constant-value `((value ',constant-value))))
                     (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                       (list ',debug-fn-name value (list 'quote excludes) depth-limit)))
+
+                  (table extracted-vl-types ',symbol
+                         '((:type :vl-usertype)
+                           (:constant-value ,constant-value)
+                           (:accessor-macro-name ,accessor-macro-name)
+                           (:changer-macro-name ,changer-macro-name)
+                           (:ranges-fn-name ,ranges-fn-name)
+                           (:debug-macro-name ,debug-macro-name)
+                           (:debug-fn-name ,debug-fn-name)
+                           (:debug-vector-fn-name ,debug-vector-fn-name)
+                           ))
                   ;;)
                   ))))
            (mv (append member-events

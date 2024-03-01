@@ -695,7 +695,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
                       config :skip-bitor/and/xor-repeated t))
              (svex-alist
               (time$
-               (b* ((svex-alist (svl::svexalist-convert-bitnot-to-bitxor svex-alist))
+               (b* ((svex-alist (svl::svexalist-convert-bitnot-to-bitxor
+                                 svex-alist :depth (if* (aggressive-find-adders-in-svex) (expt 2 12) 3)))
                     (svex-alist (svl::svex-alist-reduce-w/-env svex-alist :env env :config config)))
                  svex-alist)
                :msg "---- svl::svex-alist-reduce-w/-env took ~st seconds (real-time), or ~sc seconds ~

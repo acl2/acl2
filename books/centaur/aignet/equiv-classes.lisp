@@ -35,6 +35,7 @@
 (include-book "centaur/misc/s32-listp" :dir :system)
 (include-book "std/alists/alist-keys" :dir :system)
 (include-book "is-xor")
+(include-book "centaur/aignet/prune" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
@@ -683,10 +684,10 @@
         (add-equiv-class-to-other head next classes)))
     ;; class is the last node in the new class; set the head of head to it
     (b* ((classes (node-set-head head class classes)))
-      (or (class-check-consistency head classes)
-          (cw "add-equiv-class-to-other: inconsistent class: head ~x0 next ~x1 tail ~x2~%"
-              head (node-next head classes) (node-head head classes))
-          (break$))
+      ;; (or (class-check-consistency head classes)
+      ;;     (cw "add-equiv-class-to-other: inconsistent class: head ~x0 next ~x1 tail ~x2~%"
+      ;;         head (node-next head classes) (node-head head classes))
+      ;;     (break$))
       classes))
   ///
   (defret classes-size-of-<fn>
@@ -967,11 +968,12 @@
                   :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
 
 
-(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes)
+(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes mark)
   ;; N is the maximum first index, offset is the offset of the second index.
   :guard (and (<= (+ offset n) (num-outs aignet))
               (<= idx n)
               (<= (num-fanins aignet) (classes-size classes))
+              (<= (num-fanins aignet) (bits-length mark))
               (classes-wellformed classes))
   :measure (nfix (- (nfix n) (nfix idx)))
   :returns new-classes
@@ -980,10 +982,14 @@
         classes)
        (id1 (lit->var (outnum->fanin idx aignet)))
        (id2 (lit->var (outnum->fanin (+ (lnfix idx) (lnfix offset)) aignet)))
-       (classes (join-equiv-classes (node-class-head id1 classes)
-                                    (node-class-head id2 classes)
-                                    classes)))
-    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes))
+        
+       (classes (if (and (eql (get-bit id1 mark) 1)
+                         (eql (get-bit id2 mark) 1))
+                    (join-equiv-classes (node-class-head id1 classes)
+                                        (node-class-head id2 classes)
+                                        classes)
+                  classes)))
+    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes mark))
   ///
   
   (defret classes-size/wellformed-of-<fn>
@@ -992,6 +998,36 @@
              (and (equal (classes-size new-classes)
                          (classes-size classes))
                   (classes-wellformed new-classes)))))
+
+
+(define aignet-mark-dfs-outs-range ((from natp)
+                                    (until natp)
+                                    mark aignet)
+  :guard (and (<= (num-fanins aignet) (bits-length mark))
+              (<= from until)
+              (<= until (num-outs aignet)))
+  :measure (nfix (- (num-outs aignet) (nfix from)))
+  :returns (new-mark)
+  ;; :hooks ((:fix :omit (aignet)))
+  (if (mbe :logic (zp (- (min (nfix until) (num-outs aignet)) (nfix from)))
+           :exec (eql until from))
+      mark
+    (b* ((mark (aignet-mark-dfs-rec (lit->var (outnum->fanin from aignet)) mark aignet)))
+      (aignet-mark-dfs-outs-range (1+ (lnfix from)) until mark aignet)))
+  ///
+  (defret <fn>-length-nondecreasing
+    (<= (len mark)
+        (len new-mark))
+    :rule-classes :linear)
+
+  
+  (fty::deffixequiv aignet-mark-measure :args ((aignet node-list))
+    :hints(("Goal" :in-theory (enable aignet-mark-measure))))
+  (fty::deffixequiv aignet-mark-dfs-rec :args ((aignet node-list))
+    :hints (("goal" :in-theory (enable (:i aignet-mark-dfs-rec))
+             :induct (aignet-mark-dfs-rec id mark aignet)
+             :expand ((:free (aignet) (aignet-mark-dfs-rec id mark aignet)))))))
+  
 
 
 (define classes-init-n-outputs ((n natp)
@@ -1015,6 +1051,10 @@
        (classes (resize-class-nexts size classes))
        (classes (resize-class-heads size classes))
        ((when (zp size)) classes)
+       ((acl2::local-stobjs mark)
+        (mv mark classes))
+       (mark (resize-bits size mark))
+       (mark (set-bit 0 1 mark)) ;; mark constant node
        (classes (classes-init-empty-aux (num-fanins aignet) classes))
        ((when (> (* 2 (lnfix n)) (num-outs aignet)))
         (cw " **********  TRANSFORMATION FAILED **********~%~
@@ -1023,14 +1063,20 @@ When this value is a natural number N, there must be at least 2*N outputs, ~
 so in this case the aignet should have at least ~x2 outputs, but in fact it has ~x3.~%"
             :n-outputs-are-initial-equiv-classes
             (lnfix n) (* 2 (lnfix n)) (num-outs aignet))
-        classes)
+        (mv mark classes))
+       (regular-outs-start (if lastp 0 (* 2 (lnfix n))))
+       (regular-outs-end (if lastp
+                             (- (num-outs aignet) (* 2 (lnfix n)))
+                           (num-outs aignet)))
+       (mark (aignet-mark-dfs-outs-range regular-outs-start regular-outs-end mark aignet))
+                           
        (classes (if lastp
                     (b* ((start (- (num-outs aignet) (* 2 (lnfix n)))))
-                      (classes-join-po-pairs start n (+ start (lnfix n)) aignet classes))
-                  (classes-join-po-pairs 0 n n aignet classes))))
+                      (classes-join-po-pairs start n (+ start (lnfix n)) aignet classes mark))
+                  (classes-join-po-pairs 0 n n aignet classes mark))))
     (classes-report-sizes classes)
     (classes-check-consistency (num-fanins aignet) classes)
-    classes)
+    (mv mark classes))
        
   ///
 

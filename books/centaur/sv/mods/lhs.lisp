@@ -353,25 +353,25 @@ the order given (LSBs-first).</p>")
     :z 0
     :var (4vec-rsh (2vec x.rsh) (svex-env-fastlookup x.name env))))
 
-(define lhs-eval-zero ((x lhs-p) (env svex-env-p))
+(define lhs-eval-zx ((x lhs-p) (env svex-env-p))
   :parents (lhs)
   :returns (val 4vec-p)
   (if (atom x)
       0
     (4vec-concat (2vec (lhrange->w (car x)))
                  (lhatom-eval-zero(lhrange->atom (car x)) env)
-                 (lhs-eval-zero (cdr x) env)))
+                 (lhs-eval-zx (cdr x) env)))
   ///
-  (deffixequiv lhs-eval-zero)
+  (deffixequiv lhs-eval-zx)
 
-  (defthm lhs-eval-zero-of-cons
-    (equal (lhs-eval-zero (cons a x) env)
+  (defthm lhs-eval-zx-of-cons
+    (equal (lhs-eval-zx (cons a x) env)
            (4vec-concat (2vec (lhrange->w a))
                         (lhatom-eval-zero (lhrange->atom a) env)
-                        (lhs-eval-zero x env))))
+                        (lhs-eval-zx x env))))
 
-  (defthm lhs-eval-zero-of-nil
-    (equal (lhs-eval-zero nil env) 0)))
+  (defthm lhs-eval-zx-of-nil
+    (equal (lhs-eval-zx nil env) 0)))
 
 
 
@@ -675,9 +675,9 @@ the order given (LSBs-first).</p>")
     :otf-flg t)
 
   (defthm lhs-cons-correct-zero
-    (equal (lhs-eval-zero (lhs-cons x y) env)
-           (lhs-eval-zero (cons x y) env))
-    :hints(("Goal" :in-theory (e/d (lhs-eval-zero) (lhrange-combine-correct))
+    (equal (lhs-eval-zx (lhs-cons x y) env)
+           (lhs-eval-zx (cons x y) env))
+    :hints(("Goal" :in-theory (e/d (lhs-eval-zx) (lhrange-combine-correct))
             :use ((:instance lhrange-combine-correct-zero
                    (x x) (y (car y))))
             :do-not-induct t))
@@ -776,10 +776,10 @@ the order given (LSBs-first).</p>")
                                (:free (x y) (lhs-eval (cons x y) env)))
                :induct (lhs-norm x))))
 
-    (fty::deffixcong lhs-norm-equiv equal (lhs-eval-zero x env) x
-      :hints (("goal" :expand ((lhs-eval-zero x env)
-                               (lhs-eval-zero nil env)
-                               (:free (x y) (lhs-eval-zero (cons x y) env)))
+    (fty::deffixcong lhs-norm-equiv equal (lhs-eval-zx x env) x
+      :hints (("goal" :expand ((lhs-eval-zx x env)
+                               (lhs-eval-zx nil env)
+                               (:free (x y) (lhs-eval-zx (cons x y) env)))
                :induct (lhs-norm x))))
 
     (defthm lhs-norm-cdr-lhs-norm
@@ -857,14 +857,14 @@ the order given (LSBs-first).</p>")
                              ((:d lhs-concat))))))
 
   (defthm lhs-concat-correct-zero
-    (equal (lhs-eval-zero (lhs-concat w x y) env)
+    (equal (lhs-eval-zx (lhs-concat w x y) env)
            (4vec-concat (2vec (nfix w))
-                        (lhs-eval-zero x env)
-                        (lhs-eval-zero y env)))
+                        (lhs-eval-zx x env)
+                        (lhs-eval-zx y env)))
     :hints (("Goal" :induct (lhs-concat w x y)
              :expand ((lhs-concat w x y)
                       (lhs-concat 0 x y))
-             :in-theory (e/d (lhs-eval-zero lhs-eval lhatom-eval-zero)
+             :in-theory (e/d (lhs-eval-zx lhs-eval lhatom-eval-zero)
                              ((:d lhs-concat))))))
 
   (defthm lhs-width-of-lhs-concat
@@ -900,12 +900,12 @@ the order given (LSBs-first).</p>")
                                   (lhs-rsh))))))
 
   (defthm lhs-rsh-correct-zero
-    (equal (lhs-eval-zero (lhs-rsh sh x) env)
-           (4vec-rsh (2vec (nfix sh)) (lhs-eval-zero x env)))
+    (equal (lhs-eval-zx (lhs-rsh sh x) env)
+           (4vec-rsh (2vec (nfix sh)) (lhs-eval-zx x env)))
     :hints(("Goal" :induct (lhs-rsh sh x)
             :expand ((lhs-rsh sh x)
                      (lhs-rsh 0 x))
-            :in-theory (e/d (lhs-eval-zero lhatom-eval-zero)
+            :in-theory (e/d (lhs-eval-zx lhatom-eval-zero)
                             ((:d lhs-rsh))))
            (and stable-under-simplificationp
                 '(:in-theory (e/d (4vec-rsh 4vec-concat 4vec-shift-core)
@@ -1118,7 +1118,7 @@ the order given (LSBs-first).</p>")
                                  (4vec-z))))
     :hints (("goal" :in-theory (enable lhssvex-bounded-p)))))
 
-;; ;; Problematic wrt lhs-eval-zero.  We have changed everything to use  svex->lhs-bound.
+;; ;; Problematic wrt lhs-eval-zx.  We have changed everything to use  svex->lhs-bound.
 ;; (define svex->lhs ((x svex-p))
 ;;   :guard (lhssvex-p x)
 ;;   :verify-guards nil
@@ -2390,9 +2390,9 @@ the order given (LSBs-first).</p>")
 
   (defthm lhs->svex-zero-correct
     (equal (svex-eval (lhs->svex-zero x) env)
-           (lhs-eval-zero x env))
+           (lhs-eval-zx x env))
     :hints(("Goal" :in-theory (enable svex-eval svex-apply svexlist-eval 4veclist-nth-safe
-                                      lhs-eval-zero lhrange-eval))))
+                                      lhs-eval-zx lhrange-eval))))
 
   (defthm vars-of-lhs->svex-zero
     (implies (not (member v (lhs-vars x)))

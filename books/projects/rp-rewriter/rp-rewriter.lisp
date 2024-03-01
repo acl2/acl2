@@ -2170,7 +2170,8 @@ relieving the hypothesis for ~x1! You can disable this error by running:
      (b* ((rp-state (limit-reached-action nil rp-state)))
        (mv term rp-state)))
     ((is-rp$ term)
-     (b* ((dont-rw (dont-rw-car
+     (b* ((rp-state (push-to-rw-recent-terms term rp-state))
+          (dont-rw (dont-rw-car
                     (dont-rw-cdr
                      (dont-rw-cdr dont-rw))))
           ((mv new-term rp-state)
@@ -2207,6 +2208,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           #|((mv term dont-rw)
           (rp-check-context term dont-rw context iff-flg))|#
 
+          (rp-state (push-to-rw-recent-terms term rp-state)) ;; save what term
+          ;; is being rewritten into a small stack for history tracking when necessary.
+          
           ((mv rule-rewritten-flg term dont-rw rp-state)
            (rp-rw-rule term dont-rw
                        (rules-alist-outside-in-get (car term) rp-state)

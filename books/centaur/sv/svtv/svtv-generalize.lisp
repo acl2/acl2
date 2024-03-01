@@ -53,8 +53,8 @@
 
 (local (std::add-default-post-define-hook :fix))
 
-(std::defredundant :names (base-fsm-overridekey-transparent-p-of-base-fsm-to-cycle
-                           base-fsm-ovcongruent-p-of-base-fsm-to-cycle))
+(std::defredundant :names (fsm-overridekey-transparent-p-of-fsm-to-cycle
+                           fsm-ovcongruent-p-of-fsm-to-cycle))
 
 
 (defthm 4vec-override-mux-<<=-of-same-test/val
@@ -300,6 +300,24 @@
 (fgl::remove-fgl-rewrite svtv-spec-run-fn)
 
 
+(local (in-theory (disable acl2::hons-subset)))
+(local (include-book "centaur/misc/hons-sets" :dir :system))
+(local (include-book "std/lists/sets" :dir :system))
+(defthmd set-equiv-of-consts
+  (implies (syntaxp (and (quotep x)
+                         (quotep y)))
+           (equal (set-equiv x y)
+                  (force-execute (and (acl2::hons-subset x y)
+                                      (acl2::hons-subset y x)))))
+  :hints(("Goal" :in-theory (enable force-execute)
+          :cases ((set-equiv x y)))
+         (acl2::set-reasoning)))
+
+(defthmd intersectp-equal-execute
+  (implies (syntaxp (and (quotep x) (quotep y)))
+           (iff (intersectp-equal x y)
+                (force-execute (acl2::hons-intersect-p x y)))))
+
 
 (defconst *svtv-generalize-template*
   '(defsection <name>-refinement
@@ -337,7 +355,7 @@
                                                             <specname>))))
                 :guard-hints (("goal" :in-theory '(SVTV-DATA-OBJ-P-OF-<DATA>
                                                    ,@(:@ :phase-fsm '(phase-fsm-is-data-phase-fsm))
-                                                   base-fsm-p-of-svtv-data-obj->phase-fsm
+                                                   fsm-p-of-svtv-data-obj->phase-fsm
                                                    (svex-alist-p)
                                                    (svtv-probealist-p)
                                                    (svex-alistlist-p)
@@ -559,6 +577,8 @@
                   (:EXECUTABLE-COUNTERPART SVTV-NAME-LHS-MAP-LIST-ALL-KEYS)
                   (:EXECUTABLE-COUNTERPART SVTV-PROBEALIST-OUTVARS)
                   (:EXECUTABLE-COUNTERPART TAKE)
+                  (:meta cmr::force-execute-force-execute)
+                  (:rewrite set-equiv-of-consts)
                   ;; set-equiv-by-mergesort-equal
                   (mergesort)
                   (append)
@@ -629,14 +649,14 @@
 
         (defthm <specname>-fsm-ovmonotonic
           (b* ((x (svtv-spec->fsm (<specname>))))
-            (base-fsm-ovmonotonic x))
+            (fsm-ovmonotonic x))
           :hints(("Goal" :in-theory '(<specname>-def
                                       <SPECNAME>-FSM-OVERRIDE-TEST-VARS-DEF
-                                      (:REWRITE BASE-FSM-OVMONOTONIC-OF-SVTV-DATA-OBJ->PHASE-FSM)
+                                      (:REWRITE fsm-OVMONOTONIC-OF-SVTV-DATA-OBJ->PHASE-FSM)
                                       (:REWRITE <DATA>-CORRECT)
                                       (:REWRITE <DATA>-FACTS)
                                       (:REWRITE SVTV-SPEC->FSM-OF-SVTV-DATA-OBJ->SPEC)
-                                      (:TYPE-PRESCRIPTION BASE-FSM-OVMONOTONIC)))))
+                                      (:TYPE-PRESCRIPTION fsm-OVMONOTONIC)))))
         
         (defthm <specname>-facts
           (b* (((svtv-spec x) (<specname>)))
@@ -782,7 +802,7 @@
      ;; (:@ :triplecheck
      ;;  (local (defthm svexlist-check-overridetriples-of-<data>
      ;;           (b* (((svtv-data-obj x) (<data>))
-     ;;                ((base-fsm x.phase-fsm))
+     ;;                ((fsm x.phase-fsm))
      ;;                (overridekeys (<name>-overridekeys))
      ;;                (triples (svar->svex-override-triplelist
      ;;                          (svarlist-to-override-triples overridekeys)
@@ -795,8 +815,8 @@
      ;;                                        (<name>-overridekeys)
      ;;                                        (svar->svex-override-triplelist)
      ;;                                        (svarlist-to-override-triples)
-     ;;                                        (base-fsm->values)
-     ;;                                        (base-fsm->nextstate)
+     ;;                                        (fsm->values)
+     ;;                                        (fsm->nextstate)
      ;;                                        (svexlist-check-overridetriples)))))))
 
      (:@ :triplecheck
@@ -808,27 +828,27 @@
            (:@ :fgl-semantic-check :fgl-semantic-check t)
            (:@ (not :default-aignet-transforms) :use-default-aignet-transforms nil)))
        (local
-        (defthm base-fsm-override-transparent-p-of-<data>
-          (base-fsm-overridekey-transparent-p
+        (defthm fsm-override-transparent-p-of-<data>
+          (fsm-overridekey-transparent-p
            (svtv-data-obj->phase-fsm (<data>))
            (<name>-overridekeys))
           :hints (("goal" :in-theory '(phase-fsm-is-data-phase-fsm)
                    :use <phase-fsm>-override-transparent-for-<name>)))))
       (:@ (not :phase-fsm)
        (local
-        (def-override-transparent base-fsm-override-transparent-p-of-<data>
+        (def-override-transparent fsm-override-transparent-p-of-<data>
           :fsm (svtv-data-obj->phase-fsm (<data>)) :keys (<name>-overridekeys)
           (:@ :fgl-semantic-check :fgl-semantic-check t)
           (:@ (not :default-aignet-transforms) :use-default-aignet-transforms nil))))
 
       (:@ :svtv-spec
-       (defthm <specname>-base-fsm-override-transparent-p
-        (base-fsm-overridekey-transparent-p
+       (defthm <specname>-fsm-override-transparent-p
+        (fsm-overridekey-transparent-p
          (svtv-spec->fsm (<specname>))
          (<name>-overridekeys))
         :hints (("goal" :in-theory '(<specname>-def
                                      svtv-spec->fsm-of-svtv-data-obj->spec
-                                     base-fsm-override-transparent-p-of-<data>))))))
+                                     fsm-override-transparent-p-of-<data>))))))
 
      (:@ :triplecheck
         
@@ -862,7 +882,7 @@
             svtv-spec->initst-alist-of-svtv-data-obj->spec
             svtv-spec->in-alists-of-svtv-data-obj->spec
             override-transparency-of-svtv-data-obj->spec
-            base-fsm-override-transparent-p-of-<data>
+            fsm-override-transparent-p-of-<data>
             <data>-generalize-override-syntax-check
             <specname>-def
             svtv-spec->fsm-of-svtv-data-obj->spec
@@ -904,7 +924,7 @@
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
              override-transparency-of-svtv-data-obj->spec
-             base-fsm-override-transparent-p-of-<data>
+             fsm-override-transparent-p-of-<data>
              <data>-generalize-override-syntax-check
              <specname>-def
              svtv-spec->fsm-of-svtv-data-obj->spec
@@ -944,7 +964,7 @@
              svtv-spec->initst-alist-of-svtv-data-obj->spec
              svtv-spec->in-alists-of-svtv-data-obj->spec
              override-transparency-of-svtv-data-obj->spec
-             base-fsm-override-transparent-p-of-<data>
+             fsm-override-transparent-p-of-<data>
              <data>-generalize-override-syntax-check
              <specname>-def
              svtv-spec->fsm-of-svtv-data-obj->spec
@@ -971,8 +991,32 @@
      ;;                                       ))
 
      (:@ :svtv-spec
-      (defret no-duplicate-state-keys-of-<specname>
-        (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
+      (defthm no-duplicate-state-keys-of-<specname>
+        (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))))
+        :hints (("goal" :in-theory '(<data>-facts
+                                     <data>-correct
+                                     <specname>-def
+                                     fields-of-svtv-data-obj->ideal-spec
+                                     alist-keys-of-flatnorm->ideal-fsm
+                                     svex-alist-keys-of-delays-of-flatnorm-add-overrides
+                                     delays-of-design->flatnorm-of-svtv-data-obj))
+                (and stable-under-simplificationp
+                     '(:in-theory '(hons-dups-p-when-variable-free
+                                    no-duplicatesp-by-hons-dups-p)))
+                ))
+
+      (defthm state-keys-intersect-nondelay-of-<specname>
+        (implies (svarlist-nondelay-p x)
+                 (not (intersectp-equal (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))) x)))
+        :hints (("goal" :in-theory '(intersectp-of-delay/nondelay
+                                     (svarlist-delay-p)
+                                     (svex-alist-keys)
+                                     (fsm->nextstate)
+                                     (svtv-spec->fsm)
+                                     (<specname>)))))
+
+      (defret svarlist-delay-p-state-keys-of-<specname>
+        (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
                                      <specname>-def
@@ -988,25 +1032,24 @@
 
       (defret initst-keys-of-<specname>
         (equal (svex-alist-keys (svtv-spec->initst-alist spec))
-               (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
+               (svex-alist-keys (fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
                                      <specname>-def
                                      svtv-data-obj->spec
                                      svtv-spec->fsm-of-svtv-spec
                                      svtv-spec->initst-alist-of-svtv-spec
-                                     base-fsm-fix-when-base-fsm-p
-                                     base-fsm-p-of-svtv-data-obj->phase-fsm
+                                     fsm-fix-when-fsm-p
+                                     fsm-p-of-svtv-data-obj->phase-fsm
                                      svex-alist-fix-when-svex-alist-p
                                      svex-alist-p-of-pipeline-setup->initst))
                 (and stable-under-simplificationp
                      '(:in-theory '((<data>)
                                     (svex-alist-keys)
                                     (pipeline-setup->initst)
-                                    (base-fsm->nextstate)
+                                    (fsm->nextstate)
                                     (svtv-data-obj->phase-fsm)
-                                    (svtv-data-obj->pipeline-setup))))
-                )
+                                    (svtv-data-obj->pipeline-setup)))))
         :fn <specname>)
 
       (defret probe-keys-of-<specname>
@@ -1046,36 +1089,36 @@
         :fn <specname>)
 
       (defthm nextstate-keys-non-override-of-<specname>
-        (svarlist-override-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm (<specname>)))) nil)
+        (svarlist-override-p (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))) nil)
         :hints(("Goal" :in-theory '((<specname>)
                                     (svtv-spec->fsm)
-                                    (base-fsm->nextstate)
+                                    (fsm->nextstate)
                                     (svex-alist-keys)
                                     (svarlist-override-p)))))
 
-      (defthm base-fsm-overridekey-transparent-p-of-<specname>-cycle
-        (base-fsm-overridekey-transparent-p
+      (defthm fsm-overridekey-transparent-p-of-<specname>-cycle
+        (fsm-overridekey-transparent-p
          (svtv-spec->cycle-fsm (<specname>))
          (<name>-overridekeys))
         :hints(("Goal" :in-theory '(svtv-spec->cycle-fsm
-                                    base-fsm-overridekey-transparent-p-of-base-fsm-to-cycle
-                                    <specname>-base-fsm-override-transparent-p
+                                    fsm-overridekey-transparent-p-of-fsm-to-cycle
+                                    <specname>-fsm-override-transparent-p
                                     <specname>-facts
                                     nextstate-keys-non-override-of-<specname>))))
 
-      (defthm base-fsm-ovcongruent-of-<specname>
-        (base-fsm-ovcongruent (svtv-spec->fsm (<specname>)))
+      (defthm fsm-ovcongruent-of-<specname>
+        (fsm-ovcongruent (svtv-spec->fsm (<specname>)))
         :hints(("Goal" :in-theory '(<specname>-def
-                                    base-fsm-ovcongruent-of-svtv-data-obj->phase-fsm
+                                    fsm-ovcongruent-of-svtv-data-obj->phase-fsm
                                     <data>-correct
                                     <data>-facts
                                     svtv-spec->fsm-of-svtv-data-obj->spec))))
 
-      (defthm base-fsm-ovcongruent-of-<specname>-cycle
-        (base-fsm-ovcongruent (svtv-spec->cycle-fsm (<specname>)))
+      (defthm fsm-ovcongruent-of-<specname>-cycle
+        (fsm-ovcongruent (svtv-spec->cycle-fsm (<specname>)))
         :hints(("Goal" :in-theory '(svtv-spec->cycle-fsm
-                                    base-fsm-ovcongruent-of-<specname>
-                                    base-fsm-ovcongruent-p-of-base-fsm-to-cycle
+                                    fsm-ovcongruent-of-<specname>
+                                    fsm-ovcongruent-p-of-fsm-to-cycle
                                     <specname>-facts
                                     nextstate-keys-non-override-of-<specname>))))
                               
@@ -1086,12 +1129,19 @@
                                     (svtv-spec-fsm-syntax-check)))))
 
 
-
-      (defthm svex-alist-all-xes-of-<specname>-initst
-        (svex-alist-all-xes-p (svtv-spec->initst-alist (<specname>)))
-        :hints(("Goal" :in-theory '((svex-alist-all-xes-p)
-                                    (svtv-spec->initst-alist)
-                                    (<specname>)))))
+      (make-event
+       `(defthmd <specname>-initst-characterize
+          (equal (svtv-spec->initst-alist (<specname>))
+                 ,(if (svex-alist-all-xes-p (svtv-spec->initst-alist (<specname>)))
+                      '(svarlist-x-subst (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))))
+                    '(svex-identity-subst (svex-alist-keys (fsm->nextstate (svtv-spec->fsm (<specname>)))))))
+          :hints(("Goal" :in-theory '((svarlist-x-subst)
+                                      (svex-identity-subst)
+                                      (fsm->nextstate)
+                                      (svtv-spec->fsm)
+                                      (svex-alist-keys)
+                                      (svtv-spec->initst-alist)
+                                      (<specname>))))))
 
       (defthm svarlist-nonoverride-test-of-<specname>-cyclephaselist-keys
         (svarlist-nonoverride-p (svtv-cyclephaselist-keys (svtv-spec->cycle-phases (<specname>))) :test)
@@ -1103,7 +1153,7 @@
      
      (:@ :ideal
       (defret no-duplicate-state-keys-of-<ideal-name>
-        (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
+        (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
                                      <ideal-name>
@@ -1120,7 +1170,7 @@
 
       (defret initst-keys-of-<ideal-name>
         (equal (svex-alist-keys (svtv-spec->initst-alist spec))
-               (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm spec))))
+               (svex-alist-keys (fsm->nextstate (svtv-spec->fsm spec))))
         :hints (("goal" :in-theory '(<data>-facts
                                      <data>-correct
                                      <ideal-name>
@@ -1362,8 +1412,8 @@
          :guard-hints (("goal" :in-theory '(acl2::hons-dups-p-no-duplicatesp
                                             no-duplicate-state-keys-of-<specname>
                                             svtv-spec-p-of-<specname>)))
-         :returns (cycle base-fsm-p
-                         :hints (("goal" :in-theory '(base-fsm-p-of-svtv-spec->cycle-fsm
+         :returns (cycle fsm-p
+                         :hints (("goal" :in-theory '(fsm-p-of-svtv-spec->cycle-fsm
                                                       <fsmname>))))
          (svtv-spec->cycle-fsm (<specname>))
          ///
@@ -1378,26 +1428,26 @@
                   (<fsmname>))
            :hints(("Goal" :in-theory (disable (<specname>)))))
 
-         (defthm base-fsm-overridekey-transparent-p-of-<fsmname>-wrt-<name>-overridekeys
-           (base-fsm-overridekey-transparent-p
+         (defthm fsm-overridekey-transparent-p-of-<fsmname>-wrt-<name>-overridekeys
+           (fsm-overridekey-transparent-p
             (<fsmname>)
             (<name>-overridekeys))
-           :hints(("Goal" :in-theory '(base-fsm-overridekey-transparent-p-of-<specname>-cycle
+           :hints(("Goal" :in-theory '(fsm-overridekey-transparent-p-of-<specname>-cycle
                                        <fsmname>))))
 
-         (defthm base-fsm-ovcongruent-of-<fsmname>
-           (base-fsm-ovcongruent (<fsmname>))
-           :hints(("Goal" :in-theory '(base-fsm-ovcongruent-of-<specname>-cycle
+         (defthm fsm-ovcongruent-of-<fsmname>
+           (fsm-ovcongruent (<fsmname>))
+           :hints(("Goal" :in-theory '(fsm-ovcongruent-of-<specname>-cycle
                                        <fsmname>))))
 
          (defthm no-duplicate-state-keys-of-<fsmname>
-           (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (<fsmname>))))
+           (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate (<fsmname>))))
            :hints (("goal" :in-theory '(NEXTSTATE-KEYS-OF-SVTV-SPEC->CYCLE-FSM
                                         <fsmname>
                                         no-duplicate-state-keys-of-<specname>))))
 
          (defthm nextstate-keys-non-override-of-<fsmname>
-           (svarlist-override-p (svex-alist-keys (base-fsm->nextstate (<fsmname>))) nil)
+           (svarlist-override-p (svex-alist-keys (fsm->nextstate (<fsmname>))) nil)
            :hints(("Goal" :in-theory '(nextstate-keys-non-override-of-<specname>
                                        nextstate-keys-of-svtv-spec->cycle-fsm
                                        <fsmname>))))))
@@ -1420,13 +1470,13 @@
        
        (table svtv-spec-to-fsm-table '<specname> '<fsmname>)
 
-       (defthm base-fsm-overridekey-transparent-p-of-<fsmname>-wrt-<name>-overridekeys
-         (base-fsm-overridekey-transparent-p
+       (defthm fsm-overridekey-transparent-p-of-<fsmname>-wrt-<name>-overridekeys
+         (fsm-overridekey-transparent-p
           (<fsmname>)
           (<name>-overridekeys))
          :hints(("Goal" :in-theory '(
                                      cycle-fsm-of-<specname>)
-                 :use base-fsm-overridekey-transparent-p-of-<specname>-cycle))))
+                 :use fsm-overridekey-transparent-p-of-<specname>-cycle))))
       
       (define <name>-fsm-bindings ()
         :returns (bindings lhprobe-map-p
@@ -1434,7 +1484,14 @@
                                                         <name>-fsm-bindings))))
         :guard-hints (("goal" :in-theory '(svtv-spec-fsm-syntax-check-of-<specname>
                                            svtv-spec-p-of-<specname>)))
-        (svtv-spec-fsm-bindings (<specname>)))
+        (svtv-spec-fsm-bindings (<specname>))
+        ///
+        (defthm <name>-fsm-bindings-nondelay-p
+          (svarlist-nondelay-p (alist-keys (svtv-spec-fsm-bindings (<specname>))))
+          :hints (("goal" :in-theory '((svarlist-nondelay-p)
+                                       (alist-keys)
+                                       (svtv-spec-fsm-bindings)
+                                       (<specname>))))))
 
       (define <name>-fsm-constraints ()
         :returns (constrants lhprobe-constraintlist-p
@@ -2211,6 +2268,38 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
   :hints(("Goal" :in-theory (enable 4vec-override-mux-<<=
                                     4vec-override-mux-ok))))
 
+(local
+ (defthm 4vec-bitmux-of-4vec-mask-to-zero-lemma
+   (implies (and (equal (sparseint-val impl-test) impl-test) )
+            (equal (4vec-bitmux impl-test
+                                (4vec-mask-to-zero impl-test impl-val)
+                                other)
+                   (4vec-bitmux impl-test impl-val other)))
+   :hints (("goal"
+            :do-not-induct t
+            :in-theory (e/d (4vmask-fix
+                             4vec-bitmux 4vec-mask-to-zero)
+                            ()))
+           (bitops::logbitp-reasoning)
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (b-ite)))))))
+
+(defthm 4vec-override-mux-ok-ok-when-impl-val-is-masked-by-impl-test
+  (implies (and (4vec-muxtest-subsetp spec-test impl-test)
+                ref-p
+                (equal (sparseint-val impl-test) impl-test))
+           (equal (4vec-override-mux-ok impl-test
+                                        (sv::4vec-mask-to-zero impl-test impl-val)
+                                        spec-test spec-val ref-p ref-val)
+                  (4vec-override-mux-ok impl-test
+                                        impl-val
+                                        spec-test spec-val ref-p ref-val)))
+  :hints (("goal"
+           :in-theory (e/d* (4vec-1mask
+                             4vec 4vec-override-mux-<<=
+                             4vec-bit?! 4vec->lower 4vec->upper 
+                             4vec-override-mux-ok)
+                            ()))))
 
 
 (def-ruleset! svtv-generalized-thm-rules
@@ -2292,10 +2381,14 @@ Muxtest check failed: ~x0 evaluated to ~x1 (spec) but reduced to a non-constant 
     ;; (:rewrite SVTV-OVERRIDE-TRIPLELIST-MUXES-<<=-OF-CONS)
     ;; (:rewrite SVTV-OVERRIDE-TRIPLELIST-MUXES-<<=-OF-nil)
 
-    (:rewrite 4VEC-OVERRIDE-MUX-OK-OF-SAME)
-    (:rewrite 4VEC-OVERRIDE-MUX-<<=-OF-4vec-fix-impl-val)
-    (:rewrite 4vec-override-MUX-ok-when-no-spec-override-and-impl-val-same-as-ref)
-
+    (:rewrite 4vec-override-mux-ok-of-same)
+    (:rewrite 4vec-override-mux-<<=-of-4vec-fix-impl-val)
+    (:rewrite 4vec-override-mux-ok-when-no-spec-override-and-impl-val-same-as-ref)
+    (:rewrite 4vec-override-mux-ok-ok-when-impl-val-is-masked-by-impl-test)
+    (:e logmask)
+    (:e bitops::sparseint-val)
+    (:e 4vec-muxtest-subsetp)
+    
     (:rewrite svex-env-lookup-of-svex-env-reduce)
     (:executable-counterpart member-equal)
     (:executable-counterpart svarlist-fix$inline)
@@ -2924,6 +3017,7 @@ lemma proved using the original generalized theorem.</p>
    :input-vars input-variable-list
    :input-var-bindings input-variable-binding-list
    :override-vars override-variable-list
+   :override-var-masks override-var-mask-alist
    :x-override-vars x-override-variable-list
    :override-var-bindings override-variable-binding-list
    :spec-override-vars override-variable-list
@@ -3019,6 +3113,13 @@ is a list of override-value variables of the SVTV to be
 overridden in the FGL lemma but not overridden in the generalized theorem.
 Each such variable must have a corresponding output sampling the same signal at
 the same time so as to support eliminating the override.</li>
+
+<li>@(':override-var-masks) 
+is an alist of override-value variables bind to a mask value, which will be
+used to override only a portion of the designated variable. Example call:
+@(':override-var-masks ((mul-sum . (logmask 16))
+		     (mul-carry . (logmask 16)))')
+</li>
 
 <li>@(':override-var-bindings') (appended with @(':more-override-var-bindings'))
 is a list of @('let')-like bindings of override

@@ -31,31 +31,31 @@
 (local (include-book "std/lists/sets" :dir :system))
 
 
-(define base-fsm-overridekey-transparent-p ((x base-fsm-p)
+(define fsm-overridekey-transparent-p ((x fsm-p)
                                             (overridekeys svarlist-p))
-  (b* (((base-fsm x)))
+  (b* (((fsm x)))
     (and (ec-call (svex-alist-overridekey-transparent-p x.values overridekeys x.values))
          (ec-call (svex-alist-overridekey-transparent-p x.nextstate overridekeys x.values))))
   ///
-  (defcong set-equiv equal (base-fsm-overridekey-transparent-p x overridekeys) 2)
+  (defcong set-equiv equal (fsm-overridekey-transparent-p x overridekeys) 2)
 
-  (defthm base-fsm-overridekey-transparent-p-of-svarlist-change-override
-    (equal (base-fsm-overridekey-transparent-p x (svarlist-change-override overridekeys type))
-           (base-fsm-overridekey-transparent-p x overridekeys))))
+  (defthm fsm-overridekey-transparent-p-of-svarlist-change-override
+    (equal (fsm-overridekey-transparent-p x (svarlist-change-override overridekeys type))
+           (fsm-overridekey-transparent-p x overridekeys))))
 
-(define base-fsm-ovmonotonic ((x base-fsm-p))
-  (b* (((base-fsm x)))
+(define fsm-ovmonotonic ((x fsm-p))
+  (b* (((fsm x)))
     (and (ec-call (svex-alist-ovmonotonic x.values))
          (ec-call (svex-alist-ovmonotonic x.nextstate)))))
 
-(define base-fsm-ovcongruent ((x base-fsm-p))
-  (b* (((base-fsm x)))
+(define fsm-ovcongruent ((x fsm-p))
+  (b* (((fsm x)))
     (and (ec-call (svex-alist-ovcongruent x.values))
          (ec-call (svex-alist-ovcongruent x.nextstate)))))
 
 
-(define base-fsm-<<= ((x base-fsm-p) (y base-fsm-p))
-  (b* (((base-fsm x)) ((base-fsm y)))
+(define fsm-<<= ((x fsm-p) (y fsm-p))
+  (b* (((fsm x)) ((fsm y)))
     (and (ec-call (svex-alist-<<= x.values y.values))
          (ec-call (svex-alist-<<= x.nextstate y.nextstate)))))
 
