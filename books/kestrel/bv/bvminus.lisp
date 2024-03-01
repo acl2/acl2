@@ -1,7 +1,7 @@
 ; A function to subtract two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -178,7 +178,7 @@
 (defthm bvminus-of-+-same-arg2
   (implies (and (integerp x)
                 (integerp y))
-           (equal (bvminus size x (binary-+ x y))
+           (equal (bvminus size x (+ x y))
                   (bvuminus size y)))
   :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))
 
@@ -186,6 +186,48 @@
 (defthm bvminus-of-+-same-arg2-alt
   (implies (and (integerp x)
                 (integerp y))
-           (equal (bvminus size x (binary-+ y x))
+           (equal (bvminus size x (+ y x))
                   (bvuminus size y)))
   :hints (("Goal" :in-theory (enable bvplus bvuminus bvchop-of-sum-cases bvminus))))
+
+(defthmd bvminus-of-+-arg2
+  (implies (and (integerp x1)
+                (integerp x2))
+           (equal (bvminus size (+ x1 x2) y)
+                  (bvminus size (bvplus size x1 x2) y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+(defthmd bvminus-of-+-arg3
+  (implies (and (integerp y1)
+                (integerp y2))
+           (equal (bvminus size x (+ y1 y2))
+                  (bvminus size x (bvplus size y1 y2))))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+(defthmd bvminus-when-equal-of-bvchop-and-bvchop
+  (implies (equal (bvchop size x)
+                  (bvchop size y))
+           (equal (bvminus size x y)
+                  0))
+  :hints (("Goal" :in-theory (enable bvminus bvchop-of-sum-cases))))
+
+;; combines the constants
+;; maybe not needed if we always go to bvuminus
+(defthm bvminus-of-bvplus-of-constant-and-bvplus-of-constant
+  (implies (syntaxp (and (quotep k1) (quotep k2)))
+           (equal (bvminus size (bvplus size k1 x) (bvplus size k2 y))
+                  (bvminus size (bvplus size (bvminus size k1 k2) x) y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; maybe not needed if we always go to bvuminus
+;; (x+y)-y = x
+(defthm bvminus-of-bvplus-same
+  (equal (bvminus size (bvplus size x y) y)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; (y+x)-y = x
+(defthm bvminus-of-bvplus-same-alt
+  (equal (bvminus size (bvplus size y x) y)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))

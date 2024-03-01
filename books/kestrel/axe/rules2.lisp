@@ -2189,7 +2189,7 @@
 ;;   (implies t;(not (unsigned-byte-p 1 x)) ;helps prevent loops (if it's just 1 bit, then we can substitute using (equal x blah) just fine without the getbit
 ;;            (equal (bvxor 1 x y)
 ;;                   (bvxor 1 (getbit 0 x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvxor-1-of-getbit-arg1) ()))))
+;;   :hints (("Goal" :in-theory (enable bvxor-1-of-getbit-arg1))))
 
 ;; (theory-invariant (incompatible (:rewrite bvxor-1-of-getbit-arg1) (:rewrite bvxor-1-add-getbit-arg1)))
 
@@ -2609,8 +2609,6 @@
 ;(in-theory (disable MEMBERP-NTH-AND-CDR)) ;bozo
 ;(in-theory (disable LEN-OF-UPDATE-NTH-REWRITE-2)) ;bozo think about this...
 ;(in-theory (disable FIRSTN-OF-ONE-MORE)) ;think about this more...
-
-;(local (in-theory (disable BVPLUS-RECOLLAPSE)))
 
 ;; (defun indu (n start vals)
 ;;   (if (endp vals)
@@ -3264,7 +3262,7 @@
 ;;   (implies (not (endp l))
 ;;            (equal (mv-nth 0 l)
 ;;                   (car l)))
-;;   :hints (("Goal" :in-theory (e/d (mv-nth) ()))))
+;;   :hints (("Goal" :in-theory (enable mv-nth))))
 
 ;stuff from rc6  - file this stuff!
 
@@ -3507,9 +3505,7 @@
 ;;                  (integerp i))
 ;;             (equal (getbit N (ASH i c))
 ;;                    (getbit (- n c) i)))
-;;  :hints (("Goal" :in-theory (e/d (ash logbitp LOGAPP ) ())))))
-
-
+;;  :hints (("Goal" :in-theory (enable ash logbitp LOGAPP))))
 
 
 ;; ;bozo what about associativity?
@@ -3528,11 +3524,6 @@
 
 ;;                 nil)))
 ;;     nil))
-
-
-
-
-
 
 
 ;; (defthm true-listp-of-get-field-contents-of-initialize-2d-array-same-2

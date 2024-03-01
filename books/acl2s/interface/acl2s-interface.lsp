@@ -301,8 +301,8 @@
   (if val (quiet-mode-on) (quiet-mode-off)))
 
 (xdoc::defxdoc-raw acl2s-interface
-  :parents (interfacing-tools)
-  :short "An interface for interacting with ACL2 from Common Lisp."
+  :parents (interfacing-tools  acl2::acl2-sedan)
+  :short "An interface for interacting with ACL2/ACL2s from Common Lisp."
   :long " <p>WARNING: Loading this book by default will result in the
 redefinition of @('comment-window-co'). This is unfortunately the only
 way we found to control comment-window printing. If you would like to

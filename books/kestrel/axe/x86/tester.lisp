@@ -330,7 +330,7 @@
                       (equal (x86isa::mxcsrbits->de$inline (xr ':mxcsr 'nil x86)) 0) ; no denormal result created yet
                       (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
                       (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
-                      (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ;
+                      (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ; invalid operation
                       ;; todo: build this stuff into def-unrolled:
                       ,@register-replacement-assumptions
                       ,@register-type-assumptions
@@ -361,7 +361,6 @@
           ;; remove-rules:
           (append
            '(x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             acl2::bvchop-of-bvshr-becomes-slice
              acl2::bvchop-of-bvashr)
            remove-rules
            remove-lift-rules)
@@ -434,7 +433,6 @@
                                                '(acl2::boolif-x-x-y-becomes-boolor ;drop?
                                                  acl2::boolif-when-quotep-arg2
                                                  acl2::boolif-when-quotep-arg3
-                                                 acl2::bvchop-of-bvshr-becomes-slice
                                                  acl2::bvchop-of-bvashr))))
        ((mv result info-acc
             & ; actual-dag

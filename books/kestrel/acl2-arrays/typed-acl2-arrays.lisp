@@ -1,6 +1,6 @@
 ; Tools for defining predicates that recognize arrays of typed values
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ; Copyright (C) 2019-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -95,7 +95,8 @@
                      (integerp index2))
                 (equal (,checker-fn array-name (aset1 array-name array index2 val) index ,@extra-vars)
                        (,checker-fn array-name array index ,@extra-vars)))
-       :hints (("Goal" :in-theory (enable ,checker-fn))))
+       :hints (("Goal" :induct t ; (,checker-fn array-name array index ,@extra-vars)
+                :in-theory (enable ,checker-fn))))
 
      ;; todo: combine with the one below?
      ;; index2 can be above or below index, as long as the val being written is good
@@ -127,7 +128,8 @@
                      (< index (alen1 array-name array)))
                 (equal (,checker-fn array-name (compress1 array-name array) index ,@extra-vars)
                        (,checker-fn array-name array index ,@extra-vars)))
-       :hints (("Goal" :do-not '(generalize eliminate-destructors)
+       :hints (("Goal"; :do-not '(generalize eliminate-destructors)
+                :induct (,checker-fn array-name array index ,@extra-vars)
                 :in-theory (enable ,checker-fn))))
 
      (defthm ,(pack$ checker-fn '-of-cons-of-cons-of-header)
@@ -406,7 +408,8 @@
                                     (expand-array array-name array header-args index2 current-length)
                                     index
                                     ,@extra-vars))
-                  :hints (("Goal" :in-theory (e/d (,aux-fn expand-array
+                  :hints (("Goal" :induct t
+                           :in-theory (e/d (,aux-fn expand-array
                                                            ;; default
                                                            ;; header
                                                            array1p-of-cons-when-header-and-expanding)

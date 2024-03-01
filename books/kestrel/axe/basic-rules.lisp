@@ -34,24 +34,6 @@
 (defthmd acl2-numberp-of-unary--
   (acl2-numberp (unary-- x)))
 
-;move?
-(defthm if-of-non-nil
-  (implies (not (equal test nil))
-           (equal (if test b c)
-                  b))
-  :rule-classes nil)
-
-;move? ;rename?
-;for axe
-(defthmd if-thm
-  (equal (if (if x x t) y z)
-         y))
-
-;for axe
-(defthmd if-of-if-t-nil
-  (equal (if (if test t nil) foo bar)
-         (if test foo bar)))
-
 (defthmd natp-of-len
   (natp (len x)))
 
@@ -63,9 +45,6 @@
 
 (defthmd acl2-numberp-of--
   (acl2-numberp (- x)))
-
-(defthmd booleanp-of-iff
-  (booleanp (iff x y)))
 
 (defthmd booleanp-of-not
   (booleanp (not x)))
@@ -189,3 +168,10 @@
 ;; :type-prescrpiption rule in centaur/fty/basetypes.lisp.
 (defthmd booleanp-of-bool-fix-rewrite
   (booleanp (bool-fix x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Can help resolve whethere there is an error, when the error is a cons and nil means no error
+(defthmd not-of-cons
+  (equal (not (cons x y))
+         nil))

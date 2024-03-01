@@ -1,7 +1,7 @@
 ; Cherry-pick the definitions of the BV functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 ;; the individual books about each function.
 
 (include-book "slice-def")
+(include-book "bvashr-def")
 (include-book "getbit-def")
 (include-book "bvsx-def")
 (include-book "defs-bitwise")
@@ -35,18 +36,6 @@
 (local (include-book "sbvdiv")) ;; the verifies the guard of sbvdiv
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-
-;perhaps this should be called xshr (for sign-extending shift), but jvm has a function or macro with that name already (get rid of it first!)
-;ffixme this may be wrong if we shift all the way out! consider: (bvashr 32 -1 32)
-(defun bvashr (width x shift-amount)
-  (declare (type (integer 0 *) shift-amount)
-           (type integer x)
-           (type integer width)
-           (xargs :guard (< shift-amount width)  ;what happens if they're equal?
-                  :guard-hints (("Goal" :in-theory (enable bvshr)))))
-  (bvsx width
-        (- width shift-amount)
-        (bvshr width x shift-amount)))
 
 ;divide and round toward 0
 ;fixme what should this do if y is 0?
@@ -172,7 +161,6 @@
       1
     0))
 
-
 ;note that the test is a boolean, not a bit vector
 (defund bvif (size test thenpart elsepart)
   (declare (xargs :guard (and (natp size)
@@ -194,20 +182,6 @@
   (declare (type integer i)
            (type (integer 0 *) size))
   (bvchop size i))
-
-;dup
-;; (defun bool-fix (x)
-;;   (declare (xargs :guard t))
-;;   (and x t))
-
-;Changed this to match the version in the std library.
-;maybe this should not be hyphenated by analogy with nfix, etc.
-(DEFUN BOOL-FIX$INLINE (X)
-  (DECLARE (XARGS :GUARD T))
-  (AND X T))
-
-(DEFMACRO BOOL-FIX (X)
-  (LIST 'BOOL-FIX$INLINE X))
 
 ; a totalized version of sbvdiv, where division by 0 yields 0
 ;logically this is equal to sbvdiv (see theorem sbvdiv-total-becomes-sbvdiv)

@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,9 +19,11 @@
 ;; second approach here for now.
 
 (include-book "support-axe")
-(include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/if-lowering" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
@@ -47,6 +49,7 @@
 (include-book "../prune-dag-approximately")
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
+(include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
@@ -56,6 +59,7 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
+(include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;reduce? for logext-identity
 (include-book "kestrel/arithmetic-light/mod" :dir :system)
@@ -68,10 +72,8 @@
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 
-(acl2::ensure-rules-known (lifter-rules32))
-(acl2::ensure-rules-known (lifter-rules32-new))
-(acl2::ensure-rules-known (lifter-rules64))
-(acl2::ensure-rules-known (lifter-rules64-new))
+(acl2::ensure-rules-known (lifter-rules32-all))
+(acl2::ensure-rules-known (lifter-rules64-all))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 
 ;; move to lifter-support?
@@ -243,7 +245,7 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
-         ;; TODO: Maybe don't prune if the run has completed?
+         ;; TODO: Maybe don't prune if the run has completed (but do simplify in that case)?
          ((mv erp dag-or-quotep state)
           (acl2::maybe-prune-dag-precisely prune ; if a natp, can help prevent explosion.
                                            dag
@@ -265,43 +267,79 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; TODO: If pruning did something, consider doing another rewrite here (pruning may have introduced bvchop or bool-fix$inline).  But perhaps now there are enough rules used in pruning to handle that?
-         (dag-fns (acl2::dag-fns dag)))
-      (if (not (member-eq 'run-until-stack-shorter-than dag-fns)) ;; stop if the run is done
-          (prog2$ (cw "(The run has completed.)~%")
-                  (mv (erp-nil) dag state))
-        (if (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (what if it's on an unreachable branch?)
-            (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
-                    (mv (erp-nil) dag state))
-          (if (acl2::equivalent-dags dag old-dag) ; todo: can we test equivalence up to xor nest normalization?
-              (prog2$ (cw "Note: Stopping the run because nothing changed.~%")
-                      (mv (erp-nil) dag state))
-            (let* ((total-steps (+ steps-for-this-iteration total-steps))
-                   (state ;; Print as a term unless it would be huge:
-                     (if (acl2::print-level-at-least-tp print)
-                         (if (< (acl2::dag-or-quotep-size dag) 1000)
-                             (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
-                                  (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                             (set-print-base-radix print-base state)
-                                           state))
-                                  (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
-                                  (state (set-print-base-radix 10 state)) ;make event sets it to 10
-                                  (- (cw ")~%")))
-                               state)
-                           (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
-                                (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                                           (set-print-base-radix print-base state)
-                                         state))
-                                (- (cw "~X01" dag nil))
-                                (state (set-print-base-radix 10 state))
-                                (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
-                                (- (cw ")~%")))
-                             state))
-                       state)))
-              (repeatedly-run (- steps-left steps-for-this-iteration)
-                              step-increment
-                              dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
-                              total-steps
-                              state))))))))
+         (dag-fns (acl2::dag-fns dag))
+         ;; Stop if we hit an unimplemented instruction (what if it's on an unreachable branch?):
+         ((when (member-eq 'x86isa::x86-step-unimplemented dag-fns))
+          (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
+                  (mv (erp-nil) dag state))) ; todo: return an error?
+         (nothing-changedp (acl2::equivalent-dagsp dag old-dag)) ; todo: can we test equivalence up to xor nest normalization?
+         ((when nothing-changedp)
+          (cw "Note: Stopping the run because nothing changed.~%")
+          (mv (erp-nil) dag state)) ; todo: return an error?
+         (run-completedp (not (member-eq 'run-until-stack-shorter-than dag-fns))) ;; stop if the run is done
+         (- (and run-completedp (cw "(The run has completed.)~%")))
+         )
+      (if run-completedp
+          ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
+          (b* ((- (cw "(Doing final simplification:~%"))
+               ((mv erp dag-or-quote state)
+                (if (eq :legacy rewriter)
+                    (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
+                                    :exhaustivep t
+                                    :rule-alist rule-alist
+                                    :assumptions assumptions
+                                    :monitor rules-to-monitor
+                                    :use-internal-contextsp use-internal-contextsp
+                                    ;; pass print, so we can cause rule hits to be printed:
+                                    :print print ; :brief ;nil
+                                    ;; :print-interval 10000 ;todo: pass in
+                                    :limits limits
+                                    :memoizep memoizep
+                                    :check-inputs nil)
+                  (mv-let (erp result)
+                    (acl2::simplify-dag-x86 dag
+                                            assumptions
+                                            nil ; interpreted-function-alist
+                                            limits
+                                            rule-alist
+                                            t ; count-hints ; todo: think about this
+                                            print
+                                            (acl2::known-booleans (w state))
+                                            rules-to-monitor
+                                            t ; normalize-xors
+                                            memoizep)
+                    (mv erp result state))))
+               (- (cw "Done with final simplification.)~%"))
+               ((when erp) (mv erp nil state)))
+            (mv (erp-nil) dag-or-quote state))
+        ;; Continue the symbolic execution:
+        (let* ((total-steps (+ steps-for-this-iteration total-steps))
+               (state ;; Print as a term unless it would be huge:
+                 (if (acl2::print-level-at-least-tp print)
+                     (if (< (acl2::dag-or-quotep-size dag) 1000)
+                         (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
+                              (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                         (set-print-base-radix print-base state)
+                                       state))
+                              (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
+                              (state (set-print-base-radix 10 state)) ;make event sets it to 10
+                              (- (cw ")~%")))
+                           state)
+                       (b* ((- (cw "(DAG after ~x0 steps:~%" total-steps))
+                            (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+                                       (set-print-base-radix print-base state)
+                                     state))
+                            (- (cw "~X01" dag nil))
+                            (state (set-print-base-radix 10 state))
+                            (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
+                            (- (cw ")~%")))
+                         state))
+                   state)))
+          (repeatedly-run (- steps-left steps-for-this-iteration)
+                          step-increment
+                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
+                          total-steps
+                          state))))))
 
 ;; Returns (mv erp result-dag-or-quotep lifter-rules-used assumption-rules-used state).
 ;; This is also called by the formal unit tester.
@@ -351,6 +389,7 @@
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       (state (acl2::widen-margins state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (acl2::ensure-x86 parsed-executable))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
@@ -442,6 +481,7 @@
          assumption-rule-alist
          rules-to-monitor ; do we want to monitor here?  What if some rules are not incldued?
          nil ; don't memoize (avoids time spent making empty-memoizations)
+         t ; todo: warn just once
          state))
        ((when erp) (mv erp nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
@@ -450,7 +490,12 @@
           (acl2::print-to-hundredths assumption-simp-elapsed)
           (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%"))
-       (- (and print (cw "(Simplified assumptions: ~x0)~%" assumptions)))
+       (- (and print (progn$ (cw "(Simplified assumptions:~%")
+                             (if (acl2::print-level-at-least-tp print)
+                                 (acl2::print-list assumptions)
+                               (print-list-elided assumptions '(program-at ; the program can be huge
+                                                                )))
+                             (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (term-to-simulate '(run-until-return x86))
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
@@ -472,6 +517,7 @@
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil state))
+       (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw " (Lifting took ")
           (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
@@ -534,7 +580,7 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp produce-function)
-                              (booleanp non-executable)
+                              (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
                               (booleanp restrict-theory))
@@ -626,6 +672,12 @@
                 (mv :problem-with-function-body nil))
                ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
                ;;use defun-nx by default because stobj updates are not all let-bound to x86
+               (non-executable (if (eq :auto non-executable)
+                                   (if (member-eq 'x86 fn-formals) ; there may be writes to the stobj (perhaps with unresolved reads around them), so we use defun-nx (todo: do a more precise check)
+                                       ;; (eq :all output) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
+                                       t
+                                     nil)
+                                 non-executable))
                (defun-variant (if non-executable 'defun-nx 'defun))
                (defun `(,defun-variant ,lifted-name (,@fn-formals)
                          (declare (xargs ,@(if (member-eq 'x86 fn-formals)
@@ -695,7 +747,7 @@
                                (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
-                               (non-executable 't)  ;since stobj updates will not be let-bound      ;allow :auto?  only use for :output :all ?
+                               (non-executable ':auto)  ;since stobj updates will not be let-bound
                                (produce-theorem 't) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
                                (prove-theorem 'nil) ;whether to try to prove the theorem with ACL2 (rarely works)
                                (restrict-theory 't)       ;todo: deprecate

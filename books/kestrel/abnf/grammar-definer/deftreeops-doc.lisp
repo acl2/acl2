@@ -185,71 +185,75 @@
        then its branches match the alternation that defines the rule name."))
 
     (xdoc::desc
-     "@('<prefix>-alternatives-when-<rulename>')"
+     "@('<prefix>-concs-when-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that
        if a list of lists of trees matches
        the alternation that defines the rule name
        then the list of lists of trees matches
-       one of the alternatives (each of which is a concatenation)."))
+       one of the concatenations in the alternation.
+       This is a disjunctive theorem,
+       unless the alternation consists of just one concatenation."))
 
     (xdoc::desc
-     "@('<prefix>-alt-equivs-when-<rulename>')"
+     "@('<prefix>-conc-equivs-when-<rulename>')"
      (xdoc::p
-      "For each rule name defined in the grammar by two or more alternatives,
+      "For each rule name defined in the grammar
+       by an alternation of two or more concatenations,
        a theorem stating equivalences between
        (i) the branches (of a tree matching the rule name)
-       matching each alternative that defines the rule name and
+       matching each concatenation and
        (ii) some term over the branches
-       that discriminates among the alternatives;
-       there is an equivalence for each alternative,
+       that discriminates among the concatenations that define the rule name;
+       there is an equivalence for each concatenation,
        and the theorem consists of the conjunction of the equivalences.
+       This theorem is a conjunction of equivalences,
+       one for each concatenation that defines the rule name.
        For now we only generate this theorem
-       when each alternative is
-       a singleton concatenation of
-       a singleton repetition of a rulename element."))
+       when each concatenation is
+       a singleton of a singleton repetition of a rulename element."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-alt?')"
+     "@('<prefix>-<rulename>-conc?')"
      (xdoc::p
-      "For each rule name defined in the garmmar by two or more alternatives,
+      "For each rule name defined in the grammar by
+       an alternation of two or more concatenations,
        a function that, given a tree matching the rule name,
        returns a positive integer
-       indicating the alternative matched by the tree,
-       in the order in which the alternative appears in the grammar,
-       starting from 1 for the first alternative.
+       indicating the concatenation matched by the subtrees,
+       in the order in which the concatenation appears in the alternation,
+       starting from 1 for the first concatenation.
        If a rule name is defined by multiple rules
        (the first one non-incremental, the other ones incremental),
-       the order of the alternatives
+       the order of the concatenations
        indicated by the integer returned by this function
        is lexicographic, based first on the order of the rules
-       and then on the order of the alternatives within each rule.
+       and then on the order of the concatenations within each rule.
        The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
-     "@('<prefix>-match-alt<i>-<rulename>')"
+     "@('<prefix>-match-conc<i>-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar,
-       and for each alternative @('<i>') (starting from 1)
-       that defines the rule name,
+       and for each concatenation @('<i>') (starting from 1)
+       in the alternation that defines the rule name,
        a theorem saying that
-       if a list of lists of trees matches that alternative
-       (which is a concatenation)
+       if a list of lists of trees matches that concatenation
        then the list of lists of trees has the same length as the concatenation
        and each list of trees matches
        the corresponding repetition of the concatenation.
        For now we only generate this theorem
-       when the alternative is a singleton concatenation."))
+       when the concatenation is a singleton."))
 
     (xdoc::desc
-     "@('<prefix>-match-alt<i>-rep<j>-<rulename>')"
+     "@('<prefix>-match-conc<i>-rep<j>-<rulename>')"
      (xdoc::p
       "For each rule name defined in the grammar,
-       for each alternative @('<i>') (starting from 1)
-       that defines the rule name,
+       for each concatenation @('<i>') (starting from 1)
+       in the alternation that defines the rule name,
        and for each repetition @('<j>') (starting from 1)
-       of that alternative,
+       of that concatenation,
        a theorem saying that
        if a list of trees matches that repetition
        then the list of trees has a length
@@ -257,4 +261,5 @@
        and each tree matches
        the element of the repetition.
        For now we only generate this theorem
-       when the repetition has a range of 1.")))))
+       when the repetition has a range of 1,
+       and when the concatenation is a singleton.")))))

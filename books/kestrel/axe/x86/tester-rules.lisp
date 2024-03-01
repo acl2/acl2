@@ -1,6 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
+; Copyright (C) 2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,6 +35,7 @@
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system)) ; reduce?
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -44,34 +46,34 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 
-(acl2::def-constant-opener acl2::bool-fix$inline) ; or build into axe?
+(def-constant-opener bool-fix$inline) ; or build into axe?
 
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
-           (not (sbvlt '64 (acl2::sbvdiv '64 x y) '18446744071562067968)))
-  :hints (("Goal" :in-theory (e/d (acl2::sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
+           (not (sbvlt '64 (sbvdiv '64 x y) '18446744071562067968)))
+  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
 
 (defthm not-sbvlt-of-constant-and-sbvdiv-32-64
   (implies (unsigned-byte-p 31 x)
-           (not (SBVLT '64 '2147483647 (ACL2::SBVDIV '64 x y))))
-  :hints (("Goal" :in-theory (e/d (acl2::sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
+           (not (SBVLT '64 '2147483647 (SBVDIV '64 x y))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
 
 (defthm not-bvlt-of-constant-and-bvdiv-64-128
   (implies (unsigned-byte-p 64 x)
-           (not (BVLT '128 '18446744073709551615 (ACL2::BVDIV '128 x y))))
-  :hints (("Goal" :in-theory (enable ACL2::BVDIV bvlt))))
+           (not (BVLT '128 '18446744073709551615 (bvdiv '128 x y))))
+  :hints (("Goal" :in-theory (enable BVDIV bvlt))))
 
 (defthm not-bvlt-of-constant-and-bvdiv-32-64
   (implies (unsigned-byte-p 32 x)
-           (not (bvlt '64 4294967295 (acl2::bvdiv 64 x y))))
-  :hints (("Goal" :in-theory (enable acl2::bvdiv bvlt))))
+           (not (bvlt '64 4294967295 (bvdiv 64 x y))))
+  :hints (("Goal" :in-theory (enable bvdiv bvlt))))
 
 ;; todo: do we want to see myif or if?
-(defthm rflagsbits->af-of-if
-  (equal (x86isa::rflagsbits->af$inline (if test tp ep))
-         (myif test
-               (x86isa::rflagsbits->af$inline tp)
-               (x86isa::rflagsbits->af$inline ep))))
+;; (defthm rflagsbits->af-of-if
+;;   (equal (x86isa::rflagsbits->af$inline (if test tp ep))
+;;          (myif test
+;;                (x86isa::rflagsbits->af$inline tp)
+;;                (x86isa::rflagsbits->af$inline ep))))
 
 (defthm rflagsbits->af-of-myif
   (equal (x86isa::rflagsbits->af$inline (myif test tp ep))
@@ -159,7 +161,7 @@
 
 ;; (defthm acl2::boolif-of-t-and-nil-when-booleanp
 ;;   (implies (booleanp x)
-;;            (equal (acl2::boolif x t nil)
+;;            (equal (boolif x t nil)
 ;;                   x)))
 
 (defthm boolif-of-bvlt-strengthen-to-equal-gen
@@ -169,10 +171,10 @@
                 (posp k))
            (equal (boolif (bvlt 16 x k) then else)
                   (boolif (equal (bvchop 16 x) (+ -1 k)) then else)))
-  :hints (("Goal" :in-theory (enable acl2::boolor
+  :hints (("Goal" :in-theory (enable boolor
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
-                                     ACL2::BOOLIF
+                                     BOOLIF
                                      ))))
 
 (defthm boolif-of-bvlt-strengthen-to-equal
@@ -182,7 +184,7 @@
                 (posp k))
            (equal (boolif (bvlt 16 x k) t else)
                   (boolif (equal (bvchop 16 x) (+ -1 k)) t else)))
-  :hints (("Goal" :in-theory (enable acl2::boolor boolif
+  :hints (("Goal" :in-theory (enable boolor boolif
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
                                      ))))
@@ -196,20 +198,20 @@
                 (posp k))
            (equal (bvlt 16 x k)
                   (bvlt 16 x (+ -1 k))))
-  :hints (("Goal" :in-theory (enable acl2::boolor
+  :hints (("Goal" :in-theory (enable boolor
                                      bvlt ;todo
                                      acl2::bvchop-of-sum-cases
                                      ))))
 
 (theory-invariant (incompatible (:rewrite bvcat-of-minus-becomes-bvshl)
-                                (:definition acl2::bvshl )))
+                                (:definition bvshl )))
 
 
 ;; (defthm not-equal-of-0-and-bvshl-of-1
 ;;   (implies (and (natp amt)
 ;;                 (< amt 32))
-;;            (not (equal 0 (acl2::bvshl 32 1 amt))))
-;;   :hints (("Goal" :in-theory (e/d (acl2::bvshl)
+;;            (not (equal 0 (bvshl 32 1 amt))))
+;;   :hints (("Goal" :in-theory (e/d (bvshl)
 ;;                                   (bvcat-of-minus-becomes-bvshl)))))
 
 
@@ -217,7 +219,7 @@
 
 ;; or commute the 1 forward first
 ;; or use the fact that 1 is a mask of all 1s
-(defthm logand-of-1-arg2
+(defthm logand-of-1-becomes-getbit-arg2
   (equal (logand x 1)
          (getbit 0 x))
   :hints (("Goal" :cases ((integerp x)))))
@@ -266,9 +268,9 @@
 (defthm bvdiv-tighten-64-32 ;gen
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
-           (equal (ACL2::BVDIV 64 x y)
-                  (ACL2::BVDIV 32 x y)))
-  :hints (("Goal" :in-theory (enable acl2::bvdiv))))
+           (equal (BVDIV 64 x y)
+                  (BVDIV 32 x y)))
+  :hints (("Goal" :in-theory (enable bvdiv))))
 
 (defthm bvmod-tighten-64-32 ;gen
   (implies (and (unsigned-byte-p 32 x)
@@ -291,7 +293,7 @@
                          (quotep k2)))
            (equal (bvuminus '32 (bvif '1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
-  :hints (("Goal" :in-theory (enable acl2::boolif))))
+  :hints (("Goal" :in-theory (enable boolif))))
 
 (defthm of-spec-of-logext-32
   (equal (of-spec32$inline (logext '32 x))
@@ -344,38 +346,9 @@
                   1))
   :hints (("Goal" :in-theory (enable X86ISA::FEATURE-FLAGS))))
 
-(defthm cr0bits->ts-of-bvchop
-  (implies (and (< 3 n)
-                (integerp n))
-           (equal (x86isa::cr0bits->ts (bvchop n x))
-                  (x86isa::cr0bits->ts x)))
-  :hints (("Goal" :in-theory (enable x86isa::cr0bits->ts
-                                     x86isa::cr0bits-fix))))
-
-(defthm cr0bits->em-of-bvchop
-  (implies (and (< 2 n)
-                (integerp n))
-           (equal (x86isa::cr0bits->em (bvchop n x))
-                  (x86isa::cr0bits->em x)))
-  :hints (("Goal" :in-theory (enable x86isa::cr0bits->em
-                                     x86isa::cr0bits-fix))))
-
-(defthm cr4bits->OSFXSR-of-bvchop
-  (implies (and (< 9 n)
-                (integerp n))
-           (equal (x86isa::cr4bits->OSFXSR (bvchop n x))
-                  (x86isa::cr4bits->OSFXSR x)))
-  :hints (("Goal" :in-theory (enable x86isa::cr4bits->OSFXSR
-                                     x86isa::cr4bits-fix))))
-
 ; Only needed for Axe.
 (defthmd integerp-of-part-install-width-low$inline
   (integerp (bitops::part-install-width-low$inline val x width low)))
-
-(defthm 64-bit-modep-of-if
-  (equal (64-bit-modep (if test x86_1 x86_2))
-         (if test (64-bit-modep x86_1)
-           (64-bit-modep x86_2))))
 
 ;; ;todo!
 ;; ;or use a defun-sk to state that all states have the same cpuid
@@ -472,17 +445,11 @@
   (equal (ifix (if test x86 x86_2))
          (if test (ifix x86) (ifix x86_2))))
 
-(defthm get-flag-of-if
-  (equal (get-flag flag (if test x86 x86_2))
-         (if test (get-flag flag x86) (get-flag flag x86_2))))
-
 ;; (defthm feature-flag-of-if
 ;;   (equal (x86isa::feature-flag flag (if test x86 x86_2))
 ;;          (if test (x86isa::feature-flag flag x86) (x86isa::feature-flag flag x86_2))))
 
-(defthm ALIGNMENT-CHECKING-ENABLED-P-of-if
-  (equal (ALIGNMENT-CHECKING-ENABLED-P (if test x86 x86_2))
-         (if test (ALIGNMENT-CHECKING-ENABLED-P x86) (ALIGNMENT-CHECKING-ENABLED-P x86_2))))
+
 
 ;; should not be needed
 (defthm xr-of-!rflags-irrel
@@ -555,67 +522,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: add versions for other sizes
-(defthm mv-nth-1-of-idiv-spec-32
-  (equal (mv-nth 1 (x86isa::idiv-spec-32 dst src))
-         (let ((res (acl2::sbvdiv 64 dst (acl2::bvsx 64 32 src))))
-           (if (sbvlt 64 res -2147483648)
-               0
-             (if (sbvlt 64 2147483647 res)
-                 0
-               (bvchop 32 res)))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-32 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
 
-(defthm mv-nth-0-of-idiv-spec-32
-  (equal (mv-nth 0 (x86isa::idiv-spec-32 dst src))
-         (let ((res (acl2::sbvdiv 64 dst (acl2::bvsx 64 32 src))))
-           (if (sbvlt 64 res -2147483648)
-               (LIST (CONS 'X86ISA::QUOTIENT-INT
-                           (TRUNCATE (LOGEXT 64 DST)
-                                     (LOGEXT 32 SRC)))
-                     (CONS 'X86ISA::REMAINDER-INT
-                           (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
-             (if (sbvlt 64 2147483647 res)
-                 (LIST (CONS 'X86ISA::QUOTIENT-INT
-                             (TRUNCATE (LOGEXT 64 DST)
-                                       (LOGEXT 32 SRC)))
-                       (CONS 'X86ISA::REMAINDER-INT
-                             (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
-               nil))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-32 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
-
-;todo: add versions for other sizes
-(defthm mv-nth-1-of-idiv-spec-64
-  (equal (mv-nth 1 (x86isa::idiv-spec-64 dst src))
-         (let ((res (acl2::sbvdiv 128 dst (acl2::bvsx 128 64 src))))
-           (if (sbvlt 128 res (- (expt 2 63)))
-               0
-             (if (sbvlt 128 (+ -1 (expt 2 63)) res)
-                 0
-               (bvchop 64 res)))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
-
-(defthm mv-nth-0-of-idiv-spec-64
-  (equal (mv-nth 0 (x86isa::idiv-spec-64 dst src))
-         (let ((res (acl2::sbvdiv 128 dst (acl2::bvsx 128 64 src))))
-           (if (sbvlt 128 res (- (expt 2 63)))
-               (LIST (CONS 'X86ISA::QUOTIENT-INT
-                           (TRUNCATE (LOGEXT 128 DST)
-                                     (LOGEXT 64 SRC)))
-                     (CONS 'X86ISA::REMAINDER-INT
-                           (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
-             (if (sbvlt 128 (+ -1 (expt 2 63)) res)
-                 (LIST (CONS 'X86ISA::QUOTIENT-INT
-                             (TRUNCATE (LOGEXT 128 DST)
-                                       (LOGEXT 64 SRC)))
-                       (CONS 'X86ISA::REMAINDER-INT
-                             (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
-               nil))))
-  :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
 
 (DEFthm x86isa::X86-CWD/CDQ/CQO-alt-def
   (equal (x86isa::X86-CWD/CDQ/CQO PROC-MODE START-RIP TEMP-RIP PREFIXES REX-BYTE OPCODE MODR/M SIB x86)
@@ -639,9 +546,9 @@
 ;todo: add sbvdiv to x pkg
 ;todo: gen the 2
 (defthm not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
-  (not (sbvlt 64 (acl2::sbvdiv 64 (bvsx 64 32 x) 2) -2147483648))
+  (not (sbvlt 64 (sbvdiv 64 (bvsx 64 32 x) 2) -2147483648))
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
-           :in-theory (e/d (sbvlt acl2::sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
+           :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
                                   acl2::truncate-becomes-floor-gen
                                   acl2::getbit-of-plus
                                   bvplus
@@ -662,9 +569,9 @@
 ;; Shows that the division can't be too positive
 ;; todo: gen the 2 but watch for the one weird case
 (defthm not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-  (not (sbvlt 64 2147483647 (acl2::sbvdiv 64 (bvsx 64 32 x) 2) ))
+  (not (sbvlt 64 2147483647 (sbvdiv 64 (bvsx 64 32 x) 2) ))
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
-           :in-theory (e/d (sbvlt acl2::sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
+           :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
                                   acl2::truncate-becomes-floor-gen
                                   acl2::getbit-of-plus
                                   bvplus
@@ -677,33 +584,33 @@
   (implies (and (natp amt)
                 (< amt 32))
            (equal (bvcat (+ 32 (- amt)) val amt 0)
-                  (acl2::bvshl 32 val amt)))
-  :hints (("Goal" :in-theory (enable acl2::bvshl))))
+                  (bvshl 32 val amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
 
-(defthm X86ISA::RFLAGSBITS->PF-of-if
-  (equal (X86ISA::RFLAGSBITS->PF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->PF x1) (X86ISA::RFLAGSBITS->PF x2))))
+;; (defthm x86isa::rflagsbits->pf-of-if
+;;   (equal (x86isa::rflagsbits->pf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->pf x1) (x86isa::rflagsbits->pf x2))))
 
-(defthm X86ISA::RFLAGSBITS->CF-of-if
-  (equal (X86ISA::RFLAGSBITS->CF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->CF x1) (X86ISA::RFLAGSBITS->cF x2))))
+;; (defthm x86isa::rflagsbits->cf-of-if
+;;   (equal (x86isa::rflagsbits->cf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->cf x1) (x86isa::rflagsbits->cf x2))))
 
-(defthm X86ISA::RFLAGSBITS->OF-of-if
-  (equal (X86ISA::RFLAGSBITS->OF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->OF x1) (X86ISA::RFLAGSBITS->of x2))))
+;; (defthm x86isa::rflagsbits->of-of-if
+;;   (equal (x86isa::rflagsbits->of (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->of x1) (x86isa::rflagsbits->of x2))))
 
-(defthm X86ISA::RFLAGSBITS->SF-of-if
-  (equal (X86ISA::RFLAGSBITS->SF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->SF x1) (X86ISA::RFLAGSBITS->sf x2))))
+;; (defthm x86isa::rflagsbits->sf-of-if
+;;   (equal (x86isa::rflagsbits->sf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->sf x1) (x86isa::rflagsbits->sf x2))))
 
-(defthm X86ISA::RFLAGSBITS->ZF-of-if
-  (equal (X86ISA::RFLAGSBITS->ZF (if test x1 x2))
-         (if test (X86ISA::RFLAGSBITS->ZF x1) (X86ISA::RFLAGSBITS->zf x2))))
+;; (defthm x86isa::rflagsbits->zf-of-if
+;;   (equal (x86isa::rflagsbits->zf (if test x1 x2))
+;;          (if test (x86isa::rflagsbits->zf x1) (x86isa::rflagsbits->zf x2))))
 
 ;; since we can get better context info from boolif than from boolor?
 (defthmd boolor-becomes-boolif
-  (equal (acl2::boolor x y)
-         (acl2::boolif x t y))
+  (equal (boolor x y)
+         (boolif x t y))
   :hints (("Goal" :in-theory (enable boolif))))
 
 (theory-invariant (incompatible (:rewrite ACL2::BOOLIF-WHEN-QUOTEP-ARG2) (:rewrite boolor-becomes-boolif)))
@@ -828,17 +735,13 @@
                     else)))
   :hints (("Goal" :in-theory (disable))))
 
-(defthm if-of-set-flag-and-set-flag
-  (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))
-         (set-flag flag (if test val1 val2) x86)))
-
 ;todo: why is !rflags remaining in some examples like test_popcount_32_one_bit?
 
 ;move
 (defthm boolif-same-arg1-arg2
   (implies (syntaxp (not (quotep x))) ; avoids loop when x='t, this hyp is supported by Axe
-           (equal (acl2::boolif x x y)
-                  (acl2::boolif x t y)))
+           (equal (boolif x x y)
+                  (boolif x t y)))
   :hints (("Goal" :in-theory (enable boolif))))
 
 ;; (thm
@@ -918,9 +821,9 @@
                 (integerp i1)
                 (integerp i2)
                 )
-           (equal (acl2::BV-ARRAY-READ ELEMENT-SIZE LEN (* i1 i2) DATA)
-                  (acl2::BV-ARRAY-READ ELEMENT-SIZE LEN (bvmult (acl2::CEILING-OF-LG LEN) i1 i2) DATA)))
-  :hints (("Goal" :in-theory (e/d (acl2::BV-ARRAY-READ bvmult)
+           (equal (bv-array-read ELEMENT-SIZE LEN (* i1 i2) DATA)
+                  (bv-array-read ELEMENT-SIZE LEN (bvmult (acl2::CEILING-OF-LG LEN) i1 i2) DATA)))
+  :hints (("Goal" :in-theory (e/d (bv-array-read bvmult)
                                   (ACL2::GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
                                    ACL2::BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))))
 
@@ -930,9 +833,9 @@
                 (integerp i1)
                 (integerp i2)
                 )
-           (equal (acl2::BV-ARRAY-READ ELEMENT-SIZE LEN (+ i1 i2) DATA)
-                  (acl2::BV-ARRAY-READ ELEMENT-SIZE LEN (bvplus (acl2::CEILING-OF-LG LEN) i1 i2) DATA)))
-  :hints (("Goal" :in-theory (e/d (acl2::BV-ARRAY-READ bvplus)
+           (equal (bv-array-read ELEMENT-SIZE LEN (+ i1 i2) DATA)
+                  (bv-array-read ELEMENT-SIZE LEN (bvplus (acl2::CEILING-OF-LG LEN) i1 i2) DATA)))
+  :hints (("Goal" :in-theory (e/d (bv-array-read bvplus)
                                   (ACL2::GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
                                    ACL2::BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))))
 
@@ -997,17 +900,6 @@
            (not (equal (+ k1 (+ index text-offset))
                        (+ k2 (rsp x86)))))
   :hints (("Goal" :in-theory (enable separate))))
-
-;used by the tester
-(defthm acl2::<-of-+-cancel-3-1
-  (equal (< (+ y (+ z x)) x)
-         (< (+ y z) 0)))
-
-(defthm bvminus-of-+-of-1-same
-  (implies (integerp x)
-           (equal (bvminus size x (+ 1 x))
-                  (bvchop size -1)))
-  :hints (("Goal" :in-theory (enable bvminus))))
 
 ;; (thm
 ;;  (implies (and (syntaxp (and (quotep offset1)
@@ -1131,20 +1023,7 @@
 ;;                            distributivity
 ;;                            )))))
 
-(defthmd bvminus-of-+-arg2
-  (implies (and (integerp x1)
-                (integerp x2))
-           (equal (bvminus size (+ x1 x2) y)
-                  (bvminus size (bvplus size x1 x2) y)))
-  :hints (("Goal" :in-theory (enable bvminus bvplus))))
-
-(defthmd bvminus-of-+-arg3
-  (implies (and (integerp y1)
-                (integerp y2))
-           (equal (bvminus size x (+ y1 y2))
-                  (bvminus size x (bvplus size y1 y2))))
-  :hints (("Goal" :in-theory (enable bvminus bvplus))))
-
+;move
 (defthm acl2::bvminus-of-bvplus-and-bvplus-same-2-2
   (equal (bvminus size (bvplus size y1 x) (bvplus size y2 x))
          (bvminus size y1 y2)))

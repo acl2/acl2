@@ -163,9 +163,9 @@
            :in-theory (disable bvchop-of-*-of-bvchop))))
 
 ;for example, we prefer
-;(EQUAL '0 (BVCAT '1 x '7 '0))
+;(EQUAL 0 (BVCAT 1 x 7 0))
 ;to:
-;(EQUAL '0 (LOGEXT '8 (BVCAT '1 x '7 '0)))
+;(EQUAL 0 (LOGEXT 8 (BVCAT 1 x 7 0)))
 ;is this one okay?
 ;disable?
 (defthm add-bvchops-to-equality-of-sbps-5

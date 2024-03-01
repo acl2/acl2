@@ -22,6 +22,7 @@
     (member-equal x '(:rax
                       :eax
                       ;; todo: more
+                      :zmm0 :ymm0 :xmm0
                       ))
        (and (true-listp x) ;; (:register <N>) or (:register-bool <N>)
             (member-eq (first x) '(:register :register-bool))
@@ -60,6 +61,9 @@
          (:rax `(bvchop '64 (rax ,term)))
          (:eax `(bvchop '32 (xr ':rgf '0 ,term))) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
          ;; (:eax (rax ,term))
+         (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
+         (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
+         (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
          (t (er hard 'wrap-in-normal-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
      (if (and (consp output-indicator)
               (eq :register (first output-indicator)))

@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -312,7 +312,8 @@
                           (logext n b))))
   :hints (("Goal" :in-theory (e/d (logext
                                    getbit
-                                   slice)
+                                   slice
+                                   bvand)
                                   ( ;gen LOGAND-OF-LOGAPP and drop?
                                    LOGAPP-OF-0-ARG3
                                    BVCHOP-1-BECOMES-GETBIT
@@ -1807,8 +1808,8 @@
                    (- size lowsize)
                    (bvxor (- size lowsize) (slice (+ -1 size) lowsize x) (bvchop highsize highval)) lowsize
                    (bvxor lowsize (bvchop lowsize x) lowval)))) ;could tighetn the slice?
-  :hints (("Goal" :in-theory (e/d (                              ;bvcat bvxor
-                                   ) ( )))))
+  :hints (("Goal" :in-theory (enable ;bvcat bvxor
+                                   ))))
 
 ;fixme what does repeatbit do if not given a bit??
 
@@ -2857,34 +2858,24 @@
   (implies (and (integerp x)
                 (integerp y)
                 (natp size))
-           (equal (equal (bvmult size x y) (binary-* x y))
-                  (unsigned-byte-p size (binary-* x y))))
+           (equal (equal (bvmult size x y) (* x y))
+                  (unsigned-byte-p size (* x y))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm equal-of-bvmult-and-*-alt
   (implies (and (integerp x)
                 (integerp y)
                 (natp size))
-           (equal (equal (binary-* x y) (bvmult size x y))
-                  (unsigned-byte-p size (binary-* x y))))
+           (equal (equal (* x y) (bvmult size x y))
+                  (unsigned-byte-p size (* x y))))
   :hints (("Goal" :in-theory (enable bvmult))))
-
-;move
-(defthmd bvchop-of-*
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (bvchop size (binary-* x y))
-                  (bvmult size x y)))
-  :hints (("Goal" :in-theory (enable bvmult))))
-
-(theory-invariant (incompatible (:rewrite bvchop-of-*) (:definition bvmult)))
 
 ;gen one of the sizes
 (defthm bvmult-of-expt
   (implies (natp size)
            (equal (bvmult size (expt 2 size) x)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm bvmult-of-expt-alt
   (implies (natp size)
@@ -2949,7 +2940,7 @@
            (equal (bvmod size (bvmult size (expt 2 n) x) (expt 2 n))
                   0))
   :hints (("Goal" :in-theory (e/d (bvmult bvmod)
-                                  (BVCHOP-OF-*
+                                  (
                                    ;BVLT-OF-*-ARG3
                                    ;*-OF-2-BECOMES-BVMULT
                                    ;MOD-BECOMES-BVMOD-BETTER
@@ -3199,7 +3190,7 @@
                 (syntaxp (quotep k)))
            (equal (bvmult 9 8 x)
                   (bvmult 9 8 k)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm unsigned-byte-p-of-floor-25-64
   (implies (natp x)
@@ -3591,7 +3582,7 @@
                 (integerp high))
            (equal (slice high low (bvmult size (expt 2 m) x))
                   (slice (- high m) (- low m) x)))
-  :hints (("Goal" :in-theory (e/d (bvmult SLICE-WHEN-VAL-IS-NOT-AN-INTEGER) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult SLICE-WHEN-VAL-IS-NOT-AN-INTEGER) ()))))
 
 (defthm slice-of-bvmult-of-expt-gen-alt
   (implies (and (<= m low) ;gen?
@@ -3621,9 +3612,6 @@
                   (slice (- high (lg k)) (- low (lg k)) x)))
   :hints (("Goal" :use (:instance slice-of-bvmult-of-expt-gen (m (lg k)))
            :in-theory (e/d (power-of-2p) ( slice-of-bvmult-of-expt-gen)))))
-
-;new:
-(in-theory (disable BVCHOP-OF-*))
 
 ;kill the special purpose versions
 ;rename bvmult-of-expt and use that name for this:
@@ -4151,7 +4139,7 @@
                 )
            (equal (bvmult size x (logext size2 y))
                   (bvmult size x y)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 ;BOZO add to meta.lisp for bvmult and bvplus...??
 (defthm bvmult-of-logext-alt
@@ -4163,7 +4151,7 @@
                 )
            (equal (bvmult size (logext size2 y) x)
                   (bvmult size y x)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 ;BOZO gen
 (defthm bvplus-constant-equal-constant
@@ -4444,7 +4432,7 @@
                 (integerp size2))
            (equal (bvmult size x (logext size2 y))
                   (bvmult size x y)))
-  :hints (("Goal" :in-theory (e/d (bvmult) (bvchop-of-*)))))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
 
 (defthm bvmult-of-logext-gen-arg1
   (implies (and (<= size size2)
@@ -4565,7 +4553,7 @@
   (implies (and (integerp x)
                 (natp highsize)
                 (natp lowsize))
-           (equal (bvcat highsize highval lowsize (unary-- x))
+           (equal (bvcat highsize highval lowsize (- x))
                   (bvcat highsize highval lowsize (bvuminus lowsize x))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
@@ -4573,7 +4561,7 @@
   (implies (and (integerp x)
                 (natp highsize)
                 (natp lowsize))
-           (equal (bvcat highsize (unary-- x) lowsize lowval)
+           (equal (bvcat highsize (- x) lowsize lowval)
                   (bvcat highsize (bvuminus highsize x) lowsize lowval)))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
@@ -4826,7 +4814,7 @@
                 (natp n))
            (equal (BVCHOP n (+ (- (BVCHOP n x)) y))
                   (BVCHOP n (+ (- x) y))))
-  :hints (("Goal" :in-theory (e/d (bvminus) (;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (e/d (bvminus) (;
                                              )))))
 
 (defthm bvchop-sum-minus-bvchop-arg2-of-2
@@ -4897,7 +4885,7 @@
                  (:instance BVCHOP-SUM-SUBST (x z) (free (+ x y)) (y (- y))))
 
            :in-theory (e/d (bvminus )
-                           (;BVPLUS-RECOLLAPSE ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
+                           (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                             )))))
 
 (defthm equal-bvchop-bvchop-move-minus2
@@ -4912,7 +4900,7 @@
                  (:instance BVCHOP-SUM-SUBST (x z) (free (+ x y)) (y (- y))))
 
            :in-theory (e/d (bvminus )
-                           (;BVPLUS-RECOLLAPSE ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
+                           (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                             )))))
 
 ;fixme drop hyps
@@ -4933,7 +4921,7 @@
            :use ((:instance equal-bvchop-bvchop-move-minus (x x) (y k) (z k2))
                  (:instance equal-bvchop-bvchop-move-minus (x k) (y x) (z k2)))
            :in-theory (e/d (bvminus )
-                           (;BVPLUS-RECOLLAPSE
+                           (;
                             BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                                               EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2
                             equal-bvchop-bvchop-move-minus
@@ -4958,7 +4946,7 @@
            :in-theory (e/d (bvminus
                             bvplus
                                     )
-                           (;BVPLUS-RECOLLAPSE ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
+                           (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
 ;                            bvminus
                             equal-bvchop-bvchop-move-minus
                             ;anti-bvplus
@@ -4995,7 +4983,7 @@
            (equal (equal k1 (bvchop n (+ x k2)))
                   (and (unsigned-byte-p n k1)
                        (equal (bvchop n x) (bvchop n (- k1 k2))))))
-  :hints (("Goal" :in-theory (disable ;bvplus-recollapse
+  :hints (("Goal" :in-theory (disable ;
                               ))))
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg2
@@ -5007,7 +4995,7 @@
                 )
            (equal (bvchop size (+ x (- (bvchop size2 y))))
                   (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2))))
 
 ;no hyps about size
@@ -5017,7 +5005,7 @@
                 )
            (equal (bvchop size (+ x (- (bvchop size y))))
                   (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2))))
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg3
@@ -5030,7 +5018,7 @@
                 )
            (equal (bvchop size (+ w x (- (bvchop size2 y))))
                   (bvchop size (+ w x (- y)))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               ))))
 
 ;no hyps on size
@@ -5053,7 +5041,7 @@
                 )
            (equal (bvchop size (+ w x (bvchop size2 y)))
                   (bvchop size (+ w x y))))
-  :hints (("Goal" :in-theory (disable ;BVPLUS-RECOLLAPSE
+  :hints (("Goal" :in-theory (disable ;
                               ))))
 
 ;no hyps on size
@@ -5827,8 +5815,7 @@
                                           bvuminus
                                           bvminus
                                           bvlt)
-                                  (bvplus-of-plus-arg3
-                                   bvlt-of-plus-arg1
+                                  (bvlt-of-plus-arg1
                                    bvlt-of-plus-arg2
                                    bvminus-becomes-bvplus-of-bvuminus
 ;                                   <-of-bvchop-arg1
@@ -6038,7 +6025,6 @@
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
                            (;<-of-bvchop-arg1
-                            bvplus-of-plus-arg3
                             ;;fixme
                             bvminus-becomes-bvplus-of-bvuminus
                             <-of-bvplus-becomes-bvlt-arg1
@@ -6517,7 +6503,7 @@
          (and (equal (getbit 31 x) 0)
               (not (equal 0 (bvchop 31 x)))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
-                                  (;bvplus-recollapse
+                                  (;
                                    )))))
 
 ;; do we need these?
@@ -6876,7 +6862,7 @@
                (- (expt 2 size)
                   pow)))
   :rule-classes ((:linear :trigger-terms ((bvchop size (* pow x)))))
-  :hints (("Goal" :in-theory (enable  bvchop-of-*-when-power-of-2p)
+  :hints (("Goal" :in-theory (enable bvchop-of-*-when-power-of-2p)
            :use (:instance <-of-*-when-power-of-2p
                            (x pow)
                            (y (bvchop (+ size (- (lg pow))) x))

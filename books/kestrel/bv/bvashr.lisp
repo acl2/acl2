@@ -11,24 +11,13 @@
 
 (in-package "ACL2")
 
-(include-book "bvsx")
-(include-book "bvshr")
+(include-book "bvashr-def")
+(local (include-book "bvsx"))
+(local (include-book "bvshr"))
 (local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "repeatbit2"))
-
-;; NOTE: Currently, the shift amount must be less than the width.
-;; TODO: Result may may be wrong if we shift all the way out! consider: (bvashr 32 -1 32)
-(defund bvashr (width x shift-amount)
-  (declare (type (integer 0 *) shift-amount)
-           (type integer x)
-           (type integer width)
-           (xargs :guard (< shift-amount width)) ;what happens if they're equal?
-           )
-  (bvsx width
-        (- width shift-amount)
-        (bvshr width x shift-amount)))
 
 (defthm integerp-of-bvashr
   (integerp (bvashr width x shift-amount)))

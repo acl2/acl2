@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1712,6 +1712,9 @@ ACL2 from scratch.")
 ;                          FP SUPPORT CHECKS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2.
+
 (or (member :ieee-floating-point *features*)
     (let ((x (getenv$-raw "ACL2_FP_OK")))
       (and x
@@ -1747,6 +1750,35 @@ ACL2 from scratch.")
     (error "This Lisp is unsuitable for ACL2, because it failed~%~
             the sanity check that ~s."
            '(equal (float-radix 1.0d0) 2)))
+
+(unless
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2, specifically the section "On overflow and soundness".
+
+    (and
+
+; Check that floating-point overflow produces a double-float (presumably an
+; infinity) or an error, at least in one overflow case.
+
+     (let ((*my-most-positive-double-float*
+            most-positive-double-float))
+
+; The reason we let-bind a special variable here is that otherwise, SBCL
+; issues a style-warning, "Lisp error during constant folding".
+
+       (declare (special *my-most-positive-double-float*))
+       (typep (handler-case
+               (* *my-most-positive-double-float*
+                  *my-most-positive-double-float*)
+               (error () 0.0d0))
+              'double-float))
+     #+sbcl
+     (member :overflow
+             (cadr (member :traps
+                           (sb-int:get-floating-point-modes)))))
+  (error "This Lisp is unsuitable for ACL2, because it failed ~%a check that ~
+          floating-point overflow causes an error."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           ACL2-READTABLE

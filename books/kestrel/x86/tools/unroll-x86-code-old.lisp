@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (not based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -183,7 +183,7 @@
                  state)))
 
 ;needed after some x86 model changes:
-(in-theory (enable acl2::bvplus-recollapse))
+(in-theory (enable acl2::bvchop-of-+-becomes-bvplus))
 
 (defthm bvchop-of-if
   (equal (bvchop n (if test tp ep))
@@ -191,13 +191,13 @@
              (bvchop n tp)
            (bvchop n ep))))
 
-(in-theory (enable x86isa::rflagsbits->ac$inline-constant-opener
-                   x86isa::rflagsbits->af$inline-constant-opener
-                   x86isa::rflagsbits->cf$inline-constant-opener
-                   x86isa::rflagsbits->of$inline-constant-opener
-                   x86isa::rflagsbits->pf$inline-constant-opener
-                   x86isa::rflagsbits->sf$inline-constant-opener
-                   x86isa::rflagsbits->zf$inline-constant-opener
+(in-theory (enable ;; x86isa::rflagsbits->ac$inline-constant-opener
+                   ;; x86isa::rflagsbits->af$inline-constant-opener
+                   ;; x86isa::rflagsbits->cf$inline-constant-opener
+                   ;; x86isa::rflagsbits->of$inline-constant-opener
+                   ;; x86isa::rflagsbits->pf$inline-constant-opener
+                   ;; x86isa::rflagsbits->sf$inline-constant-opener
+                   ;; x86isa::rflagsbits->zf$inline-constant-opener
 
                    !rflags-of-!rflagsbits->af
                    !rflags-of-!rflagsbits->cf

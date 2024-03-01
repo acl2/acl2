@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -105,8 +105,7 @@
                                 (concatenate 'string
                                              (subseq s 0 p2)
                                              "E+"
-                                             (subseq s (1+ p2) (length s))))
-                               (t s)))
+                                             (subseq s (1+ p2) (length s))))))
                         (p2 (concatenate 'string
                                          (subseq s 0 p2)
                                          "E"
@@ -237,10 +236,10 @@
 (defmacro defun-df-*1*-from-function-sigs ()
   (cons
    'progn
-   (loop for tuple in *df-function-sigs-exec*
+   (loop with tmp
+         for tuple in *df-function-sigs-exec*
          as fn = (car tuple)
          as args = (cadr tuple)
-         with tmp
          when (setq tmp (cond ((null args) ; df-pi
                                nil)
                               ((null (cdr args))

@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -16249,6 +16249,14 @@
                                (t env-var)))))))))
             (t ; should be an integer value
              (cond
+
+; In ACL2(r), i.e., when #+non-standard-analysis, useless-runes-r/w is nil.
+; Therefore the first COND branch below can be ignored in that case.  We would
+; leave it there unconditionally anyhow, to avoid having an extra readtime
+; conditional, but Allegro CL warns otherwise when building ACL2: "Warning:
+; Type NULL is incompatible for numeric operation."
+
+              #-non-standard-analysis
               ((and (integerp useless-runes-r/w)
                     (not (zerop useless-runes-r/w))
                     (<= -100 useless-runes-r/w)
@@ -18873,10 +18881,11 @@
      (cond ((and (consp field-descriptor)
                  (symbolp (car field-descriptor))
                  (keyword-value-listp (cdr field-descriptor))
-                 (member-equal (length field-descriptor) '(1 3 5 7))
+                 (member-equal (length field-descriptor) '(1 3 5 7 9))
                  (let ((keys (odds field-descriptor)))
                    (and (no-duplicatesp keys)
-                        (subsetp-eq keys '(:type :initially :resizable)))))
+                        (subsetp-eq keys '(:type :element-type :initially
+                                                 :resizable)))))
             (value nil))
            (t (er soft ctx
                   "The field descriptors of a single-threaded object ~
@@ -18892,6 +18901,8 @@
             (type (if (assoc-keyword :type (cdr field-descriptor))
                       (cadr (assoc-keyword :type (cdr field-descriptor)))
                     t))
+            (element-type (cadr (assoc-keyword :element-type
+                                               (cdr field-descriptor))))
             (initp (assoc-keyword :initially (cdr field-descriptor)))
             (init (if initp (cadr initp) nil))
             (resizable (if (assoc-keyword :resizable (cdr field-descriptor))
@@ -18932,16 +18943,28 @@
                       ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
                       illegal."
                      type0 field name))
+                ((and element-type
+                      (not (or (eq element-type t)
+                               (equal element-type etype))))
+                 (er soft ctx
+                     "When the :element-type keyword is specified for a stobj ~
+                      array field, it must be either T or the type specified ~
+                      for the elements of the array by its :type keyword.  ~
+                      The :element-type of ~x0 is thus illegal for :type ~x1."
+                     element-type type))
                 (t
                  (chk-stobj-field-etype etype type field name initp init t
                                         non-memoizable
                                         child-stobj-memoizable-error-string
                                         ctx wrld state)))))))
-        ((assoc-keyword :resizable (cdr field-descriptor))
+        ((or element-type
+             (assoc-keyword :resizable (cdr field-descriptor)))
          (er soft ctx
-             "The :resizable keyword is only legal for array types, hence is ~
-              illegal for the ~x0 field of ~x1."
-             field name))
+             "The ~#0~[:resizable~/:element-type~] keyword is only legal for ~
+              array types, hence is illegal for the ~x1 field of ~x2."
+             (if element-type 1 0)
+             field
+             name))
         ((and (consp type)
               (eq (car type) 'hash-table))
          (cond ((not (and (true-listp type)
@@ -19220,10 +19243,11 @@
    (t
 
 ; An element of field-descriptors (i.e., of ftemps) is either a symbolic field
-; name, field, or else of the form (field :type type :initially val), where
-; either or both of the keyword fields can be omitted.  Val must be an evg,
-; i.e., an unquoted constant like t, nil, 0 or undef (the latter meaning the
-; symbol 'undef).  :Type defaults to the unrestricted type t and :initially
+; name, field, or else of the form (field :type type :element-type element-type
+; :initially val), where any of the keyword fields can be omitted and
+; :element-type is legal only when :type specifies an array.  Val must be an
+; evg, i.e., an unquoted constant like t, nil, 0 or undef (the latter meaning
+; the symbol 'undef).  :Type defaults to the unrestricted type t and :initially
 ; defaults to nil.  Type is either a primitive type, as recognized by
 ; translate-declaration-to-guard-gen, or a stobj name, or else is of the form
 ; (array ptype (n)), where ptype is a primitive type or stobj name and n is an

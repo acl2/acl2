@@ -425,3 +425,128 @@
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: SARX/SHLX/SHRX
+;; ======================================================================
+
+(def-inst x86-sarx/shlx/shrx
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :parents (three-byte-opcodes)
+
+  :short "SARX/SHLX/SHRX: Shift without affecting flags."
+
+  :vex t
+
+  :modr/m t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; The VEX prefix provides an encoding of the REX byte.
+       ;; Since some of the functions in our model depend on the REX byte
+       ;; (e.g. x86-operand-from-modr/m-and-sib-bytes),
+       ;; here we build a REX byte from its encoding in the VEX prefixes.
+       ;; See Figure 2-9 in Intel manual Volume 2 of Dec 2023.
+       ;; Note that the R, X, B bits are encoded negated,
+       ;; while the W is encoded directly (not negated).
+       (vex.w (vex->w vex-prefixes))
+       (vex.r (vex->r vex-prefixes))
+       (vex.x (vex->x vex-prefixes))
+       (vex.b (vex->b vex-prefixes))
+       (rex-byte (+ #x40 ; 40h-4Fh
+                    (if (= vex.w 0) 0 #b1000)
+                    (if (= vex.r 1) 0 #b0100)
+                    (if (= vex.x 1) 0 #b0010)
+                    (if (= vex.b 1) 0 #b0001)))
+
+       ;; The operand size is always 32 in 32-bit mode.
+       ;; In 64-bit mode, it is 32 or 64 based on whether VEX.W is 0 or 1.
+       ((the (integer 4 8) operand-size)
+        (if (and (equal proc-mode #.*64-bit-mode*)
+                 (equal vex.w 1))
+            8
+          4))
+
+       ;; Since the Intel manual does not say anything specific about registers,
+       ;; the registers for the operands must be the general-purpose ones.
+       ;; This is confirmed by looking at some disassembled code.
+
+       ;; The first source operand, i.e. Operand 2 in the Intel manual,
+       ;; is specified in the Mod and R/M bits of the ModR/M byte.
+       ;; This operand is the value to be shifted.
+       ;; We ignore the increment-rip-by result, because it is always 0,
+       ;; since these instructions do not involve immediate operands.
+       ;; We also ignore the returned address of the operand,
+       ;; because the operand is only used as source in these instructions.
+       (inst-ac? t)
+       ((mv flg val-to-shift & & x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               *gpr-access*
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; num-imm-bytes
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; The second source operand, i.e. Operand 3 in the Intel manual,
+       ;; is specified in the vvvv bits of the VEX prefix,
+       ;; in negated (one's complement) form;
+       ;; see Figure 2-9 of the Intel manual Volume 2 of Dec 2023.
+       ;; This operand is the count by which
+       ;; the other source operand must be shifted.
+       ;; Based on the operand size,
+       ;; the count is masked to keep the low 5 or 6 bits,
+       ;; as specified in the pseudocode of the Intel manual
+       ;; for these instructions.
+       (cnt-reg (loghead 4 (lognot (vex->vvvv vex-prefixes))))
+       (cnt-to-shift (rgfi-size operand-size
+                                cnt-reg
+                                rex-byte
+                                x86))
+       (cnt-mask (if (= operand-size 4) #x1f #x3f))
+       (cnt-to-shift (logand cnt-to-shift cnt-mask))
+
+       ;; We calculate the result of the shift,
+       ;; based on the pp bits in the VEX prefixes,
+       ;; which provide an opcode extension
+       ;; to select one of the three instructions.
+       ;; See Figure 2-9 of Intel manual Volume 2 of Dec 2023.
+       (result (case (vex->pp vex-prefixes)
+                 (#b01 (shlx-spec operand-size val-to-shift cnt-to-shift)) ; 66
+                 (#b10 (sarx-spec operand-size val-to-shift cnt-to-shift)) ; F2
+                 (#b11 (shrx-spec operand-size val-to-shift cnt-to-shift)) ; F3
+                 (otherwise 0))) ; cannot happen
+
+       ;; The destination operand, i.e. Operand 1 in the Intel manual,
+       ;; is specified in the Reg/Opcode bits of the ModR/M byte,
+       ;; where in this case those bits specify a register
+       ;; (not an opcode extension).
+       ;; So we store the result into that register.
+       (x86 (!rgfi-size operand-size
+                        (reg-index reg rex-byte #.*r*)
+                        result
+                        rex-byte
+                        x86))
+
+       ;; Update the program counter.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (enable shlx-spec sarx-spec shrx-spec))))
+
+;; ======================================================================

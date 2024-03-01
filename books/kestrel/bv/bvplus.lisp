@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bvchop")
 (include-book "getbit")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "unsigned-byte-p"))
 
@@ -38,11 +39,19 @@
            :use ((:instance bvplus-associative)
                  (:instance bvplus-associative (x y) (y x))))))
 
+;; not needed if we are commuting more generally
 (defthmd bvplus-commute-constant
   (implies (syntaxp (and (quotep k)
                          (not (quotep x))))
            (equal (bvplus size x k)
                   (bvplus size k x))))
+
+;; not needed if we are commuting more generally
+(defthmd bvplus-commute-constant2
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvplus size x (bvplus size k y))
+                  (bvplus size k (bvplus size x y)))))
 
 ;; The (bvplus size x y) in the conclusion gets computed.
 (defthm bvplus-combine-constants
@@ -364,26 +373,6 @@
 (defthm bvplus-not-negative
   (not (< (bvplus size x y) 0)))
 
-(defthmd bvplus-of-plus
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
-           (equal (bvplus 32 x (+ y z))
-                  (bvplus 32 x (bvplus 32 y z))))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-(defthmd bvplus-of-plus2
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
-           (equal (bvplus 32 (+ y z) x)
-                  (bvplus 32 (bvplus 32 y z) x)))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-;fixme kill these?
-(theory-invariant (incompatible (:rewrite bvplus-of-plus) (:definition bvplus)))
-(theory-invariant (incompatible (:rewrite bvplus-of-plus2) (:definition bvplus)))
-
 (defthmd bvplus-of-plus-arg3
   (implies (and (integerp y)
                 (integerp z))
@@ -398,8 +387,8 @@
                   (bvplus size (bvplus size y z) x)))
   :hints (("Goal" :use (:instance bvplus-of-plus-arg3))))
 
-(theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG3) (:definition bvplus)))
-(theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG2) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite bvplus-of-plus-arg3) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite bvplus-of-plus-arg2) (:definition bvplus)))
 
 (defthm bvplus-trim-leading-constant
   (implies (and (syntaxp (and (quotep k)
@@ -412,15 +401,14 @@
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
 
-;rename
-(defthmd bvplus-recollapse
+(defthmd bvchop-of-+-becomes-bvplus
   (implies (and (integerp x) ;these are new, since bvplus ifixes its args
                 (integerp y))
            (equal (bvchop size (+ x y))
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(theory-invariant (incompatible (:definition bvplus) (:rewrite bvplus-recollapse)))
+(theory-invariant (incompatible (:definition bvplus) (:rewrite bvchop-of-+-becomes-bvplus)))
 
 
 ;todo: instead, introduce bvminus
@@ -440,3 +428,20 @@
            (equal (bvplus size x (expt 2 size))
                   (bvchop size x)))
   :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-subst-smaller-term-arg2
+  (implies (and (equal (bvchop n y) (bvchop n free))
+                (syntaxp (smaller-termp free y)))
+           (equal (bvplus n x y)
+                  (bvplus n x free)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-subst-smaller-term-arg1
+  (implies (and (equal (bvchop n x) (bvchop n free))
+                (syntaxp (smaller-termp free x)))
+           (equal (bvplus n x y)
+                  (bvplus n free y)))
+  :hints (("Goal" :use (:instance bvplus-subst-smaller-term-arg2
+                                  (x y)
+                                  (y x))
+           :in-theory (disable bvplus-subst-smaller-term-arg2))))

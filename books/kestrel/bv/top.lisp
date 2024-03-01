@@ -119,6 +119,7 @@
 ;; Shift operations:
 (include-book "bvshl")
 (include-book "bvshr")
+(include-book "bvashr-def")
 (include-book "bvashr")
 
 ;; Counting one bits:
@@ -177,6 +178,7 @@
 (include-book "if-becomes-bvif-rules")
 
 (include-book "intro")
+(include-book "bitops")
 
 (include-book "validation-stp")
 (include-book "validation-smt-lib")

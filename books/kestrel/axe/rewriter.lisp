@@ -415,12 +415,14 @@
                                        (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1 (work-hardp: ~x2, work-hard-when-instructedp: ~x3).~%" hyp rule-symbol work-hardp work-hard-when-instructedp)
                                                (cw "Reason: Rewrote to:~%")
                                                (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
-                                               (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
+                                               ;; These can be very big (elide big ones?):
+                                               ;; (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
                                                ;;print these better?:
-                                               (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
-                                               (cw "(DAG:~%")
-                                               (print-array2 'dag-array dag-array dag-len)
-                                               (cw "))~%")))
+                                               ;; (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
+                                               ;; (cw "(DAG:~%")
+                                               ;; (print-array2 'dag-array dag-array dag-len)
+                                               ;; (cw ")")
+                                               (cw ")~%")))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))))))))))))))
 
  ;;returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
@@ -1414,7 +1416,7 @@
         (mv erp nil nil state)
       (if (quotep result-dag)
           (mv (erp-nil) result-dag limits state)
-        (if (equivalent-dags dag result-dag) ; nothing changed (except perhaps node numbering)
+        (if (equivalent-dagsp dag result-dag) ; nothing changed (except perhaps node numbering)
             (mv (erp-nil) dag limits state)
           (progn$ (cw "(Something changed, so continue.)~%")
                   ;; (print-list result-dag) ; consider printing here if in verbose mode
@@ -1514,7 +1516,7 @@
             (if (quotep simplified-dag)
                 (mv (erp-nil) simplified-dag limits state)
               ;; normalizing xors did nothing, so we are done (we already rewrote until stable, so doing it again won't help)
-              (if (equivalent-dags simplified-dag normalized-dag)
+              (if (equivalent-dagsp simplified-dag normalized-dag)
                   (mv (erp-nil) normalized-dag limits state)
                 (normalize-xors-and-simplify-until-stable
                  simplified-dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print
@@ -1581,7 +1583,8 @@
                                     normalize-xors
                                     refined-assumption-alist ;mentions nodenums in the context-array
                                     equality-assumption-alist ; use the context array for this?
-                                    print-interval print
+                                    print-interval
+                                    warn-missingp print ; whether to warn about missing monitored rules
                                     priorities ;ignored for rule-alists
                                     interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                     rule-set-number total-rule-set-count
@@ -1600,6 +1603,7 @@
                               (non-false-contextp context)
                               (acl2-numberp rule-set-number)
                               (alistp priorities)
+                              (booleanp warn-missingp)
                               (booleanp exhaustivep)
                               (rule-limitsp limits)
                               (dag-constant-alistp context-dag-constant-alist)
@@ -1624,7 +1628,7 @@
                 (prog2$ (er hard? 'simplify-with-rule-sets-aux "Unknown tag!  tagged-rule-set: ~x0" tagged-rule-set)
                         (mv :unknown-tag nil))))))
          ((when erp) (mv erp nil nil state))
-         (- (print-missing-rules monitored-symbols rule-alist)) ;todo: think about where to put this printing
+         (- (and warn-missingp (print-missing-rules monitored-symbols rule-alist))) ;todo: think about where to put this printing
          ;; Apply the first rule set:
          ((mv erp dag-or-quotep limits state)
           (simplify-and-normalize-xors-until-stable dag
@@ -1641,7 +1645,7 @@
       ;; Apply the rest of the rule sets:
       (simplify-with-rule-sets-aux dag-or-quotep
                                    (rest tagged-rule-sets)
-                                   slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval print priorities
+                                   slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval warn-missingp print priorities
                                    interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                    (+ 1 rule-set-number) total-rule-set-count
                                     context context-array-name context-array context-array-len context-parent-array-name context-parent-array
@@ -1660,6 +1664,7 @@
                                 normalize-xors
                                 assumptions ;terms to be assumed non-nil (probably share most vars with the dag but may contain new vars?) - merge the handling of this with the context-array?
                                 print-interval
+                                warn-missingp
                                 print
                                 priorities ;the priorities to use, or :default, ignored for rule-alists ;todo: drop this arg?
                                 interpreted-function-alist
@@ -1749,7 +1754,7 @@
               & ;limits
               state)
           (simplify-with-rule-sets-aux dag-or-quotep
-                                       tagged-rule-sets slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval print priorities
+                                       tagged-rule-sets slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval warn-missingp print priorities
                                        interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                        1 ;;rule-set-number; starts at 1 (saying rule set "0 of 3" looked odd)
                                        (len tagged-rule-sets)
@@ -1780,6 +1785,7 @@
                     normalize-xors
                     assumptions
                     print-interval
+                    warn-missingp
                     print
                     interpreted-function-alist
                     monitored-symbols
@@ -1847,6 +1853,7 @@
                              normalize-xors
                              assumptions
                              print-interval
+                             warn-missingp
                              print
                              :default
                              interpreted-function-alist
@@ -1874,6 +1881,7 @@
                     (normalize-xors 't)
                     (assumptions 'nil)
                     (print-interval 'nil)
+                    (warn-missingp 't)
                     (print 'nil)
                     (interpreted-function-alist 'nil)
                     (monitor 'nil)
@@ -1898,6 +1906,7 @@
                 ,normalize-xors
                 ,assumptions
                 ,print-interval
+                ,warn-missingp
                 ,print
                 ,interpreted-function-alist
                 ,monitor
@@ -1928,6 +1937,7 @@
                      normalize-xors
                      assumptions
                      print-interval
+                     warn-missingp
                      print
                      interpreted-function-alist
                      monitored-symbols
@@ -2000,6 +2010,7 @@
                              normalize-xors
                              assumptions
                              print-interval
+                             warn-missingp
                              print
                              :default
                              interpreted-function-alist
@@ -2031,6 +2042,7 @@
                      (normalize-xors 't)
                      (assumptions 'nil)
                      (print-interval 'nil)
+                     (warn-missingp 't)
                      (print 'nil)
                      (interpreted-function-alist 'nil)
                      (monitor 'nil)
@@ -2051,7 +2063,7 @@
                  ,rules
                  ,rule-alist
                  ,rule-alists
-                 ,slack-amount ,normalize-xors ,assumptions ,print-interval ,print
+                 ,slack-amount ,normalize-xors ,assumptions ,print-interval ,warn-missingp ,print
                  ,interpreted-function-alist
                  ,monitor
                  ,remove-duplicate-rulesp
@@ -2190,6 +2202,7 @@
                             rule-alist
                             monitored-rules
                             memoizep
+                            warn-missingp
                             againp
                             state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
@@ -2197,6 +2210,7 @@
                               (rule-alistp rule-alist)
                               (symbol-listp monitored-rules)
                               (booleanp memoizep)
+                              (booleanp warn-missingp)
                               (booleanp againp))
                   :stobjs state
                   :mode :program))
@@ -2210,49 +2224,55 @@
                      :assumptions (append (rest terms) done-terms) ; note that we don't use the term to simplify itself!
                      :monitor monitored-rules
                      :memoizep memoizep
+                     :warn-missingp warn-missingp
                      :check-inputs nil))
          ((when erp) (mv erp nil nil state))
          (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
       (if (equal result-term term) ;; no change:
-          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules memoizep againp state)
+          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules memoizep warn-missingp againp state)
         (if (equal *t* result-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it:
-            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules memoizep againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
+            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules memoizep warn-missingp againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
           (let ((conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules memoizep t state)))))))
+            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules memoizep warn-missingp t state)))))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules memoizep state)
+(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules memoizep warn-missingp state)
   (declare (xargs :guard (and (natp passes-left)
                               (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
                               (symbol-listp monitored-rules)
-                              (booleanp memoizep))
+                              (booleanp memoizep)
+                              (booleanp warn-missingp))
                   :stobjs state
                   :mode :program))
   (if (zp passes-left)
       (prog2$ (cw "NOTE: Limit reached when simplifying terms repeatedly.~%")
               (mv (erp-nil) terms state))
     (b* (((mv erp new-terms againp state)
-          (simplify-terms-once terms nil rule-alist monitored-rules memoizep nil state))
+          (simplify-terms-once terms nil rule-alist monitored-rules memoizep warn-missingp nil state))
          ((when erp) (mv erp nil state)))
       (if againp
-          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules memoizep state)
+          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules memoizep warn-missingp state)
         (mv (erp-nil) new-terms state)))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly (terms rule-alist monitored-rules memoizep state)
+(defun simplify-terms-repeatedly (terms rule-alist monitored-rules memoizep warn-missingp state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
                               (symbol-listp monitored-rules)
-                              (booleanp memoizep))
+                              (booleanp memoizep)
+                              (booleanp warn-missingp))
                   :stobjs state
                   :mode :program))
-  (let ((len (len terms)))
-    ;; We add 1 so that if len=1 we get at least 2 passes:
-    (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules memoizep state)))
+  (prog2$ (and warn-missingp (print-missing-rules monitored-rules rule-alist)) ; do this just once, here
+          (let ((len (len terms)))
+            ;; We add 1 so that if len=1 we get at least 2 passes:
+            (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules memoizep
+                                           nil ; don't warn again about missing monitored rules
+                                           state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2276,6 +2296,7 @@
                           normalize-xors
                           assumptions
                           print-interval
+                          warn-missingp
                           print
                           interpreted-function-alist
                           monitored-symbols
@@ -2328,6 +2349,7 @@
                              normalize-xors
                              assumptions
                              print-interval
+                             warn-missingp
                              print
                              :default
                              interpreted-function-alist
@@ -2357,6 +2379,7 @@
                           (normalize-xors 'nil)
                           (assumptions 'nil)
                           (print-interval 'nil)
+                          (warn-missingp 't)
                           (print 'nil)
                           (interpreted-function-alist 'nil)
                           (monitor 'nil)
@@ -2380,6 +2403,7 @@
                       ,normalize-xors
                       ,assumptions
                       ,print-interval
+                      ,warn-missingp
                       ,print
                       ,interpreted-function-alist
                       ,monitor
@@ -2412,6 +2436,7 @@
                                             normalize-xors
                                             assumptions
                                             print-interval
+                                            warn-missingp
                                             print
                                             interpreted-function-alist
                                             monitored-symbols
@@ -2440,6 +2465,7 @@
                        normalize-xors
                        assumptions
                        print-interval
+                       warn-missingp
                        print
                        interpreted-function-alist
                        monitored-symbols
@@ -2469,6 +2495,7 @@
                                             (normalize-xors 'nil)
                                             (assumptions 'nil)
                                             (print-interval 'nil)
+                                            (warn-missingp 't)
                                             (print 'nil)
                                             (interpreted-function-alist 'nil)
                                             (monitor 'nil)
@@ -2494,6 +2521,7 @@
                                         ,normalize-xors
                                         ,assumptions
                                         ,print-interval
+                                        ,warn-missingp
                                         ,print
                                         ,interpreted-function-alist
                                         ,monitor

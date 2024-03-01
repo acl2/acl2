@@ -1,7 +1,7 @@
 ; Mixed Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -54,7 +54,6 @@
                             ;minus-becomes-bv
                             ;plus-becomes-bvplus-arg1-free
                             ;bvuminus-of-+
-                            bvplus-of-plus-arg3
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
                             <-of-bvplus-becomes-bvlt-arg1
@@ -169,8 +168,8 @@
                 (posp xsize))
            (equal (bvlt size x y)
                   (bvlt (max xsize ysize) x y)))
-  :hints (("Goal" :use (:instance bvlt-tighten-non-dag)
-           :in-theory (disable bvlt-tighten-non-dag))))
+  :hints (("Goal" :use (:instance bvlt-tighten)
+           :in-theory (disable bvlt-tighten))))
 
 (defthmd <-becomes-bvlt-dag-gen
   (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
@@ -350,7 +349,7 @@
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bvlt
                                                           ;unsigned-byte-p
                                                           )
-                                  (bvlt-tighten-non-dag
+                                  (bvlt-tighten
                                    UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 
@@ -375,7 +374,7 @@
                                                    )
                            (<-of-bvchop-and-bvchop-same
                             BVCHOP-WHEN-<-TIGHTEN
-                            bvlt-tighten-non-dag
+                            bvlt-tighten
                             UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 (defthmd bvmult-tighten-dag-power-of-2
@@ -711,25 +710,6 @@
   :hints (("Goal" :use (:instance  bvplus-of-bvplus-of-constant-and-short-expand-helper (k (bvchop 32 k)))))
 ; :hints (("Goal" :in-theory (enable bvlt bvplus bvchop-of-sum-cases UNSIGNED-BYTE-P-FORCED)))
   )
-
-(defthmd *-becomes-bvmult-2
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p ysize y)
-                (unsigned-byte-p-forced xsize x)
-                )
-           (equal (* x y) (bvmult (+ ysize xsize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance *-becomes-bvmult-non-dag (n xsize) (m ysize)))))
-
-(defthmd *-becomes-bvmult-3
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p ysize y)
-                (unsigned-byte-p-forced xsize x)
-                )
-           (equal (* y x) (bvmult (+ ysize xsize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance *-becomes-bvmult-non-dag (n xsize) (m ysize)))))
-
 
 ;fixme use signed comparisons more when values can go negative?!
 (defthmd unsigned-byte-p-of-+-of-minus2

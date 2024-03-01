@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -25,16 +25,19 @@
 ; Essay on Support for Floating-point (double-float, df) Operations in ACL2
 
 ; Much of what we have to say about dfs is in :DOC df.  This Essay assumes
-; familiarity with that :DOC topic and adds implementation-level remarks, more
-; of which may be added in the future.
+; familiarity with that :DOC topic and adds implementation-level remarks.
 
 ; Note: A tags-search for "[^a-z]df[^a-oq-z]" outside doc.lisp will hit "df"
 ; occurrences relevant to support for floating-point operations.
+
+; Section: *1* functions take ACL2 objects
 
 ; A key to evaluation with dfs is that *1* functions never take or return
 ; Common Lisp floats.  This complicates ec-call a bit for raw Lisp calls when
 ; dfs are involved, but that is solved by requiring a :dfs argument in any such
 ; ec-call expression.
+
+; Section: On translation for execution
 
 ; The introduction of dfs after Version_8.5 affected translation for execution,
 ; by enforcing stobj-like syntactic restrictions when expressions may involve
@@ -83,6 +86,183 @@
 ; determine which, translate11-mv-let calls translate11-collecting-known-dfs,
 ; which returns a suitable known-dfs for translation of <body>.  See
 ; translate11-mv-let for details.
+
+; Section: On overflow and soundness
+
+; This section is about a concern raised by Pete Manolios and Eric Smith in a
+; talk on 2/8/2024, which amounts to the question of whether overflow with a df
+; operation could result in a value that violates the axioms, by returning
+; other than a double-float.  In short, we think that the Common Lisp
+; specification guarantees the absence of such a disaster because of the
+; following Key Passage from the Common Lisp Hyperspec.
+
+;   [Key Passage]
+
+;   12.1.4.4 Rule of Float Precision Contagion
+
+;   The result of a numerical function is a float of the largest format among
+;   all the floating-point arguments to the function.
+
+; That passage seems to rule out the possibility that, for example, (* x y)
+; could evaluate to the string "nan" or the symbol 'nan, thus violating the
+; provable theorem (dfp (df* x y)).
+
+; Even without that Key Passage, we find it very unlikely that any Common Lisp
+; implementer would return a non-float upon overflow.  See :DOC
+; generalized-booleans for discussion of an analogous issue, where the CL spec
+; does not tie things down but we pretend that it does.
+
+; The remainder of this Section provides alternate justification for ACL2's
+; assumption that floating-point overflow either causes an error or returns a
+; double-float value, without depending on the Key Passage above.
+
+; (So perhaps the remainder of this Section is unnecessary.  But it provided
+; our initial justification, it contains relevant information, and it provides
+; backup in case there are (unforeseen) challenges to the relevance of the Key
+; Passage.)
+
+; We start with the following quote from HyperSpec Section
+; 12.1.4.3, "Rule of Float Underflow and Overflow"
+; https://www.lispworks.com/documentation/HyperSpec/Body/12_adc.htm).
+
+;   An error of type floating-point-overflow or floating-point-underflow
+;   should be signaled if a floating-point computation causes exponent
+;   overflow or underflow, respectively.
+
+; The notion "should be signaled" is found in Section 1.4.2 of the Hyperspec,
+; "Error Terminology", in particular the quote below.  The key here is that
+; since ACL2 uses optimization setting (SAFETY 0), it presumably runs "unsafe
+; code", so the consequences of overflow are unpredictable.  Thus (* x y) might
+; evaluate to "nan", say, if we have overflow -- at least in principle.
+
+;   An error should be signaled
+; 
+;   This means that an error is signaled in safe code, and an error
+;   might be signaled in unsafe code. Conforming code may rely on the
+;   fact that the error is signaled in safe code. Every implementation
+;   is required to detect the error at least in safe code. When the
+;   error is not signaled, the ``consequences are undefined'' (see
+;   below). For example, ``+ should signal an error of type type-error
+;   if any argument is not of type number.''
+; 
+;   The consequences are undefined
+; 
+;   This means that the consequences are unpredictable. The consequences
+;   may range from harmless to fatal. No conforming code may depend on
+;   the results or effects. Conforming code must treat the consequences
+;   as unpredictable. In places where the words ``must,'' ``must not,''
+;   or ``may not'' are used, then ``the consequences are undefined'' if
+;   the stated requirement is not met and no specific consequence is
+;   explicitly stated. An implementation is permitted to signal an error
+;   in this case.
+; 
+;   For example: ``Once a name has been declared by defconstant to be
+;   constant, any further assignment or binding of that variable has
+;   undefined consequences.''
+
+; The following from the CCL manual Section 4.11, "Floating Point Numbers"
+; (https://ccl.clozure.com/manual/chapter4.11.html) is reasonably explicit that
+; floating-point overflow causes an error (note in particular the second
+; sentence).
+
+;    Floating-point exceptions are generally enabled and detected. By
+;    default, threads start up with overflow, division-by-zero, and
+;    invalid enabled, and the rounding mode is set to nearest. The
+;    functions SET-FPU-MODE and GET-FPU-MODE provide user control over
+;    floating-point behavior.
+
+; The situation seems to be similar for SBCL, though we have not found a
+; documentated guarantee.  SBCL source file src/code/float-trap.lisp led us to
+; produce the following log using ACL2 built on SBCL, after dropping into raw
+; lisp.
+
+; * (sb-int:get-floating-point-modes)
+; (:TRAPS (:OVERFLOW :INVALID :DIVIDE-BY-ZERO) :ROUNDING-MODE :NEAREST
+;  :CURRENT-EXCEPTIONS (:INEXACT) :ACCRUED-EXCEPTIONS (:INEXACT) :FAST-MODE NIL)
+; * 
+
+; Indeed, for SBCL we check at build time that :OVERFLOW is among the :TRAPS.
+
+; So, it looks like both CCL and SBCL produce fp overflow exceptions by
+; default.  Both provide a way to change that, but of course ACL2 wouldn't make
+; such a capability available (without a trust tag).
+
+; We haven't done similar investigations for the other Lisps that can host
+; ACL2.  But we can already imagine that SBCL may cause (* x y) to evaluate to
+; "nan", say, by changing the initial floating-point-modes.  So further
+; investigation won't lock down a guarantee of floating-point overflow errors
+; for all host Lisps (if we didn't have the Key Passage noted above).
+
+; We could address this concern by having ACL2 do one of the following, at
+; least for SBCL and other Lisps that don't have documented guarantees like the
+; one for CCL.
+
+;   - Check at runtime that df+ etc. produce a double-float;
+;   OR
+;   - Change the guards of df+ etc. to check that the arguments won't cause
+;     overflow.
+
+; We are concerned that the former could non-trivially hurt performance, while
+; the latter would take some effort to implement and could cause headaches for
+; users.
+
+; Instead, we arrange for ACL2 to check at build time that (*
+; most-positive-double-float most-positive-double-float) signals an error or
+; returns a double-float (presumably an infinity, as we have seen in LispWorks
+; and Allegro CL).  While that check does not provide an ironclad guarantee, it
+; does provide extra confidence; and anyhow, as noted above, we find it very
+; unlikely that floating-point overflow would ever return a value that violates
+; ACL2 axioms (even if we didn't have the Key Passage shown above).
+
+; By the way, even if overflow errors were somehow defeated, the following logs
+; provide additional evidence that the values returned would still be
+; consistent with the ACL2 axioms.  These logs are with SBCL and CCL as they
+; start up, without an ACL2 build.
+
+; SBCL
+
+;  * double-float-positive-infinity
+;  #.DOUBLE-FLOAT-POSITIVE-INFINITY
+;  * most-positive-double-float
+;  1.7976931348623157d308
+;  * (< most-positive-double-float double-float-positive-infinity)
+;  T
+;  * (type-of double-float-positive-infinity)
+;  DOUBLE-FLOAT
+;  * (rational most-positive-double-float)
+;  179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368
+;  * (rational double-float-positive-infinity)
+;  
+;  debugger invoked on a SIMPLE-ERROR in thread
+;  #<THREAD "main thread" RUNNING {1001D60003}>:
+;    Can't decode NaN or infinity: #.DOUBLE-FLOAT-POSITIVE-INFINITY.
+;  
+;  Type HELP for debugger help, or (SB-EXT:EXIT) to exit from SBCL.
+;  
+;  restarts (invokable by number or by possibly-abbreviated name):
+;    0: [ABORT] Exit debugger, returning to top level.
+;  
+;  (SB-KERNEL:INTEGER-DECODE-DOUBLE-FLOAT #.DOUBLE-FLOAT-POSITIVE-INFINITY)
+;  0] 
+
+; CCL
+
+;  ? ccl::double-float-positive-infinity
+;  1D++0
+;  ? most-positive-double-float
+;  1.7976931348623157D+308
+;  ? (< most-positive-double-float ccl::double-float-positive-infinity)
+;  T
+;  ? (type-of ccl::double-float-positive-infinity)
+;  DOUBLE-FLOAT
+;  ? (rational most-positive-double-float)
+;  179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368
+;  ? (rational ccl::double-float-positive-infinity)
+;  179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216
+;  ? (> (rational ccl::double-float-positive-infinity)
+;       (rational most-positive-double-float))
+;  T
+;  ? 
 
 #-acl2-loop-only
 (declaim (inline

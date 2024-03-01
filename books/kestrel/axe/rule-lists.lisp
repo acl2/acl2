@@ -145,7 +145,7 @@
 
 (defun mv-nth-rules ()
   (declare (xargs :guard t))
-  '(mv-nth-of-cons-alt ; since mv expands to cons
+  '(mv-nth-of-cons-safe ; since mv expands to cons
     mv-nth-of-myif))
 
 (defun base-rules ()
@@ -175,9 +175,11 @@
             myif-same-test2
             myif-same-arg1-arg2-when-booleanp-axe
 
+            ;; todo: compare to the myif rules:
             if-of-t
             if-of-nil
             if-same-branches
+            if-of-t-and-nil-when-booleanp
             not-of-if
 
             fix-when-acl2-numberp
@@ -185,6 +187,8 @@
             acl2-numberp-of-fix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
+            eq ; introduces EQUAL
+            /= ; "not equal"
 
             double-rewrite
             return-last
@@ -509,16 +513,26 @@
     bvashr-of-bvchop ;gen?
     leftrotate32-of-bvchop-arg2
     leftrotate32-of-bvchop-5            ;new ;gen!
+    leftrotate-of-bvchop-arg2
+    leftrotate-of-bvchop-arg3
+    rightrotate-of-bvchop-arg2
+    rightrotate-of-bvchop-arg3
     sbvlt-of-bvchop-arg2
     sbvlt-of-bvchop-arg3
-    bvlt-of-bvchop-arg3-same ;mon jan 30 21:24:38 2017 ; todo: other rule
+    bvlt-of-bvchop-arg2
+    bvlt-of-bvchop-arg3
     bvchop-of-bvchop
     getbit-of-bvchop
     slice-of-bvchop-low-gen
     slice-of-bvchop-too-high
-    ;;todo: bvcat rules
+    bvdiv-of-bvchop-arg2
+    bvdiv-of-bvchop-arg3
+    bvmod-of-bvchop-arg2
+    bvmod-of-bvchop-arg3
+    sbvdiv-of-bvchop-arg2
+    sbvdiv-of-bvchop-arg3
+    ;; todo: sbvmoddown?
     ))
-
 
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
@@ -566,7 +580,7 @@
      ;; rightrotate-open-when-constant-shift-amount ;bozo just go to leftrotate
      bvchop-of-leftrotate32-does-nothing ;drop since we have bvchop-identity-axe?
      leftrotate32-of-leftrotate32
-     leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it)
+     leftrotate-becomes-leftrotate32 ;go to leftrotate32 when possible (since the STP translation supports it) ; warning: loops with defn of leftrotate32
      ;;leftrotate-becomes-leftrotate64
      equal-of-leftrotate32-and-leftrotate32
      equal-of-constant-and-leftrotate32
@@ -753,7 +767,7 @@
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
-     bvchop-of-bvshr-becomes-slice            ;new todo: remove?? with bvshr we can split into cases easily.
+     bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr ; introduces slice
      bvchop-of-bvif
 
@@ -776,6 +790,12 @@
      bvlt-transitive-1-b
      bvlt-transitive-2-a
      bvlt-transitive-2-b
+     bvlt-transitive-3-a
+     bvlt-transitive-3-b
+     bvlt-transitive-4-a
+     bvlt-transitive-4-b
+     bvlt-transitive-5-a
+     bvlt-transitive-5-b
 
      not-equal-max-int-when-<=      ;new, rename
 
@@ -940,8 +960,7 @@
      getbit-of-bitand-all-cases ;covered by the too-high and identity rules if n is a constant
      ;; getbit-of-bvchop-too-high ; covered by getbit-too-high-is-0-bind-free-axe
 
-
-     slice-out-of-order ;trying the real version
+     slice-out-of-order
      slice-too-high-is-0-bind-free-axe
      ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
@@ -1806,7 +1825,7 @@
 ;    bvxor-smaller-term-becomes-cat-arg1 ;yuck? Sat Jan 22 01:06:43 2011
 ;   bvxor-smaller-term-becomes-cat-arg2 ;yuck? Sat Jan 22 01:06:45 2011
 
-            ;; logtail-becomes-slice-dag       ;drop?
+            ;; logtail-becomes-slice-bind-free-axe       ;drop?
 
             bvmult-of-2-gen
 ;trying these:
@@ -1983,7 +2002,7 @@
     bvplus-of-*-arg2
     bvuminus-of-+
     bvplus-of-unary-minus
-    bvplus-recollapse ;rename?
+    bvchop-of-+-becomes-bvplus
     ;move these to type-rules:
     integerp-of-*
     acl2-numberp-of-+
@@ -2011,7 +2030,7 @@
     bvlt-when-bound-dag
 ;    bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
     bvlt-of-max-arg2          ;alt version?
-    bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
+    ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
     bvmod-of-power-of-2
     unsigned-byte-p-of-bvmod-gen ;remove since added to big list
 ;    slice-of-bvmult-of-expt
@@ -2251,7 +2270,7 @@
 ;sbvlt-becomes-bvlt
 ;     sbvlt-becomes-bvlt-better
      bv-array-write-of-0
-     bvplus-of-plus
+     ;bvplus-of-plus
 
      bvlt-when-unsigned-byte-p-better-helper
 ;;     recollapse-hack ;sun mar 28 15:19:01 2010
@@ -2359,11 +2378,6 @@
      equal-of-+-of-unary-minus
      subrange-of-cons
 
-     ;move these?
-     bvmod-of-bvchop-arg2
-     bvmod-of-bvchop-arg3
-     bvdiv-of-bvchop-arg2
-     bvdiv-of-bvchop-arg3
      equal-of-bv-array-write-and-bv-array-write-same
      ;;new stuff:
      ;;fixme: this rule seems bad so try without it (or with a replacement?): add a polarity?
@@ -2654,7 +2668,7 @@
 ;;   (declare (xargs :guard t))
 ;;   '(equal-same
 ;;     nth-of-cons-constant-version
-;;     mv-nth-of-cons-alt))
+;;     mv-nth-of-cons-safe))
 
 (defun reassemble-bv-rules ()
   (declare (xargs :guard t))
@@ -3071,8 +3085,8 @@
              bvxor-subst-arg2
              bvxor-subst-arg3
 
-             bvlt-of-bvchop-arg3
-             bvlt-of-bvchop-arg2
+             ;;bvlt-of-bvchop-arg3
+             ;;bvlt-of-bvchop-arg2
 
              bvcat-subst-constant-arg2
              bvcat-subst-constant-arg4
@@ -3863,7 +3877,7 @@
 (set-axe-rule-priority bitxor-associative -10)
 
 (set-axe-rule-priority nth-of-cons-constant-version -1) ;this hits a lot in some proofs, so let's check it first
-(set-axe-rule-priority mv-nth-of-cons-alt -1)
+(set-axe-rule-priority mv-nth-of-cons-safe -1)
 
 ;bit-blasting should be the last thing we try (otherwise we may try to bit-blast (bvchop 8 <bit-blasted-8-bit-thing>)
 (set-axe-rule-priority bvchop-blast 10)
@@ -3944,6 +3958,23 @@
 (set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe -10)
 (set-axe-rule-priority bv-array-read-of-bv-array-write-diff-safe-gen -10) ;thu mar 25 04:05:09 2010
 (set-axe-rule-priority bv-array-read-of-bv-array-write-same-gen -10)
+
+;; when rotate unrolling is being done, we prefer these rules:
+(set-axe-rule-priority rightrotate-becomes-rightrotate-unroller-strong2 -1)
+(set-axe-rule-priority leftrotate-becomes-leftrotate-unroller-strong2 -1)
+
+;; We try these late, since they involve free vars:
+(set-axe-rule-priority bvlt-transitive-1-a 1)
+(set-axe-rule-priority bvlt-transitive-1-b 1)
+(set-axe-rule-priority bvlt-transitive-2-a 1)
+(set-axe-rule-priority bvlt-transitive-2-b 1)
+(set-axe-rule-priority bvlt-transitive-3-a 1)
+(set-axe-rule-priority bvlt-transitive-3-b 1)
+(set-axe-rule-priority bvlt-transitive-4-a 1)
+(set-axe-rule-priority bvlt-transitive-4-b 1)
+(set-axe-rule-priority bvlt-transitive-5-a 1)
+(set-axe-rule-priority bvlt-transitive-5-b 1)
+
 
 ;; (defconst *super-rules*
 ;;   '(

@@ -711,12 +711,12 @@ the result.</p>"
                 ;; CF is affected, OF is undefined.
                 ;; All other flags are unaffected.
                 (b* ((cf ;; CF = MSB of the result.
-                      (mbe :logic
-                           (part-select result :low 0 :width 1)
-                           :exec
-                           (the (unsigned-byte 1)
-                             (logand 1 (the (unsigned-byte ,size)
-                                         result)))))
+                      (mbe :logic (logbit ,size-1 result)
+                           :exec (logand 1
+                                         (the (unsigned-byte 1)
+                                           (ash (the (unsigned-byte ,size)
+                                                  result)
+                                                ,neg-size-1)))))
                      (output-rflags (the (unsigned-byte 32)
                                       (!rflagsBits->cf cf input-rflags)))
                      (undefined-flags (the (unsigned-byte 32)
@@ -777,7 +777,7 @@ the result.</p>"
   :long "<p>Source: Intel Manual, Volume 2B, Instruction Set
   Reference \(N-Z\).</p>
 
-<p>For the ROR and ROR instructions, the orig- inal value of the CF
+<p>For the ROL and ROR instructions, the original value of the CF
 flag is not a part of the result, but the CF flag receives a copy of
 the bit that was shifted from one end to the other. ... The OF flag is
 defined only for the 1-bit rotates; it is undefined in all other cases

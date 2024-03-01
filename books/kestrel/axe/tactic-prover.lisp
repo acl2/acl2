@@ -38,6 +38,7 @@
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
+(include-book "bv-intro-rules")
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/sbvrem" :dir :system)
@@ -456,15 +457,17 @@
 
 (verify-guards lookup-nodes-in-counterexample)
 
+;move
 ;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
 (defund pre-stp-rules ()
   (declare (xargs :guard t))
   (append
-   '(bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
+   '(;; since we don't translate these shift operations to STP:
+     bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
      bvshr-rewrite-for-constant-shift-amount             ; introduces slice
      bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
-     ;; todo: handle more cases.  a general solution?
-     bvshl-16-cases ; todo: do something similar for rotate ops?
+     ;; todo: handle more cases.  a general solution? ; see the leftrotate-unroller
+     bvshl-16-cases
      bvshl-32-cases
      bvshl-64-cases
      bvshr-16-cases
@@ -473,13 +476,30 @@
      bvashr-16-cases
      bvashr-32-cases
      bvashr-64-cases
-     ;; these are needed to resolve claims about the indiced being in bounds (todo: generalize the rules above):
+     ;; these are needed to resolve claims about the indices being in bounds (todo: generalize the rules above):
      <-lemma-for-known-operators-axe
      <-lemma-for-known-operators-axe-alt
      eql ; introduced by case
      not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
      not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
-     )
+     bvcat-of-0-arg1
+     bvcat-of-0-arg3 ; can arise from unrolling a rotate
+     equal-of-bvuminus-and-constant
+     bvcat-of-bvchop-high
+     bvcat-of-bvchop-low
+     ;; Rules about rotates (since we don't translate most rotates to STP):
+     leftrotate-open-when-constant-shift-amount
+     rightrotate-open-when-constant-shift-amount
+     rightrotate-becomes-rightrotate-unroller-strong2
+     rightrotate-unroller-opener
+     leftrotate-becomes-leftrotate-unroller-strong2
+     leftrotate-unroller-opener
+     ;; Introduce bvif when we can:
+     if-becomes-bvif-1-axe
+     if-becomes-bvif-2-axe
+     if-becomes-bvif-3-axe
+     if-becomes-bvif-4-axe)
+   (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))
 
@@ -618,7 +638,8 @@
               (if (call-of *possible-counterexample* result)
                   (prog2$ (and print (cw "STP returned a possible counterexample.)~%"))
                           (mv *no-change*
-                              result ;; return the counterexample in the info
+                              (append result ;; return the counterexample in the info
+                                      (list :dag dag-array :disjuncts disjunct-nodenums))
                               state))
                 (prog2$ (er hard? 'apply-tactic-stp "Bad result: ~x0." result)
                         (mv *error* nil state))))))))))
@@ -922,6 +943,7 @@
              assumptions rule-alist
              nil ; monitored-rules
              t ; memoizep
+             t ; warn-missingp
              state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))
@@ -1019,7 +1041,7 @@
           (mv (erp-nil)
               (extend-progn defthm `(table prove-with-tactics-table ',whole-form ',defthm))
               state))
-      (progn$ (cw "Failure info: ~x0." info-acc)
+      (progn$ (cw "Failure info: ~X01." info-acc nil)
               (er hard 'prove-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 
@@ -1163,7 +1185,7 @@
           (mv (erp-nil)
               (extend-progn defthm `(table prove-equal-with-tactics-table ',whole-form ',defthm))
               state))
-      (progn$ (cw "Failure info: ~x0." info-acc)
+      (progn$ (cw "Failure info: ~X01." info-acc nil)
               (er hard 'prove-equal-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 

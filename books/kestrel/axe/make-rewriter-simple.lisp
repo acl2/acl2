@@ -48,7 +48,6 @@
 (include-book "supporting-nodes") ; for drop-non-supporters-array
 (include-book "node-replacement-array3")
 (include-book "refined-assumption-alists2")
-(include-book "rewriter-support") ;make local? but may be needed by the generated rewriters
 (include-book "tries")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "rule-limits")
@@ -441,6 +440,7 @@
        (local (include-book "kestrel/arithmetic-light/types" :dir :system))
        (local (include-book "kestrel/utilities/if-rules" :dir :system))
        (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
+       (local (include-book "kestrel/axe/rewriter-support" :dir :system))
 
        (local (in-theory (disable wf-dagp wf-dagp-expander
                                   default-car
@@ -474,7 +474,8 @@
                           pseudo-term-listp-of-cdr-when-pseudo-term-listp-cheap-disabled
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
-                          myquotep-when-dag-exprp-and-quote)))
+                          myquotep-when-dag-exprp-and-quote
+                          rationalp-of-sub-tries)))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)

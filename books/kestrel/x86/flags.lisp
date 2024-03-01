@@ -19,6 +19,9 @@
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
+(local (include-book "kestrel/bv/rules" :dir :system)) ; to tighten a bvcat?
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system))
 
 (set-compile-fns t) ; Matt K. mod for GCL to avoid exhausting storage
 
@@ -244,6 +247,10 @@
                                           x86isa::vif x86isa::vip id x86isa::res5))
   :hints (("Goal" :in-theory (e/d (X86ISA::RFLAGSBITS) (UNSIGNED-BYTE-P logapp)))))
 
+(defthm get-flag-of-if
+  (equal (get-flag flag (if test x86 x86_2))
+         (if test (get-flag flag x86) (get-flag flag x86_2))))
+
 (defthm get-flag-of-xw
   (implies (not (equal fld :rflags))
            (equal (get-flag flag (xw fld index val x86))
@@ -261,16 +268,6 @@
            (equal (set-flag flag val1 (xw fld index val2 x86))
                   (xw fld index val2 (set-flag flag val1 x86))))
   :hints (("Goal" :in-theory (enable set-flag))))
-
-;; (local (include-book "kestrel/bv/logand" :dir :system))
-;; (local (include-book "kestrel/bv/logior" :dir :system))
-;; (defthm logior-combine-constants
-;;   (implies (syntaxp (and (quotep i)
-;;                          (quotep j)))
-;;            (equal (logior i (logior j k))
-;;                   (logior (logior i j) k))))
-
-(local (include-book "bitops"))
 
 (defthm set-flag-of-set-flag-same
   (equal (set-flag flag val1 (set-flag flag val2 x86))
@@ -651,16 +648,6 @@
                   x86-2))
   :hints (("Goal" :in-theory (enable !rflags))))
 
-(defthm app-view-of-set-flag
-  (equal (app-view (set-flag flag val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable set-flag))))
-
-(defthm x86p-of-set-flag
-  (implies (x86p x86)
-           (x86p (set-flag flag val x86)))
-  :hints (("Goal" :in-theory (enable set-flag))))
-
 (defthm xr-rflags-of-set-flag-af
   (equal (xr :rflags nil (set-flag :af val x86))
          (x86isa::!rflagsbits->af$inline val (xr :rflags nil x86)))
@@ -732,10 +719,15 @@
                                      x86isa::!rflagsbits->iopl x86isa::rflagsbits->iopl
                                      x86isa::!rflagsbits->intf x86isa::rflagsbits->intf))))
 
-(defthmd if-of-set-flag-arg2
-  (implies (member-equal flag *flags*)
-           (equal (if test (set-flag flag val x86_1) x86_2) (set-flag flag (if test val (get-flag flag x86_2)) (if test x86_1 x86_2)))) )
 
-(defthmd if-of-set-flag-arg3
-  (implies (member-equal flag *flags*)
-           (equal (if test x86_1 (set-flag flag val x86_2)) (set-flag flag (if test (get-flag flag x86_1) val) (if test x86_1 x86_2)))) )
+
+
+
+(defthm if-of-set-flag-and-set-flag
+  (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))
+         (set-flag flag (if test val1 val2) x86)))
+
+(defthm get-flag-of-!rflags-of-xr
+  (equal (get-flag flag (!rflags (xr ':rflags 'nil x86_1) x86_2))
+         (get-flag flag x86_1))
+  :hints (("Goal" :in-theory (enable !rflags get-flag))))

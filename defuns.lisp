@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -5787,7 +5787,8 @@
            (assumep (or (eq (ld-skip-proofsp state) 'include-book)
                         (eq (ld-skip-proofsp state) 'include-book-with-locals)
                         (eq (ld-skip-proofsp state) 'initialize-acl2)))
-           (old-alist (verify-guards-old-dcl-alist name wrld))
+           (old-alist (and (symbolp name)
+                           (verify-guards-old-dcl-alist name wrld)))
            (guard-simplify (if (and (not guard-simplify-p)
                                     (assoc-eq :guard-simplify old-alist))
                                (cdr (assoc-eq :guard-simplify old-alist))

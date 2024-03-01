@@ -33,6 +33,7 @@
 (defund edx (x86) (declare (xargs :stobjs x86)) (rgfi *rdx* x86))
 (defund esp (x86) (declare (xargs :stobjs x86)) (rgfi *rsp* x86))
 (defund ebp (x86) (declare (xargs :stobjs x86)) (rgfi *rbp* x86))
+;; todo: esi and edi!
 
 ;; Register writers
 (defund set-eax (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rax* val x86))

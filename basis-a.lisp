@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2023, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -7940,8 +7940,7 @@
 (defrec defstobj-field-template
   (((fieldp-name . type) . (init . length-name))
    (accessor-name . updater-name)
-   resize-name
-   resizable
+   (resize-name resizable . element-type)
    . other ; for a hash-table field
    )
   nil)
@@ -8224,6 +8223,10 @@
                      (or (cadr (assoc-keyword :type (cdr field-desc)))
                          t)
                    t))
+           (element-type (if (consp field-desc)
+                             (cadr (assoc-keyword :element-type
+                                                  (cdr field-desc)))
+                           nil))
            (init (if (consp field-desc)
                      (cadr (assoc-keyword :initially (cdr field-desc)))
                    nil))
@@ -8261,6 +8264,7 @@
                   :length-name length-name
                   :resize-name resize-name
                   :resizable resizable
+                  :element-type element-type
                   :other
                   (list boundp-name
                         accessor?-name
@@ -8790,7 +8794,10 @@
 ; having a simple-vector element type declaration.
 
                                   t
-                                etype0)))
+                                (or (access defstobj-field-template
+                                            field-template
+                                            :element-type)
+                                    etype0))))
             (simple-type (and arrayp
                               (simple-array-type array-etype (caddr type))))
             (array-length (and arrayp (car (caddr type))))
@@ -8969,7 +8976,7 @@
 ; with NILs.
 
                                              :initial-element
-                                             ,(if (and (eq array-etype
+                                             ,(if (and (eq etype0
                                                            'double-float)
                                                        (dfp init))
                                                   `(to-df ,init)
@@ -9108,7 +9115,10 @@
 
                                (if stobj-creator
                                    t
-                                 array-etype0)))
+                                 (or (access defstobj-field-template
+                                             field-template
+                                             :element-type)
+                                     array-etype0))))
              (init (access defstobj-field-template field-template :init)))
         (cond
          (arrayp
@@ -9133,7 +9143,7 @@
                                   do
                                   (setf (svref ar i) (,stobj-creator)))
                             ar))))
-                      ((and (eq array-etype 'double-float)
+                      ((and (eq array-etype0 'double-float)
                             (dfp init))
                        `(make-array$ ,array-size
                                      :element-type ',array-etype

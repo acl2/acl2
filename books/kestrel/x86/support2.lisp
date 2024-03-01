@@ -1,7 +1,7 @@
 ; More supporting material for x86 reasoning
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,11 +25,13 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for floor-of-/-arg2
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; todo, for logtail-of-one-more
-(local (include-book "kestrel/bv/arith" :dir :system)) ; todo
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system)) ;prevent calls of expt on huge args
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
@@ -450,8 +452,6 @@
 ;;                                                     ACL2::SLICE-OF-+ ;looped
 ;;                                                     ACL2::BVCAT-OF-+-HIGH
 ;;                                                     )))))
-
-(in-theory (disable acl2::bvplus-recollapse)) ; move
 
 ;; (defthm write-bytes-of-281474976710656
 ;;   (equal (write-bytes 281474976710656 vals x86)

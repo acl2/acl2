@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,7 +23,8 @@
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-weaken
 (include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
 (include-book "kestrel/bv/slice-def" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;for bvashr
+(include-book "kestrel/bv/bvashr-def" :dir :system)
+(include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (local (include-book "kestrel/bv/rules10" :dir :system))
@@ -322,13 +323,13 @@
      x86isa::*VIP*
      x86isa::*ID*))))
 
-(in-theory (disable logcount))
-(in-theory (disable x86isa::WRITE-USER-RFLAGS-AND-XW))
-(in-theory (disable BYTE-LISTP))
-(in-theory (disable x86isa::COMBINE-BYTES))
+(in-theory (disable logcount
+                    x86isa::write-user-rflags-and-xw
+                    byte-listp
+                    x86isa::combine-bytes))
 
 (defthm canonical-address-p-between
-  (implies (and (canonical-address-p low)
+  (implies (and (canonical-address-p low) ; low and high are free vars
                 (canonical-address-p high)
                 (<= low ad)
                 (<= ad high))
@@ -1125,6 +1126,11 @@
   (equal (app-view (if test x86 x86_2))
          (if test (app-view x86) (app-view x86_2))))
 
+(defthm 64-bit-modep-of-if
+  (equal (64-bit-modep (if test x86_1 x86_2))
+         (if test (64-bit-modep x86_1)
+           (64-bit-modep x86_2))))
+
 (defthm program-at-of-if
   (equal (program-at prog-addr bytes (if test x86 x86_2))
          (if test (program-at prog-addr bytes x86) (program-at prog-addr bytes x86_2))))
@@ -1136,3 +1142,7 @@
 (defthm ctri-of-if
   (equal (ctri i (if test x86 x86_2))
          (if test (ctri i x86) (ctri i x86_2))))
+
+(defthm alignment-checking-enabled-p-of-if
+  (equal (alignment-checking-enabled-p (if test x86 x86_2))
+         (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))

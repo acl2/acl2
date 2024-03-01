@@ -64,7 +64,7 @@
     :USE FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-RIGHT-LEMMA)))
 
 ;dup
-;todo: bad rule.  matches (BINARY-* '-1/2 LOW)
+;todo: bad rule.  matches (* '-1/2 LOW)
 ;loops with |(- (* c x))|
 (DEFTHM FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-LEFT
   (EQUAL (* (- X) Y)
@@ -345,12 +345,21 @@
 
 ;should be cheap
 ;complete set of these?!
-(defthm <-of-constant-when-<=-of-free
+;rename
+(defthmd <-of-constant-when-<=-of-free
   (implies (and (syntaxp (quotep k1))
                 (<= x free)
                 (syntaxp (quotep free))
                 (<= free k1))
            (not (< k1 x))))
+
+(defthmd not-<-of-constant-when-<-of-free
+  (implies (and (syntaxp (quotep k))
+                (< x free)
+                (syntaxp (quotep free))
+                (<= free k) ; can do better if things are integers
+                )
+           (not (< k x))))
 
 ;; (defthm <-of-sums-cancel
 ;;   (equal (< x (+ x y))

@@ -1,7 +1,7 @@
 ; More rules about bit vectors
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -49,17 +49,17 @@
            (equal (+ (- y) x)
                   k)))
 
-(defthm getbit-of-ash
-  (implies (and (natp c)
-                (natp i)
-                (natp n))
-           (equal (getbit n (ash i c))
-                  (getbit n (bvcat (+ 1 n (- C)) i c 0))))
-  :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
-                                       BVCHOP-OF-LOGTAIL)
-                                  (BVCHOP-1-BECOMES-GETBIT
-                                   SLICE-BECOMES-GETBIT
-                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+;; (defthm getbit-of-ash
+;;   (implies (and (natp c)
+;;                 (natp i)
+;;                 (natp n))
+;;            (equal (getbit n (ash i c))
+;;                   (getbit n (bvcat (+ 1 n (- C)) i c 0))))
+;;   :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
+;;                                        BVCHOP-OF-LOGTAIL)
+;;                                   (BVCHOP-1-BECOMES-GETBIT
+;;                                    SLICE-BECOMES-GETBIT
+;;                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 ;(in-theory (enable logext-of-sum-trim-constant))
 
@@ -84,20 +84,6 @@
                                    (n n)))
            :in-theory (disable getbit-of-slice))))
 
-;; or got to getbit of bvnot first?
-(defthm getbit-of-lognot
-  (implies (natp m)
-           (equal (getbit m (lognot x))
-                  (bvnot 1 (getbit m x))))
-  :hints (("Goal" :in-theory (e/d (lognot
-                                   getbit
-                                   SLICE-OF-SUM-CASES
-                                   ifix)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
-                                   BITXOR-OF-SLICE-ARG2
-                                   )))))
-
 ;gen the -1
 (defthm ash-of-bvchop-32-and-minus1
   (equal (ash (bvchop '32 x) '-1)
@@ -114,16 +100,7 @@
                                   (slice-becomes-getbit
                                    bvchop-1-becomes-getbit
                                    MOD-OF-EXPT-OF-2)))))
-(defthm logand-becomes-bvand
-  (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-;                (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p size x)
-;               (unsigned-byte-p size y)
-                (natp y)
-                )
-           (equal (logand x y)
-                  (bvand size x y)))
-  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
+
 
 (defthm UNSIGNED-BYTE-P-shift-lemma
   (IMPLIES (AND (natp n)
@@ -202,10 +179,10 @@
                 (integerp k))
            (equal (bvand size k x)
                   (bvcat 1
-                               (getbit (+ -1 (integer-length k))
-                                             x)
-                               (+ -1 (integer-length k))
-                               0))))
+                         (getbit (+ -1 (integer-length k))
+                                 x)
+                         (+ -1 (integer-length k))
+                         0))))
 
 (in-theory (disable bvand-of-expt)) ;bvand-of-expt-constant-version should usually be enough
 
@@ -234,46 +211,6 @@
                                    bvchop-of-logtail-becomes-slice
                                    logtail-of-plus)))))
 
-(defthm bvand-with-mask-basic-gen
-  (implies (and (<= size n)
-                (natp size)
-                (integerp n))
-           (equal (bvand size (+ -1 (expt 2 n)) x)
-                  (bvchop size x)))
-  :hints (("Goal" :in-theory (e/d (;bitops::part-install-width-low
-                                   repeatbit-of-1-arg2
-                                   bvnot-of-0
-                                   bvand)
-                                  ( ;slice-of-bvand
-;                                   bvplus-recollapse ;looped
-;                                   bvcat-of-+-high
-                                   ;exponents-add
- ;                                  bvcat-of-+-low ;looped
-                                   bvand-of-+-arg3      ;looped
-                                   bvand-of-+-arg2
-                                   )))))
-
-(defthm bvand-with-mask-basic-gen-alt
-  (implies (and (<= size n)
-                (natp size)
-                (integerp n))
-           (equal (bvand size x (+ -1 (expt 2 n)))
-                  (bvchop size x)))
-  :hints (("Goal" :use bvand-with-mask-basic-gen
-           :in-theory (disable bvand-with-mask-basic-gen))))
-
-;drop in favor of a general trim rule?
-(defthm bvand-of-bvnot-trim
-  (implies (and (< low size)
-                (integerp size)
-                (natp low))
-           (equal (bvand low x (bvnot size y))
-                  (bvand low x (bvnot low y))))
-  :hints (("Goal" :in-theory (enable bvand))))
-
-;move
-
-
 (defthm ash-becomes-bvcat
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x)) ;only works for constant size?
                 (force (unsigned-byte-p xsize x))
@@ -285,24 +222,6 @@
                                0)))
   :hints (("Goal" :in-theory (enable bvcat ash))))
 
-(defthm ash-of-bvchop-becomes-bvcat
-  (implies (and (natp amt)
-                (natp xsize))
-           (equal (ash (bvchop xsize x) amt)
-                  (bvcat (+ xsize amt)
-                               (bvchop xsize x)
-                               amt
-                               0)))
-  :hints (("Goal" :in-theory (enable bvcat ash))))
-
-(defthm slice-of-lognot
-  (implies (and (natp high) ;drop?
-                (natp low))
-           (equal (slice high low (lognot x))
-                  (slice high low (bvnot (+ 1 high) x))))
-  :hints (("Goal" ;:cases ((natp high))
-           :in-theory (enable bvnot))))
-
 (defthm ash-of-ones
   (implies (and (natp n)
                 (natp low))
@@ -311,27 +230,7 @@
                                low 0)))
   :hints (("Goal" :in-theory (e/d (bvcat ash BVUMINUS BVMINUS)
                                   (;BVPLUS-OF-UNARY-MINUS-ARG2
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   ;BVPLUS-RECOLLAPSE ;looped!
-                                   )))))
-
-;move to intro.lisp?
-(defthmd logand-of-bvchop-becomes-bvand
-  (implies (and (natp width)
-                (natp y)) ;gen
-           (equal (LOGAND y (BVCHOP WIDTH x))
-                  (bvand width y x)))
-  :hints (("Goal" :use (:instance LOGAND-BECOMES-BVAND (size width) (x (BVCHOP WIDTH x)))
-           :in-theory (disable LOGAND-BECOMES-BVAND))))
-
-;move to intro.lisp?
-(defthmd logand-of-bvchop-becomes-bvand-alt
-  (implies (and (natp width)
-                (natp y)) ;gen
-           (equal (LOGAND (BVCHOP WIDTH x) y)
-                  (bvand width y x)))
-  :hints (("Goal" :use (:instance LOGAND-BECOMES-BVAND (size width) (x (BVCHOP WIDTH x)))
-           :in-theory (disable LOGAND-BECOMES-BVAND))))
+                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -458,29 +357,12 @@
 (in-theory (disable getbit-of-logior))
 
 ;move
-(defthm getbit-of-logand-better
-  (equal (getbit n (logand a b))
-         (bvand 1 (getbit n a)
-               (getbit n b)))
-  :hints (("Goal" :in-theory (enable bvand))))
-
-(in-theory (disable getbit-of-logand))
-
-;move
 (defthm getbit-of-bvchop-both
   (implies (and (natp m) ;drop?
                 (natp n))
            (equal (getbit m (bvchop n x))
                   (if (< m n)
                       (getbit m x)
-                    0))))
-
-(defthm getbit-of-logmask
-  (implies (and (natp n)
-                (integerp width))
-           (equal (GETBIT n (LOGMASK WIDTH))
-                  (if (< n width)
-                      1
                     0))))
 
 ;todo: think about this
@@ -522,7 +404,7 @@
                      (- x))
                   (bvchop 32 k)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvlt)
-                                  (;bvplus-recollapse
+                                  (;
                                    )))))
 
 ;In case we don't want to commit to a normal form
@@ -603,14 +485,6 @@
                   (if test
                       (bvchop n k1)
                     (bvchop n k2)))))
-
-(defthm ash-of-negative-becomes-logtail
-  (implies (and (<= amt 0)
-                (integerp amt))
-           (equal (ash x amt)
-                  (logtail (- amt) x)))
-  :hints (("Goal" :in-theory (enable logtail ash))))
-
 
 ;todo: or go to bvplus of bvplus
 (defthm bvplus-of-+-combine-constants

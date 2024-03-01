@@ -1,5 +1,5 @@
 ; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2020, Regents of the University of Texas
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -18256,8 +18256,9 @@
       (trans-er+? cform x
                   ctx
                   "A single-threaded object, namely ~x0, is being used where ~
-                   an ordinary object is expected."
-                  term))
+                   ~#1~[an ordinary object~/a df expression~] is expected."
+                  term
+                  (if (null (car stobjs-out)) 0 1)))
      ((and (car stobjs-out)
            (not (eq (car stobjs-out) :df))
            (not (eq (car stobjs-out) term)))
@@ -22368,9 +22369,9 @@
 ; Warning: Keep this function in sync with the other functions listed in the
 ; Essay on the Wormhole Implementation Nexus in axioms.lisp.
 
-; Here we carve out some code from translate11-call for case where both
-; stobjs-out and stobjs-out2 are conses, so that we can invoke it twice without
-; writing the code twice.  Msg is as described in translate11-lst.
+; Here we carve out some code from translate11-call for the case that both
+; stobjs-out and stobjs-out2 are conses, so that we can invoke it more than
+; once without repeating the code.  Msg is as described in translate11-lst.
 
   (trans-er-let*
 
@@ -22384,26 +22385,16 @@
 ; bogus nil into that middle arg slot during translate11-lst below and then
 ; swap back the untranslated middle arg below.
 
-   ((targs (trans-or
-            (translate11-lst (if (eq fn 'wormhole-eval)
-                                 (list (nth 0 args) *nil* (nth 2 args))
-                               args)
-                             (ilks-per-argument-slot fn wrld)
-                             stobjs-in-call
-                             bindings
-                             known-stobjs known-dfs
-                             msg flet-alist form ctx wrld
-                             state-vars)
+   ((targs
+     (cond
+      ((and (symbolp fn)
+            (stobj-recognizer-p fn wrld))
 
-; Just below, we allow dfp to be applied to a df even though the stobjs-in for
-; dfp is (nil).  This is useful for translating guards for which dfp is applied
-; to a variable declared with (xargs :dfs ...) or with (type double-float ...).
-
-; We also allow a stobj recognizer to be applied to an ordinary object, even
-; when translating for execution (function bodies or top-level loop).  This is
-; an exception to the usual rule, which requires stobj functions to respect
-; their stobjs-in arguments when translating for execution.  We take advantage
-; of this exception in our support for stobj fields of stobjs.  For example,
+; We allow a stobj recognizer to be applied to an ordinary object, even when
+; translating for execution (function bodies or top-level loop).  This is an
+; exception to the usual rule, which requires stobj functions to respect their
+; stobjs-in arguments when translating for execution.  We take advantage of
+; this exception in our support for stobj fields of stobjs.  For example,
 ; consider the following two events.
 
 ;   (defstobj sub1 sub1-fld1)
@@ -22422,23 +22413,59 @@
 ; By allowing sub1p to be applied to an ordinary object, we allow the
 ; definition to be accepted without any (other) special treatment.
 
-            (or (eq fn 'dfp)
-                (stobj-recognizer-p fn wrld))
-            (translate11-lst args
-                             nil ; ilks = '(nil)
-                             (if (eq fn 'dfp)
-                                 '(:df)
-                               '(nil))
-                             bindings
-                             known-stobjs known-dfs
-                             msg flet-alist form ctx wrld
-                             state-vars)
-            (if (eq fn 'dfp)
-                ""
-              (msg "  Observe that while it is permitted to apply ~x0 to an ~
-                    ordinary object, this stobj recognizer must not be ~
-                    applied to the wrong stobj."
-                   fn)))))
+       (cond
+        ((if (eq known-stobjs t)
+             (stobjp (car args) known-stobjs wrld)
+           (member-eq (car args) known-stobjs))
+
+; See the comment above about applying dfp or a stobj recognizer to be applied
+; to an ordinary object.  Translation shoud succeed in this case.
+
+         (mv-let (erp val bindings)
+           (translate11-lst args
+                            (ilks-per-argument-slot fn wrld)
+                            stobjs-in-call
+                            bindings known-stobjs known-dfs
+                            msg flet-alist form ctx wrld state-vars)
+           (cond (erp (trans-er ctx
+                                "~@0  Observe that while it is permitted to ~
+                                 apply ST4$CP to an ordinary object, this ~
+                                 stobj recognizer must not be applied to the ~
+                                 wrong stobj."
+                                val))
+                 (t (trans-value val)))))
+        (t (translate11-lst args
+                            (ilks-per-argument-slot fn wrld)
+                            '(nil)
+                            bindings known-stobjs known-dfs
+                            msg flet-alist form ctx wrld state-vars))))
+      ((eq fn 'dfp)
+
+; We allow dfp to be applied to a df even though the stobjs-in for dfp is
+; (nil).  This is useful for translating guards for which dfp is applied to a
+; variable declared with (xargs :dfs ...) or with (type double-float ...).
+
+       (trans-or
+        (translate11-lst args
+                         (ilks-per-argument-slot fn wrld)
+                         stobjs-in-call ; '(nil)
+                         bindings known-stobjs known-dfs
+                         msg flet-alist form ctx wrld state-vars)
+        t
+        (translate11-lst args
+                         (ilks-per-argument-slot fn wrld)
+                         '(:df)
+                         bindings known-stobjs known-dfs
+                         msg flet-alist form ctx wrld state-vars)
+        ""))
+      (t 
+       (translate11-lst (if (eq fn 'wormhole-eval)
+                            (list (nth 0 args) *nil* (nth 2 args))
+                          args)
+                        (ilks-per-argument-slot fn wrld)
+                        stobjs-in-call
+                        bindings known-stobjs known-dfs
+                        msg flet-alist form ctx wrld state-vars)))))
    (cond
     ((and (not (global-val 'boot-strap-flg wrld))
           (member-eq fn '(wormhole-eval
@@ -22628,7 +22655,7 @@
                (translate-bind stobjs-out-fn
                                (if (consp alist-in-out) ; optimizationa
 
-; Since stobjs-out-fn is a symbol, there alist-in-out represents a one-to-one
+; Since stobjs-out-fn is a symbol, alist-in-out represents a one-to-one
 ; mapping; see stobjs-in-out.  So inverting alist-in-out makes sense.
 
                                    (apply-inverse-symbol-alist alist-in-out
@@ -22651,70 +22678,9 @@
 
       (let ((bindings
              (translate-bind stobjs-out-x stobjs-out-call bindings)))
-        (trans-er-let*
-         ((targs (trans-or
-                  (translate11-lst (if (eq fn 'wormhole-eval)
-                                       (list (nth 0 args) *nil* (nth 2 args))
-                                     args)
-                                   (ilks-per-argument-slot fn wrld)
-                                   stobjs-in-call
-                                   bindings known-stobjs known-dfs
-                                   msg flet-alist form ctx wrld state-vars)
-
-; See the comment above about applying dfp or a stobj recognizer to be applied
-; to an ordinary object.
-
-                  (or (eq fn 'dfp)
-                      (stobj-recognizer-p fn wrld))
-                  (translate11-lst args
-                                   (ilks-per-argument-slot fn wrld)
-                                   (if (eq fn 'dfp)
-                                       '(:df)
-                                     '(nil))
-                                   bindings known-stobjs known-dfs
-                                   msg flet-alist form ctx wrld state-vars)
-                  (if (eq fn 'dfp)
-                      ""
-                    (msg "  Observe that while it is permitted to apply ~x0 ~
-                          to an ordinary object, this stobj recognizer must ~
-                          not be applied to the wrong stobj."
-                         fn)))))
-         (cond
-          ((and (not (global-val 'boot-strap-flg wrld))
-                (member-eq fn '(wormhole-eval
-                                sync-ephemeral-whs-with-persistent-whs
-                                set-persistent-whs-and-ephemeral-whs))
-                (or (not (quotep (car targs)))
-                    (member-eq (unquote (car targs))
-                               *protected-system-wormhole-names*)))
-           (cond
-            ((not (quotep (car targs)))
-             (trans-er ctx
-                       "The first argument of ~x0 must be a quoted wormhole ~
-                        name, thus ~X12 is illegal.~#3~[~/  This call of ~
-                        WORMHOLE-EVAL might have been introduced by the ~
-                        macroexpansion of a call of WORMHOLE on that wormhole ~
-                        name.~]"
-                       fn
-                       (cons fn args)
-                       (evisc-tuple 3 3 nil nil)
-                       (if (eq fn 'wormhole-eval) 1 0)))
-            (t (trans-er ctx
-                         "It is illegal to call ~x0 on ~x1 because that is ~
-                          the name of a protected ACL2 system ~
-                          wormhole.~#2~[~/  This call of WORMHOLE-EVAL might ~
-                          have been introduced by the macroexpansion of a ~
-                          call of WORMHOLE on that wormhole name.~]"
-                         fn
-                         (unquote (car targs))
-                         (if (eq fn 'wormhole-eval) 1 0)))))
-          ((eq fn 'wormhole-eval)
-           (translate11-wormhole-eval (car targs)
-                                      (cadr args)
-                                      (caddr targs)
-                                      bindings flet-alist ctx wrld
-                                      state-vars))
-          (t (trans-value (fcons-term fn targs)))))))
+        (translate11-call-1 form fn args bindings
+                            known-stobjs known-dfs msg flet-alist ctx wrld
+                            state-vars stobjs-in-call)))
      (t ; both stobjs-out-x and stobjs-out-call are symbols
       (let ((bindings
 
@@ -26946,9 +26912,9 @@
                 (cond
                  (user-stobjs-modified-warning
                   (warning$ ctx "User-stobjs-modified"
-                            "A call of the ACL2 evaluator on the term ~x0 has ~
-                            modified the user stobj~#1~[~/s~] ~&1.  See :DOC ~
-                            user-stobjs-modified-warnings."
+                            "A call of the ACL2 evaluator on the term ~x0 may ~
+                             have modified the user stobj~#1~[~/s~] ~&1.  See ~
+                             :DOC user-stobjs-modified-warnings."
                             trans
                             user-stobjs))
                  (t state))))

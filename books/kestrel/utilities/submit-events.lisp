@@ -1,7 +1,7 @@
 ; Utilities for submitting events to ACL2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -97,14 +97,18 @@
                            ;; warning!
                            observation prove proof-builder event history summary proof-tree comment)
                        ;; print must be nil, so inhibit everything:
-                       '(error warning warning! observation prove proof-builder event history summary proof-tree comment))))))
+                       '(error warning warning! observation prove proof-builder event history summary proof-tree comment)))))
+                (inhibited-output-types-to-remove (if (eq print :verbose) '(prove) nil))
+                )
             (mv-let (erp result state)
               ;;this magic incantation comes from :doc with-output:
               ;; These globals get unset after the call of trans-eval-error-triple
               (state-global-let*
                ((inhibit-output-lst
-                 (union-eq (f-get-global 'inhibit-output-lst state)
-                           additional-output-types-to-inhibit))
+                 (set-difference-eq
+                  (union-eq (f-get-global 'inhibit-output-lst state)
+                            additional-output-types-to-inhibit)
+                  inhibited-output-types-to-remove))
                 (inhibit-er-hard (if print nil t)) ; suppress even hard errors
                 (print-clause-ids (if print t nil)) ; compare to what set-gag-mode-fn does
                 (gag-mode (if print nil t)) ; compare to what set-gag-mode-fn does

@@ -327,3 +327,9 @@
            (equal (* 2 (expt 2 (+ -1 n)))
                   (expt 2 n)))
   :hints (("Goal" :in-theory (enable expt))))
+
+(defthm minus-two-expts
+  (implies (posp size)
+           (equal (+ (- (expt 2 (+ -1 size))) (- (expt 2 (+ -1 size))))
+                  (- (expt 2 size))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))

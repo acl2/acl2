@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -46,10 +46,13 @@
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "support-axe")
+;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
+(include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules64" :dir :system)
+(include-book "kestrel/x86/write-over-write-rules" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
@@ -61,6 +64,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
+(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
@@ -71,6 +75,7 @@
 ;(include-book "kestrel/axe/rules2" :dir :system) ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "axe/basic-rules" :dir :kestrel-acl2)
 (include-book "kestrel/bv/arith" :dir :system) ;todo
+(include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 ;(include-book "kestrel/arithmetic-light/mod" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.
@@ -248,19 +253,31 @@
                    segment-pcs loop-headers x86)
                   x86)))
 
-(defthm run-until-exit-segment-or-hit-loop-header-of-myif-split
-  (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (myif test s1 s2))
-         (myif test
-                     (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
-                     (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2)))
-  :hints (("Goal" :in-theory (enable myif))))
+;; (defthm run-until-exit-segment-or-hit-loop-header-of-myif-split
+;;   (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (myif test s1 s2))
+;;          (myif test
+;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
+;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2)))
+;;   :hints (("Goal" :in-theory (enable myif))))
+
+(defthm run-until-exit-segment-or-hit-loop-header-of-if-split
+  (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (if test s1 s2))
+         (if test
+               (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
+               (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
 
 ;this puts in myif...
+;; (defthm run-until-exit-segment-or-hit-loop-header-of-if
+;;   (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (if test s1 s2))
+;;          (myif test
+;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
+;;                (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
+
 (defthm run-until-exit-segment-or-hit-loop-header-of-if
   (equal (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers (if test s1 s2))
-         (myif test
-                     (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
-                     (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
+         (if test
+             (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s1)
+           (run-until-exit-segment-or-hit-loop-header starting-rsp segment-pcs loop-headers s2))))
 
 ;; For the loop lifter
 (defun symbolic-execution-rules-loop ()
@@ -270,7 +287,8 @@
     run-until-exit-segment-or-hit-loop-header-base-case-1
     run-until-exit-segment-or-hit-loop-header-base-case-2
     run-until-exit-segment-or-hit-loop-header-base-case-3
-    run-until-exit-segment-or-hit-loop-header-of-myif-split
+    ;; run-until-exit-segment-or-hit-loop-header-of-myif-split
+    run-until-exit-segment-or-hit-loop-header-of-if-split
     run-until-exit-segment-or-hit-loop-header-of-if))
 
 (acl2::ensure-rules-known (symbolic-execution-rules-loop))
@@ -325,7 +343,7 @@
      x86isa::equal-of-if-constants-alt
      acl2::bool-fix-when-booleanp
      acl2::if-t-nil
-     x86isa::mv-nth-of-if
+     acl2::mv-nth-of-if
      x86isa::canonical-address-p-of-if
      x86isa::+-of-if-arg1
      x86isa::+-of-if-arg2
@@ -359,6 +377,7 @@
      acl2::equal-of-bvplus-constant-and-constant
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
+     xr-of-if
      )
 ;(x86isa::lifter-rules)
    ))
@@ -427,7 +446,7 @@
   (b* (((mv erp dag) (compose-term-and-dag '(xr ':rip 'nil :x86) :x86 state-dag))
        ((when erp) (mv erp nil state)))
     (simp-dag dag
-              :rules (set-difference-eq (append lifter-rules extra-rules) remove-rules)
+              :rules (set-difference-eq (append '(xr-of-if) lifter-rules extra-rules) remove-rules)
               :assumptions assumptions ;need to know that text offset is reasonable
               :monitor '(x86isa::logext-48-does-nothing-when-canonical-address-p)
               :check-inputs nil)))
@@ -567,26 +586,29 @@
                   :mode :program)
            (irrelevant loop-top-rsp-term) ;todo
            )
-  (if (call-of 'myif loop-body-term)
+  (if (or (call-of 'myif loop-body-term)
+          (call-of 'if loop-body-term))
       (b* ((test (farg1 loop-body-term))
            ((mv erp one-rep-term1 exit-term1 exit-test-term1 state)
             (analyze-loop-body-aux (farg2 loop-body-term) loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules assumptions state))
            ((when erp) (mv erp nil nil nil state))
            ((mv erp one-rep-term2 exit-term2 exit-test-term2 state)
             (analyze-loop-body-aux (farg3 loop-body-term) loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules assumptions state))
-           ((when erp) (mv erp nil nil nil state)))
+           ((when erp) (mv erp nil nil nil state))
+           (if-variant (ffn-symb loop-body-term)) ;myif or if
+           )
         (mv (erp-nil)
             (if (eq :none one-rep-term1)
                 one-rep-term2
               (if (eq :none one-rep-term2)
                   one-rep-term1
-                `(myif ,test ,one-rep-term1 ,one-rep-term2)))
+                `(,if-variant ,test ,one-rep-term1 ,one-rep-term2)))
             (if (eq :none exit-term1)
                 exit-term2
               (if (eq :none exit-term2)
                   exit-term1
-                `(myif ,test ,exit-term1 ,exit-term2)))
-            `(myif ,test ,exit-test-term1 ,exit-test-term2) ;gets simplified in the wrapper
+                `(,if-variant ,test ,exit-term1 ,exit-term2)))
+            `(,if-variant ,test ,exit-test-term1 ,exit-test-term2) ;gets simplified in the wrapper
             state))
     ;; loop-body-term should be an x86 state.  Test whether it has exited the loop:
     (b* (((mv erp exitp state)
@@ -602,8 +624,9 @@
             (append (lifter-rules2)
                     lifter-rules
                     extra-rules
-                    (myif-rules)
-                    '(x86isa::xr-of-myif))
+                    (myif-rules) ; todo: these hardly mention myif
+                    '(x86isa::xr-of-myif ; maybe drop
+                      x86isa::xr-of-if))
             remove-rules)
            :assumptions assumptions))
          ((when erp) (mv erp nil nil nil state)))
@@ -1738,8 +1761,9 @@
          (if erp
              (mv erp nil nil nil nil state)
            (mv (erp-nil) changep state-dag generated-events next-loop-num state)))
-     (if (eq 'myif (ffn-symb state-term)) ;todo: pass the test as an assumption?
-         (b* ((- (cw "(Handling a myif with test ~x0.)~%" (farg1 state-term)))
+     (if (or (eq 'myif (ffn-symb state-term)) ;todo: pass the test as an assumption?
+             (eq 'if (ffn-symb state-term)))
+         (b* ((- (cw "(Handling an if with test ~x0.)~%" (farg1 state-term)))
               ((mv erp changep then-branch-dag generated-events next-loop-num state)
                (lift-loop-leaves (farg2 state-term)
                                  changep
@@ -1756,8 +1780,7 @@
                                  measure-alist
                                  base-name
                                  lifter-rules
-                                 state
-                                 ))
+                                 state))
               ((when erp) (mv erp nil nil nil nil state))
               ((mv erp changep else-branch-dag generated-events next-loop-num state)
                (lift-loop-leaves (farg3 state-term)
@@ -1775,16 +1798,16 @@
                                  measure-alist
                                  base-name
                                  lifter-rules
-                                 state
-                                 ))
+                                 state))
               ((when erp) (mv erp nil nil nil nil state))
               (all-state-nums (acl2::ints-in-range 0 loop-depth))
               (all-state-vars (ACL2::PACK-IN-PACKAGE-OF-base-SYMBOL-list 'x86_ all-state-nums)) ;could pass these in
               (result-dag ;(mv erp result-dag)
                ;; todo: this is a non-array function:
-               (compose-term-and-dags `(myif ,(farg1 state-term)
-                                             :then-part
-                                             :else-part)
+                (compose-term-and-dags `(,(ffn-symb state-term) ; if or myif
+                                         ,(farg1 state-term)
+                                         :then-part
+                                         :else-part)
                                       (acons :then-part then-branch-dag
                                              (acons :else-part else-branch-dag
                                                     nil))
@@ -1792,7 +1815,7 @@
               ;((when erp) (mv erp nil nil nil nil state))
               )
            (mv nil changep result-dag generated-events next-loop-num state))
-       ;; Not a myif, so test whether we have exited the segment:
+       ;; Not an if/myif, so test whether we have exited the segment:
        ;; TODO: Begin by comparing the stack height?
        (b* (((mv erp exitedp state)
              (b* ( ;; Extract the PC:
@@ -2017,6 +2040,7 @@
          ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
          (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
                                           nil ; don't memoize (avoids time spent making empty-memoizations)
+                                          t ; todo: do this warning just once?
                                           state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
@@ -2156,12 +2180,35 @@
        (measure-alist (if (eq :skip measures)
                           :skip
                         (doublets-to-alist measures)))
+       ;; Can't really use the new, nicer normal forms for readers and writers:
        (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
-                         (lifter-rules32)
-                       (append (lifter-rules64)
-                               '(x86isa::rip x86isa::rip$a) ; todo
+                         (set-difference-eq
+                          (lifter-rules32)
+                          ;; todo: move these rule-lists:
+                          '(xr-becomes-undef
+                            x86isa::!undef-becomes-set-undef
+                            xw-becomes-set-undef
+                            xr-becomes-ms
+                            xw-becomes-set-ms
+                            !ms-becomes-set-ms
+                            xr-becomes-fault
+                            xw-becomes-set-fault
+                            !fault-becomes-set-fault))
+                       (set-difference-eq
+                        (append (lifter-rules64)
+                                '(x86isa::rip x86isa::rip$a ; todo?
+                                  x86isa::undef x86isa::undef$a ; exposes xr
+                                  x86isa::!undef x86isa::!undef$a ; exposes xw
+                                  x86isa::ms x86isa::ms$a ; exposes xr
+                                  x86isa::!ms x86isa::!ms$a ; exposes xw
+                                  x86isa::fault x86isa::fault$a ; exposes xr
+                                  x86isa::!fault x86isa::!fault$a ; exposes xw
+                                  )
                                ;(lifter-rules64-new); todo
-                               )))
+                                )
+                        '(xr-becomes-undef
+                          x86isa::!undef-becomes-set-undef
+                          xw-becomes-set-undef))))
        ((mv erp dag events
             ;; & ;;rules
             & ;;next-loop-num

@@ -1,7 +1,7 @@
 ; Extract leaves from a nest of BITXORs in a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -32,11 +32,12 @@
         (bitxor x y)))
 
 ;; This book deals with "normalized" BITXOR nests.  Such a nest contains nested
-;; calls of BITXOR.  A normalized nest:
+;; calls of BITXOR.  (For unnormalized nests, see bitxor-nest-leaves.)  A
+;; normalized nest:
 ;;
 ;; 1. is associated to the right.
 ;;
-;; 2. has either no constant or a single constant listed first (as argument 2
+;; 2. has either no constant or a single constant listed first (as argument 1
 ;; of the top-level BITXOR).
 ;;
 ;; 3. has leaf nodes (nodes that are not BITXORs) that appear
@@ -66,7 +67,7 @@
                (not (consp (darg1 expr))) ; a quoted constant should not appear as arg1 since we have handled the top node specially
                (not (consp (darg2 expr))) ; a quoted constant should not appear as arg2 if the nest is normalized
                (mbt (< (darg2 expr) nodenum)))
-          ;;expr is of the form (bitxor <arg1> <ar23>).  since the nest is normalized, arg1 cannot be a bitxor and arg2 cannot be a constant
+          ;;expr is of the form (bitxor <arg1> <arg2>).  since the nest is normalized, arg1 cannot be a bitxor and arg2 cannot be a constant
           (leaves-of-normalized-bitxor-nest-aux (darg2 expr) dag-array dag-len (cons (darg1 expr) nodenums-acc))
         ;; Not a suitable bitxor:
         (cons nodenum nodenums-acc)))))

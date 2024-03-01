@@ -51,6 +51,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "divide"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "endbranch"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "exchange"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "jump-and-loop"
@@ -93,6 +95,11 @@
 (defsection two-byte-opcodes
   :parents (instructions)
   :short "Instruction semantic functions for Intel's instructions with two-byte
+  opcodes" )
+
+(defsection three-byte-opcodes
+  :parents (instructions)
+  :short "Instruction semantic functions for Intel's instructions with three-byte
   opcodes" )
 
 (defsection fp-opcodes
