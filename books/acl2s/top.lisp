@@ -38,8 +38,8 @@
 ; We experimented with including smtlink but decided not to require it
 ; (include-book "projects/smtlink/top" :dir :system :ttags :all)
 ; (include-book "projects/smtlink/examples/basictypes" :dir :system :ttags :all)
-(include-book "acl2s/interface/top" :dir :system)
-(include-book "acl2s/interface/acl2s-utils/top" :dir :system)
+(include-book "acl2s/interface/top" :dir :system :ttags :all)
+(include-book "acl2s/interface/acl2s-utils/top" :dir :system :ttags :all)
 
 ;; This mimics what we do when we create an ACL2s executable.
 (acl2::acl2s-common-settings)
