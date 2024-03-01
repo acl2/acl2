@@ -1091,7 +1091,8 @@
 
 (defun float-rules ()
   (declare (xargs :guard t))
-  '(is-nan-intro
+  '(is-nan-intro ; targets an IF
+    is-nan-intro-from-boolif
     if-of-equal-of-indef-and-is-nan
     if-of-equal-of-qnan-and-is-nan
     if-of-equal-of-snan-and-is-nan
@@ -1270,7 +1271,9 @@
           (acl2::core-rules-bv)
           (bitops-rules)
           (logops-rules)
-          '(;; Reading/writing registers (or parts of registers).  We leave
+          '(myif ; trying this, so that we only have to deal with IF
+
+            ;; Reading/writing registers (or parts of registers).  We leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
             ;; to xr and xw.  Shilpi seems to do the same.
             x86isa::rr08$inline
@@ -1572,7 +1575,7 @@
             ;; fault x86isa::fault$a                         ;expose the call to xr
             fault-of-set-ms
             fault-of-set-flag
-            fault-of-myif
+            ;; fault-of-myif
             fault-of-!rflags ; why is !rflags not going away?
             fault-of-set-rip ; move to 64 rules?
             fault-of-set-undef
@@ -1586,7 +1589,7 @@
             xr-becomes-ms
             ms-of-set-ms
             ms-of-set-flag
-            ms-of-myif
+            ;; ms-of-myif
             ms-of-!rflags ; why is !rflags not going away?
             ms-of-set-rip ; move to 64 rules?
             ms-of-set-undef
@@ -1601,7 +1604,7 @@
             xr-becomes-undef ; introduces undef
             undef-of-set-undef
             undef-of-set-flag
-            undef-of-myif
+            ;; undef-of-myif
             undef-of-!rflags ; why is !rflags not going away?
             undef-of-set-rip ; move to 64 rules?
 
@@ -1614,7 +1617,7 @@
 
             set-undef-of-set-undef
             set-undef-of-set-flag
-            set-undef-of-myif ; todo: think about this
+            ;; set-undef-of-myif ; todo: think about this
             set-undef-of-!rflags ; why is !rflags showing up?
             set-undef-of-set-rip ; move to 64 rules?
 
@@ -1944,6 +1947,7 @@
    (acl2::lookup-rules)))
 
 ;move?
+;todo: most of these are not myif rules
 (defun myif-rules ()
   (declare (xargs :guard t))
   (append '(acl2::myif-same-branches ;add to lifter-rules?
@@ -3417,23 +3421,23 @@
     rsp-of-write
     rbp-of-write
 
-    rip-of-myif
-    rax-of-myif
-    rbx-of-myif
-    rcx-of-myif
-    rdx-of-myif
-    rsi-of-myif
-    rdi-of-myif
-    r8-of-myif
-    r9-of-myif
-    r10-of-myif
-    r11-of-myif
-    r12-of-myif
-    r13-of-myif
-    r14-of-myif
-    r15-of-myif
-    rsp-of-myif
-    rbp-of-myif
+    ;; rip-of-myif
+    ;; rax-of-myif
+    ;; rbx-of-myif
+    ;; rcx-of-myif
+    ;; rdx-of-myif
+    ;; rsi-of-myif
+    ;; rdi-of-myif
+    ;; r8-of-myif
+    ;; r9-of-myif
+    ;; r10-of-myif
+    ;; r11-of-myif
+    ;; r12-of-myif
+    ;; r13-of-myif
+    ;; r14-of-myif
+    ;; r15-of-myif
+    ;; rsp-of-myif
+    ;; rbp-of-myif
 
     rip-of-if
     rax-of-if
@@ -3453,18 +3457,18 @@
     r14-of-if
     r15-of-if
 
-    set-rip-of-myif
-    set-rax-of-myif
-    set-rbx-of-myif
-    set-rcx-of-myif
-    set-rdx-of-myif
-    set-rsi-of-myif
-    set-rdi-of-myif
-    set-r8-of-myif
-    set-r9-of-myif
-    set-r10-of-myif ; todo: more?
-    set-rsp-of-myif
-    set-rbp-of-myif
+    ;; set-rip-of-myif
+    ;; set-rax-of-myif
+    ;; set-rbx-of-myif
+    ;; set-rcx-of-myif
+    ;; set-rdx-of-myif
+    ;; set-rsi-of-myif
+    ;; set-rdi-of-myif
+    ;; set-r8-of-myif
+    ;; set-r9-of-myif
+    ;; set-r10-of-myif ; todo: more?
+    ;; set-rsp-of-myif
+    ;; set-rbp-of-myif
 
     write-of-set-rip
     write-of-set-rax
@@ -3981,10 +3985,10 @@
             ;;RFLAGSBITS->AF-of-myif
             acl2::eql ; drop soon?
             ACL2::EQUAL-OF-CONSTANT-AND-BVUMINUS
-            ACL2::BVOR-OF-MYIF-ARG2 ; introduces bvif (myif can arise from expanding a shift into cases)
-            ACL2::BVOR-OF-MYIF-ARG3 ; introduces bvif (myif can arise from expanding a shift into cases)
-            ACL2::BVIF-OF-MYIF-ARG3 ; introduces bvif
-            ACL2::BVIF-OF-MYIF-ARG4 ; introduces bvif
+            ;; ACL2::BVOR-OF-MYIF-ARG2 ; introduces bvif (myif can arise from expanding a shift into cases)
+            ;; ACL2::BVOR-OF-MYIF-ARG3 ; introduces bvif (myif can arise from expanding a shift into cases)
+            ;; ACL2::BVIF-OF-MYIF-ARG3 ; introduces bvif
+            ;; ACL2::BVIF-OF-MYIF-ARG4 ; introduces bvif
             ;; help to show that divisions don't overflow or underflow:
             not-sbvlt-of-constant-and-sbvdiv-32-64
             not-sbvlt-of-sbvdiv-and-minus-constant-32-64
@@ -4049,6 +4053,7 @@
             ;; acl2::boolif-of-t-and-nil-when-booleanp
             slice-of-bvand-of-constant
             acl2::myif-becomes-boolif-axe ; since STP translation supports disjuncts that are calls to boolif but not if.
+            acl2::if-becomes-boolif-axe ; since STP translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
             acl2::bvchop-of-bvshr-same
