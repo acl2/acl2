@@ -293,7 +293,7 @@ to signed values.</p>"
                                     lhatom-vars)
           :expand ((:free (v) (svex-envs-agree (list v) env1 env2))))))
 
-(define lhs-eval-ext ((x lhs-p) (env svex-env-p))
+(define lhs-eval-signx ((x lhs-p) (env svex-env-p))
   :returns (val 4vec-p)
   (if (atom x)
       0
@@ -302,23 +302,23 @@ to signed values.</p>"
                        (lhatom-eval-zero (lhrange->atom (car x)) env))
       (4vec-concat (2vec (lhrange->w (car x)))
                    (lhatom-eval-zero (lhrange->atom (car x)) env)
-                   (lhs-eval-ext (cdr x) env))))
+                   (lhs-eval-signx (cdr x) env))))
   ///
-  (defcong svex-envs-similar equal (lhs-eval-ext x env) 2
+  (defcong svex-envs-similar equal (lhs-eval-signx x env) 2
     :hints(("Goal" :in-theory (enable lhatom-eval-zero)))))
 
-(defthm lhs-eval-zero-when-envs-agree
+(defthm lhs-eval-zx-when-envs-agree
   (implies (svex-envs-agree (lhs-vars x) env1 env2)
-           (equal (lhs-eval-zero x env1)
-                  (lhs-eval-zero x env2)))
-  :hints(("Goal" :in-theory (enable lhs-eval-zero
+           (equal (lhs-eval-zx x env1)
+                  (lhs-eval-zx x env2)))
+  :hints(("Goal" :in-theory (enable lhs-eval-zx
                                     lhs-vars))))
 
-(defthm lhs-eval-ext-when-envs-agree
+(defthm lhs-eval-signx-when-envs-agree
   (implies (svex-envs-agree (lhs-vars x) env1 env2)
-           (equal (lhs-eval-ext x env1)
-                  (lhs-eval-ext x env2)))
-  :hints(("Goal" :in-theory (enable lhs-eval-ext
+           (equal (lhs-eval-signx x env1)
+                  (lhs-eval-signx x env2)))
+  :hints(("Goal" :in-theory (enable lhs-eval-signx
                                     lhs-vars))))
 
 (define svex-envlists-agree ((vars svarlist-p)
@@ -351,8 +351,8 @@ to signed values.</p>"
   (b* (((lhprobe x))
        (env (nth x.stage envs)))
     (if x.signedp
-        (lhs-eval-ext x.lhs env)
-      (lhs-eval-zero x.lhs env)))
+        (lhs-eval-signx x.lhs env)
+      (lhs-eval-zx x.lhs env)))
   ///
   (local (in-theory (disable take)))
   (local (include-book "std/lists/nth" :dir :system))
@@ -382,19 +382,19 @@ to signed values.</p>"
     :hints(("Goal" :in-theory (enable svex-envlist-extract-keys))))
 
 
-  (defthm lhs-eval-ext-of-svex-env-extract
+  (defthm lhs-eval-signx-of-svex-env-extract
     (implies (subsetp-equal (lhs-vars x) (Svarlist-fix vars))
-             (equal (lhs-eval-ext x (svex-env-extract vars env))
-                    (lhs-eval-ext x env)))
-    :hints(("Goal" :in-theory (enable lhs-eval-ext
+             (equal (lhs-eval-signx x (svex-env-extract vars env))
+                    (lhs-eval-signx x env)))
+    :hints(("Goal" :in-theory (enable lhs-eval-signx
                                       lhatom-vars
                                       lhatom-eval-zero))))
 
-  (defthm lhs-eval-zero-of-svex-env-extract
+  (defthm lhs-eval-zx-of-svex-env-extract
     (implies (subsetp-equal (lhs-vars x) (Svarlist-fix vars))
-             (equal (lhs-eval-zero x (svex-env-extract vars env))
-                    (lhs-eval-zero x env)))
-    :hints(("Goal" :in-theory (enable lhs-eval-zero
+             (equal (lhs-eval-zx x (svex-env-extract vars env))
+                    (lhs-eval-zx x env)))
+    :hints(("Goal" :in-theory (enable lhs-eval-zx
                                       lhatom-vars
                                       lhatom-eval-zero))))
   
@@ -411,11 +411,11 @@ to signed values.</p>"
     :hints(("Goal" :in-theory (enable lhprobe-eval
                                       lhprobe-vars))
            (and stable-under-simplificationp
-                '(:use ((:instance lhs-eval-ext-when-envs-agree
+                '(:use ((:instance lhs-eval-signx-when-envs-agree
                          (x (lhprobe->lhs x))
                          (env1 (nth (lhprobe->stage x) envs1))
                          (env2 (nth (lhprobe->stage x) envs2)))
-                        (:instance lhs-eval-zero-when-envs-agree
+                        (:instance lhs-eval-zx-when-envs-agree
                          (x (lhprobe->lhs x))
                          (env1 (nth (lhprobe->stage x) envs1))
                          (env2 (nth (lhprobe->stage x) envs2)))))))))
@@ -631,7 +631,7 @@ to signed values.</p>"
 
 
 
-(define lhs-overridemux-eval-ext ((x lhs-p)
+(define lhs-overridemux-eval-signx ((x lhs-p)
                               (env svex-env-p)
                               (out svex-env-p))
   :returns (val 4vec-p)
@@ -642,7 +642,7 @@ to signed values.</p>"
                        (lhatom-overridemux-eval (lhrange->atom (car x)) env out))
       (4vec-concat (2vec (lhrange->w (car x)))
                    (lhatom-overridemux-eval (lhrange->atom (car x)) env out)
-                   (lhs-overridemux-eval-ext (cdr x) env out))))
+                   (lhs-overridemux-eval-signx (cdr x) env out))))
   ///
 
 
@@ -688,7 +688,7 @@ to signed values.</p>"
        (env (nth x.stage envs))
        (out (nth x.stage outs)))
     (if x.signedp
-        (lhs-overridemux-eval-ext x.lhs env out)
+        (lhs-overridemux-eval-signx x.lhs env out)
       (lhs-overridemux-eval-zero x.lhs env out)))
   ///
   (local (include-book "std/lists/nth" :dir :System)))
@@ -1139,7 +1139,7 @@ to signed values.</p>"
                                (namemap svtv-name-lhs-map-p))
   :returns (lhprobe lhprobe-p)
   (b* (((svtv-probe x)))
-    ;; This is used on the output side, and SVTV outputs are always unsigned (the LHSes are evaluated with lhs-eval-zero).
+    ;; This is used on the output side, and SVTV outputs are always unsigned (the LHSes are evaluated with lhs-eval-zx).
     (make-lhprobe :stage x.time :lhs (cdr (hons-get x.signal (svtv-name-lhs-map-fix namemap))))))
 
 
@@ -1192,3 +1192,25 @@ to signed values.</p>"
 
   (defrefinement svex-envlists-similar svex-envlists-ovtestsimilar
     :hints(("Goal" :in-theory (enable svex-envlists-similar-rec)))))
+
+(define svtv-spec-cycle-fsm-inputsubsts ((x svtv-spec-p))
+  :returns (substs svex-alistlist-p)
+  (b* (((svtv-spec x)))
+    (svtv-fsm-to-fsm-inputsubsts
+     (take (len (svtv-probealist-outvars x.probes))
+           x.in-alists)
+     x.override-val-alists
+     x.override-test-alists
+     x.namemap))
+  ///
+  (local (defthm take-of-svex-alistlist-eval
+         (equal (take len (svex-alistlist-eval x env))
+                (svex-alistlist-eval (take len x) env))
+         :hints(("Goal" :in-theory (e/d (svex-alistlist-eval
+                                         svex-alist-eval)
+                                        (acl2::take-of-too-many
+                                         acl2::take-when-atom))))))
+  (defretd eval-of-<fn>
+    (equal (svex-alistlist-eval substs env)
+           (svtv-spec-pipe-env->cycle-envs x env))
+    :hints(("Goal" :in-theory (enable svtv-spec-pipe-env->cycle-envs)))))

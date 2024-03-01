@@ -528,30 +528,30 @@
            :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-when-extract-dependencies-similar
                                              svex-envs-similar)))))
 
-  (defthm base-fsm-eval-of-svex-envlist-extract-keys
-    (implies (subsetp-equal (set-difference-equal (append (svex-alist-dependencies (base-fsm->values fsm))
-                                                          (svex-alist-dependencies (base-fsm->nextstate fsm)))
-                                                  (svex-alist-keys (base-fsm->nextstate fsm)))
+  (defthm fsm-eval-of-svex-envlist-extract-keys
+    (implies (subsetp-equal (set-difference-equal (append (svex-alist-dependencies (fsm->values fsm))
+                                                          (svex-alist-dependencies (fsm->nextstate fsm)))
+                                                  (svex-alist-keys (fsm->nextstate fsm)))
                             (svarlist-fix keys))
-             (svex-envlists-equivalent (base-fsm-eval (svex-envlist-extract-keys keys ins) initst fsm)
-                                       (base-fsm-eval ins initst fsm)))
-    :hints(("Goal" :in-theory (enable base-fsm-eval
+             (svex-envlists-equivalent (fsm-eval (svex-envlist-extract-keys keys ins) initst fsm)
+                                       (fsm-eval ins initst fsm)))
+    :hints(("Goal" :in-theory (enable fsm-eval
                                       svex-envlists-equivalent-redef
-                                      base-fsm-step
-                                      base-fsm-step-outs
-                                      base-fsm-step-env)
-            :induct (base-fsm-eval ins initst fsm))))
+                                      fsm-step
+                                      fsm-step-outs
+                                      fsm-step-env)
+            :induct (fsm-eval ins initst fsm))))
 
-  (defthm base-fsm-final-state-of-svex-envlist-extract-keys
+  (defthm fsm-final-state-of-svex-envlist-extract-keys
     (implies (subsetp-equal (set-difference-equal (svex-alist-dependencies nextstate)
                                                   (svex-alist-keys nextstate))
                             (svarlist-fix keys))
-             (svex-envs-equivalent (base-fsm-final-state (svex-envlist-extract-keys keys ins) initst nextstate)
-                                   (base-fsm-final-state ins initst nextstate)))
-    :hints(("Goal" :in-theory (enable base-fsm-final-state
-                                      base-fsm-step
-                                      base-fsm-step-env)
-            :induct (base-fsm-final-state ins initst nextstate))))
+             (svex-envs-equivalent (fsm-final-state (svex-envlist-extract-keys keys ins) initst nextstate)
+                                   (fsm-final-state ins initst nextstate)))
+    :hints(("Goal" :in-theory (enable fsm-final-state
+                                      fsm-step
+                                      fsm-step-env)
+            :induct (fsm-final-state ins initst nextstate))))
 
   (defthm svar-override-triplelist-envlist-muxes-<<=-of-extract-impl-env
     (implies (subsetp-equal (svar-override-triplelist-override-vars x) (svarlist-fix keys))

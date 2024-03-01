@@ -99,6 +99,7 @@
 
 (defsvtv$ mod-run
   :design *design*
+  :initial-state-vars t
   :phases ((:overrides
             (("a" a :cond a-ovr)
              ("b" b :cond b-ovr :output b-out)

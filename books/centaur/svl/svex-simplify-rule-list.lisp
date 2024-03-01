@@ -36,10 +36,10 @@
            . SVL::SVEXL-NODE-EVAL-WOG)
     (:META SVL::SVEX-EVAL-WOG-META-MAIN
            . SVL::SVEX-EVAL-WOG)
-    (:META SVL::CONCAT-META . SV::4VEC-CONCAT)
-    (:META SVL::CONCAT-META . SVL::4VEC-CONCAT$)
-    (:META SVL::BITS-OF-META-FN . SVL::BITS)
-    (:META SVL::BITS-OF-META-FN
+    (:META SVL::CONCAT-META-fn . SV::4VEC-CONCAT)
+    (:META SVL::CONCAT-META-fn . SVL::4VEC-CONCAT$)
+    (:META SVL::BITS-OF-META-FN-fn . SVL::BITS)
+    (:META SVL::BITS-OF-META-FN-fn
            . SV::4VEC-PART-SELECT)
     (:META RP::MV-NTH-META . MV-NTH)
     (:META RP::RP-EQUAL-META . EQUAL)
@@ -172,7 +172,7 @@
       (:rewrite bits-of-4vec-plus-is-4vec-plus-start=0)
       (:rewrite bits-of-4vec-plus-is-4vec-plus)
       (:rewrite 4vec-part-install-is-sbits)
-      (:rewrite sbits-of-bits)
+      (:rewrite sbits-of-bits-same-size)
       (:rewrite sbits-size=0)
       (:rewrite 4vec-concat$-of-term2=0)
       (:rewrite concat-of-size=0)

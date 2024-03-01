@@ -349,7 +349,7 @@ data necessary to compute the pipeline, but not the unrolled cycle FSM or
 pipeline itself.  It can be shown that an @(see svtv-run) of an SVTV is equal
 to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
 "
-  ((fsm base-fsm-p "The FSM to be run")
+  ((fsm fsm-p "The FSM to be run")
    (cycle-phases svtv-cyclephaselist-p
                  "The list of @(see svtv-cyclephase) objects representing the clock cycle")
    (namemap svtv-name-lhs-map-p "Mapping from namemap names to @(see lhs) objects in terms of FSM signal names")
@@ -365,7 +365,7 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
        (svtv-fsm-ins (svex-alistlist-eval x.in-alists pipe-env))
        (svtv-fsm-tests (svex-alistlist-eval x.override-test-alists pipe-env))
        (svtv-fsm-vals (svex-alistlist-eval x.override-val-alists pipe-env))
-       (cycle-ins (svtv-fsm-to-base-fsm-inputs
+       (cycle-ins (svtv-fsm-to-fsm-inputs
                    (take (len (svtv-probealist-outvars x.probes))
                          svtv-fsm-ins)
                    svtv-fsm-vals svtv-fsm-tests x.namemap)))
@@ -401,16 +401,16 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
   :parents (svtv-spec)
   :short "Run an @(see svtv-spec) object and return its outputs"
   :returns (pipe-out svex-env-p)
-  :guard (and (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x)))))
+  :guard (and (not (hons-dups-p (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x)))))
               (equal (svex-alist-keys (svtv-spec->initst-alist x))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x))))
+                     (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x))))
               (svtv-cyclephaselist-has-outputs-captured (svtv-spec->cycle-phases x)))
   (b* (((svtv-spec x))
        (phase-ins (svtv-spec-pipe-env->phase-envs x pipe-env))
        (full-ins (svex-envlist-x-override phase-ins base-ins))
        (full-initst (svex-env-x-override (svex-alist-eval x.initst-alist pipe-env) initst))
-       (phase-outs (mbe :logic (base-fsm-eval full-ins full-initst x.fsm)
-                        :exec (base-fsm-eval full-ins (svex-env-extract (svex-alist-keys (base-fsm->nextstate x.fsm)) full-initst)
+       (phase-outs (mbe :logic (fsm-eval full-ins full-initst x.fsm)
+                        :exec (fsm-eval full-ins (svex-env-extract (svex-alist-keys (fsm->nextstate x.fsm)) full-initst)
                                              x.fsm))))
     (svtv-spec-phase-outs->pipe-out x phase-outs))
   ///
@@ -432,7 +432,7 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
        (svtv-fsm-ins (svex-alistlist-eval x.in-alists pipe-env))
        (svtv-fsm-tests (svex-alistlist-eval x.override-test-alists pipe-env))
        (svtv-fsm-vals (svex-alistlist-eval x.override-val-alists pipe-env)))
-    (svtv-fsm-to-base-fsm-inputs
+    (svtv-fsm-to-fsm-inputs
      (take (len (svtv-probealist-outvars x.probes))
            svtv-fsm-ins)
      svtv-fsm-vals svtv-fsm-tests x.namemap))
@@ -523,22 +523,22 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
                     (consp cycle-phases))
            :rule-classes :forward-chaining))
   
-  (defthm base-fsm-eval-of-base-fsm-to-cycle
+  (defthm fsm-eval-of-fsm-to-cycle
     (implies (and (svtv-cyclephaselist-has-outputs-captured cycle-phases))
-             (equal (base-fsm-eval ins initst (base-fsm-to-cycle cycle-phases x simp))
+             (equal (fsm-eval ins initst (fsm-to-cycle cycle-phases x simp))
                     (svex-envlist-phase-outputs-extract-cycle-outputs
                      cycle-phases
-                     (base-fsm-eval
+                     (fsm-eval
                       (svtv-cycle-run-fsm-inputs ins cycle-phases)
                       initst x))))
     :hints ((acl2::equal-by-nths-hint)
             '(:in-theory (enable mod)))))
 
 (define svtv-spec->cycle-fsm ((x svtv-spec-p))
-  :guard (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x)))))
-  :returns (cycle base-fsm-p)
+  :guard (not (hons-dups-p (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x)))))
+  :returns (cycle fsm-p)
   (b* (((svtv-spec x)))
-    (base-fsm-to-cycle x.cycle-phases x.fsm nil))
+    (fsm-to-cycle x.cycle-phases x.fsm nil))
   ///
   (defthmd svtv-spec-run-in-terms-of-cycle-fsm
     (implies (svtv-cyclephaselist-has-outputs-captured (svtv-spec->cycle-phases x))
@@ -549,14 +549,14 @@ to the @(see svtv-spec-run) of an analogous svtv-spec object.</p>
                          (cycle-envs-full (svex-envlist-x-override cycle-envs-from-pipe cycle-base-ins))
                          (initst-from-pipe (svex-alist-eval (svtv-spec->initst-alist x) pipe-env))
                          (initst-full (svex-env-x-override initst-from-pipe initst))
-                         (cycle-outs (base-fsm-eval cycle-envs-full initst-full (svtv-spec->cycle-fsm x))))
+                         (cycle-outs (fsm-eval cycle-envs-full initst-full (svtv-spec->cycle-fsm x))))
                       (svtv-spec-cycle-outs->pipe-out x cycle-outs))))
     :hints(("Goal" :in-theory (enable svtv-spec-run
                                       svtv-spec-pipe-env->phase-envs-in-terms-of-cycle-envs svtv-spec-phase-outs->pipe-out-in-terms-of-cycle-outs))))
 
   (defthm nextstate-keys-of-svtv-spec->cycle-fsm
-    (equal (svex-alist-keys (base-fsm->nextstate (svtv-spec->cycle-fsm x)))
-           (svex-alist-keys (base-fsm->nextstate (svtv-spec->fsm x))))))
+    (equal (svex-alist-keys (fsm->nextstate (svtv-spec->cycle-fsm x)))
+           (svex-alist-keys (fsm->nextstate (svtv-spec->fsm x))))))
 
 
 

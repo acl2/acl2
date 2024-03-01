@@ -106,12 +106,12 @@
 
 ;; (defthm my-svtv-pipeline-correct
 ;;   (b* ((fsm (my-cycle))
-;;        (rename-fsm (make-svtv-fsm :base-fsm fsm
+;;        (rename-fsm (make-svtv-fsm :fsm fsm
 ;;                                   :namemap (my-namemap)))
 ;;        (renamed-fsm (svtv-fsm->renamed-fsm rename-fsm))       
 ;;        ((pipeline-setup pipe) (my-pipeline-setup))
 ;;        (outvars (svtv-probealist-outvars pipe.probes))
-;;        (run (base-fsm-run
+;;        (run (fsm-run
 ;;              (svex-alistlist-eval
 ;;               (svtv-fsm-run-input-substs
 ;;                (take (len outvars) pipe.inputs)
@@ -139,7 +139,7 @@
 ||#
 
 
-(define svtv-pipeline-correct ((cycle-fsm base-fsm-p)
+(define svtv-pipeline-correct ((cycle-fsm fsm-p)
                                (namemap svtv-name-lhs-map-p)
                                (pipeline-setup pipeline-setup-p)
                                (pipeline-result svex-alist-p)
@@ -147,14 +147,14 @@
   :verify-guards nil
   :enabled t
   (b* ((fsm cycle-fsm)
-       (rename-fsm (make-svtv-fsm :base-fsm fsm
+       (rename-fsm (make-svtv-fsm :fsm fsm
                                   :namemap namemap))
        (renamed-fsm (svtv-fsm->renamed-fsm rename-fsm))
        ((pipeline-setup pipe) pipeline-setup)
        (outvars (svtv-probealist-outvars pipe.probes))
-       (run (base-fsm-run
+       (run (fsm-run
              (svex-alistlist-eval
-              (svtv-fsm-to-base-fsm-inputsubsts
+              (svtv-fsm-to-fsm-inputsubsts
                (take (len outvars) pipe.inputs)
                pipe.override-vals pipe.override-tests
                namemap)
@@ -184,19 +184,19 @@
                                     (svtv-data$c->pipeline svtv-data)
                                     env))
     :hints(("Goal" :in-theory (enable svtv-data$ap
-                                      svtv-fsm-run-is-base-fsm-run)))))
+                                      svtv-fsm-run-is-fsm-run)))))
 
-(define svtv-cycle-correct ((phase-fsm base-fsm-p)
+(define svtv-cycle-correct ((phase-fsm fsm-p)
                             (cycle-phases svtv-cyclephaselist-p)
-                            (cycle-fsm base-fsm-p))
-  :guard (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate phase-fsm))))
+                            (cycle-fsm fsm-p))
+  :guard (not (hons-dups-p (svex-alist-keys (fsm->nextstate phase-fsm))))
   :enabled t
-  (b* (((base-fsm phase-fsm))
+  (b* (((fsm phase-fsm))
        ((mv values nextstate)
         (svtv-cycle-compile (svex-identity-subst
                              (svex-alist-keys phase-fsm.nextstate))
-                            cycle-phases phase-fsm nil))) ;; simp is irrelevant under base-fsm-eval-equiv
-    (base-fsm-eval-equiv (make-base-fsm :values values :nextstate nextstate) cycle-fsm))
+                            cycle-phases phase-fsm nil))) ;; simp is irrelevant under fsm-eval-equiv
+    (fsm-eval-equiv (make-fsm :values values :nextstate nextstate) cycle-fsm))
   ///
   (defthm svtv-cycle-correct-when-svtv-data$ap
     (implies (and (svtv-datap svtv-data)
@@ -542,7 +542,7 @@
                           `((make-event
                              `(define ,',cycle-name ()
                                 :no-function t
-                                :returns (fsm base-fsm-p)
+                                :returns (fsm fsm-p)
                                 ',(svtv-data->cycle-fsm ,stobj-name))))))
        (namemap-name (intern-in-package-of-symbol
                       (concatenate 'string (symbol-name svtv-name) "-NAMEMAP")
@@ -567,14 +567,14 @@
           (in-theory (disable ,@(and define-cycle `((,cycle-name)))))
           (defthmd ,thmname
             (b* ((fsm (,cycle-name))
-                 (rename-fsm (make-svtv-fsm :base-fsm fsm
+                 (rename-fsm (make-svtv-fsm :fsm fsm
                                             :namemap (,namemap-name)))
                  (renamed-fsm (svtv-fsm->renamed-fsm rename-fsm))
                  ((pipeline-setup pipe) (,pipeline-setup-name))
                  (outvars  (svtv-probealist-outvars pipe.probes))
-                 (run (base-fsm-run
+                 (run (fsm-run
                        (svex-alistlist-eval
-                        (svtv-fsm-to-base-fsm-inputsubsts
+                        (svtv-fsm-to-fsm-inputsubsts
                          (take (len outvars) pipe.inputs)
                          pipe.override-vals pipe.override-tests
                          (,namemap-name))
@@ -625,14 +625,14 @@ following form:</p>
 
 @({
    (b* ((fsm (svtv-cycle))
-        (rename-fsm (make-svtv-fsm :base-fsm fsm
+        (rename-fsm (make-svtv-fsm :fsm fsm
                                    :namemap (svtv-namemap)))
         (renamed-fsm (svtv-fsm->renamed-fsm rename-fsm))
         ((pipeline-setup pipe) (svtv-pipeline-setup))
         (outvars  (svtv-probealist-outvars pipe.probes))
-        (run (base-fsm-run
+        (run (fsm-run
               (svex-alistlist-eval
-               (svtv-fsm-to-base-fsm-inputsubsts
+               (svtv-fsm-to-fsm-inputsubsts
                 (take (len outvars) pipe.inputs)
                 pipe.override-vals pipe.override-tests
                 (svtv-namemap))
@@ -770,7 +770,7 @@ event. (The cycle function doesn't need to be created if a previous
                           `((make-event
                              `(define ,',cycle-name ()
                                 :no-function t
-                                :returns (fsm base-fsm-p)
+                                :returns (fsm fsm-p)
                                 ',(svtv-data->cycle-fsm ,stobj-name))))))
        (define-phase (or (not phase-name) define-phase))
        (phase-name (or phase-name
@@ -781,7 +781,7 @@ event. (The cycle function doesn't need to be created if a previous
                           `((make-event
                              `(define ,',phase-name ()
                                 :no-function t
-                                :returns (fsm base-fsm-p)
+                                :returns (fsm fsm-p)
                                 ',(svtv-data->phase-fsm ,stobj-name))))))
        (cycle-phases-name (intern-in-package-of-symbol
                            (concatenate 'string (symbol-name svtv-name) "-CYCLE-PHASES")
@@ -799,13 +799,13 @@ event. (The cycle function doesn't need to be created if a previous
             (in-theory (disable ,@(and define-cycle `((,cycle-name)))
                                 ,@(and define-phase `((,phase-name)))))
             (defthmd ,thmname
-              (b* (((base-fsm phase-fsm) (,phase-name))
+              (b* (((fsm phase-fsm) (,phase-name))
                    ((mv values nextstate)
                     (svtv-cycle-compile (svex-identity-subst
                                          (svex-alist-keys phase-fsm.nextstate))
                                         (,cycle-phases-name) phase-fsm nil)))
-                (base-fsm-eval-equiv (,cycle-name)
-                                     (make-base-fsm :values values :nextstate nextstate)))
+                (fsm-eval-equiv (,cycle-name)
+                                     (make-fsm :values values :nextstate nextstate)))
               :hints (("goal" :clause-processor (svtv-cycle-clause-proc
                                                  clause
                                                  '((,phase-name)
@@ -839,13 +839,13 @@ creating the cycle using @('defcycle') or @('defsvtv$'). It proves a theorem of
 the following form:</p>
 
 @({
-   (b* (((base-fsm phase-fsm) (phase-fsm))
+   (b* (((fsm phase-fsm) (phase-fsm))
         ((mv values nextstate)
          (svtv-cycle-compile (svex-identity-subst
                               (svex-alist-keys phase-fsm.nextstate))
                              (cycle-phases) phase-fsm nil)))
-     (base-fsm-eval-equiv (cycle-fsm)
-                          (make-base-fsm :values values :nextstate nextstate)))
+     (fsm-eval-equiv (cycle-fsm)
+                          (make-fsm :values values :nextstate nextstate)))
  })
 
 <p>The options for @('def-cycle-thm') are as follows:</p>

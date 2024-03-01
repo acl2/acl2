@@ -1813,6 +1813,11 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   term)
 
 
+(defconst *rw-recent-terms-size-width*
+  6)
+(defconst *rw-recent-terms-size*
+   ;; the last value will be used for the pointer.
+  (1+ (expt 2 *rw-recent-terms-size-width*)))
 
 (defstobj rp-state
 
@@ -1849,7 +1854,37 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
   (orig-conjecture :type (satisfies rp-termp) :initially ''nil)
 
+
+  (rw-recent-terms :type (array t (*rw-recent-terms-size*)))
+  ;; the last value will be the pointer.
+
   :inline t)
+
+(encapsulate
+  nil
+  (local
+   (include-book "arithmetic-3/top" :dir :system))
+  (defund push-to-rw-recent-terms (term rp-state)
+    (declare (xargs :stobjs (rp-state)))
+    (b* ((length (mbe :exec *rw-recent-terms-size*
+                      :logic (rw-recent-terms-length rp-state)))
+         (ptr (nfix (rw-recent-termsI (1- length) rp-state)))
+         (rp-state (update-rw-recent-termsI (1- length)
+                                            (1+ ptr)
+                                            rp-state))
+         (rp-state (update-rw-recent-termsI (mod ptr (1- length))
+                                            term
+                                            rp-state)))
+      rp-state))
+
+  (defund get-from-rw-recent-terms (cnt rp-state)
+    (declare (xargs :stobjs (rp-state)
+                    :guard (integerp cnt)))
+    (b* ((ptr (nfix (rw-recent-termsI (1- *rw-recent-terms-size*) rp-state)))
+         (ptr (- ptr cnt))
+         (term (rw-recent-termsI (mod ptr (1- *rw-recent-terms-size*))
+                                 rp-state)))
+      term)))
 
 
 (in-theory (disable rules-alist-inside-out-put

@@ -122,7 +122,21 @@
 
 (progn
 
-  (defun sum-comm-order-aux (x cnt)
+  (define ex-from-rp/--loose (x)
+    :returns (res rp-termp :hyp (rp-termp x))
+    (cond ((and (consp x)
+                (consp (cdr x)))
+           (if (or (equal (car x) '--))
+               (ex-from-rp/--loose (cadr x))
+             (if (and (equal (car x) 'rp)
+                      (consp (cddr x)))
+                 (ex-from-rp/--loose (caddr x))
+               x)))
+          (t x)))
+
+  (define sum-comm-order-aux (x (cnt natp)
+                                &key
+                                (orig-term 'orig-term))
     (case-match x
       (('m2 &)
        (mv 'm2 x))
@@ -153,12 +167,14 @@
       (('rp-trans x)
        (sum-comm-order-aux x (1+ cnt)))
       (('mv-nth & &)
-       (mv 'mv-nth (list (caddr x) (cadr x))))
+       (mv 'mv-nth (list (caddr x) (cadr x) orig-term)))
       (('pp-sum-merge & &)
        (mv 'merge x))
       (('s-sum-merge & &)
        (mv 'merge x))
       (('car x)
+       (sum-comm-order-aux x (1+ cnt)))
+      (('ifix x)
        (sum-comm-order-aux x (1+ cnt)))
       (('cdr x)
        (sum-comm-order-aux x (1+ cnt)))
@@ -168,48 +184,57 @@
        (mv 'binary-m2-chain x))
       (('ex-from-rp/-- &)
        (mv 'm2 x))
+      (('quote x)
+       (mv 'quote x))
+      (('ex-from-rp x)
+       (sum-comm-order-aux x (1+ cnt)))
       (&
-       (mv cnt x))))
+       (if (consp x)
+           (mv 'mv-nth (list x cnt orig-term))
+         (mv 'atom (list x cnt orig-term))))))
 
-  (defun sum-comm-order (a b)
-    (b* (((mv a-type a)
-          (sum-comm-order-aux a 0))
+  (define sum-comm-order (a b &key (for-m2-chain 'nil))
+    (b* ((a (ex-from-rp/--loose a))
+         (b (ex-from-rp/--loose b))
+         ((mv a-type a)
+          (sum-comm-order-aux a 0 :orig-term a))
          ((mv b-type b)
-          (sum-comm-order-aux b 0)))
+          (sum-comm-order-aux b 0 :orig-term b)))
       (cond
-       ((or (equal a-type 'binary-sum)
-            (equal a-type 'binary-m2-chain)
-            (equal b-type 'binary-sum)
-            (equal b-type 'binary-m2-chain))
+       ((and (not for-m2-chain)
+             (or (equal a-type 'binary-sum)
+                 (equal b-type 'binary-sum)))
         nil)
-       ((or (and (equal a-type 'm2)
-                 (equal b-type 'm2))
-            (and (equal a-type 'mv-nth)
-                 (equal b-type 'mv-nth))
-            (and (equal a-type 'merge)
-                 (equal b-type 'merge)))
+       ((and for-m2-chain
+             (or (equal a-type 'binary-m2-chain)
+                 (equal b-type 'binary-m2-chain)))
+        nil)
+       ((equal a-type b-type)
         (b* (((mv res &) (lexorder2 a b)))
           res))
-       ((or (equal a-type 'm2)
-            (equal b-type 'm2))
+       ((xor (equal a-type 'quote)
+             (equal b-type 'quote))
+        (equal b-type 'quote))
+       ((xor (equal a-type 'm2)
+             (equal b-type 'm2))
         (not (equal b-type 'm2)))
-       ((or (equal a-type 'mv-nth)
-            (equal b-type 'mv-nth))
+       ((xor (equal a-type 'mv-nth)
+             (equal b-type 'mv-nth))
         (not (equal b-type 'mv-nth)))
-       ((or (equal a-type 'merge)
-            (equal b-type 'merge))
+       ((xor (equal a-type 'merge)
+             (equal b-type 'merge))
         (not (equal b-type 'merge)))
-       ((or (and (equal a-type 'd2)
-                 (equal b-type 'd2))
-            (and (equal a-type 'f2)
-                 (equal b-type 'f2)))
+       ((xor (and (equal a-type 'd2)
+                  (equal b-type 'd2))
+             (and (equal a-type 'f2)
+                  (equal b-type 'f2)))
         (b* (((mv res &) (lexorder2 a b)))
           res))
-       ((or (equal a-type 'd2)
-            (equal b-type 'd2))
+       ((xor (equal a-type 'd2)
+             (equal b-type 'd2))
         (not (equal a-type 'd2)))
-       ((or (equal a-type 'f2)
-            (equal b-type 'f2))
+       ((xor (equal a-type 'f2)
+             (equal b-type 'f2))
         (not (equal a-type 'f2)))
        ((and (integerp a-type)
              (integerp b-type))
@@ -217,9 +242,9 @@
           (if equals
               (> a-type b-type)
             res)))
-       ((or (integerp a-type)
-            (integerp b-type))
-        (not (integerp a-type)))
+       ((xor (equal a-type 'atom)
+             (equal b-type 'atom))
+        (equal a-type 'atom))
        (t (b* (((mv res &) (lexorder2 a b)))
             res)))))
 
@@ -276,6 +301,8 @@
              :in-theory (e/d (ifix sum) ()))))
 
   )
+
+
 
 (in-theory (disable ifix))
 
@@ -1359,6 +1386,19 @@ mod2-is-m2)
     :hints (("Goal"
              :in-theory (e/d (m2-chain) ()))))
 
+
+  (defthm m2-chain-comm
+    (and
+     (implies (syntaxp (sum-comm-order a b :for-m2-chain t))
+              (equal  (m2-chain b a)
+                      (m2-chain a b)))
+     (implies (syntaxp (sum-comm-order a b :for-m2-chain t))
+              (equal  (m2-chain b a c)
+                      (m2-chain a b c))))
+    :rule-classes ((:rewrite :loop-stopper nil))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain) (m2-to-m2-chain)))))
+
   (defthm m2-chain-reorder
     (and (equal (m2-chain (sum a b) c)
                 (m2-chain a b c))
@@ -1366,18 +1406,6 @@ mod2-is-m2)
                 (m2-chain a b c))
          (equal (m2-chain (m2-chain a b) c)
                 (m2-chain a b c)))
-    :hints (("Goal"
-             :in-theory (e/d (m2-chain) (m2-to-m2-chain)))))
-
-  (defthm m2-chain-comm
-    (and
-     (implies (syntaxp (sum-comm-order a b))
-              (equal  (m2-chain b a)
-                      (m2-chain a b)))
-     (implies (syntaxp (sum-comm-order a b))
-              (equal  (m2-chain b a c)
-                      (m2-chain a b c))))
-    :rule-classes ((:rewrite :loop-stopper nil))
     :hints (("Goal"
              :in-theory (e/d (m2-chain) (m2-to-m2-chain)))))
 
@@ -1598,7 +1626,6 @@ mod2-is-m2)
   :hints (("Goal"
            :in-theory (e/d (sum ifix --) (+-IS-SUM)))))
 
-
 (defthm odd+1-is-even
   (implies (and (not (evenp (ifix x))))
            (and (evenp (sum 1 x))
@@ -1616,7 +1643,6 @@ mod2-is-m2)
                             sum)
                            (+-IS-SUM)))))
 
-
 (defthm f2*2-when-evenp
   (implies (evenp (ifix x))
            (equal (* 2 (f2 x))
@@ -1625,7 +1651,6 @@ mod2-is-m2)
            :in-theory (e/d (f2 ifix)
                            (floor2-if-f2)))))
 
-
 (defthm integerp-of-1/2+1/2*odd
   (implies (and (not (evenp x))
                 (integerp x))
@@ -1633,3 +1658,246 @@ mod2-is-m2)
                 (integerp (+ -1/2 (* 1/2 x)))))
   :hints (("goal"
            :in-theory (e/d () ()))))
+
+
+
+(progn
+  (defun find-common-sum-item (x y)
+    (declare (ignorable x y)
+             (xargs :measure (+ (acl2-count x)
+                                (acl2-count y))
+                    :otf-flg nil
+                    :hints (("Goal"
+                             :do-not-induct t
+                             :in-theory (e/d ()
+                                             (
+                                              +-IS-SUM))))))
+    (b* (((mv cur-x rest-x) (case-match x
+                              (('binary-sum cur-x rest-x)
+                               (mv cur-x rest-x))
+                              (('binary-m2-chain cur-x rest-x)
+                               (mv cur-x rest-x))
+                              (('ifix cur-x)
+                               (mv cur-x nil))
+                              (& (mv x nil))))
+         ((mv cur-y rest-y) (case-match y
+                              (('binary-sum cur-y rest-y)
+                               (mv cur-y rest-y))
+                              (('binary-m2-chain cur-y rest-y)
+                               (mv cur-y rest-y))
+                              (('ifix cur-y)
+                               (mv cur-y nil))
+                              (& (mv y nil))))
+         ((when (equal cur-y cur-x))
+          `((common . ,cur-y))))
+      (cond ((and rest-x
+                  rest-y)
+             (or (find-common-sum-item rest-x y)
+                 (find-common-sum-item x rest-y)))
+            (rest-y
+             (find-common-sum-item x rest-y))
+            (rest-x
+             (find-common-sum-item rest-x y))
+            (t nil))))
+
+  (defthm sum-cancel-common
+    (and (implies (bind-free (find-common-sum-item `(binary-sum ,x ,y) `(binary-sum ,a ,b))
+                             (common))
+                  (equal (equal (sum x y)
+                                (sum a b))
+                         (equal (sum x y (-- common))
+                                (sum a b (-- common)))))
+         (implies (bind-free (find-common-sum-item `(binary-sum ,x ,y) a)
+                             (common))
+                  (and (equal (equal (sum x y)
+                                     (ifix a))
+                              (equal (sum x y (-- common))
+                                     (sum a (-- common))))
+                       (equal (equal (ifix a)
+                                     (sum x y))
+                              (equal (sum x y (-- common))
+                                     (sum a (-- common)))))))
+    :hints (("Goal"
+             :in-theory (e/d (sum --)
+                             (+-IS-SUM)))))
+
+  (defthm m2-of-sum-cancel-common
+    (and (implies (bind-free (find-common-sum-item `(binary-sum ,x ,y) `(binary-sum ,x2 ,y2))
+                             (common))
+                  (equal (equal (m2 (sum x y))
+                                (m2 (sum x2 y2)))
+                         (equal (m2 (sum x y (-- common)))
+                                (m2 (sum x2 y2 (-- common))))))
+         (implies (bind-free (find-common-sum-item `(binary-sum ,x ,y) x2)
+                             (common))
+                  (and (equal (equal (m2 (sum x y))
+                                     (m2 x2))
+                              (equal (m2 (sum x y (-- common)))
+                                     (m2 (sum x2 (-- common)))))
+                       (equal (equal (m2 x2)
+                                     (m2 (sum x y)))
+                              (equal (m2 (sum x y (-- common)))
+                                     (m2 (sum x2 (-- common))))))))
+    :hints (("Goal"
+             :in-theory (e/d ()
+                             (M2-OF---
+                              S-OF-MINUS)))))
+
+  (defthm m2-chain-cancel-common
+    (and (implies (bind-free (find-common-sum-item `(binary-m2-chain ,x ,y) `(binary-m2-chain ,x2 ,y2))
+                             (common))
+                  (equal (equal (m2-chain x y)
+                                (m2-chain x2 y2))
+                         (equal (m2-chain x y (-- common))
+                                (m2-chain x2 y2 (-- common)))))
+         (implies (bind-free (find-common-sum-item `(binary-m2-chain ,x ,y) x2)
+                             (common))
+                  (and (equal (equal (m2-chain x y)
+                                     (m2-chain x2))
+                              (equal (m2-chain x y (-- common))
+                                     (m2-chain x2 (-- common))))
+                       (equal (equal (m2-chain x2)
+                                     (m2-chain x y))
+                              (equal (m2-chain x y (-- common))
+                                     (m2-chain x2 (-- common)))))))
+    :hints (("Goal"
+             :do-not '(preprocess)
+             :in-theory (e/d (m2-chain)
+                             (M2-CHAIN-OF-M2))))))
+
+(defthm --of-ifix
+  (equal (-- (ifix x))
+         (-- x))
+  :hints (("Goal"
+           :in-theory (e/d (--) ()))))
+
+(defthm m2-chain-of---
+  (and (equal (m2-chain (-- x) y)
+              (m2-chain x y))
+       (equal (m2-chain y (-- x))
+              (m2-chain y x))
+       (equal (m2-chain (-- x))
+              (m2-chain x)))
+  :hints (("Goal"
+           :in-theory (e/d (m2-chain)
+                           (M2-CHAIN-OF-M2)))))
+
+(encapsulate
+  nil
+  (local
+   (use-arithmetic-5 t))
+
+  (defthm m2-chain-of-repeated
+    (and (equal (m2-chain x x y)
+                (m2-chain y))
+         (equal (m2-chain x x)
+                0))
+    :hints (("Goal"
+             :in-theory (e/d (m2-chain m2 sum)
+                             (M2-CHAIN-OF-M2
+                              MOD2-IS-M2
+                              +-IS-SUM))))))
+
+(defthm bitp-of-m2-chain
+  (bitp (m2-chain x y))
+  :hints (("Goal"
+           :in-theory (e/d (m2-chain) ()))))
+
+(encapsulate
+  nil
+
+  ;;(local (use-arithmetic-5 t))
+
+
+  (defthmd m2-of-oddp
+    (implies (and (oddp a)
+                  (case-split (integerp a))
+                  (syntaxp (atom a)))
+             (equal (m2 (sum a b))
+                    (m2 (sum 1 b))))
+    :hints (("Goal"
+             :in-theory (e/d (m2
+                              --
+                              sum
+                              (:REWRITE ACL2::|(* a (/ a) b)|)
+                              (:REWRITE ACL2::|(* x (+ y z))|)
+                              (:REWRITE ACL2::|(* y x)|)
+                              (:REWRITE ACL2::|(mod x 2)| . 1)
+                              (:REWRITE ACL2::EVEN-AND-ODD-ALTERNATE)
+                              (:REWRITE IFIX-OPENER)
+                              (:REWRITE ACL2::SUM-IS-EVEN . 1))
+                             (mod2-is-m2 +-IS-SUM)))))
+
+  (defthmd rw-times-when-coef-is-odd 
+    (and (implies (and (integerp coef)
+                       (oddp coef))
+                  (equal (times coef x)
+                         (sum (times (* 2 (floor coef 2)) x)
+                              x))))
+    :hints (("Goal"
+             :in-theory (e/d (times sum f2)
+                             (FLOOR2-IF-F2 +-IS-SUM)))))
+
+  (defthmd rw-times-when-coef-is-even
+    (and (implies (and (integerp coef)
+                       (evenp coef))
+                  (equal (times coef x)
+                         (times (* 2 (floor coef 2)) x))))
+    :hints (("Goal"
+             :in-theory (e/d (times sum f2)
+                             (FLOOR2-IF-F2 +-IS-SUM)))))
+  
+  (defthm m2-chain-of-oddp-times
+    (implies (and (case-split (integerp coef))
+                  (oddp coef))
+             (and (equal (m2-chain (times coef x) y)
+                         (m2-chain x y))
+                  (equal (m2-chain y (times coef x))
+                         (m2-chain x y))
+                  (equal (m2-chain (times coef x))
+                         (m2-chain x))))
+    :hints (("Goal"
+             :expand ((:free (x y) (TIMES (* 2 x) y)))
+             :in-theory (e/d (RW-TIMES-WHEN-COEF-IS-ODD 
+                              (:DEFINITION BINARY-SUM)
+                              (:DEFINITION CASE-SPLIT)
+                              (:DEFINITION EVENP)
+                              (:DEFINITION M2)
+                              (:DEFINITION NOT)
+                              (:DEFINITION ODDP)
+                              (:DEFINITION SYNP)
+                              (:REWRITE ACL2::|(* a (/ a) b)|)
+                              (:REWRITE ACL2::|(* x (+ y z))|)
+                              (:REWRITE ACL2::|(* y x)|)
+                              (:REWRITE ACL2::|(mod x 2)| . 1)
+                              (:REWRITE ACL2::EVEN-AND-ODD-ALTERNATE)
+                              (:REWRITE IFIX-OPENER)
+                              (:REWRITE ACL2::SUM-IS-EVEN . 1))
+                             (TIMES-COMM
+                              (:REWRITE ACL2::|(equal x (if a b c))|)
+                              (:REWRITE ACL2::|(equal (if a b c) x)|)
+                              mod2-is-m2 +-IS-SUM)))))
+
+  (defthm m2-chain-of-evenp-times
+    (implies (and (evenp coef)
+                  (case-split (integerp coef)))
+             (and (equal (m2-chain (times coef x) y)
+                         (m2-chain y))
+                  (equal (m2-chain y (times coef x))
+                         (m2-chain y))
+                  (equal (m2-chain (times coef x))
+                         0)))
+    :hints (("Goal"
+             
+             :use ((:instance RW-TIMES-WHEN-COEF-IS-EVEN))
+             :expand ((:free (x y) (TIMES (* 2 x) y)))
+             :in-theory (e/d (;;rw-times-when-coef-is-even
+                              (:DEFINITION BINARY-SUM)
+                              (:DEFINITION EVENP)
+                              )
+                             (TIMES-COMM evenp floor f2
+                              RW-TIMES-WHEN-COEF-IS-EVEN
+                              (:REWRITE ACL2::|(equal x (if a b c))|)
+                              (:REWRITE ACL2::|(equal (if a b c) x)|)
+                              mod2-is-m2 +-IS-SUM)))
+            )))

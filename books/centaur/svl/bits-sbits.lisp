@@ -1102,7 +1102,7 @@
 
   (add-svex-simplify-rule sbits-size=0)
 
-  (def-rp-rule sbits-of-bits
+  (def-rp-rule sbits-of-bits-same-size
     (implies (and (natp start)
                   (natp size)
                   (syntaxp (consp (rp::ex-from-rp new-val))))
@@ -1112,7 +1112,7 @@
              :use ((:instance 4vec-part-install-of-4vec-part-select))
              :in-theory (e/d () ()))))
 
-  (add-svex-simplify-rule sbits-of-bits)
+  (add-svex-simplify-rule sbits-of-bits-same-size)
 
   ;; this is actually-not-necessary:
   (defthmd sbits-of-sbits-reorder-sizes=1
@@ -1143,7 +1143,43 @@
                     (sbits start size new old)))
     :hints (("Goal"
              :in-theory (e/d (sbits
-                              4vec-part-install-of-4vec-part-select) ())))))
+                              4vec-part-install-of-4vec-part-select) ()))))
+
+
+
+  (def-rp-rule sbits-0-of-new-val=bits-old-val=0
+    (implies (and (natp size1)
+		  (natp start1)
+		  (natp start2)
+		  (natp size2))
+	     (equal (svl::sbits start1 size1
+			        (svl::bits term start2 size2)
+			        0)
+		    (sv::4vec-lsh start1
+                                  (svl::bits term start2 (min size2 size1)))))
+    :hints (("Goal"
+             :cases ((<= SIZE2 SIZE1))
+             :in-theory (e/d (4VEC-PART-INSTALL
+                              2VEC 4VEC
+                              4VEC-CONCAT$
+                              4VEC-PART-SELECT)
+                             ()))))
+
+  (def-rp-rule sbits-0-of-old-val=bits-new-val=0--1
+    (implies (and (natp size1)
+		  (natp start1)
+		  (natp start2)
+		  (natp size2)
+		  (>= start1 (+ start2 size2)))
+	     (equal (svl::sbits start1 size1
+			        0
+			        (svl::bits term start2 size2))
+		    (svl::bits term start2 size2)))
+    :hints (("Goal"
+             :in-theory (e/d (4VEC-PART-INSTALL
+                              2VEC 4VEC
+                              4VEC-PART-SELECT)
+                             ())))))
 
 (encapsulate
   nil

@@ -84,9 +84,9 @@
     (implies (and (equal cycle-len (len phases))
                   (equal cycle-outphase (svtv-cycle-output-phase phases))
                   cycle-outphase)
-             (equal (svtv-probealist-extract x (base-fsm-eval ins initst (base-fsm-to-cycle phases fsm simp)))
+             (equal (svtv-probealist-extract x (fsm-eval ins initst (fsm-to-cycle phases fsm simp)))
                     (svtv-probealist-extract
-                     new-x (base-fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm))))
+                     new-x (fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm))))
     :hints(("Goal"
             :expand (<call>
                      (:free (eval) (svtv-probealist-extract x eval))
@@ -100,12 +100,12 @@
                   cycle-outphase)
              (equal (svtv-probealist-extract x (svtv-name-lhs-map-eval-list
                                                 map
-                                                (base-fsm-eval ins initst (base-fsm-to-cycle phases fsm simp))))
+                                                (fsm-eval ins initst (fsm-to-cycle phases fsm simp))))
                     (svtv-probealist-extract
                      new-x
                      (svtv-name-lhs-map-eval-list
                       map
-                      (base-fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm)))))
+                      (fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm)))))
     :hints(("Goal"
             :in-theory (disable len-of-svtv-cycle-run-fsm-inputs)
             :expand (<call>
@@ -133,57 +133,57 @@
   
   (defret <fn>-correct
     (implies (svtv-cycle-output-phase phases)
-             (equal (svtv-probealist-extract x (base-fsm-eval ins initst (base-fsm-to-cycle phases fsm simp)))
+             (equal (svtv-probealist-extract x (fsm-eval ins initst (fsm-to-cycle phases fsm simp)))
                     (svtv-probealist-extract
-                     new-x (base-fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm)))))
+                     new-x (fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm)))))
 
   (defret <fn>-correct-name-lhs-map-eval-list
     (implies (svtv-cycle-output-phase phases)
              (equal (svtv-probealist-extract x (svtv-name-lhs-map-eval-list
                                                 map
-                                                (base-fsm-eval ins initst (base-fsm-to-cycle phases fsm simp))))
+                                                (fsm-eval ins initst (fsm-to-cycle phases fsm simp))))
                     (svtv-probealist-extract
                      new-x
                      (svtv-name-lhs-map-eval-list
                       map
-                      (base-fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm)))))))
+                      (fsm-eval (svtv-cycle-run-fsm-inputs ins phases) initst fsm)))))))
 
 
 
-(defthmd base-fsm->nextstate-of-svtv-fsm->renamed-fsm
-  (equal (base-fsm->nextstate (svtv-fsm->renamed-fsm svtv-fsm))
-         (base-fsm->nextstate (svtv-fsm->base-fsm svtv-fsm)))
+(defthmd fsm->nextstate-of-svtv-fsm->renamed-fsm
+  (equal (fsm->nextstate (svtv-fsm->renamed-fsm svtv-fsm))
+         (fsm->nextstate (svtv-fsm->fsm svtv-fsm)))
   :hints(("Goal" :in-theory (enable svtv-fsm->renamed-fsm))))
 
-(defthm base-fsm-step-outs-of-svtv-fsm->renamed-fsm
-  (equal (base-fsm-step-outs in prev-st (svtv-fsm->renamed-fsm fsm))
+(defthm fsm-step-outs-of-svtv-fsm->renamed-fsm
+  (equal (fsm-step-outs in prev-st (svtv-fsm->renamed-fsm fsm))
          (svtv-name-lhs-map-eval
           (svtv-fsm->namemap fsm)
-          (base-fsm-step-outs in prev-st (svtv-fsm->base-fsm fsm))
-          ;; (append (base-fsm-step-outs in prev-st (svtv-fsm->base-fsm fsm))
-          ;;         (base-fsm-step-env in prev-st (svtv-fsm->nextstate fsm)))
+          (fsm-step-outs in prev-st (svtv-fsm->fsm fsm))
+          ;; (append (fsm-step-outs in prev-st (svtv-fsm->fsm fsm))
+          ;;         (fsm-step-env in prev-st (svtv-fsm->nextstate fsm)))
           ))
-  :hints(("Goal" :in-theory (enable base-fsm-step-outs
+  :hints(("Goal" :in-theory (enable fsm-step-outs
                                     svtv-fsm->renamed-fsm
-                                    base-fsm-step-env))))
+                                    fsm-step-env))))
 
-(defthmd base-fsm-eval-of-svtv-fsm->renamed-fsm
-    (equal (base-fsm-eval ins prev-st (svtv-fsm->renamed-fsm x))
+(defthmd fsm-eval-of-svtv-fsm->renamed-fsm
+    (equal (fsm-eval ins prev-st (svtv-fsm->renamed-fsm x))
            (svtv-name-lhs-map-eval-list
             (svtv-fsm->namemap x)
-            (base-fsm-eval ins prev-st (svtv-fsm->base-fsm x))
+            (fsm-eval ins prev-st (svtv-fsm->fsm x))
             ;; (svex-envlists-append-corresp
-            ;;  (base-fsm-eval ins prev-st (svtv-fsm->base-fsm x))
-            ;;  (base-fsm-eval-envs ins prev-st (svtv-fsm->nextstate x)))
+            ;;  (fsm-eval ins prev-st (svtv-fsm->fsm x))
+            ;;  (fsm-eval-envs ins prev-st (svtv-fsm->nextstate x)))
             ))
-    :hints(("Goal" :in-theory (enable base-fsm-eval
-                                      base-fsm-step
-                                      base-fsm-step-outs
-                                      base-fsm-step-env
+    :hints(("Goal" :in-theory (enable fsm-eval
+                                      fsm-step
+                                      fsm-step-outs
+                                      fsm-step-env
                                       svtv-name-lhs-map-eval-list
-                                      base-fsm->nextstate-of-svtv-fsm->renamed-fsm)
-            :induct (base-fsm-eval ins prev-st (svtv-fsm->base-fsm x))
-            :expand ((:free (x) (base-fsm-eval ins prev-st x))))))
+                                      fsm->nextstate-of-svtv-fsm->renamed-fsm)
+            :induct (fsm-eval ins prev-st (svtv-fsm->fsm x))
+            :expand ((:free (x) (fsm-eval ins prev-st x))))))
 
 
 (define svtv-probealist-sufficient-varlists ((x svtv-probealist-p)
