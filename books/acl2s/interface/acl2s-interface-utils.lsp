@@ -222,7 +222,7 @@ can't be a macro."
       (second res))))
 
 (xdoc::defxdoc-raw acl2s-interface-utils
-  :parents (acl2s-interface)
+  :parents (acl2s-interface::acl2s-interface)
   :short "Some utilities built into the ACL2s interface."
   :long "
 <ul>
