@@ -19,6 +19,7 @@
 (local (include-book "slice"))
 (local (include-book "repeatbit"))
 (local (include-book "repeatbit2"))
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -252,3 +253,23 @@
   :hints (("Goal" :in-theory (enable
                               bvsx ;todo
                               ))))
+
+;rename
+(defthm high-slice-of-logext
+  (implies (and (<= (+ -1 n) low)
+                (posp n)
+                (natp low)
+                (integerp high))
+           (equal (slice high low (logext n x))
+                  (bvsx (+ 1 high (- low))
+                        1
+                        (getbit (+ -1 n) x))))
+  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+
+(defthm bvchop-of-logext-becomes-bvsx
+  (implies (and (< size2 size)
+                (natp size)
+                (posp size2))
+           (equal (bvchop size (logext size2 x))
+                  (bvsx size size2 x)))
+  :hints (("Goal" :in-theory (e/d (bvsx logtail-of-bvchop-becomes-slice) (logext)))))

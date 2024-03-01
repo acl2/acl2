@@ -4015,7 +4015,6 @@
             app-view-OF-!RFLAGS
             x86p-OF-!RFLAGS
             read-OF-!RFLAGS
-            boolif-same-arg1-arg2
             logext-of-+-of-bvplus-same-size
             logext-of-+-of-+-of-mult-same-size
             ACL2::MINUS-CANCELLATION-ON-RIGHT ; todo: use an arithmetic-light rule
@@ -4161,7 +4160,7 @@
             jnl-condition-of-getbit-31-and-0
             jnl-condition-rewrite-16
             jnl-condition-rewrite-16b
-            bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
+            acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
             ;ACL2::BVSX-WHEN-SIZES-MATCH
             ACL2::BVCHOP-OF-BVSX
             ;ACL2::BVCHOP-OF-BVCHOP
