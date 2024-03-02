@@ -185,8 +185,8 @@
    targets   ; string list, keys of the pages linked to from source
    links-fal ; the fal being constructed
    )
-  (declare (xargs :guard (and (stringp source)
-                              (symbol-listp targets))))
+  (declare (xargs :guard (and (symbolp source)
+                              (string-listp targets))))
   (b* (((when (atom targets))
         links-fal)
        (target1      (car targets))
