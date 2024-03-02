@@ -164,7 +164,7 @@
        via their macro names."))
 
     (xdoc::desc
-     "@('<prefix>-nonleaf-when-<rulename>')"
+     "@('<prefix>-<rulename>-nonleaf')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that a tree that matches the rule name

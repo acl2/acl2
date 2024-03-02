@@ -200,7 +200,7 @@
     (xdoc::li
      "The alternation that defines the rule name.")
     (xdoc::li
-     "The name of the @('<prefix>-nonleaf-when-<rulename>') theorem
+     "The name of the @('<prefix>-<rulename>-nonleaf') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
      "The name of the @('<prefix>-rulename-when-<rulename>') theorem
@@ -780,7 +780,7 @@
   (b* ((rulename-string (rulename->get rulename))
        (rulename-upstring (str::upcase-string rulename-string))
        (nonleaf-thm
-        (packn-pos (list prefix '-nonleaf-when- rulename-upstring)
+        (packn-pos (list prefix '- rulename-upstring '-nonleaf)
                    prefix))
        (rulename-thm
         (packn-pos (list prefix '-rulename-when- rulename-upstring)
