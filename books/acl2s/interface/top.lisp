@@ -12,6 +12,8 @@
 (defttag :acl2s-interface)
 (include-raw "acl2s-interface.lsp")
 (include-raw "acl2s-interface-utils.lsp")
+
+(include-book "doc")
 ;; Uncomment the below block to generate documentation in this directory.
 #|
 ;; this is required to run xdoc::save on versions of ACL2 before commit

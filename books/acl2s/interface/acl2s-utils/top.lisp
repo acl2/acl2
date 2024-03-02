@@ -6,3 +6,4 @@
 (defttag :acl2s-interface)
 (include-raw "additions.lsp")
 (include-raw "extras.lsp")
+(include-book "extras-doc")
