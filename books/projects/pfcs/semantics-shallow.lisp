@@ -123,7 +123,7 @@
    (xdoc::p
     "The order of the list is according to
      the total order that osets are based on."))
-  (cond ((set::empty names) nil)
+  (cond ((set::emptyp names) nil)
         (t (cons (name-to-symbol (set::head names) state)
                  (name-set-to-symbol-list (set::tail names) state)))))
 

@@ -141,7 +141,7 @@
      (implies (and (setp X)
                    (setp Y))
               (equal (fast-intersectp X Y)
-                     (not (empty (fast-intersect-old X Y)))))
+                     (not (emptyp (fast-intersect-old X Y)))))
      :hints(("Goal" :in-theory (enable (:ruleset low-level-rules)))))))
 
 
@@ -188,7 +188,7 @@
   (defthm fast-intersectp-correct
     (implies (and (setp X) (setp Y))
              (equal (fast-intersectp X Y)
-                    (not (empty (fast-intersect X Y nil))))))
+                    (not (emptyp (fast-intersect X Y nil))))))
 
   (in-theory (disable fast-intersect
                       fast-intersect-set
@@ -216,7 +216,7 @@ consing.</p>"
   (defun intersect (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
-    (mbe :logic (cond ((empty X) (sfix X))
+    (mbe :logic (cond ((emptyp X) (sfix X))
                       ((in (head X) Y)
                        (insert (head X) (intersect (tail X) Y)))
                       (t (intersect (tail X) Y)))
@@ -231,11 +231,11 @@ consing.</p>"
   (defthm intersect-sfix-cancel-Y
     (equal (intersect X (sfix Y)) (intersect X Y)))
 
-  (defthm intersect-empty-X
-    (implies (empty X) (empty (intersect X Y))))
+  (defthm intersect-emptyp-X
+    (implies (emptyp X) (emptyp (intersect X Y))))
 
-  (defthm intersect-empty-Y
-    (implies (empty Y) (empty (intersect X Y))))
+  (defthm intersect-emptyp-Y
+    (implies (emptyp Y) (emptyp (intersect X Y))))
 
   (encapsulate ()
 
@@ -318,7 +318,7 @@ consing.</p>"
 members."
 
   :long "<p>Logically we just check whether the @(see intersect) of @('X') and
-@('Y') is @(see empty).</p>
+@('Y') is @(see emptyp).</p>
 
 <p>In the execution, we use a faster function that checks for any common
 members and doesn't build any new sets.</p>"
@@ -326,5 +326,5 @@ members and doesn't build any new sets.</p>"
   (defun intersectp (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :guard-hints(("Goal" :in-theory (enable fast-intersectp-correct)))))
-    (mbe :logic (not (empty (intersect X Y)))
+    (mbe :logic (not (emptyp (intersect X Y)))
          :exec (fast-intersectp X Y))))

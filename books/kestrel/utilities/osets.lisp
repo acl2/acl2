@@ -1,10 +1,10 @@
 ; Oset Utilities
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,7 +71,7 @@
   :returns (yes/no booleanp)
   :parents (osets-of-natural-numbers)
   :short "Check if all the elements of a set are natural numbers."
-  (or (empty set)
+  (or (emptyp set)
       (and (natp (head set))
            (set-all-natp (tail set))))
   ///
@@ -121,7 +121,7 @@
   :returns (yes/no booleanp)
   :parents (osets-of-integer-numbers)
   :short "Check if all the elements of a set are integer numbers."
-  (or (empty set)
+  (or (emptyp set)
       (and (integerp (head set))
            (set-all-integerp (tail set))))
   ///

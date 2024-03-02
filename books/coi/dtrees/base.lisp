@@ -409,7 +409,7 @@
  ()
 
  (local (defun flat-countmap (domain map)
-          (if (set::empty domain)
+          (if (set::emptyp domain)
               1
             (+ (count (map::get (set::head domain) map))
                (flat-countmap (set::tail domain) map)))))
@@ -876,10 +876,10 @@
  ;; things up, so I'm just making it local for this proof.
  (local (defthm in-forward-to-nonempty
           (implies (set::in a x)
-                   (not (set::empty x)))
+                   (not (set::emptyp x)))
           :rule-classes :forward-chaining))
 
  (defthm empty-of-domain
-   (equal (set::empty (domain dtree))
+   (equal (set::emptyp (domain dtree))
           nil))
 )

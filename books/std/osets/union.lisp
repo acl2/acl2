@@ -145,7 +145,7 @@ the set order.</p>"
   (defun union (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
-    (mbe :logic (if (empty X)
+    (mbe :logic (if (emptyp X)
                     (sfix Y)
                   (insert (head X) (union (tail X) Y)))
          :exec  (fast-union X Y nil)))
@@ -159,17 +159,17 @@ the set order.</p>"
   (defthm union-sfix-cancel-Y
     (equal (union X (sfix Y)) (union X Y)))
 
-  (defthm union-empty-X
-    (implies (empty X)
+  (defthm union-emptyp-X
+    (implies (emptyp X)
              (equal (union X Y) (sfix Y))))
 
-  (defthm union-empty-Y
-    (implies (empty Y)
+  (defthm union-emptyp-Y
+    (implies (emptyp Y)
              (equal (union X Y) (sfix X))))
 
-  (defthm union-empty
-    (equal (empty (union X Y))
-           (and (empty X) (empty Y))))
+  (defthm union-emptyp
+    (equal (emptyp (union X Y))
+           (and (emptyp X) (emptyp Y))))
 
   (defthm union-in
     (equal (in a (union X Y))

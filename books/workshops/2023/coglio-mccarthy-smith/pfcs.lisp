@@ -958,7 +958,7 @@
            set::mergesort))
 
 (defrule definition-free-vars-of-boolean-assert-list-gadget
-  (set::empty (definition-free-vars (boolean-assert-list-gadget n)))
+  (set::emptyp (definition-free-vars (boolean-assert-list-gadget n)))
   :enable (boolean-assert-list-gadget
            definition-free-vars))
 

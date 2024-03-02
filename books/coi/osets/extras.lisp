@@ -42,7 +42,7 @@
 
 (defthmd open-set2list
   (implies
-   (not (empty set))
+   (not (emptyp set))
    (equal (2list set)
           (CONS (HEAD SET)
                 (|2LIST| (TAIL SET))))))
@@ -51,7 +51,7 @@
 (defthmd in-implications
   (implies
    (and
-    (not (empty set))
+    (not (emptyp set))
     (in a set)
     (not (equal (head set) a)))
    (acl2::<< (head set) a))
@@ -65,7 +65,7 @@
 (defthmd head-is-least-element
   (implies
    (and
-    (not (empty set))
+    (not (emptyp set))
     (in a (tail set)))
    (acl2::<< (head set) a))
   :hints (("goal" :use in-implications)))
@@ -73,8 +73,8 @@
 (defthm ordering-over-subset
   (implies
    (and
-    (not (empty set1))
-    (not (empty set2))
+    (not (emptyp set1))
+    (not (emptyp set2))
     (subset set2 (tail set1)))
    (acl2::<< (head set1) (head set2)))
   :hints (("goal" :use (:instance head-is-least-element
@@ -84,27 +84,27 @@
 (defthm head-of-insert-under-subset
   (implies
    (and
-    ;(not (empty set2))
-    (not (empty set1))
+    ;(not (emptyp set2))
+    (not (emptyp set1))
     (subset set2 (tail set1)))
    (equal (head (insert (head set1) set2))
           (head set1)))
   :hints (("goal" :in-theory (enable HEAD-INSERT))))
 
-(defthm not-empty-setp
+(defthm not-emptyp-setp
   (implies
    (and
     (setp set)
-    (empty set))
+    (emptyp set))
    (not set))
   :rule-classes (:forward-chaining)
-  :hints (("goal" :in-theory (enable setp empty))))
+  :hints (("goal" :in-theory (enable setp emptyp))))
 
 (defthm tail-of-insert-under-subset
   (implies
    (and
     (setp set2)
-    (not (empty set1))
+    (not (emptyp set1))
     (subset set2 (tail set1)))
    (equal (tail (insert (head set1) set2))
           set2))
@@ -113,13 +113,13 @@
 (defthm consp-of-insert
   (consp (insert a s))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable empty insert setp))))
+  :hints (("Goal" :in-theory (enable emptyp insert setp))))
 
 ;; ;bzo drop because we have consp-of-insert?
 ;; (defthm iff-of-insert
 ;;   (iff (insert a s)
 ;;        t)
-;;   :hints (("Goal" :in-theory (enable empty insert setp))))
+;;   :hints (("Goal" :in-theory (enable emptyp insert setp))))
 
 
 ;these mix car/cdr and insert and perhaps that should never happen.  but it seems to in practice...
@@ -148,25 +148,25 @@
   (in a (list a))
   :hints (("Goal" :in-theory (enable tail
                                      head
-                                     empty)
+                                     emptyp)
            :expand ((in a (list a))))))
 
-(defthm empty-when-setp-means-nil
+(defthm emptyp-when-setp-means-nil
   (implies (setp x)
-           (equal (EMPTY x)
+           (equal (EMPTYP x)
                   (equal x nil)))
-  :hints (("Goal" :in-theory (enable EMPTY))))
+  :hints (("Goal" :in-theory (enable EMPTYP))))
 
 ;bzo expensive?
-(defthm empty-implies-not-sfix
-  (implies (empty set)
+(defthm emptyp-implies-not-sfix
+  (implies (emptyp set)
            (not (sfix set)))
   :hints (("Goal" :in-theory (enable sfix))))
 
 (defthm union-iff
   (iff (union x y)
-       (or (not (empty x))
-           (not (empty y)))))
+       (or (not (emptyp x))
+           (not (emptyp y)))))
 
 (defthmd delete-of-union-push-into-both
   (equal (DELETE A (UNION x y))
@@ -189,8 +189,8 @@
            (insert b (delete a x)))))
 
 ;expensive?
-(defthm head-when-empty
-  (implies (empty x)
+(defthm head-when-emptyp
+  (implies (emptyp x)
            (equal (head x)
                   (emptyset)))
   :hints (("Goal" :in-theory (enable head))))
@@ -205,16 +205,16 @@
 ;trying disabled, since this sort of takes us out of the set world
 
 ;; [jared] something like this is now in std/osets
-;; (defthmd insert-when-empty
-;;   (implies (empty x)
+;; (defthmd insert-when-emptyp
+;;   (implies (emptyp x)
 ;;            (equal (insert a x)
 ;;                   (list a)))
 ;;   :hints (("Goal" :in-theory (enable insert))))
 
 ;this sort of keeps us in the sets world (emptyset is a macro for nil - does that count as being in the sets world?)
-(defthm insert-when-empty-2
+(defthm insert-when-emptyp-2
   (implies (and (syntaxp (not (equal x ''nil))) ;prevents loops
-                (empty x))
+                (emptyp x))
            (equal (insert a x)
                   (insert a (emptyset))))
   :hints (("Goal" :in-theory (enable insert))))
@@ -295,9 +295,9 @@
            (subset x (insert a y)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-(defthm not-empty-of-singleton
-  (not (empty (list a)))
-  :hints (("Goal" :in-theory (enable empty))))
+(defthm not-emptyp-of-singleton
+  (not (emptyp (list a)))
+  :hints (("Goal" :in-theory (enable emptyp))))
 
 ;may be expensive?
 (defthm subset-delete-irrel-cheap
@@ -325,33 +325,33 @@
 
 (defthmd subset-of-singleton
   (equal (subset x (insert a nil))
-         (or (empty x)
+         (or (emptyp x)
              ;(equal x (insert a nil))
              (and (equal a (head x)) ;rephrasing...
-                  (empty (tail x))))))
+                  (emptyp (tail x))))))
 
 ;Maybe restrict double-containment to not fire if either argument is a singleton?
 ;(theory-invariant (incompatible (:rewrite subset-of-singleton) (:rewrite double-containment)))
 
 ;semed to be expensive.
-(defthmd empty-of-delete-rewrite
-  (equal (empty (delete a s))
-         (or (empty s)
+(defthmd emptyp-of-delete-rewrite
+  (equal (emptyp (delete a s))
+         (or (emptyp s)
              (equal s (insert a (emptyset))))))
 
 ;; [jared] something like this is now in std/osets/top
-;; (defthmd tail-when-empty
-;;   (implies (empty set)
+;; (defthmd tail-when-emptyp
+;;   (implies (emptyp set)
 ;;            (equal (tail set)
 ;;                   (emptyset)))
 ;;   :hints (("Goal" :in-theory (enable tail))))
 
-(defthm tail-when-empty-cheap
-  (implies (empty set)
+(defthm tail-when-emptyp-cheap
+  (implies (emptyp set)
            (equal (tail set)
                   (emptyset)))
   :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable tail-when-empty))))
+  :hints (("Goal" :in-theory (enable tail-when-emptyp))))
 
 (defthm delete-head-of-self
   (equal (delete (head set) set)
@@ -370,6 +370,6 @@
   :rule-classes ((:rewrite :backchain-limit-lst (1)))
   :hints (("Goal" :in-theory (enable tail-when-not-setp))))
 
-(defthm not-empty-when-something-in
+(defthm not-emptyp-when-something-in
   (implies (in a x) ;a is a free variable
-           (not (empty x))))
+           (not (emptyp x))))

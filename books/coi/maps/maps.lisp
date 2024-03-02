@@ -66,7 +66,7 @@
 ;;
 ;;   (head map)              returns some arbitrary key from the map
 ;;   (tail map)              macro, abbreviation for (erase (head map) map)
-;;   (empty map)             macro, abbreviation for (set::empty (domain map))
+;;   (empty map)             macro, abbreviation for (set::emptyp (domain map))
 ;;   (empty-exec map)        faster executing function which rewrites to empty
 ;;
 ;;
@@ -190,7 +190,7 @@
 ;; We have not concerned ourselves much with runtime efficiency.  Originally we
 ;; wrote our primitive list-like operations (head, tail) using the set
 ;; operations on the domain of the map.  In other words, (empty map) was
-;; (set::empty (domain map)), (head map) was (set::head (domain map)), and
+;; (set::emptyp (domain map)), (head map) was (set::head (domain map)), and
 ;; (tail map) was (erase (head map) map).  This was very inefficient because we
 ;; had to reconstruct the entire domain for each operation, although at least
 ;; we could define empty-exec to be a faster version of empty that just asked
@@ -485,7 +485,7 @@
 ;; "empty", a simple macro abbreviation for emptiness of its domain.
 
 (defmacro empty (map)
-  `(set::empty (domain ,map)))
+  `(set::emptyp (domain ,map)))
 
 (defund empty-exec (map)
   (declare (xargs :guard (mapp map)
@@ -1091,7 +1091,7 @@
 (ACL2::add-untranslate-pattern (set::in ?key (domain ?map))
                                (in ?key ?map))
 
-(ACL2::add-untranslate-pattern (set::empty (domain ?map))
+(ACL2::add-untranslate-pattern (set::emptyp (domain ?map))
                                (empty ?map))
 
 (ACL2::add-untranslate-pattern (erase (head ?map) ?map)

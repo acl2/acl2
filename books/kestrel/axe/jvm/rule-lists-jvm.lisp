@@ -693,7 +693,7 @@
           '(set::delete-constant-opener ;needed for address calcs
             set::tail-constant-opener   ;needed for address calcs
             set::head-constant-opener   ;needed for address calcs
-            set::empty-constant-opener  ;needed for address calcs
+            set::emptyp-constant-opener ;needed for address calcs
             set::sfix-constant-opener   ;needed for address calcs
             set::setp-constant-opener   ;needed for address calcs
             fast-<<-constant-opener     ;needed for address calcs
