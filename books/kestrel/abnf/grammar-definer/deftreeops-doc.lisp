@@ -233,7 +233,7 @@
        The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
-     "@('<prefix>-match-conc<i>-<rulename>')"
+     "@('<prefix>-<rulename>-conc<i>-match')"
      (xdoc::p
       "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (starting from 1)
