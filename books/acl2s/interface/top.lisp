@@ -2,7 +2,6 @@
 ; (depends-on "acl2s-interface-utils.lsp")
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
-(include-book "xdoc/defxdoc-raw" :dir :system)
 (set-ignore-ok t)
 (make-event
  (er-progn (assign acl2s-interface-internal::command-result nil)
