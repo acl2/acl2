@@ -203,7 +203,7 @@
      "The name of the @('<prefix>-<rulename>-nonleaf') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
-     "The name of the @('<prefix>-rulename-when-<rulename>') theorem
+     "The name of the @('<prefix>-<rulename>-rulename') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
      "The name of the @('<prefix>-branches-match-alt-when-<rulename>') theorem
@@ -783,7 +783,7 @@
         (packn-pos (list prefix '- rulename-upstring '-nonleaf)
                    prefix))
        (rulename-thm
-        (packn-pos (list prefix '-rulename-when- rulename-upstring)
+        (packn-pos (list prefix '- rulename-upstring '-rulename)
                    prefix))
        (match-thm
         (packn-pos (list prefix '-branches-match-alt-when- rulename-upstring)
