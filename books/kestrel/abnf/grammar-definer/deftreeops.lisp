@@ -209,7 +209,7 @@
      "The name of the @('<prefix>-<rulename>-branches-match-alt') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
-     "The name of the @('<prefix>-concs-when-<rulename>') theorem
+     "The name of the @('<prefix>-<rulename>-concs') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
      "The name of the @('<prefix>-conc-equivs-when-<rulename>') theorem
@@ -789,7 +789,7 @@
         (packn-pos (list prefix '- rulename-upstring '-branches-match-alt)
                    prefix))
        (concs-thm
-        (packn-pos (list prefix '-concs-when- rulename-upstring)
+        (packn-pos (list prefix '- rulename-upstring '-concs)
                    prefix))
        ((mv okp terms) (deftreeops-gen-discriminant-terms alt))
        (terms (if okp terms (repeat (len alt) nil)))

@@ -185,7 +185,7 @@
        then its branches match the alternation that defines the rule name."))
 
     (xdoc::desc
-     "@('<prefix>-concs-when-<rulename>')"
+     "@('<prefix>-<rulename>-concs')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that
