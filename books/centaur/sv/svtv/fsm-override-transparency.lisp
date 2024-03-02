@@ -37,13 +37,13 @@
 (local (std::add-default-post-define-hook :fix))
 
 
-;; (define base-fsm-partial-monotonic ((params svarlist-p)
-;;                                     (x base-fsm-p))
-;;   (b* (((base-fsm x)))
+;; (define fsm-partial-monotonic ((params svarlist-p)
+;;                                     (x fsm-p))
+;;   (b* (((fsm x)))
 ;;     (and (ec-call (svex-alist-partial-monotonic params x.values))
 ;;          (ec-call (svex-alist-partial-monotonic params x.nextstate))))
 ;;   ///
-;;   (defcong set-equiv equal (base-fsm-partial-monotonic params x) 1))
+;;   (defcong set-equiv equal (fsm-partial-monotonic params x) 1))
 
 
 (local (defthm svex-env-<<=-of-svex-env-extract
@@ -110,8 +110,8 @@
            (if (atom ins)
                (list  x-initst y-initst x y)
              (ind (cdr ins)
-                  (base-fsm-step (car ins) x-initst x)
-                  (base-fsm-step (car ins) y-initst y)
+                  (fsm-step (car ins) x-initst x)
+                  (fsm-step (car ins) y-initst y)
                   x y))))
   
   (defthm fsm-final-state-when-<<=-and-ovmonotonic
@@ -121,43 +121,43 @@
                   (equal (svex-alist-keys x) (svex-alist-keys y))
                   (svarlist-override-p (svex-alist-keys x) nil)
                   (svex-env-<<= x-initst y-initst))
-             (svex-env-<<= (base-fsm-final-state ins x-initst x)
-                           (base-fsm-final-state ins y-initst y)))
+             (svex-env-<<= (fsm-final-state ins x-initst x)
+                           (fsm-final-state ins y-initst y)))
     :hints (("goal" :induct (ind ins x-initst y-initst x y)
-             :in-theory (enable base-fsm-step
-                                base-fsm-step-env
+             :in-theory (enable fsm-step
+                                fsm-step-env
                                 svex-envlist-<<=)
-             :expand ((:free (initst x) (base-fsm-final-state ins initst x)))))))
+             :expand ((:free (initst x) (fsm-final-state ins initst x)))))))
 
-(defsection base-fsm-<<=
-  (local (in-theory (enable base-fsm-<<=)))
-  (local (std::set-define-current-function base-fsm-<<=))
+(defsection fsm-<<=
+  (local (in-theory (enable fsm-<<=)))
+  (local (std::set-define-current-function fsm-<<=))
 
   (local (defun ind (ins x-initst y-initst x y)
            (if (atom ins)
                (list  x-initst y-initst x y)
              (ind (cdr ins)
-                  (base-fsm-step (car ins) x-initst (base-fsm->nextstate x))
-                  (base-fsm-step (car ins) y-initst (base-fsm->nextstate y))
+                  (fsm-step (car ins) x-initst (fsm->nextstate x))
+                  (fsm-step (car ins) y-initst (fsm->nextstate y))
                   x y))))
   
-  (defthm fsm-eval-when-base-fsm-<<=-and-ovmonotonic
-    (b* (((base-fsm x)) ((base-fsm y)))
-      (implies (and (base-fsm-<<= x y)
-                    (base-fsm-ovmonotonic x)
-                    (base-fsm-ovmonotonic y)
+  (defthm fsm-eval-when-fsm-<<=-and-ovmonotonic
+    (b* (((fsm x)) ((fsm y)))
+      (implies (and (fsm-<<= x y)
+                    (fsm-ovmonotonic x)
+                    (fsm-ovmonotonic y)
                     (equal (svex-alist-keys x.nextstate) (svex-alist-keys y.nextstate))
                     (svarlist-override-p (svex-alist-keys x.nextstate) nil)
                     (svex-env-<<= x-initst y-initst))
-               (svex-envlist-<<= (base-fsm-eval ins x-initst x)
-                                 (base-fsm-eval ins y-initst y))))
+               (svex-envlist-<<= (fsm-eval ins x-initst x)
+                                 (fsm-eval ins y-initst y))))
     :hints (("goal" :induct (ind ins x-initst y-initst x y)
-             :in-theory (enable base-fsm-step
-                                base-fsm-step-outs
-                                base-fsm-step-env
+             :in-theory (enable fsm-step
+                                fsm-step-outs
+                                fsm-step-env
                                 svex-envlist-<<=
-                                base-fsm-ovmonotonic)
-             :expand ((:free (initst x) (base-fsm-eval ins initst x)))))))
+                                fsm-ovmonotonic)
+             :expand ((:free (initst x) (fsm-eval ins initst x)))))))
   
        
                                             
@@ -218,7 +218,7 @@
      ;; but it binds free variables params/overridekeys/subst explicitly for the theorem below.
      (implies (and ;; (overridekeys-envs-ok params overridekeys some-impl-env some-spec-env
                ;;                       (svex-alist-eval subst spec-env))
-               (bind-free '((subst . (base-fsm->values$inline x))
+               (bind-free '((subst . (fsm->values$inline x))
                             (overridekeys . overridekeys))
                           (subst overridekeys))
                (overridekeys-envs-ok overridekeys impl-env spec-env
@@ -237,55 +237,55 @@
                (list x impl-envs impl-initst spec-envs spec-initst)
              (ind x
                   (cdr impl-envs)
-                  (base-fsm-step (car impl-envs) impl-initst (base-fsm->nextstate x))
+                  (fsm-step (car impl-envs) impl-initst (fsm->nextstate x))
                   (cdr spec-envs)
-                  (base-fsm-step (car spec-envs) spec-initst (base-fsm->nextstate x))))))
+                  (fsm-step (car spec-envs) spec-initst (fsm->nextstate x))))))
                     
   (defthm fsm-eval-when-overridekeys-envlists-ok
-    (b* ((impl-outs (base-fsm-eval impl-envs impl-initst x))
-         (spec-outs (base-fsm-eval spec-envs spec-initst x)))
-      (implies (and (base-fsm-overridekey-transparent-p x overridekeys)
-                    (base-fsm-ovmonotonic x)
-                    (base-fsm-ovcongruent x)
+    (b* ((impl-outs (fsm-eval impl-envs impl-initst x))
+         (spec-outs (fsm-eval spec-envs spec-initst x)))
+      (implies (and (fsm-overridekey-transparent-p x overridekeys)
+                    (fsm-ovmonotonic x)
+                    (fsm-ovcongruent x)
                     (overridekeys-envlists-ok overridekeys impl-envs spec-envs spec-outs)
                     (svex-env-<<= impl-initst spec-initst)
-                    (svarlist-override-p (svex-alist-keys (base-fsm->nextstate x)) nil))
+                    (svarlist-override-p (svex-alist-keys (fsm->nextstate x)) nil))
                (svex-envlist-<<= impl-outs spec-outs)))
-    :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p
-                                      base-fsm-ovmonotonic
-                                      base-fsm-ovcongruent
+    :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p
+                                      fsm-ovmonotonic
+                                      fsm-ovcongruent
                                       svex-envlist-<<=
-                                      base-fsm-step
-                                      base-fsm-step-outs
-                                      base-fsm-step-env)
-            :expand ((base-fsm-eval impl-envs impl-initst x)
-                     (base-fsm-eval spec-envs spec-initst x)
+                                      fsm-step
+                                      fsm-step-outs
+                                      fsm-step-env)
+            :expand ((fsm-eval impl-envs impl-initst x)
+                     (fsm-eval spec-envs spec-initst x)
                      (:free (spec-outs)
                       (overridekeys-envlists-ok overridekeys impl-envs spec-envs spec-outs)))
             :induct (ind x impl-envs impl-initst spec-envs spec-initst))))
 
   (defthm fsm-final-state-when-overridekeys-envlists-ok
-    (b* ((impl-final (base-fsm-final-state impl-envs impl-initst (base-fsm->nextstate x)))
-         (spec-final (base-fsm-final-state spec-envs spec-initst (base-fsm->nextstate x)))
-         (spec-outs (base-fsm-eval spec-envs spec-initst x)))
-      (implies (and (base-fsm-overridekey-transparent-p x overridekeys)
-                    (base-fsm-ovmonotonic x)
-                    (base-fsm-ovcongruent x)
+    (b* ((impl-final (fsm-final-state impl-envs impl-initst (fsm->nextstate x)))
+         (spec-final (fsm-final-state spec-envs spec-initst (fsm->nextstate x)))
+         (spec-outs (fsm-eval spec-envs spec-initst x)))
+      (implies (and (fsm-overridekey-transparent-p x overridekeys)
+                    (fsm-ovmonotonic x)
+                    (fsm-ovcongruent x)
                     (overridekeys-envlists-ok overridekeys impl-envs spec-envs spec-outs)
                     (svex-env-<<= impl-initst spec-initst)
-                    (svarlist-override-p (svex-alist-keys (base-fsm->nextstate x)) nil)
+                    (svarlist-override-p (svex-alist-keys (fsm->nextstate x)) nil)
                     (equal (len impl-envs) (len spec-envs)))
                (svex-env-<<= impl-final spec-final)))
-    :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p
-                                      base-fsm-ovmonotonic
-                                      base-fsm-ovcongruent
+    :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p
+                                      fsm-ovmonotonic
+                                      fsm-ovcongruent
                                       svex-envlist-<<=
-                                      base-fsm-step
-                                      base-fsm-step-outs
-                                      base-fsm-step-env)
-            :expand ((base-fsm-eval spec-envs spec-initst x)
-                     (:free (x) (base-fsm-final-state spec-envs spec-initst x))
-                     (:free (x) (base-fsm-final-state impl-envs impl-initst x))
+                                      fsm-step
+                                      fsm-step-outs
+                                      fsm-step-env)
+            :expand ((fsm-eval spec-envs spec-initst x)
+                     (:free (x) (fsm-final-state spec-envs spec-initst x))
+                     (:free (x) (fsm-final-state impl-envs impl-initst x))
                      (:free (spec-outs)
                       (overridekeys-envlists-ok overridekeys impl-envs spec-envs spec-outs)))
             :induct (ind x impl-envs impl-initst spec-envs spec-initst))))
@@ -300,53 +300,53 @@
                                              svex-env-<<=-transitive-2)))))
 
   (defthm fsm-eval-with-conservative-fsm-when-overridekeys-envlists-ok
-    (b* ((impl-outs (base-fsm-eval impl-envs impl-initst x-approx))
-         (spec-outs (base-fsm-eval spec-envs spec-initst x)))
-      (implies (and (base-fsm-overridekey-transparent-p x overridekeys)
-                    (base-fsm-ovmonotonic x)
-                    (base-fsm-ovmonotonic x-approx)
-                    (base-fsm-ovcongruent x)
-                    ;; (base-fsm-ovcongruent x-approx)
+    (b* ((impl-outs (fsm-eval impl-envs impl-initst x-approx))
+         (spec-outs (fsm-eval spec-envs spec-initst x)))
+      (implies (and (fsm-overridekey-transparent-p x overridekeys)
+                    (fsm-ovmonotonic x)
+                    (fsm-ovmonotonic x-approx)
+                    (fsm-ovcongruent x)
+                    ;; (fsm-ovcongruent x-approx)
                     (overridekeys-envlists-ok overridekeys impl-envs spec-envs spec-outs)
                     (svex-env-<<= impl-initst spec-initst)
-                    (svarlist-override-p (svex-alist-keys (base-fsm->nextstate x)) nil)
-                    (base-fsm-<<= x-approx x)
-                    (equal (svex-alist-keys (base-fsm->nextstate x-approx))
-                           (svex-alist-keys (base-fsm->nextstate x))))
+                    (svarlist-override-p (svex-alist-keys (fsm->nextstate x)) nil)
+                    (fsm-<<= x-approx x)
+                    (equal (svex-alist-keys (fsm->nextstate x-approx))
+                           (svex-alist-keys (fsm->nextstate x))))
                (svex-envlist-<<= impl-outs spec-outs)))
-    :hints (("goal" :use ((:instance fsm-eval-when-base-fsm-<<=-and-ovmonotonic
+    :hints (("goal" :use ((:instance fsm-eval-when-fsm-<<=-and-ovmonotonic
                            (x x-approx) (y x)
                            (x-initst impl-initst) (y-initst impl-initst)
                            (ins impl-envs)))
-             :in-theory (e/d () (fsm-eval-when-base-fsm-<<=-and-ovmonotonic)))))
+             :in-theory (e/d () (fsm-eval-when-fsm-<<=-and-ovmonotonic)))))
 
   (defthm fsm-final-state-with-conservative-fsm-when-overridekeys-envlists-ok
-    (b* ((impl-final (base-fsm-final-state impl-envs impl-initst (base-fsm->nextstate x-approx)))
-         (spec-final (base-fsm-final-state spec-envs spec-initst (base-fsm->nextstate x)))
-         (spec-outs (base-fsm-eval spec-envs spec-initst x)))
-      (implies (and (base-fsm-overridekey-transparent-p x overridekeys)
-                    (base-fsm-ovmonotonic x)
-                    (base-fsm-ovcongruent x)
-                    (base-fsm-ovmonotonic x-approx)
+    (b* ((impl-final (fsm-final-state impl-envs impl-initst (fsm->nextstate x-approx)))
+         (spec-final (fsm-final-state spec-envs spec-initst (fsm->nextstate x)))
+         (spec-outs (fsm-eval spec-envs spec-initst x)))
+      (implies (and (fsm-overridekey-transparent-p x overridekeys)
+                    (fsm-ovmonotonic x)
+                    (fsm-ovcongruent x)
+                    (fsm-ovmonotonic x-approx)
                     (overridekeys-envlists-ok overridekeys impl-envs spec-envs spec-outs)
                     (svex-env-<<= impl-initst spec-initst)
-                    (svarlist-override-p (svex-alist-keys (base-fsm->nextstate x)) nil)
+                    (svarlist-override-p (svex-alist-keys (fsm->nextstate x)) nil)
                     (equal (len impl-envs) (len spec-envs))
-                    (base-fsm-<<= x-approx x)
-                    (equal (svex-alist-keys (base-fsm->nextstate x-approx))
-                           (svex-alist-keys (base-fsm->nextstate x))))
+                    (fsm-<<= x-approx x)
+                    (equal (svex-alist-keys (fsm->nextstate x-approx))
+                           (svex-alist-keys (fsm->nextstate x))))
                (svex-env-<<= impl-final spec-final)))
     :hints (("goal" :use ((:instance fsm-final-state-when-<<=-and-ovmonotonic
-                           (x (base-fsm->nextstate x-approx))
-                           (y (base-fsm->nextstate x))
+                           (x (fsm->nextstate x-approx))
+                           (y (fsm->nextstate x))
                            (x-initst impl-initst) (y-initst impl-initst)
                            (ins impl-envs)))
              :in-theory (e/d (svex-env-<<=-transitive-1
                               svex-env-<<=-transitive-2)
                              (fsm-final-state-when-<<=-and-ovmonotonic)))
             (and stable-under-simplificationp
-                 '(:in-theory (enable base-fsm-<<=
-                                      base-fsm-ovmonotonic))))))
+                 '(:in-theory (enable fsm-<<=
+                                      fsm-ovmonotonic))))))
 
 
 (defsection overridekeys-envlists-agree*
@@ -407,7 +407,7 @@
              (ind x
                   (cdr impl-envs)
                   (cdr spec-envs)
-                  (base-fsm-step (car spec-envs) initst (base-fsm->nextstate x))))))
+                  (fsm-step (car spec-envs) initst (fsm->nextstate x))))))
                     
   
   (local (defthm svex-alist-eval-ovtransparent-special
@@ -425,22 +425,22 @@
                     :in-theory (disable svex-alist-eval-when-overridekeys-envs-agree*)))))
                                   
   (defthm fsm-eval-when-overridekeys-envlists-agree*
-    (b* ((impl-outs (base-fsm-eval impl-envs initst x))
-         (spec-outs (base-fsm-eval spec-envs initst x)))
-      (implies (and (base-fsm-overridekey-transparent-p x overridekeys)
-                    (base-fsm-ovcongruent x)
+    (b* ((impl-outs (fsm-eval impl-envs initst x))
+         (spec-outs (fsm-eval spec-envs initst x)))
+      (implies (and (fsm-overridekey-transparent-p x overridekeys)
+                    (fsm-ovcongruent x)
                     (overridekeys-envlists-agree* overridekeys impl-envs spec-envs spec-outs)
-                    (svarlist-override-p (svex-alist-keys (base-fsm->nextstate x)) nil))
+                    (svarlist-override-p (svex-alist-keys (fsm->nextstate x)) nil))
                (svex-envlists-equivalent impl-outs spec-outs)))
-    :hints(("Goal" :in-theory (enable base-fsm-overridekey-transparent-p
-                                      base-fsm-ovcongruent
+    :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p
+                                      fsm-ovcongruent
                                       svex-envlist-<<=
-                                      base-fsm-step
-                                      base-fsm-step-outs
-                                      base-fsm-step-env
+                                      fsm-step
+                                      fsm-step-outs
+                                      fsm-step-env
                                       svex-envlists-equivalent-redef)
-            :expand ((base-fsm-eval impl-envs initst x)
-                     (base-fsm-eval spec-envs initst x)
+            :expand ((fsm-eval impl-envs initst x)
+                     (fsm-eval spec-envs initst x)
                      (:free (spec-outs)
                       (overridekeys-envlists-agree* overridekeys impl-envs spec-envs spec-outs)))
             :induct (ind x impl-envs spec-envs initst)))))

@@ -155,15 +155,15 @@
            :hints(("Goal" :use flatnorm-of-svtv-data-obj
                    :in-theory (disable flatnorm-of-svtv-data-obj)))))
 
-  (defthm base-fsm-ovmonotonic-of-svtv-data-obj->phase-fsm
+  (defthm fsm-ovmonotonic-of-svtv-data-obj->phase-fsm
     (b* (((svtv-data-obj x)))
       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                     x.flatten-validp
                     x.flatnorm-validp
                     x.phase-fsm-validp
                     (flatnorm-setup->monotonify x.flatnorm-setup))
-               (base-fsm-ovmonotonic x.phase-fsm)))
-    ;; :hints(("Goal" :in-theory (e/d (;; base-fsm-ovcongruent
+               (fsm-ovmonotonic x.phase-fsm)))
+    ;; :hints(("Goal" :in-theory (e/d (;; fsm-ovcongruent
     ;;                                 ;; phase-fsm-composition-p
     ;;                                 PHASE-FSM-COMPOSITION-P-IMPLIES-VALUES-KEYS)
     ;;                                (phase-fsm-validp-of-svtv-data-obj))
@@ -293,36 +293,36 @@
 
   (local (include-book "tools/trivial-ancestors-check" :dir :system))
   (local (acl2::use-trivial-ancestors-check))
-
-  (local (defthm base-fsm-ovcongruent-when-phase-fsm-composition-p
+  
+  (local (defthm fsm-ovcongruent-when-phase-fsm-composition-p
            (b* (((flatnorm-res flat)))
              (implies (and (phase-fsm-composition-p x flat config)
                            (svarlist-override-p (svex-alist-vars flat.assigns) nil)
                            (svarlist-override-p (svex-alist-keys flat.assigns) nil)
                            (svarlist-override-p (svex-alist-vars flat.delays) nil)
                            (svarlist-override-p (svex-alist-keys flat.delays) nil))
-                      (base-fsm-ovcongruent x)))
-           :hints(("Goal" :in-theory (e/d (base-fsm-ovcongruent
+                      (fsm-ovcongruent x)))
+           :hints(("Goal" :in-theory (e/d (fsm-ovcongruent
                                              phase-fsm-composition-p
                                              svtv-flatnorm-apply-overrides))))))
 
-
-
-
-  (defthm base-fsm-ovcongruent-of-svtv-data-obj->phase-fsm
+  
+  
+  
+  (defthm fsm-ovcongruent-of-svtv-data-obj->phase-fsm
     (b* (((svtv-data-obj x)))
       (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                     x.flatten-validp
                     x.flatnorm-validp
                     x.phase-fsm-validp)
-               (base-fsm-ovcongruent x.phase-fsm)))
-    :hints(("Goal" :in-theory (e/d (;; base-fsm-ovcongruent
+               (fsm-ovcongruent x.phase-fsm)))
+    :hints(("Goal" :in-theory (e/d (;; fsm-ovcongruent
                                     ;; phase-fsm-composition-p
                                     PHASE-FSM-COMPOSITION-P-IMPLIES-VALUES-KEYS)
                                    (phase-fsm-validp-of-svtv-data-obj))
             :use ((:INSTANCE PHASE-FSM-VALIDP-OF-SVTV-DATA-OBJ)))))
 
-  ;; (local (defthm base-fsm-overridekey-transparent-p-of-svtv-data-obj->phase-fsm
+  ;; (local (defthm fsm-overridekey-transparent-p-of-svtv-data-obj->phase-fsm
   ;;          (b* (((svtv-data-obj x))
   ;;               ((flatnorm-res x.flatnorm))
   ;;               (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
@@ -332,11 +332,11 @@
   ;;                          x.flatnorm-validp
   ;;                          x.phase-fsm-validp
   ;;                          (flatnorm-setup->monotonify x.flatnorm-setup))
-  ;;                     (base-fsm-partial-monotonic (svarlist-change-override override-mux-keys :test) x.phase-fsm)))
-  ;;          :hints(("Goal" :in-theory (enable base-fsm-partial-monotonic)))))
-
-
-
+  ;;                     (fsm-partial-monotonic (svarlist-change-override override-mux-keys :test) x.phase-fsm)))
+  ;;          :hints(("Goal" :in-theory (enable fsm-partial-monotonic)))))
+                
+                     
+   
 
   (defthm override-transparency-of-svtv-data-obj->spec
     (b* (((svtv-spec spec) (svtv-data-obj->spec x))
@@ -346,7 +346,7 @@
          (impl-run (svtv-spec-run spec pipe-env))
          ;; (override-mux-keys (svtv-assigns-override-vars x.flatnorm.assigns
          ;;                                                (phase-fsm-config->override-config x.phase-fsm-setup)))
-         ;; ((base-fsm spec.fsm))
+         ;; ((fsm spec.fsm))
          ;; (overridetriples (svar->svex-override-triplelist
          ;;                   (svarlist-to-override-triples overridekeys)
          ;;                   spec.fsm.values))
@@ -358,7 +358,7 @@
                     (flatnorm-setup->monotonify x.flatnorm-setup)
 
                     (svtv-spec-override-syntax-checks spec overridekeys triplemaps)
-                    (base-fsm-overridekey-transparent-p spec.fsm overridekeys)
+                    (fsm-overridekey-transparent-p spec.fsm overridekeys)
 
                     ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.values) overridetriples))
                     ;; (not (svexlist-check-overridetriples (svex-alist-vals spec.fsm.nextstate) overridetriples))
@@ -372,7 +372,7 @@
                     (svarlist-nonoverride-p (svex-envlist-all-keys base-ins) :test))
                (svex-env-<<= impl-run spec-run)))
     :hints(("Goal" :in-theory (e/d (svtv-data-obj->spec
-                                    base-fsm-overridekey-transparent-p
+                                    fsm-overridekey-transparent-p
                                     )
                                    (design->ideal-fsm-overridekey-transparent))
             ;; :use ((:instance design->ideal-fsm-overridekey-transparent
@@ -521,7 +521,7 @@
            :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
                                              svex-lookup-of-svarlist-to-override-alist)))))
 
-  (local (defthm netevalcomp-p-base-fsm->values-of-svtv-data-obj
+  (local (defthm netevalcomp-p-fsm->values-of-svtv-data-obj
            (B* (((svtv-data-obj x))
                 ((flatnorm-res flat) (Design->flatnorm x.design)))
              (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
@@ -529,7 +529,7 @@
                            x.flatnorm-validp
                            x.phase-fsm-validp
                            (flatnorm-setup->monotonify x.flatnorm-setup))
-                      (netevalcomp-p (base-fsm->values x.phase-fsm)
+                      (netevalcomp-p (fsm->values x.phase-fsm)
                                      (flatnorm-res->assigns
                                       (flatnorm-add-overrides
                                        flat
@@ -561,17 +561,16 @@
                         `(:expand (,(car (last clause))))))))
 
 
-
-
-  (local (defthm base-fsm-<<=-ideal-of-svtv-data-obj->phase-fsm
+  
+  (local (defthm fsm-<<=-ideal-of-svtv-data-obj->phase-fsm
            (B* (((svtv-data-obj x)))
              (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                            x.flatten-validp
                            x.flatnorm-validp
                            x.phase-fsm-validp
                            (flatnorm-setup->monotonify x.flatnorm-setup))
-                      (base-fsm-<<= x.phase-fsm (design->ideal-fsm x.design x.phase-fsm-setup))))
-           :hints(("Goal" :in-theory (e/d (base-fsm-<<=
+                      (fsm-<<= x.phase-fsm (design->ideal-fsm x.design x.phase-fsm-setup))))
+           :hints(("Goal" :in-theory (e/d (fsm-<<=
                                            design->ideal-fsm
                                            flatnorm->ideal-fsm
                                            phase-fsm-composition-p
@@ -582,15 +581,15 @@
                                           (phase-fsm-validp-of-svtv-data-obj))
                    :use phase-fsm-validp-of-svtv-data-obj))))
 
-  (local (defthm svex-alist-keys-of-base-fsm->nextstate
+  (local (defthm svex-alist-keys-of-fsm->nextstate
            (B* (((svtv-data-obj x)))
              (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic x))
                            x.flatten-validp
                            x.flatnorm-validp
                            x.phase-fsm-validp)
-                      (equal (svex-alist-keys (base-fsm->nextstate x.phase-fsm))
+                      (equal (svex-alist-keys (fsm->nextstate x.phase-fsm))
                              (Svex-alist-keys (flatnorm-res->delays x.flatnorm)))))
-           :hints(("Goal" :in-theory (e/d (base-fsm-<<=
+           :hints(("Goal" :in-theory (e/d (fsm-<<=
                                            design->ideal-fsm
                                            flatnorm->ideal-fsm
                                            phase-fsm-composition-p

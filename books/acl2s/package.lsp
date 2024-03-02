@@ -54,6 +54,7 @@
      ecw?
      => ;sig
      _ ;range
+     comment
      get-alist
      )
    (union-eq *acl2-exports*
@@ -204,6 +205,18 @@
      define-rule
      set-cgen-guard-checking
      ))
+
+(defpkg "ACL2S-INTERFACE-INTERNAL" *common-lisp-symbols-from-main-lisp-package*)
+
+#!ACL2S-INTERFACE-INTERNAL
+(acl2::defconst acl2::*acl2s-interface-exports*
+  '( ;API export
+    acl2s-compute
+    acl2s-query
+    acl2s-event
+    acl2s-interface
+    itest?-query
+    ))
 
 (defconst *ccg-exports*
   '(set-termination-method 
@@ -393,7 +406,9 @@
      defdata::*defdata-exports*
      (union-eq
       cgen::*cgen-exports*
-      acl2s-shared::*acl2s-shared-exports*)))))
+      (union-eq
+       acl2s-shared::*acl2s-shared-exports*
+       *acl2s-interface-exports*))))))
 
 #!ACL2S
 (defconst *acl2s-exports*

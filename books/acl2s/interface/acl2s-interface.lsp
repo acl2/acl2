@@ -300,9 +300,10 @@
 (defun set-quiet-mode (val)
   (if val (quiet-mode-on) (quiet-mode-off)))
 
-(xdoc::defxdoc-raw acl2s-interface
-  :parents (interfacing-tools)
-  :short "An interface for interacting with ACL2 from Common Lisp."
+(xdoc::defxdoc-raw acl2s-interface::acl2s-interface
+  :parents (acl2::interfacing-tools acl2::acl2-sedan)
+  :pkg "ACL2S-INTERFACE"
+  :short "An interface for interacting with ACL2/ACL2s from Common Lisp."
   :long " <p>WARNING: Loading this book by default will result in the
 redefinition of @('comment-window-co'). This is unfortunately the only
 way we found to control comment-window printing. If you would like to
@@ -311,8 +312,9 @@ disable this feature, you can add the
 :ACL2S-INTERFACE-NO-OVERWRITE *features*)') in raw mode before
 certifying this book.</p>")
 
-(xdoc::defxdoc-raw quiet-mode
-  :parents (acl2s-interface)
+(xdoc::defxdoc-raw acl2s-interface::quiet-mode
+  :parents (acl2s-interface::acl2s-interface)
+  :pkg "ACL2S-INTERFACE"
   :short "Control whether or not the acl2s-interface attempts to suppress ACL2 printed output"
   :long "
 Examples:
@@ -326,10 +328,83 @@ Examples:
 Most of the ACL2s interface functions also take a @(':quiet') argument for
 locally controlling quiet mode without affecting the global setting.
 </p>
+
+<p>
+The ACL2s interface provides hooks for code that should run when quiet mode
+is enabled or disabled. See @(see quiet-mode-hooks) for more information.
+</p>
 ")
 
-(xdoc::defxdoc-raw capture-output
-  :parents (acl2s-interface)
+(xdoc::defxdoc-raw acl2s-interface::quiet-mode-hooks
+  :parents (acl2s-interface::acl2s-interface)
+  :pkg "ACL2S-INTERFACE"
+  :short "Hooks that fire when the ACL2s interface quiet mode is turned on or off."
+  :long "
+<b>General form</b>
+@({
+ (add-quiet-mode-on-hook
+   name  ; A (symbol) name to associate with this hook
+   hook) ; A function to call when quiet mode transitions from disabled to enabled.
+         ; The return value of the hook function should be a list of ACL2 forms to
+         ; be executed.
+
+ (add-quiet-mode-off-hook
+   name  ; A (symbol) name to associate with this hook
+   hook) ; A function to call when quiet mode transitions from enabled to disabled.
+         ; The return value of the hook function should be a list of ACL2 forms to
+         ; be executed.
+})
+<p>
+Some applications may have verbosity settings beyond the standard ACL2 ones. Quiet
+mode hooks provide a way to change these settings whenever the ACL2s interface
+transitions from quiet mode being enabled to disabled, and vice versa.
+</p>
+
+<p>
+Upon the appropriate transition, each hook function for that transition is called.
+The return values of all of the hook functions for that transition type are
+appended, and the resulting list of ACL2 forms is evaluated using @(see acl2::ld)
+in an environment that disables all output. Typically, hooks will perform some
+stateful operation (for example, a quiet-mode-on hook might save the current value
+of a setting into a variable) and then produce a list of ACL2 forms that will change
+the setting to its original value (for a quiet-mode-off hook) or to a particular
+quiet value (for a quiet-mode-on hook). One should <b>not</b> call any of
+@('acl2s-compute'), @('acl2s-query'), or @('acl2s-event') from inside of a hook.
+</p>
+
+<p>
+For each transition type, adding a hook with the same name as another hook for that
+same transition type will result in the previously added hook being removed from
+the list of hooks.
+</p>
+
+<b>Examples</b>
+@({
+  ;; Define a variable to store the last seen gag mode.
+  ;; See books/acl2s/interface/acl2s-interface.lsp for the definition
+  ;; of define-var, which is needed to work around SBCL and CCL quirks.
+  (define-var *saved-gag-mode* (acl2::gag-mode))
+
+  (add-quiet-mode-on-hook
+    :gag-mode
+    (lambda ()
+      ;; Calling acl2::@ here is probably not super safe, but it seems to work...
+      (setf *saved-gag-mode* (acl2::@ acl2::gag-mode))
+      '((acl2::set-gag-mode t))))
+
+  (add-quiet-mode-off-hook
+    :gag-mode
+    (lambda () `((acl2::set-gag-mode ,*saved-gag-mode*))))
+})
+
+<p>
+See @('books/acl2s/interface/acl2s-utils/additions.lsp') for some example hooks.
+</p>
+")
+
+(xdoc::defxdoc-raw acl2s-interface::capture-output
+  :parents (acl2s-interface::acl2s-interface)
+  :pkg "ACL2S-INTERFACE"
   :short "Control whether or not the acl2s-interface attempts to capture ACL2 printed output"
   :long "
 Examples:
@@ -348,11 +423,12 @@ locally controlling whether output is captured without affecting the global sett
 </p>
 ")
 
-(xdoc::defxdoc-raw acl2s-interface-symbol-package-tips
-  :parents (acl2s-interface)
+(xdoc::defxdoc-raw acl2s-interface::acl2s-interface-symbol-package-tips
+  :parents (acl2s-interface::acl2s-interface)
+  :pkg "ACL2S-INTERFACE"
   :short "Tips for dealing with symbol package issues when using the ACL2s interface"
   :long "
-<p>When using any of the ACL2s interface functions from inside of a package other than \"ACL2\", you may run into problems because the symbols inside of any query literals will default to being interned in that package. This is mainly problematic when it comes to writing expressoions that call ACL2 functions.
+<p>When using any of the ACL2s interface functions from inside of a package other than \"ACL2\", you may run into problems because the symbols inside of any query literals will default to being interned in that package. This is mainly problematic when it comes to writing expressions that call ACL2 functions.
 </p>
 <p>
 The simplest way to solve this problem while still working in a non-ACL2 package is to fully specify the names of all functions inside your queries. For example, one would write <tt>(acl2s-compute '(acl2::expt 2 3))</tt> instead of <tt>(acl2s-compute '(expt 2 3))</tt>.
@@ -488,7 +564,8 @@ Here's an older definition
       (last-result))))
 
 (xdoc::defxdoc-raw acl2s-compute
-  :parents (acl2s-interface)
+  :parents (acl2s-interface::acl2s-interface)
+  :pkg "ACL2S-INTERFACE"
   :short "Run a single-value ACL2 computation from Common Lisp"
   :long "
 <b>General form</b>
@@ -524,7 +601,7 @@ When the @(':capture-output') option is set to @('t'), @('acl2s-compute') will a
 @({(acl2s-compute '(+ 1 2))})
 Returns (nil 3)
 @({(acl2s-compute '(+ 1 2) :quiet nil :ld-pre-eval-print t)})
-Returns (nil 3), does not attempt to suppress any ACL2 printed output, and passes @(':ld-pre-eval-print t') to @(see ld)
+Returns (nil 3), does not attempt to suppress any ACL2 printed output, and passes @(':ld-pre-eval-print t') to @(see acl2::ld)
 @({(acl2s-compute '(append '(1 2) '(3 4)))})
 Returns (nil (1 2 3 4))
 @({(acl2s-compute '(+ 1 '(1 2)))})
@@ -623,7 +700,8 @@ Here are some examples
       (last-result))))
 
 (xdoc::defxdoc-raw acl2s-query
-  :parents (acl2s-interface)
+  :parents (acl2s-interface::acl2s-interface)
+  :pkg "ACL2S-INTERFACE"
   :short "Run a multiple-value ACL2 computation from Common Lisp"
   :long "
 <b>General form</b>
@@ -645,7 +723,7 @@ Here are some examples
 </dl>
 
 <p>
-The @('form') argument should be an ACL2 expression that evaluates to an @(see error-triple). @('form') should also not change the state of the ACL2 world with respect to events. Be careful about symbol packages when using @('acl2s-query') when inside a different package - you may need to fully specify the name of an ACL2 function when calling it. See @(see acl2s-interface-symbol-package-tips) for more information.
+The @('form') argument should be an ACL2 expression that evaluates to an @(see acl2::error-triple). @('form') should also not change the state of the ACL2 world with respect to events. Be careful about symbol packages when using @('acl2s-query') when inside a different package - you may need to fully specify the name of an ACL2 function when calling it. See @(see acl2s-interface-symbol-package-tips) for more information.
 </p>
 
 <p>
@@ -657,7 +735,7 @@ When the @(':capture-output') option is set to @('t'), @('acl2s-query') will att
 </p>
 
 <p>
-@('acl2s-query') evaluates @('form') inside of a @(see with-prover-step-limit), where the step-limit is set to the value provided to @(':prover-step-limit'), or ACL2's set prover-step-limit if that option is not provided. See @(see set-prover-step-limit) for more information about the prover step-limit. If you don't want to limit the number of prover steps permitted for an event, set @(':prover-step-limit') to nil.
+@('acl2s-query') evaluates @('form') inside of a @(see acl2::with-prover-step-limit), where the step-limit is set to the value provided to @(':prover-step-limit'), or ACL2's set prover-step-limit if that option is not provided. See @(see acl2::set-prover-step-limit) for more information about the prover step-limit. If you don't want to limit the number of prover steps permitted for an event, set @(':prover-step-limit') to nil.
 </p>
 
 <h4>Examples</h4>
@@ -671,10 +749,10 @@ Returns (nil :invisible)
 Returns (nil t)
 
 @({(acl2s-query '(value (+ 1 2)) :quiet nil :ld-pre-eval-print t)})
-Returns (nil 3), does not attempt to suppress any ACL2 printed output, and passes @(':ld-pre-eval-print t') to @(see ld)
+Returns (nil 3), does not attempt to suppress any ACL2 printed output, and passes @(':ld-pre-eval-print t') to @(see acl2::ld)
 
 @({(acl2s-query '(trans-eval '(+ 1 2) 'my-ctx state nil))})
-Returns (nil ((nil) . 3)). See @(see trans-eval) for more information
+Returns (nil ((nil) . 3)). See @(see acl2::trans-eval) for more information
 about trans-eval's return value.
 
 @({(acl2s-query '(test? (implies (integerp x) (natp x))))})
@@ -746,7 +824,8 @@ Returns (t nil)
 	    (list erp nil))))))
 
 (xdoc::defxdoc-raw acl2s-event
-  :parents (acl2s-interface)
+  :parents (acl2s-interface::acl2s-interface)
+  :pkg "ACL2S-INTERFACE"
   :short "Install an ACL2 event from Common Lisp"
   :long "
 <b>General form</b>
@@ -756,7 +835,7 @@ Returns (t nil)
   :quiet <bool>                ; Optional. Whether or not to suppress all ACL2 printed output. Defaults to nil.
   :capture-output <bool>       ; Optional. Whether or not to capture all ACL2 printed output. Defaults to nil.
   :prover-step-limit           ; Optional. Sets the prover step limit. Defaults to what ACL2 would have used
-                               ;           for a top-level evaluation (see set-prover-step-limit).
+                               ;           for a top-level evaluation (see acl2::set-prover-step-limit).
   ...)                         ; Any additional arguments will be passed to ld, except for :ld-error-action.
 =>
 (list erp nil)
@@ -767,7 +846,7 @@ Returns (t nil)
 </dl>
 
 <p>
-The @('form') argument should be an ACL2 expression that evaluates to an @(see error-triple). Be careful about symbol packages when using @('acl2s-event') when inside a different package - you may need to fully specify the name of an ACL2 function when calling it. See @(see acl2s-interface-symbol-package-tips) for more information.
+The @('form') argument should be an ACL2 expression that evaluates to an @(see acl2::error-triple). Be careful about symbol packages when using @('acl2s-event') when inside a different package - you may need to fully specify the name of an ACL2 function when calling it. See @(see acl2s-interface-symbol-package-tips) for more information.
 </p>
 
 <p>
@@ -779,7 +858,7 @@ When the @(':capture-output') option is set to @('t'), @('acl2s-event') will att
 </p>
 
 <p>
-@('acl2s-event') evaluates @('form') inside of a @(see with-prover-step-limit), where the step-limit is set to the value provided to @(':prover-step-limit'), or ACL2's set prover-step-limit if that option is not provided. See @(see set-prover-step-limit) for more information about the prover step-limit. If you don't want to limit the number of prover steps permitted for an event, set @(':prover-step-limit') to nil.
+@('acl2s-event') evaluates @('form') inside of a @(see acl2::with-prover-step-limit), where the step-limit is set to the value provided to @(':prover-step-limit'), or ACL2's set prover-step-limit if that option is not provided. See @(see acl2::set-prover-step-limit) for more information about the prover step-limit. If you don't want to limit the number of prover steps permitted for an event, set @(':prover-step-limit') to nil.
 </p>
 
 <h4>Examples</h4>

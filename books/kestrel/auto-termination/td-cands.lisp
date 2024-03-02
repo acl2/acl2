@@ -2448,7 +2448,7 @@
      (O< (MAX (LEN (CDR SV::OUTS))
               (LEN (CDR SV::STATES)))
          (MAX (LEN SV::OUTS) (LEN SV::STATES)))))
-   (SV::BASE-FSM-PRINT-RUN 7
+   (SV::fsm-PRINT-RUN 7
                            :SYSTEM . "centaur/sv/svtv/fsm-base")))
  ((JUSTIFICATION (SV::N SV::ELAB-MOD)
                  (NIL O-P . O<)
@@ -2588,7 +2588,7 @@
                                                   (LNFIX$INLINE SV::CYCLE))))))
          (NFIX (BINARY-+ (LEN SV::FSM-EVAL)
                          (UNARY-- (NFIX SV::CYCLE)))))))
-   (SV::BASE-FSM-COLLECT-OVERRIDE-ENVS-ALT 3 :SYSTEM
+   (SV::fsm-COLLECT-OVERRIDE-ENVS-ALT 3 :SYSTEM
                                            . "centaur/sv/svtv/svtv-fsm-override")))
  ((JUSTIFICATION (N)
                  (NIL O-P . O<)
@@ -3884,7 +3884,7 @@
                                            . "centaur/aignet/simplify-marked")
    (FGL::CGRAPH-DERIVE-ASSIGNS-MEASURE :SYSTEM . "centaur/fgl/ctrex-utils")
    (FGL::PROF-ENTRY-TRIES-INSERTSORT :SYSTEM . "centaur/fgl/prof")
-   (SV::REMOVE-OVERRIDE-VARS-OF-BASE-FSM-EVAL*-IND :SYSTEM
+   (SV::REMOVE-OVERRIDE-VARS-OF-fsm-EVAL*-IND :SYSTEM
                                                    . "centaur/sv/svtv/svtv-fsm-override")
    (SV::4VEC-DRIVESTRENGTH-INSERTSORT :SYSTEM . "centaur/sv/svtv/resolve")
    (SV::SVTV-DEBUG-FSM-WRITEPHASES :SYSTEM . "centaur/sv/svtv/debug")

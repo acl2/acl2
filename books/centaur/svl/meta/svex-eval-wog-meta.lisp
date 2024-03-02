@@ -489,7 +489,7 @@ fast-alist. Consider making it one for a better performance.~%"))
                                  :interval 5
                                  ))
                 (- (time-tracker :svex-alist-eval-meta-aux :start!))
-                (alist (svexalist-convert-bitnot-to-bitxor alist))
+                (alist (svexalist-convert-bitnot-to-bitxor alist :depth 3))
                 (alist (svex-alist-reduce-w/-env alist :env env-falist :config nil))
                 (- (time-tracker :svex-alist-eval-meta-aux :stop))
                 (- (time-tracker :svex-alist-eval-meta-aux :print?

@@ -11,3 +11,4 @@
 (include-book "extra-doc")
 (include-book "interface/acl2s-utils/top" :ttags :all)
 (include-book "interface/top")
+(include-book "top" :ttags :all)

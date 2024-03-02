@@ -37,9 +37,10 @@
 (include-book "std/util/bstar" :dir :system)
 
 (defun booth-enc-one (a b)
-  (+ (if (logbitp 0 a) b        0)
-     (if (logbitp 1 a) b        0)
-     (if (logbitp 2 a) (* -2 b) 0)))
+  (let ((b (ifix b)))
+    (+ (if (logbitp 0 a) b        0)
+       (if (logbitp 1 a) b        0)
+       (if (logbitp 2 a) (* -2 b) 0))))
 
 (local
  (progn
@@ -50,7 +51,7 @@
    (defthm booth-enc-one-redef
      (equal (booth-enc-one a b)
             (* (booth-enc-coeff a)
-               b))
+               (ifix b)))
      :hints(("Goal" :expand ((:free (n a) (logext n a))
                              (:free (n a) (logbitp n a)))
              :in-theory (enable booth-enc-coeff))))
@@ -59,13 +60,13 @@
 
 
    (defthmd booth-enc-one-impl
-     (implies (integerp b)
-              (equal (booth-enc-one a b)
-                     (b* ((bsign (if (logbitp 2 a) (- b) b))
-                          (shft (iff (logbitp 0 a) (logbitp 1 a)))
-                          (zro (and shft (iff (logbitp 1 a) (logbitp 2 a))))
-                          (res1 (if zro 0 bsign)))
-                       (if shft (* 2 res1) res1))))
+     (equal (booth-enc-one a b)
+            (b* ((b (ifix b))
+                 (bsign (if (logbitp 2 a) (- b) b))
+                 (shft (iff (logbitp 0 a) (logbitp 1 a)))
+                 (zro (and shft (iff (logbitp 1 a) (logbitp 2 a))))
+                 (res1 (if zro 0 bsign)))
+              (if shft (* 2 res1) res1)))
      :hints(("Goal" :in-theory (disable booth-enc-one-redef))))
 
 
@@ -119,10 +120,9 @@
                               acl2::logtail-identity)))
 
    (defthm booth-sum-is-multiply
-     (implies (integerp b)
-              (equal (booth-sum n a b)
-                     (let ((m (logext (+ 1 (* 2 (nfix n))) a)))
-                       (* (+ (logcdr m) (logcar m)) b))))
+     (equal (booth-sum n a b)
+            (let ((m (logext (+ 1 (* 2 (nfix n))) a)))
+              (* (+ (logcdr m) (logcar m)) (ifix b))))
      :hints(("Goal" :in-theory (e/d* (acl2::logcons booth-enc-coeff)
                                      ((:d booth-sum)))
              :induct (booth-sum n a b)
@@ -168,20 +168,17 @@
             :hints(("Goal" :in-theory (enable ash)))))
 
    (defthm booth-enc-one-integerp
-     (implies (integerp b)
-              (integerp (booth-enc-one a b)))
+     (integerp (booth-enc-one a b))
      :hints(("Goal" :in-theory (enable booth-enc-one)))
      :rule-classes :type-prescription)
 
    (defthm booth-sum-integerp
-     (implies (integerp b)
-              (integerp (booth-sum n a b)))
+     (integerp (booth-sum n a b))
      :hints(("Goal" :in-theory (enable booth-sum)))
      :rule-classes :type-prescription)
 
    (defthm booth-sum-impl1-is-booth-sum
-     (implies (and (natp i)
-                   (integerp b))
+     (implies (and (natp i))
               (equal (booth-sum-impl1 n i a b)
                      (ash (booth-sum n (ash a (- 1 (* 2 i))) b) (* 2 i))))
      :hints(("Goal" :in-theory (e/d (booth-sum booth-sum-impl1 acl2::logcons)
@@ -249,11 +246,75 @@
   (loghead (+ 2 sz) (booth-enc-one (ash a (- 1 (* 2 i)))
                                    (logext sz b))))
 
+(local (in-theory (disable unsigned-byte-p)))
+
+(defthm unsigned-byte-p-of-boothpipe-pp-spec
+  (implies (and (natp sz)
+                (integerp n)
+                (<= (+ 2 sz) n))
+           (unsigned-byte-p n (boothpipe-pp-spec sz i a b)))
+  :hints(("Goal" :in-theory (enable boothpipe-pp-spec))))
+
+
+(defund boothpipe-pps-spec (count sz i a b)
+  (if (zp count)
+      0
+    (logapp (+ 2 sz)
+            (boothpipe-pp-spec sz i a b)
+            (boothpipe-pps-spec (1- count) sz (+ 1 i) a b))))
+
+(local (defthm arith-lemma
+         (implies (and (posp count) (natp sz))
+                  (<= (+ 2 sz) (+ (* 2 count) (* count sz))))
+         :hints (("Goal" :nonlinearp t))
+         :rule-classes :linear))
+
+(defthm unsigned-byte-p-of-boothpipe-pps-spec-lemma
+  (implies (and (natp sz))
+           (unsigned-byte-p (* (nfix count) (+ 2 sz)) (boothpipe-pps-spec count sz i a b)))
+  :hints(("Goal" :in-theory (e/d (boothpipe-pps-spec) (unsigned-byte-p)))))
+
+(defthm unsigned-byte-p-of-boothpipe-pps-spec
+  (implies (and (integerp n)
+                (natp sz)
+                (<= (* (nfix count) (+ 2 sz)) n))
+           (unsigned-byte-p n (boothpipe-pps-spec count sz i a b)))
+  :hints (("goal" :use unsigned-byte-p-of-boothpipe-pps-spec-lemma
+           :in-theory (disable unsigned-byte-p-of-boothpipe-pps-spec-lemma))))
+
+
+(defund boothpipe-sum-pps (count sz i pps)
+  (if (zp count)
+      0
+    (+ (ash (logext (+ 2 sz) pps) (* 2 i))
+       (boothpipe-sum-pps (1- count) sz (+ 1 i) (logtail (+ 2 sz) pps)))))
+
+
 (defund booth-sum-impl (n i a b sz)
   (if (zp n)
       0
     (+ (ash (logext (+ 2 sz) (boothpipe-pp-spec sz i a b)) (* 2 i))
        (booth-sum-impl (1- n) (+ 1 i) a b sz))))
+
+
+(local (defthm logext-of-logapp-same
+         (implies (posp n)
+                  (equal (logext n (logapp n a b))
+                         (logext n a)))
+         :hints (("goal" :induct (logext n a)
+                  :in-theory (e/d* (bitops::ihsext-inductions
+                                    bitops::ihsext-recursive-redefs))))))
+         
+
+(defthm boothpipe-sum-pps-of-pps-spec-is-booth-sum-impl
+  (implies (and (<= (nfix n) (nfix count))
+                (natp sz))
+           (equal (boothpipe-sum-pps n sz i (boothpipe-pps-spec count sz i a b))
+                  (booth-sum-impl n i a b sz)))
+  :hints(("Goal" :in-theory (enable boothpipe-pps-spec
+                                    boothpipe-sum-pps
+                                    booth-sum-impl))))
+
 
 (local
  (defthm booth-sum-impl-is-booth-sum-impl1
@@ -269,9 +330,20 @@
                                     signed-byte-p))))))
 
 (defthm booth-sum-impl-is-multiply
-  (implies (and (integerp b)
-                (posp sz)
+  (implies (and (posp sz)
                 (posp n))
            (equal (booth-sum-impl n 0 a b sz)
                   (* (logext sz b) (logext (* 2 n) a))))
   :hints (("goal" :expand ((LOGEXT (+ 1 (* 2 N)) (ASH A 1))))))
+
+
+(defthm boothpipe-sum-pps-of-pp-spec-is-multiply
+  (implies (and (posp sz)
+                (posp n))
+           (equal (boothpipe-sum-pps n sz 0 (boothpipe-pps-spec n sz 0 a b))
+                  (* (logext sz b) (logext (* 2 n) a)))))
+
+
+(defthm boothpipe-sum-pps-of-pps-spec-is-multiply-16
+  (equal (boothpipe-sum-pps 8 16 0 (boothpipe-pps-spec 8 16 0 a b))
+         (* (logext 16 b) (logext 16 a))))

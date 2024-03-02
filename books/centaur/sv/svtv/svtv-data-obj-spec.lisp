@@ -42,12 +42,12 @@
                   (svtv-data-obj->cycle-fsm-validp x)
                   (svtv-data-obj->flatten-validp x))
              (b* (((svtv-data-obj x))
-                  ((base-fsm x.phase-fsm))
-                  ((base-fsm x.cycle-fsm)))
-               (base-fsm-eval-equiv x.cycle-fsm
-                                    (base-fsm-to-cycle x.cycle-phases x.phase-fsm nil))))
-    :hints (("goal" :in-theory (e/d (base-fsm-eval-equiv
-                                     base-fsm-to-cycle)))
+                  ((fsm x.phase-fsm))
+                  ((fsm x.cycle-fsm)))
+               (fsm-eval-equiv x.cycle-fsm
+                                    (fsm-to-cycle x.cycle-phases x.phase-fsm nil))))
+    :hints (("goal" :in-theory (e/d (fsm-eval-equiv
+                                     fsm-to-cycle)))
             (and stable-under-simplificationp
                  `(:expand ((:with svex-alist-eval-equiv-in-terms-of-envs-equivalent
                              ,(car (last clause)))))))))
@@ -88,7 +88,7 @@
     :hints(("Goal" :in-theory (enable svtv-spec-run
                                       svtv-spec-phase-outs->pipe-out
                                       svtv-spec-pipe-env->phase-envs
-                                      svtv-fsm-run-is-base-fsm-run
-                                      base-fsm-run
-                                      base-fsm-eval-of-svtv-fsm->renamed-fsm
+                                      svtv-fsm-run-is-fsm-run
+                                      fsm-run
+                                      fsm-eval-of-svtv-fsm->renamed-fsm
                                       )))))

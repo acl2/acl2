@@ -80,7 +80,7 @@ errors out."
   stmt                     ;; The statement to find counterexamples to.
   :num-counterexamples ... ;; Optional. If non-nil, the number of counterexamples to request from itest?.
   :quiet ...               ;; Optional. Whether or not to suppress all ACL2 printed output. Defaults to t.
-  :prover-step-limit ...   ;; Optional. Sets the prover step limit. See acl2s-query for more information
+  :prover-step-limit ...   ;; Optional. Sets the prover step limit. See @(see acl2s-query) for more information
                            ;;           about the default value.
 )
 =>
@@ -101,15 +101,15 @@ and the conjecture was not proved.
 </dl>
 
 <p>
-The @('stmt') argument should be an ACL2 expression. Be careful about symbol packages when using @('itest?-query') when inside a different package - you may need to fully specify the name of an ACL2 function when calling it. See @(see acl2s-interface-symbol-package-tips) for more information.
+The @('stmt') argument should be an ACL2 expression. Be careful about symbol packages when using @('itest?-query') when inside a different package - you may need to fully specify the name of an ACL2 function when calling it. See @(see acl2s-interface::acl2s-interface-symbol-package-tips) for more information.
 </p>
 
 <p>
-When the @(':quiet') option is set to @('t'), @('itest?-query') will attempt to suppress all ACL2 printed output while itest? is running. This temporarily overrides the current @(see quiet-mode).
+When the @(':quiet') option is set to @('t'), @('itest?-query') will attempt to suppress all ACL2 printed output while itest? is running. This temporarily overrides the current @(see acl2s-interface::quiet-mode).
 </p>
 
 <p>
-@('itest?-query') evaluates itest? inside of a @(see with-prover-step-limit), where the step-limit is set to the value provided to @(':prover-step-limit'), or ACL2's set prover-step-limit if that option is not provided. See @(see set-prover-step-limit) for more information about the prover step-limit. If you don't want to limit the number of prover steps permitted for itest?, set @(':prover-step-limit') to nil.
+@('itest?-query') evaluates itest? inside of a @(see acl2::with-prover-step-limit), where the step-limit is set to the value provided to @(':prover-step-limit'), or ACL2's set prover-step-limit if that option is not provided. See @(see acl2::set-prover-step-limit) for more information about the prover step-limit. If you don't want to limit the number of prover steps permitted for itest?, set @(':prover-step-limit') to nil.
 </p>
 
 <p>
@@ -125,7 +125,7 @@ In some cases, @('itest?') may produce counterexamples where some variables are 
 </p>
 
 <p>
-See @(see test?) for more information about ACL2s' counterexample generation facilities. @('itest?') is essentially a slightly modified version of @('test?') that provides more information programatically.
+See @(see acl2::test?) for more information about ACL2s' counterexample generation facilities. @('itest?') is essentially a slightly modified version of @('test?') that provides more information programmatically.
 </p>
 
 <h4>Examples</h4>
