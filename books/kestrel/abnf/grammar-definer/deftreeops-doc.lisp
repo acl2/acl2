@@ -178,7 +178,7 @@
        has exactly that rule name."))
 
     (xdoc::desc
-     "@('<prefix>-branches-match-alt-when-<rulename>')"
+     "@('<prefix>-<rulename>-branches-match-alt')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that if a tree matches the rule name
