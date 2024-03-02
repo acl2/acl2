@@ -112,7 +112,7 @@
     "This information consists of:")
    (xdoc::ul
     (xdoc::li
-     "The name of the @('<prefix>-match-conc<i>-rep<j>-<rulename>') theorem
+     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-match') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if the repetition does not have range 1
@@ -667,7 +667,7 @@
   (b* ((match-thm
         (and (equal (repetition->range rep)
                     (make-repeat-range :min 1 :max (nati-finite 1)))
-             (packn-pos (list prefix '-match-conc i '-rep1- rulename-upstring)
+             (packn-pos (list prefix '- rulename-upstring '-conc i '-rep1-match)
                         prefix))))
     (make-deftreeops-rep-info :match-thm match-thm)))
 

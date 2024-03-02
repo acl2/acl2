@@ -247,7 +247,7 @@
        when the concatenation is a singleton."))
 
     (xdoc::desc
-     "@('<prefix>-match-conc<i>-rep<j>-<rulename>')"
+     "@('<prefix>-<rulename>-conc<i>-rep<j>-match')"
      (xdoc::p
       "For each rule name defined in the grammar,
        for each concatenation @('<i>') (starting from 1)
