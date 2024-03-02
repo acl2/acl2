@@ -130,6 +130,11 @@
            (tlp pats2))
       (match-pats-codes (cons (cons :or pats6) pats2) codes)))
 
+(defthm symbol-doublet-listp-assoc-equal
+  (implies (and (symbol-doublet-listp bindings)
+                (not (consp (cdr (assoc-equal pat bindings)))))
+           (not (cdr (assoc-equal pat bindings)))))
+
 (defun match-tests-and-bindings (x pat tests bindings)
 
 ; Modified from basis-a.lisp
@@ -168,7 +173,9 @@
 ; by dropping the #\!.  This is a way of referring to already bound variables
 ; in the pattern. Finally, the symbol & matches anything and causes no binding.
 
-  (declare (xargs :guard (acl2::symbol-doublet-listp bindings)
+  (declare (xargs :guard (and (symbol-doublet-listp bindings)
+                              (tlp tests)
+                              (tlp bindings))
                   :verify-guards nil))
   (b* ((type? (match-type pat)))
     (cond
@@ -177,7 +184,8 @@
      ((symbolp pat)
       (cond
        ((or (eq pat t)
-            (eq pat nil))
+            (eq pat nil)
+            (keywordp pat))
         (mv (cons (list 'eq x pat) tests) bindings))
        ((let ((len (length (symbol-name pat))))
           (and (> len 0)
@@ -200,29 +208,45 @@
                    (mv tests (cons (list pat x) bindings)))
                   (t (mv (cons (list 'equal x (cadr binding)) tests)
                          bindings)))))))
-      ((atom pat)
-       (mv (cons (acl2::equal-x-constant x (list 'quote pat)) tests)
-           bindings))
-      ((and (eq (car pat) 'quote)
-            (consp (cdr pat))
-            (null (cddr pat)))
-       (mv (cons (acl2::equal-x-constant x pat) tests)
-           bindings))
-      ((and (eq (car pat) 'quote~)
-            (consp (cdr pat))
-            (symbolp (cadr pat))
-            (null (cddr pat)))
-       (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
-           bindings))
-      (t (mv-let (tests1 bindings1)
-           (match-tests-and-bindings (list 'car x) (car pat)
-                                     (cons (list 'consp x) tests)
-                                     bindings)
-           (match-tests-and-bindings (list 'cdr x) (cdr pat)
-                                     tests1 bindings1))))))
+     ((atom pat)
+      (mv (cons (acl2::equal-x-constant x (list 'quote pat)) tests)
+          bindings))
+     ((and (eq (car pat) 'quote)
+           (consp (cdr pat))
+           (null (cddr pat)))
+      (mv (cons (acl2::equal-x-constant x pat) tests)
+          bindings))
+     ((and (eq (car pat) 'quote~)
+           (consp (cdr pat))
+           (symbolp (cadr pat))
+           (null (cddr pat)))
+      (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
+          bindings))
+     (t (mv-let (tests1 bindings1)
+          (match-tests-and-bindings (list 'car x) (car pat)
+                                    (cons (list 'consp x) tests)
+                                    bindings)
+          (match-tests-and-bindings (list 'cdr x) (cdr pat)
+                                    tests1 bindings1))))))
+
+(defthm match-tests-and-bindings-guards1
+  (implies (tlp y)
+           (tlp (mv-nth 0 (match-tests-and-bindings x pat y z))))
+  :rule-classes :type-prescription)
+
+(defthm match-tests-and-bindings-guards3
+  (implies (tlp z)
+           (tlp (mv-nth 1 (match-tests-and-bindings x pat y z))))
+  :rule-classes :type-prescription)
+
+(defthm match-tests-and-bindings-guards2
+  (implies (symbol-doublet-listp z)
+           (symbol-doublet-listp (mv-nth 1 (match-tests-and-bindings x pat y z)))))
+
+(verify-guards match-tests-and-bindings)
 
 (defun match-clause (x pat forms)
-  (declare (xargs :guard t :verify-guards nil))
+  (declare (xargs :guard t))
   (mv-let (tests bindings)
     (match-tests-and-bindings x pat nil nil)
     (list (if (null tests)
@@ -235,7 +259,6 @@
   :pre (match-pats-codes pats codes)
   :skip-tests t
   :timeout 500
-  :body-contracts-strictp nil
   (declare (xargs :consider-only-ccms ((acl2s-size codes) (acl2s-size pats))))
   (if (endp pats)
       nil
@@ -275,7 +298,6 @@
   :pre (match-pats-codes pats codes)
   :skip-tests t
   :timeout 500
-  :body-contracts-strictp nil
   (declare (xargs :consider-only-ccms ((acl2s-size codes))))
   ;; To enforce exhaustiveness
   (append (gen-match-body1 exp pats codes)
@@ -286,7 +308,6 @@
   :pre (tlp (strip-cars args))
   :pre (match-pats-codes (strip-cars args)
                          (strip-cdrs args))
-  :body-contracts-strictp nil
   (b* ((pats  (strip-cars args))
        (codes (strip-cdrs args)))
     (cons 'cond
