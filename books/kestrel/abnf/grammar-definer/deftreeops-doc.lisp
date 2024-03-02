@@ -197,7 +197,7 @@
        unless the alternation consists of just one concatenation."))
 
     (xdoc::desc
-     "@('<prefix>-conc-equivs-when-<rulename>')"
+     "@('<prefix>-<rulename>-conc-equivs')"
      (xdoc::p
       "For each rule name defined in the grammar
        by an alternation of two or more concatenations,

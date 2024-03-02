@@ -146,7 +146,7 @@
      "The concatenation.")
     (xdoc::li
      "The discriminant term used in
-      the @('<prefix>-conc-equivs-when-<rulename>') theorem
+      the @('<prefix>-<rulename>-conc-equivs') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the rule name is defined by
       an alternation of just one concatenation.")
@@ -212,7 +212,7 @@
      "The name of the @('<prefix>-<rulename>-concs') theorem
       described in @(tsee deftreeops).")
     (xdoc::li
-     "The name of the @('<prefix>-conc-equivs-when-<rulename>') theorem
+     "The name of the @('<prefix>-<rulename>-conc-equivs') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if some concatenation in the alternation that defines the rule name
@@ -594,7 +594,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are the terms used in
-     the @('<prefix>-conc-equivs-when-<rulename>') theorem
+     the @('<prefix>-<rulename>-conc-equivs') theorem
      described in @(tsee deftreeops).")
    (xdoc::p
     "For now we only support alternations of certain forms.
@@ -796,7 +796,7 @@
        (two-or-more-concs-p (and okp (> (len alt) 1)))
        (conc-equivs-thm
         (and two-or-more-concs-p
-             (packn-pos (list prefix '-conc-equivs-when- rulename-upstring)
+             (packn-pos (list prefix '- rulename-upstring '-conc-equivs)
                         prefix)))
        (check-conc-fn
         (and two-or-more-concs-p
