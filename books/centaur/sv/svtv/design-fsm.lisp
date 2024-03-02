@@ -298,13 +298,13 @@
            (implies (subsetp a b)
                     (set-equiv (append b a) b))))
 
-(define phase-fsm-composition-p ((phase-fsm base-fsm-p)
+(define phase-fsm-composition-p ((phase-fsm fsm-p)
                                  (flatnorm flatnorm-res-p)
                                  (config phase-fsm-config-p))
   (b* (((phase-fsm-config config))
        ((mv overridden-assigns overridden-delays)
         (svtv-flatnorm-apply-overrides flatnorm config.override-config))
-       ((base-fsm phase-fsm)))
+       ((fsm phase-fsm)))
     (and (ec-call (netevalcomp-p phase-fsm.values overridden-assigns))
          ;; Need this because if we have signals that are in the
          ;; original assigns (therefore in the overridden assigns)
@@ -321,15 +321,15 @@
           (svex-alist-eval-equiv! phase-fsm.nextstate
                                   (svex-alist-compose overridden-delays phase-fsm.values)))))
   ///
-  (defcong base-fsm-eval-equiv equal (phase-fsm-composition-p phase-fsm flatnorm config) 1
-    :hints(("Goal" :in-theory (enable base-fsm-eval-equiv))))
+  (defcong fsm-eval-equiv equal (phase-fsm-composition-p phase-fsm flatnorm config) 1
+    :hints(("Goal" :in-theory (enable fsm-eval-equiv))))
 
   (defcong flatnorm-res-equiv equal (phase-fsm-composition-p phase-fsm flatnorm config) 2)
 
   (defthm phase-fsm-composition-p-implies-no-duplicate-nextstate-keys
     (implies (and (phase-fsm-composition-p phase-fsm flatnorm config)
                   (no-duplicatesp-equal (svex-alist-keys (flatnorm-res->delays flatnorm))))
-             (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate phase-fsm))))))
+             (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate phase-fsm))))))
 
 
 
@@ -351,7 +351,7 @@ to a small number is usually practical if there is such a problem.")
 (define svtv-compose-assigns/delays ((flatnorm flatnorm-res-p)
                                      (config phase-fsm-config-p)
                                      (params phase-fsm-params-p))
-  :returns (fsm base-fsm-p)
+  :returns (fsm fsm-p)
   (b* (((flatnorm-res flatnorm))
        ((phase-fsm-config config))
        ((phase-fsm-params params))
@@ -367,11 +367,11 @@ to a small number is usually practical if there is such a problem.")
        (updates2 (fast-alist-fork updates1 (make-fast-alist (svex-alist-compose override-alist updates1))))
        (nextstates (make-fast-alist (svex-alist-compose flatnorm.delays updates2))))
     (fast-alist-free updates2)
-    (make-base-fsm :values updates1 :nextstate nextstates))
+    (make-fsm :values updates1 :nextstate nextstates))
   ///
   (defret no-duplicate-nextstates-of-<fn>
     (implies (no-duplicatesp-equal (svex-alist-keys (flatnorm-res->delays flatnorm)))
-             (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate fsm)))))
+             (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate fsm)))))
 
   (local (defthmd svex-alist-keys-when-svex-alist-p
            (implies (svex-alist-p x)
@@ -427,7 +427,7 @@ to a small number is usually practical if there is such a problem.")
     :hints (("goal" 
              :in-theory (enable svtv-flatnorm-apply-overrides
                                 phase-fsm-composition-p
-                                base-fsm-eval-equiv)))))
+                                fsm-eval-equiv)))))
 
 
 ;; BOZO this could probably be broken into a few parts.
@@ -465,7 +465,7 @@ to a small number is usually practical if there is such a problem.")
   
   :returns (mv err
                (fsm (implies (not err)
-                             (base-fsm-p fsm)))
+                             (fsm-p fsm)))
                (new-moddb moddb-basics-ok) new-aliases)
   :guard (modalist-addr-p (design->modalist x))
   (b* (((mv err assigns delays & moddb aliases)
@@ -493,13 +493,13 @@ to a small number is usually practical if there is such a problem.")
        (updates2 (svex-alist-compose override-alist updates1))
        (nextstates (with-fast-alist updates2 (svex-alist-compose delays updates2))))
     (mv nil
-        (make-base-fsm :values updates1
+        (make-fsm :values updates1
                        :nextstate (fast-alist-clean nextstates))
         moddb aliases))
   ///
   (defret no-duplicate-nextstates-of-<fn>
     (implies (not err)
-             (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate fsm)))))
+             (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate fsm)))))
 
   (defret <fn>-normalize-stobjs
     (implies (syntaxp (and (not (equal moddb ''nil))

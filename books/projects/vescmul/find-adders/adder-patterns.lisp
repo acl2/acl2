@@ -339,7 +339,6 @@
 
   )
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; adder pattern functions.
 
@@ -414,6 +413,7 @@
                                             postwork
                                             good-measure-hints
                                             correct-pattern-hints
+                                            correct-pattern-initial-hints
                                             (extra-svex-reduce-params? 'nil)
                                             (extra-key-args 'nil)
                                             (inline 't)
@@ -484,11 +484,14 @@
                              (sv::svex-eval$ svex env))))
 
          :hints (("goal"
-                  :expand ((:free (args env)
-                                  (sv::svex-eval$ (cons 'fa-c-chain args)
+                  :expand ((:free (fn args env)
+                                  (sv::svex-eval$ (cons fn args)
                                                   env))
+                           (:free (pattern) (member-equal pattern nil))
+                           (:free (pattern x y) (member-equal pattern (cons x y)))
                            (:free (x y)
                                   (pattern-call (cons x y))))
+                  ,@correct-pattern-initial-hints
                   :in-theory (e/d (,@enable-2
                                    svl::insert-4vec-bitand-into-4vec-bitor
                                    ;;pattern-call
@@ -504,7 +507,8 @@
                                    sv::svex-apply$
                                    sv::svex-apply
                                    sv::svexlist-eval$)
-                                  ((:rewrite sv::svex-eval$-when-quote)
+                                  (pattern-fn-call-list-provide-good-measure-p
+                                   (:rewrite sv::svex-eval$-when-quote)
                                    acl2::integerp-of-car-when-integer-listp
                                    acl2::symbolp-of-car-when-symbol-listp
                                    acl2::true-list-listp-implies-true-listp-xxx
@@ -1224,7 +1228,7 @@
 
   (create-case-match-macro partsel-of-atom-pattern
                            ('sv::partsel start size term)
-                           (atom term))
+                           :extra-cond (atom term))
   (create-case-match-macro bitxor-pattern
                            ('sv::bitxor x y))
 
@@ -1270,6 +1274,7 @@
                                                                    ;; When two of them are variables, then don't try to create a a half-adder.
                                                                    ;; This is redundant and only here for performance improvements.
                                                                    ;; May cause issues in corner cases.
+                                                                   :extra-cond
                                                                    (and (or (not (and (partsel-of-atom-pattern-p x)
                                                                                       (partsel-of-atom-pattern-p y))))
                                                                         ;; when  one of  them is  zero,
@@ -1306,7 +1311,6 @@
                                                 :args args))))))
                                :warrant-hyps ((apply$-warrant-ha-s-chain))))
 
-
 (defsection ha-c-chain
   ;; match half-adder carry pattern.
 
@@ -1340,6 +1344,7 @@
                                :prepwork ((create-case-match-macro ha-c-chain-pattern
                                                                    ('sv::bitand x y)
                                                                    ;; prevent two partsels to be go intp a half-adder.
+                                                                   :Extra-cond
                                                                    (and (or (not (and (partsel-of-atom-pattern-p x)
                                                                                       (partsel-of-atom-pattern-p y)))
                                                                             )
@@ -1379,7 +1384,113 @@
                                :warrant-hyps ((apply$-warrant-ha-c-chain))
                                :postwork ((memoize 'sv::svex-count)))
 
-  
+
+  (create-look-for-pattern-fnc :name ha-c-chain-pattern-with-negatable-args
+                               :prepwork ((define
+                                            ha-c-chain-pattern-with-negatable-args-aux
+                                            ((svex sv::Svex-p)
+                                             &key
+                                             ((env) 'env)
+                                             ((context rp-term-listp) 'context)
+                                             ((config svl::svex-reduce-config-p) 'config))
+                                            :inline t
+                                            :returns (res sv::Svex-p :hyp (sv::Svex-p svex))
+                                            (b* ((arg1-negable (svl::bitand/or-of-one-negated-p svex))
+                                                 ((unless arg1-negable) svex) 
+                                                 (arg1-neg (sv::svex-call 'sv::bitxor (hons-list 1 svex)))
+                                                 (arg1-neg (svl::svex-reduce-bit-negations-aux arg1-neg
+                                                                                               :limit (expt 2 5))))
+                                              (sv::svex-call 'sv::bitxor (hons-list 1 arg1-neg)))
+                                            ///
+                                            (defret svex-eval$-of-<fn>-is-correct
+                                              (implies
+                                               (and
+                                                (sv::svex-p svex)
+                                                (rp-term-listp context)
+                                                (valid-sc env-term a)
+                                                (eval-and-all context a)
+                                                (falist-consistent-aux env env-term)
+                                                (svl::width-of-svex-extn-correct$-lst
+                                                 (svl::svex-reduce-config->width-extns config))
+                                                (svl::integerp-of-svex-extn-correct$-lst
+                                                 (svl::svex-reduce-config->integerp-extns config)))
+                                               (equal
+                                                (sv::svex-eval$ res (rp-evlt env-term a))
+                                                (sv::svex-eval$ svex
+                                                                (rp-evlt env-term a))))
+                                              :hints (("Goal"
+                                                       :in-theory (e/d (SV::SVEX-CALL->FN
+                                                                        svl::bitand/or-of-one-negated-p
+                                                                        SV::SVEX-APPLY)
+                                                                       (svl::svex-eval$-of-svex-reduce-bit-negations-aux-correct))
+                                                       :use
+                                                       ((:instance svl::svex-eval$-of-svex-reduce-bit-negations-aux-correct
+                                                                   ;;(svl::big-env env)
+                                                                   (svl::env-term env-term)
+                                                                   (svl::a a)
+                                                                   (svl::svex (sv::svex-call 'sv::bitxor (hons-list 1 svex)))
+                                                                   (svl::limit (expt 2 5))
+                                                                   ))))))
+                                          (create-case-match-macro ha-c-chain-negatable-args-pattern
+                                                                   ;; args can be double negated.
+                                                                   ('sv::bitand x y)
+                                                                   :extra-cond
+                                                                   (or (svl::bitand/or-of-one-negated-p x)
+                                                                       (svl::bitand/or-of-one-negated-p y)))
+                                          (local (in-theory (e/d (ha-c-chain
+                                                                  ha-c-chain-negatable-args-pattern-p 
+                                                                  sv::svexlist-p
+                                                                  )
+                                                                 (acl2::merge-lexorder
+                                                                  SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$-LST
+                                                                  SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$
+                                                                  SV::SVEX-APPLY$-OF-FNSYM-FIX-FN
+                                                                  SV::4VECLIST-NTH-SAFE-OUT-OF-BOUNDS
+                                                                  ASSOC-EQUAL
+                                                                  (:DEFINITION ACL2::APPLY$-BADGEP)
+                                                                  (:TYPE-PRESCRIPTION LEN)
+                                                                  pattern-fn-call-list-provide-good-measure-p
+                                                                  sv::equal-of-svex-call
+                                                                  cons-equal
+                                                                  sv::svexlist-p-of-cons
+                                                                  ;;sv::svex-kind$inline
+                                                                  svl::width-of-svex-extn-correct$-lst
+                                                                  svl::width-of-svex-extn-correct$
+                                                                  sv::svex-eval$-when-fncall
+                                                                  valid-sc
+                                                                  sv::len-of-svexlist-eval$
+                                                                  eval-and-all
+                                                                  len
+                                                                  rp-trans
+                                                                  member-equal
+                                                                  acl2::merge-sort-lexorder
+                                                                  )))))
+                               :body (and
+                                      (ha-c-chain-negatable-args-pattern-p svex)
+                                      (ha-c-chain-negatable-args-pattern-body
+                                       svex
+                                       (b* (;; (arg1-negable (svl::bitand/or-of-one-negated-p x))
+                                            ;; (arg2-negable (svl::bitand/or-of-one-negated-p y))
+                                            (x-dneg (ha-c-chain-pattern-with-negatable-args-aux x))
+                                            (y-dneg (ha-c-chain-pattern-with-negatable-args-aux y))
+                                            (p (make-pattern-fn-call :fn 'ha-c-chain :rule *ha-c-chain-rule*))
+                                            (ps
+                                             (list
+                                              (change-pattern-fn-call p :args (acl2::merge-sort-lexorder (list x-dneg y)))
+                                              (change-pattern-fn-call p :args (acl2::merge-sort-lexorder (list x y-dneg)))
+                                              (change-pattern-fn-call p :args (acl2::merge-sort-lexorder (list x-dneg y-dneg))))))
+                                         (and (pattern-fn-call-list-provide-good-measure-p svex ps)
+                                              ps))))
+                               :correct-pattern-initial-hints
+                               ()
+                               :correct-pattern-hints
+                               '(:expand ((:free (x) (hide x))
+                                          (SV::SVEX-EVAL$ SVEX (RP-EVLT ENV-TERM A))))
+                                                 
+                               :extra-svex-reduce-params? t
+                               :warrant-hyps ((apply$-warrant-ha-c-chain))
+                               :postwork ((memoize 'sv::svex-count)))
+
   (with-output
     :off :all
     :gag-mode :goals
@@ -1391,70 +1502,146 @@
 
                                             (create-case-match-macro ha-c-chain-repeated-with-self1
                                                                      ('ha-c-chain x ('ha-c-chain y1 y2))
+                                                                     :extra-cond
                                                                      (or (equal y1 x)
                                                                          (equal y2 x)))
                                             (create-case-match-macro ha-c-chain-repeated-with-self2
                                                                      ('ha-c-chain ('ha-c-chain y1 y2) x)
+                                                                     :extra-cond
                                                                      (or (equal y1 x)
                                                                          (equal y2 x)))
+
+                                            (create-case-match-macro ha-c-chain-negatable-pattern
+                                                                   ('sv::bitor x y)
+                                                                   :extra-cond
+                                                                   (and (or (svl::bitxor-of-1-term-1-p x)
+                                                                            (svl::bitxor-of-1-term-2-p x)
+                                                                            (svl::bitxor-of-1-term-1-p y)
+                                                                            (svl::bitxor-of-1-term-2-p y))
+                                                                        ;; (or (atom x)
+                                                                        ;;     (and (not (equal (car x) 'fa-s-chain))
+                                                                        ;;          (not (equal (car x) 'fa-c-chain))
+                                                                        ;;          (not (equal (car x) 'ha-s-chain))
+                                                                        ;;          (not (equal (car x) 'ha-s-chain))
+                                                                        ;;          (not (equal (car x) 'ha+1-s-chain))
+                                                                        ;;          (not (equal (car x) 'ha+1-c-chain))))
+                                                                        ;; (or (atom y)
+                                                                        ;;     (and (not (equal (car y) 'fa-s-chain))
+                                                                        ;;          (not (equal (car y) 'fa-c-chain))
+                                                                        ;;          (not (equal (car y) 'ha-s-chain))
+                                                                        ;;          (not (equal (car y) 'ha-s-chain))
+                                                                        ;;          (not (equal (car y) 'ha+1-s-chain))
+                                                                        ;;          (not (equal (car y) 'ha+1-c-chain))))
+                                                                        ))
+
                                             
+
                                             (local (in-theory (e/d (ha-c-chain)
                                                                    ()))))
                                  :body
                                  (append ;; (and
-                                         ;;  (ha-c-chain-repeated-with-self1-p svex)
-                                         ;;  (ha-c-chain-repeated-with-self1-body
-                                         ;;   svex
-                                         ;;   (declare (ignorable x))
-                                         ;;   (list (make-pattern-fn-call
-                                         ;;          :fn 'ha-c-chain
-                                         ;;          :rule '(t)
-                                         ;;          :args (acl2::merge-sort-lexorder (list y1 y2))))))
-                                         ;; (and
-                                         ;;  (ha-c-chain-repeated-with-self2-p svex)
-                                         ;;  (ha-c-chain-repeated-with-self2-body
-                                         ;;   svex
-                                         ;;   (declare (ignorable x))
-                                         ;;   (list (make-pattern-fn-call
-                                         ;;          :fn 'ha-c-chain
-                                         ;;          :rule '(t)
-                                         ;;          :args (acl2::merge-sort-lexorder (list y1 y2))))))
+                                  ;;  (ha-c-chain-repeated-with-self1-p svex)
+                                  ;;  (ha-c-chain-repeated-with-self1-body
+                                  ;;   svex
+                                  ;;   (declare (ignorable x))
+                                  ;;   (list (make-pattern-fn-call
+                                  ;;          :fn 'ha-c-chain
+                                  ;;          :rule '(t)
+                                  ;;          :args (acl2::merge-sort-lexorder (list y1 y2))))))
+                                  ;; (and
+                                  ;;  (ha-c-chain-repeated-with-self2-p svex)
+                                  ;;  (ha-c-chain-repeated-with-self2-body
+                                  ;;   svex
+                                  ;;   (declare (ignorable x))
+                                  ;;   (list (make-pattern-fn-call
+                                  ;;          :fn 'ha-c-chain
+                                  ;;          :rule '(t)
+                                  ;;          :args (acl2::merge-sort-lexorder (list y1 y2))))))
 
-                                         (and
-                                          (ha-c-chain-pattern-itself-p svex)
-                                          (ha-c-chain-pattern-itself-body
-                                           svex
-                                           (list (make-pattern-fn-call
-                                                  :fn 'ha-c-chain
-                                                  :rule nil
-                                                  :new-p nil
-                                                  :args (acl2::merge-sort-lexorder (list x y))))))
-                                         
-                                         (and
-                                          (ha-c-chain-pattern-p svex)
-                                          (ha-c-chain-pattern-body
-                                           svex
-                                           (b* ((p0 (make-pattern-fn-call
-                                                     :fn 'ha-c-chain
-                                                     :rule *ha-c-chain-rule*
-                                                     :args (acl2::merge-sort-lexorder (list x y))))
+                                  (and
+                                   (ha-c-chain-pattern-itself-p svex)
+                                   (ha-c-chain-pattern-itself-body
+                                    svex
+                                    (list (make-pattern-fn-call
+                                           :fn 'ha-c-chain
+                                           :rule nil
+                                           :new-p nil
+                                           :args (acl2::merge-sort-lexorder (list x y))))))
 
-                                                (p1 (look-for-ha-c-chain-pattern-with-simplify svex
-                                                                                               :strength 0))
-                                                (p2 (look-for-ha-c-chain-pattern-with-simplify svex
-                                                                                               :strength 1))
-                                                (p3 (and nil (look-for-ha-c-chain-pattern-with-simplify svex
-                                                                                                        :strength 2)))
-                                                (res `(,p0 ,@p1 ,@p2 ,@p3))
-                                                (res (remove-duplicates-equal res)))
-                                             res)))
+                                  (and
+                                   (ha-c-chain-pattern-p svex)
+                                   (ha-c-chain-pattern-body
+                                    svex
+                                    (b* ((p0 (make-pattern-fn-call
+                                              :fn 'ha-c-chain
+                                              :rule *ha-c-chain-rule*
+                                              :args (acl2::merge-sort-lexorder (list x y))))
 
-                                         ;; Putting this  here because  when this
-                                         ;; is applied at fa  search stage, it is
-                                         ;; messing  up  with things.  This  way,
-                                         ;; this will have a less priority.... TODO: remove this from here!!!
-                                         ;;(look-for-fa-c-chain-pattern-6 svex)
-                                         )
+                                         (p1 (look-for-ha-c-chain-pattern-with-simplify svex
+                                                                                        :strength 0))
+                                         (p2 (look-for-ha-c-chain-pattern-with-simplify svex
+                                                                                        :strength 1))
+                                         (p3 (and nil (look-for-ha-c-chain-pattern-with-simplify svex
+                                                                                                 :strength 2)))
+                                         (res `(,p0 ,@p1 ,@p2 ,@p3))
+                                         (res (remove-duplicates-equal res)))
+                                      res)))
+
+                                  (and
+                                   (ha-c-chain-negatable-pattern-p svex)
+                                   (ha-c-chain-negatable-pattern-body
+                                    svex
+                                    (declare (ignorable x y))
+                                    (b* (;;(width (svl::width-of-svex svex))
+                                         (negated-svex (sv::svex-call 'sv::bitxor
+                                                                      (hons-list 1 svex)))
+                                         (negated-svex (svl::svex-reduce-bit-negations-aux negated-svex
+                                                                                           :limit (expt 2 10)))
+                                         (p0 (and (ha-c-chain-pattern-p negated-svex)
+                                                  (ha-c-chain-pattern-body
+                                                   negated-svex
+                                                   (list (b* ((args (acl2::merge-sort-lexorder (list x y))))
+                                                           (make-pattern-fn-call
+                                                            :fn 'ha-c-chain
+                                                            :rule *ha-c-chain-rule*
+                                                            :flip t
+                                                            :args args))))))
+                                         (p0 (and (pattern-fn-call-list-provide-good-measure-p svex p0)
+                                                  p0)))
+                                      p0)))
+
+                                  (look-for-ha-c-chain-pattern-with-negatable-args  svex)
+
+                                  
+
+                                  ;; Putting this  here because  when this
+                                  ;; is applied at fa  search stage, it is
+                                  ;; messing  up  with things.  This  way,
+                                  ;; this will have a less priority.... TODO: remove this from here!!!
+                                  ;;(look-for-fa-c-chain-pattern-6 svex)
+                                  )
+
+
+                                 :correct-pattern-hints
+                                 '(:in-theory
+                                   (e/d (SV::SVEX-CALL->FN
+                                         SV::SVEX-CALL->ARGS)
+                                        (svl::svex-eval$-of-svex-reduce-bit-negations-aux-correct))
+                                   :expand ((:free (x) (sv::svex-apply 'sv::bitor x))
+                                            (:free (x) (sv::svex-apply 'sv::bitand x))
+                                            (:free (x) (sv::svex-call 'sv::bitxor x))
+                                            (:free (x) (sv::svex-apply 'sv::bitxor x)))
+                                            
+                                   :use ((:instance svl::svex-eval$-of-svex-reduce-bit-negations-aux-correct
+                                                    ;;(svl::big-env env)
+                                                    (svl::env-term env-term)
+                                                    (svl::a a)
+                                                  
+                                                    (svl::svex (SV::SVEX-CALL 'SV::BITXOR (LIST 1 SVEX)))
+                                                    (svl::limit 1024)
+                                                    )
+                                         ))
+                                 
                                  :extra-svex-reduce-params? t
                                  :warrant-hyps ((apply$-warrant-ha-c-chain)
                                                 (apply$-warrant-fa-c-chain))))
@@ -1495,6 +1682,7 @@
                                :prepwork ((create-case-match-macro ha+1-c-chain-pattern
                                                                    ('sv::bitor x y)
                                                                    ;; prevent two partsels to be go intp a half-adder.
+                                                                   :extra-cond
                                                                    (and (not (and (partsel-of-atom-pattern-p x)
                                                                                   (partsel-of-atom-pattern-p y)))
                                                                         (not (integerp x))
@@ -1537,44 +1725,179 @@
                                :inline nil
                                )
 
+
+
+
+  (create-look-for-pattern-fnc :name ha+1-c-chain-pattern-with-negatable-args
+                               :prepwork ((create-case-match-macro ha+1-c-chain-negatable-args-pattern
+                                                                   ;; args can be double negated.
+                                                                   ('sv::bitor x y)
+                                                                   :extra-cond
+                                                                   (or (svl::bitand/or-of-one-negated-p x)
+                                                                       (svl::bitand/or-of-one-negated-p y)))
+                                          (local (in-theory (e/d (ha+1-c-chain
+                                                                  ha+1-c-chain-negatable-args-pattern-p 
+                                                                  sv::svexlist-p
+                                                                  )
+                                                                 (acl2::merge-lexorder
+                                                                  SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$-LST
+                                                                  SVL::INTEGERP-OF-SVEX-EXTN-CORRECT$
+                                                                  SV::SVEX-APPLY$-OF-FNSYM-FIX-FN
+                                                                  SV::4VECLIST-NTH-SAFE-OUT-OF-BOUNDS
+                                                                  ASSOC-EQUAL
+                                                                  (:DEFINITION ACL2::APPLY$-BADGEP)
+                                                                  (:TYPE-PRESCRIPTION LEN)
+                                                                  pattern-fn-call-list-provide-good-measure-p
+                                                                  sv::equal-of-svex-call
+                                                                  cons-equal
+                                                                  sv::svexlist-p-of-cons
+                                                                  ;;sv::svex-kind$inline
+                                                                  svl::width-of-svex-extn-correct$-lst
+                                                                  svl::width-of-svex-extn-correct$
+                                                                  sv::svex-eval$-when-fncall
+                                                                  valid-sc
+                                                                  sv::len-of-svexlist-eval$
+                                                                  eval-and-all
+                                                                  len
+                                                                  rp-trans
+                                                                  member-equal
+                                                                  acl2::merge-sort-lexorder
+                                                                  )))))
+                               :body (and
+                                      (ha+1-c-chain-negatable-args-pattern-p svex)
+                                      (ha+1-c-chain-negatable-args-pattern-body
+                                       svex
+                                       (b* (;; (arg1-negable (svl::bitand/or-of-one-negated-p x))
+                                            ;; (arg2-negable (svl::bitand/or-of-one-negated-p y))
+                                            (x-dneg (ha-c-chain-pattern-with-negatable-args-aux x))
+                                            (y-dneg (ha-c-chain-pattern-with-negatable-args-aux y))
+                                            (p (make-pattern-fn-call :fn 'ha+1-c-chain :rule *ha+1-c-chain-rule*))
+                                            (ps
+                                             (list
+                                              (change-pattern-fn-call p :args (acl2::merge-sort-lexorder (list x-dneg y)))
+                                              (change-pattern-fn-call p :args (acl2::merge-sort-lexorder (list x y-dneg)))
+                                              (change-pattern-fn-call p :args (acl2::merge-sort-lexorder (list x-dneg y-dneg))))))
+                                         (and (pattern-fn-call-list-provide-good-measure-p svex ps)
+                                              ps))))
+                               :correct-pattern-initial-hints
+                               ()
+                               :correct-pattern-hints
+                               '(:expand ((:free (x) (hide x))
+                                          (SV::SVEX-EVAL$ SVEX (RP-EVLT ENV-TERM A))))
+                                                 
+                               :extra-svex-reduce-params? t
+                               :warrant-hyps ((apply$-warrant-ha+1-c-chain))
+                               :postwork ((memoize 'sv::svex-count)))
+
+  
+
   (create-look-for-pattern-fnc :name ha+1-c-chain-pattern
                                :prepwork (
                                           (create-case-match-macro ha+1-c-chain-self-pattern
                                                                    ('ha+1-c-chain x y))
+
+                                          (create-case-match-macro ha+1-c-chain-negatable-pattern
+                                                                   ('sv::bitand x y)
+                                                                   :extra-cond
+                                                                   (and (or (svl::bitxor-of-1-term-1-p x)
+                                                                            (svl::bitxor-of-1-term-2-p x)
+                                                                            (svl::bitxor-of-1-term-1-p y)
+                                                                            (svl::bitxor-of-1-term-2-p y))
+                                                                        ;; (or (atom x)
+                                                                        ;;     (and (not (equal (car x) 'fa-s-chain))
+                                                                        ;;          (not (equal (car x) 'fa-c-chain))
+                                                                        ;;          (not (equal (car x) 'ha-s-chain))
+                                                                        ;;          (not (equal (car x) 'ha-s-chain))
+                                                                        ;;          (not (equal (car x) 'ha+1-s-chain))
+                                                                        ;;          (not (equal (car x) 'ha+1-c-chain))))
+                                                                        ;; (or (atom y)
+                                                                        ;;     (and (not (equal (car y) 'fa-s-chain))
+                                                                        ;;          (not (equal (car y) 'fa-c-chain))
+                                                                        ;;          (not (equal (car y) 'ha-s-chain))
+                                                                        ;;          (not (equal (car y) 'ha-s-chain))
+                                                                        ;;          (not (equal (car y) 'ha+1-s-chain))
+                                                                        ;;          (not (equal (car y) 'ha+1-c-chain))))
+                                                                        ))
+
                                           (local
                                            (in-theory (e/d (ha+1-c-chain)
                                                            ()))))
                                :body
-                               (cond ((ha+1-c-chain-pattern-p svex)
-                                      (b* ((p0 (ha+1-c-chain-pattern-body
-                                                svex
-                                                (b* (#|(- (and (or (integerp x)
-                                                     (integerp y))
-                                                     (cwe "ha+1-c-chain-pattern found an integerp: ~p0~%" svex)))|#
-                                                     (args (acl2::merge-sort-lexorder (list x y))))
-                                                  (make-pattern-fn-call
-                                                   :fn 'ha+1-c-chain
-                                                   :rule *ha+1-c-chain-rule*
-                                                   :args args))))
+                               (append (and (ha+1-c-chain-pattern-p svex)
+                                            (b* ((p0 (ha+1-c-chain-pattern-body
+                                                      svex
+                                                      (b* ( #|(- (and (or (integerp x)
+                                                           (integerp y)) ; ; ; ; ;
+                                                           (cwe "ha+1-c-chain-pattern found an integerp: ~p0~%" svex)))|#
+                                                           (args (acl2::merge-sort-lexorder (list x y))))
+                                                        (make-pattern-fn-call
+                                                         :fn 'ha+1-c-chain
+                                                         :rule *ha+1-c-chain-rule*
+                                                         :args args))))
 
-                                           (p1 (and t (look-for-ha+1-c-chain-pattern-with-simplify svex
-                                                                                                   :strength 0)))
-                                           (p2 (and t (look-for-ha+1-c-chain-pattern-with-simplify svex
-                                                                                                   :strength 1)))
-                                           (p3 (and nil (look-for-ha+1-c-chain-pattern-with-simplify svex
-                                                                                                     :strength 2)))
-                                           (res `(,p0 ,@p1 ,@p2 ,@p3))
-                                           (res (remove-duplicates-equal res)))
-                                        res))
-                                     ((ha+1-c-chain-self-pattern-p svex)
-                                      (ha+1-c-chain-self-pattern-body
-                                       svex
-                                       (b* ((args (acl2::merge-sort-lexorder (list x y))))
-                                         (list (make-pattern-fn-call
-                                                :fn 'ha+1-c-chain
-                                                :rule nil ;; nil so that it will not try to replace anything.
-                                                :new-p nil
-                                                :args args))))))
+                                                 (p1 (and t (look-for-ha+1-c-chain-pattern-with-simplify svex
+                                                                                                         :strength 0)))
+                                                 (p2 (and t (look-for-ha+1-c-chain-pattern-with-simplify svex
+                                                                                                         :strength 1)))
+                                                 (p3 (and nil (look-for-ha+1-c-chain-pattern-with-simplify svex
+                                                                                                           :strength 2)))
+                                                 (res `(,p0 ,@p1 ,@p2 ,@p3))
+                                                 (res (remove-duplicates-equal res)))
+                                              res))
+                                       (and (ha+1-c-chain-self-pattern-p svex)
+                                            (ha+1-c-chain-self-pattern-body
+                                             svex
+                                             (b* ((args (acl2::merge-sort-lexorder (list x y))))
+                                               (list (make-pattern-fn-call
+                                                      :fn 'ha+1-c-chain
+                                                      :rule nil ;; nil so that it will not try to replace anything.
+                                                      :new-p nil
+                                                      :args args)))))
+
+                                       ;; maybe the whole body can be negated.
+                                       (and
+                                        (ha+1-c-chain-negatable-pattern-p svex)
+                                        (ha+1-c-chain-negatable-pattern-body
+                                         svex
+                                         (declare (ignorable x y))
+                                         (b* (;;(width (svl::width-of-svex svex))
+                                              (negated-svex (sv::svex-call 'sv::bitxor
+                                                                           (hons-list 1 svex)))
+                                              (negated-svex (svl::svex-reduce-bit-negations-aux negated-svex
+                                                                                                :limit (expt 2 10)))
+                                              (p0 (and (ha+1-c-chain-pattern-p negated-svex)
+                                                       (ha+1-c-chain-pattern-body
+                                                        negated-svex
+                                                        (list (b* ((args (acl2::merge-sort-lexorder (list x y))))
+                                                                (make-pattern-fn-call
+                                                                 :fn 'ha+1-c-chain
+                                                                 :rule *ha+1-c-chain-rule*
+                                                                 :flip t
+                                                                 :args args))))))
+                                              (p0 (and (pattern-fn-call-list-provide-good-measure-p svex p0)
+                                                       p0)))
+                                           p0)))
+
+                                       ;; maybe the args can be double-negated individually:
+                                       (look-for-ha+1-c-chain-pattern-with-negatable-args svex))
+                               :correct-pattern-hints
+                               '(:in-theory
+                                 (e/d (SV::SVEX-CALL->FN
+                                       SV::SVEX-CALL->ARGS)
+                                      (svl::svex-eval$-of-svex-reduce-bit-negations-aux-correct))
+                                 :expand ((:free (x) (sv::svex-apply 'sv::bitor x))
+                                          (:free (x) (sv::svex-apply 'sv::bitand x))
+                                          (:free (x) (sv::svex-call 'sv::bitxor x))
+                                          (:free (x) (sv::svex-apply 'sv::bitxor x)))
+                                            
+                                 :use ((:instance svl::svex-eval$-of-svex-reduce-bit-negations-aux-correct
+                                                  ;;(svl::big-env env)
+                                                  (svl::env-term env-term)
+                                                  (svl::a a)
+                                                  
+                                                  (svl::svex (SV::SVEX-CALL 'SV::BITXOR (LIST 1 SVEX)))
+                                                  (svl::limit 1024)
+                                                  ))) 
                                :extra-svex-reduce-params? t
                                :inline nil
                                :warrant-hyps ((apply$-warrant-ha+1-c-chain))))
@@ -1649,6 +1972,7 @@
                                                                    ('sv::bitnot ('sv::bitxor x y)))
                                           (create-case-match-macro ha+1-s-chain-pattern-2
                                                                    ('sv::bitxor ('sv::bitxor x y) z)
+                                                                   :extra-cond
                                                                    (and (or (equal x 1)
                                                                             (equal y 1)
                                                                             (equal z 1))
@@ -1657,6 +1981,7 @@
                                                                         (not (equal z 0))))
                                           (create-case-match-macro ha+1-s-chain-pattern-3
                                                                    ('sv::bitxor z ('sv::bitxor x y))
+                                                                   :extra-cond
                                                                    (and (or (equal x 1)
                                                                             (equal y 1)
                                                                             (equal z 1))
@@ -1729,7 +2054,7 @@
                                                            :rule nil
                                                            :new-p nil
                                                            :args args)))))))
-                               
+
                                :warrant-hyps ((apply$-warrant-ha+1-s-chain))))
 
 (defsection self-patterns
@@ -1950,7 +2275,7 @@
       ;; ha-s search has to come first to prevent override!!!
       (look-for-ha-s-chain-pattern svex)
       (look-for-ha-c-chain-pattern svex)
-      
+
       (look-for-ha+1-s-chain-pattern svex)
       (look-for-ha+1-c-chain-pattern svex)
 
@@ -2086,13 +2411,12 @@
                                             (in-theory (e/d (svl::4vec-correct-width-p
                                                              svl::4vec-concat$))))))
 
-
 (local
  (encapsulate nil
    (local
     (include-book "centaur/bitops/signed-byte-p" :dir :system))
    ;;bitops::basic-unsigned-byte-p-of-+
-   
+
    (defthm width-of-+-lemma-
      (implies (and (integerp x)
                    (integerp y)
@@ -2159,7 +2483,6 @@
                                    :prepwork
                                    ())
 
-
 (svl::create-integerp-of-svex-extn :fn half-adder
                                    :prepwork
                                    ((Local (in-theory (enable fa-s-chain
@@ -2176,7 +2499,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 ;; create an unfloat instance. This can help above
@@ -2216,46 +2538,46 @@
                              ())))))
 
 (define ex-adder-fnc-from-unfloat ((svex sv::Svex-p))
-     :returns (res-svex sv::svex-p :hyp (sv::Svex-p svex))
-     (case-match svex
-       (('sv::unfloat ('id x))
-        (if (and (equal (sv::svex-kind x) :call)
-                 (member-equal  (sv::Svex-call->fn  x)
-                                '(fa-c-chain fa-s-chain
-                                             full-adder half-adder int-vector-adder  ha+1-c-chain ha+1-s-chain
-                                             ha-c-chain   ha-s-chain   sv::bitand   sv::bitor
-                                             sv::bitxor)))
-            (cadr svex)
-          svex))
-       (('sv::unfloat x)
-        (if (and (equal (sv::svex-kind x) :call)
-                 (member-equal  (sv::Svex-call->fn  x)
-                                '(fa-c-chain fa-s-chain
-                                             full-adder half-adder int-vector-adder ha+1-c-chain ha+1-s-chain
-                                             ha-c-chain   ha-s-chain   sv::bitand   sv::bitor
-                                             sv::bitxor)))
-            x svex))
-       (& svex))
-     ///
-     (defret <fn>-correct
-       (implies (and (warrants-for-adder-pattern-match))
-                (equal (sv::svex-eval$ res-svex env)
-                       (sv::svex-eval$ svex env)))
-       :hints (("Goal"
-                :expand ((sv::svex-call->fn svex)
-                         (sv::svex-call->args svex)
-                         (sv::svex-call->fn (cadr svex))
-                         (sv::svex-call->args (cadr svex))
-                         (:free (args) (sv::svex-apply 'id args))
-                         (:free (args) (sv::svex-apply 'sv::bitor args))
-                         (:free (args) (sv::svex-apply 'sv::bitxor args))
-                         (:free (args) (sv::svex-apply 'sv::bitand args))
-                         (:free (args) (sv::svex-apply 'sv::unfloat args)))
-                :in-theory (e/d (fa-c-chain
-                                 fa-s-chain
-                                 full-adder half-adder
-                                 int-vector-adder
-                                 ha-c-chain ha-s-chain
-                                 ha+1-s-chain ha+1-c-chain
-                                 sv::svex-apply$)
-                                (acl2::apply$-badgep))))))
+  :returns (res-svex sv::svex-p :hyp (sv::Svex-p svex))
+  (case-match svex
+    (('sv::unfloat ('id x))
+     (if (and (equal (sv::svex-kind x) :call)
+              (member-equal  (sv::Svex-call->fn  x)
+                             '(fa-c-chain fa-s-chain
+                                          full-adder half-adder int-vector-adder  ha+1-c-chain ha+1-s-chain
+                                          ha-c-chain   ha-s-chain   sv::bitand   sv::bitor
+                                          sv::bitxor)))
+         (cadr svex)
+       svex))
+    (('sv::unfloat x)
+     (if (and (equal (sv::svex-kind x) :call)
+              (member-equal  (sv::Svex-call->fn  x)
+                             '(fa-c-chain fa-s-chain
+                                          full-adder half-adder int-vector-adder ha+1-c-chain ha+1-s-chain
+                                          ha-c-chain   ha-s-chain   sv::bitand   sv::bitor
+                                          sv::bitxor)))
+         x svex))
+    (& svex))
+  ///
+  (defret <fn>-correct
+    (implies (and (warrants-for-adder-pattern-match))
+             (equal (sv::svex-eval$ res-svex env)
+                    (sv::svex-eval$ svex env)))
+    :hints (("Goal"
+             :expand ((sv::svex-call->fn svex)
+                      (sv::svex-call->args svex)
+                      (sv::svex-call->fn (cadr svex))
+                      (sv::svex-call->args (cadr svex))
+                      (:free (args) (sv::svex-apply 'id args))
+                      (:free (args) (sv::svex-apply 'sv::bitor args))
+                      (:free (args) (sv::svex-apply 'sv::bitxor args))
+                      (:free (args) (sv::svex-apply 'sv::bitand args))
+                      (:free (args) (sv::svex-apply 'sv::unfloat args)))
+             :in-theory (e/d (fa-c-chain
+                              fa-s-chain
+                              full-adder half-adder
+                              int-vector-adder
+                              ha-c-chain ha-s-chain
+                              ha+1-s-chain ha+1-c-chain
+                              sv::svex-apply$)
+                             (acl2::apply$-badgep))))))

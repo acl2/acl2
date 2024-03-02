@@ -52,12 +52,12 @@
        ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
        (outvars (svtv-probealist-outvars setup.probes))
        (outs (svtv-fsm-run-compile setup.inputs setup.override-vals setup.override-tests setup.initst
-                                   (make-svtv-fsm :base-fsm fsm
+                                   (make-svtv-fsm :fsm fsm
                                                   :namemap (svtv-data$c->namemap svtv-data))
                                    outvars precomp-inputs simp))
        (result (svtv-probealist-extract-alist setup.probes outs)))
     (implies (equal (svex-alist-keys setup.initst)
-                    (svex-alist-keys (base-fsm->nextstate fsm)))
+                    (svex-alist-keys (fsm->nextstate fsm)))
              (svtv-data$c-pipeline-okp svtv-data result)))
   :hints(("Goal" :in-theory (enable svtv-data$c-pipeline-okp))))
 
@@ -67,7 +67,7 @@
        ((pipeline-setup setup) (svtv-data$c->pipeline-setup svtv-data))
        (outvars (svtv-probealist-outvars setup.probes))
        (outs (svtv-fsm-run-compile setup.inputs setup.override-vals setup.override-tests setup.initst
-                                   (make-svtv-fsm :base-fsm fsm
+                                   (make-svtv-fsm :fsm fsm
                                                   :namemap (svtv-data$c->namemap svtv-data))
                                    outvars precomp-inputs simp))
        (result (svtv-probealist-extract-alist setup.probes outs)))
@@ -84,7 +84,7 @@
               ;; (svtv-data->flatten-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
-              (b* ((st-vars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+              (b* ((st-vars (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
                 (and (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
                             st-vars)
                      (not (acl2::hons-intersect-p precomp-inputs st-vars))
@@ -100,7 +100,7 @@
         (outvars (svtv-probealist-outvars setup.probes))
         (outs (make-fast-alists (svtv-fsm-run-compile
                                     setup.inputs setup.override-vals setup.override-tests setup.initst
-                                    (make-svtv-fsm :base-fsm fsm
+                                    (make-svtv-fsm :fsm fsm
                                                    :namemap (svtv-data->namemap svtv-data))
                                     outvars precomp-inputs simp)))
         (result (svtv-probealist-extract-alist setup.probes outs))
@@ -126,7 +126,7 @@
                                           ((precomp-inputs svarlist-p) 'nil))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->cycle-fsm-validp svtv-data)
-              (b* ((st-vars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+              (b* ((st-vars (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
                 (and (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
                             st-vars)
                      (not (acl2::hons-intersect-p precomp-inputs st-vars))

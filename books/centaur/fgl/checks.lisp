@@ -32,6 +32,8 @@
 
 (include-book "arith-base")
 (include-book "syntax-bind")
+(include-book "std/alists/alist-defuns" :dir :system)
+
 
 (defxdoc fgl-syntactic-checker-binders
   :parents (fgl-rewrite-rules)
@@ -302,3 +304,14 @@ its symbolic bits.</p>"
 
 (define symbolic-t () t)
 (define symbolic-nil () nil)
+
+
+
+(define alist-const-pairs (ans x)
+  :short "FGL binder that gets the constant-valued pairs from an alist."
+  (and (acl2::sub-alistp ans x) ans)
+  ///
+  (defthm sub-alistp-of-alist-const-pairs
+    (acl2::sub-alistp (alist-const-pairs ans x) x)
+    :hints(("Goal" :in-theory (enable acl2::sub-alistp
+                                      acl2::alists-agree)))))

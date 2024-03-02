@@ -30,17 +30,26 @@
 
 ;the axe-syntaxp is new
 (defthmd myif-becomes-boolif-axe
-  (implies (and (axe-syntaxp (syntactic-booleanp b dag-array)) ;could be optimized with a single call to an axe-syntaxp function that checks both
-                (axe-syntaxp (syntactic-booleanp c dag-array))
-                (booleanp b)
+  (implies (and (axe-syntaxp (and (syntactic-booleanp b dag-array) ;could be optimized with a single call to an axe-syntaxp function that checks both
+                                  (syntactic-booleanp c dag-array)))
+                (booleanp b) ; could use a scheme like we do for unsigned-byte-p-forced, for speed
                 (booleanp c))
            (equal (myif a b c)
                   (boolif a b c)))
   :hints (("Goal" :in-theory (enable myif boolif))))
 
+(defthmd if-becomes-boolif-axe
+  (implies (and (axe-syntaxp (and (syntactic-booleanp b dag-array) ;could be optimized with a single call to an axe-syntaxp function that checks both
+                                  (syntactic-booleanp c dag-array)))
+                (booleanp b)
+                (booleanp c))
+           (equal (if a b c)
+                  (boolif a b c)))
+  :hints (("Goal" :in-theory (enable myif boolif))))
+
 (defthmd equal-of-booleans-axe
-  (implies (and (axe-syntaxp (syntactic-booleanp x dag-array))
-                (axe-syntaxp (syntactic-booleanp y dag-array))
+  (implies (and (axe-syntaxp (and (syntactic-booleanp x dag-array)
+                                  (syntactic-booleanp y dag-array)))
                 (booleanp x)
                 (booleanp y))
            (equal (equal x y)

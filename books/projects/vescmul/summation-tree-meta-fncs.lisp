@@ -53,7 +53,6 @@
   use-ihs-logops-lemmas
   :disabled t))
 
-
 (local
  (fetch-new-theory
   (include-book "arithmetic-5/top" :dir :system)
@@ -286,10 +285,10 @@
                    :in-theory (e/d () (loghead unsigned-byte-p))))
     :returns (hash-code integerp)
     (the (unsigned-byte 59)
-      (loghead 59
-               (* (hash-coef)
-                  (+ (* 3 (calculate-pp-hash pp))
-                     (* 7 (get-hash-code-of-c c)))))))
+         (loghead 59
+                  (* (hash-coef)
+                     (+ (* 3 (calculate-pp-hash pp))
+                        (* 7 (get-hash-code-of-c c)))))))
 
   (local
    (defthm integerp-of-+and*
@@ -311,24 +310,24 @@
          (hash-coef (the (unsigned-byte 8) (hash-coef)))
 
          (mult0 (the (unsigned-byte 90)
-                  (loghead 90
-                           (* hash-coef
-                              (logxor (loghead 90 hash-code-base)
-                                      (loghead 90 (ash hash-code-base -90)))))))
+                     (loghead 90
+                              (* hash-coef
+                                 (logxor (loghead 90 hash-code-base)
+                                         (loghead 90 (ash hash-code-base -90)))))))
 
          ;; expecting below to be zero in cases where c-of-s simplification is
          ;; enabled (which is the default)
          (mult1 (the (unsigned-byte 59)
-                  (loghead 59 (* s-hash-codes1 hash-coef))))
+                     (loghead 59 (* s-hash-codes1 hash-coef))))
          (mult2 (the (unsigned-byte 59)
-                  (loghead 59 (* s-hash-codes2 hash-coef)))))
+                     (loghead 59 (* s-hash-codes2 hash-coef)))))
       (cons
        (the (unsigned-byte 59)
-         (logapp 8 (len (list-to-lst pp))
-                 (logapp 8 (len (list-to-lst c))
-                         (loghead 43 (ash (the (unsigned-Byte 90)
-                                            (loghead 90 (+ mult0 mult1))) ;
-                                          -47)))))
+            (logapp 8 (len (list-to-lst pp))
+                    (logapp 8 (len (list-to-lst c))
+                            (loghead 43 (ash (the (unsigned-Byte 90)
+                                                  (loghead 90 (+ mult0 mult1))) ;
+                                             -47)))))
        (the (unsigned-byte 59) (loghead 59 (+ mult0 mult2)))
        ))))
 
@@ -529,94 +528,94 @@
 ;;             :in-theory (e/d (rp-termp rp-term-listp) ())))))
 
 (acl2::defines
-  get-max-min-val
-  :flag-defthm-macro defthm-get-min-max-val
-  :flag-local nil
-  :prepwork ((local
-              (in-theory (e/d (measure-lemmas
-                               list-to-lst)
-                              (measure-lemma1
-                               measure-lemma1-2
-                               ;;                              (:rewrite acl2::o-p-o-infp-car)
-                               (:rewrite default-car)
-                               not-include-rp)))))
+ get-max-min-val
+ :flag-defthm-macro defthm-get-min-max-val
+ :flag-local nil
+ :prepwork ((local
+             (in-theory (e/d (measure-lemmas
+                              list-to-lst)
+                             (measure-lemma1
+                              measure-lemma1-2
+                              ;;                              (:rewrite acl2::o-p-o-infp-car)
+                              (:rewrite default-car)
+                              not-include-rp)))))
 
-  :verify-guards nil
-  (define get-max-min-val ((term rp-termp))
-    :measure (cons-count term)
-    :returns (mv  (max-val integerp)
-                  (min-val integerp)
-                  (valid booleanp))
-    (b* (((when (has-bitp-rp term)) (mv 1 0 t))
-         (term (ex-from-rp$ term)))
-      (cond
-       ((single-c-p term)
-        (b* (((mv s pp c)
-              (case-match term (('c & s pp c) (mv s pp c)) (& (mv nil nil nil))))
-             ((mv s-max-val s-min-val s-valid)
-              (case-match s
-                (('list . lst) (get-max-min-val-lst lst))
-                (''nil (mv 0 0 t))
-                (& (mv 0 0 nil))))
-             ((mv pp-max-val pp-min-val pp-valid)
-              (case-match pp
-                (('list . lst) (get-max-min-val-lst lst))
-                (''nil (mv 0 0 t))
-                (& (mv 0 0 nil))))
-             ((mv c-max-val c-min-val c-valid)
-              (case-match c
-                (('list . lst) (get-max-min-val-lst lst))
-                (''nil (mv 0 0 t))
-                (& (mv 0 0 nil))))
-             ((unless (and s-valid pp-valid c-valid))
-              (mv 0 0 nil)))
-          (mv (floor (+ s-max-val pp-max-val c-max-val) 2)
-              (floor (+ s-min-val pp-min-val c-min-val) 2)
-              t)))
-       ((and-times-list-p term)
-        (b* (((mv max-val min-val valid) (get-max-min-val (fourth term)))
-             ((when (and*-exec valid
-                               (natp min-val)
-                               (natp max-val)))
-              (mv max-val 0 t)))
-          (mv 0 0 nil)))
-          
-       ((or* (single-s-p term)
-             (binary-fnc-p term)
-             (logbit-p term)
-             (and-list-p term))
-        (mv 1 0 t))
-       ((equal term ''1) (mv 1 1 t))
-       ((times-p term)
-        (b* ((coef (ifix (unquote (cadr term))))
-             (n (second (cdr term)))
-             ((mv max-val min-val valid)
-              (get-max-min-val n)))
-          (if (< coef 0)
-              (mv (* coef min-val) (* coef max-val) valid)
-            (mv (* coef max-val) (* coef min-val) valid))))
-       (t (mv 0 0 nil)))))
-  (define get-max-min-val-lst ((lst rp-term-listp))
-    :measure (cons-count lst)
-    :returns (mv (max-val integerp)
+ :verify-guards nil
+ (define get-max-min-val ((term rp-termp))
+   :measure (cons-count term)
+   :returns (mv  (max-val integerp)
                  (min-val integerp)
                  (valid booleanp))
-    (if (atom lst)
-        (mv 0 0 t)
-      (b* (((mv max-val1 min-val1 valid1)
-            (get-max-min-val (car lst)))
-           ((unless valid1)
-            (mv max-val1 min-val1 valid1))
-           ((mv max-val2 min-val2 valid2)
-            (get-max-min-val-lst (cdr lst))))
-        (mv (+ max-val1 max-val2) (+ min-val1 min-val2) valid2))))
+   (b* (((when (has-bitp-rp term)) (mv 1 0 t))
+        (term (ex-from-rp$ term)))
+     (cond
+      ((single-c-p term)
+       (b* (((mv s pp c)
+             (case-match term (('c & s pp c) (mv s pp c)) (& (mv nil nil nil))))
+            ((mv s-max-val s-min-val s-valid)
+             (case-match s
+               (('list . lst) (get-max-min-val-lst lst))
+               (''nil (mv 0 0 t))
+               (& (mv 0 0 nil))))
+            ((mv pp-max-val pp-min-val pp-valid)
+             (case-match pp
+               (('list . lst) (get-max-min-val-lst lst))
+               (''nil (mv 0 0 t))
+               (& (mv 0 0 nil))))
+            ((mv c-max-val c-min-val c-valid)
+             (case-match c
+               (('list . lst) (get-max-min-val-lst lst))
+               (''nil (mv 0 0 t))
+               (& (mv 0 0 nil))))
+            ((unless (and s-valid pp-valid c-valid))
+             (mv 0 0 nil)))
+         (mv (floor (+ s-max-val pp-max-val c-max-val) 2)
+             (floor (+ s-min-val pp-min-val c-min-val) 2)
+             t)))
+      ((and-times-list-p term)
+       (b* (((mv max-val min-val valid) (get-max-min-val (fourth term)))
+            ((when (and*-exec valid
+                              (natp min-val)
+                              (natp max-val)))
+             (mv max-val 0 t)))
+         (mv 0 0 nil)))
 
-  ///
-  (verify-guards get-max-min-val-lst
-    :hints (("Goal"
-             :in-theory (e/d (RP-TERM-LISTP) ()))))
+      ((or* (single-s-p term)
+            (binary-fnc-p term)
+            (logbit-p term)
+            (and-list-p term))
+       (mv 1 0 t))
+      ((equal term ''1) (mv 1 1 t))
+      ((times-p term)
+       (b* ((coef (ifix (unquote (cadr term))))
+            (n (second (cdr term)))
+            ((mv max-val min-val valid)
+             (get-max-min-val n)))
+         (if (< coef 0)
+             (mv (* coef min-val) (* coef max-val) valid)
+           (mv (* coef max-val) (* coef min-val) valid))))
+      (t (mv 0 0 nil)))))
+ (define get-max-min-val-lst ((lst rp-term-listp))
+   :measure (cons-count lst)
+   :returns (mv (max-val integerp)
+                (min-val integerp)
+                (valid booleanp))
+   (if (atom lst)
+       (mv 0 0 t)
+     (b* (((mv max-val1 min-val1 valid1)
+           (get-max-min-val (car lst)))
+          ((unless valid1)
+           (mv max-val1 min-val1 valid1))
+          ((mv max-val2 min-val2 valid2)
+           (get-max-min-val-lst (cdr lst))))
+       (mv (+ max-val1 max-val2) (+ min-val1 min-val2) valid2))))
 
-  (profile 'get-max-min-val))
+ ///
+ (verify-guards get-max-min-val-lst
+   :hints (("Goal"
+            :in-theory (e/d (RP-TERM-LISTP) ()))))
+
+ (profile 'get-max-min-val))
 
 (define len-lte (lst size)
   ;; checks if length of lst is less than or equal to size.
@@ -634,137 +633,137 @@
              (natp res-size))))
 
 (acl2::defines maybe-bitp-precheck
-  ;; A light-weight check to  see if a given term can satisfy  bitp. It is used
-  ;; to cost of calling get-max-min-val inside create-c-instance function.
+               ;; A light-weight check to  see if a given term can satisfy  bitp. It is used
+               ;; to cost of calling get-max-min-val inside create-c-instance function.
 
-  :hints (("Goal"
-           :in-theory (e/d (measure-lemmas
-                            )
-                           ())))
-  :prepwork
-  ((local
-    (defthmd dummy-lemma0
-      (implies (and (natp x)
-                    (O< x (CONS-COUNT (ex-from-rp TERM))))
-               (O< x (CONS-COUNT TERM)))
-      :hints (("Goal"
-               :in-theory (e/d (ex-from-rp cons-count) ())))))
+               :hints (("Goal"
+                        :in-theory (e/d (measure-lemmas
+                                         )
+                                        ())))
+               :prepwork
+               ((local
+                 (defthmd dummy-lemma0
+                   (implies (and (natp x)
+                                 (O< x (CONS-COUNT (ex-from-rp TERM))))
+                            (O< x (CONS-COUNT TERM)))
+                   :hints (("Goal"
+                            :in-theory (e/d (ex-from-rp cons-count) ())))))
 
-   (local
-    (In-Theory (enable measure-lemmas)))
+                (local
+                 (In-Theory (enable measure-lemmas)))
 
-   (local
-    (defthmd dummy-lemma1
-      (implies (or #|(and (<= x y)
-                (< y z))|#
-                (and (< x y)
-                     (<= y z)))
-               (< x z))))
+                (local
+                 (defthmd dummy-lemma1
+                   (implies (or #|(and (<= x y)
+                             (< y z))|#
+                             (and (< x y)
+                                  (<= y z)))
+                            (< x z))))
 
-   (local
-    (defthm 0<-to-<
-      (implies (and (natp x) (natp y))
-               (equal (O< x y)
-                      (< x y)))
-      :hints (("Goal"
-               :expand (O< x y)
-               :in-theory (e/d () ())))))
+                (local
+                 (defthm 0<-to-<
+                   (implies (and (natp x) (natp y))
+                            (equal (O< x y)
+                                   (< x y)))
+                   :hints (("Goal"
+                            :expand (O< x y)
+                            :in-theory (e/d () ())))))
 
-   (local
-    (defthm dummy-lemma2
-      (IMPLIES (AND (CONSP term)
-                    (EQUAL (CAR term) 'C)
-                    (CONSP (CDR term))
-                    (CONSP (CDDR term))
-                    (CONSP (CDDDR term))
-                    (CONSP (CDDDDR term))
-                    (NOT (CDR (CDDDDR term))))
-               (O< (CONS-COUNT (LIST-TO-LST (CAR (CDDDDR term))))
-                   (CONS-COUNT TERM)))
-      :otf-flg t
-      :hints (("Goal"
+                (local
+                 (defthm dummy-lemma2
+                   (IMPLIES (AND (CONSP term)
+                                 (EQUAL (CAR term) 'C)
+                                 (CONSP (CDR term))
+                                 (CONSP (CDDR term))
+                                 (CONSP (CDDDR term))
+                                 (CONSP (CDDDDR term))
+                                 (NOT (CDR (CDDDDR term))))
+                            (O< (CONS-COUNT (LIST-TO-LST (CAR (CDDDDR term))))
+                                (CONS-COUNT TERM)))
+                   :otf-flg t
+                   :hints (("Goal"
 
-               :do-not-induct t
-               :in-theory (e/d (LIST-TO-LST
-                                cons-count)
-                               ())))))
+                            :do-not-induct t
+                            :in-theory (e/d (LIST-TO-LST
+                                             cons-count)
+                                            ())))))
 
-   (local
-    (defthm dummy-lemma3
-      (IMPLIES (AND (CONSP (EX-FROM-RP TERM))
-                    (EQUAL (CAR (EX-FROM-RP TERM)) 'C)
-                    (CONSP (CDR (EX-FROM-RP TERM)))
-                    (CONSP (CDDR (EX-FROM-RP TERM)))
-                    (CONSP (CDDDR (EX-FROM-RP TERM)))
-                    (CONSP (CDDDDR (EX-FROM-RP TERM)))
-                    (NOT (CDR (CDDDDR (EX-FROM-RP TERM)))))
-               (O< (CONS-COUNT (LIST-TO-LST (CAR (CDDDDR (EX-FROM-RP TERM)))))
-                   (CONS-COUNT TERM)))
-      :otf-flg t
-      :hints (("Goal"
-               :use ((:instance dummy-lemma2
-                                (term (ex-from-rp term)))
-                     (:instance dummy-lemma1
-                                (x (CONS-COUNT
-                                    (LIST-TO-LST (CAR (CDDDDR
-                                                       (EX-FROM-RP TERM))))))
-                                (z (CONS-COUNT TERM))
-                                (y (cons-count (EX-FROM-RP TERM)))))
-               :do-not-induct t
-               :in-theory (e/d () (dummy-lemma1 dummy-lemma2)))))))
+                (local
+                 (defthm dummy-lemma3
+                   (IMPLIES (AND (CONSP (EX-FROM-RP TERM))
+                                 (EQUAL (CAR (EX-FROM-RP TERM)) 'C)
+                                 (CONSP (CDR (EX-FROM-RP TERM)))
+                                 (CONSP (CDDR (EX-FROM-RP TERM)))
+                                 (CONSP (CDDDR (EX-FROM-RP TERM)))
+                                 (CONSP (CDDDDR (EX-FROM-RP TERM)))
+                                 (NOT (CDR (CDDDDR (EX-FROM-RP TERM)))))
+                            (O< (CONS-COUNT (LIST-TO-LST (CAR (CDDDDR (EX-FROM-RP TERM)))))
+                                (CONS-COUNT TERM)))
+                   :otf-flg t
+                   :hints (("Goal"
+                            :use ((:instance dummy-lemma2
+                                             (term (ex-from-rp term)))
+                                  (:instance dummy-lemma1
+                                             (x (CONS-COUNT
+                                                 (LIST-TO-LST (CAR (CDDDDR
+                                                                    (EX-FROM-RP TERM))))))
+                                             (z (CONS-COUNT TERM))
+                                             (y (cons-count (EX-FROM-RP TERM)))))
+                            :do-not-induct t
+                            :in-theory (e/d () (dummy-lemma1 dummy-lemma2)))))))
 
-  (define maybe-bitp-precheck ((term rp-termp)
-                               &optional
-                               ((upper-bound natp) '1))
-    :verify-guards nil
-    :returns (res)
-    :measure (cons-count term)
-    (b* (((when (has-bitp-rp term))
-          (1- upper-bound))
-         (term (ex-from-rp$ term)))
-      (case-match term
-        (('c & s pp c)
-         (b* ((upper-bound (1+ (* 2 upper-bound)))
-              (s-lst (list-to-lst s))
-              (upper-bound (len-lte s-lst upper-bound))
-              ((unless upper-bound) -1)
-              (pp-lst (list-to-lst pp))
-              (upper-bound (len-lte pp-lst upper-bound))
-              ((unless upper-bound) -1)
-              (c-lst (list-to-lst c)))
-           (f2 (maybe-bitp-precheck-lst c-lst upper-bound))))
-        (& -1))))
-  (define maybe-bitp-precheck-lst ((lst rp-term-listp)
-                                   (upper-bound natp))
-    :measure (cons-count lst)
-    :returns (res)
-    (if (atom lst)
-        upper-bound
-      (b* ((upper-bound (maybe-bitp-precheck (car lst) upper-bound))
-           ((when (equal upper-bound -1)) upper-bound)
-           (upper-bound (maybe-bitp-precheck-lst (cdr lst) upper-bound)))
-        upper-bound)))
-  ///
+               (define maybe-bitp-precheck ((term rp-termp)
+                                            &optional
+                                            ((upper-bound natp) '1))
+                 :verify-guards nil
+                 :returns (res)
+                 :measure (cons-count term)
+                 (b* (((when (has-bitp-rp term))
+                       (1- upper-bound))
+                      (term (ex-from-rp$ term)))
+                   (case-match term
+                     (('c & s pp c)
+                      (b* ((upper-bound (1+ (* 2 upper-bound)))
+                           (s-lst (list-to-lst s))
+                           (upper-bound (len-lte s-lst upper-bound))
+                           ((unless upper-bound) -1)
+                           (pp-lst (list-to-lst pp))
+                           (upper-bound (len-lte pp-lst upper-bound))
+                           ((unless upper-bound) -1)
+                           (c-lst (list-to-lst c)))
+                        (f2 (maybe-bitp-precheck-lst c-lst upper-bound))))
+                     (& -1))))
+               (define maybe-bitp-precheck-lst ((lst rp-term-listp)
+                                                (upper-bound natp))
+                 :measure (cons-count lst)
+                 :returns (res)
+                 (if (atom lst)
+                     upper-bound
+                   (b* ((upper-bound (maybe-bitp-precheck (car lst) upper-bound))
+                        ((when (equal upper-bound -1)) upper-bound)
+                        (upper-bound (maybe-bitp-precheck-lst (cdr lst) upper-bound)))
+                     upper-bound)))
+               ///
 
-  (defret-mutual result-of-maybe-bitp-precheck
-    (defret natp-of-<fn>
-      (implies (and (natp upper-bound)
-                    (not (equal res -1)))
-               (natp res))
-      :fn maybe-bitp-precheck)
-    (defret natp-of-<fn>
-      (implies (and (natp upper-bound)
-                    (not (equal res -1)))
-               (natp res))
-      :fn maybe-bitp-precheck-lst)
-    :hints (("Goal"
-             :in-theory (e/d (f2)
-                             (FLOOR2-IF-F2)))))
+               (defret-mutual result-of-maybe-bitp-precheck
+                 (defret natp-of-<fn>
+                   (implies (and (natp upper-bound)
+                                 (not (equal res -1)))
+                            (natp res))
+                   :fn maybe-bitp-precheck)
+                 (defret natp-of-<fn>
+                   (implies (and (natp upper-bound)
+                                 (not (equal res -1)))
+                            (natp res))
+                   :fn maybe-bitp-precheck-lst)
+                 :hints (("Goal"
+                          :in-theory (e/d (f2)
+                                          (FLOOR2-IF-F2)))))
 
-  (verify-guards maybe-bitp-precheck-fn
-    :hints (("Goal"
-             :in-theory (e/d (rp-term-listp)
-                             ())))))
+               (verify-guards maybe-bitp-precheck-fn
+                 :hints (("Goal"
+                          :in-theory (e/d (rp-term-listp)
+                                          ())))))
 
 (define is-c-bitp-traverse ((single-c rp-termp))
   ;; Check every piece of a c instance to see if it satisfies bitp.
@@ -1239,7 +1238,7 @@
            (coughed-pp (pp-sum-merge coughed-pp1 coughed-pp2)))
         (mv (cons cur rest)
             coughed-s coughed-pp)))
-         
+
     ///
 
     (defret-mutual
@@ -1621,240 +1620,240 @@ nil)))
                   (pp-term-p pp2)))))
 
 (acl2::defines
-  pattern0-reduce-aux
-  :flag-defthm-macro defthm-pattern0-reduce-aux
-  :flag-local nil
-  :returns-hints (("Goal"
-                   :expand ((pattern0-reduce-aux nil pp-lst nil limit))
-                   :do-not-induct t
-                   :in-theory (e/d () ())))
-  :prepwork ((local
-              (in-theory (disable (:definition not)
-                                  (:definition natp)
-                                  (:rewrite acl2::zp-open)
-                                  (:type-prescription single-c-p$inline)
-                                  (:type-prescription rp-termp)
-                                  (:type-prescription acl2::element-list-p)
-                                  (:type-prescription str::dec-digit-char-listp)
-                                  (:rewrite quotep-term-with-ex-from-rp)
-                                  (:rewrite rp-termp-implies-subterms)
-                                  (:type-prescription ex-from-synp)
-                                  (:rewrite default-+-1)
-                                  (:type-prescription pp-term-p-fn)
-                                  (:rewrite acl2::fold-consts-in-+)
-                                  (:type-prescription o-finp)
-                                  (:type-prescription rp-term-listp)
-                                  (:definition pp-term-p-fn)
-                                  (:rewrite default-cdr)
-                                  (:rewrite default-car)
-                                  (:rewrite default-+-2)
-                                  (:rewrite is-if-rp-termp)
-                                  (:rewrite is-rp-pseudo-termp)))))
-  :verify-guards nil
+ pattern0-reduce-aux
+ :flag-defthm-macro defthm-pattern0-reduce-aux
+ :flag-local nil
+ :returns-hints (("Goal"
+                  :expand ((pattern0-reduce-aux nil pp-lst nil limit))
+                  :do-not-induct t
+                  :in-theory (e/d () ())))
+ :prepwork ((local
+             (in-theory (disable (:definition not)
+                                 (:definition natp)
+                                 (:rewrite acl2::zp-open)
+                                 (:type-prescription single-c-p$inline)
+                                 (:type-prescription rp-termp)
+                                 (:type-prescription acl2::element-list-p)
+                                 (:type-prescription str::dec-digit-char-listp)
+                                 (:rewrite quotep-term-with-ex-from-rp)
+                                 (:rewrite rp-termp-implies-subterms)
+                                 (:type-prescription ex-from-synp)
+                                 (:rewrite default-+-1)
+                                 (:type-prescription pp-term-p-fn)
+                                 (:rewrite acl2::fold-consts-in-+)
+                                 (:type-prescription o-finp)
+                                 (:type-prescription rp-term-listp)
+                                 (:definition pp-term-p-fn)
+                                 (:rewrite default-cdr)
+                                 (:rewrite default-car)
+                                 (:rewrite default-+-2)
+                                 (:rewrite is-if-rp-termp)
+                                 (:rewrite is-rp-pseudo-termp)))))
+ :verify-guards nil
 
-  (define pattern0-reduce-aux-s-lst ((s-lst rp-term-listp)
-                                     (limit natp)
-                                     (search-limit integerp))
-    :returns (mv (s1 rp-termp :hyp (rp-term-listp s-lst))
-                 (s2 rp-termp :hyp (rp-term-listp s-lst))
-                 (s-cnt natp)
-                 (s-valid booleanp))
-    :measure (nfix limit)
-    (if (zp limit)
-        (mv ''nil ''nil 0 nil)
-      (case-match s-lst
-        ((s1 s2)
-         (b* (((when (< (- search-limit 2) 0))
-               (mv ''nil ''nil 0 nil))
-              (s1 (ex-from-rp$ s1))
-              (s2 (ex-from-rp$ s2))
-              ((unless (and (single-s-p s1)
-                            (single-s-p s2)))
-               (mv ''nil ''nil 0 nil))
-              ((mv term1 term2 s1-valid)
-               (pattern0-reduce-aux nil
-                                    (list-to-lst (caddr s1))
-                                    (list-to-lst (cadddr s1))
-                                    (1- limit)))
-              ((unless s1-valid)
-               (mv ''nil ''nil 0 nil))
-              (s1 `(binary-xor ,term1 ,term2))
-              ((mv term1 term2 s2-valid)
-               (pattern0-reduce-aux nil
-                                    (list-to-lst (caddr s2))
-                                    (list-to-lst (cadddr s2))
-                                    (1- limit)))
-              ((unless s2-valid)
-               (mv ''nil ''nil 0 nil))
-              (s2 `(binary-xor ,term1 ,term2)))
-           (mv s1 s2 2 t)))
-        ((s1)
-         (b* (((when (< (- search-limit 1) 0))
-               (mv ''nil ''nil 0 nil))
-              (s1 (ex-from-rp s1))
-              ((unless (single-s-p s1))
-               (mv ''nil ''nil 0 nil))
-              ((mv term1 term2 s1-valid)
-               (pattern0-reduce-aux nil
-                                    (list-to-lst (caddr s1))
-                                    (list-to-lst (cadddr s1))
-                                    (1- limit)))
-              ((unless s1-valid)
-               (mv ''nil ''nil 0 nil))
-              (s1 `(binary-xor ,term1 ,term2)))
-           (mv s1 ''0 1 t)))
-        (()
-         (mv ''0 ''0 0 t))
-        (&
-         (mv ''nil ''nil 0 nil)))))
+ (define pattern0-reduce-aux-s-lst ((s-lst rp-term-listp)
+                                    (limit natp)
+                                    (search-limit integerp))
+   :returns (mv (s1 rp-termp :hyp (rp-term-listp s-lst))
+                (s2 rp-termp :hyp (rp-term-listp s-lst))
+                (s-cnt natp)
+                (s-valid booleanp))
+   :measure (nfix limit)
+   (if (zp limit)
+       (mv ''nil ''nil 0 nil)
+     (case-match s-lst
+       ((s1 s2)
+        (b* (((when (< (- search-limit 2) 0))
+              (mv ''nil ''nil 0 nil))
+             (s1 (ex-from-rp$ s1))
+             (s2 (ex-from-rp$ s2))
+             ((unless (and (single-s-p s1)
+                           (single-s-p s2)))
+              (mv ''nil ''nil 0 nil))
+             ((mv term1 term2 s1-valid)
+              (pattern0-reduce-aux nil
+                                   (list-to-lst (caddr s1))
+                                   (list-to-lst (cadddr s1))
+                                   (1- limit)))
+             ((unless s1-valid)
+              (mv ''nil ''nil 0 nil))
+             (s1 `(binary-xor ,term1 ,term2))
+             ((mv term1 term2 s2-valid)
+              (pattern0-reduce-aux nil
+                                   (list-to-lst (caddr s2))
+                                   (list-to-lst (cadddr s2))
+                                   (1- limit)))
+             ((unless s2-valid)
+              (mv ''nil ''nil 0 nil))
+             (s2 `(binary-xor ,term1 ,term2)))
+          (mv s1 s2 2 t)))
+       ((s1)
+        (b* (((when (< (- search-limit 1) 0))
+              (mv ''nil ''nil 0 nil))
+             (s1 (ex-from-rp s1))
+             ((unless (single-s-p s1))
+              (mv ''nil ''nil 0 nil))
+             ((mv term1 term2 s1-valid)
+              (pattern0-reduce-aux nil
+                                   (list-to-lst (caddr s1))
+                                   (list-to-lst (cadddr s1))
+                                   (1- limit)))
+             ((unless s1-valid)
+              (mv ''nil ''nil 0 nil))
+             (s1 `(binary-xor ,term1 ,term2)))
+          (mv s1 ''0 1 t)))
+       (()
+        (mv ''0 ''0 0 t))
+       (&
+        (mv ''nil ''nil 0 nil)))))
 
-  (define pattern0-reduce-aux-c-lst ((c-lst rp-term-listp)
-                                     (limit natp)
-                                     (search-limit integerp))
-    :returns (mv (c1 rp-termp :hyp (rp-term-listp c-lst))
-                 (c2 rp-termp :hyp (rp-term-listp c-lst))
-                 (c-cnt natp)
-                 (c-valid booleanp))
-    :measure (nfix limit)
-    (if (zp limit)
-        (mv ''nil ''nil 0 nil)
-      (case-match c-lst
-        ((c1 c2)
-         (b* (((when (< (- search-limit 2) 0))
-               (mv ''nil ''nil 0 nil))
-              (c1 (ex-from-rp$ c1))
-              (c2 (ex-from-rp$ c2))
-              ((unless (and (single-c-p c1)
-                            (single-c-p c2)))
-               (mv ''nil ''nil 0 nil))
-              ((mv term1 term2 c1-valid)
-               (pattern0-reduce-aux (list-to-lst (caddr c1))
-                                    (list-to-lst (cadddr c1))
-                                    (list-to-lst (caddr(cddr c1)))
-                                    (1- limit)))
-              ((unless c1-valid)
-               (mv ''nil ''nil 0 nil))
-              (c1 `(binary-and ,term1 ,term2))
-              ((mv term1 term2 c2-valid)
-               (pattern0-reduce-aux (list-to-lst (caddr c2))
-                                    (list-to-lst (cadddr c2))
-                                    (list-to-lst (caddr(cddr c2)))
-                                    (1- limit)))
-              ((unless c2-valid)
-               (mv ''nil ''nil 0 nil))
-              (c2 `(binary-and ,term1 ,term2)))
-           (mv c1 c2 2 t)))
-        ((c1)
-         (b* (((when (< (- search-limit 1) 0))
-               (mv ''nil ''nil 0 nil))
-              (c1 (ex-from-rp c1))
-              ((unless (single-c-p c1))
-               (mv ''nil ''nil 0 nil))
-              ((mv term1 term2 c1-valid)
-               (pattern0-reduce-aux (list-to-lst (caddr c1))
-                                    (list-to-lst (cadddr c1))
-                                    (list-to-lst (caddr(cddr c1)))
-                                    (1- limit)))
-              ((unless c1-valid)
-               (mv ''nil ''nil 0 nil))
-              (c1 `(binary-and ,term1 ,term2)))
-           (mv c1 ''0 1 t)))
-        (()
-         (mv ''0 ''0 0 t))
-        (&
-         (mv ''nil ''nil 0 nil)))))
+ (define pattern0-reduce-aux-c-lst ((c-lst rp-term-listp)
+                                    (limit natp)
+                                    (search-limit integerp))
+   :returns (mv (c1 rp-termp :hyp (rp-term-listp c-lst))
+                (c2 rp-termp :hyp (rp-term-listp c-lst))
+                (c-cnt natp)
+                (c-valid booleanp))
+   :measure (nfix limit)
+   (if (zp limit)
+       (mv ''nil ''nil 0 nil)
+     (case-match c-lst
+       ((c1 c2)
+        (b* (((when (< (- search-limit 2) 0))
+              (mv ''nil ''nil 0 nil))
+             (c1 (ex-from-rp$ c1))
+             (c2 (ex-from-rp$ c2))
+             ((unless (and (single-c-p c1)
+                           (single-c-p c2)))
+              (mv ''nil ''nil 0 nil))
+             ((mv term1 term2 c1-valid)
+              (pattern0-reduce-aux (list-to-lst (caddr c1))
+                                   (list-to-lst (cadddr c1))
+                                   (list-to-lst (caddr(cddr c1)))
+                                   (1- limit)))
+             ((unless c1-valid)
+              (mv ''nil ''nil 0 nil))
+             (c1 `(binary-and ,term1 ,term2))
+             ((mv term1 term2 c2-valid)
+              (pattern0-reduce-aux (list-to-lst (caddr c2))
+                                   (list-to-lst (cadddr c2))
+                                   (list-to-lst (caddr(cddr c2)))
+                                   (1- limit)))
+             ((unless c2-valid)
+              (mv ''nil ''nil 0 nil))
+             (c2 `(binary-and ,term1 ,term2)))
+          (mv c1 c2 2 t)))
+       ((c1)
+        (b* (((when (< (- search-limit 1) 0))
+              (mv ''nil ''nil 0 nil))
+             (c1 (ex-from-rp c1))
+             ((unless (single-c-p c1))
+              (mv ''nil ''nil 0 nil))
+             ((mv term1 term2 c1-valid)
+              (pattern0-reduce-aux (list-to-lst (caddr c1))
+                                   (list-to-lst (cadddr c1))
+                                   (list-to-lst (caddr(cddr c1)))
+                                   (1- limit)))
+             ((unless c1-valid)
+              (mv ''nil ''nil 0 nil))
+             (c1 `(binary-and ,term1 ,term2)))
+          (mv c1 ''0 1 t)))
+       (()
+        (mv ''0 ''0 0 t))
+       (&
+        (mv ''nil ''nil 0 nil)))))
 
-  (define pattern0-reduce-aux ((s-lst rp-term-listp)
-                               (pp-lst rp-term-listp)
-                               (c-lst rp-term-listp)
-                               (limit natp))
-    :returns (mv (pp-term1 rp-termp :hyp (and (rp-term-listp s-lst)
-                                              (rp-term-listp pp-lst)
-                                              (rp-term-listp c-lst)))
-                 (pp-term2 rp-termp :hyp (and (rp-term-listp s-lst)
-                                              (rp-term-listp pp-lst)
-                                              (rp-term-listp c-lst)))
-                 (valid booleanp))
-    :measure (nfix limit)
+ (define pattern0-reduce-aux ((s-lst rp-term-listp)
+                              (pp-lst rp-term-listp)
+                              (c-lst rp-term-listp)
+                              (limit natp))
+   :returns (mv (pp-term1 rp-termp :hyp (and (rp-term-listp s-lst)
+                                             (rp-term-listp pp-lst)
+                                             (rp-term-listp c-lst)))
+                (pp-term2 rp-termp :hyp (and (rp-term-listp s-lst)
+                                             (rp-term-listp pp-lst)
+                                             (rp-term-listp c-lst)))
+                (valid booleanp))
+   :measure (nfix limit)
 
-    ;;:verify-guards nil
+   ;;:verify-guards nil
 
-    (b* (((when (zp limit)) (mv ''nil ''nil nil))
-         ((mv pp1 pp2 pp-cnt pp-valid)
-          (pattern0-reduce-aux-pp-lst pp-lst))
-         ((unless pp-valid)
-          (mv ''nil ''nil nil))
-         ((mv s1 s2 s-cnt s-valid)
-          (pattern0-reduce-aux-s-lst s-lst (1- limit) (- 2 pp-cnt)))
-         ((unless s-valid)
-          (mv ''nil ''nil nil))
-         ((mv c1 c2 c-cnt c-valid)
-          (pattern0-reduce-aux-c-lst c-lst (1- limit) (+ 2 (- pp-cnt) (- s-cnt))))
-         ((unless c-valid)
-          (mv ''nil ''nil nil)))
-      (cond ((and* (= s-cnt 0) (= pp-cnt 0) (= c-cnt 2))
-             (mv c1 c2 t))
-            ((and* (= s-cnt 0) (= pp-cnt 1) (= c-cnt 1))
-             (mv pp1 c1 t))
-            ((and* (= s-cnt 0) (= pp-cnt 2) (= c-cnt 0))
-             (mv pp1 pp2 t))
-            ((and* (= s-cnt 1) (= pp-cnt 0) (= c-cnt 1))
-             (mv s1 c1 t))
-            ((and* (= s-cnt 1) (= pp-cnt 1) (= c-cnt 0))
-             (mv s1 pp1 t))
-            ((and* (= s-cnt 2) (= pp-cnt 0) (= c-cnt 0))
-             (mv s1 s2 t))
-            (t
-             (mv ''nil ''nil nil)))))
-  ///
+   (b* (((when (zp limit)) (mv ''nil ''nil nil))
+        ((mv pp1 pp2 pp-cnt pp-valid)
+         (pattern0-reduce-aux-pp-lst pp-lst))
+        ((unless pp-valid)
+         (mv ''nil ''nil nil))
+        ((mv s1 s2 s-cnt s-valid)
+         (pattern0-reduce-aux-s-lst s-lst (1- limit) (- 2 pp-cnt)))
+        ((unless s-valid)
+         (mv ''nil ''nil nil))
+        ((mv c1 c2 c-cnt c-valid)
+         (pattern0-reduce-aux-c-lst c-lst (1- limit) (+ 2 (- pp-cnt) (- s-cnt))))
+        ((unless c-valid)
+         (mv ''nil ''nil nil)))
+     (cond ((and* (= s-cnt 0) (= pp-cnt 0) (= c-cnt 2))
+            (mv c1 c2 t))
+           ((and* (= s-cnt 0) (= pp-cnt 1) (= c-cnt 1))
+            (mv pp1 c1 t))
+           ((and* (= s-cnt 0) (= pp-cnt 2) (= c-cnt 0))
+            (mv pp1 pp2 t))
+           ((and* (= s-cnt 1) (= pp-cnt 0) (= c-cnt 1))
+            (mv s1 c1 t))
+           ((and* (= s-cnt 1) (= pp-cnt 1) (= c-cnt 0))
+            (mv s1 pp1 t))
+           ((and* (= s-cnt 2) (= pp-cnt 0) (= c-cnt 0))
+            (mv s1 s2 t))
+           (t
+            (mv ''nil ''nil nil)))))
+ ///
 
-  (local
-   (defthm dummy-lemma
-     (and (implies (and (natp x)
-                        (natp y))
-                   (and (integerp (+ 2 (- x) (- y)))))
-          (implies (natp x)
-                   (integerp (+ 2 (- x)))))))
+ (local
+  (defthm dummy-lemma
+    (and (implies (and (natp x)
+                       (natp y))
+                  (and (integerp (+ 2 (- x) (- y)))))
+         (implies (natp x)
+                  (integerp (+ 2 (- x)))))))
 
-  (verify-guards  pattern0-reduce-aux
-    :hints (("Goal"
-             :in-theory (e/d ()
-                             ((:type-prescription single-s-p$inline)
-                              (:type-prescription single-c-p$inline)
-                              (:type-prescription o<)
-                              (:type-prescription zp)
-                              (:type-prescription quotep)
-                              (:rewrite rp-termp-should-term-be-in-cons-lhs)
-                              (:rewrite extract-from-rp-pseudo-term-listp)
-                              (:rewrite local-measure-lemma4)
-                              (:rewrite rp-termp-caddddr)
-                              (:rewrite rp-termp-cadr)
-                              (:rewrite rp-termp-extract-from-rp))))))
+ (verify-guards  pattern0-reduce-aux
+   :hints (("Goal"
+            :in-theory (e/d ()
+                            ((:type-prescription single-s-p$inline)
+                             (:type-prescription single-c-p$inline)
+                             (:type-prescription o<)
+                             (:type-prescription zp)
+                             (:type-prescription quotep)
+                             (:rewrite rp-termp-should-term-be-in-cons-lhs)
+                             (:rewrite extract-from-rp-pseudo-term-listp)
+                             (:rewrite local-measure-lemma4)
+                             (:rewrite rp-termp-caddddr)
+                             (:rewrite rp-termp-cadr)
+                             (:rewrite rp-termp-extract-from-rp))))))
 
-  (defret-mutual pp-term-p-of-<fn>
-    (defret pp-term-p-of-<fn>
-      (implies s-valid
-               (and (pp-term-p s1)
-                    (pp-term-p s2)))
-      :fn pattern0-reduce-aux-s-lst)
-    (defret pp-term-p-of-<fn>
-      (implies c-valid
-               (and (pp-term-p c1)
-                    (pp-term-p c2)))
-      :fn pattern0-reduce-aux-c-lst)
-    (defret pp-term-p-of-<fn>
-      (implies valid
-               (and (pp-term-p pp-term1)
-                    (pp-term-p pp-term2)))
-      :fn pattern0-reduce-aux)
-    :hints (("Goal"
-             :expand ((pattern0-reduce-aux nil pp-lst nil limit)
-                      (:free (x) (pp-term-p (cons 'binary-and x)))
-                      (:free (x) (pp-term-p (cons 'binary-xor x)))
-                      (:free (x) (ex-from-rp (cons 'binary-and x)))
-                      (:free (x) (ex-from-rp (cons 'binary-xor x))))
-             :do-not-induct t
-             :in-theory (e/d (is-rp) ())))))
+ (defret-mutual pp-term-p-of-<fn>
+   (defret pp-term-p-of-<fn>
+     (implies s-valid
+              (and (pp-term-p s1)
+                   (pp-term-p s2)))
+     :fn pattern0-reduce-aux-s-lst)
+   (defret pp-term-p-of-<fn>
+     (implies c-valid
+              (and (pp-term-p c1)
+                   (pp-term-p c2)))
+     :fn pattern0-reduce-aux-c-lst)
+   (defret pp-term-p-of-<fn>
+     (implies valid
+              (and (pp-term-p pp-term1)
+                   (pp-term-p pp-term2)))
+     :fn pattern0-reduce-aux)
+   :hints (("Goal"
+            :expand ((pattern0-reduce-aux nil pp-lst nil limit)
+                     (:free (x) (pp-term-p (cons 'binary-and x)))
+                     (:free (x) (pp-term-p (cons 'binary-xor x)))
+                     (:free (x) (ex-from-rp (cons 'binary-and x)))
+                     (:free (x) (ex-from-rp (cons 'binary-xor x))))
+            :do-not-induct t
+            :in-theory (e/d (is-rp) ())))))
 
 (define c-pattern0-reduce ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
@@ -2139,10 +2138,8 @@ nil)))
         (list ''1)
         t)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; c-pattern4-compress
-
 
 
 (progn
@@ -2161,7 +2158,6 @@ nil)))
                   ;; (rp-term-listp y)
                   )
              (rp-term-listp (set-difference-equal x y)))))
-
 
 
 (define create-and-times-list-instance ((lst rp-term-listp)
@@ -2189,7 +2185,7 @@ nil)))
          nil
        (or (member-equal (car lst1) lst2)
            (lists-have-common? (cdr lst1) lst2))))
-   
+
    (define simplify-pp-lst-from-e-lst ((pp-lst rp-term-listp)
                                        (e-lst rp-term-listp))
      :returns (mv (new-pp-lst rp-term-listp
@@ -2200,13 +2196,13 @@ nil)))
        (b* ((cur (car pp-lst))
             ((mv e-lst2 s/c has-s/c valid)
              (case-match* cur
-               (('and-list & ('list . x))
-                (mv x nil nil t))
-               (('and-times-list & ('list . x) s/c)
-                (mv x s/c t t))
-               (('logbit$inline & &)
-                (mv (list cur) nil nil t))
-               (& (mv nil nil nil nil))))
+                          (('and-list & ('list . x))
+                           (mv x nil nil t))
+                          (('and-times-list & ('list . x) s/c)
+                           (mv x s/c t t))
+                          (('logbit$inline & &)
+                           (mv (list cur) nil nil t))
+                          (& (mv nil nil nil nil))))
             ((unless valid) (mv pp-lst nil))
             ((mv rest-pp-lst rest-changed)
              (simplify-pp-lst-from-e-lst (cdr pp-lst) e-lst))
@@ -2232,13 +2228,13 @@ nil)))
             (cur (car pp-lst))
             (e-lst
              (case-match* cur
-               (('and-list & ('list . x))
-                x)
-               (('and-times-list & ('list . x) &)
-                x)
-               (('logbit$inline & &)
-                (list cur))
-               (& nil))))
+                          (('and-list & ('list . x))
+                           x)
+                          (('and-times-list & ('list . x) &)
+                           x)
+                          (('logbit$inline & &)
+                           (list cur))
+                          (& nil))))
          (union-equal e-lst rest)))
      ///
      (memoize 'collect-e-lst-from-pp-lst :recursive nil))
@@ -2248,7 +2244,7 @@ nil)))
                                      &key
                                      ((limit natp) 'limit))
        :verify-guards nil
-       :returns (e-lst) 
+       :returns (e-lst)
        :measure (nfix limit)
        :no-function t
        (if (zp limit)
@@ -2287,14 +2283,13 @@ nil)))
          (rp-term-listp e-lst)
          :hyp (rp-term-listp s/c-lst)
          :fn collect-e-lst-from-s/c-lst))
-     
+
      (verify-guards collect-e-lst-from-s/c-fn
        :guard-debug t)
-     
+
      (memoize-partial ((collect-e-lst-from-s/c* collect-e-lst-from-s/c-fn)
                        (collect-e-lst-from-s/c-lst*
                         collect-e-lst-from-s/c-lst-fn :condition 'nil))))
-   
 
    (defines simplify-s/c-from-e-lst
      :flag-local nil
@@ -2310,7 +2305,7 @@ nil)))
             ((unless (lists-have-common? e-lst collected-e-lst))
              (mv s/c nil)))
          (simplify-s/c-from-e-lst s/c e-lst :limit (1- limit))))
-            
+
      (define simplify-s/c-from-e-lst ((s/c rp-termp)
                                       (e-lst rp-term-listp)
                                       &key
@@ -2363,9 +2358,8 @@ nil)))
              (mv s/c-lst nil)))))
      ///
      (verify-guards simplify-s/c-from-e-lst-fn)))
-                         
-            
-  (cond 
+
+  (cond
    ((and*-exec (atom lst)
                (or*-exec (has-bitp-rp s/c)
                          (single-s-p (ex-from-rp s/c))
@@ -2391,7 +2385,7 @@ nil)))
                        ,new-s/c)))))
 
 ;; collect common elements in pp-lst and pull it out from a c term's arguments
-;; into a (times pp-common new-c) way. 
+;; into a (times pp-common new-c) way.
 (define c-pattern4-compress ((s-lst rp-term-listp)
                              (pp-lst rp-term-listp)
                              (c-lst rp-term-listp))
@@ -2413,8 +2407,7 @@ nil)))
            `(defattach  c-pattern4-compress-enabled return-t)
          `(defattach  c-pattern4-compress-enabled return-nil)))
 
-     (enable-c-pattern4-compress nil)) 
-   
+     (enable-c-pattern4-compress nil))
 
    (define collect-common-e-lst ((pp-lst rp-term-listp))
      :returns (commons rp-term-listp
@@ -2424,7 +2417,7 @@ nil)))
            nil)
           (cur (car pp-lst))
           #|((when (equal cur ''1))
-           (collect-common-e-lst (cdr pp-lst)))|#
+          (collect-common-e-lst (cdr pp-lst)))|#
           ((mv cur valid) (case-match cur
                             (('and-list & ('list . x))
                              (mv x t))
@@ -2441,8 +2434,8 @@ nil)))
    (define remove-e-lst-from-e-lst ((e-lst rp-term-listp)
                                     (to-remove-e-lst rp-term-listp))
      :returns (mv (res-e-lst rp-term-listp :hyp (rp-term-listp e-lst))
-                  (valid)) 
-         
+                  (valid))
+
      (b* (((when (atom e-lst)) (mv nil (atom to-remove-e-lst)))
           ((when (atom to-remove-e-lst)) (mv e-lst t))
           (f1 (car e-lst))
@@ -2454,13 +2447,13 @@ nil)))
                                     to-remove-e-lst))
           ((unless valid) (mv nil nil)))
        (mv (cons f1 rest) t)))
-       
+
    (define remove-e-lst-from-pp-lst ((pp-lst rp-term-listp)
                                      (to-remove-e-lst rp-term-listp))
      :returns (mv (s-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
                                                  (rp-term-listp to-remove-e-lst)))
                   (res-pp-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
-                                                  (rp-term-listp to-remove-e-lst)))
+                                                      (rp-term-listp to-remove-e-lst)))
                   (c-lst rp-term-listp :hyp (and (rp-term-listp pp-lst)
                                                  (rp-term-listp to-remove-e-lst)))
                   (valid))
@@ -2524,67 +2517,66 @@ nil)))
           ((unless (single-c-p x))
            (mv nil c-in)))
        (case-match* x
-         (('c & ''nil ('list a b) ''nil)
-          (b* (((mv a-e-lst a-has-s/c a-valid)
-                (case-match* a
-                  (('and-list & ('list . lst))
-                   (mv lst nil t))
-                  (('logbit$inline & &)
-                   (mv (list a) nil t))
-                  (''1
-                   (mv (list ''1) nil t))
-                  ;; extra cases adds up!!!
-                  (('and-times-list & ('list . lst) s/c)
-                   (mv lst s/c (is-c-bitp-traverse s/c)))
-                  (& (mv nil nil nil)
-                     #|(if (has-bitp-rp a)
-                         (mv (list a) nil t)
-                       (mv nil nil nil))|#)))
-               ((unless a-valid)
-                (mv nil c-in))
-               ((mv b-e-lst b-has-s/c b-valid)
-                (case-match* b
-                  (('and-list & ('list . lst))
-                   (mv lst nil t))
-                  (('logbit$inline & &)
-                   (mv (list b) nil t))
-                  (('and-times-list & ('list . lst) s/c)
-                   (mv lst s/c (or*-exec
-                                (has-bitp-rp s/c)
-                                (is-c-bitp-traverse s/c))))
-                  (''1
-                   (mv (list ''1) nil t))
-                  (& (mv nil nil nil)
-                     #|(if (has-bitp-rp b)
-                         (mv (list b) nil t)
-                       (mv nil nil nil))|#)))
-               ((unless b-valid)
-                (mv nil c-in))
-               ((when (and*-exec b-has-s/c a-has-s/c))
-                (mv nil c-in))
-               (e-lst (merge-sorted-and$-lists a-e-lst b-e-lst))
-               (s/c (or*-exec a-has-s/c b-has-s/c ''1)))
-            (mv e-lst s/c)))
-         (('c & ''nil ('list a) ('list b))
-          (b* (((unless (and*-exec (or*-exec (has-bitp-rp a)
-                                             (and-list-p a)
-                                             (logbit-p a)
-                                             (equal a ''1))
-                                   (or*-exec (has-bitp-rp b)
-                                             (is-c-bitp-traverse b))))
-                (mv nil c-in))
-               ((mv rest-e-lst rest-c)
-                (break-down-two-arg-c b)))
-            (mv (cons a rest-e-lst) rest-c)))
-         (& (mv nil c-in))))
+                    (('c & ''nil ('list a b) ''nil)
+                     (b* (((mv a-e-lst a-has-s/c a-valid)
+                           (case-match* a
+                                        (('and-list & ('list . lst))
+                                         (mv lst nil t))
+                                        (('logbit$inline & &)
+                                         (mv (list a) nil t))
+                                        (''1
+                                         (mv (list ''1) nil t))
+                                        ;; extra cases adds up!!!
+                                        (('and-times-list & ('list . lst) s/c)
+                                         (mv lst s/c (is-c-bitp-traverse s/c)))
+                                        (& (mv nil nil nil)
+                                           #|(if (has-bitp-rp a)
+                                           (mv (list a) nil t)
+                                           (mv nil nil nil))|#)))
+                          ((unless a-valid)
+                           (mv nil c-in))
+                          ((mv b-e-lst b-has-s/c b-valid)
+                           (case-match* b
+                                        (('and-list & ('list . lst))
+                                         (mv lst nil t))
+                                        (('logbit$inline & &)
+                                         (mv (list b) nil t))
+                                        (('and-times-list & ('list . lst) s/c)
+                                         (mv lst s/c (or*-exec
+                                                      (has-bitp-rp s/c)
+                                                      (is-c-bitp-traverse s/c))))
+                                        (''1
+                                         (mv (list ''1) nil t))
+                                        (& (mv nil nil nil)
+                                           #|(if (has-bitp-rp b)
+                                           (mv (list b) nil t)
+                                           (mv nil nil nil))|#)))
+                          ((unless b-valid)
+                           (mv nil c-in))
+                          ((when (and*-exec b-has-s/c a-has-s/c))
+                           (mv nil c-in))
+                          (e-lst (merge-sorted-and$-lists a-e-lst b-e-lst))
+                          (s/c (or*-exec a-has-s/c b-has-s/c ''1)))
+                       (mv e-lst s/c)))
+                    (('c & ''nil ('list a) ('list b))
+                     (b* (((unless (and*-exec (or*-exec (has-bitp-rp a)
+                                                        (and-list-p a)
+                                                        (logbit-p a)
+                                                        (equal a ''1))
+                                              (or*-exec (has-bitp-rp b)
+                                                        (is-c-bitp-traverse b))))
+                           (mv nil c-in))
+                          ((mv rest-e-lst rest-c)
+                           (break-down-two-arg-c b)))
+                       (mv (cons a rest-e-lst) rest-c)))
+                    (& (mv nil c-in))))
      ///
      (defret rp-termp-o-<fn>
        (and (rp-termp res-c)
             (rp-term-listp e-lst))
        :hyp (rp-termp c-in)))
    )
-   
-   
+
   (b* (((unless (and (not s-lst) (not c-lst))) (mv nil nil))
        ((unless (c-pattern4-compress-enabled)) (mv nil nil))
        ((unless (> (len pp-lst) 1)) (mv nil nil))
@@ -2592,11 +2584,11 @@ nil)))
        ((unless pp-commons) (mv nil nil))
        (pp-commons (sort-and$-list pp-commons (len pp-commons)))
        ((mv s-lst pp-lst c-lst valid) (remove-e-lst-from-pp-lst pp-lst pp-commons))
-       ((unless valid) (mv nil nil)) 
+       ((unless valid) (mv nil nil))
        ((when s-lst) (mv nil nil))
        ((when (and*-exec (not* pp-lst) (not* c-lst)))
         (mv (list ''0) t))
-       
+
        #|((when (equal (+ (len pp-lst) (len c-lst)) 2))
        (mv (list (create-and-list-instance ;
        (merge-sorted-and$-lists ;
@@ -2607,7 +2599,7 @@ nil)))
        (pp-lst (if (pp-lst-orderedp pp-lst)
                    pp-lst
                  (pp-sum-sort-lst pp-lst)))
-       
+
        (pp (create-list-instance pp-lst))
        (c (create-list-instance c-lst))
        (hash-code (calculate-c-hash ''nil pp c))
@@ -2615,22 +2607,19 @@ nil)))
        (res-c `(c ',hash-code 'nil ,pp ,c))
 
        #|(- (and (equal hash-code '(2 . 5315388))
-               (raise "here ((s-lst ~p0)
-                             (pp-lst ~p1)
-                             (c-lst ~p2))~%"
-                      s-lst pp-lst c-lst)))|#
-                      
-                      
-       
+       (raise "here ((s-lst ~p0)
+       (pp-lst ~p1)
+       (c-lst ~p2))~%"
+       s-lst pp-lst c-lst)))|#
+
+
        ((mv more-pp-commons res-c)
         (break-down-two-arg-c res-c))
        (more-pp-commons (sort-and$-list more-pp-commons (len more-pp-commons)))
        (pp-commons (merge-sorted-and$-lists pp-commons more-pp-commons)))
     (mv (list (create-and-times-list-instance pp-commons res-c)) t)))
 
-       
 
-       
 
     ;;    ((mv pp-commons pp-lst c-lst)
     ;;     (b* (((unless (and (atom c-lst)
@@ -2639,18 +2628,16 @@ nil)))
     ;;       (mv (merge-sorted-and$-lists (sort-and$-list pp-lst 2)
     ;;                                    pp-commons)
     ;;           nil nil)))
-        
-       
+
     ;;    (pp (create-list-instance pp-lst))
     ;;    (c (create-list-instance c-lst))
     ;;    (hash-code (calculate-c-hash ''nil pp c))
 
-       
-       
+
     ;;    #|(- (and (equal (len c-lst) 1)
     ;;            (equal (second (car c-lst)) ''(257 . 360468381))
     ;;            (raise "here")))|#
-                      
+
     ;;    (res-c `(rp 'bitp (rp 'natp (c ',hash-code 'nil ,pp ,c))))
     ;;    (res (merge-sorted-and$-lists (list res-c) pp-commons))
     ;;    (res (create-and-list-instance res))
@@ -2658,7 +2645,6 @@ nil)))
     ;;    ;;(- (cw "res: ~p0 ~%" res))
     ;;    )
     ;; (mv (list res) t))))
-
 
 #|(skip-proofs
  (define c-instance-to-e-lst (x)
@@ -2677,8 +2663,7 @@ nil)))
          (mv (sort-and$-list (list a b) 2)
              ''1)))
       (& (mv nil x-orig))))))|#
-      
-      
+
 
 (define create-c-instance ((s-lst rp-term-listp)
                            (pp-lst rp-term-listp)
@@ -2710,7 +2695,7 @@ nil)))
        ((when reducedp)
         (mv nil reduced-pp-lst nil))
        ;; pattern4 comes after because pattern2 can do a better reduction
-       ;; first.  
+       ;; first.
        ((mv reduced-pp-lst reducedp)
         (c-pattern4-compress s-lst pp-lst c-lst))
        ((when reducedp)
@@ -2753,7 +2738,7 @@ nil)))
                 ;; (- (and (equal hash-code '(2 . 6288828))
                 ;;         (raise "s-lst: ~p0. pp-lst ~p1, c-lst ~p2 ~%" s-lst
                 ;;         pp-lst c-lst)))
-                
+
                 ((mv max-val min-val valid)
                  (if (natp (maybe-bitp-precheck res)) ;; minimize the calls made to get-max-min-val
                      (get-max-min-val res)
@@ -3362,21 +3347,21 @@ c2-lst: ~p2 ~%"
           (mv rest-single-s/c-lst
               (cons cur rest-lst)
               nil)))
-      (case-match cur
-        (('logbit$inline & &)
-         (mv rest-single-s/c-lst
-             (cons-with-hint cur rest-lst e-lst)
-             t))
-        (('s & & &)
-         (mv (cons cur rest-single-s/c-lst) rest-lst t))
-        (('c & & & &)
-         (mv (cons cur rest-single-s/c-lst) rest-lst has-bitp))
-        (('s-c-res & & &)
-         (mv (cons cur rest-single-s/c-lst) rest-lst has-bitp))
-        (&  ;; should never come here because of pattern-check
-         (mv rest-single-s/c-lst
-             (cons cur rest-lst)
-             nil))))))
+      (cond
+       ((logbit-p cur)
+        (mv rest-single-s/c-lst
+            (cons-with-hint cur rest-lst e-lst)
+            t))
+       ((single-s-p cur)
+        (mv (cons cur rest-single-s/c-lst) rest-lst t))
+       ((single-c-p cur)
+        (mv (cons cur rest-single-s/c-lst) rest-lst has-bitp))
+       ((s-c-res-p cur)
+        (mv (cons cur rest-single-s/c-lst) rest-lst has-bitp))
+       (t  ;; should never come here because of pattern-check
+        (mv rest-single-s/c-lst
+            (cons cur rest-lst)
+            nil))))))
 
 ;; separate single-s/c from within binary-fncs
 (define cross-product-pp-aux-precollect2 ((single-pp rp-termp))
@@ -3418,12 +3403,12 @@ c2-lst: ~p2 ~%"
                  (cons `(binary-and (binary-not ,test) ,else)
                        (cross-product-pp-aux-precollect2-aux test side-pp1))
                  t)))
-          ((or (binary-not-p term)
-               (binary-or-p term)
-               (binary-xor-p term)
-               (logbit-p term)
-               (equal term ''1)
-               (equal term ''0))
+          ((or*-exec (binary-not-p term)
+                     (binary-or-p term)
+                     (binary-xor-p term)
+                     (logbit-p term)
+                     (equal term ''1)
+                     (equal term ''0))
            (mv ''1 single-pp nil t))
           ((binary-and-p term)
            (b* (((mv s/c1 pp1 side1 valid1)
@@ -3556,7 +3541,6 @@ c2-lst: ~p2 ~%"
 
 
 
-
 ;; Cros product e-lst into single-s/c
 (defines cross-product-pp-aux-for-s/c
 
@@ -3587,7 +3571,6 @@ c2-lst: ~p2 ~%"
              ;;    :hints (("Goal"
              ;;             :cases ((= z 1))
              ;;             :in-theory (e/d ((:e tau-system)) ())))))
-             
 
              ;; (local
              ;;  (defthm floor-lemma
@@ -3602,7 +3585,7 @@ c2-lst: ~p2 ~%"
              ;;            (and stable-under-simplificationp
              ;;                 '(:use ((:instance *-<-with-posp
              ;;                                    (x (* x (/ size))))))))))
-             
+
              (local
               (defthm m-lemma1
                 (implies (and (consp y)
@@ -3684,24 +3667,22 @@ c2-lst: ~p2 ~%"
                (& (mv nil nil nil nil))))
 
 
-            
             ((and*-exec (single-c-p single-s/c)
                         (c-pattern4-compress-enabled))
              (b* (((when (not e-lst)) (mv nil nil nil nil))
 
                   ((mv more-pp-common res-c)
                    (break-down-two-arg-c single-s/c-orig))
-                   
+
                   (pp-commons (merge-sorted-and$-lists more-pp-common e-lst))
                   (res (create-and-times-list-instance pp-commons res-c))
 
                   #|(- (cw "res: ~p0, single-s/c-orig:~p1, e-lst:~p2 ~%" res
-                         single-s/c-orig e-lst))|#
+                  single-s/c-orig e-lst))|#
                   )
                (mv nil (list res) nil t)))
 
 
-            
             ((single-c-p single-s/c)
              (case-match single-s/c
                (('c & ''nil pp c-list)
@@ -4496,6 +4477,61 @@ to-be-coughed-c-lst))|#
 
 ;;(include-book "pp-flatten-wrapper")
 
+
+
+(defines has-more-than-one-var?
+  (define has-more-than-one-var? (term)
+    ;; second return value should be ignored. 
+    :returns (mv result found-var) 
+    (cond ((atom term)
+           (mv nil term))
+          ((quotep term)
+           (mv nil nil))
+          (t (has-more-than-one-var?-lst (cdr term)))))
+  (define has-more-than-one-var?-lst (lst)
+    :returns (mv result found-var)
+    (if (atom lst)
+        (mv nil nil)
+      (b* (((mv result1 found-var1)
+            (has-more-than-one-var? (car lst)))
+           ((when result1)
+            (mv result1 nil))
+           ((mv result2 found-var2)
+            (has-more-than-one-var?-lst (cdr lst))))
+        (mv (or result2
+                (and found-var1 found-var2
+                     (not (equal found-var1 found-var2))))
+            (or found-var1 found-var2))))))
+
+(define has-s-c-buried-under-binary-fnc? (term
+                                          &key
+                                          (exclude-radix8+-cases 'exclude-radix8+-cases))
+  :measure (cons-count term)
+  :hints (("Goal"
+           :in-theory (e/d (measure-lemmas) ())))
+  (b* ((term (ex-from-rp term)))
+    (cond ((binary-not-p term)
+           (has-s-c-buried-under-binary-fnc? (cadr term)))
+          ((or (binary-and-p term)
+               (binary-or-p term)
+               (binary-xor-p term))
+           (or (has-s-c-buried-under-binary-fnc? (cadr term))
+               (has-s-c-buried-under-binary-fnc? (caddr term))))
+          ((binary-?-p term)
+           (or (has-s-c-buried-under-binary-fnc? (cadr term))
+               (has-s-c-buried-under-binary-fnc? (caddr term))
+               (has-s-c-buried-under-binary-fnc? (cadddr term))))
+          ((or (single-s-p term)
+               (single-c-p term)
+               (s-c-res-p term))
+           (if exclude-radix8+-cases
+               (b* (((mv has-more-than-one-var &)
+                     (has-more-than-one-var? term)))
+                 has-more-than-one-var)
+             t)))))
+        
+           
+
 (define new-sum-merge-aux ((sum-lst rp-term-listp)
                            (limit natp))
   :verify-guards nil
@@ -4573,9 +4609,12 @@ to-be-coughed-c-lst))|#
            (pp-lst2 (pp-flatten-with-binds
                      term-w/-sc
                      :coef 1
-                     :disabled (and (unpack-booth-later-enabled)
-                                    (not
-                                     (pp-is-a-part-of-radix8+-summation term-w/-sc)))))
+                     :disabled (and*-exec (unpack-booth-later-enabled)
+                                          (not (has-s-c-buried-under-binary-fnc?
+                                                term-w/-sc
+                                                :exclude-radix8+-cases t))
+                                          (not
+                                           (pp-is-a-part-of-radix8+-summation term-w/-sc)))))
 
            (pp-lst2 (append-with-times coef pp-lst2 nil))
 
@@ -4621,22 +4660,22 @@ to-be-coughed-c-lst))|#
                   c-lst)))))
   ///
   (acl2::defret
-    return-vals--of--<fn>
-    :hyp (rp-term-listp sum-lst)
-    (and (rp-termp s)
-         (rp-term-listp pp-lst)
-         (rp-term-listp c-lst))
-    :hints (("Goal"
-             :do-not-induct t
-             :expand ((new-sum-merge-aux sum-lst limit)
-                      (new-sum-merge-aux nil limit))
-             :induct (new-sum-merge-aux sum-lst limit)
-             :in-theory (e/d ((:induction new-sum-merge-aux))
-                             ((:definition new-sum-merge-aux)
-                              (:e tau-system)
-                              (:rewrite default-car)
-                              (:rewrite default-cdr)
-                              (:rewrite rp-termp-implies-subterms))))))
+   return-vals--of--<fn>
+   :hyp (rp-term-listp sum-lst)
+   (and (rp-termp s)
+        (rp-term-listp pp-lst)
+        (rp-term-listp c-lst))
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((new-sum-merge-aux sum-lst limit)
+                     (new-sum-merge-aux nil limit))
+            :induct (new-sum-merge-aux sum-lst limit)
+            :in-theory (e/d ((:induction new-sum-merge-aux))
+                            ((:definition new-sum-merge-aux)
+                             (:e tau-system)
+                             (:rewrite default-car)
+                             (:rewrite default-cdr)
+                             (:rewrite rp-termp-implies-subterms))))))
   (verify-guards new-sum-merge-aux))
 
 (define extract-from-equals-lst ((pp-lst rp-term-listp))
@@ -4693,12 +4732,12 @@ to-be-coughed-c-lst))|#
             (t (mv ''nil nil nil nil)))))
   ///
   (acl2::defret
-    return-vals--of--<fn>
-    :hyp (rp-term-listp pp-lst)
-    (and (rp-termp s)
-         (rp-term-listp res-pp-lst)
-         (rp-term-listp c-lst)
-         ))
+   return-vals--of--<fn>
+   :hyp (rp-term-listp pp-lst)
+   (and (rp-termp s)
+        (rp-term-listp res-pp-lst)
+        (rp-term-listp c-lst)
+        ))
 
   (verify-guards extract-from-equals-lst
     :hints (("Goal"
@@ -4754,12 +4793,12 @@ to-be-coughed-c-lst))|#
         ))
   ///
   (acl2::defret
-    return-vals--of--<fn>
-    :hyp (rp-termp term)
-    (and (rp-termp s)
-         (rp-term-listp pp-lst)
-         (rp-term-listp c-lst)
-         )))
+   return-vals--of--<fn>
+   :hyp (rp-termp term)
+   (and (rp-termp s)
+        (rp-term-listp pp-lst)
+        (rp-term-listp c-lst)
+        )))
 
 ;; (progn
 #|(define well-formed-new-sum ((term rp-termp))
@@ -5003,6 +5042,17 @@ nil
                     ,(extract-binary-xor-for-s-spec-aux x)))
       (& term)))
 
+  (define extract-binary-xor-for-s-spec-aux-lst ((lst rp-term-listp))
+    :returns (res-lst rp-term-listp
+                      :hyp (rp-term-listp lst))
+    (if (atom lst)
+        lst
+      (cons-with-hint (if (pp-term-p (car lst))
+                          (extract-binary-xor-for-s-spec-aux (car lst))
+                        (car lst))
+                      (extract-binary-xor-for-s-spec-aux-lst (cdr lst))
+                      lst)))
+
   (define extract-binary-xor-for-s-spec ((term rp-termp))
     :returns (res rp-termp
                   :hyp (rp-termp term))
@@ -5011,7 +5061,8 @@ nil
        (b* ((x-orig x)
             (x (ex-from-rp$ x)))
          (if (and (consp x)
-                  (equal (car x) 'binary-xor)
+                  (or (equal (car x) 'binary-xor)
+                      (equal (car x) 'binary-not))
                   (pp-term-p x))
              `(cons ,(extract-binary-xor-for-s-spec-aux x)
                     ,(extract-binary-xor-for-s-spec rest))

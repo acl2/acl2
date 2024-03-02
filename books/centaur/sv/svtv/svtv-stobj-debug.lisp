@@ -46,7 +46,7 @@
 ;; (svtv-cycle-run-fsm-inputs ins phases) produces a set of inputs for the base
 ;; fsm given the cycle phases and inputs for the cycle fsm.
 
-;; (svtv-fsm-to-base-fsm-inputs
+;; (svtv-fsm-to-fsm-inputs
 ;;   (take (len (svtv-probealist-outvars probes)) ins)
 ;;   override-vals override-tests fsm)
 ;; produces a set of inputs for the cycle fsm given inputs for the pipeline.
@@ -111,22 +111,22 @@
 (define fsm-debug-writephases ((phasenum natp)
                                     (inalists svex-envlist-p)
                                     (prev-state svex-env-p)
-                                    (fsm base-fsm-p)
+                                    (fsm fsm-p)
                                     aliases vcd-wiremap vcd-vals
                                     (p vl-printedlist-p))
   :guard-hints (("goal" :do-not-induct t))
   :guard (and (<= (aliass-length aliases) (vcdwires-length vcd-wiremap))
               (<= (vcdwires-length vcd-wiremap) (4vecs-length vcd-vals))
               (<= (aliass-length aliases) (4vecs-length vcd-vals))
-              (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate fsm))))
+              (not (hons-dups-p (svex-alist-keys (fsm->nextstate fsm))))
               (equal (alist-keys prev-state)
-                     (svex-alist-keys (base-fsm->nextstate fsm))))
+                     (svex-alist-keys (fsm->nextstate fsm))))
   :returns (mv vcd-vals1
                (p1 vl-printedlist-p)
                (final-state svex-env-p))
   (b* (((when (atom inalists))
         (mv vcd-vals (vl::vl-printedlist-fix p) (svex-env-fix prev-state)))
-       ((base-fsm fsm))
+       ((fsm fsm))
        (eval-alist (append (mbe :logic (svex-env-extract (svex-alist-keys fsm.nextstate) prev-state)
                                 :exec prev-state)
                            (car inalists)))
@@ -161,7 +161,7 @@
 
 (define fsm-debug ((ins svex-envlist-p)
                    (initst svex-env-p)
-                   (fsm base-fsm-p)
+                   (fsm fsm-p)
                    &key
                    ((top-mod modname-p) 'nil)
                    ((filename stringp) '"svtv-debug.vcd")
@@ -176,11 +176,11 @@
                      (< modidx (moddb->nmods moddb))
                      (<= (moddb-mod-totalwires modidx moddb)
                          (aliass-length aliases))))
-              (not (hons-dups-p (svex-alist-keys (base-fsm->nextstate fsm))))
+              (not (hons-dups-p (svex-alist-keys (fsm->nextstate fsm))))
               (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate fsm))))
+                     (svex-alist-keys (fsm->nextstate fsm))))
   :guard-hints (("Goal" :do-not-induct t))
-  (b* (((base-fsm fsm))
+  (b* (((fsm fsm))
        (modidx (moddb-modname-get-index top-mod moddb))
 
        ;; Start VCD creation.  Make the wiremap and the scope structure (from
@@ -225,7 +225,7 @@
   ;; (local
   ;;  (defret no-duplicate-nextstates-when-equal-<fn>
   ;;    (implies (and (equal y
-  ;;                         (svex-alist-keys (base-fsm->nextstate fsm)))
+  ;;                         (svex-alist-keys (fsm->nextstate fsm)))
   ;;                  (not err))
   ;;             (no-duplicatesp-equal y))
   ;;    :fn svtv-design-to-fsm))
@@ -234,7 +234,7 @@
     (implies (and (svtv-data$ap svtv-data)
                   (svtv-data$c->flatnorm-validp svtv-data)
                   (svtv-data$c->phase-fsm-validp svtv-data))
-             (no-duplicatesp-equal (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
+             (no-duplicatesp-equal (svex-alist-keys (fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
     :hints(("Goal" :in-theory (e/d (svtv-data$ap))))))
 
 (defthm modalist-addr-p-of-svtv-data-design
@@ -257,7 +257,7 @@
               (svtv-data->flatten-validp svtv-data)
               (svtv-data->flatnorm-validp svtv-data)
               (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   ;; :guard-hints ((and stable-under-simplificationp
   ;;                    '(:in-theory (enable svtv-data$ap)
   ;;                      :do-not-induct t)))
@@ -309,7 +309,7 @@
   :returns new-svtv-chase-data
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatten-validp svtv-data))
-  (b* (((base-fsm fsm) (svtv-data->phase-fsm svtv-data))
+  (b* (((fsm fsm) (svtv-data->phase-fsm svtv-data))
        ((flatnorm-res flatnorm) (svtv-data->flatnorm svtv-data))
        (svtv-chase-data (set-svtv-chase-data->stack nil svtv-chase-data))
        (svtv-chase-data (set-svtv-chase-data->phaselabels labels svtv-chase-data))
@@ -327,7 +327,7 @@
                                       &key
                                       (svtv-data 'svtv-data))
   :returns (evaldata svtv-evaldata-p)
-  (b* (((base-fsm fsm) (svtv-data->phase-fsm svtv-data)))
+  (b* (((fsm fsm) (svtv-data->phase-fsm svtv-data)))
     (make-svtv-evaldata
      :nextstate (make-fast-alist fsm.nextstate)
      :inputs (make-fast-alists ins)
@@ -348,7 +348,7 @@
 ;;               (svtv-data->phase-fsm-validp svtv-data)
 ;;               (svtv-data->flatten-validp svtv-data)
 ;;               (equal (alist-keys initst)
-;;                      (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+;;                      (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
 ;;   :returns (mv new-svtv-chase-data new-state)
 ;;   (b* ((svtv-chase-data (svtv-data-set-svtv-chase-data :labels labels
 ;;                                                        :probes probes
@@ -371,7 +371,7 @@
               (svtv-data->flatnorm-validp svtv-data)
               ;; (svtv-data->cycle-fsm-validp svtv-data)
               (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   (b* ((base-ins (svtv-cycle-run-fsm-inputs ins (svtv-data->cycle-phases svtv-data))))
     (svtv-data-debug-phase-fsm base-ins initst :filename filename)))
 
@@ -440,19 +440,19 @@
 
 ;; (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
 ;;   (implies (and (svtv-data$ap svtv-data)
-;;                 ;; (svtv-data$c->base-fsm-validp svtv-data)
+;;                 ;; (svtv-data$c->fsm-validp svtv-data)
 ;;                 (svtv-data$c->cycle-fsm-validp svtv-data))
-;;            (equal (svex-alist-keys (base-fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))
-;;                   (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
+;;            (equal (svex-alist-keys (fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))
+;;                   (svex-alist-keys (fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
 ;;   :hints(("Goal" :in-theory (enable svtv-data$ap))))
 
 (defthm svex-alist-keys-of-svtv-data->pipeline-initst
   (implies (and (svtv-data$ap svtv-data)
-                ;; (svtv-data$c->base-fsm-validp svtv-data)
+                ;; (svtv-data$c->fsm-validp svtv-data)
                 ;; (svtv-data$c->cycle-fsm-validp svtv-data)
                 (svtv-data$c->pipeline-validp svtv-data))
            (equal (svex-alist-keys (pipeline-setup->initst (svtv-data$c->pipeline-setup svtv-data)))
-                  (svex-alist-keys (base-fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))))
+                  (svex-alist-keys (fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))))
   :hints(("Goal" :in-theory (enable svtv-data$ap svtv-data$c-pipeline-okp))))
 
 (define svtv-pipeline-setup-to-cycle-inputs ((env svex-env-p)
@@ -465,7 +465,7 @@
        (initst (svex-alist-eval setup.initst env))
        (outvars (svtv-probealist-outvars setup.probes))
        (len (len outvars))
-       (cycle-ins (svtv-fsm-to-base-fsm-inputs
+       (cycle-ins (svtv-fsm-to-fsm-inputs
                    (take len (svex-alistlist-eval setup.inputs env))
                    (svex-alistlist-eval setup.override-vals env)
                    (svex-alistlist-eval setup.override-tests env)
@@ -490,7 +490,7 @@
               (svtv-data->flatnorm-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst setup))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
 
   (b* (((mv cycle-ins initst)
         (svtv-pipeline-setup-to-cycle-inputs env setup
@@ -511,7 +511,7 @@
               (svtv-data->flatnorm-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst (svtv-data->pipeline-setup svtv-data)))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   (svtv-data-debug-pipeline-aux
    env (svtv-data->pipeline-setup svtv-data)
    :filename filename))
@@ -638,9 +638,9 @@
                              (initst svex-env-p)
                              (probes svtv-probealist-p)
                              (namemap svtv-name-lhs-map-p)
-                             (fsm base-fsm-p))
+                             (fsm fsm-p))
   :returns (result svex-env-p)
-  (b* (((base-fsm fsm))
+  (b* (((fsm fsm))
        ((with-fast fsm.values fsm.nextstate initst))
        (renamed-values (svtv-name-lhs-map-compose namemap fsm.values))
        ((with-fast renamed-values))
@@ -671,7 +671,7 @@
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               ;; (svtv-data->cycle-fsm-validp svtv-data)
               (equal (alist-keys initst)
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   :returns (result svex-env-p)
   ;; TODO: The chase and debug (vcd dump) utils in this file only need the
   ;; phase FSM to be valid.  This one requires the cycle FSM to be valid.  It
@@ -701,7 +701,7 @@
               ;; (svtv-data->cycle-fsm-validp svtv-data)
               ;; (svtv-data->namemap-validp svtv-data)
               (equal (svex-alist-keys (pipeline-setup->initst setup))
-                     (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
+                     (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data)))))
   :returns (result svex-env-p)
   (b* (((mv cycle-ins initst)
         (svtv-pipeline-setup-to-cycle-inputs env setup (svtv-data->namemap svtv-data))))

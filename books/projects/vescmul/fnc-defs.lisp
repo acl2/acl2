@@ -614,16 +614,27 @@ term
     ///
     (defthm times-p-implies
       (implies (times-p term)
-               (case-match term
-                 (('times ('quote coef) &)
-                  (integerp coef))))
-      :rule-classes :forward-chaining))
+               (and (case-match term
+                      (('times ('quote coef) &)
+                       (integerp coef)))
+                    ;; (equal (rp-trans (cadr term))
+                    ;;        (cadr term))
+                    ))
+               :rule-classes ((:forward-chaining)))
+    ;; (defthm times-p-implies-2
+    ;;   (implies (times-p term)
+    ;;            (quotep (cadr term)))
+    ;;   :rule-classes (:type-prescription))
+    )
 
   (define get-pp-and-coef (term)
     :inline t
     :returns (mv (coef integerp :rule-classes (:type-prescription :rewrite))
                  (res-term rp-termp :hyp (rp-termp term)))
-    (case-match term (('times ('quote coef) a) (mv (ifix coef) a)) (& (mv 1  term))))
+    (cond ((times-p term)
+           (mv (ifix (cadr (cadr term))) (caddr term)))
+          (t (mv 1  term))))
+   ;; (case-match term (('times ('quote coef) a) (mv (ifix coef) a)) (& (mv 1  term))))
 
   (define create-times-instance ((coef integerp)
                                  term)

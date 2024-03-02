@@ -15,6 +15,7 @@
 
 (include-book "acl2s/installation" :dir :system :ttags :all)
 (include-book "acl2s/extra-doc" :dir :system :ttags :all)
+(include-book "acl2s/interface/top" :dir :system)
 
 ;; (defun allp (x)
 ;;   (declare (ignore x)

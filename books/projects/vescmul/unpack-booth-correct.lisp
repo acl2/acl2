@@ -246,6 +246,10 @@
            (if (equal a x)
                (mv y z)
              (sum-chain-smart-fn-aux (cdr cl) x)))
+          (('not ('equal a ('BINARY-M2-CHAIN y z)))
+           (if (equal a x)
+               (mv y z)
+             (sum-chain-smart-fn-aux (cdr cl) x)))
           (&
            (sum-chain-smart-fn-aux (cdr cl) x))))))
 
@@ -277,7 +281,16 @@
              (and (equal (sum x other)
                          (sum y other z))
                   (equal (sum other x)
-                         (sum y other z))))))
+                         (sum y other z)))))
+
+  (defthmd expand-m2-chain-from-the-hyps
+    (implies (and (bind-free (sum-chain-smart-fn x mfc state)
+                             (y z))
+                  (equal x (sum y z)))
+             (and (equal (m2-chain x other)
+                         (m2-chain y other z))
+                  (equal (m2-chain other x)
+                         (m2-chain y other z))))))
 
 (defthm valid-sc-of-binary-fnc-p
   (and (equal (valid-sc (cons 'binary-? x) a)
@@ -339,6 +352,129 @@
    (equal (rp-evlt (ex-from-rp (cons 'list x)) a)
           (rp-evlt-lst x a))))
 
+
+(local
+ (defret new-sum-merge-aux-correct-woth-m2-chain
+   (implies (and (rp-evl-meta-extract-global-facts :state state)
+                 (mult-formula-checks state)
+                 (valid-sc-subterms sum-lst a)
+                 (rp-term-listp sum-lst))
+            (and 
+             (equal (m2-chain (sum-list (rp-evlt s a))
+                              (sum-list-eval pp-lst a)
+                              (sum-list-eval c-lst a)
+                              aaother)
+                    (m2-chain (sum-list-eval sum-lst a)
+                              aaother)
+                    )))
+   :fn new-sum-merge-aux
+   :hints (("Goal"
+            :do-not-induct t
+            :do-not '(preprocess)
+            :use ((:instance new-sum-merge-aux-correct))
+            :in-theory '((:DEFINITION BINARY-M2-CHAIN)
+                         (:DEFINITION HIDE)
+                         (:DEFINITION SYNP)
+                         (:REWRITE M2-CHAIN-COMM)
+                         (:REWRITE M2-OF-M2)
+                         (:REWRITE SUM-ASSOC)
+                         (:REWRITE SUM-COMM-1)
+                         (:REWRITE SUM-COMM-2))))))
+
+(local
+ (defret new-sum-merge-correct-woth-m2-chain
+   (implies (and (rp-evl-meta-extract-global-facts :state state)
+                 (mult-formula-checks state)
+                 (valid-sc term a)
+                 (rp-termp term))
+            (and 
+             (equal (m2-chain (sum-list (rp-evlt s a))
+                              (sum-list-eval pp-lst a)
+                              (sum-list-eval c-lst a)
+                              aaother)
+                    (m2-chain (sum-list (rp-evlt term a))
+                              aaother)
+                    )
+             (equal (m2-chain (sum-list (rp-evlt s a))
+                              (sum-list-eval pp-lst a)
+                              (sum-list-eval c-lst a))
+                    (m2 (sum-list (rp-evlt term a)))
+                    )))
+   :fn new-sum-merge
+   :hints (("Goal"
+            :do-not-induct t
+            :do-not '(preprocess)
+            :use ((:instance new-sum-merge-correct))
+            :in-theory '((:DEFINITION BINARY-M2-CHAIN)
+                         (:DEFINITION HIDE)
+                         (:DEFINITION SYNP)
+                         (:REWRITE M2-CHAIN-COMM)
+                         (:REWRITE M2-OF-M2)
+                         (:REWRITE SUM-ASSOC)
+                         (:REWRITE SUM-COMM-1)
+                         (:REWRITE SUM-COMM-2))))))
+
+
+
+(local
+ (defthm sum-cancel-from-hyps-1
+   (implies (EQUAL x (SUM (--  y) (-- z) other1))
+            (equal (m2-chain x y z other2)
+                   (m2-chain other1 other2)))
+   :hints (("Goal"
+            :do-not '(preprocess)
+            :in-theory (e/d (m2-chain)
+                            (M2-CHAIN-OF-M2))))))
+
+(defthm valid-sc-of-trans-list
+  (implies (valid-sc-subterms lst a)
+           (valid-sc (trans-list lst) a)))
+
+(local
+ (defthm trans-list-correct
+  (equal (rp-evlt (trans-list lst) a)
+         (rp-evlt-lst lst a))))
+
+
+(local
+ (defthm when-term-is-0-lemma
+   (implies (and (EQUAL (EX-FROM-RP (MV-NTH 1 (GET-PP-AND-COEF C-TERM)))
+                        ''0)
+                 (rp-evl-meta-extract-global-facts :state state)
+                 (mult-formula-checks state))
+            (and (equal (EQUAL 0
+                               (IFIX (RP-EVLT (EX-FROM-RP C-TERM) A)))
+                        t)))))
+
+(local
+ (progn
+   (defthm pull-times-outwards
+     (and (equal (-- (times x y))
+                 (times x (-- y)))
+          (equal (sum (times x y) (times x z))
+                 (times x (sum y z))))
+     :hints (("Goal"
+              :in-theory (e/d (times sum)
+                              (+-is-SUM)))))
+
+   (in-theory (disable TIMES-OF---))))
+
+(encapsulate
+  nil
+  (local
+   (use-arith-5 t))
+  (defthm equal-with-same-times
+    (equal (equal (times x y)
+                  (times x z))
+           (if (equal (ifix x) 0)
+               t
+             (equal (ifix y)
+                    (ifix z))))
+    :hints (("Goal"
+             :in-theory (e/d (times) ())))))
+
+
+ 
 
 (defret-mutual
   unpack-booth-for-s-correct
@@ -446,8 +582,14 @@
 
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (m2-to-m2-chain
+           :expand ((:free (x y) (SUM-LIST-EVAL (cons x y) A)))
+           ;;:case-split-limitations (4 4)
+           :in-theory (e/d* (GET-PP-AND-COEF
+                             ;;times-p
+                             
+                             m2-to-m2-chain
                              expand-sum-from-the-hyps
+                             expand-m2-chain-from-the-hyps
                              binary-fnc-p
                              has-bitp-rp-force-insert
                              create-s-instance-correct-singled-out
@@ -460,6 +602,8 @@
                              unpack-booth-buried-in-pp
                              rp-evlt-of-ex-from-rp-reverse-2
                              ex-from-rp-when---
+                             REGULAR-RP-EVL-OF_times_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             REGULAR-RP-EVL-OF_times_WHEN_MULT-FORMULA-CHECKS
                              REGULAR-RP-EVL-OF_binary-?_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
                              REGULAR-RP-EVL-OF_binary-xor_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
                              REGULAR-RP-EVL-OF_binary-and_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP
@@ -476,7 +620,16 @@
                              (:REWRITE
                               REGULAR-RP-EVL-OF_s_WHEN_MULT-FORMULA-CHECKS_WITH-EX-FROM-RP)
                              )
-                            (rp-evlt-of-ex-from-rp
+                            ((:DEFINITION SUM-LIST-EVAL)
+
+                             
+
+                             (:REWRITE DUMMY-SUM-CANCEL-LEMMA1)
+                             (:REWRITE ACL2::ZP-OPEN)
+                             (:REWRITE RW->-TO-GT)
+                             (:META BINARY-OR**/AND**-GUARD-META-CORRECT)
+                             
+                             rp-evlt-of-ex-from-rp
                              ex-from-rp
                              rp-termp
                              (:REWRITE DEFAULT-CAR)
@@ -493,7 +646,11 @@
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC)
                              (:REWRITE NOT-INCLUDE-RP-MEANS-VALID-SC-LST)
                              eval-and-all
-                             rp-trans)))))
+                             rp-trans)))
+          (and stable-under-simplificationp
+               '(:expand ((SUM-LIST-EVAL LST A)
+                          (SUM-LIST-EVAL S-LST A)
+                          (SUM-LIST-EVAL C-LST A))))))
 
 #|(defret unpack-booth-for-c-lst-correct-with-other
 (implies (and
@@ -625,11 +782,14 @@ other)
                     (sum-list-eval (list (cadr (cadr term)))
                                    a))
            :in-theory (e/d* (or*
+                             GET-PP-AND-COEF
                              unpack-booth-meta
                              HAS-BITP-RP-FORCE-INSERT
                              ;;has-bitp-rp-force-insert
                              unpack-booth
                              s-c-res
+                             regular-rp-evl-of_times_when_mult-formula-checks_with-ex-from-rp
+                             regular-rp-evl-of_times_when_mult-formula-checks
                              regular-rp-evl-of_unpack-booth_when_mult-formula-checks_with-ex-from-rp
                              regular-rp-evl-of_unpack-booth_when_mult-formula-checks
                              regular-rp-evl-of_s-c-res_when_mult-formula-checks_with-ex-from-rp
@@ -639,6 +799,9 @@ other)
                              (:rewrite regular-rp-evl-of_--_when_mult-formula-checks)
                              )
                             (;;(:REWRITE ACL2::EQUAL-LEN-1)
+
+                             GET-PP-AND-COEF-CORRECT-WHEN-RES-TERM-IS-0
+                             
                              ACL2::EQUAL-LEN-1
                              (:REWRITE BINARY-FNC-P-RELIEVE)
                              (:TYPE-PRESCRIPTION SINGLE-C-P$INLINE)
@@ -675,7 +838,11 @@ other)
                '(:use ((:instance pp-has-bitp-rp-implies
                                   (term (cadr term)))
                        (:instance pp-has-bitp-rp-implies
-                                  (term (cadr (cadr term)))))))))
+                                  (term (caddr term)))
+                       (:instance pp-has-bitp-rp-implies
+                                  (term (cadr (cadr term))))
+                       (:instance pp-has-bitp-rp-implies
+                                  (term (caddr (cadr term)))))))))
 
 (local
  (defthm valid-sc-of-cons
@@ -816,6 +983,8 @@ other)
 :hints (("Goal"
 :induct (len lst)
 :in-theory (e/d (unpack-booth-general-meta-lst) ())))))|#
+
+
 
 (defret-mutual unpack-booth-general-meta-correct
 

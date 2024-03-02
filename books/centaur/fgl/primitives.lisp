@@ -33,6 +33,7 @@
 (include-book "add-primitives")
 (include-book "primitives-stub")
 (include-book "bfr-arithmetic")
+(include-book "list-to-tree")
 ; (include-book "subst-functions")
 (include-book "def-fgl-rewrite")
 (include-book "centaur/misc/hons-remove-dups" :dir :system)
@@ -59,7 +60,7 @@
 ;;    typespec-check implies fgl-sat-check))
 
 (def-formula-checks primitives-formula-checks
-  (if! atom ifix bool-fix$inline mv-nth binary-append nthcdr take len))
+  (if! atom ifix bool-fix$inline mv-nth binary-append nthcdr take len acl2::list-to-tree))
 
 (enable-split-ifs equal)
 
@@ -809,25 +810,24 @@
 
 
 (define fgl-len-aux ((x fgl-object-p) (n natp))
-  :returns (mv ok (new-x fgl-object-p))
+  :returns (mv ok (len natp :rule-classes :type-prescription))
   :verify-guards nil
   :measure (fgl-object-count x)
   (fgl-object-case x
-    :g-concrete (mv t (g-concrete (+ (len x.val) (lnfix n))))
+    :g-concrete (mv t (+ (len x.val) (lnfix n)))
     :g-cons (fgl-len-aux x.cdr (1+ (lnfix n)))
-    :g-boolean (mv t (g-concrete (lnfix n)))
-    :g-integer (mv t (g-concrete (lnfix n)))
-    :otherwise (mv nil nil))
+    :g-boolean (mv t (lnfix n))
+    :g-integer (mv t (lnfix n))
+    :otherwise (mv nil 0))
   ///
   (Verify-guards fgl-len-aux)
   
-  (defret bfr-listp-of-<fn>
-    (implies (bfr-listp (fgl-object-bfrlist x))
-             (bfr-listp (fgl-object-bfrlist new-x))))
-  
   (defret eval-of-<fn>
-    (implies ok
-             (equal (fgl-object-eval new-x env)
+    (implies (and ok
+                  (bind-free '((logicman . (interp-st->logicman interp-st))
+                               (env . env))
+                             (logicman env)))
+             (equal len
                     (+ (nfix n) (len (fgl-object-eval x env)))))
     :hints (("goal" :induct <call>
              :in-theory (enable len)))))
@@ -836,9 +836,105 @@
   (b* (((mv ok len) (fgl-len-aux x 0))
        ((unless ok)
         (mv nil nil)))
-    (mv t len))
+    (mv t (g-concrete len)))
   :formula-check primitives-formula-checks
   :returns (mv successp ans))
+
+
+
+(define fgl-list-to-tree-aux2 ((logn natp) (x fgl-object-p))
+  :returns (mv ok (tree fgl-object-p) (rest fgl-object-p))
+  :verify-guards nil
+  :measure (nfix logn)
+  (b* (((when (zp logn))
+        (fgl-object-case x
+          :g-concrete (mv t (g-concrete (ec-call (car x.val)))
+                          (g-concrete (ec-call (cdr x.val))))
+          :g-cons (mv t x.car x.cdr)
+          :g-boolean (mv t nil nil)
+          :g-integer (mv t nil nil)
+          :otherwise (mv nil nil nil)))
+       ((mv ok first-n rest-after-n)
+        (fgl-list-to-tree-aux2 (1- logn) x))
+       ((unless ok) (mv nil nil nil))
+       ((mv ok next-n rest)
+        (fgl-list-to-tree-aux2 (1- logn) rest-after-n))
+       ((unless ok) (mv nil nil nil)))
+    (mv t (mk-g-cons first-n next-n) rest))
+    
+  ///
+  (Verify-guards fgl-list-to-tree-aux2)
+  
+  (defret bfr-listp-of-<fn>
+    (implies (bfr-listp (fgl-object-bfrlist x))
+             (and (bfr-listp (fgl-object-bfrlist tree))
+                  (bfr-listp (fgl-object-bfrlist rest)))))
+  
+  (defret eval-of-<fn>
+    (implies ok
+             (b* (((mv spec-tree spec-rest)
+                   (acl2::list-to-tree-aux2 logn (fgl-object-eval x env))))
+               (and (equal (fgl-object-eval tree env) spec-tree)
+                    (equal (fgl-object-eval rest env) spec-rest))))
+    :hints (("goal" :induct <call>
+             :in-theory (enable acl2::list-to-tree-aux2)))))
+
+(define fgl-list-to-tree-aux ((n natp) (x fgl-object-p))
+  :returns (mv ok (tree fgl-object-p))
+  :verify-guards nil
+  :measure (nfix n)
+  :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+             (local (defthm integer-length-gte-1
+                      (implies (not (zp x))
+                               (<= 1 (integer-length x)))
+                      :hints(("Goal" :expand ((integer-length x))))
+                      :rule-classes :type-prescription))
+             (local (defthm natp-expt
+                      (implies (natp x)
+                               (natp (expt 2 x)))
+                      :hints(("Goal" :in-theory (enable expt)))
+                      :rule-classes :type-prescription))
+             (local (defthm expt-2-integer-length-minus-1
+                      (implies (not (zp x))
+                               (<= (expt 2 (+ -1 (integer-length x))) x))
+                      :hints (("goal" :in-theory (enable* bitops::ihsext-inductions
+                                                          bitops::ihsext-recursive-redefs
+                                                          bitops::logcons-<-n-strong)
+                               :induct t)
+                              (and stable-under-simplificationp
+                                   '(:expand ((:free (j) (expt 2 (integer-length j)))))))
+                      :rule-classes :linear)))
+  (b* (((when (zp n)) (mv t nil))
+       (logn (1- (integer-length n)))
+       ((mv ok firsttree rest) (fgl-list-to-tree-aux2 logn x))
+       ((unless ok) (mv nil nil))
+       ((mv ok secondtree)
+        (fgl-list-to-tree-aux (- n (expt 2 logn)) rest)))
+    (mv ok (and ok (mk-g-cons firsttree secondtree))))
+  ///
+  (Verify-guards fgl-list-to-tree-aux)
+  
+  (defret bfr-listp-of-<fn>
+    (implies (bfr-listp (fgl-object-bfrlist x))
+             (and (bfr-listp (fgl-object-bfrlist tree)))))
+  
+  (defret eval-of-<fn>
+    (implies ok
+             (b* ((spec-tree
+                   (acl2::list-to-tree-aux n (fgl-object-eval x env))))
+               (and (equal (fgl-object-eval tree env) spec-tree))))
+    :hints (("goal" :induct <call>
+             :in-theory (enable acl2::list-to-tree-aux)))))
+
+               
+(def-fgl-primitive acl2::list-to-tree (x)
+  (b* (((mv ok len) (fgl-len-aux x 0))
+       ((unless ok)
+        (mv nil nil)))
+    (fgl-list-to-tree-aux len x))
+  :formula-check primitives-formula-checks
+  :returns (mv successp ans)
+  :prepwork ((local (in-theory (enable acl2::list-to-tree)))))
 
 
 

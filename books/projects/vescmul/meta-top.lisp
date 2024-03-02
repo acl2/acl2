@@ -285,7 +285,7 @@
 (add-postprocessor
  :processor-fnc unpack-booth-general-postprocessor
  :valid-syntaxp t
- :disabledp t
+ :disabledp nil
  :formula-checks mult-formula-checks
  :returns (mv term rp-state)
  :hints (("Goal"

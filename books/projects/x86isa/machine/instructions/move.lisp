@@ -578,7 +578,7 @@
 
 ; AT&T mnemonic: MOVSLQ
 
-(def-inst x86-movsx
+(def-inst x86-movsxd
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
@@ -650,7 +650,7 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
-(def-inst x86-movsxd
+(def-inst x86-movsx
 
   ;; Op/En: RM
   ;; [OP REG, R/M]
