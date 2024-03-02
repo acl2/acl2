@@ -1,3 +1,5 @@
+; (depends-on "additions.lsp")
+; (depends-on "extras.lsp")
 (in-package "ACL2")
 (include-book "tools/include-raw" :dir :system)
 (include-book "xdoc/defxdoc-raw" :dir :system)
