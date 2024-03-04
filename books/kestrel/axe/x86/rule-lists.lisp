@@ -1116,10 +1116,11 @@
     x86isa::mxcsrbits->rc$inline-constant-opener
     x86isa::mxcsrbits->fz$inline-constant-opener
 
-    mxcsrbits->daz-of-bvchop-32
-    mxcsrbits->dm-of-bvchop-32
-    mxcsrbits->im-of-bvchop-32
-    mxcsrbits->ie-of-bvchop-32
+    ;todo: more
+    mxcsrbits->daz-of-bvchop
+    mxcsrbits->dm-of-bvchop
+    mxcsrbits->im-of-bvchop
+    mxcsrbits->ie-of-bvchop
 
     mxcsrbits->daz-of-ifix
     mxcsrbits->dm-of-ifix

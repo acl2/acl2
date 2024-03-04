@@ -126,22 +126,24 @@
 (defthm mxcsrbits->fz-of-loghead-32 (equal (mxcsrbits->fz (loghead 32 mxcsr)) (mxcsrbits->fz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->fz))))
 (defthm mxcsrbits->reserved-of-loghead-32 (equal (mxcsrbits->reserved (loghead 32 mxcsr)) (mxcsrbits->reserved mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
 
-(defthm mxcsrbits->ie-of-bvchop-32 (equal (mxcsrbits->ie (bvchop 32 mxcsr)) (mxcsrbits->ie mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
-(defthm mxcsrbits->de-of-bvchop-32 (equal (mxcsrbits->de (bvchop 32 mxcsr)) (mxcsrbits->de mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
-(defthm mxcsrbits->ze-of-bvchop-32 (equal (mxcsrbits->ze (bvchop 32 mxcsr)) (mxcsrbits->ze mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
-(defthm mxcsrbits->oe-of-bvchop-32 (equal (mxcsrbits->oe (bvchop 32 mxcsr)) (mxcsrbits->oe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
-(defthm mxcsrbits->ue-of-bvchop-32 (equal (mxcsrbits->ue (bvchop 32 mxcsr)) (mxcsrbits->ue mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
-(defthm mxcsrbits->pe-of-bvchop-32 (equal (mxcsrbits->pe (bvchop 32 mxcsr)) (mxcsrbits->pe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
-(defthm mxcsrbits->daz-of-bvchop-32 (equal (mxcsrbits->daz (bvchop 32 mxcsr)) (mxcsrbits->daz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
-(defthm mxcsrbits->im-of-bvchop-32 (equal (mxcsrbits->im (bvchop 32 mxcsr)) (mxcsrbits->im mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
-(defthm mxcsrbits->dm-of-bvchop-32 (equal (mxcsrbits->dm (bvchop 32 mxcsr)) (mxcsrbits->dm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
-(defthm mxcsrbits->zm-of-bvchop-32 (equal (mxcsrbits->zm (bvchop 32 mxcsr)) (mxcsrbits->zm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
-(defthm mxcsrbits->om-of-bvchop-32 (equal (mxcsrbits->om (bvchop 32 mxcsr)) (mxcsrbits->om mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
-(defthm mxcsrbits->um-of-bvchop-32 (equal (mxcsrbits->um (bvchop 32 mxcsr)) (mxcsrbits->um mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
-(defthm mxcsrbits->pm-of-bvchop-32 (equal (mxcsrbits->pm (bvchop 32 mxcsr)) (mxcsrbits->pm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
-(defthm mxcsrbits->rc-of-bvchop-32 (equal (mxcsrbits->rc (bvchop 32 mxcsr)) (mxcsrbits->rc mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
-(defthm mxcsrbits->fz-of-bvchop-32 (equal (mxcsrbits->fz (bvchop 32 mxcsr)) (mxcsrbits->fz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->fz))))
-(defthm mxcsrbits->reserved-of-bvchop-32 (equal (mxcsrbits->reserved (bvchop 32 mxcsr)) (mxcsrbits->reserved mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
+(encapsulate ()
+  (local (in-theory (e/d (mxcsrbits-fix) ())))
+  (defthm mxcsrbits->ie-of-bvchop (implies (and (<= 1 size) (natp size)) (equal (mxcsrbits->ie (bvchop size mxcsr)) (mxcsrbits->ie mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
+  (defthm mxcsrbits->de-of-bvchop (implies (and (<= 2 size) (natp size)) (equal (mxcsrbits->de (bvchop size mxcsr)) (mxcsrbits->de mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
+  (defthm mxcsrbits->ze-of-bvchop (implies (and (<= 3 size) (natp size)) (equal (mxcsrbits->ze (bvchop size mxcsr)) (mxcsrbits->ze mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
+  (defthm mxcsrbits->oe-of-bvchop (implies (and (<= 4 size) (natp size)) (equal (mxcsrbits->oe (bvchop size mxcsr)) (mxcsrbits->oe mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
+  (defthm mxcsrbits->ue-of-bvchop (implies (and (<= 5 size) (natp size)) (equal (mxcsrbits->ue (bvchop size mxcsr)) (mxcsrbits->ue mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
+  (defthm mxcsrbits->pe-of-bvchop (implies (and (<= 6 size) (natp size)) (equal (mxcsrbits->pe (bvchop size mxcsr)) (mxcsrbits->pe mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
+  (defthm mxcsrbits->daz-of-bvchop (implies (and (<= 7 size) (natp size)) (equal (mxcsrbits->daz (bvchop size mxcsr)) (mxcsrbits->daz mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+  (defthm mxcsrbits->im-of-bvchop (implies (and (<= 8 size) (natp size)) (equal (mxcsrbits->im (bvchop size mxcsr)) (mxcsrbits->im mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
+  (defthm mxcsrbits->dm-of-bvchop (implies (and (<= 9 size) (natp size)) (equal (mxcsrbits->dm (bvchop size mxcsr)) (mxcsrbits->dm mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
+  (defthm mxcsrbits->zm-of-bvchop (implies (and (<= 10 size) (natp size)) (equal (mxcsrbits->zm (bvchop size mxcsr)) (mxcsrbits->zm mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
+  (defthm mxcsrbits->om-of-bvchop (implies (and (<= 11 size) (natp size)) (equal (mxcsrbits->om (bvchop size mxcsr)) (mxcsrbits->om mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
+  (defthm mxcsrbits->um-of-bvchop (implies (and (<= 12 size) (natp size)) (equal (mxcsrbits->um (bvchop size mxcsr)) (mxcsrbits->um mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
+  (defthm mxcsrbits->pm-of-bvchop (implies (and (<= 13 size) (natp size)) (equal (mxcsrbits->pm (bvchop size mxcsr)) (mxcsrbits->pm mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
+  (defthm mxcsrbits->rc-of-bvchop (implies (and (<= 15 size) (natp size)) (equal (mxcsrbits->rc (bvchop size mxcsr)) (mxcsrbits->rc mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+  (defthm mxcsrbits->fz-of-bvchop (implies (and (<= 16 size) (natp size)) (equal (mxcsrbits->fz (bvchop size mxcsr)) (mxcsrbits->fz mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->fz))))
+  (defthm mxcsrbits->reserved-of-bvchop (implies (and (<= 32 size) (natp size)) (equal (mxcsrbits->reserved (bvchop size mxcsr)) (mxcsrbits->reserved mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->reserved)))))
 
 (defthm mxcsrbits->ie-of-bvif-32 (equal (mxcsrbits->ie (bvif 32 test x y)) (bvif 32 test (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable bvif))))
 (defthm mxcsrbits->de-of-bvif-32 (equal (mxcsrbits->de (bvif 32 test x y)) (bvif 32 test (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable bvif))))
@@ -180,22 +182,22 @@
   (defthm mxcsrbits->reserved-of-logior (equal (mxcsrbits->reserved (logior x y)) (logior (mxcsrbits->reserved x) (mxcsrbits->reserved y))) :hints (("Goal" :in-theory (enable bvif mxcsrbits->reserved))))
   )
 
-(defthm mxcsrbits->ie-of-bvor-32 (equal (mxcsrbits->ie (bvor 32 x y)) (bvor 32 (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->de-of-bvor-32 (equal (mxcsrbits->de (bvor 32 x y)) (bvor 32 (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->ze-of-bvor-32 (equal (mxcsrbits->ze (bvor 32 x y)) (bvor 32 (mxcsrbits->ze x) (mxcsrbits->ze y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->oe-of-bvor-32 (equal (mxcsrbits->oe (bvor 32 x y)) (bvor 32 (mxcsrbits->oe x) (mxcsrbits->oe y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->ue-of-bvor-32 (equal (mxcsrbits->ue (bvor 32 x y)) (bvor 32 (mxcsrbits->ue x) (mxcsrbits->ue y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->pe-of-bvor-32 (equal (mxcsrbits->pe (bvor 32 x y)) (bvor 32 (mxcsrbits->pe x) (mxcsrbits->pe y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->daz-of-bvor-32 (equal (mxcsrbits->daz (bvor 32 x y)) (bvor 32 (mxcsrbits->daz x) (mxcsrbits->daz y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->im-of-bvor-32 (equal (mxcsrbits->im (bvor 32 x y)) (bvor 32 (mxcsrbits->im x) (mxcsrbits->im y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->dm-of-bvor-32 (equal (mxcsrbits->dm (bvor 32 x y)) (bvor 32 (mxcsrbits->dm x) (mxcsrbits->dm y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->zm-of-bvor-32 (equal (mxcsrbits->zm (bvor 32 x y)) (bvor 32 (mxcsrbits->zm x) (mxcsrbits->zm y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->om-of-bvor-32 (equal (mxcsrbits->om (bvor 32 x y)) (bvor 32 (mxcsrbits->om x) (mxcsrbits->om y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->um-of-bvor-32 (equal (mxcsrbits->um (bvor 32 x y)) (bvor 32 (mxcsrbits->um x) (mxcsrbits->um y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->pm-of-bvor-32 (equal (mxcsrbits->pm (bvor 32 x y)) (bvor 32 (mxcsrbits->pm x) (mxcsrbits->pm y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->rc-of-bvor-32 (equal (mxcsrbits->rc (bvor 32 x y)) (bvor 32 (mxcsrbits->rc x) (mxcsrbits->rc y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->fz-of-bvor-32 (equal (mxcsrbits->fz (bvor 32 x y)) (bvor 32 (mxcsrbits->fz x) (mxcsrbits->fz y))) :hints (("Goal" :in-theory (enable bvor))))
-(defthm mxcsrbits->reserved-of-bvor-32 (equal (mxcsrbits->reserved (bvor 32 x y)) (bvor 32 (mxcsrbits->reserved x) (mxcsrbits->reserved y))) :hints (("Goal" :in-theory (enable bvif bvor))))
+(defthm mxcsrbits->ie-of-bvor (implies (and (<= 1 size) (natp size)) (equal (mxcsrbits->ie (bvor size x y)) (bvor 1 (mxcsrbits->ie x) (mxcsrbits->ie y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->de-of-bvor (implies (and (<= 2 size) (natp size)) (equal (mxcsrbits->de (bvor size x y)) (bvor 1 (mxcsrbits->de x) (mxcsrbits->de y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->ze-of-bvor (implies (and (<= 3 size) (natp size)) (equal (mxcsrbits->ze (bvor size x y)) (bvor 1 (mxcsrbits->ze x) (mxcsrbits->ze y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->oe-of-bvor (implies (and (<= 4 size) (natp size)) (equal (mxcsrbits->oe (bvor size x y)) (bvor 1 (mxcsrbits->oe x) (mxcsrbits->oe y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->ue-of-bvor (implies (and (<= 5 size) (natp size)) (equal (mxcsrbits->ue (bvor size x y)) (bvor 1 (mxcsrbits->ue x) (mxcsrbits->ue y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->pe-of-bvor (implies (and (<= 6 size) (natp size)) (equal (mxcsrbits->pe (bvor size x y)) (bvor 1 (mxcsrbits->pe x) (mxcsrbits->pe y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->daz-of-bvor (implies (and (<= 7 size) (natp size)) (equal (mxcsrbits->daz (bvor size x y)) (bvor 1 (mxcsrbits->daz x) (mxcsrbits->daz y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->im-of-bvor (implies (and (<= 8 size) (natp size)) (equal (mxcsrbits->im (bvor size x y)) (bvor 1 (mxcsrbits->im x) (mxcsrbits->im y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->dm-of-bvor (implies (and (<= 9 size) (natp size)) (equal (mxcsrbits->dm (bvor size x y)) (bvor 1 (mxcsrbits->dm x) (mxcsrbits->dm y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->zm-of-bvor (implies (and (<= 10 size) (natp size)) (equal (mxcsrbits->zm (bvor size x y)) (bvor 1 (mxcsrbits->zm x) (mxcsrbits->zm y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->om-of-bvor (implies (and (<= 11 size) (natp size)) (equal (mxcsrbits->om (bvor size x y)) (bvor 1 (mxcsrbits->om x) (mxcsrbits->om y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->um-of-bvor (implies (and (<= 12 size) (natp size)) (equal (mxcsrbits->um (bvor size x y)) (bvor 1 (mxcsrbits->um x) (mxcsrbits->um y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->pm-of-bvor (implies (and (<= 13 size) (natp size)) (equal (mxcsrbits->pm (bvor size x y)) (bvor 1 (mxcsrbits->pm x) (mxcsrbits->pm y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->rc-of-bvor (implies (and (<= 15 size) (natp size)) (equal (mxcsrbits->rc (bvor size x y)) (bvor 2 (mxcsrbits->rc x) (mxcsrbits->rc y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->fz-of-bvor (implies (and (<= 16 size) (natp size)) (equal (mxcsrbits->fz (bvor size x y)) (bvor 1 (mxcsrbits->fz x) (mxcsrbits->fz y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->reserved-of-bvor (implies (and (<= 32 size) (natp size)) (equal (mxcsrbits->reserved (bvor size x y)) (bvor 16 (mxcsrbits->reserved x) (mxcsrbits->reserved y)))) :hints (("Goal" :in-theory (enable bvif bvor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -573,3 +575,28 @@
                   (x86isa::cr4bits->OSFXSR x)))
   :hints (("Goal" :in-theory (enable x86isa::cr4bits->OSFXSR
                                      x86isa::cr4bits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd integerp-of-zencode
+  (integerp (rtl::zencode sgn f)))
+
+(defthmd integerp-of-iencode
+  (integerp (rtl::iencode sgn f)))
+
+(defthmd integerp-of-dencode
+  (integerp (rtl::dencode x f)))
+
+(defthmd integerp-of-nencode
+  (integerp (rtl::nencode x f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd acl2-numberp-of-ddecode
+  (acl2-numberp (rtl::ddecode x f)))
+
+(defthmd acl2-numberp-of-ndecode
+  (acl2-numberp (rtl::ndecode x f)))
+
+(defthmd acl2-numberp-of-decode
+  (acl2-numberp (rtl::decode x f)))
