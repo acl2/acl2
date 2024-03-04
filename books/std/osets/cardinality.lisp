@@ -44,7 +44,7 @@ always returns 0 for ill-formed sets.</p>"
   (defun cardinality (X)
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
-    (mbe :logic (if (empty X)
+    (mbe :logic (if (emptyp X)
                     0
                   (1+ (cardinality (tail X))))
          :exec  (length (the list X))))
@@ -52,7 +52,7 @@ always returns 0 for ill-formed sets.</p>"
   (verify-guards cardinality
     ;; Normally we would never want to enable the primitives theory.  However,
     ;; here we need to show that cardinality is equal to length, and for this
-    ;; we need to be able to reason about tail and empty.  Think of this as a
+    ;; we need to be able to reason about tail and emptyp.  Think of this as a
     ;; tiny extension of "fast.lisp"
     :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
 
@@ -61,9 +61,9 @@ always returns 0 for ill-formed sets.</p>"
          (<= 0 (cardinality X)))
     :rule-classes :type-prescription)
 
-  (defthm cardinality-zero-empty
+  (defthm cardinality-zero-emptyp
     (equal (equal (cardinality x) 0)
-           (empty x)))
+           (emptyp x)))
 
   (defthm cardinality-sfix-cancel
     (equal (cardinality (sfix X)) (cardinality X)))
@@ -71,7 +71,7 @@ always returns 0 for ill-formed sets.</p>"
   (encapsulate ()
 
     (local (defthm cardinality-insert-empty
-             (implies (empty X)
+             (implies (emptyp X)
                       (equal (cardinality (insert a X)) 1))
              :hints(("Goal" :use (:instance cardinality (x (insert a nil)))))))
 
@@ -95,7 +95,7 @@ always returns 0 for ill-formed sets.</p>"
 
   (local (defun double-delete-induction (X Y)
            (declare (xargs :guard (and (setp X) (setp Y))))
-           (if (or (empty X) (empty Y))
+           (if (or (emptyp X) (emptyp Y))
                (list X Y)
              (double-delete-induction (delete (head X) X)
                                       (delete (head X) Y)))))
@@ -109,7 +109,7 @@ always returns 0 for ill-formed sets.</p>"
   (encapsulate
     ()
     (local (defthm subset-cardinality-lemma
-             (implies (and (not (or (empty x) (empty y)))
+             (implies (and (not (or (emptyp x) (emptyp y)))
                            (implies (subset (delete (head x) x)
                                             (delete (head x) y))
                                     (<= (cardinality (delete (head x) x))
@@ -156,5 +156,3 @@ always returns 0 for ill-formed sets.</p>"
             :use ((:instance equal-cardinality-subset-is-equality
                              (X (sfix x))
                              (Y (sfix y))))))))
-
-

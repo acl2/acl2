@@ -53,7 +53,7 @@
        (key (svar-change-override key nil))
        ((unless (and (svar-equiv-nonoverride test.name key)
                      (svar-override-p test.name :test)))
-        nil) 
+        nil)
        ((unless (svex-case then :var))
         ;; bad
         key)
@@ -88,7 +88,7 @@
        ((unless (and (svarlist-member-nonoverride test.name keys)
                      (svar-override-p test.name :test)))
         nil)
-       (key (svar-change-override test.name nil)) 
+       (key (svar-change-override test.name nil))
        ((unless (svex-case then :var))
         ;; bad
         key)
@@ -151,7 +151,7 @@
                               equal-of-svar-change-override
                               svar-equiv-nonoverride)
                              (<fn>))))))
- 
+
 
 
 (defines svex-overridekey-syntax-check
@@ -207,7 +207,7 @@
       (or (svex-overridekey-syntax-check (car x) key value)
           (svexlist-overridekey-syntax-check (cdr x) key value))))
   ///
-  
+
 
   (fty::deffixequiv-mutual svex-overridekey-syntax-check)
 
@@ -300,11 +300,11 @@
   (local (in-theory (disable svex-overridekeys-syntax-check
                              svex-call-overridekeys-syntax-check
                              svexlist-overridekeys-syntax-check)))
-  
+
   (local (defthm setp-of-singleton
            (setp (list x))
            :hints(("Goal" :in-theory (enable setp)))))
-  
+
   (std::defret-mutual setp-of-<fn>
     :mutual-recursion svex-overridekeys-syntax-check
     (defret setp-of-<fn>
@@ -324,7 +324,7 @@
 
   (verify-guards svex-overridekeys-syntax-check)
 
-  
+
 
   (local (defthm svex-eval-when-var
            (implies (svex-case x :var)
@@ -343,7 +343,7 @@
                            (svex-eval (svex-lookup v x) env)))))
 
   (local (in-theory (disable svex-env-lookup-of-svex-alist-eval)))
-  
+
   (local (defthm overridekeys-transparent-p-when-bit?!-overridekeys-syntax-check
            (implies (and (svex-case x :call)
                          (equal (svex-call->fn x) 'bit?!)
@@ -383,7 +383,7 @@
                 (or (sfix a) (sfix b)))
            :hints(("Goal" :in-theory (enable union)))))
 
-    
+
   (std::defret-mutual overridekeys-transparent-p-when-<fn>
     (defret overridekeys-transparent-p-when-<fn>
       (b* (((overridekey-syntaxcheck-data data)))
@@ -403,7 +403,7 @@
       :hints ('(:expand (<call>))
               (and stable-under-simplificationp
                    '(:expand ((:free (env) (svex-eval x env)))
-                     :in-theory (enable svexlist-vars 
+                     :in-theory (enable svexlist-vars
                                         svex-overridekey-transparent-p-when-args-transparent
                                         ;; svex-override-triple-check
                                         ))))
@@ -437,14 +437,14 @@
   (local (defthm in-of-singleton
            (iff (in b (list a))
                 (equal a b))
-           :hints(("Goal" :in-theory (enable in empty head tail)))))
+           :hints(("Goal" :in-theory (enable in emptyp head tail)))))
 
   (local (defthm insert-nil
            (equal (insert a nil) (list a))
            :hints(("Goal" :in-theory (enable set::pick-a-point-subset-strategy
                                              double-containment)))))
-           
-  
+
+
   (local (defthm set-lemma4
            (equal (insert a (list a)) (list a))
            :hints(("Goal" :in-theory (enable set::pick-a-point-subset-strategy
@@ -527,7 +527,7 @@
                             (svexlist-overridekey-syntax-check (cddr args)  key value)
                             (svexlist-overridekey-syntax-check (cdddr args) key value))))))
 
-  
+
   (std::defret-mutual <fn>-in-terms-of-overridekey-syntax-check
     (defretd <fn>-in-terms-of-overridekey-syntax-check
       (equal <call>
@@ -632,7 +632,7 @@
                                                                  keys values))))))))
 
     (fty::deffixequiv-mutual svex-overridekeys-syntax-check)
-    
+
     (defthm svexlist-override-syntax-check-subsetp-of-keys
       (subsetp-equal
        (svexlist-overridekeys-syntax-check x data)
@@ -642,7 +642,3 @@
                              (values (overridekey-syntaxcheck-data->values data)))))))
 
     (memoize 'svex-call-overridekeys-syntax-check))
-
-
-
-

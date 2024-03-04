@@ -168,7 +168,7 @@
   :short "Check if an obag is empty."
   :long
   (xdoc::topstring-p
-   "This is similar to @(tsee set::empty) for osets.")
+   "This is similar to @(tsee set::emptyp) for osets.")
   (null (bfix bag))
   ///
 

@@ -143,7 +143,7 @@
 ;; (defthm map-subset-helper-2
 ;;   (implies (not (in (head X) Y))
 ;;            (equal (subset X Y)
-;;                   (empty X))))
+;;                   (emptyp X))))
 
 
 ; We will map an arbitrary transformation function across the set.  We don't
@@ -173,7 +173,7 @@
   (defun map (X)
     (declare (xargs :guard (setp X)))
     (declare (xargs :verify-guards nil))
-    (mbe :logic (if (empty X)
+    (mbe :logic (if (emptyp X)
 		    nil
 		  (insert (transform (head X))
 			  (map (tail X))))
@@ -461,5 +461,3 @@
 		      inversep)))
 
 (in-theory (disable generic-map-theory))
-
-

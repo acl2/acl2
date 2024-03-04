@@ -162,7 +162,7 @@
   ((define lift-thm-def-hyps-aux ((crels constrel-setp) (tab alistp))
      :returns (more-hyps true-listp)
      :parents nil
-     (b* (((when (set::empty crels)) nil)
+     (b* (((when (set::emptyp crels)) nil)
           (crel (set::head crels))
           (name (constrel->name crel))
           (info (cdr (assoc-equal name tab)))
@@ -188,7 +188,7 @@
      This instantiation is used in a lemma instance (see @(tsee lift-thm)).
      The instantiation replaces each variable
      with its lookup in the witness term of the @(tsee defun-sk)."))
-  (cond ((set::empty free) nil)
+  (cond ((set::emptyp free) nil)
         (t (b* ((var (set::head free)))
              (cons `(,(name-to-symbol var state) (cdr (omap::in ,var ,witness)))
                    (lift-thm-free-inst (set::tail free) witness state)))))
@@ -324,7 +324,7 @@
        (thm-name (acl2::packn-pos (list 'constraint-satp-of- pred-name)
                                   pred-name))
        (thm-event
-        (if (set::empty (definition-free-vars def))
+        (if (set::emptyp (definition-free-vars def))
             `(defruledl ,thm-name
                (implies (and (assignmentp asg)
                              (assignment-wfp asg p)
@@ -334,7 +334,7 @@
                         (b* ((args (constraint-relation->args constr))
                              (def (lookup-definition ,def-name defs)))
                           (implies (and def
-                                        (set::empty (definition-free-vars def)))
+                                        (set::emptyp (definition-free-vars def)))
                                    (equal (constraint-satp constr defs asg p)
                                           (constraint-relation-nofreevars-satp
                                            ,def-name args defs asg p)))))
@@ -378,7 +378,7 @@
      so that we can apply the lifting theorems for those relations.
      So here we go through all the relations called by @('def')
      and we generate one specialized theorem for each."))
-  (b* (((when (set::empty rels)) (mv nil nil))
+  (b* (((when (set::emptyp rels)) (mv nil nil))
        (rel (set::head rels))
        (pred-name (name-to-symbol rel state))
        (thm-name (acl2::packn-pos
@@ -563,7 +563,7 @@
                          fty::consp-when-reserrp
                          acl2::natp-compound-recognizer
                          (:e nat-listp)
-                         (:e set::empty)
+                         (:e set::emptyp)
                          car-cons
                          cdr-cons
                          omap::in-of-update
@@ -647,7 +647,7 @@
                         fty::consp-when-reserrp
                         acl2::natp-compound-recognizer
                         (:e nat-listp)
-                        (:e set::empty)
+                        (:e set::emptyp)
                         car-cons
                         cdr-cons
                         omap::in-of-update*

@@ -334,8 +334,7 @@
                            (set::x x)
                            (set::y y)))
           :do-not-induct t
-          :in-theory (e/d (empty)
+          :in-theory (e/d (emptyp)
                           (set::subset-difference
                            set::pick-a-point-subset-strategy))
           )))
-

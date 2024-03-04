@@ -235,7 +235,7 @@
 ;move to sets
 ;expensive?
 (defthm head-when-empty
-  (implies (set::empty ads)
+  (implies (set::emptyp ads)
            (equal (set::head ads)
                   nil))
   :hints (("Goal" :in-theory (enable set::head set::sfix))))

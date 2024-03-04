@@ -676,9 +676,9 @@ block size.</p>"
     :hints(("Goal" :use ((:instance member-equal-is-in
                                     (x (sbitset-pair-members x)))))))
 
-  (defthm empty-of-sbitset-pair-members
+  (defthm emptyp-of-sbitset-pair-members
     (implies (force (sbitset-pairp x))
-             (not (set::empty (sbitset-pair-members x))))
+             (not (set::emptyp (sbitset-pair-members x))))
     :hints(("Goal" :in-theory (e/d* ((:ruleset set::primitive-rules))
                                     (sbitset-pair-members))))))
 
@@ -969,8 +969,8 @@ is not performed for other block sizes.</p>"
 
   (local (defthm union-under-iff
            (iff (set::union x y)
-                (or (not (set::empty x))
-                    (not (set::empty y))))
+                (or (not (set::emptyp x))
+                    (not (set::emptyp y))))
            :hints(("Goal" :in-theory (enable* (:ruleset set::primitive-rules))))))
 
   (defthm sbitset-members-of-cons
@@ -1793,7 +1793,7 @@ only member is @('a')."
 
 (local (defthm c2
            (implies (sbitset-pairp x)
-                    (not (empty (sbitset-pair-members x))))))
+                    (not (emptyp (sbitset-pair-members x))))))
 
 (local (defthm equal-of-sbitset-pairs
            (implies (and (sbitset-pairp x)
