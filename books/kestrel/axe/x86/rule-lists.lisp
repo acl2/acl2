@@ -251,8 +251,14 @@
     set-flag-of-write
     get-flag-of-write
     read-of-write-same
+    ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     read-of-write-disjoint
     read-of-write-disjoint2
+    ;; todo: more variants of these:
+    ;; todo: uncomment:
+    ;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
+    ;read-of-write-of-write-of-set-flag
+    ;read-of-write-of-write-write-of-of-set-flag
     program-at-of-write
     ;; todo: uncomment these but first organize rules:
     ;;write-of-write-same
