@@ -21,6 +21,8 @@
 (include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system)
 (include-book "projects/x86isa/machine/state" :dir :system) ; for xr
 (include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvif" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
@@ -38,7 +40,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 
-(in-theory (disable acl2::loghead))
+(in-theory (disable loghead))
 
 (local (in-theory (enable ACL2::LOGTAIL-OF-BVCHOP)))
 
@@ -87,45 +89,117 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable mxcsrbits-fix)))
+
+(defthm unsigned-byte-p-of-mxcsrbits->ie (implies (posp size) (unsigned-byte-p size (mxcsrbits->ie m))))
+(defthm unsigned-byte-p-of-mxcsrbits->de (implies (posp size) (unsigned-byte-p size (mxcsrbits->de m))))
+(defthm unsigned-byte-p-of-mxcsrbits->ze (implies (posp size) (unsigned-byte-p size (mxcsrbits->ze m))))
+(defthm unsigned-byte-p-of-mxcsrbits->oe (implies (posp size) (unsigned-byte-p size (mxcsrbits->oe m))))
+(defthm unsigned-byte-p-of-mxcsrbits->ue (implies (posp size) (unsigned-byte-p size (mxcsrbits->ue m))))
+(defthm unsigned-byte-p-of-mxcsrbits->pe (implies (posp size) (unsigned-byte-p size (mxcsrbits->pe m))))
+(defthm unsigned-byte-p-of-mxcsrbits->daz (implies (posp size) (unsigned-byte-p size (mxcsrbits->daz m))))
+(defthm unsigned-byte-p-of-mxcsrbits->im (implies (posp size) (unsigned-byte-p size (mxcsrbits->im m))))
+(defthm unsigned-byte-p-of-mxcsrbits->dm (implies (posp size) (unsigned-byte-p size (mxcsrbits->dm m))))
+(defthm unsigned-byte-p-of-mxcsrbits->zm (implies (posp size) (unsigned-byte-p size (mxcsrbits->zm m))))
+(defthm unsigned-byte-p-of-mxcsrbits->om (implies (posp size) (unsigned-byte-p size (mxcsrbits->om m))))
+(defthm unsigned-byte-p-of-mxcsrbits->um (implies (posp size) (unsigned-byte-p size (mxcsrbits->um m))))
+(defthm unsigned-byte-p-of-mxcsrbits->pm (implies (posp size) (unsigned-byte-p size (mxcsrbits->pm m))))
+(defthm unsigned-byte-p-of-mxcsrbits->rc (implies (and (<= 2 n) (integerp n)) (unsigned-byte-p n (mxcsrbits->rc y))) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+(defthm unsigned-byte-p-of-mxcsrbits->fz (implies (posp size) (unsigned-byte-p size (mxcsrbits->fz m))))
+(defthm unsigned-byte-p-of-mxcsrbits->reserved (implies (and (<= 16 size) (integerp size)) (unsigned-byte-p size (mxcsrbits->reserved m))) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
+
 ;todo: more
-(defthm mxcsrbits->im-of-loghead-32
-  (equal (mxcsrbits->im (loghead 32 mxcsr))
-         (mxcsrbits->im mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->im mxcsrbits-fix))))
+(defthm mxcsrbits->ie-of-loghead-32 (equal (mxcsrbits->ie (loghead 32 mxcsr)) (mxcsrbits->ie mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
+(defthm mxcsrbits->de-of-loghead-32 (equal (mxcsrbits->de (loghead 32 mxcsr)) (mxcsrbits->de mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
+(defthm mxcsrbits->ze-of-loghead-32 (equal (mxcsrbits->ze (loghead 32 mxcsr)) (mxcsrbits->ze mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
+(defthm mxcsrbits->oe-of-loghead-32 (equal (mxcsrbits->oe (loghead 32 mxcsr)) (mxcsrbits->oe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
+(defthm mxcsrbits->ue-of-loghead-32 (equal (mxcsrbits->ue (loghead 32 mxcsr)) (mxcsrbits->ue mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
+(defthm mxcsrbits->pe-of-loghead-32 (equal (mxcsrbits->pe (loghead 32 mxcsr)) (mxcsrbits->pe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
+(defthm mxcsrbits->daz-of-loghead-32 (equal (mxcsrbits->daz (loghead 32 mxcsr)) (mxcsrbits->daz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+(defthm mxcsrbits->im-of-loghead-32 (equal (mxcsrbits->im (loghead 32 mxcsr)) (mxcsrbits->im mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
+(defthm mxcsrbits->dm-of-loghead-32 (equal (mxcsrbits->dm (loghead 32 mxcsr)) (mxcsrbits->dm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
+(defthm mxcsrbits->zm-of-loghead-32 (equal (mxcsrbits->zm (loghead 32 mxcsr)) (mxcsrbits->zm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
+(defthm mxcsrbits->om-of-loghead-32 (equal (mxcsrbits->om (loghead 32 mxcsr)) (mxcsrbits->om mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
+(defthm mxcsrbits->um-of-loghead-32 (equal (mxcsrbits->um (loghead 32 mxcsr)) (mxcsrbits->um mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
+(defthm mxcsrbits->pm-of-loghead-32 (equal (mxcsrbits->pm (loghead 32 mxcsr)) (mxcsrbits->pm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
+(defthm mxcsrbits->rc-of-loghead-32 (equal (mxcsrbits->rc (loghead 32 mxcsr)) (mxcsrbits->rc mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+(defthm mxcsrbits->fz-of-loghead-32 (equal (mxcsrbits->fz (loghead 32 mxcsr)) (mxcsrbits->fz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->fz))))
+(defthm mxcsrbits->reserved-of-loghead-32 (equal (mxcsrbits->reserved (loghead 32 mxcsr)) (mxcsrbits->reserved mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
 
-(defthm mxcsrbits->dm-of-loghead-32
-  (equal (mxcsrbits->dm (loghead 32 mxcsr))
-         (mxcsrbits->dm mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->dm mxcsrbits-fix))))
+(defthm mxcsrbits->ie-of-bvchop-32 (equal (mxcsrbits->ie (bvchop 32 mxcsr)) (mxcsrbits->ie mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
+(defthm mxcsrbits->de-of-bvchop-32 (equal (mxcsrbits->de (bvchop 32 mxcsr)) (mxcsrbits->de mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
+(defthm mxcsrbits->ze-of-bvchop-32 (equal (mxcsrbits->ze (bvchop 32 mxcsr)) (mxcsrbits->ze mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
+(defthm mxcsrbits->oe-of-bvchop-32 (equal (mxcsrbits->oe (bvchop 32 mxcsr)) (mxcsrbits->oe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
+(defthm mxcsrbits->ue-of-bvchop-32 (equal (mxcsrbits->ue (bvchop 32 mxcsr)) (mxcsrbits->ue mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
+(defthm mxcsrbits->pe-of-bvchop-32 (equal (mxcsrbits->pe (bvchop 32 mxcsr)) (mxcsrbits->pe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
+(defthm mxcsrbits->daz-of-bvchop-32 (equal (mxcsrbits->daz (bvchop 32 mxcsr)) (mxcsrbits->daz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+(defthm mxcsrbits->im-of-bvchop-32 (equal (mxcsrbits->im (bvchop 32 mxcsr)) (mxcsrbits->im mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
+(defthm mxcsrbits->dm-of-bvchop-32 (equal (mxcsrbits->dm (bvchop 32 mxcsr)) (mxcsrbits->dm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
+(defthm mxcsrbits->zm-of-bvchop-32 (equal (mxcsrbits->zm (bvchop 32 mxcsr)) (mxcsrbits->zm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
+(defthm mxcsrbits->om-of-bvchop-32 (equal (mxcsrbits->om (bvchop 32 mxcsr)) (mxcsrbits->om mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
+(defthm mxcsrbits->um-of-bvchop-32 (equal (mxcsrbits->um (bvchop 32 mxcsr)) (mxcsrbits->um mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
+(defthm mxcsrbits->pm-of-bvchop-32 (equal (mxcsrbits->pm (bvchop 32 mxcsr)) (mxcsrbits->pm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
+(defthm mxcsrbits->rc-of-bvchop-32 (equal (mxcsrbits->rc (bvchop 32 mxcsr)) (mxcsrbits->rc mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+(defthm mxcsrbits->fz-of-bvchop-32 (equal (mxcsrbits->fz (bvchop 32 mxcsr)) (mxcsrbits->fz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->fz))))
+(defthm mxcsrbits->reserved-of-bvchop-32 (equal (mxcsrbits->reserved (bvchop 32 mxcsr)) (mxcsrbits->reserved mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
 
-(defthm mxcsrbits->daz-of-loghead-32
-  (equal (mxcsrbits->daz (loghead 32 mxcsr))
-         (mxcsrbits->daz mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->daz mxcsrbits-fix))))
+(defthm mxcsrbits->ie-of-bvif-32 (equal (mxcsrbits->ie (bvif 32 test x y)) (bvif 32 test (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->de-of-bvif-32 (equal (mxcsrbits->de (bvif 32 test x y)) (bvif 32 test (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->ze-of-bvif-32 (equal (mxcsrbits->ze (bvif 32 test x y)) (bvif 32 test (mxcsrbits->ze x) (mxcsrbits->ze y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->oe-of-bvif-32 (equal (mxcsrbits->oe (bvif 32 test x y)) (bvif 32 test (mxcsrbits->oe x) (mxcsrbits->oe y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->ue-of-bvif-32 (equal (mxcsrbits->ue (bvif 32 test x y)) (bvif 32 test (mxcsrbits->ue x) (mxcsrbits->ue y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->pe-of-bvif-32 (equal (mxcsrbits->pe (bvif 32 test x y)) (bvif 32 test (mxcsrbits->pe x) (mxcsrbits->pe y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->daz-of-bvif-32 (equal (mxcsrbits->daz (bvif 32 test x y)) (bvif 32 test (mxcsrbits->daz x) (mxcsrbits->daz y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->im-of-bvif-32 (equal (mxcsrbits->im (bvif 32 test x y)) (bvif 32 test (mxcsrbits->im x) (mxcsrbits->im y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->dm-of-bvif-32 (equal (mxcsrbits->dm (bvif 32 test x y)) (bvif 32 test (mxcsrbits->dm x) (mxcsrbits->dm y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->zm-of-bvif-32 (equal (mxcsrbits->zm (bvif 32 test x y)) (bvif 32 test (mxcsrbits->zm x) (mxcsrbits->zm y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->om-of-bvif-32 (equal (mxcsrbits->om (bvif 32 test x y)) (bvif 32 test (mxcsrbits->om x) (mxcsrbits->om y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->um-of-bvif-32 (equal (mxcsrbits->um (bvif 32 test x y)) (bvif 32 test (mxcsrbits->um x) (mxcsrbits->um y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->pm-of-bvif-32 (equal (mxcsrbits->pm (bvif 32 test x y)) (bvif 32 test (mxcsrbits->pm x) (mxcsrbits->pm y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->rc-of-bvif-32 (equal (mxcsrbits->rc (bvif 32 test x y)) (bvif 32 test (mxcsrbits->rc x) (mxcsrbits->rc y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->fz-of-bvif-32 (equal (mxcsrbits->fz (bvif 32 test x y)) (bvif 32 test (mxcsrbits->fz x) (mxcsrbits->fz y))) :hints (("Goal" :in-theory (enable bvif))))
+(defthm mxcsrbits->reserved-of-bvif-32 (equal (mxcsrbits->reserved (bvif 32 test x y)) (bvif 32 test (mxcsrbits->reserved x) (mxcsrbits->reserved y))) :hints (("Goal" :in-theory (enable bvif mxcsrbits->reserved))))
+
+(encapsulate ()
+  (local (in-theory (e/d (mxcsrbits-fix acl2::b-ior) (acl2::loghead-becomes-bvchop acl2::logbitp-iff-getbit))))
+  (defthm mxcsrbits->ie-of-logior (equal (mxcsrbits->ie (logior x y)) (logior (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
+  (defthm mxcsrbits->de-of-logior (equal (mxcsrbits->de (logior x y)) (logior (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
+  (defthm mxcsrbits->ze-of-logior (equal (mxcsrbits->ze (logior x y)) (logior (mxcsrbits->ze x) (mxcsrbits->ze y))) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
+  (defthm mxcsrbits->oe-of-logior (equal (mxcsrbits->oe (logior x y)) (logior (mxcsrbits->oe x) (mxcsrbits->oe y))) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
+  (defthm mxcsrbits->ue-of-logior (equal (mxcsrbits->ue (logior x y)) (logior (mxcsrbits->ue x) (mxcsrbits->ue y))) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
+  (defthm mxcsrbits->pe-of-logior (equal (mxcsrbits->pe (logior x y)) (logior (mxcsrbits->pe x) (mxcsrbits->pe y))) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
+  (defthm mxcsrbits->daz-of-logior (equal (mxcsrbits->daz (logior x y)) (logior (mxcsrbits->daz x) (mxcsrbits->daz y))) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+  (defthm mxcsrbits->im-of-logior (equal (mxcsrbits->im (logior x y)) (logior (mxcsrbits->im x) (mxcsrbits->im y))) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
+  (defthm mxcsrbits->dm-of-logior (equal (mxcsrbits->dm (logior x y)) (logior (mxcsrbits->dm x) (mxcsrbits->dm y))) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
+  (defthm mxcsrbits->zm-of-logior (equal (mxcsrbits->zm (logior x y)) (logior (mxcsrbits->zm x) (mxcsrbits->zm y))) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
+  (defthm mxcsrbits->om-of-logior (equal (mxcsrbits->om (logior x y)) (logior (mxcsrbits->om x) (mxcsrbits->om y))) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
+  (defthm mxcsrbits->um-of-logior (equal (mxcsrbits->um (logior x y)) (logior (mxcsrbits->um x) (mxcsrbits->um y))) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
+  (defthm mxcsrbits->pm-of-logior (equal (mxcsrbits->pm (logior x y)) (logior (mxcsrbits->pm x) (mxcsrbits->pm y))) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
+  (defthm mxcsrbits->rc-of-logior (equal (mxcsrbits->rc (logior x y)) (logior (mxcsrbits->rc x) (mxcsrbits->rc y))) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+  (defthm mxcsrbits->fz-of-logior (equal (mxcsrbits->fz (logior x y)) (logior (mxcsrbits->fz x) (mxcsrbits->fz y))) :hints (("Goal" :in-theory (enable mxcsrbits->fz))))
+  (defthm mxcsrbits->reserved-of-logior (equal (mxcsrbits->reserved (logior x y)) (logior (mxcsrbits->reserved x) (mxcsrbits->reserved y))) :hints (("Goal" :in-theory (enable bvif mxcsrbits->reserved))))
+  )
+
+(defthm mxcsrbits->ie-of-bvor-32 (equal (mxcsrbits->ie (bvor 32 x y)) (bvor 32 (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->de-of-bvor-32 (equal (mxcsrbits->de (bvor 32 x y)) (bvor 32 (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->ze-of-bvor-32 (equal (mxcsrbits->ze (bvor 32 x y)) (bvor 32 (mxcsrbits->ze x) (mxcsrbits->ze y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->oe-of-bvor-32 (equal (mxcsrbits->oe (bvor 32 x y)) (bvor 32 (mxcsrbits->oe x) (mxcsrbits->oe y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->ue-of-bvor-32 (equal (mxcsrbits->ue (bvor 32 x y)) (bvor 32 (mxcsrbits->ue x) (mxcsrbits->ue y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->pe-of-bvor-32 (equal (mxcsrbits->pe (bvor 32 x y)) (bvor 32 (mxcsrbits->pe x) (mxcsrbits->pe y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->daz-of-bvor-32 (equal (mxcsrbits->daz (bvor 32 x y)) (bvor 32 (mxcsrbits->daz x) (mxcsrbits->daz y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->im-of-bvor-32 (equal (mxcsrbits->im (bvor 32 x y)) (bvor 32 (mxcsrbits->im x) (mxcsrbits->im y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->dm-of-bvor-32 (equal (mxcsrbits->dm (bvor 32 x y)) (bvor 32 (mxcsrbits->dm x) (mxcsrbits->dm y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->zm-of-bvor-32 (equal (mxcsrbits->zm (bvor 32 x y)) (bvor 32 (mxcsrbits->zm x) (mxcsrbits->zm y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->om-of-bvor-32 (equal (mxcsrbits->om (bvor 32 x y)) (bvor 32 (mxcsrbits->om x) (mxcsrbits->om y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->um-of-bvor-32 (equal (mxcsrbits->um (bvor 32 x y)) (bvor 32 (mxcsrbits->um x) (mxcsrbits->um y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->pm-of-bvor-32 (equal (mxcsrbits->pm (bvor 32 x y)) (bvor 32 (mxcsrbits->pm x) (mxcsrbits->pm y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->rc-of-bvor-32 (equal (mxcsrbits->rc (bvor 32 x y)) (bvor 32 (mxcsrbits->rc x) (mxcsrbits->rc y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->fz-of-bvor-32 (equal (mxcsrbits->fz (bvor 32 x y)) (bvor 32 (mxcsrbits->fz x) (mxcsrbits->fz y))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->reserved-of-bvor-32 (equal (mxcsrbits->reserved (bvor 32 x y)) (bvor 32 (mxcsrbits->reserved x) (mxcsrbits->reserved y))) :hints (("Goal" :in-theory (enable bvif bvor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm mxcsrbits->daz-of-bvchop-32
-  (equal (mxcsrbits->daz (bvchop 32 mxcsr))
-         (mxcsrbits->daz mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->daz mxcsrbits-fix))))
-
-(defthm mxcsrbits->dm-of-bvchop-32
-  (equal (mxcsrbits->dm (bvchop 32 mxcsr))
-         (mxcsrbits->dm mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->dm mxcsrbits-fix))))
-
-(defthm mxcsrbits->im-of-bvchop-32
-  (equal (mxcsrbits->im (bvchop 32 mxcsr))
-         (mxcsrbits->im mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->im mxcsrbits-fix))))
-
-(defthm mxcsrbits->ie-of-bvchop-32
-  (equal (mxcsrbits->ie (bvchop 32 mxcsr))
-         (mxcsrbits->ie mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->ie mxcsrbits-fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; do we still need these?
 
 (defthm mxcsrbits->daz-of-ifix
   (equal (mxcsrbits->daz (ifix mxcsr))
