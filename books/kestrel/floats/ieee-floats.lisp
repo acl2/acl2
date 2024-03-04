@@ -736,6 +736,13 @@
   :hints (("Goal" :in-theory (enable representable-positive-normalp smallest-positive-normal decode-normal-number bias emax emin
                                      <=-of-expt-of-2-when-<=-of-log2))))
 
+(defthm smallest-positive-normal-correct-forward
+  (implies (and (representable-positive-normalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= (smallest-positive-normal k p) rat))
+  :rule-classes :forward-chaining)
+
 (defthm <-of-smallest-positive-normal-when-representable-positive-subnormalp
   (implies (and (representable-positive-subnormalp k p rat)
                 (rationalp rat)
@@ -1166,6 +1173,13 @@
                            (decode-subnormal-number-of-encode-subnormal-number
                             bitp
                             unsigned-byte-p)))))
+
+(defthm largest-subnormal-correct-forward
+  (implies (and (representable-subnormalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= rat (largest-subnormal k p)))
+  :rule-classes :forward-chaining)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
