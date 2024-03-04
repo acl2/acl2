@@ -164,28 +164,28 @@
        via their macro names."))
 
     (xdoc::desc
-     "@('<prefix>-nonleaf-when-<rulename>')"
+     "@('<prefix>-<rulename>-nonleaf')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that a tree that matches the rule name
        is a non-leaf tree."))
 
     (xdoc::desc
-     "@('<prefix>-rulename-when-<rulename>')"
+     "@('<prefix>-<rulename>-rulename')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that a tree that matches the rule name
        has exactly that rule name."))
 
     (xdoc::desc
-     "@('<prefix>-branches-match-alt-when-<rulename>')"
+     "@('<prefix>-<rulename>-branches-match-alt')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that if a tree matches the rule name
        then its branches match the alternation that defines the rule name."))
 
     (xdoc::desc
-     "@('<prefix>-concs-when-<rulename>')"
+     "@('<prefix>-<rulename>-concs')"
      (xdoc::p
       "For each rule name defined in the grammar,
        a theorem saying that
@@ -197,7 +197,7 @@
        unless the alternation consists of just one concatenation."))
 
     (xdoc::desc
-     "@('<prefix>-conc-equivs-when-<rulename>')"
+     "@('<prefix>-<rulename>-conc-equivs')"
      (xdoc::p
       "For each rule name defined in the grammar
        by an alternation of two or more concatenations,
@@ -233,7 +233,7 @@
        The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
-     "@('<prefix>-match-conc<i>-<rulename>')"
+     "@('<prefix>-<rulename>-conc<i>-match')"
      (xdoc::p
       "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (starting from 1)
@@ -247,7 +247,7 @@
        when the concatenation is a singleton."))
 
     (xdoc::desc
-     "@('<prefix>-match-conc<i>-rep<j>-<rulename>')"
+     "@('<prefix>-<rulename>-conc<i>-rep<j>-match')"
      (xdoc::p
       "For each rule name defined in the grammar,
        for each concatenation @('<i>') (starting from 1)
