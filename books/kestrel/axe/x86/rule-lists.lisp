@@ -582,6 +582,7 @@
     x86isa::evex-byte3->vl/rc$inline-constant-opener
     x86isa::evex-byte3->z$inline-constant-opener
 
+    x86isa::rex-byte-from-vex-prefixes-constant-opener
 
 ;    x86isa::num-prefixes-fix$inline
 
