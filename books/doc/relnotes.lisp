@@ -329,6 +329,11 @@
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
+    "The library has been moved
+     from @('[books]/kestrel/crypto/pfcs')
+     to @('[books]/projects/pfcs').")
+
+   (xdoc::p
     "A concrete syntax for PFCSes, in the form of an ABNF grammar,
      has been defined.")
 
