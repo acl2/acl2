@@ -225,7 +225,7 @@
 (def-constant-opener set::delete)
 (def-constant-opener set::tail)
 (def-constant-opener set::head)
-(def-constant-opener set::empty)
+(def-constant-opener set::emptyp)
 (def-constant-opener set::sfix)
 (def-constant-opener set::setp)
 (def-constant-opener FAST-<<)

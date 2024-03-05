@@ -51,7 +51,7 @@
 ;;  (set::use-osets-reasoning)
 
 ;; What does this strategy do?  We think of the set predicates subset,
-;; intersectp, empty, and equal as involving quantifiers.  For example,
+;; intersectp, emptyp, and equal as involving quantifiers.  For example,
 ;; (subset x y) really means (forall a (implies (in a x) (in a y))).
 
 ;; We do two things with this quantifier-based interpretation of each
@@ -77,7 +77,7 @@
 ;;  (intersectp x y)         (and (in a x) (in a y))
 ;;  (not (equal x y))        (implies (and (setp x) (setp y))
 ;;                                    (xor (in a x) (in a y)))
-;;  (not (empty x))          (not (in a x)).
+;;  (not (emptyp x))         (not (in a x)).
 
 ;; For a positive occurrence -- think of a (subset a b) hypothesis -- we may
 ;; instantiate the implicit quantified formula one or more times, depending
@@ -105,7 +105,7 @@
 ;; (subset x y)               (implies (in a x) (in a y))
 ;; (not (intersectp x y))     (not (and (in a x) (in a y)))
 ;; (equal x y)                (iff (in a x) (in a y))
-;; (empty x)                  (not (in a x))
+;; (emptyp x)                 (not (in a x))
 
 ;; After we do these replacements, we're done.  What does this get us?
 ;; Basically, we've reduced all our implicit quantifiers to a bunch of IN
@@ -171,7 +171,7 @@
 
 (defun nonsubset-witness (x y)
   (declare (xargs :guard (and (setp x) (setp y))))
-  (if (empty x)
+  (if (emptyp x)
       nil
     (if (in (head x) y)
         (nonsubset-witness (tail x) y)
@@ -189,7 +189,7 @@
 
 (defun intersectp-witness (x y)
   (declare (xargs :guard (and (setp x) (setp y))))
-  (if (empty x)
+  (if (emptyp x)
       nil
     (if (in (head x) y)
         (head x)
@@ -221,10 +221,10 @@
 
 (defun nonempty-witness (x)
   (declare (xargs :guard (setp x)))
-  (if (empty x) nil (head x)))
+  (if (emptyp x) nil (head x)))
 
 (defthmd nonempty-witness-correct
-  (iff (empty x)
+  (iff (emptyp x)
        (not (in (nonempty-witness x) x))))
 
 
@@ -257,7 +257,7 @@
   :generalize (((osets-unequal-witness x y) . uneqw)))
 
 (acl2::defwitness empty-witnessing
-  :predicate (not (empty x))
+  :predicate (not (emptyp x))
   :expr (in (nonempty-witness x) x)
   :hints ('(:in-theory '(nonempty-witness-correct)))
   :generalize (((nonempty-witness x) . nempw)))
@@ -285,7 +285,7 @@
   :hints ('(:in-theory nil)))
 
 (acl2::definstantiate empty-instancing
-  :predicate (empty x)
+  :predicate (emptyp x)
   :vars (a)
   :expr (not (in a x))
   :hints ('(:in-theory '(never-in-empty))))
@@ -402,7 +402,7 @@
 
 (defthmd nonempty-when-in
   (implies (in a x)
-           (not (empty x))))
+           (not (emptyp x))))
 
 (defthmd in-tail-to-in-x
   (equal (in a (tail x))
@@ -418,11 +418,11 @@
 (defthmd in-of-cons
   (equal (in a (cons b y))
          (and (setp y)
-              (or (empty y)
+              (or (emptyp y)
                   (<< b (head y)))
               (or (equal a b)
                   (in a y))))
-  :hints(("Goal" :in-theory (enable setp head tail empty)
+  :hints(("Goal" :in-theory (enable setp head tail emptyp)
           :expand ((in a (cons b y)))
           :do-not-induct t)))
 
@@ -435,11 +435,11 @@
     insert-head-tail
     repeated-insert
     insert-sfix-cancel
-    head-when-empty
-    insert-when-empty
+    head-when-emptyp
+    insert-when-emptyp
     head-of-insert-a-nil
     tail-of-insert-a-nil
-    sfix-when-empty
+    sfix-when-emptyp
     subset-membership-tail
     in-tail-or-head
     insert-identity
@@ -449,13 +449,13 @@
     subset-sfix-cancel-y
     subset-in
     subset-in-2
-    empty-subset
-    empty-subset-2
+    emptyp-subset
+    emptyp-subset-2
     subset-reflexive
     subset-insert
     subset-tail
     delete-delete
-    delete-preserves-empty
+    delete-preserves-emptyp
     delete-sfix-cancel
     delete-nonmember-cancel
     repeated-delete
@@ -470,9 +470,9 @@
     union-delete-y
     union-sfix-cancel-x
     union-sfix-cancel-y
-    union-empty-x
-    union-empty-y
-    union-empty
+    union-emptyp-x
+    union-emptyp-y
+    union-emptyp
     union-subset-x
     union-subset-y
     union-self
@@ -485,8 +485,8 @@
     intersect-delete-y
     intersect-sfix-cancel-x
     intersect-sfix-cancel-y
-    intersect-empty-x
-    intersect-empty-y
+    intersect-emptyp-x
+    intersect-emptyp-y
     intersect-subset-x
     intersect-subset-y
     intersect-self
@@ -497,8 +497,8 @@
     intersect-outer-cancel
     difference-sfix-x
     difference-sfix-y
-    difference-empty-x
-    difference-empty-y
+    difference-emptyp-x
+    difference-emptyp-y
     difference-subset-x
     subset-difference
     difference-over-union
@@ -513,7 +513,7 @@
     in-tail))
 
 (acl2::def-ruleset! osets-defs
-  '(setp in empty subset
+  '(setp in emptyp subset
          insert delete intersect union difference
          head tail))
 
@@ -585,15 +585,15 @@
 
    ;; lemmas from sets.lisp
    (defthmd insert-never-empty-lemma
-     (not (empty (insert a X))))
+     (not (emptyp (insert a X))))
 
    (defthmd insert-head-lemma
-     (implies (not (empty X))
+     (implies (not (emptyp X))
               (equal (insert (head X) X)
                      X)))
 
    (defthmd insert-head-tail-lemma
-     (implies (not (empty X))
+     (implies (not (emptyp X))
               (equal (insert (head X) (tail X))
                      X)))
 
@@ -607,14 +607,14 @@
 
    ;; this one doesn't really fit with these -- it's more of an
    ;; implementation detail than a property of sets
-   ;;(defthmd head-when-empty-lemma
-   ;;  (implies (empty X)
+   ;;(defthmd head-when-emptyp-lemma
+   ;;  (implies (emptyp X)
    ;;           (equal (head X)
    ;;                  nil)))
 
-   (defthmd insert-when-empty-lemma
+   (defthmd insert-when-emptyp-lemma
      (implies (and (syntaxp (not (equal X ''nil)))
-                   (empty X))
+                   (emptyp X))
               (equal (insert a X)
                      (insert a nil))))
 
@@ -630,8 +630,8 @@
    ;;         nil))
 
    ;; ;;same thing here
-   ;;(defthmd sfix-when-empty-lemma
-   ;;  (implies (empty X)
+   ;;(defthmd sfix-when-emptyp-lemma
+   ;;  (implies (emptyp X)
    ;;           (equal (sfix X)
    ;;                  nil)))
 
@@ -695,14 +695,14 @@
                         (subset X Y))
                    (not (in a X)))))
 
-   (defthmd empty-subset-lemma
-     (implies (empty X)
+   (defthmd emptyp-subset-lemma
+     (implies (emptyp X)
               (subset X Y)))
 
-   (defthmd empty-subset-2-lemma
-     (implies (empty Y)
+   (defthmd emptyp-subset-2-lemma
+     (implies (emptyp Y)
               (iff (subset X Y)
-                   (empty X))))
+                   (emptyp X))))
 
    (defthmd subset-reflexive-lemma
      (subset X X))
@@ -721,9 +721,9 @@
             (delete b (delete a X)))
      :rule-classes ((:rewrite :loop-stopper ((a b)))))
 
-   (defthmd delete-preserves-empty-lemma
-     (implies (empty X)
-              (empty (delete a X))))
+   (defthmd delete-preserves-emptyp-lemma
+     (implies (emptyp X)
+              (emptyp (delete a X))))
 
    (defthmd delete-in-lemma
      (equal (in a (delete b X))
@@ -788,17 +788,17 @@
    (defthmd union-sfix-cancel-Y-lemma
      (equal (union X (sfix Y)) (union X Y)))
 
-   (defthmd union-empty-X-lemma
-     (implies (empty X)
+   (defthmd union-emptyp-X-lemma
+     (implies (emptyp X)
               (equal (union X Y) (sfix Y))))
 
-   (defthmd union-empty-Y-lemma
-     (implies (empty Y)
+   (defthmd union-emptyp-Y-lemma
+     (implies (emptyp Y)
               (equal (union X Y) (sfix X))))
 
-   (defthmd union-empty-lemma
-     (iff (empty (union X Y))
-          (and (empty X) (empty Y))))
+   (defthmd union-emptyp-lemma
+     (iff (emptyp (union X Y))
+          (and (emptyp X) (emptyp Y))))
 
    (defthmd union-in-lemma
      (iff (in a (union X Y))
@@ -849,11 +849,11 @@
    (defthmd intersect-sfix-cancel-Y-lemma
      (equal (intersect X (sfix Y)) (intersect X Y)))
 
-   (defthmd intersect-empty-X-lemma
-     (implies (empty X) (empty (intersect X Y))))
+   (defthmd intersect-emptyp-X-lemma
+     (implies (emptyp X) (emptyp (intersect X Y))))
 
-   (defthmd intersect-empty-Y-lemma
-     (implies (empty Y) (empty (intersect X Y))))
+   (defthmd intersect-emptyp-Y-lemma
+     (implies (emptyp Y) (emptyp (intersect X Y))))
 
    (defthmd intersect-in-lemma
      (equal (in a (intersect X Y))
@@ -895,12 +895,12 @@
    (defthmd difference-sfix-Y-lemma
      (equal (difference X (sfix Y)) (difference X Y)))
 
-   (defthmd difference-empty-X-lemma
-     (implies (empty X)
+   (defthmd difference-emptyp-X-lemma
+     (implies (emptyp X)
               (equal (difference X Y) (sfix X))))
 
-   (defthmd difference-empty-Y-lemma
-     (implies (empty Y)
+   (defthmd difference-emptyp-Y-lemma
+     (implies (emptyp Y)
               (equal (difference X Y) (sfix X))))
 
    (defthmd difference-in-lemma
@@ -912,7 +912,7 @@
      (subset (difference X Y) X))
 
    (defthmd subset-difference-lemma
-     (iff (empty (difference X Y))
+     (iff (emptyp (difference X Y))
           (subset X Y)))
 
    (defthmd difference-over-union-lemma
@@ -951,7 +951,7 @@
    (defthmd insert-induction-case-lemma
      (implies (and (not (<< a (head X)))
                    (not (equal a (head X)))
-                   (not (empty X)))
+                   (not (emptyp X)))
               (equal (insert (head X) (insert a (tail X)))
                      (insert a X))))
 
@@ -965,4 +965,3 @@
    (defthmd in-tail-lemma
      (implies (in a (tail x))
               (in a x)))))
-

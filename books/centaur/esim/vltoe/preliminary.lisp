@@ -483,10 +483,10 @@ versa.  We extend @('X') with a fatal warning if this doesn't hold.</p>"
                                  nil)))
                :hints(("Goal" :in-theory (enable (:ruleset set::primitive-rules))))))
 
-      (defthm empty-intersect-to-intersectp-equal
+      (defthm emptyp-intersect-to-intersectp-equal
         (implies (and (setp x)
                       (setp y))
-                 (equal (empty (set::intersect x y))
+                 (equal (emptyp (set::intersect x y))
                         (not (intersectp-equal x y))))
         :hints(("Goal"
                 :induct (set::intersect x y)
@@ -981,4 +981,3 @@ instances."
                     (force (vl-ealist-p eal)))
                (good-esim-occsp (mv-nth 2 ret))))
     :hints(("Goal" :in-theory (enable good-esim-occsp)))))
-

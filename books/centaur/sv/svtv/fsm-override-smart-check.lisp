@@ -97,7 +97,7 @@
                   (union (mergesort a) (mergesort b)))
            :hints(("Goal" :in-theory (enable double-containment
                                              set::pick-a-point-subset-strategy)))))
-  
+
   (local (defthm svexlist-overridekeys-syntax-check-of-set-difference
            (equal (svexlist-overridekeys-syntax-check x (overridekey-syntaxcheck-data
                                                          (set-difference-equal (svarlist-change-override keys nil)
@@ -121,26 +121,26 @@
                                (svexlist-overridekeys-syntax-check
                                 x (overridekey-syntaxcheck-data (cons a b) values)))))))))
 
-  
 
-  
+
+
 
   (local (defthmd difference-of-union-lemma
-           (and (empty (difference x (union y x)))
-                (empty (difference x (union x y))))
+           (and (emptyp (difference x (union y x)))
+                (emptyp (difference x (union x y))))
            :hints(("Goal" :in-theory (e/d (double-containment
                                            set::pick-a-point-subset-strategy)
                                           (not))))))
-  
+
   (local (defthm difference-of-union-2
            (and (equal (difference x (union y x)) nil)
                 (equal (difference x (union x y)) nil))
            :hints (("goal" :use difference-of-union-lemma
-                    :in-theory (e/d (empty)
+                    :in-theory (e/d (emptyp)
                                     (set::union-subset-y
                                      set::subset-difference))))))
-  
-  
+
+
   (defret <fn>-correct
     (fsm-overridekey-transparent-p
      x (set-difference-equal (svarlist-change-override keys nil)
@@ -165,7 +165,7 @@
   (local (defthm set-diff-nil
            (set-equiv (set-difference-equal x nil) x)
            :hints(("Goal" :in-theory (enable acl2::set-unequal-witness-rw)))))
-  
+
   (defret <fn>-correct-when-no-bad-keys
     (implies (not bad-keys)
              (fsm-overridekey-transparent-p
@@ -219,7 +219,7 @@
            (iff (svex-alist-eval x env)
                 (svex-alist-keys x))
            :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-eval)))))
-  
+
   (defret <fn>-correct
     (implies (equal (svex-alist-keys x) (svex-alist-keys y))
              (equal (equal (svex-alist-eval new-x env)
@@ -242,7 +242,7 @@
 
   (defret len-of-<fn>
     (equal (len new-y) (len new-x)))
-  
+
   (local (in-theory (enable svex-alist-fix))))
 
 (define svex-alists-equivalence-prune-top ((x svex-alist-p)
@@ -320,7 +320,7 @@
                                 (pairlis$ keys vals2))))
            :hints (("Goal" :induct (list (pairlis$ keys vals1)
                                          (pairlis$ keys vals2))))))
-  
+
   (local (defthmd svex-alist-eval-in-terms-of-svexlist-eval
            (equal (svex-alist-eval x env)
                   (pairlis$ (svex-alist-keys x)
@@ -329,15 +329,15 @@
                                              svexlist-eval
                                              svex-alist-eval
                                              svex-alist-keys)))))
-  
+
   (local (defthm equal-of-svexlist-eval-svex-alist-vals
            (implies (equal (svex-alist-keys x) (svex-alist-keys y))
                     (equal (equal (svexlist-eval (svex-alist-vals x) env)
                                   (svexlist-eval (svex-alist-vals y) env))
                            (equal (svex-alist-eval x env) (svex-alist-eval y env))))
-           :hints (("goal" 
+           :hints (("goal"
                     :in-theory (enable svex-alist-eval-in-terms-of-svexlist-eval)))))
-                  
+
   (defret <fn>-correct
     (implies (equal (svex-alist-keys x) (svex-alist-keys y))
              (equal equiv
@@ -365,7 +365,7 @@
            (if (atom x)
                x1
              (ind (cdr x) (cdr x1)))))
-  
+
   (local (defthm equal-of-append
            (implies (and (true-listp x) (true-listp x1)
                          (equal (len x) (len x1)))
@@ -391,8 +391,8 @@
 
 (defchoose fsm-override-semantic-check-badguy (env) (x keys)
   (not (fsm-override-semantic-check-on-env x keys env)))
-  
-  
+
+
 
 
 (define fsm-override-semantic-check ((x fsm-p)
@@ -421,7 +421,7 @@
                   (equal (take (len x) y1)
                          (take (len x) y2)))
            :hints(("Goal" :in-theory (enable pairlis$ take)))))
-  
+
   (defthmd fsm-override-semantic-check-in-terms-of-badguy
     (equal (fsm-override-semantic-check x keys)
            (fsm-override-semantic-check-on-env
@@ -467,8 +467,8 @@
     (cw "The following keys failed the override syntax check: ~x0~%" bad-keys)
     (fsm-override-semantic-check-on-env x bad-keys env)))
 
-       
-       
+
+
 (defchoose fsm-override-smart-check-badguy (env) (x keys)
   (not (fsm-override-smart-check-on-env x keys env)))
 
@@ -533,7 +533,7 @@
                         y))
     :hints(("Goal" :in-theory (enable acl2::set-unequal-witness-rw))))
 
-  
+
   (defret fsm-overridekey-transparent-p-when-<fn>
     (b* (((fsm x)))
       (implies ok
@@ -564,7 +564,7 @@
       (& (fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (cdr clause))))))
 
 (define nest-binary-appends (lst)
-  
+
   (if (atom lst)
       ''nil
     (if (atom (cdr lst))
@@ -577,7 +577,7 @@
            (xargs :stobjs state))
   (let ((args (fsm-overridekey-transparent-p-by-assumptions-collect-args fsm-term (mfc-clause mfc))))
     `((args . ,(nest-binary-appends args)))))
-    
+
 
 
 (defthm fsm-overridekey-transparent-p-when-subsetp
@@ -597,7 +597,7 @@
                  :use ((:instance overridekeys-envs-agree-implies
                         (overridekeys nil)
                         (v (svex-envs-similar-witness impl-env spec-env))))))))
-                        
+
 (defthm fsm-overridekey-transparent-p-of-empty-keys
   (fsm-overridekey-transparent-p fsm nil)
   :hints(("Goal" :in-theory (enable fsm-overridekey-transparent-p
@@ -669,7 +669,7 @@
             (fgl::disable-definition sv::svex-env-fix$inline)
             (fgl::disable-definition sv::svex-env-lookup)
             (memoize 'svex-mask-alist-p)
-       
+
             (:@ :default-aignet-transforms
              (defun tmp-svtv-generalize-fgl-transforms-config ()
                (declare (xargs :guard t
@@ -693,8 +693,8 @@
                :guard-hints (("goal" :in-theory '((booleanp))))
                (fgl::make-fgl-satlink-monolithic-sat-config :transform t))
              (defattach fgl::fgl-toplevel-sat-check-config tmp-svtv-generalize-monolithic-sat-with-transforms))
-       
-       
+
+
             (fgl::def-fgl-thm tmp-def-override-transparent-smart-check-fgl
               (fsm-override-smart-check-on-env <fsm> (tmp-override-transparent-keys) env)))
 
@@ -710,7 +710,7 @@
                             (syntaxp (quotep fsm-val)))
                        (equal <fsm> fsm-val))
               :hints (("goal" :in-theory '(force-execute)))))
-           
+
            (defthm tmp-def-override-transparent-smart-check
              (fsm-overridekey-transparent-p <fsm> (tmp-override-transparent-keys))
              (:@ :fgl-semantic-check
@@ -735,7 +735,7 @@
        (table def-override-transparent-table '<fsm>
               (cons (cons '<name> '<keys-val>)
                     (cdr (assoc-equal '<fsm> (table-alist 'def-override-transparent-table world))))))))
-       
+
 
 
 (defun def-override-transparent-fn (name fsm-expr keys-expr
@@ -806,8 +806,8 @@ provided, a semantic check using FGL and equivalence checking.</p>
    (defund my-keys1 () '(a b c))
 
    (def-override-transparent fsm-transparent1 :fsm (my-fsm) :keys (my-keys1))
-   
-       
+
+
    (defund my-keys2 () '(d b c))
 
    (def-override-transparent fsm-transparent2 :fsm (my-fsm) :keys (my-keys2))
@@ -816,4 +816,3 @@ provided, a semantic check using FGL and equivalence checking.</p>
    (defund my-keys3 () '(a b c d))
 
    (def-override-transparent fsm-transparent3 :fsm (my-fsm) :keys (my-keys3))))
-

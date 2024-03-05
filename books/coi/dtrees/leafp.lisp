@@ -66,7 +66,7 @@
   :hints(("Goal" :in-theory (enable set::sfix
                                     set::setp
                                     set::in
-                                    set::empty
+                                    set::emptyp
                                     set::head
                                     set::tail))))
 
@@ -321,7 +321,7 @@
   (declare (xargs :guard (and (set::setp paths)
                               (dtree::dtreep dtree))
                   :verify-guards nil))
-  (if (set::empty paths)
+  (if (set::emptyp paths)
       (set::emptyset)
     (if (leafp (set::head paths) dtree)
         (set::insert (set::head paths)

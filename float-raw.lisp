@@ -128,7 +128,7 @@
 
 ; If there is a double-float corresponding to x, return it; else return nil.
 ; Note that although we expect that *1* functions are normally not handed
-; dfs, but an exception is when ec-call is invoked from raw Lisp.
+; dfs, an exception is when ec-call is invoked from raw Lisp.
 
   (cond ((typep x 'double-float) x) ; See note above about ec-call.
         ((rationalp x)

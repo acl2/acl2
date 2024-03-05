@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,7 +186,7 @@
      or by reducing the size of the work set
      (if no rules are taken out of @('rules')),
      in which case the length of @('rules') stays the same."))
-  (b* (((when (empty workset)) (rulelist-fix accumulator))
+  (b* (((when (set::emptyp workset)) (rulelist-fix accumulator))
        (rulename (head workset))
        (workset (tail workset))
        ((mv rulename-rules other-rules) (rules-of-name rulename rules))
