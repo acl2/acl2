@@ -316,7 +316,7 @@
 ; attempts.  We fix the first of those two attempts by applying to-df
 ; in the bindings, as explained just above.  We fix the second
 ; attempt, accommodating the fact that equal accepts only ordinary
-; arguments, not :dfs, by applying from-df to each argument of equal.
+; arguments, not dfs, by applying from-df to each argument of equal.
 ; From-df is logically the identity function, but maps a :df (whose
 ; value is a representable rational) to an ordinary object (that
 ; rational).
@@ -348,7 +348,7 @@
 (thm
 ; Here we prove the preceding failure of associativity.  We can omit
 ; the from-df and to-df calls, because syntax checking for
-; :dfs is relaxed in theorems just as it is relaxed for stobjs.
+; dfs is relaxed in theorems just as it is relaxed for stobjs.
 
 ; Note that, at least initially, the ONLY things that can be proved
 ; about floating point expressions are (a) things proved by
@@ -373,7 +373,7 @@
 (trans
 ; Here we see macroexpansion of a df+ call on more than two arguments.
 ; Hopefully we won't see ugly rationals too much since unlike :trans,
-; evaluation results will generally print :dfs in #d notation, as
+; evaluation results will generally print dfs in #d notation, as
 ; shown above.
  '(df+ #d.1 #d.2 #d.3))
 
@@ -422,7 +422,7 @@
  (equal (to-df 1/2) 1/2))
 
 ; Much like stobj recognizers, dfp may be applied either to ordinary
-; objects or to :dfs, as shown in the following two examples.
+; objects or to dfs, as shown in the following two examples.
 (assert-event
 ; dfp applied to :df
  (dfp (to-df 1/3)))
@@ -898,36 +898,43 @@
   (declare (xargs :guard (rationalp x)))
   (ec-call (df- (to-df x))))
 
-; The following causes an error because when a :df is returned, a :dfs
-; argument to ec-call is required.
+; The following causes an error because :dfs-in and :dfs-out
+; arguments to ec-call are required here.
 (defun f6 (x)
   (declare (xargs :guard (rationalp x)))
   (ec-call (unary-df- (to-df x))))
 
-; The following fails because the :dfs argument should be '(t).
+; The following fails because the :dfs-out argument should be '(t).
 (defun f6 (x)
   (declare (xargs :guard (rationalp x)))
   (ec-call (unary-df- (to-df x))
-           :dfs '(nil)))
+           :dfs-out '(nil)))
 
-; The following fails because the :dfs argument must be quoted.
+; The following fails because the :dfs-out argument must be quoted.
 (defun f6 (x)
   (declare (xargs :guard (rationalp x)))
   (ec-call (unary-df- (to-df x))
-           :dfs (t)))
+           :dfs-out (t)))
 
-; The following fails because the :dfs argument specifies the wrong
+; The following fails because the :dfs-out argument specifies the wrong
 ; number of outputs.
 (defun f6 (x)
   (declare (xargs :guard (rationalp x)))
   (ec-call (unary-df- (to-df x))
-           :dfs '(t nil)))
+           :dfs-out '(t nil)))
+
+; The following fails because :dfs-in is missing.
+(defun f6 (x)
+  (declare (xargs :guard (rationalp x)))
+  (ec-call (unary-df- (to-df x))
+           :dfs-out '(t)))
 
 ; The following succeeds.
 (defun f6 (x)
   (declare (xargs :guard (rationalp x)))
   (ec-call (unary-df- (to-df x))
-           :dfs '(t)))
+           :dfs-in '(t)
+           :dfs-out '(t)))
 
 ; Try running in the top-level loop.
 
@@ -935,7 +942,7 @@
 
 ; The following is quite subtle, and should be ignored by those who do
 ; not use raw-mode.  As explained at the top of this section, the use
-; of ec-call with :dfs is intended to cause the return of actual
+; of ec-call with :dfs-out is intended to cause the return of actual
 ; double-floats in raw Lisp.  That is what we illustrate here.
 
 (set-raw-mode-on!)
@@ -946,7 +953,8 @@
 (defun f6-ideal (x)
   (declare (xargs :guard (rationalp x) :verify-guards nil))
   (ec-call (unary-df- (to-df x))
-           :dfs '(t)))
+           :dfs-in '(t)
+           :dfs-out '(t)))
 
 (f6-ideal 7/2)
 
@@ -954,7 +962,8 @@
 (defun f6-prog (x)
   (declare (xargs :guard (rationalp x) :mode :program))
   (ec-call (unary-df- (to-df x))
-           :dfs '(t)))
+           :dfs-in '(t)
+           :dfs-out '(t)))
 
 (f6-prog 7/2)
 
@@ -966,7 +975,7 @@
   (mv (f6 x) (f6-ideal x) (f6-prog x)))
 
 ; We expect each of the three functions -- f6, f6-ideal, and f6-prog
-; -- to return a :DF, because of their use of the :dfs argument of
+; -- to return a :DF, because of their use of the :dfs-out argument of
 ; ec-call.  So f7 should produce an mv of three :DF values.
 
 (f7 7/2) ; an mv of three :DF values, (#d-3.5 #d-3.5 #d-3.5)
@@ -976,7 +985,7 @@
 (defun f8 (x)
   (declare (xargs :mode :program))
   (ec-call (f7 x)
-           :dfs '(t t t)))
+           :dfs-out '(t t t)))
 
 (f8 7/2) ; as for f7: mv of three :DF values, (#d-3.5 #d-3.5 #d-3.5)
 
@@ -1004,16 +1013,16 @@
 
 (f9 7/2)
 
-; Error: Need to quote the :dfs argument.
+; Error: Need to quote the :dfs-out argument.
 (defun f8-logic (x)
   (declare (xargs :guard (rationalp x)))
   (ec-call (f7 x)
-           :dfs (t t t)))
+           :dfs-out (t t t)))
 
 (defun f8-logic (x)
   (declare (xargs :guard (rationalp x)))
   (ec-call (f7 x)
-           :dfs '(t t t)))
+           :dfs-out '(t t t)))
 
 (f8-logic 7/2)
 
@@ -1050,6 +1059,22 @@
 (f9-logic 7/2)
 
 (set-guard-checking t)
+
+; Finally, here is an example based on one that caused an error in an initial
+; implementation of dfs.
+
+(defstobj st0 fld0)
+
+(defun h1 (x y st0)
+  (declare (xargs :stobjs st0 :dfs y))
+  (let ((st0 (update-fld0 x st0)))
+    (mv 3 y st0)))
+
+(defun h2 (x y st0)
+  (declare (xargs :stobjs st0 :dfs y))
+  (ec-call (h1 x y st0) :dfs-in '(nil t nil) :dfs-out '(nil t nil)))
+
+(h2 3 (to-df 4) st0) ; should not cause an error:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; We can't prove much

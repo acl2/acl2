@@ -130,6 +130,130 @@
            (tlp pats2))
       (match-pats-codes (cons (cons :or pats6) pats2) codes)))
 
+(defthm symbol-doublet-listp-assoc-equal
+  (implies (and (symbol-doublet-listp bindings)
+                (not (consp (cdr (assoc-equal pat bindings)))))
+           (not (cdr (assoc-equal pat bindings)))))
+
+(defun match-tests-and-bindings (x pat tests bindings)
+
+; Modified from basis-a.lisp
+; We return two results.  The first is a list of tests, in reverse
+; order, that determine whether x matches the structure pat.  We
+; describe the language of pat below.  The tests are accumulated onto
+; tests, which should be nil initially.  The second result is an alist
+; containing entries of the form (sym expr), suitable for use as the
+; bindings in the let we generate if the tests are satisfied.  The
+; bindings required by pat are accumulated onto bindings and thus are
+; reverse order, although their order is actually irrelevant.
+
+; For example, the pattern
+;   ('equal ('car ('cons u v)) u)
+; matches only first order instances of (EQUAL (CAR (CONS u v)) u).
+
+; The pattern
+;   ('equal (ev (simp x) a) (ev x a))
+; matches only second order instances of (EQUAL (ev (simp x) a) (ev x a)),
+; i.e., ev, simp, x, and a are all bound in the match.
+
+; In general, the match requires that the cons structure of x be isomorphic
+; to that of pat, down to the atoms in pat.  Symbols in the pat denote
+; variables that match anything and get bound to the structure matched.
+; Occurrences of a symbol after the first match only structures equal to
+; the binding.  Non-symbolp atoms match themselves.
+
+; There are some exceptions to the general scheme described above.  A cons
+; structure starting with QUOTE matches only itself.  A cons structure of the
+; form (QUOTE~ sym), where sym is a symbol, is like (QUOTE sym) except it
+; matches any symbol with the same symbol-name as sym.  The symbols nil and t,
+; and all symbols whose symbol-name starts with #\* match only structures equal
+; to their values.  (These symbols cannot be legally bound in ACL2 anyway, so
+; this exceptional treatment does not restrict us further.)  Any symbol
+; starting with #\! matches only the value of the symbol whose name is obtained
+; by dropping the #\!.  This is a way of referring to already bound variables
+; in the pattern. Finally, the symbol & matches anything and causes no binding.
+
+  (declare (xargs :guard (and (symbol-doublet-listp bindings)
+                              (tlp tests)
+                              (tlp bindings))
+                  :verify-guards nil))
+  (b* ((type? (match-type pat)))
+    (cond
+     (type?
+      (mv (cons (list type? x) tests) bindings))
+     ((symbolp pat)
+      (cond
+       ((or (eq pat t)
+            (eq pat nil)
+            (keywordp pat))
+        (mv (cons (list 'eq x pat) tests) bindings))
+       ((let ((len (length (symbol-name pat))))
+          (and (> len 0)
+               (eql #\* (char (symbol-name pat) 0))
+               (eql #\* (char (symbol-name pat) (1- len)))))
+        (mv (cons (list 'equal x pat) tests) bindings))
+       ((and (> (length (symbol-name pat)) 0)
+             (eql #\! (char (symbol-name pat) 0)))
+        (mv (cons (list 'equal x
+                        (intern-in-package-of-symbol
+                         (subseq (symbol-name pat)
+                                 1
+                                 (length (symbol-name pat)))
+                         pat))
+                  tests)
+            bindings))
+       ((eq pat '&) (mv tests bindings))
+       (t (let ((binding (assoc-eq pat bindings)))
+            (cond ((null binding)
+                   (mv tests (cons (list pat x) bindings)))
+                  (t (mv (cons (list 'equal x (cadr binding)) tests)
+                         bindings)))))))
+     ((atom pat)
+      (mv (cons (acl2::equal-x-constant x (list 'quote pat)) tests)
+          bindings))
+     ((and (eq (car pat) 'quote)
+           (consp (cdr pat))
+           (null (cddr pat)))
+      (mv (cons (acl2::equal-x-constant x pat) tests)
+          bindings))
+     ((and (eq (car pat) 'quote~)
+           (consp (cdr pat))
+           (symbolp (cadr pat))
+           (null (cddr pat)))
+      (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
+          bindings))
+     (t (mv-let (tests1 bindings1)
+          (match-tests-and-bindings (list 'car x) (car pat)
+                                    (cons (list 'consp x) tests)
+                                    bindings)
+          (match-tests-and-bindings (list 'cdr x) (cdr pat)
+                                    tests1 bindings1))))))
+
+(defthm match-tests-and-bindings-guards1
+  (implies (tlp y)
+           (tlp (mv-nth 0 (match-tests-and-bindings x pat y z))))
+  :rule-classes :type-prescription)
+
+(defthm match-tests-and-bindings-guards3
+  (implies (tlp z)
+           (tlp (mv-nth 1 (match-tests-and-bindings x pat y z))))
+  :rule-classes :type-prescription)
+
+(defthm match-tests-and-bindings-guards2
+  (implies (symbol-doublet-listp z)
+           (symbol-doublet-listp (mv-nth 1 (match-tests-and-bindings x pat y z)))))
+
+(verify-guards match-tests-and-bindings)
+
+(defun match-clause (x pat forms)
+  (declare (xargs :guard t))
+  (mv-let (tests bindings)
+    (match-tests-and-bindings x pat nil nil)
+    (list (if (null tests)
+              t
+            (cons 'and (reverse tests)))
+          (cons 'let (cons (reverse bindings) forms)))))
+
 (definec gen-match-body1
   (exp :all pats :tl codes :true-list-list) :tl
   :pre (match-pats-codes pats codes)
@@ -165,8 +289,8 @@
        (t? (cons `(,(car t?) ,(car code))
                  (gen-match-body1 exp (cdr pats) (cdr codes))))
        (t (if (eq pat '&)
-              (list (acl2::match-clause exp '& code))
-            (cons (acl2::match-clause exp pat code)
+              (list (match-clause exp '& code))
+            (cons (match-clause exp pat code)
                   (gen-match-body1 exp (cdr pats) (cdr codes)))))))))
 
 (definec gen-match-body
@@ -340,13 +464,6 @@
     (match x
       (nil t)
       ((f . r) (and (mem f y) (subset r y)))))
-
-  ;; More complex patterns than (f . r) can be used to match with
-  ;; conses and lists. For example, (x x y) and ('x (:x x) . t) are
-  ;; allowed patterns. The first pattern matches (1 1 2), ((1 2) (1 2)
-  ;; (3)), etc, and the second pattern only matches lists whose first
-  ;; element is the symbol x, whose second element is a list of length
-  ;; two whose first element is the keyword x and whose cddr is t.
   
   ;; If you want to match an object, say obj, you can use the pattern
   ;; 'obj.  This allows you to match keywords that may otherwise be
@@ -392,12 +509,28 @@
 
   (thm (equal (acl2-count2 x) (acl2-count x)))
 
+  ;; More complex patterns than (f . r) can be used to match with
+  ;; conses and lists. For example, (x x y), ('x (':x x) . t), and
+  ;; ('x (:x x)) are allowed patterns. The first pattern matches
+  ;; (1 1 2), ((1 2) (1 2) (3)), etc. The second pattern only matches
+  ;; lists whose first element is the symbol x, whose second element
+  ;; is a list of length two whose first element is the keyword x, and
+  ;; whose cddr is t. The third pattern only matches lists of length
+  ;; two, whose first element is the symbol x and whose second element
+  ;; is a list of length two whose first element is of type x (i.e.,
+  ;; recognized by xp).
+
+  ;; There are restrictions on the patterns that are used to match
+  ;; conses and lists. At the top level, all of the patterns above are
+  ;; allowed, but inside of such patterns, disjunctive patterns, and
+  ;; code patterns (using :t) are not supported. Type patterns (such
+  ;; as :int, :bool, (:r intp), etc) are supported.
 
 })
 
 <h3>Purpose</h3>
 
-<p> The macro @(see match) Provides pattern matching.  It includes the
+<p> The macro @(see match) provides pattern matching.  It includes the
 functionality similar to that provided by @(see? case-match) and more.
 It supports predicate/recognizer patterns in a style similar to how
 @(see?  definec) allows you to specify @(see? defdata) types. These

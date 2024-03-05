@@ -55,12 +55,12 @@
 ;; Is this what we want?  Or should we stick with forward chaining, as
 ;; with (consp (rkeys ..)) ??
 
-(defthm empty-rkeys-not-r
-  (equal (empty (rkeys r))
+(defthm emptyp-rkeys-not-r
+  (equal (emptyp (rkeys r))
          (not r))
   ;;:rule-classes (:forward-chaining)
   :hints (("Goal" :in-theory (e/d nil
-                                  (EMPTY-WHEN-SETP-MEANS-NIL)))))
+                                  (EMPTYP-WHEN-SETP-MEANS-NIL)))))
 
 (defthm rkeys-iff-r
   (iff (set::rkeys r) r)
@@ -239,8 +239,8 @@
 
 ;do we need all of these?
 
-(defthm empty-of-rkeys
-  (equal (set::empty (rkeys r))
+(defthm emptyp-of-rkeys
+  (equal (set::emptyp (rkeys r))
          (equal r nil))
   :hints (("Goal" :in-theory (enable rkeys acl2->rcd))))
 

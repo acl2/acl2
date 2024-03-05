@@ -466,7 +466,7 @@
      In this case, we can avoid the existential quantification."))
   (b* ((def (lookup-definition name defs)))
     (and def
-         (set::empty (definition-free-vars def))
+         (set::emptyp (definition-free-vars def))
          (b* (((definition def) def))
            (and (equal (len args) (len def.para))
                 (b* ((vals (eval-expr-list args asg p)))
@@ -498,7 +498,7 @@
                 (args (constraint-relation->args constr))
                 (def (lookup-definition name defs)))
              (implies (and def
-                           (set::empty (definition-free-vars def)))
+                           (set::emptyp (definition-free-vars def)))
                       (equal (constraint-satp constr defs asg p)
                              (constraint-relation-nofreevars-satp name
                                                                   args
@@ -517,7 +517,7 @@
                    (args (constraint-relation->args constr))
                    (def (lookup-definition name defs)))
                 (implies (and def
-                              (set::empty (definition-free-vars def)))
+                              (set::emptyp (definition-free-vars def)))
                          (implies (constraint-satp constr defs asg p)
                                   (constraint-relation-nofreevars-satp name
                                                                        args
@@ -528,7 +528,7 @@
      :enable (constraint-satp-of-relation
               constraint-relation-satp
               constraint-relation-nofreevars-satp
-              set::empty
+              set::emptyp
               omap::keys-iff-not-empty))
 
    (defrule if-direction
@@ -539,7 +539,7 @@
                    (args (constraint-relation->args constr))
                    (def (lookup-definition name defs)))
                 (implies (and def
-                              (set::empty (definition-free-vars def)))
+                              (set::emptyp (definition-free-vars def)))
                          (implies (constraint-relation-nofreevars-satp name
                                                                        args
                                                                        defs

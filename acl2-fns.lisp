@@ -463,8 +463,8 @@
 
 (defun output-type-for-declare-form-rec (form flet-alist)
 
-; We return either nil or *, or else a type for form that ideally is as small
-; as possible.
+; Form has been successfully processed by ACL2.  We return either nil or *, or
+; else a type for form that ideally is as small as possible.
 
 ; Note that this isn't complete.  In particular, ACL2's proclaiming mechanism
 ; for GCL produces a return type of * for RETRACT-WORLD, because it can return
@@ -620,7 +620,16 @@
           (t t)))
    ((eq (car form) 'unwind-protect)
     (output-type-for-declare-form-rec (cadr form) flet-alist))
-   ((member (car form) '(time progn ec-call) :test 'eq)
+   ((and (eq (car form) 'ec-call) ; (ec-call x ...)
+         (let ((dfs-out (cadr (member :dfs-out (cddr form)))))
+           (and (consp dfs-out)
+                (eq (car dfs-out) 'quote) ; presumably always true
+                (cadr (car dfs-out)))))   ; rule out :dfs-out (quote nil)
+    (cons 'values (let ((dfs-out (cadr (member :dfs-out (cddr form)))))
+                    (cadr (car dfs-out)))))
+   ((eq (car form) 'ec-call)
+    (output-type-for-declare-form-rec (cadr form) flet-alist))
+   ((member (car form) '(time progn) :test 'eq)
     (output-type-for-declare-form-rec (car (last form)) flet-alist))
    ((member (car form)
             '(tagbody ; e.g., ld-fn

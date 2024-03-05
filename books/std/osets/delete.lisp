@@ -53,7 +53,7 @@ difference) or @(see intersect).</p>
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
     (mbe :logic
-         (cond ((empty X) nil)
+         (cond ((emptyp X) nil)
                ((equal a (head X)) (tail X))
                (t (insert (head X) (delete a (tail X)))))
          :exec
@@ -67,9 +67,9 @@ difference) or @(see intersect).</p>
   (verify-guards delete
     :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
 
-  (defthm delete-preserves-empty
-    (implies (empty X)
-             (empty (delete a X))))
+  (defthm delete-preserves-emptyp
+    (implies (emptyp X)
+             (emptyp (delete a X))))
 
   (defthm delete-in
     (equal (in a (delete b X))

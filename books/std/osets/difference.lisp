@@ -169,7 +169,7 @@ exploiting the set order.</p>"
   (defun difference (X Y)
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
-    (mbe :logic (cond ((empty X) (sfix X))
+    (mbe :logic (cond ((emptyp X) (sfix X))
                       ((in (head X) Y) (difference (tail X) Y))
                       (t (insert (head X) (difference (tail X) Y))))
          :exec (fast-difference X Y nil)))
@@ -183,12 +183,12 @@ exploiting the set order.</p>"
   (defthm difference-sfix-Y
     (equal (difference X (sfix Y)) (difference X Y)))
 
-  (defthm difference-empty-X
-    (implies (empty X)
+  (defthm difference-emptyp-X
+    (implies (emptyp X)
              (equal (difference X Y) (sfix X))))
 
-  (defthm difference-empty-Y
-    (implies (empty Y)
+  (defthm difference-emptyp-Y
+    (implies (emptyp Y)
              (equal (difference X Y) (sfix X))))
 
   (encapsulate ()
@@ -210,7 +210,7 @@ exploiting the set order.</p>"
     ()
     ;; bozo shouldn't really need this
     (local (defthm l0
-             (implies (and (setp y) (setp x) (empty x))
+             (implies (and (setp y) (setp x) (emptyp x))
                       (not (fast-difference x y nil)))
              :hints(("Goal" :in-theory (enable fast-difference
                                                (:ruleset low-level-rules))))))
@@ -223,7 +223,7 @@ exploiting the set order.</p>"
     (subset (difference X Y) X))
 
   (defthm subset-difference
-    (equal (empty (difference X Y))
+    (equal (emptyp (difference X Y))
            (subset X Y))
     :hints(("Goal" :in-theory (enable subset))))
 

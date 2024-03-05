@@ -1,10 +1,10 @@
 ; Bitcoin Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,7 +88,7 @@
                                               (all-paths bip32-path-setp))
      :returns (yes/no booleanp)
      (or (not (mbt (bip32-path-setp cur-paths)))
-         (empty cur-paths)
+         (emptyp cur-paths)
          (and (bip32-path-set-closedp-exec-inner (head cur-paths) all-paths)
               (bip32-path-set-closedp-exec-outer (tail cur-paths) all-paths)))
      :no-function t
@@ -264,7 +264,7 @@
      then any member of the set satisfies the key validity condition.
      This fact is used in the correctness proof of the attachment."))
   (or (not (mbt (bip32-path-setp paths)))
-      (empty paths)
+      (emptyp paths)
       (and (b* (((mv error? &) (bip32-ckd* root (head paths))))
              (not error?))
            (bip32-valid-keys-p-exec root (tail paths))))
@@ -367,7 +367,7 @@
      then any member of the set satisfies the depth validity condition.
      This fact is used in the correctness proof of the attachment."))
   (or (not (mbt (bip32-path-setp paths)))
-      (empty paths)
+      (emptyp paths)
       (and (bytep (+ (byte-fix init) (len (head paths))))
            (bip32-valid-depths-p-exec init (tail paths))))
   :no-function t

@@ -59,5 +59,6 @@
 (include-book "kestrel/ethereum/semaphore/portcullis" :dir :system)
 (include-book "projects/pfcs/portcullis" :dir :system)
 (include-book "kestrel/zcash/portcullis" :dir :system)
+(include-book "acl2s/interface/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags :all

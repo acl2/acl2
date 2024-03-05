@@ -49,7 +49,7 @@
 (defstub process (x) t)
 
 (defund process-set (set)
-  (if (set::empty set)
+  (if (set::emptyp set)
       (set::emptyset)
     (let ((v (set::head set)))
       (if (generic-pred v)
@@ -59,7 +59,7 @@
 
 (defund filter-generic-pred (x)
   ;;  filter-generic-pred(x) = { x | (v \in x) ^ (generic-pred v) }
-  (if (set::empty x)
+  (if (set::emptyp x)
       (set::emptyset)
     (let ((v (set::head x)))
       (if (generic-pred v)
@@ -68,7 +68,7 @@
 
 (defund process-all (x)
   ;; process-all(x) = { (process v) | v \in x }
-  (if (set::empty x)
+  (if (set::emptyp x)
       (set::emptyset)
     (set::insert (process (set::head x))
             (process-all (set::tail x)))))
@@ -125,7 +125,7 @@
 
 (defund has-process-inverse (a x)
   ;; (has-process-inverse a x) = exists b in x such that (process b) = a
-  (if (set::empty x)
+  (if (set::emptyp x)
       nil
     (or (equal a (process (set::head x)))
        (has-process-inverse a (set::tail x)))))
@@ -201,12 +201,12 @@
 (encapsulate
  ()
  (local (defthm terrible-lemma
-          (implies (and (set::empty x)
+          (implies (and (set::emptyp x)
                         (not (equal a (process b))))
                    (not (has-process-inverse a (set::insert b x))))
           :hints(("goal" :in-theory (enable has-process-inverse
                                             set::insert
-                                            set::empty
+                                            set::emptyp
                                             set::sfix
                                             set::head
                                             set::tail)))))
@@ -350,6 +350,6 @@
            (process-set x)))
   :hints (("Goal" :use (:instance goal-both)
            :expand (PROCESS-ALL (SET::INSERT A NIL))
-           :in-theory (e/d (SET::EMPTY
+           :in-theory (e/d (SET::EMPTYP
                             FILTER-GENERIC-PRED
                             MY-PROCESS-SET)(goal-both)))))

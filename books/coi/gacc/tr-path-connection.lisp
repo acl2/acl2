@@ -58,7 +58,7 @@
 ;;
 
 (defun mypush-aux (keys r)
-  (if (set::empty keys)
+  (if (set::emptyp keys)
       nil ;the empty typed record
     (gacc::wr (set::head keys)
               (g (set::head keys) r)
@@ -101,14 +101,14 @@
 ;;                     (MYPUSH-AUX (CONS A RKEYS) R)
 ;;                     (SET::HEAD (CONS A RKEYS))
 ;;                     (SET::SETP (CONS A RKEYS))
-;;                     (SET::EMPTY (CONS A RKEYS))
+;;                     (SET::EMPTYP (CONS A RKEYS))
 ;;                     (SET::TAIL (CONS A RKEYS)))
 ;;            :in-theory (disable GACC::WR==R!)
 ;;            :do-not '(generalize eliminate-destructors))))
 
 
 (defun my-ind (a rkeys r)
-  (if (set::empty rkeys)
+  (if (set::emptyp rkeys)
       (list a rkeys r)
     (if (equal a (set::head (set::insert a rkeys)))
         (list a rkeys r)
@@ -119,7 +119,7 @@
 ;clean up conclusion?
 (defthmd car-of-insert
   (equal (CAR (SET::INSERT a x))
-         (COND ((SET::EMPTY X) A)
+         (COND ((SET::EMPTYP X) A)
                ((EQUAL (SET::HEAD X) A) (SET::HEAD X))
                ((<< A (SET::HEAD X)) A)
                (T (SET::HEAD X))))
@@ -140,7 +140,7 @@
                            (SET::SETP (CDR S))
                            (:free (x y) (set::setp (cons x y)))
                            )
-           :in-theory (e/d (car-of-insert SET::EMPTY SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
+           :in-theory (e/d (car-of-insert SET::EMPTYP SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
            :do-not '(generalize eliminate-destructors))))
 
 (defthm set-hack2
@@ -156,7 +156,7 @@
                            (SET::SETP (CDR S))
                            (:free (x y) (set::setp (cons x y)))
                            )
-           :in-theory (e/d (car-of-insert SET::EMPTY SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
+           :in-theory (e/d (car-of-insert SET::EMPTYP SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
            :do-not '(generalize eliminate-destructors))))
 
 
@@ -169,7 +169,7 @@
                )
           (not (set::in a s)))
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-          :expand ((SET::EMPTY S)
+          :expand ((SET::EMPTYP S)
                    (SET::SETP S))
           :in-theory (enable SET::HEAD set::tail))))
 
@@ -189,7 +189,7 @@
                            (SET::SETP (CDR S))
                            (:free (x y) (set::setp (cons x y)))
                            )
-           :in-theory (e/d (car-of-insert SET::EMPTY SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
+           :in-theory (e/d (car-of-insert SET::EMPTYP SET::HEAD SET::tail SET::SFIX) ( SET::PICK-A-POINT-SUBSET-STRATEGY))
            :do-not '(generalize eliminate-destructors))))
 
 
@@ -283,7 +283,7 @@
 ;value for typed records) and so become keys "bound" to nil in the record
 ;(such keys don't show up, since nil is the default value for records).
 (defun mylift-aux (keys tr)
-  (if (set::empty keys)
+  (if (set::emptyp keys)
       nil ;the empty record
     (s (set::head keys)
        (gacc::rd (set::head keys) tr)
@@ -362,14 +362,14 @@
              (set::tail s)
            nil ;the empty set - is there a function for that?
            ))
-  :hints (("Goal" :in-theory (enable SET::EMPTY))))
+  :hints (("Goal" :in-theory (enable SET::EMPTYP))))
 
 ;could be expensive?
 (defthm empty-means-tail-nil
-  (implies (set::empty s)
+  (implies (set::emptyp s)
            (equal (set::tail s)
                   nil))
-  :hints (("Goal" :in-theory (enable set::empty set::tail set::sfix))))
+  :hints (("Goal" :in-theory (enable set::emptyp set::tail set::sfix))))
 
 ;bzo may loop with defn delete or something?
 (defthmd delete-from-tail-when-not-head
@@ -389,7 +389,7 @@
 
 ;bzo bad name? really this checks the values?
 (defun check-tr-keys (keys tr)
-  (if (set::empty keys)
+  (if (set::emptyp keys)
       t
     (let* ((val (g (set::head keys) tr)))
       (and (equal nil (cdr val)) ;(equal 1 (len val))
@@ -745,14 +745,14 @@
 ;; ;bzo dup?
 ;; (defun all-non-nil (lst)
 ;; ;  (declare (xargs :guard t))
-;;   (if (set::empty lst)
+;;   (if (set::emptyp lst)
 ;;       t
 ;;     (and (not (null (set::head lst)))
 ;;          (all-non-nil (set::tail lst)))))
 
 (defthm head-non-nil-when-all-non-nil
   (implies (and (set::all<non-nil> s)
-                (not (set::empty s)))
+                (not (set::emptyp s)))
            (set::head s))
   :hints (("Goal" :in-theory (enable))))
 
@@ -768,7 +768,7 @@
                 (set::setp keys))
            (equal (set::rkeys (mylift-aux keys tr))
                   keys))
-  :hints (("Goal" :in-theory (enable SET::EMPTY))))
+  :hints (("Goal" :in-theory (enable SET::EMPTYP))))
 
 #+joe
 (defthm wfkeyed-implies-not-nil-memberp
@@ -799,14 +799,14 @@
            :in-theory (enable wfr WFKEYED))))
 
 (defthm empty-list2set
-  (equal (set::empty (list::2set list))
+  (equal (set::emptyp (list::2set list))
          (not (consp list)))
   :hints (("Goal" :in-theory (e/d (list::2set)
                                   (SET::|2SET-REWRAP|)))))
 
 (defthm empty-rkeys-when-wfr
   (IMPLIES (AND  (WFR TR))
-           (equal (SET::EMPTY (SET::RKEYS TR))
+           (equal (SET::EMPTYP (SET::RKEYS TR))
                   (NOT TR)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 ;;           :in-theory (enable wfr RKEYS))))
@@ -814,7 +814,7 @@
 (defun ind (keys tr)
   (declare (xargs :verify-guards nil))
   (if (or (not (set::setp keys))
-          (set::empty keys))
+          (set::emptyp keys))
       (list keys tr)
     (ind (set::tail keys)
          (GACC::MEMORY-CLR (SET::HEAD (SET::RKEYS TR)) tr);
@@ -852,7 +852,7 @@
 (defthm not-check-tr-keys-1
   (implies (equal (loghead 8 (car (g (set::head rkeys) tr))) 0)
            (equal (check-tr-keys rkeys tr)
-                  (set::empty rkeys))))
+                  (set::emptyp rkeys))))
 
 (defthm check-tr-keys-of-memory-clr-irrel
   (implies (and (not (set::in key keys))
@@ -922,7 +922,7 @@
 
 (defun typed-fix-aux (keys r)
   (declare (xargs :verify-guards nil))
-  (if (set::empty keys)
+  (if (set::emptyp keys)
       nil ;the empty record
     (s (set::head keys)
        (val-fix (g (set::head keys) r))
@@ -979,7 +979,7 @@
 (defun ind3 (keys r)
   (declare (xargs :verify-guards nil))
   (if (or (not (set::setp keys))
-          (set::empty keys))
+          (set::emptyp keys))
       (list keys r)
     (ind3 (set::tail keys)
          (CLR (SET::HEAD (SET::RKEYS R)) r);
@@ -1135,7 +1135,7 @@
 
 (defun all-vals-okay-aux (keys r)
   (declare (xargs :verify-guards nil))
-  (if (set::empty keys)
+  (if (set::emptyp keys)
       t
     (and (unsigned-byte-p 8(g (set::head keys) r))
          (not (equal 0 (g (set::head keys) r)))
@@ -1177,7 +1177,7 @@
 ;; (thm
 ;;  (iff (SET::DELETE A S)
 ;;       (and
-;;       (not (or (set::empty s)
+;;       (not (or (set::emptyp s)
 ;;                (equal s (list a)) ;gross?
 ;;                ))
 
@@ -1192,7 +1192,7 @@
 ;;                        (caddr s))
 ;;                    (car s))))
 ;;  :otf-flg t
-;;  :hints (("Goal" :in-theory (e/d (set::head set::tail SET::SFIX SET::EMPTY
+;;  :hints (("Goal" :in-theory (e/d (set::head set::tail SET::SFIX SET::EMPTYP
 ;;                                  CAR-OF-INSERT
 ;;                                             )
 ;;                                  (set::delete
@@ -1222,7 +1222,7 @@
 ;; ;;                                 (SET::INSERT (CADR KEYS)
 ;; ;;                                              (SET::DELETE A (CDDR KEYS))))
 ;;                    )
-;;           :in-theory (e/d (set::head set::tail SET::SFIX SET::EMPTY
+;;           :in-theory (e/d (set::head set::tail SET::SFIX SET::EMPTYP
 ;;     CAR-OF-INSERT
 ;;                                      )
 ;;                           (set::delete

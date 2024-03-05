@@ -1,10 +1,10 @@
 ; Cryptocurrency Hierarchical Deterministic Wallet Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author: Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -520,7 +520,7 @@
                                (addresses natp))
   :returns (yes/no booleanp)
   :short "Lift @(tsee valid-key-path-p) to sets of paths."
-  (or (empty paths)
+  (or (emptyp paths)
       (and (valid-key-path-p (head paths) addresses)
            (all-valid-key-paths-p (tail paths) addresses)))
   :no-function t

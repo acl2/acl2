@@ -1,10 +1,10 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author: Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -199,7 +199,7 @@
   :short "Check if an omap is empty."
   :long
   (xdoc::topstring-p
-   "This is similar to @(tsee set::empty) for osets.")
+   "This is similar to @(tsee set::emptyp) for osets.")
   (null (mfix map))
   ///
 
@@ -581,13 +581,13 @@
   :long
   (xdoc::topstring-p
    "This lifts @(tsee delete) from a single key to a set of keys.")
-  (cond ((set::empty keys) (mfix map))
+  (cond ((set::emptyp keys) (mfix map))
         (t (delete (set::head keys) (delete* (set::tail keys) map))))
   :verify-guards :after-returns
   ///
 
   (defrule delete*-when-left-empty
-    (implies (set::empty keys)
+    (implies (set::emptyp keys)
              (equal (delete* keys map)
                     (mfix map))))
 
@@ -681,19 +681,19 @@
    "This lifts @(tsee in) to sets of keys.
     However, this returns a boolean,
     while @(tsee in) returns a @(tsee listp).")
-  (cond ((set::empty keys) t)
+  (cond ((set::emptyp keys) t)
         (t (and (in (set::head keys) map)
                 (in* (set::tail keys) map))))
   ///
 
   (defrule in*-when-left-empty
-    (implies (set::empty keys)
+    (implies (set::emptyp keys)
              (in* keys map)))
 
   (defrule in*-when-rigth-empty
     (implies (empty map)
              (equal (in* keys map)
-                    (set::empty keys))))
+                    (set::emptyp keys))))
 
   (defrule in*-of-tail
     (implies (in* keys map)
@@ -799,7 +799,7 @@
   :long
   (xdoc::topstring-p
    "This lifts @(tsee lookup) to sets of keys.")
-  (cond ((set::empty keys) nil)
+  (cond ((set::emptyp keys) nil)
         ((mbt (if (in (set::head keys) map) t nil))
          (set::insert (lookup (set::head keys) map)
                       (lookup* (set::tail keys) map)))
@@ -809,7 +809,7 @@
   (verify-guards lookup* :hints (("Goal" :in-theory (enable in*))))
 
   (defrule lookup*-when-left-empty
-    (implies (set::empty keys)
+    (implies (set::emptyp keys)
              (equal (lookup* keys map)
                     nil))
     :rule-classes (:rewrite :type-prescription))
@@ -856,14 +856,14 @@
   :long
   (xdoc::topstring-p
    "This lifts @(tsee rlookup*) to sets of values.")
-  (cond ((set::empty vals) nil)
+  (cond ((set::emptyp vals) nil)
         (t (set::union (rlookup (set::head vals) map)
                        (rlookup* (set::tail vals) map))))
   :verify-guards :after-returns
   ///
 
   (defrule rlookup*-when-left-empty
-    (implies (set::empty vals)
+    (implies (set::emptyp vals)
              (equal (rlookup* vals map) nil))
     :rule-classes (:rewrite :type-prescription))
 
@@ -891,7 +891,7 @@
   ///
 
   (defrule restrict-when-left-empty
-    (implies (set::empty keys)
+    (implies (set::emptyp keys)
              (equal (restrict keys map) nil))
     :rule-classes (:rewrite :type-prescription))
 
@@ -980,7 +980,7 @@
              set::insert
              set::head
              set::tail
-             set::empty
+             set::emptyp
              set::setp))
 
   (defrule keys-of-update*

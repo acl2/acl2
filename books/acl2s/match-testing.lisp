@@ -191,3 +191,33 @@ Have to use acl2::x to redefine, but here is the definition.
 
 (property (a :Foo) (baz a))
 (property (a :Bar) (baz a)) 
+(property (a :int) (! (baz a)))
+(property (a :all) (iff (baz a)
+                        (or (foop a) (barp a))))
+
+
+(definec nested (x :all) :all
+  (match x
+    ((:int :int) 1)
+    (((:int :nat) :int) 2)
+    ((:or ((:bool :bool)) :bool) 3)
+    (& 4)))
+
+(check= (nested '(1 2)) 1)
+(check= (nested '((1 2) 3)) 2)
+(check= (nested t) 3)
+(check= (nested '((t nil))) 3)
+(check= (nested '(t nil)) 4)
+
+#|
+
+Note that something like this does not work, as we do not
+allow :or and :t patterns to be nested
+
+(b* ((x '(1 2 3)))
+  (match x
+    ((:int :int) 1)
+    ((:or ((:or :int :int) :nat) (:int)) 2)
+    (& 3)))
+
+|#

@@ -53,7 +53,7 @@
   (equal (setp (cons a X))
          (and (setp X)
               (or (<< a (head X))
-                  (empty X))))
+                  (emptyp X))))
   :hints(("Goal" :in-theory (enable primitives-theory))))
 
 (defthm cons-head
@@ -63,7 +63,7 @@
 
 (defthm cons-to-insert-empty
   (implies (and (setp X)
-                (empty X))
+                (emptyp X))
            (equal (cons a X) (insert a X)))
   :hints(("Goal" :in-theory (enable primitives-theory))))
 
