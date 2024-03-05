@@ -44,7 +44,7 @@
   (declare (xargs :guard (and (set::setp locs)
                               (dtreep sub)
                               (dtreep super))))
-  (or (set::empty locs)
+  (or (set::emptyp locs)
       (and (in (set::head locs) super)
            (set::subset
             (localdeps (get (set::head locs) sub))
@@ -86,7 +86,7 @@
                          (localdeps (get path super)))))
 
 (defthm subtree1-when-empty-locs
-  (implies (set::empty locs)
+  (implies (set::emptyp locs)
            (subtree1 locs sub super))
   :hints(("Goal" :in-theory (enable subtree1))))
 
@@ -200,7 +200,7 @@
 
  (local (defund subtree1-badguy (locs sub super)
           (declare (xargs :verify-guards nil))
-          (cond ((set::empty locs)
+          (cond ((set::emptyp locs)
                  nil)
                 ((and (in (set::head locs) super)
                       (set::subset
@@ -325,7 +325,7 @@
   (declare (xargs :guard (and (set::setp locs)
                               (dtreep sub)
                               (dtreep super))))
-  (or (set::empty locs)
+  (or (set::emptyp locs)
       (and (in (set::head locs) super)
            (set::subset
             (deps (get (set::head locs) sub))
@@ -367,7 +367,7 @@
                          (deps (get path super)))))
 
 (defthm subdeps1-when-empty-locs
-  (implies (set::empty locs)
+  (implies (set::emptyp locs)
            (subdeps1 locs sub super))
   :hints(("Goal" :in-theory (enable subdeps1))))
 
@@ -481,7 +481,7 @@
 
  (local (defund subdeps1-badguy (locs sub super)
           (declare (xargs :verify-guards nil))
-          (cond ((set::empty locs)
+          (cond ((set::emptyp locs)
                  nil)
                 ((and (in (set::head locs) super)
                       (set::subset

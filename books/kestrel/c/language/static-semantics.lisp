@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -620,11 +620,11 @@
       could just return a set of types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
-  ((return-types type-set :reqfix (if (set::empty return-types)
+  ((return-types type-set :reqfix (if (set::emptyp return-types)
                                       (set::insert (type-void) nil)
                                     return-types))
    (variables var-table))
-  :require (not (set::empty return-types))
+  :require (not (set::emptyp return-types))
   :pred types+vartab-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2672,7 +2672,7 @@
        (vartab (funtab+vartab+tagenv->vars funtab+vartab+tagenv))
        (overlap (set::intersect (omap::keys funtab)
                                 (omap::keys (car vartab))))
-       ((unless (set::empty overlap))
+       ((unless (set::emptyp overlap))
         (reserrf (list :transunit-fun-obj-overlap overlap)))
        ((unless (var-table-add-block vartab))
         (reserrf (list :transunit-has-undef-var vartab)))

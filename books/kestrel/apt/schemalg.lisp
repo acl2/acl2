@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1104,7 +1104,7 @@
      algo
      :formals x-z1...zm
      :body `(cond ((or (not (set::setp ,x))
-                       (set::empty ,x))
+                       (set::emptyp ,x))
                    (,?g ,@x-z1...zm))
                   (t (,?h ,@head-x-z1...zm
                           (,algo ,@tail-x-z1...zm))))
@@ -1243,7 +1243,7 @@
      :guard t
      :body `(forall ,x-x1...xn
                     (impliez (or (not (set::setp ,x))
-                                 (set::empty ,x))
+                                 (set::emptyp ,x))
                              ,iorel-term))
      :verify-guards verify-guards
      :enable spec-0-enable
@@ -1417,7 +1417,7 @@
      :guard t
      :body `(forall (,@x-x1...xn ,y)
                     (impliez (and (set::setp ,x)
-                                  (not (set::empty ,x))
+                                  (not (set::emptyp ,x))
                                   ,iorel-term1)
                              ,iorel-term2))
      :verify-guards verify-guards

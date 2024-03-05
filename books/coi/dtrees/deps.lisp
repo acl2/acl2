@@ -97,7 +97,7 @@
   (declare (xargs :guard (and (set::setp locs)
                               (dtreep dtree))
                   :verify-guards nil))
-  (if (set::empty locs)
+  (if (set::emptyp locs)
       (set::emptyset)
     (set::union (localdeps (get (set::head locs) dtree))
                 (deps1 (set::tail locs) dtree))))
@@ -257,29 +257,29 @@
                           (path nil)))))
 
 (defthm empty-of-localdeps-of-get-when-deps-empty
-  (implies (set::empty (deps dtree))
-           (set::empty (localdeps (get path dtree))))
+  (implies (set::emptyp (deps dtree))
+           (set::emptyp (localdeps (get path dtree))))
   :hints(("Goal"
           :in-theory (disable in-deps-when-in-localdeps-of-get)
           :use (:instance in-deps-when-in-localdeps-of-get
                           (a (set::head (localdeps (get path dtree))))))))
 
 (defthm empty-of-localdeps-when-deps-empty
-  (implies (set::empty (deps dtree))
-           (set::empty (localdeps dtree)))
+  (implies (set::emptyp (deps dtree))
+           (set::emptyp (localdeps dtree)))
   :hints(("Goal"
           :in-theory (disable empty-of-localdeps-of-get-when-deps-empty)
           :use (:instance empty-of-localdeps-of-get-when-deps-empty
                           (path nil)))))
 
 (defthm empty-of-deps-when-nonempty-of-localdeps-of-get
-  (implies (not (set::empty (localdeps (get path dtree))))
-           (equal (set::empty (deps dtree))
+  (implies (not (set::emptyp (localdeps (get path dtree))))
+           (equal (set::emptyp (deps dtree))
                   nil)))
 
 (defthm empty-of-deps-when-nonempty-of-localdeps
-  (implies (not (set::empty (localdeps dtree)))
-           (equal (set::empty (deps dtree))
+  (implies (not (set::emptyp (localdeps dtree)))
+           (equal (set::emptyp (deps dtree))
                   nil)))
 
 (local (in-theory (enable mrdeps)))
@@ -373,7 +373,7 @@
 (defund depsource1 (a locs dtree)
   (declare (xargs :guard (and (set::setp locs)
                               (dtreep dtree))))
-  (if (set::empty locs)
+  (if (set::emptyp locs)
       nil
     (if (set::in a (localdeps (get (set::head locs) dtree)))
         (set::head locs)

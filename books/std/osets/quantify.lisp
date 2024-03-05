@@ -209,7 +209,7 @@
   (defun all (set-for-all-reduction)
     (declare (xargs :guard (setp set-for-all-reduction)
                     :verify-guards nil))
-    (if (empty set-for-all-reduction)
+    (if (emptyp set-for-all-reduction)
 	t
       (and (predicate (head set-for-all-reduction))
 	   (all (tail set-for-all-reduction)))))
@@ -217,21 +217,21 @@
   (defun exists (X)
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
-    (cond ((empty X) nil)
+    (cond ((emptyp X) nil)
 	  ((predicate (head X)) t)
 	  (t (exists (tail X)))))
 
   (defun find (X)
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
-    (cond ((empty X) nil)
+    (cond ((emptyp X) nil)
 	  ((predicate (head X)) (head X))
 	  (t (find (tail X)))))
 
   (defun filter (X)
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
-    (cond ((empty X) (sfix X))
+    (cond ((emptyp X) (sfix X))
 	  ((predicate (head X))
 	   (insert (head X) (filter (tail X))))
 	  (t (filter (tail X)))))
@@ -386,8 +386,8 @@
     (implies (all X)
 	     (all (tail X))))
 
-  (defthm all-empty
-    (implies (empty X)
+  (defthm all-emptyp
+    (implies (emptyp X)
 	     (all X)))
 
   (defthm all-in
@@ -492,7 +492,7 @@
     (implies (setp X)
 	     (equal (all-list X)
 		    (all X)))
-    :hints(("Goal" :in-theory (enable setp empty sfix head tail))))
+    :hints(("Goal" :in-theory (enable setp emptyp sfix head tail))))
 
 ))
 
@@ -809,7 +809,7 @@
 	(instance-*theorems*
 	 :subs ,subs
 	 :suffix ,(mksym wrap in-package))
-	 ;:extra-defs (empty))
+	 ;:extra-defs (emptyp))
 
 
 	;; Automating the computed hints is a pain in the ass.  We
@@ -943,7 +943,7 @@
 	(instance-*final-theorems*
 	 :subs ,subs
 	 :suffix ,(mksym wrap in-package))
-	 ;:extra-defs (empty))
+	 ;:extra-defs (emptyp))
 
 
         ,@(and verify-guards
@@ -1031,4 +1031,3 @@
     all-list<not> exists-list<not> find-list<not> filter-list<not>))
 
 (in-theory (disable generic-quantification-theory))
-

@@ -84,7 +84,7 @@
 
 ;bzo can we make this a set processor?
 (defun cons-onto-all (item set)
-  (if (set::empty set)
+  (if (set::emptyp set)
       (set::emptyset)
     (set::insert (cons item (set::head set))
                  (cons-onto-all item (set::tail set)))))
@@ -92,7 +92,7 @@
 ;bzo do we get this for a set processor?
 (defthm cons-onto-all-iff
   (iff (cons-onto-all a set)
-       (not (set::empty set))))
+       (not (set::emptyp set))))
 
 
 ;if this didn't take a depth, how would we know to stop if an "element" of the tree happened to be another tree
@@ -120,7 +120,7 @@
 ;;                                   (element-processor 'unsupplied)  ;can this be a term?
 ;;                                   (predicate 'unsupplied))
 ;;   `(defun ,processor-name (set) ;can this take more than one arg?
-;;      (if (set::empty set)
+;;      (if (set::emptyp set)
 ;;          (set::emptyset)
 ;;        (if (,predicate (set::head set))
 ;;            (set::insert (,element-processor (set::head set))
@@ -130,14 +130,14 @@
 
 ;bzo use a set processor?
 (defun convert-reversed-bit-lists-to-integers (bit-lists)
-  (if (set::empty bit-lists)
+  (if (set::emptyp bit-lists)
       (set::emptyset)
     (set::insert (convert-reversed-bit-list-to-integer (set::head bit-lists))
                  (convert-reversed-bit-lists-to-integers (set::tail bit-lists)))))
 
 (defthm convert-reversed-bit-lists-to-integers-iff
   (iff (convert-reversed-bit-lists-to-integers bit-lists)
-       (not (set::empty bit-lists))))
+       (not (set::emptyp bit-lists))))
 
 (defthm convert-reversed-bit-lists-to-integers-of-insert
   (equal (convert-reversed-bit-lists-to-integers (set::insert lst lst-of-lsts))
@@ -323,7 +323,7 @@
   (equal (cons-onto-all item (list x))
          (list (cons item x)))
   :hints (("Goal" :in-theory (enable set::head
-                                     set::empty
+                                     set::emptyp
                                      set::tail)
            :expand ((set::setp (list x))
                     (set::insert (cons item x) nil)
@@ -597,7 +597,7 @@
          (not (set::in a x))))
 
 ;; (defun all-have-len (len x)
-;;   (if (set::empty x)
+;;   (if (set::emptyp x)
 ;;       t
 ;;     (and (equal len (len (set::head x)))
 ;;          (all-have-len len (set::tail x)))))
@@ -830,7 +830,7 @@
                 (rationalp len)
                 )
            (equal (len (set::head x))
-                  (if (not (set::empty x))
+                  (if (not (set::emptyp x))
                       len
                   0)))
   :hints (("Goal" :expand ((set::all<len-equal> x len)))))
@@ -854,7 +854,7 @@
                   (CONVERT-REVERSED-BIT-LISTS-TO-INTEGERS
                    (SET::DELETE (CONVERT-INTEGER-TO-REVERSED-BIT-LIST A len)
                                 bit-lists))))
-  :hints (("Subgoal *1/2" :cases ((SET::EMPTY (SET::TAIL BIT-LISTS))))
+  :hints (("Subgoal *1/2" :cases ((SET::EMPTYP (SET::TAIL BIT-LISTS))))
           ("Goal" :in-theory (disable ;test
                               (:type-prescription CONVERT-INTEGER-TO-REVERSED-BIT-LIST) ;had to disable this
                               )
@@ -881,7 +881,7 @@
   (implies (and (natp depth)
                 (mem::_memtree-p mem depth))
            (equal (len (set::head (mem::domain-aux mem depth)))
-                  (if (set::empty (mem::domain-aux mem depth))
+                  (if (set::emptyp (mem::domain-aux mem depth))
                       0
                     (nfix depth))))
   :hints (("Goal" :use (:instance all-len-equal-of-domain-aux (tree mem))
@@ -896,7 +896,7 @@
 ;the need for it arose when i disabled SET::ALL<BIT-LISTP>, since the definition rule was high on accumulated persistence
 (defthm not-all-BIT-LISTP-when-not-head
   (IMPLIES (AND (NOT (BIT-LISTP (SET::HEAD SET::SET-FOR-ALL-REDUCTION)))
-                (NOT (SET::EMPTY SET::SET-FOR-ALL-REDUCTION)))
+                (NOT (SET::EMPTYP SET::SET-FOR-ALL-REDUCTION)))
            (NOT (SET::ALL<BIT-LISTP> SET::SET-FOR-ALL-REDUCTION)))
   :hints (("Goal" :in-theory (enable SET::ALL<BIT-LISTP>))))
 
@@ -951,7 +951,7 @@
                   (set::delete a (mem::domain mem))))
   :otf-flg t
   :hints (("Goal" :do-not-induct t
-           :cases ((SET::EMPTY (MEM::DOMAIN-AUX (CAR (CAR MEM))
+           :cases ((SET::EMPTYP (MEM::DOMAIN-AUX (CAR (CAR MEM))
                                                 (CAR (CDR (CDR MEM))))))
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (set::delete-of-union-push-into-both
@@ -1210,7 +1210,7 @@
   :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;           :use (:instance domain-of-store) ;gross way to prove this...
-           :cases ((SET::EMPTY (MEM::DOMAIN-AUX (CAR (CAR MEM))
+           :cases ((SET::EMPTYP (MEM::DOMAIN-AUX (CAR (CAR MEM))
                                                       (CAR (CDR (CDR MEM))))))
 
            :in-theory (e/d (MEM::DOMAIN

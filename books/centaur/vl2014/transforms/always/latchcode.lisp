@@ -441,7 +441,7 @@ sanity checking."
        ((when warning)
         (mv x cvtregs (vl-warn-delta warning)))
        (lhs-scary (intersect lhs-names scary-regs))
-       ((unless (empty lhs-scary))
+       ((unless (emptyp lhs-scary))
         (mv x cvtregs
             (dwarn :type :vl-latchcode-fail
                    :msg "~a0: cowardly refusing to synthesize always block ~
