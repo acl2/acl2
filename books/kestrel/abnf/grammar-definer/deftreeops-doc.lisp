@@ -233,6 +233,25 @@
        The generated function is accompanied by theorems about it."))
 
     (xdoc::desc
+     "@('<prefix>-<rulename>-conc<i>')"
+     (xdoc::p
+      "For each rule name defined in the grammar by
+       an alternation of two or more concatenations,
+       and for each concatenation @('<i>') (numbered starting from 1)
+       in the alternation,
+       a function that, given a tree matching the rule name
+       whose subtrees match the concatenation @('<i>')
+       (expressed via @('<prefix>-<rulename>-conc?') above),
+       returns the subtrees of the tree.
+       The generated function is accompanied by theorems,
+       in particular saying that the subtrees match
+       the concatenation @('<i>'):
+       this is the difference between the functions
+       generated for different values of @('<i>'),
+       all of which have the same defining body
+       because they all return the subtrees."))
+
+    (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>-match')"
      (xdoc::p
       "For each rule name defined in the grammar,
