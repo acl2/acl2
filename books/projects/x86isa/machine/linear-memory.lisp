@@ -82,12 +82,6 @@
 ;; Some utilities to generate numerous (but efficient) RoW and WoW
 ;; kinda theorems:
 
-(make-event
- `(defconst *x86-field-names-as-keywords*
-    ',(loop$ for i in (strip-cars *x86isa-state*)
-             collect
-             (intern$ (symbol-name i) "KEYWORD"))))
-
 (defun remove-elements-from-list (elems lst)
   (if (or (endp lst) (endp elems))
       lst

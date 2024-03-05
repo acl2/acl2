@@ -419,7 +419,9 @@
   (if (mbt (not (app-view x86)))
       (b* ((cr3       (ctri *cr3* x86))
            ;; PML4 Table:
-           (pml4-base-addr (ash (cr3Bits->pdb cr3) 12)))
+           (pml4-base-addr (ash (cr3Bits->pdb cr3) 12))
+           (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
+           (lin-addr (logext #.*max-linear-address-size* (ash vpn 12))))
 
         (xlation-governing-entries-paddrs-for-pml4-table
          lin-addr pml4-base-addr x86))

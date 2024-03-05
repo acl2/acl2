@@ -407,6 +407,7 @@
 (defconst *2^max-linear-address-size-1* (expt 2 *max-linear-address-size-1*))
 (defconst *-2^max-linear-address-size-1* (- *2^max-linear-address-size-1*))
 (defconst *max-linear-address-space* (expt 2 *max-linear-address-size*))
+(defconst *max-linear-page-size* (- *max-linear-address-size* 12))
 
 ; Physical Memory:
 

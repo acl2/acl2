@@ -555,17 +555,42 @@
 
     (:doc "</ul>")))
 
+(make-event
+ `(defconst *x86-field-names-as-keywords*
+    ',(loop$ for i in (strip-cars *x86isa-state*)
+             when (not (equal i :doc))
+             collect
+             (intern$ (symbol-name i) "KEYWORD"))))
+
+(define tlb-entryp (x)
+  :guard t
+  (b* (((unless (consp x)) nil)
+       ((cons key val) x))
+      (and (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 4) key)
+           (< (loghead 2 key) 3)
+           (unsigned-byte-p (- #.*physical-address-size* 12) val)))
+  ///
+  (defthm constraints-on-tlb-entryp
+          (equal (tlb-entryp (cons key val))
+                 (and (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 4) key)
+                      (< (loghead 2 key) 3)
+                      (unsigned-byte-p (- #.*physical-address-size* 12) val)))))
+
 (define tlbp (tlb)
-  :enabled t
   :guard t
   (b* (((unless (consp tlb)) (equal tlb :tlb))
        ((list* el tail) tlb)
-       ((unless (consp el)) nil)
-       ((cons key val) el)
-       ((unless (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 3) key)) nil)
-       ((unless (unsigned-byte-p (- #.*physical-address-size* 12) val)) nil))
+       ((unless (tlb-entryp el)) nil))
       (tlbp tail))
   ///
+  (defthm |:tlb-is-tlbp|
+          (tlbp :tlb))
+
+  (defthm consing-tlb-entry-onto-tlbp-is-tlbp
+          (implies (and (tlb-entryp entry)
+                        (tlbp tlb))
+                   (tlbp (cons entry tlb))))
+
   (defthm integerp-cdr-hons-assoc-equal-tlb
           (implies (tlbp tlb)
                    (b* ((result (hons-assoc-equal key tlb)))

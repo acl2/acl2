@@ -571,15 +571,15 @@
 
 ;; las-to-pas error:
 
-(skip-proofs (local
- (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-0
-   (implies (and (equal addr-2 addr-1)
-                 ;; <n-2,addr-2> is a subset of <n-1,addr-1>.
-                 (<= (+ n-2 addr-2) (+ n-1 addr-2))
-                 (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
-                 (posp n-1))
-            (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
-                   nil)))))
+(local
+  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-0
+           (implies (and (equal addr-2 addr-1)
+                         ;; <n-2,addr-2> is a subset of <n-1,addr-1>.
+                         (<= (+ n-2 addr-2) (+ n-1 addr-2))
+                         (not (mv-nth 0 (las-to-pas n-1 addr-1 r-w-x x86)))
+                         (posp n-1))
+                    (equal (mv-nth 0 (las-to-pas n-2 addr-2 r-w-x x86))
+                           nil))))
 
 (local
  (defthmd mv-nth-0-las-to-pas-subset-p-in-non-marking-view-helper-1
@@ -770,49 +770,49 @@
               (val (logtail 8 val)))
            (rb-rb-induction-scheme n-1 a-1 n-2 a-2 val x86)))))
 
-(skip-proofs (defthmd rb-rb-subset-in-non-marking-view
-  ;; [Shilpi]: Expensive rule. Keep this disabled.
-  (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
-                (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
-                ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
-                ;; This non-strictness is nice because it lets me have
-                ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-view ---
-                ;; (< lin-addr (+ (len bytes) prog-addr))
-                ;; instead of
-                ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
-                (<= (+ j addr-j) (+ i addr-i))
-                (<= addr-i addr-j)
-                (canonical-address-p addr-i)
-                (canonical-address-p (+ -1 i addr-i))
-                (canonical-address-p addr-j)
-                (posp i) (posp j)
-                (not (app-view x86))
-                (not (marking-view x86))
-                (x86p x86))
-           (equal (mv-nth 1 (rb j addr-j r-w-x x86))
-                  (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
-  :hints (("Goal"
-           :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
-                         (las-to-pas i addr-i r-w-x x86)
-                         (las-to-pas j addr-j r-w-x x86))
-           :in-theory (e/d* (signed-byte-p
-                             ifix
-                             nfix
-                             rb-1-opener-theorem)
-                            (unsigned-byte-p)))
-          (if (equal (car id) '(0 1))
-              '(:expand ((las-to-pas i addr-i r-w-x x86))
-                        :use ((:instance rb-rb-same-start-address-different-op-sizes-non-marking-view
-                                         (addr addr-i)))
-                        :in-theory (e/d* (rb-rb-subset-helper-1
-                                          rb-rb-subset-helper-2
-                                          signed-byte-p
-                                          ifix
-                                          nfix
-                                          rb-1-opener-theorem)
-                                         (unsigned-byte-p
-                                          signed-byte-p)))
-            nil))))
+(defthmd rb-rb-subset-in-non-marking-view
+         ;; [Shilpi]: Expensive rule. Keep this disabled.
+         (implies (and (equal (mv-nth 1 (rb i addr-i r-w-x x86)) val)
+                       (not (mv-nth 0 (las-to-pas i addr-i r-w-x x86)))
+                       ;; <j,addr-j> is a subset (not strict) of <i,addr-i>.
+                       ;; This non-strictness is nice because it lets me have
+                       ;; a better hyp in one-read-with-rb-from-program-at-in-non-marking-view ---
+                       ;; (< lin-addr (+ (len bytes) prog-addr))
+                       ;; instead of
+                       ;; (< (+ 1 lin-addr) (+ (len bytes) prog-addr))
+                       (<= (+ j addr-j) (+ i addr-i))
+                       (<= addr-i addr-j)
+                       (canonical-address-p addr-i)
+                       (canonical-address-p (+ -1 i addr-i))
+                       (canonical-address-p addr-j)
+                       (posp i) (posp j)
+                       (not (app-view x86))
+                       (not (marking-view x86))
+                       (x86p x86))
+                  (equal (mv-nth 1 (rb j addr-j r-w-x x86))
+                         (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
+         :hints (("Goal"
+                  :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
+                                (las-to-pas i addr-i r-w-x x86)
+                                (las-to-pas j addr-j r-w-x x86))
+                  :in-theory (e/d* (signed-byte-p
+                                     ifix
+                                     nfix
+                                     rb-1-opener-theorem)
+                                   (unsigned-byte-p)))
+                 (if (equal (car id) '(0 1))
+                   '(:expand ((las-to-pas i addr-i r-w-x x86))
+                             :use ((:instance rb-rb-same-start-address-different-op-sizes-non-marking-view
+                                              (addr addr-i)))
+                             :in-theory (e/d* (rb-rb-subset-helper-1
+                                                rb-rb-subset-helper-2
+                                                signed-byte-p
+                                                ifix
+                                                nfix
+                                                rb-1-opener-theorem)
+                                              (unsigned-byte-p
+                                                signed-byte-p)))
+                   nil)))
 
 (defthm many-reads-with-rb-from-program-at-in-non-marking-view
   (implies

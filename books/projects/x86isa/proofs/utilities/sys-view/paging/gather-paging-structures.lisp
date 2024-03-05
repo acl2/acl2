@@ -392,7 +392,9 @@
   :parents (xlate-equiv-structures)
   :long "<p>Two paging structure entries are @('xlate-equiv-entries')
   if they are equal for all bits except the accessed and dirty
-  bits (bits 5 and 6, respectively).</p>"
+  bits (bits 5 and 6, respectively). Additionally, the tlb and paging entries
+  on the states must be arranged so that address translations are the same
+  on both states.</p>"
   ;; (and (equal (part-select e-1 :low 0 :high 4)
   ;;             (part-select e-2 :low 0 :high 4))
   ;;      ;; Bits 5 (accessed bit) and 6 (dirty bit) missing here.
@@ -2176,8 +2178,8 @@
 
   (if (and (equal (xr :app-view nil x86-1) nil)
            (equal (xr :app-view nil x86-2) nil)
-           (64-bit-modep x86-1)
-           (64-bit-modep x86-2))
+           (equal (64-bit-modep x86-1)
+                  (64-bit-modep x86-2)))
 
       (and (xlate-equiv-structures x86-1 x86-2)
            (all-mem-except-paging-structures-equal x86-1 x86-2))

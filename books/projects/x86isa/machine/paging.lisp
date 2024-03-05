@@ -64,6 +64,145 @@
 
 ;; ======================================================================
 
+(define same-page ((lin-addr integerp)
+                   (lin-addr-2 integerp))
+  (or (equal lin-addr lin-addr-2)
+      (and (mbt (and (integerp lin-addr)
+                     (integerp lin-addr-2)))
+           (equal (logtail 12 lin-addr)
+                  (logtail 12 lin-addr-2))))
+  ///
+  (defequiv same-page)
+
+  (local (defthmd equal-logtail-i-implies-equal-logtail-j-for-j>=i
+                  (implies (and (natp i)
+                                (integerp x)
+                                (integerp y)
+                                (integerp j)
+                                (>= j i)
+                                (equal (logtail i x)
+                                       (logtail i y)))
+                           (equal (logtail j x)
+                                  (logtail j y)))
+                  :hints (("Goal" :in-theory (enable logtail**
+                                                     bitops::logtail-induct)))))
+
+  (defthm same-page-implies-logtails>=12-equal
+          (implies (and (integerp i)
+                        (>= i 12)
+                        (same-page y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (equal (logtail i x)
+                          (logtail i y)))
+          :hints (("Goal" :use (:instance equal-logtail-i-implies-equal-logtail-j-for-j>=i (i 12) (j i) (x x) (y y)))))
+
+  (defthm same-page-address-construction
+          (implies (same-page x y)
+                   (same-page (logior (loghead i x)
+                                      (ash z i))
+                              (logior (loghead i y)
+                                      (ash z i))))
+          :rule-classes :congruence)
+
+  (defthm same-page-implies-logapp<=12-equal
+          (implies (and (integerp n)
+                        (<= n 12)
+                        (same-page y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (same-page (logapp n x z)
+                              (logapp n y z)))
+          :hints (("Goal" :in-theory (enable logtail**
+                                             bitops::logtail-induct
+                                             logapp**
+                                             bitops::logapp-induct))))
+
+  (defthm same-page-implies-same-page-logheads
+          (implies (same-page a b)
+                   (same-page (loghead n a) (loghead n b)))
+          :rule-classes :congruence)
+
+  (local (defthmd logext-maintains-logtail-equals
+                  (implies (and (integerp k)
+                                (> k n)
+                                (natp n)
+                                (integerp x)
+                                (integerp y)
+                                (equal (logtail n x)
+                                       (logtail n y)))
+                           (equal (logtail n (logext k x))
+                                  (logtail n (logext k y))))
+                  :hints (("Goal" :in-theory (enable logtail**
+                                                     bitops::logtail-induct
+                                                     logext**
+                                                     bitops::logext-induct)))))
+
+  (defthm logexting-maintains-same-page
+          (implies (and (integerp n)
+                        (> n 12)
+                        (same-page y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (same-page (logext n x)
+                              (logext n y)))
+          :hints (("Goal" :use (:instance logext-maintains-logtail-equals (n 12) (k n)))))
+
+  (defthmd logtails<=12-equal-implies-same-page
+           (implies (and (integerp x)
+                         (integerp y)
+                         (natp n)
+                         (<= n 12)
+                         (equal (logtail n x) (logtail n y)))
+                    (same-page x y))
+           :hints (("Goal" :use (:instance equal-logtail-i-implies-equal-logtail-j-for-j>=i (j 12) (i n))))))
+
+(defthm 0-loghead-of-ash
+        (implies (and (natp n)
+                      (natp m)
+                      (<= n m))
+                 (equal (loghead n (ash x m))
+                        0))
+        :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct
+                                           ash** bitops::ash**-induct))))
+
+(define same-page-offset ((lin-addr integerp)
+                          (lin-addr-2 integerp))
+  (equal (loghead 12 lin-addr)
+         (loghead 12 lin-addr-2))
+  ///
+  (defequiv same-page-offset)
+
+  (defthm same-page-offset-addr-construction
+          (implies (and (natp n)
+                        (>= n 12))
+                   (same-page-offset (logior (loghead n x)
+                                             (ash y n))
+                                     x)))
+
+  (defthm logexted-is-same-page
+          (implies (and (natp n)
+                        (>= n 12))
+                   (same-page-offset (logext n x)
+                                     x)))
+
+  (local (defthmd equal-loghead-implies-equal-more-restrictive-logheads
+                  (implies (and (natp n)
+                                (natp m)
+                                (<= m n)
+                                (equal (loghead n x)
+                                       (loghead n y)))
+                           (equal (loghead m x)
+                                  (loghead m y)))
+                  :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct)))))
+
+  (defthm same-page-offset-implies-same-logheads
+          (implies (and (natp n)
+                        (<= n 12)
+                        (same-page-offset y (double-rewrite x))
+                        (syntaxp (not (equal x y))))
+                   (equal (loghead n x)
+                          (loghead n y)))
+          :hints (("Goal" :use (:instance equal-loghead-implies-equal-more-restrictive-logheads
+                                          (n 12) (m n) (x x) (y y))))))
+
 (defthm loghead-zero-smaller
   (implies (and (equal (loghead n x) 0)
                 (natp n)
@@ -533,7 +672,14 @@
       :hints-l (("Goal" :in-theory (e/d ()
                                         (page-table-entry-addr))))
       :gen-linear t
-      :gen-type t))
+      :gen-type t)
+
+    (defthm page-table-entry-addr-equal-if-same-page
+            (implies (same-page lin-addr lin-addr-2)
+                     (equal (page-table-entry-addr lin-addr base-addr)
+                            (page-table-entry-addr lin-addr-2 base-addr)))
+            :hints (("Goal" :in-theory (enable same-page)))
+            :rule-classes :congruence))
 
   (define page-directory-entry-addr
     ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -596,7 +742,13 @@
       :concl (+ 7 (page-directory-entry-addr lin-addr base-addr))
       :gen-linear t
       :gen-type t
-      :hints-l (("Goal" :in-theory (e/d () (page-directory-entry-addr))))))
+      :hints-l (("Goal" :in-theory (e/d () (page-directory-entry-addr)))))
+
+    (defthm page-directory-entry-addr-equal-if-same-page
+            (implies (same-page lin-addr lin-addr-2)
+                     (equal (page-directory-entry-addr lin-addr base-addr)
+                            (page-directory-entry-addr lin-addr-2 base-addr)))
+            :rule-classes :congruence))
 
   (define page-dir-ptr-table-entry-addr
     ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -657,7 +809,13 @@
       :hints-l (("Goal" :in-theory (e/d ()
                                         (page-dir-ptr-table-entry-addr))))
       :gen-linear t
-      :gen-type t))
+      :gen-type t)
+
+    (defthm page-dir-ptr-table-entry-addr-equal-if-same-page
+            (implies (same-page lin-addr lin-addr-2)
+                     (equal (page-dir-ptr-table-entry-addr lin-addr base-addr)
+                            (page-dir-ptr-table-entry-addr lin-addr-2 base-addr)))
+            :rule-classes :congruence))
 
   (define pml4-table-entry-addr
     ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -718,7 +876,14 @@
       :concl (+ 7 (pml4-table-entry-addr lin-addr base-addr))
       :gen-linear t
       :gen-type t
-      :hints-l (("Goal" :in-theory (e/d () (pml4-table-entry-addr)))))))
+      :hints-l (("Goal" :in-theory (e/d () (pml4-table-entry-addr))))))
+
+    (defthm pml4-table-entry-addr-equal-if-same-page
+              (implies (same-page lin-addr lin-addr-2)
+                       (equal (pml4-table-entry-addr lin-addr base-addr)
+                              (pml4-table-entry-addr lin-addr-2 base-addr)))
+              :hints (("Goal" :in-theory (enable pml4-table-entry-addr)))
+              :rule-classes :congruence))
 
 (in-theory (e/d () (adding-7-to-shifted-bits)))
 
@@ -1252,7 +1417,31 @@
                                                   u/s-acc r/w-acc x/d-acc
                                                   wp smep smap ac nxe r-w-x cpl x86)))
                   (x86-operation-mode x86))
-           :enable x86-operation-mode))
+           :enable x86-operation-mode)
+
+  (defthm paging-entry-no-page-fault-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))
+                          (mv-nth 0 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))))
+          :rule-classes :congruence)
+
+  (defthm paging-entry-no-page-fault-val-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))
+                          (mv-nth 1 (paging-entry-no-page-fault-p
+                                      structure-type lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))))
+          :rule-classes :congruence))
 
 ;; ======================================================================
 
@@ -1291,8 +1480,7 @@
 
   (if (mbt (not (app-view x86)))
 
-    (b* (
-         ;; Fix the inputs of this function without incurring execution
+    (b* (;; Fix the inputs of this function without incurring execution
          ;; overhead.
          (lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
                         :exec lin-addr))
@@ -1523,7 +1711,42 @@
                                                   wp smep smap ac nxe r-w-x cpl x86)))
                   (x86-operation-mode x86))
            :enable x86-operation-mode
-           :disable ia32e-la-to-pa-page-table))
+           :disable ia32e-la-to-pa-page-table)
+
+  (defthm ia32e-la-to-pa-page-table-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-page-table
+                                    lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-page-table
+                                                 lin-addr entry
+                                                 u/s-acc r/w-acc x/d-acc
+                                                 wp smep smap ac nxe r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-page-table-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-page-table
+                                      lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-page-table
+                                      lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-page-table-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-page-table
+                                          lin-addr entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-page-table
+                                          lin-addr-2 entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -1860,7 +2083,48 @@
                                                   wp smep smap ac nxe r-w-x cpl x86)))
                   (x86-operation-mode x86))
            :enable x86-operation-mode
-           :disable ia32e-la-to-pa-page-directory))
+           :disable ia32e-la-to-pa-page-directory)
+
+  (defthm ia32e-la-to-pa-page-directory-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                    lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-page-directory
+                                                 lin-addr entry
+                                                 u/s-acc r/w-acc x/d-acc
+                                                 wp smep smap ac nxe r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-page-directory-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                      lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-page-directory
+                                      lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-page-directory-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-page-directory
+                                          lin-addr entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-page-directory
+                                          lin-addr-2 entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -2203,7 +2467,48 @@
                                                   wp smep smap ac nxe r-w-x cpl x86)))
                   (x86-operation-mode x86))
            :enable x86-operation-mode
-           :disable ia32e-la-to-pa-page-dir-ptr-table))
+           :disable ia32e-la-to-pa-page-dir-ptr-table)
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                    lin-addr entry
+                                    u/s-acc r/w-acc x/d-acc
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
+                                                 lin-addr entry
+                                                 u/s-acc r/w-acc x/d-acc
+                                                 wp smep smap ac nxe r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                      lin-addr entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
+                                      lin-addr-2 entry
+                                      u/s-acc r/w-acc x/d-acc
+                                      wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-page-dir-ptr-table-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
+                                          lin-addr entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
+                                          lin-addr-2 entry
+                                          u/s-acc r/w-acc x/d-acc
+                                          wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -2454,11 +2759,46 @@
 
   (defrule x86-operation-mode-of-ia32e-la-to-pa-pml4-table
            (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-pml4-table
-                                                  lin-addr base-addr
+                                                  lin-addr ase-addr
                                                   wp smep smap ac nxe r-w-x cpl x86)))
                   (x86-operation-mode x86))
            :enable x86-operation-mode
-           :disable ia32e-la-to-pa-pml4-table))
+           :disable ia32e-la-to-pa-pml4-table)
+
+  (defthm ia32e-la-to-pa-pml4-table-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                    lin-addr ase-addr
+                                    wp smep smap ac nxe r-w-x cpl x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-pml4-table
+                                                 lin-addr ase-addr
+                                                 wp smep smap ac nxe r-w-x cpl x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-pml4-table-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                      lin-addr ase-addr
+                                      wp smep smap ac nxe r-w-x cpl x86))
+                          (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                                      lin-addr-2 ase-addr
+                                      wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-pml4-table-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-pml4-table
+                                          lin-addr ase-addr
+                                          wp smep smap ac nxe r-w-x cpl x86))
+                              (mv-nth 1 (ia32e-la-to-pa-pml4-table
+                                          lin-addr-2 ase-addr
+                                          wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence))
 
 ;; ----------------------------------------------------------------------
 
@@ -2467,7 +2807,7 @@
        (segment-selectorBits->rpl
         (the (unsigned-byte 16) (seg-visiblei #.*cs* x86)))))
 
-(define ia32e-la-to-pa
+(define ia32e-la-to-pa-without-tlb
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
              "Canonical linear address to be mapped to a physical address")
    (r-w-x     :type (member  :r :w :x)
@@ -2494,24 +2834,6 @@
 
     (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
                         :exec lin-addr))
-         (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
-         (supervisor? (equal (cpl x86) 0))
-         (tlb (tlb x86))
-         (tlb-key (logior 
-                    (ash vpn 3)
-                    (ash (if supervisor? 1 0) 2)
-                    (case r-w-x
-                      (:r 0)
-                      (:w 1)
-                      (:x 2))
-                    ))
-         (tlb-entry (cdr (hons-get tlb-key tlb)))
-         ((when tlb-entry) (mv nil 
-                               (logapp 12 lin-addr tlb-entry)
-                               x86))
-
-         ;; We didn't find a valid tlb entry
-
          (cr0
            ;; CR0 is still a 32-bit register in 64-bit mode.
            (n32 (ctri *cr0* x86)))
@@ -2536,11 +2858,230 @@
              (the (unsigned-byte 52)
                   (ash (the (unsigned-byte 40) (cr3Bits->pdb cr3)) 12))))
          ((mv flg phys-addr x86)
-          (ia32e-la-to-pa-pml4-table (logext #.*max-linear-address-size* (ash vpn 12)) pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
-         ((when flg) (mv t 0 x86))
+          (ia32e-la-to-pa-pml4-table lin-addr pml4-table-base-addr wp smep smap ac nxe r-w-x cpl x86))
+         ((when flg) (mv t 0 x86)))
+        (mv flg phys-addr x86))
+
+    (mv t 0 x86))
+
+  ///
+
+  (defthm ia32e-la-to-pa-without-tlb-in-non-app-view
+          (implies (xr :app-view nil x86)
+                   (equal (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)
+                          (mv t 0 x86))))
+
+  (local (defthm unsigned-byte-p-logapp
+                 (implies (and (natp j)
+                               (unsigned-byte-p i x)
+                               (integerp y))
+                          (unsigned-byte-p (+ i j) (logapp j y x)))))
+
+  (defthm-unsigned-byte-p n52p-mv-nth-1-ia32e-la-to-pa-without-tlb
+                          :hyp t
+                          :bound *physical-address-size*
+                          :concl (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+
+                          :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
+                          :otf-flg t
+                          :gen-linear t
+                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
+                          :gen-type t
+                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
+                                                            (force (force) not)))))
+
+  (defthm x86p-mv-nth-2-ia32e-la-to-pa-without-tlb
+          (implies (x86p x86)
+                   (x86p (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+          :hints (("Goal" :in-theory (e/d () (x86p)))))
+
+  (defthm xr-ia32e-la-to-pa-without-tlb
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm xr-fault-ia32e-la-to-pa-without-tlb
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                   (equal (xr :fault index (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                          (xr :fault index x86)))
+          :hints (("Goal" :in-theory (e/d* ()
+                                           (force
+                                             (force)
+                                             (:definition not)
+                                             (:meta acl2::mv-nth-cons-meta))))))
+
+  (defthm xr-and-ia32e-la-to-pa-without-tlb-in-non-marking-view
+          (implies (and (not (marking-view x86))
+                        (not (equal fld :fault)))
+                   (equal (xr fld index (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                          (xr fld index x86)))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-values
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw fld index value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw fld index value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-rflags-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (and (equal (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 0
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                        (equal (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                       (xw :rflags nil value x86)))
+                               (mv-nth 1
+                                       (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (e/d (rflagsbits->ac rflagsbits-fix) ()))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-state
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :marking-view)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                  (xw fld index value x86)))
+                          (xw fld index value
+                              (mv-nth 2
+                                      (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                      x86)))))
+          :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-xw-rflags-state-not-ac
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags x86)))
+                   (equal (mv-nth 2
+                                  (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                  (xw :rflags nil value x86)))
+                          (xw :rflags nil value
+                              (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-same-page-offset
+          (implies (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                   (same-page-offset (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                                     lin-addr)))
+
+  (defthm ia32e-la-to-pa-without-tlb-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                          (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-without-tlb-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                              (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm mv-nth-2-ia32e-la-to-pa-without-tlb-system-level-non-marking-view
+    (implies (and (not (marking-view x86))
+                  (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+             (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                    x86))
+    :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb) (force (force))))))
+
+  (defrule 64-bit-modep-of-ia32e-la-to-pa-without-tlb
+           (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                  (64-bit-modep x86))
+           :enable (64-bit-modep)
+           :disable (force (force)))
+
+  (defrule x86-operation-mode-of-ia32e-la-to-pa-without-tlb
+           (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                  (x86-operation-mode x86))
+           :enable x86-operation-mode
+           :disable ia32e-la-to-pa-without-tlb)
+
+  (defthm ia32e-la-to-pa-without-tlb-fixes-address
+          (equal (ia32e-la-to-pa-without-tlb (logext 48 lin-addr) r-w-x x86)
+                 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+
+(define ia32e-la-to-pa
+  ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
+             "Canonical linear address to be mapped to a physical address")
+   (r-w-x     :type (member  :r :w :x)
+              "Indicates whether this translation is on the behalf of a read, write, or instruction fetch")
+   (x86 "x86 state"))
+
+  :parents (ia32e-paging)
+
+  :guard (and (not (app-view x86))
+              (canonical-address-p lin-addr))
+
+  :guard-hints (("Goal" :in-theory (e/d (acl2::bool->bit bitops::logsquash segment-selectorbits->rpl)
+                                        (unsigned-byte-p
+                                          signed-byte-p
+                                          bitops::logand-with-negated-bitmask
+                                          member-equal
+                                          not))))
+
+  ;; If lin-addr is not canonical, we should throw a general
+  ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
+  ;; appropriate?)
+
+  (if (mbt (not (app-view x86)))
+
+    (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
+                        :exec lin-addr))
+         (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
+         (tlb (tlb x86))
+
+         (tlb-key (logior 
+                    (ash vpn 4)
+                    (ash (cpl x86) 2)
+                    (case r-w-x
+                      (:r 0)
+                      (:w 1)
+                      (:x 2))))
+         ;; The useless looking and is necessary to coerce the return value of member
+         ;; to boolean, which is necessary cause mbt requires t, not just a truthy value
+         (tlb-entry (if (mbt (and (member r-w-x '(:r :w :x)) t))
+                      (cdr (hons-get tlb-key tlb))
+                      nil))
+         ((when tlb-entry) (mv nil 
+                               (logapp 12 lin-addr tlb-entry)
+                               x86))
+
+         ;; We didn't find a valid tlb entry
+         ((mv flg phys-addr x86) (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+         ((when flg) (mv flg phys-addr x86))
          (ppn (logtail 12 phys-addr))
-         (x86 (!tlb (hons-acons tlb-key ppn tlb) x86)))
-        (mv flg (logapp 12 lin-addr ppn) x86))
+         ;; The use of and is for the same reason as the one documented above
+         (x86 (if (mbt (and (member r-w-x '(:r :w :x)) t))
+                (!tlb (hons-acons tlb-key ppn tlb) x86)
+                x86)))
+        (mv flg phys-addr x86))
 
     (mv t 0 x86))
 
@@ -2660,20 +3201,6 @@
                               (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))))
           :hints (("Goal" :in-theory (e/d* (rflagsBits->ac rflagsbits-fix) (force (force))))))
 
-  (defthm ia32e-la-to-pa-phys-addr-same-page-virt-addr-same-page
-          (implies (and (canonical-address-p lin-addr)
-                        (canonical-address-p lin-addr-2)
-                        (equal (logtail 12 lin-addr)
-                               (logtail 12 lin-addr-2)))
-                   (b* (((mv flg1 p-addr1 x861) (ia32e-la-to-pa lin-addr r-w-x x86))
-                        ((mv flg2 p-addr2 x862) (ia32e-la-to-pa lin-addr-2 r-w-x x86)))
-                       (and (equal flg1 flg2)
-                            (equal (logtail 12 p-addr1)
-                                   (logtail 12 p-addr2))
-                            (equal x861
-                                   x862))))
-)
-
   (defrule 64-bit-modep-of-ia32e-la-to-pa
            (equal (64-bit-modep (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (64-bit-modep x86))
@@ -2684,7 +3211,25 @@
            (equal (x86-operation-mode (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
                   (x86-operation-mode x86))
            :enable x86-operation-mode
-           :disable ia32e-la-to-pa))
+           :disable ia32e-la-to-pa)
+
+  (defthm ia32e-la-to-pa-flg-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))
+                          (mv-nth 0 (ia32e-la-to-pa lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (disable logexting-maintains-same-page)
+                   :use ((:instance logexting-maintains-same-page
+                                    (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence)
+
+  (defthm ia32e-la-to-pa-phys-addr-same-if-virt-addr-same-page
+          (implies (same-page lin-addr lin-addr-2)
+                   (same-page (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))
+                              (mv-nth 1 (ia32e-la-to-pa lin-addr-2 r-w-x x86))))
+          :hints (("Goal" :in-theory (e/d () (logexting-maintains-same-page))
+                          :use ((:instance logexting-maintains-same-page
+                                           (x lin-addr) (y lin-addr-2) (n 48)))))
+          :rule-classes :congruence))
 
 ;; ======================================================================
 
@@ -3008,6 +3553,16 @@
                                    signed-byte-p
                                    force (force))))))
 
+(defthmd ia32e-la-to-pa-without-tlb-lower-12-bits-value-of-address-when-error
+  (implies (and (natp n)
+                (<= n 12)
+                (x86p x86)
+                (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+           (equal
+            (loghead n (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+            0))
+  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb) ()))))
+
 (defthmd ia32e-la-to-pa-lower-12-bits-value-of-address-when-error
   (implies (and (natp n)
                 (<= n 12)
@@ -3016,7 +3571,7 @@
            (equal
             (loghead n (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))
             0))
-  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa) ()))))
+  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa ia32e-la-to-pa-without-tlb-lower-12-bits-value-of-address-when-error) ()))))
 
 (defrulel ia32e-la-to-pa-lower-12-bits-alt
   ;; This local rule helps in the proof of
