@@ -1751,6 +1751,15 @@ ACL2 from scratch.")
             the sanity check that ~s."
            '(equal (float-radix 1.0d0) 2)))
 
+; The following form doesn't seem to take effect unless it is executed at
+; startup, so we include it in the code for lp conditioned on (not
+; *lp-ever-entered-p*).  But we include it here as well, just in case a future
+; GCL implementation needs it in order to avoid an error in the overflow test
+; below.
+#+gcl
+(fpe:break-on-floating-point-exceptions :floating-point-overflow t
+                                        :floating-point-invalid-operation t)
+
 (unless
 
 ; See the Essay on Support for Floating-point (double-float, df) Operations in
