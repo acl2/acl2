@@ -9656,6 +9656,15 @@
            #-(and gcl (not cltl2))
            (setq *debugger-hook* 'our-abort)
 
+           #+gcl
+           (fpe:break-on-floating-point-exceptions
+
+; See the comment about this call in acl2.lisp for why we make this call both
+; there and here.
+
+            :floating-point-overflow t
+            :floating-point-invalid-operation t)
+
 ; We have found it necessary to extend the LispWorks stack size, in particular
 ; for community books books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.

@@ -6891,12 +6891,8 @@
              (rassoc-eq (car uterm) *initial-return-last-table*))
          (append (butlast uterm 1)
                  (list (maybe-convert-to-mv (car (last uterm))))))
-        ((and (eq (car uterm) 'ec-call)
-              (= (length uterm) 2)) ; always true?
-         (list 'ec-call
-               (maybe-convert-to-mv (cadr uterm))))
-        ((eq (car uterm) 'time$) ; (time$ x ...)
-         (list* 'time$
+        ((member-eq (car uterm) '(ec-call time$))
+         (list* (car uterm)
                 (maybe-convert-to-mv (cadr uterm))
                 (cddr uterm)))
         (t uterm)))
@@ -20772,15 +20768,19 @@
          (set-difference-assoc-eq (cdr lst) alist))
         (t (cons (car lst) (set-difference-assoc-eq (cdr lst) alist)))))
 
-(defun ec-call-boolean-listp-check (stobjs-out lst)
-  (declare (xargs :guard (true-listp stobjs-out)))
-  (cond ((endp stobjs-out)
+(defun ec-call-boolean-listp-check (stobjs lst)
+
+; Stobjs is a stobjs-in or stobjs-out list that is being checked against lst, a
+; list of Booleans as supplied to the :dfs-in or :dfs-out argument of ec-call.
+
+  (declare (xargs :guard (true-listp stobjs)))
+  (cond ((endp stobjs)
          (null lst))
         ((atom lst)
          nil)
-        (t (and (eq (eq :df (car stobjs-out))
+        (t (and (eq (eq :df (car stobjs))
                     (car lst))
-                (ec-call-boolean-listp-check (cdr stobjs-out) (cdr lst))))))
+                (ec-call-boolean-listp-check (cdr stobjs) (cdr lst))))))
 
 (defun plausible-actual-stobjs-out-p (stobjs-out lst known-stobjs wrld)
   (declare (xargs :guard (and (symbol-listp stobjs-out)
@@ -21007,6 +21007,42 @@
                     ((member-eq var known-dfs)
                      (remove1-eq var known-dfs))
                     (t known-dfs)))))))
+
+(defun bad-dfs-in-out (arg2 arg3 wrld)
+
+; This function supports translation of a form (return-last 'ec-call1-raw arg2
+; arg3), which was presumably generated from ec-call.  It returns nil to
+; indicate the absence of a problem with the :dfs-in or :dfs-out argument of
+; that ec-call.  Otherwise it returns (cons bad-in bad-out), where bad-in is t
+; if the :dfs-in argument from that ec-call is incorrect or inappropriately
+; missing and otherwise bad-in is nil, and similarly for bad-out and :dfs-out.
+
+; We make a couple of assumptions justified by checks made in translate11
+; before bad-dfs-in-out is called.  First, fn below is bound to a non-nil
+; value.  Second, arg2 is either nil or of the form (cons qdfs-in qdfs-out)
+; where qdfs-in and qdfs-out pass qdfs-check, i.e., each is either nil or a
+; quoted true list of Booleans.
+
+  (let* ((fn (if (function-symbolp (car arg3) wrld)
+                 (car arg3)
+               (corresponding-inline-fn (car arg3)
+                                        wrld)))
+         (dfs-in (cadr (cadr arg2))) ; nil or (unquote (cadr arg2))
+         (dfs-out (cadr (caddr arg2))) ; nil or (unquote (caddr arg2))
+         (stobjs-in (stobjs-in fn wrld))
+         (stobjs-out (stobjs-out fn wrld))
+         (bad-in
+          (if (null dfs-in)
+              (member-eq :df stobjs-in)
+            (not (ec-call-boolean-listp-check stobjs-in
+                                              dfs-in))))
+         (bad-out
+          (if (null dfs-out)
+              (member-eq :df stobjs-out)
+            (not (ec-call-boolean-listp-check stobjs-out
+                                              dfs-out)))))
+    (and (or bad-in bad-out)
+         (cons bad-in bad-out))))
 
 (mutual-recursion
 
@@ -25767,7 +25803,7 @@
                            with defun-inline) to a call of FN$INLINE (i.e., ~
                            the result of adding suffix \"$INLINE\" to the ~
                            symbol-name of FN).  See :DOC ec-call."
-                          (car (last x))
+                          arg3
                           (let* ((fn0 (and (consp arg3)
                                            (car arg3)))
                                  (fn (and fn0
@@ -25815,32 +25851,34 @@
                           'ec-call '*ec-call-bad-ops*))
                ((and
                  (eq key 'ec-call1-raw)
-                 (not (and (consp arg2)
-                           (eq (car arg2) 'quote)
-                           (consp (cdr arg2))
-                           (null (cddr arg2)))))
+                 (not (or (null arg2)
+                          (equal arg2 *nil*)
+                          (and (true-listp arg2)
+                               (= (length arg2) 3)
+                               (eq (car arg2) 'cons)
+                               (and (qdfs-check (cadr arg2))
+                                    (qdfs-check (caddr arg2)))))))
                 (trans-er ctx
-                          "A use of ~x0 on the term ~x1 has a :DFS argument ~
-                           that is not of the form (QUOTE lst), hence is ~
-                           illegal.  See :DOC ec-call."
-                          'ec-call
-                          arg3))
-               ((and
-                 (eq key 'ec-call1-raw)
-                 (let* ((fn (if (function-symbolp (car arg3) wrld)
-                                (car arg3)
-                              (corresponding-inline-fn (car arg3)
-                                                       wrld)))
-                        (u (cadr arg2))
-                        (stobjs-out (stobjs-out fn wrld)))
-                   (if (null u)
-                       (member-eq :df stobjs-out)
-                     (not (ec-call-boolean-listp-check stobjs-out u)))))
+                          "The call ~x0 is illegal.  It appears to have ~
+                           arisen from an attempt to macroexpand an illegal ~
+                           call of ~x1 or ~x2."
+                          x 'ec-call 'ec-call1))
+               ((and (eq key 'ec-call1-raw)
+                     (bad-dfs-in-out arg2 arg3 wrld))
                 (trans-er ctx
-                          "A use of ~x0 on the term ~x1 requires a suitable ~
-                           :DFS keyword argument.  See :DOC ec-call."
+                          "A use of ~x0 on the term ~x1 requires ~#2~[a ~
+                           suitable :DFS-IN keyword argument~/a suitable ~
+                           :DFS-OUT keyword argument~/suitable :DFS-IN and ~
+                           :DFS-OUT keyword arguments~].  See :DOC ec-call."
                           'ec-call
-                          arg3))
+                          arg3
+                          (let* ((bad-in/bad-out
+                                  (bad-dfs-in-out arg2 arg3 wrld))
+                                 (bad-in (car bad-in/bad-out))
+                                 (bad-out (cdr bad-in/bad-out)))
+                            (cond ((not bad-out) 0)
+                                  ((not bad-in) 1)
+                                  (t 2)))))
                ((and
                  (eq key 'with-guard-checking1-raw)
                  (or (not (case-match arg2
