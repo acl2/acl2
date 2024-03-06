@@ -32,7 +32,6 @@
 (definecd network-propagator (evnts acc :loev) :loev
   :skip-tests t
   :body-contracts-hints (("Goal" :in-theory (enable evntp)))
-  :timeout 2000
   (match evnts
     (() (reverse acc))
     (((p1 'SND p2 x y) . rst)
@@ -101,7 +100,6 @@
   :ic (is-valid-twp twpm)
   :body-contracts-hints
   (("Goal" :do-not-induct t :in-theory (enable transition)))
-  :timeout 600
   :skip-tests t
   (cdr (car (reverse (run-network gr evnts i twpm s)))))
 

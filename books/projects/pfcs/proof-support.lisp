@@ -529,7 +529,7 @@
               constraint-relation-satp
               constraint-relation-nofreevars-satp
               set::emptyp
-              omap::keys-iff-not-empty))
+              omap::keys-iff-not-emptyp))
 
    (defrule if-direction
      (implies (and (assignmentp asg)

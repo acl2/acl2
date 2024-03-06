@@ -157,7 +157,7 @@
      This predicate says whether all the natural numbers in an assignment
      are in fact elements of the prime field specified by the given prime."))
   (b* ((asg (assignment-fix asg)))
-    (or (omap::empty asg)
+    (or (omap::emptyp asg)
         (b* (((mv & nat) (omap::head asg)))
           (and (fep nat p)
                (assignment-wfp (omap::tail asg) p)))))

@@ -323,6 +323,9 @@
    (xdoc::p
     "Improved documentation and organization.")
 
+   (xdoc::p
+    "Renamed @('omap::empty') to @(tsee omap::emptyp).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
