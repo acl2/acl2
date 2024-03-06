@@ -244,7 +244,9 @@
         for each concatenation @('<i>') (numbered starting from 1)
         in the alternation that defines the rule name,
         which asserts that the function returns @('<i>')
-        iff the subtrees match the concatenation.")))
+        iff the subtrees match the concatenation.")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>')"
