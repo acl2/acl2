@@ -257,13 +257,12 @@
        whose subtrees match the concatenation @('<i>')
        (expressed via @('<prefix>-<rulename>-conc?') above),
        returns the subtrees of the tree.
-       The generated function is accompanied by theorems,
-       in particular saying that the subtrees match
-       the concatenation @('<i>'):
-       this is the difference between the functions
-       generated for different values of @('<i>'),
-       all of which have the same defining body
-       because they all return the subtrees."))
+       The generated function is accompanied by the following theorems:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc<i>-match'),
+        which asserts that the result of the function (the subtrees)
+        matches the concatenation @('<i>').")))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>-matching')"

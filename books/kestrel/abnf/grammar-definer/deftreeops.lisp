@@ -1009,7 +1009,20 @@
              (tree-nonleaf->branches cst)
              :prepwork ((local (in-theory nil)))
              :guard-hints (("Goal" :in-theory '((:e elementp)
-                                                ,nonleaf-thm)))))))
+                                                ,nonleaf-thm)))
+             ///
+             (more-returns
+              (cstss (,conc-matchp cstss
+                                   ,(pretty-print-concatenation info.conc))
+                     :hyp (and (,matchp cst ,rulename-string)
+                               (equal (,check-conc-fn cst) ,i))
+                     :name ,(packn-pos (list info.get-tree-list-list-fn
+                                             '-matchp)
+                                       info.get-tree-list-list-fn)
+                     :hints (("Goal"
+                              :in-theory
+                              '(,info.get-tree-list-list-fn
+                                ,info.check-conc-fn-equiv-thm)))))))))
        (conc-singletonp (and (consp conc)
                              (not (consp (cdr conc)))))
        ((unless (or (not conc-singletonp)
