@@ -385,12 +385,12 @@
 (defthm len-of-keccak-sponge-aux2
   (implies (and (natp d)
                 (posp r))
-           (equal (len (keccak-sponge-aux2 b n_r r z s d w))
+           (equal (len (keccak-sponge-aux2 b n_r r z s d))
                   d)))
 
 ;; Check that the length of the output is in fact d.
 (defthm len-of-keccak-sponge
   (implies (and (natp d)
                 (posp r))
-           (equal (len (keccak-sponge b n_r r n d w))
+           (equal (len (keccak-sponge b n_r r n d))
                   d)))

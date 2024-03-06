@@ -728,6 +728,12 @@
            (representable-positive-normalp k p (smallest-positive-normal k p)))
   :hints (("Goal" :in-theory (enable smallest-positive-normal representable-positive-normalp decode-normal-number bias emin emax))))
 
+(defthm smallest-positive-normal-positive-linear
+  (implies (formatp k p)
+           (< 0 (smallest-positive-normal k p)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable smallest-positive-normal decode-normal-number bias emax emin))))
+
 (defthm smallest-positive-normal-correct
   (implies (and (representable-positive-normalp k p rat)
                 (rationalp rat)

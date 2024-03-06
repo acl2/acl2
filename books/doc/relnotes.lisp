@@ -329,6 +329,11 @@
                              "PFCS (Prime Field Constraint System) Library"))
 
    (xdoc::p
+    "The library has been moved
+     from @('[books]/kestrel/crypto/pfcs')
+     to @('[books]/projects/pfcs').")
+
+   (xdoc::p
     "A concrete syntax for PFCSes, in the form of an ABNF grammar,
      has been defined.")
 
@@ -436,6 +441,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "set::std/osets" "Standard Osets Library"))
+
+   (xdoc::p
+    "The @('set::empty') function has been renamed to @(tsee set::emptyp).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
                              "Standard Typed Alists Library"))
 
@@ -491,6 +503,14 @@
     "Tools @(tsee functions-after) and @(tsee macros-after) return names of
      functions and macros, respectively, that were introduced after a given
      name.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p
+    "Support has been added for the VEX-encoded
+     SHLX, SHRX, and SARX instructions.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

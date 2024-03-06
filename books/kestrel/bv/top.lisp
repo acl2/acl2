@@ -1,7 +1,7 @@
 ; The BV (bit vector) library.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,7 +31,7 @@
 ;; Underlying functions:
 (include-book "lognot")
 (include-book "logand")
-(include-book "logand2")
+(include-book "logand2") ; todo: rename logand-b?
 (include-book "logior")
 (include-book "logior-b")
 (include-book "logorc1")

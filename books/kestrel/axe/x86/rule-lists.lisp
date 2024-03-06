@@ -582,6 +582,7 @@
     x86isa::evex-byte3->vl/rc$inline-constant-opener
     x86isa::evex-byte3->z$inline-constant-opener
 
+    x86isa::rex-byte-from-vex-prefixes-constant-opener
 
 ;    x86isa::num-prefixes-fix$inline
 
@@ -3992,7 +3993,7 @@
             acl2::collect-constants-over-<-2
             acl2::commutativity-of-*-when-constant
             <-of-*-of-constant-and-constant
-            rationalp-when-integerp
+            acl2::rationalp-when-integerp
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed
@@ -4037,7 +4038,6 @@
             app-view-OF-!RFLAGS
             x86p-OF-!RFLAGS
             read-OF-!RFLAGS
-            boolif-same-arg1-arg2
             logext-of-+-of-bvplus-same-size
             logext-of-+-of-+-of-mult-same-size
             ACL2::MINUS-CANCELLATION-ON-RIGHT ; todo: use an arithmetic-light rule
@@ -4184,7 +4184,7 @@
             jnl-condition-of-getbit-31-and-0
             jnl-condition-rewrite-16
             jnl-condition-rewrite-16b
-            bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
+            acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
             ;ACL2::BVSX-WHEN-SIZES-MATCH
             ACL2::BVCHOP-OF-BVSX
             ;ACL2::BVCHOP-OF-BVCHOP
