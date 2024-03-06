@@ -700,7 +700,7 @@
        (defthms ; either nil or a singleton list
          (and produce-theorem
               (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
-                                (implies (and ,@assumptions)
+                                (implies (and ,@assumptions) ; todo: also include standard assumptions put in when lifting
                                          (equal (run-until-return x86)
                                                 (,lifted-name ,@fn-formals)))
                                 :hints ,(if restrict-theory
