@@ -237,7 +237,10 @@
     read-when-equal-of-read-alt
     <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
-    ))
+    bvchop-of-read
+    trim-of-read
+    svblt-of-read-trim-arg2
+    svblt-of-read-trim-arg3))
 
 (defun write-rules ()
   (declare (xargs :guard t))
@@ -251,8 +254,14 @@
     set-flag-of-write
     get-flag-of-write
     read-of-write-same
+    ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     read-of-write-disjoint
     read-of-write-disjoint2
+    ;; todo: more variants of these:
+    ;; todo: uncomment:
+    ;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
+    ;read-of-write-of-write-of-set-flag
+    ;read-of-write-of-write-write-of-of-set-flag
     program-at-of-write
     ;; todo: uncomment these but first organize rules:
     ;;write-of-write-same
@@ -1055,7 +1064,7 @@
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
 
-;todo: separate out the 64 but rules
+;todo: separate out the 64-bit rules
 (defun segment-base-and-bounds-rules ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
@@ -1255,10 +1264,12 @@
     ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
     ;;x86isa::not-equal-when-separate
     ;;x86isa::not-equal-when-separate-alt
+    x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
+    x86isa::not-equal-constant-when-separate-of-constants-alt
+    acl2::equal-of-+-combine-constants
+    acl2::equal-of-+-combine-constants-alt
+    acl2::equal-of-+-and-+-cancel-constants
     ))
-
-
-
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
