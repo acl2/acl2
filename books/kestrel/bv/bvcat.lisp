@@ -674,9 +674,9 @@
                          (bvchop size2 y2)))))
 
 (defthm slice-of-logapp-hack
-  (implies (and (natp size)
-                (natp bound)
-                (<= size bound))
+  (implies (and (<= size bound)
+                (natp size)
+                (natp bound))
            (equal (slice bound size (logapp size x -1))
                   (slice (- bound size) 0 -1)))
   :hints (("Goal" :in-theory (e/d (logapp slice logtail-of-bvchop ;repeatbit

@@ -2239,3 +2239,40 @@ reference made from privilege level 3.</blockquote>"
          length)))
 
 ;; ======================================================================
+
+(define rex-byte-from-vex-prefixes ((vex-prefixes vex-prefixes-p))
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+  :returns (rex-byte (unsigned-byte-p 8 rex-byte))
+  :parents (decoding-and-spec-utils)
+  :short "Calculate a REX byte from a VEX prefix."
+  :long
+  "<p>
+   The VEX prefix (see Intel manual Volume 2 Section 2.3.5 of Dec 2023)
+   provides an encoding of the REX byte.
+   Since some of the functions in our model depend on the REX byte
+   (e.g. @(tsee x86-operand-from-modr/m-and-sib-bytes)),
+   here we introduce a function to build a REX byte
+   from its encoding in the VEX prefix.
+   We do that for both the 2-byte form and the 3-byte form of the VEX prefix;
+   see @(tsee vex->r), @(tsee vex->x), @(tsee vex->b), and @(tsee vex->w).
+   See Figure 2-9 in Intel manual Volume 2 of Dec 2023.
+   Note that the R, X, B bits are encoded negated,
+   while the W is encoded directly (not negated).
+   </p>"
+  (b* ((vex.w (vex->w vex-prefixes))
+       (vex.r (vex->r vex-prefixes))
+       (vex.x (vex->x vex-prefixes))
+       (vex.b (vex->b vex-prefixes))
+       (rex-byte (+ #x40 ; 40h-4Fh
+                    (if (= vex.w 0) 0 #b1000)
+                    (if (= vex.r 1) 0 #b0100)
+                    (if (= vex.x 1) 0 #b0010)
+                    (if (= vex.b 1) 0 #b0001))))
+    rex-byte)
+  ///
+
+  (defthm-unsigned-byte-p unsigned-byte-p-of-rex-byte-from-vex-prefixes
+    :bound 8
+    :concl (rex-byte-from-vex-prefixes vex-prefixes)
+    :gen-type t
+    :gen-linear t))

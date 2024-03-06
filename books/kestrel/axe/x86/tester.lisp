@@ -24,6 +24,7 @@
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
+(include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
