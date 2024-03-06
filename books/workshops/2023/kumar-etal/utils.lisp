@@ -1,8 +1,7 @@
 (in-package "ACL2S")
 ;; Some utility functions
 
-(set-acl2s-property-table-proof-timeout 1000)
-(set-defunc-timeout 1000)
+(set-defunc-timeout 100000)
 
 (defdata lol (listof tl))
 (defdata lor (listof rational))
