@@ -736,7 +736,7 @@
   :enable omap::submap)
 
 (defruled omap-not-in-when-key-less
-  (implies (or (omap::empty map)
+  (implies (or (omap::emptyp map)
                (<< key (mv-nth 0 (omap::head map))))
            (not (omap::in key map)))
   :induct t
@@ -745,10 +745,10 @@
            omap::tail
            omap::mapp
            omap::mfix
-           omap::empty))
+           omap::emptyp))
 
 (defruled omap-head-not-in-tail
-  (implies (not (omap::empty map))
+  (implies (not (omap::emptyp map))
            (not (omap::in (mv-nth 0 (omap::head map))
                           (omap::tail map))))
   :enable omap::head-tail-order
@@ -757,7 +757,7 @@
                   (key (mv-nth 0 (omap::head map)))))
 
 (defruled omap-submap-of-tail-lemma
-  (implies (and (not (omap::empty map))
+  (implies (and (not (omap::emptyp map))
                 (omap::submap (omap::tail map)
                               (omap::tail map)))
            (omap::submap (omap::tail map) map))
@@ -775,7 +775,7 @@
            omap-submap-of-tail-lemma))
 
 (defruled omap-submap-of-tail
-  (implies (not (omap::empty map))
+  (implies (not (omap::emptyp map))
            (omap::submap (omap::tail map) map))
   :enable omap-submap-of-tail-lemma)
 
