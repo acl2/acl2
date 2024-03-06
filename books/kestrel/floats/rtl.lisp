@@ -81,12 +81,19 @@
            0))
   :hints (("Goal" :in-theory (enable rtl::expo log2))))
 
-(defthm expo-becomes-log2-when-negative
-  (implies (and (< rat 0)
-                (rationalp rat))
-           (equal (rtl::expo rat)
-                  (log2 (- rat))))
-  :hints (("Goal" :in-theory (enable rtl::expo log2))))
+;; (defthm expo-becomes-log2-when-negative
+;;   (implies (and (< rat 0)
+;;                 (rationalp rat))
+;;            (equal (rtl::expo rat)
+;;                   (log2 (- rat))))
+;;   :hints (("Goal" :in-theory (enable rtl::expo log2))))
+
+(defthm encodingp-becomes-unsigned-byte-p
+  (implies (and (rtl::formatp f)
+                (not (rtl::explicitp f)))
+           (equal (rtl::encodingp x f)
+                  (unsigned-byte-p (format-k f) x)))
+  :hints (("Goal" :in-theory (enable rtl::encodingp rtl::sigw))))
 
 ;drop?
 (defthmd representable-normalp-becomes-nrepp
@@ -269,15 +276,13 @@
   (implies (and (rtl::formatp f)
                 (rtl::encodingp x f)
                 (not (rtl::explicitp f))
-                (equal k (+ (rtl::prec f) (rtl::expw f)))
-                (equal p (rtl::prec f))
                 ;; Decoding does not give one of the 5 special kinds of floating-point-datump:
                 (not (rtl::infp x f)) ; see below for this case
                 (not (rtl::nanp x f)) ; see below for this case
                 (not (rtl::zerp x f)) ; see below for this case
                 )
            (equal (rtl::decode x f)
-                  (decode-bv-float k p x)))
+                  (decode-bv-float (format-k f) (format-p f) x)))
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
@@ -412,9 +417,8 @@
                                    oracle)))
   :hints (("Goal" :in-theory (enable rtl::zencode encode-bv-float encode wfn encode-nonzero-rational rtl::sigw))))
 
-
 ;; Encoding an infinity
-(defthm iencode-becomes-incode-bv-float
+(defthm iencode-becomes-encode-bv-float
   (implies (and (rtl::formatp f)
                 (not (rtl::explicitp f)) ; we only handle implicit formats
                 (bitp sgn))
@@ -423,8 +427,6 @@
                                    (if (equal 0 sgn) *float-positive-infinity* *float-negative-infinity*)
                                    oracle)))
   :hints (("Goal" :in-theory (enable rtl::iencode encode-bv-float encode wfn encode-nonzero-rational rtl::sigw))))
-
-
 
 (defthm drepp-forward-to-rationalp
   (implies (rtl::drepp x f)
@@ -590,3 +592,35 @@
                                    bvcat-equal-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm infp-in-terms-of-decode-bv-float
+  (implies (and (rtl::formatp f)
+                (not (rtl::explicitp f)) ; we only handle implicit formats
+                (rtl::encodingp x f))
+           (equal (rtl::infp x f)
+                  (infinityp (decode-bv-float (format-k f) (format-p f) x))))
+  :hints (("Goal" :in-theory (enable infinityp
+                                     rtl::infp
+                                     decode-bv-float
+                                     decode
+                                     rtl::unsupp
+                                     wfn
+                                     rtl::expf
+                                     rtl::manf
+                                     rtl::sigw))))
+
+(defthm nanp-in-terms-of-decode-bv-float
+  (implies (and (rtl::formatp f)
+                (not (rtl::explicitp f)) ; we only handle implicit formats
+                (rtl::encodingp x f))
+           (equal (rtl::nanp x f)
+                  (equal (decode-bv-float (format-k f) (format-p f) x)
+                         *float-nan*)))
+  :hints (("Goal" :in-theory (enable rtl::nanp
+                                     decode-bv-float
+                                     decode
+                                     rtl::unsupp
+                                     wfn
+                                     rtl::expf
+                                     rtl::manf
+                                     rtl::sigw))))
