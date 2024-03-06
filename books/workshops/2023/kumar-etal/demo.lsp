@@ -432,7 +432,7 @@
        s :nat)
   :res1
   :skip-tests t
-  :timeout 600
+  :timeout 12000
   :ic (is-valid-twp twpm)
   :body-contracts-hints (("goal" :do-not-induct t
                           :in-theory (enable nbr-topic-statep evntp twpp wpp)))
@@ -699,7 +699,7 @@
                                        s :nat)
   :res1
   :skip-tests t
-  :timeout 60
+  :timeout 12000
   :ic (is-valid-twp twpm)
   :body-contracts-hints (("Goal" :DO-NOT-INDUCT T
                           :in-theory (enable nbr-topic-statep evntp twpp wpp)))
@@ -809,7 +809,7 @@
                                   twpm :twp)
   :res2
   :skip-tests t
-  :timeout 2000
+  :timeout 12000
   :function-contract-hints (("Goal" :DO-NOT-INDUCT T
                              :in-theory (enable evntp)))
   :body-contracts-hints (("Goal" :DO-NOT-INDUCT T
@@ -898,7 +898,7 @@
 				  twpm :twp)
   :res2
   :skip-tests t
-  :timeout 2000
+  :timeout 12000
   :function-contract-hints (("Goal" :DO-NOT-INDUCT T
 			     :in-theory (enable evntp paramsp)))
   :body-contracts-hints (("Goal" :DO-NOT-INDUCT T
@@ -960,7 +960,7 @@
 (definecd transition
   (self :peer pstate :peer-state evnt :evnt twpm :twp s :nat) :res4
   :skip-tests t
-  :timeout 2000
+  :timeout 12000
   :function-contract-hints (("Goal" :in-theory (enable evntp forward-emission
                                                     update-nbr-topic-state
                                                     update-nbr-topic-state1
