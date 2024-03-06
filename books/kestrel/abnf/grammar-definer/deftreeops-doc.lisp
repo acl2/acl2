@@ -264,7 +264,9 @@
       (xdoc::li
        "@('<prefix>-<rulename>-conc<i>-match'),
         which asserts that the result of the function (the subtrees)
-        matches the concatenation @('<i>').")))
+        matches the concatenation @('<i>').")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>-matching')"

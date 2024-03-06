@@ -1022,7 +1022,14 @@
                      :hints (("Goal"
                               :in-theory
                               '(,info.get-tree-list-list-fn
-                                ,info.check-conc-fn-equiv-thm)))))))))
+                                ,info.check-conc-fn-equiv-thm)))))
+             (fty::deffixequiv ,info.get-tree-list-list-fn
+               :hints
+               (("Goal"
+                 :in-theory
+                 '(,info.get-tree-list-list-fn
+                   tree-nonleaf->branches$inline-tree-equiv-congruence-on-x
+                   tree-fix-under-tree-equiv))))))))
        (conc-singletonp (and (consp conc)
                              (not (consp (cdr conc)))))
        ((unless (or (not conc-singletonp)
