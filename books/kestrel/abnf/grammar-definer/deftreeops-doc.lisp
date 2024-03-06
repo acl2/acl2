@@ -230,10 +230,46 @@
        indicated by the integer returned by this function
        is lexicographic, based first on the order of the rules
        and then on the order of the concatenations within each rule.
-       The generated function is accompanied by theorems about it."))
+       The generated function is accompanied by the following theorems:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc?-possibilities'),
+        which asserts that the result of the function is
+        one of the numbers 1, ..., @('n'),
+        where @('n') is the number of concatenations
+        that form the alternation that defines the rule name.
+        This is a disjunctive theorem.")
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc?-<i>-iff-match-conc'),
+        for each concatenation @('<i>') (numbered starting from 1)
+        in the alternation that defines the rule name,
+        which asserts that the function returns @('<i>')
+        iff the subtrees match the concatenation.")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-match')"
+     "@('<prefix>-<rulename>-conc<i>')"
+     (xdoc::p
+      "For each rule name defined in the grammar by
+       an alternation of two or more concatenations,
+       and for each concatenation @('<i>') (numbered starting from 1)
+       in the alternation,
+       a function that, given a tree matching the rule name
+       whose subtrees match the concatenation @('<i>')
+       (expressed via @('<prefix>-<rulename>-conc?') above),
+       returns the subtrees of the tree.
+       The generated function is accompanied by the following theorems:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc<i>-match'),
+        which asserts that the result of the function (the subtrees)
+        matches the concatenation @('<i>').")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
+
+    (xdoc::desc
+     "@('<prefix>-<rulename>-conc<i>-matching')"
      (xdoc::p
       "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (starting from 1)
@@ -247,7 +283,7 @@
        when the concatenation is a singleton."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-rep<j>-match')"
+     "@('<prefix>-<rulename>-conc<i>-rep<j>-matching')"
      (xdoc::p
       "For each rule name defined in the grammar,
        for each concatenation @('<i>') (starting from 1)
