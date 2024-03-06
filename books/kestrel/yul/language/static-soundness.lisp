@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -202,7 +202,7 @@
     "See @(tsee funenv-to-funtable) for more explanation on
      the purpose of this computation."))
   (b* ((funscope (funscope-fix funscope))
-       ((when (omap::empty funscope)) nil)
+       ((when (omap::emptyp funscope)) nil)
        ((mv name funinfo) (omap::head funscope))
        (funtab (funscope-to-funtable (omap::tail funscope))))
     (omap::update name (funinfo-to-funtype funinfo) funtab))
@@ -315,7 +315,7 @@
     "See @(tsee funinfo-safep) for motivation (i.e. the invariant).
      This predicate checks the safety of all the values of the omap."))
   (b* (((when (or (not (mbt (funscopep funscope)))
-                  (omap::empty funscope)))
+                  (omap::emptyp funscope)))
         t)
        ((mv & info) (omap::head funscope)))
     (and (funinfo-safep info funtab)
