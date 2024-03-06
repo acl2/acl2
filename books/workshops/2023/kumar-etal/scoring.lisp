@@ -660,7 +660,6 @@
   :ic (is-valid-twp twpm)
   :skip-tests t
   :body-contracts-hints (("Goal" :in-theory (enable wpp)))
-  :timeout 100
   (match pt-ctrs
     (() acc)
     ((((p . top) . &) . rst)

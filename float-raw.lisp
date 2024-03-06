@@ -36,20 +36,64 @@
 ; we can (or must?) get a complex float for (expt x y) when y is not an
 ; integer; but ACL2 doesn't recognize complex floats.
 
+(defmacro df-signal? (form op)
+
+; Form should return a single numeric value in ACL2.  We ensure that if there
+; is no error then the result is truly a floating-point number that represents
+; a rational number -- not an infinity or NaN.  Actually we don't need to worry
+; about NaN in guard-verified code; it's simple to include that test in Allegro
+; CL with a documented function (rather than just testing against
+; #.*infinity-double* and #.*negative-infinity-double*), so we do so, but we
+; don't bother testing for Nan in LispWorks.
+
+; We return form unchanged in other than Allegro CL and LispWorks, because we
+; already know that an error is signalled on overflow for other Lisps that host
+; ACL2; see break-on-overflow-and-nan.
+
+  #-(or allegro lispworks)
+  (declare (ignore op))
+  #-(or allegro lispworks)
+  form
+  #+allegro
+  `(let ((result ,form))
+     (when (excl:exceptional-floating-point-number-p result)
+       (error "Floating-point exception for a call of ~s"
+              ',op))
+     result)
+  #+lispworks
+  `(let ((result ,form))
+     (when (or (= result +1D++0) (= result -1D++0))
+       (error "Floating-point overflow for a call of ~s"
+              ',op))
+     result))
+
 (defmacro defun-df-binary (name op)
+
+; We can perhaps avoid calling df-signal? in cases where overflow is
+; impossible, but we don't; see defun-df-unary.
+
   `(progn
      (defun ,name (x y)
        (declare (type double-float x y))
        (the double-float
-            (,op (the double-float x)
-                 (the double-float y))))))
+            (df-signal? (,op (the double-float x)
+                             (the double-float y))
+                        ,op)))))
 
 (defmacro defun-df-unary (name op)
+
+; We can perhaps avoid calling df-signal? in cases where overflow is
+; impossible, e.g., if op is sin.  But since df-signal? is needed on most df
+; operations, so we already likely have slowdown from df-signal? in LispWorks
+; and Allegro CL, we keep things simple and apply df-signal? unconditionally.
+; That could change if there are complaints.
+
   `(progn
      (defun ,name (x)
        (declare (type double-float x))
        (the double-float
-            (,op (the double-float x))))))
+            (df-signal? (,op (the double-float x))
+                        ,op)))))
 
 (defun-df-binary binary-df+ +)
 (defun-df-binary binary-df* *)

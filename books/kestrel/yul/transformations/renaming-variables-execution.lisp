@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -109,10 +109,10 @@
      and the function information for the same function name must be related."))
   (b* ((old (funscope-fix old))
        (new (funscope-fix new)))
-    (and (or (and (omap::empty old)
-                  (omap::empty new))
-             (and (not (omap::empty old))
-                  (not (omap::empty new))
+    (and (or (and (omap::emptyp old)
+                  (omap::emptyp new))
+             (and (not (omap::emptyp old))
+                  (not (omap::emptyp new))
                   (b* (((mv old-fun old-info) (omap::head old))
                        ((mv new-fun new-info) (omap::head new)))
                     (and (equal old-fun new-fun)
