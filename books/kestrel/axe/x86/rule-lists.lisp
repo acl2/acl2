@@ -1116,6 +1116,23 @@
     x86isa::mxcsrbits->rc$inline-constant-opener
     x86isa::mxcsrbits->fz$inline-constant-opener
 
+    mxcsrbits->ie-of-bvor
+    mxcsrbits->de-of-bvor
+    mxcsrbits->ze-of-bvor
+    mxcsrbits->oe-of-bvor
+    mxcsrbits->ue-of-bvor
+    mxcsrbits->pe-of-bvor
+    mxcsrbits->daz-of-bvor
+    mxcsrbits->im-of-bvor
+    mxcsrbits->dm-of-bvor
+    mxcsrbits->zm-of-bvor
+    mxcsrbits->om-of-bvor
+    mxcsrbits->um-of-bvor
+    mxcsrbits->pm-of-bvor
+    mxcsrbits->rc-of-bvor
+    mxcsrbits->fz-of-bvor
+    mxcsrbits->reserved-of-bvor
+
     ;todo: more
     mxcsrbits->daz-of-bvchop
     mxcsrbits->dm-of-bvchop
