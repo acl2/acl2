@@ -26,6 +26,8 @@
 
 (local (in-theory (disable randp symbol-alistp)))
 
+(in-theory (disable mv-nth))
+
 ;move
 (defthm integerp-of-mv-nth-0-of-genrandom
   (implies (integerp max) ; gen?

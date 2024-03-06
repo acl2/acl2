@@ -448,28 +448,13 @@
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-       ;; The VEX prefix provides an encoding of the REX byte.
-       ;; Since some of the functions in our model depend on the REX byte
-       ;; (e.g. x86-operand-from-modr/m-and-sib-bytes),
-       ;; here we build a REX byte from its encoding in the VEX prefixes.
-       ;; See Figure 2-9 in Intel manual Volume 2 of Dec 2023.
-       ;; Note that the R, X, B bits are encoded negated,
-       ;; while the W is encoded directly (not negated).
-       (vex.w (vex->w vex-prefixes))
-       (vex.r (vex->r vex-prefixes))
-       (vex.x (vex->x vex-prefixes))
-       (vex.b (vex->b vex-prefixes))
-       (rex-byte (+ #x40 ; 40h-4Fh
-                    (if (= vex.w 0) 0 #b1000)
-                    (if (= vex.r 1) 0 #b0100)
-                    (if (= vex.x 1) 0 #b0010)
-                    (if (= vex.b 1) 0 #b0001)))
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
 
        ;; The operand size is always 32 in 32-bit mode.
        ;; In 64-bit mode, it is 32 or 64 based on whether VEX.W is 0 or 1.
        ((the (integer 4 8) operand-size)
         (if (and (equal proc-mode #.*64-bit-mode*)
-                 (equal vex.w 1))
+                 (equal (vex->w vex-prefixes) 1))
             8
           4))
 

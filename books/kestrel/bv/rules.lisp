@@ -613,20 +613,6 @@
 
 (in-theory (enable BVCHOP-OF-LOGTAIL)) ;fixme why?
 
-;rename
-(defthm slice-of-logext
-  (implies (and (< highbit n)
-                (posp n)
-                (natp lowbit)
-                (integerp highbit))
-           (equal (slice highbit lowbit (logext n x))
-                  (slice highbit lowbit x)))
-  :hints (("Goal" :expand (slice highbit lowbit x)
-           :cases ((and (integerp x) (<= lowbit highbit))
-                   (and (integerp x) (> lowbit highbit)))
-           :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice
-                                    logtail-of-bvchop-becomes-slice)))))
-
 (defthm bvxor-of-bvchop-hack6
   (implies (and (integerp x)
                 (integerp y)
@@ -1059,42 +1045,42 @@
                 (natp size))
            (< (bvchop size x) k)))
 
-;fixme
-(defthmd logxor-logapp-24
-  (equal (logxor x (logapp 24 y z))
-         (logapp 24
-                 (logxor x y)
-                 (logxor (logtail 24 x) z))))
+;; ;fixme
+;; (defthmd logxor-logapp-24
+;;   (equal (logxor x (logapp 24 y z))
+;;          (logapp 24
+;;                  (logxor x y)
+;;                  (logxor (logtail 24 x) z))))
 
-(defthmd logxor-logapp-16
-  (equal (logxor x (logapp 16 y z))
-         (logapp 16
-                 (logxor x y)
-                 (logxor (logtail 16 x) z))))
+;; (defthmd logxor-logapp-16
+;;   (equal (logxor x (logapp 16 y z))
+;;          (logapp 16
+;;                  (logxor x y)
+;;                  (logxor (logtail 16 x) z))))
 
-(defthmd logxor-logapp-8
-  (equal (logxor x (logapp 8 y z))
-         (logapp 8
-                 (logxor x y)
-                 (logxor (logtail 8 x) z))))
+;; (defthmd logxor-logapp-8
+;;   (equal (logxor x (logapp 8 y z))
+;;          (logapp 8
+;;                  (logxor x y)
+;;                  (logxor (logtail 8 x) z))))
 
-(defthm logtail-logapp-24-8
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (logtail 8 (logapp 24 x y))
-                   (logapp 16 (logtail 8 x) y))))
+;; (defthm logtail-logapp-24-8
+;;    (implies (and (integerp x)
+;;                  (integerp y))
+;;             (equal (logtail 8 (logapp 24 x y))
+;;                    (logapp 16 (logtail 8 x) y))))
 
-(defthm logtail-logapp-16-8
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (logtail 8 (logapp 16 x y))
-                   (logapp 8 (logtail 8 x) y))))
+;; (defthm logtail-logapp-16-8
+;;    (implies (and (integerp x)
+;;                  (integerp y))
+;;             (equal (logtail 8 (logapp 16 x y))
+;;                    (logapp 8 (logtail 8 x) y))))
 
-(defthm logtail-logapp-24-16
-   (implies (and (integerp x)
-                 (integerp y))
-            (equal (logtail 16 (logapp 24 x y))
-                   (logapp 8 (logtail 16 x) y))))
+;; (defthm logtail-logapp-24-16
+;;    (implies (and (integerp x)
+;;                  (integerp y))
+;;             (equal (logtail 16 (logapp 24 x y))
+;;                    (logapp 8 (logtail 16 x) y))))
 
 (defthm logapp-equal-rewrite-24
    (equal (equal (logapp 24 x y) z)
@@ -2277,25 +2263,6 @@
            (equal (slice 31 7 (logext 8 x))
                   (bvsx 25 1 (getbit 7 x))))
   :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
-
-(defthm high-slice-of-logext
-  (implies (and (<= (+ -1 n) low)
-                (posp n)
-                (natp low)
-                (integerp high))
-           (equal (slice high low (logext n x))
-                  (bvsx (+ 1 high (- low))
-                        1
-                        (getbit (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
-
-;fixme
-(defthm bvchop-32-logext-8
-  (implies (integerp x)
-           (equal (bvchop 32 (logext 8 x))
-                  (bvsx 32 8 x)))
-  :hints (("Goal" :cases ((equal 0 (GETBIT 7 X)))
-           :in-theory (enable bvsx))))
 
 ;; ;bozo gen
 (defthm bvplus-of-logext-arg1-32-8
@@ -3738,30 +3705,7 @@
          (bvxor size y (bvif size test a b)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-;newly disabled
-(defthmd logxor-bvchop-bvchop
-  (implies (and (integerp x)
-                (<= 0 size)
-                (integerp size)
-                (integerp y))
-           (equal (LOGXOR (BVCHOP size x)
-                          (BVCHOP size y))
-                  (bvxor size x y)))
-  :hints (("Goal" :in-theory (enable bvxor))))
 
-(defthmd logxor-of-bvchop-and-bvchop
-  (implies (and (integerp x)
-                (integerp y)
-                (natp size1)
-                (natp size2))
-           (equal (LOGXOR (BVCHOP size1 x)
-                          (BVCHOP size2 y))
-                  (if (<= size1 size2)
-                      (bvxor size2 (bvchop size1 x) y)
-                    (bvxor size1 x (bvchop size2 y)))))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
-(theory-invariant (incompatible (:definition bvxor) (:rewrite LOGXOR-BVCHOP-BVCHOP)))
 
 (defthm bitxor-of-myif-arg1
   (equal (bitxor (myif test a b) y)

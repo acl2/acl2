@@ -112,6 +112,7 @@
     bool-fix-when-booleanp
     ;; Rules about boolif:
     boolif-same-branches
+    boolif-same-arg1-arg2
     boolif-of-t-and-nil
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
@@ -916,7 +917,7 @@
      bvxor-1-becomes-bitxor
      bvor-1-becomes-bitor
 
-     bvand-with-mask-better-eric
+     bvand-with-constant-mask-arg2
      ;; trying without
 ;            bvor-appending-idiom-low
 ;           bvor-appending-idiom-low-alt
@@ -1431,7 +1432,8 @@
     bitand-of-logext-arg1
     bitxor-of-logext-arg2
     bitxor-of-logext-arg1
-    bvchop-32-logext-8 ;bozo
+    bvchop-of-logext-becomes-bvsx
+    ;;bvchop-32-logext-8 ;bozo
     logext-64-bound-hack-8 ;bozo
     logext-64-bound-hack ;bozo
     logext-bound-when-unsigned-byte-p

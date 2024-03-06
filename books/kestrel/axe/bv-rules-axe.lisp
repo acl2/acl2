@@ -927,6 +927,9 @@
                   t))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
+(defthmd acl2-numberp-of-logext
+  (acl2-numberp (logext size i)))
+
 ;fixme more like this for other ops?!
 (defthmd bvxor-tighten-axe-bind-and-bind
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
