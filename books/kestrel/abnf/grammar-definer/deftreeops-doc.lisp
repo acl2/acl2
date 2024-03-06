@@ -252,7 +252,7 @@
        because they all return the subtrees."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-match')"
+     "@('<prefix>-<rulename>-conc<i>-matching')"
      (xdoc::p
       "For each rule name defined in the grammar,
        and for each concatenation @('<i>') (starting from 1)
@@ -266,7 +266,7 @@
        when the concatenation is a singleton."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-rep<j>-match')"
+     "@('<prefix>-<rulename>-conc<i>-rep<j>-matching')"
      (xdoc::p
       "For each rule name defined in the grammar,
        for each concatenation @('<i>') (starting from 1)
