@@ -237,7 +237,10 @@
     read-when-equal-of-read-alt
     <-of-constant-and-read ; in case we backchain to < to try to resolve a bvlt
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
-    ))
+    bvchop-of-read
+    trim-of-read
+    svblt-of-read-trim-arg2
+    svblt-of-read-trim-arg3))
 
 (defun write-rules ()
   (declare (xargs :guard t))

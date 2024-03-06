@@ -1,7 +1,7 @@
 ; Simpler functions for reading and writing memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system)) ;todo
 (local (include-book "kestrel/bv/logior-b" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
 
 (local (in-theory (disable ;(:linear x86isa::n08p-xr-mem)
@@ -906,6 +907,48 @@
                                        8
                                        (read 1 addr x86))))))
   :hints (("Goal" :use (:instance read-4-blast))))
+
+(local
+  (defun bvchop-of-read-induct (numbits numbytes addr)
+    (if (zp numbytes)
+        (list numbits numbytes addr)
+      (bvchop-of-read-induct (+ -8 numbits) (+ -1 numbytes) (+ 1 addr)))))
+
+(defthm bvchop-of-read
+  (implies (and (equal 0 (mod numbits 8))
+                (natp numbits)
+                (natp numbytes))
+           (equal (bvchop numbits (read numbytes addr x86))
+                  (if (< numbits (* 8 numbytes))
+                      (read (/ numbits 8) addr x86)
+                    (read numbytes addr x86))))
+  :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
+           :in-theory (enable READ acl2::trim))))
+
+(defthm trim-of-read
+  (implies (and (equal 0 (mod numbits 8))
+                (natp numbits)
+                (natp numbytes))
+           (equal (acl2::trim numbits (read numbytes addr x86))
+                  (if (< numbits (* 8 numbytes))
+                      (read (/ numbits 8) addr x86)
+                    (read numbytes addr x86))))
+  :hints (("Goal" :in-theory (enable acl2::trim))))
+
+;; where should these go?
+(defthm svblt-of-read-trim-arg2
+  (implies (and (< size (* 8 n))
+                (posp size))
+           (equal (sbvlt size (read n addr x86) y)
+                  (sbvlt size (acl2::trim size (read n addr x86)) y)))
+  :hints (("Goal" :in-theory (enable acl2::trim))))
+
+(defthm svblt-of-read-trim-arg3
+  (implies (and (< size (* 8 n))
+                (posp size))
+           (equal (sbvlt size y (read n addr x86))
+                  (sbvlt size y (acl2::trim size (read n addr x86)))))
+  :hints (("Goal" :in-theory (enable acl2::trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
