@@ -1,6 +1,6 @@
 ; Arithmetic helpers for IEEE floating point spec
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -123,7 +123,6 @@
             (integerp (expt 2 (+ k (- p)))))
    :rule-classes :type-prescription)
 
-
 (defthm log2-of-*-of-expt
   (implies (and (integerp i)
                 (< 0 x)
@@ -131,6 +130,13 @@
            (equal (log2 (* x (expt 2 i)))
                   (+ i (log2 x))))
   :hints (("Goal" :in-theory (enable expt log2))))
+
+(defthm log2-of-*-of-expt-alt
+  (implies (and (integerp i)
+                (< 0 x)
+                (rationalp x))
+           (equal (log2 (* (expt 2 i) x))
+                  (+ i (log2 x)))))
 
 (defthm log2-of-*-of-expt-arg3
   (implies (and (integerp i)

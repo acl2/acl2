@@ -1,6 +1,6 @@
 ; Some validation theorems for the floating-point model
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,9 +13,15 @@
 (include-book "ieee-floats-as-bvs")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system))
 
@@ -149,3 +155,65 @@
 
 ;; From https://en.wikipedia.org/wiki/Single-precision_floating-point_format:
 (thm (equal (largest-subnormal 32 24) (* (expt 2 -126) (- 1 (expt 2 -23)))))
+
+;; The granularity of the subnormals is the smallest-positive-subnormal.
+;; That is, the difference between any 2 subnormals is a multiple of this value.
+(thm
+  (implies (and (formatp k p)
+                (rationalp rat1)
+                (rationalp rat2)
+                (representable-subnormalp k p rat1)
+                (representable-subnormalp k p rat2))
+           (equal (mod (- rat1 rat2) (smallest-positive-subnormal k p))
+                  0))
+  :hints (("Goal" :in-theory (enable representable-subnormalp
+                                     smallest-positive-subnormal-redef
+                                     representable-positive-subnormalp
+                                     equal-of-0-and-mod
+                                     expt-of-+))))
+
+;; And every subnormal is a multiple of that value.
+(thm
+  (implies (and (formatp k p)
+                (rationalp rat)
+                (representable-subnormalp k p rat))
+           (equal (mod rat (smallest-positive-subnormal k p))
+                  0))
+  :hints (("Goal" :in-theory (enable representable-subnormalp
+                                     smallest-positive-subnormal-redef
+                                     representable-positive-subnormalp
+                                     equal-of-0-and-mod
+                                     expt-of-+))))
+
+;; And so is every normal
+(thm
+  (implies (and (formatp k p)
+                (rationalp rat)
+                (representable-normalp k p rat))
+           (equal (mod rat (smallest-positive-subnormal k p))
+                  0))
+  :hints (("Goal"
+           :use ((:instance integerp-of-*
+                            (x (* 1/2 rat (expt 2 p)
+                                  (/ (expt 2 (log2 (if (< rat 0) (- rat) rat))))))
+                            (y (/ (expt 2 (log2 (if (< rat 0) (- rat) rat)))
+                                  (expt 2 (emin k p))))))
+           :in-theory (e/d (representable-normalp
+                            smallest-positive-subnormal-redef
+                            representable-positive-subnormalp
+                            equal-of-0-and-mod
+                            expt-of-+
+                            representable-positive-normalp)
+                           (integerp-of-*)))))
+
+;; And the gap between the subnormals and the normals is exactly the
+;; smallest-positive-subnormal.
+(thm
+  (implies (formatp k p)
+           (equal (- (smallest-positive-normal k p)
+                     (largest-subnormal k p))
+                  (smallest-positive-subnormal k p)))
+  :hints (("Goal" :in-theory (enable smallest-positive-subnormal-redef
+                                     smallest-positive-normal-redef
+                                     largest-subnormal
+                                     decode-subnormal-number))))
