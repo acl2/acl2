@@ -38,7 +38,7 @@
 ;(local (include-book "kestrel/lists-light/rules2" :dir :system)) ;todo
 (include-book "kestrel/arithmetic-light/floor" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
-(local (include-book "arithmetic/equalities" :dir :system))
+;(local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -3208,7 +3208,7 @@
            :in-theory (e/d (bvlt unsigned-byte-p bvcat logapp bvplus posp slice-becomes-getbit)
                            (anti-bvplus
                             PLUS-BECOMES-BVPLUS
-
+                            exponents-add ; for speed
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2)))))
 
@@ -8329,8 +8329,8 @@
              (unsigned-byte-p 5 x)
              (unsigned-byte-p 5 j)
              (unsigned-byte-p 5 k))
-            (equal (bvlt '5 (bvmult '5 j x) k)
-                   (bvlt '5 x (ceiling k j))))
+            (equal (bvlt 5 (bvmult 5 j x) k)
+                   (bvlt 5 x (ceiling k j))))
   :hints (("Goal"
            :use ((:instance floor-bound-hack-31)
 ;                 (:instance bvchop-identity (i (* J X)) (size 5))
@@ -8360,6 +8360,11 @@
 ;                            *-OF-2-BECOMES-BVMULT
                             ;COLLECT-CONSTANTS-OVER-<
                             +-OF-MINUS-1-AND-BV2
+                            ;; for speed:
+                            *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE
+                            INEQ-HACK
+                            INEQ-HACK2
+                            BOUND-WHEN-USB
                             )))))
 
 ;gen!
