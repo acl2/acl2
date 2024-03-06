@@ -48,6 +48,7 @@
 (include-book "../dag-info")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
+(include-book "../arithmetic-rules-axe")
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)

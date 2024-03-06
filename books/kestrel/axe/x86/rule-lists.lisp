@@ -1060,7 +1060,7 @@
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
 
-;todo: separate out the 64 but rules
+;todo: separate out the 64-bit rules
 (defun segment-base-and-bounds-rules ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
@@ -1237,10 +1237,12 @@
     ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
     ;;x86isa::not-equal-when-separate
     ;;x86isa::not-equal-when-separate-alt
+    x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
+    x86isa::not-equal-constant-when-separate-of-constants-alt
+    acl2::equal-of-+-combine-constants
+    acl2::equal-of-+-combine-constants-alt
+    acl2::equal-of-+-and-+-cancel-constants
     ))
-
-
-
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?

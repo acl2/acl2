@@ -81,6 +81,7 @@
 ;(include-book "kestrel/arithmetic-light/mod" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../dags2") ; for compose-term-and-dags
+(include-book "../arithmetic-rules-axe")
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
