@@ -1,6 +1,6 @@
 ; Idioms for expressing BV ops in terms of more common ones
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2024 Kestrel Institute
 ; Copyright (C) 2017-2018 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -123,11 +123,10 @@
                     bvand-8-hack
                     bvand-4-hack
                     bvand-2-hack
-                    bvand-with-mask-better-eric
-                    bvand-with-mask-better
-                    bvand-with-mask
+                    bvand-with-constant-mask-arg2
+                    bvand-with-constant-mask-arg3
                     ;bvand-of-constant-tighten
                     ;bvshl-rewrite-for-constant-shift-amount
                     ;bvshl-rewrite-with-bvchop-for-constant-shift-amount
                     ;bvshl-rewrite-with-bvchop
-                    bvand-with-mask-better-eric-alt))
+                    ))

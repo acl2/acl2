@@ -1,7 +1,7 @@
 ; Limiting how many times a rule can fire
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,11 +27,13 @@
             (all-integerp (strip-cdrs (acons-unique key val alist))))
    :hints (("Goal" :in-theory (enable acons-unique)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The rule-limits is a map from rule names to the number of additional times we can try them
 (defund rule-limitsp (limits)
   (declare (xargs :guard t))
   (and (symbol-alistp limits)
-       ;; may go negative if we exhaust the limit when relieving hyps and the decrement once more:
+       ;; may go negative if we exhaust the limit when relieving hyps and then decrement once more:
        (all-integerp (strip-cdrs limits))))
 
 (defthm rule-limitsp-forward-to-alistp
@@ -59,6 +61,8 @@
            (rule-limitsp (acons-unique key val alist)))
   :hints (("Goal" :in-theory (enable acons-unique rule-limitsp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; LIMITS is an alist that maps rule names to natural numbers (the number of
 ;; allowed rule applications remaining). Usually LIMITS will be nil, or at
 ;; least a very small alist.
@@ -77,6 +81,8 @@
             (prog2$ (and print (cw "(NOTE: Limit reached for rule ~x0.)~%" rule-symbol))
                     t)
           nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Decrements the limit for the supplied rule by 1.
 ;; TODO: This repeats some work done in limit-reachedp.  But this may be called much less often than limit-reachedp.
