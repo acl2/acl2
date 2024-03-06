@@ -231,7 +231,6 @@
                                   twpm :twp)
   :res2
   :skip-tests t
-  :timeout 2000
   :function-contract-hints (("Goal" :DO-NOT-INDUCT T
                              :in-theory (enable evntp)))
   :body-contracts-hints (("Goal" :DO-NOT-INDUCT T
@@ -365,7 +364,6 @@
                                    twpm :twp)
    :res2
    :skip-tests t
-   :timeout 2000
    :function-contract-hints (("Goal" :DO-NOT-INDUCT T
                               :in-theory (enable evntp paramsp)))
    :body-contracts-hints (("Goal" :DO-NOT-INDUCT T

@@ -309,7 +309,7 @@
      So we go through the variables in the (file) scope,
      ensuring that they are defined or tentatively defined."))
   (b* ((varscope (var-table-scope-fix varscope))
-       ((when (omap::empty varscope)) t)
+       ((when (omap::emptyp varscope)) t)
        ((mv & info) (omap::head varscope))
        (defstatus (var-sinfo->defstatus info))
        ((unless (or (var-defstatus-case defstatus :defined)
@@ -493,7 +493,7 @@
   :returns (yes/no booleanp)
   :short "Check if all the functions in a table are defined."
   (b* ((funtab (fun-table-fix funtab))
-       ((when (omap::empty funtab)) t)
+       ((when (omap::emptyp funtab)) t)
        ((mv & info) (omap::head funtab))
        ((unless (fun-sinfo->definedp info)) nil))
     (fun-table-all-definedp (omap::tail funtab)))

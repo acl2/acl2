@@ -1751,14 +1751,53 @@ ACL2 from scratch.")
             the sanity check that ~s."
            '(equal (float-radix 1.0d0) 2)))
 
-; The following form doesn't seem to take effect unless it is executed at
-; startup, so we include it in the code for lp conditioned on (not
-; *lp-ever-entered-p*).  But we include it here as well, just in case a future
-; GCL implementation needs it in order to avoid an error in the overflow test
-; below.
-#+gcl
-(fpe:break-on-floating-point-exceptions :floating-point-overflow t
-                                        :floating-point-invalid-operation t)
+(defun break-on-overflow-and-nan ()
+
+; In GCL at least, the effects of this function may not take effect unless this
+; form is executed at startup.  So we call it not only during the build, but
+; also in the code for lp conditioned on (not *lp-ever-entered-p*).  Thanks to
+; Camm Maguire for suggesting that we specify an effect for every legal keyword
+; in GCL, in case the defaults change.  We're applying that principle here for
+; other Lisps too.
+
+; We aren't concerned about underflow or inexact results.
+
+; It probably isn't important to set the rounding-mode to :nearest, as this is
+; probably the default anyhow.  But we do so just to tie things down a bit,
+; since that's what IEEE specifies that a language should do by default (see
+; documentation in the partial-encapsulate that introduces df-round).
+
+  #+gcl
+  (fpe:break-on-floating-point-exceptions :division-by-zero t
+                                          :floating-point-invalid-operation t
+                                          :floating-point-overflow t
+                                          :floating-point-underflow nil
+                                          :floating-point-inexact nil)
+  #+ccl
+  (ccl::set-fpu-mode :rounding-mode :nearest
+                     :overflow t
+                     :underflow nil
+                     :division-by-zero t
+                     :invalid t
+                     :inexact nil)
+
+  #+sbcl
+  (sb-int:set-floating-point-modes :traps
+                                   '(:overflow :invalid :divide-by-zero)
+                                   :rounding-mode :nearest)
+
+  #+cmucl
+  (ext:set-floating-point-modes :traps
+                                '(:overflow :invalid :divide-by-zero)
+                                :rounding-mode :nearest)
+
+; LispWorks and Allegro CL seem to have no mechanism like those above, so we
+; define a wrapper elsewhere, df-signal?, that is a no-op except in those two
+; Lisps.
+
+  nil)
+
+(break-on-overflow-and-nan)
 
 (unless
 
