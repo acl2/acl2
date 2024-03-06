@@ -1100,6 +1100,9 @@
     booleanp-of-is-nan
     not-mv-nth-0-of-sse-cmp
 
+    integerp-of-xr-mxcsr
+    x86isa::n32p-xr-mxcsr
+
     x86isa::mxcsrbits-fix-constant-opener
     x86isa::mxcsrbits->ie$inline-constant-opener
     x86isa::mxcsrbits->de$inline-constant-opener
@@ -1145,9 +1148,25 @@
     mxcsrbits->im-of-ifix
     mxcsrbits->ie-of-ifix
 
+    ;; more?  or make rules about bvif
+    x86isa::mxcsrbits->im-of-if
+    x86isa::mxcsrbits->dm-of-if
+    x86isa::mxcsrbits->daz-of-if
+
     mxcsrbits->daz-of-mv-nth-2-of-sse-cmp
     mxcsrbits->dm-of-mv-nth-2-of-sse-cmp
     mxcsrbits->im-of-mv-nth-2-of-sse-cmp
+
+    unsigned-byte-p-32-of-!mxcsrbits->ie
+    unsigned-byte-p-32-of-!mxcsrbits->de
+    integerp-of-!mxcsrbits->de
+    integerp-of-!mxcsrbits->ie
+    mxcsrbits->im-of-!mxcsrbits->ie
+    mxcsrbits->im-of-!mxcsrbits->de
+    mxcsrbits->dm-of-!mxcsrbits->de
+    mxcsrbits->dm-of-!mxcsrbits->ie
+    mxcsrbits->daz-of-!mxcsrbits->de
+    mxcsrbits->daz-of-!mxcsrbits->ie
 
     sse-cmp-of-bvchop-arg2
     sse-cmp-of-bvchop-arg3
@@ -1170,22 +1189,8 @@
     equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
     not-equal-of-7-and-mv-nth-1-of-sse-cmp
 
-    unsigned-byte-p-32-of-!MXCSRBITS->IE
-    unsigned-byte-p-32-of-!MXCSRBITS->DE
-    integerp-of-!MXCSRBITS->DE
-    integerp-of-!MXCSRBITS->IE
-    integerp-of-xr-mxcsr
-    MXCSRBITS->IM-of-!MXCSRBITS->IE
-    MXCSRBITS->IM-of-!MXCSRBITS->DE
-    MXCSRBITS->DM-of-!MXCSRBITS->DE
-    MXCSRBITS->DM-of-!MXCSRBITS->IE
-    MXCSRBITS->DAZ-of-!MXCSRBITS->DE
-    MXCSRBITS->DAZ-of-!MXCSRBITS->IE
-    X86ISA::MXCSRBITS->IM-of-if
-    X86ISA::MXCSRBITS->DM-of-if
-    X86ISA::MXCSRBITS->Daz-of-if
     sse-daz-of-nil
-    X86ISA::N32P-XR-MXCSR
+
     ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
     x86isa::dp-sse-cmp ; scary?
     dazify-of-0-arg2
