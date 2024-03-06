@@ -917,7 +917,7 @@
      bvxor-1-becomes-bitxor
      bvor-1-becomes-bitor
 
-     bvand-with-mask-better-eric
+     bvand-with-constant-mask-arg2
      ;; trying without
 ;            bvor-appending-idiom-low
 ;           bvor-appending-idiom-low-alt

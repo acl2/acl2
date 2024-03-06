@@ -210,8 +210,6 @@
 ;                            anti-bvplus
                             )))))
 
-(in-theory (disable logmaskp)) ;move
-
 (defthmd blast-bvmult-into-bvplus-constant-version-arg2
   (implies (and (syntaxp (quotep y))
                 (integerp x)  ;new

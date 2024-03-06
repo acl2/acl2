@@ -19,6 +19,7 @@
 (include-book "bvplus")
 (include-book "bv-syntax")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
+(include-book "logext-def")
 (local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
