@@ -156,12 +156,7 @@
       This is @('nil') if the theorem is not generated,
       i.e. if the concatenation is not a singleton.")
     (xdoc::li
-     "The name of the generated theorem that asserts the equivalence between
-      (1) the fact that the concatenation checking function
-      (@('check-conc-fn') in @(tsee deftreeops-rulename-info))
-      returns the positive integer corresponding to this concatenation and
-      (2) the discriminant term in @('discriminant-term').
-      This is generated as part of the @('<prefix>-<rulename>-conc?') function
+     "The name of the @('<prefix>-<rulename>-conc?-<i>-iff-match-conc') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if the rule name is defined by

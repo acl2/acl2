@@ -230,7 +230,21 @@
        indicated by the integer returned by this function
        is lexicographic, based first on the order of the rules
        and then on the order of the concatenations within each rule.
-       The generated function is accompanied by theorems about it."))
+       The generated function is accompanied by the following theorems:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc?-possibilities'),
+        which asserts that the result of the function is
+        one of the numbers 1, ..., @('n'),
+        where @('n') is the number of concatenations
+        that form the alternation that defines the rule name.
+        This is a disjunctive theorem.")
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc?-<i>-iff-match-conc'),
+        for each concatenation @('<i>') (numbered starting from 1)
+        in the alternation that defines the rule name,
+        which asserts that the function returns @('<i>')
+        iff the subtrees match the concatenation.")))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>')"
