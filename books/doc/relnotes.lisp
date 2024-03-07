@@ -312,6 +312,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags (Obags) Library"))
+
+   (xdoc::p
+    "Renamed @('obag::empty') to @(tsee obag::emptyp).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
