@@ -1,6 +1,6 @@
 ; Partial spec of IEEE 754 floating point values and operations
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -742,6 +742,13 @@
   :hints (("Goal" :in-theory (enable representable-positive-normalp smallest-positive-normal decode-normal-number bias emax emin
                                      <=-of-expt-of-2-when-<=-of-log2))))
 
+(defthm smallest-positive-normal-correct-forward
+  (implies (and (representable-positive-normalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= (smallest-positive-normal k p) rat))
+  :rule-classes :forward-chaining)
+
 (defthm <-of-smallest-positive-normal-when-representable-positive-subnormalp
   (implies (and (representable-positive-subnormalp k p rat)
                 (rationalp rat)
@@ -1173,6 +1180,13 @@
                             bitp
                             unsigned-byte-p)))))
 
+(defthm largest-subnormal-correct-forward
+  (implies (and (representable-subnormalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= rat (largest-subnormal k p)))
+  :rule-classes :forward-chaining)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund smallest-positive-subnormal (k p)
@@ -1356,3 +1370,25 @@
  (equal (floating-point-datum-= k p x *float-negative-infinity*)
         (equal x *float-negative-infinity*))
  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; or define a nanp function
+(defthm equal-of-decode-and-float-nan
+  (equal (equal ':float-nan (decode k p sign biased-exponent trailing-significand))
+         (and (equal biased-exponent (+ (expt 2 (- k p)) -1))
+              (not (equal 0 trailing-significand))))
+  :hints (("Goal" :in-theory (enable decode wfn))))
+
+;; Tests whether X, which should be a floating-point datum, is either kind of infinity.
+;; Could add a guard but then this would have to take k and p.
+(defund infinityp (x)
+  (declare (xargs :guard t))
+  (or (equal x *float-positive-infinity*)
+      (equal x *float-negative-infinity*)))
+
+(defthm infinityp-of-decode
+  (equal (infinityp (decode k p sign biased-exponent trailing-significand))
+         (and (equal biased-exponent (+ (expt 2 (- k p)) -1))
+              (equal 0 trailing-significand)))
+  :hints (("Goal" :in-theory (enable decode wfn infinityp))))

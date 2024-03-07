@@ -1,6 +1,6 @@
 ; Connections between this BV library and the RTL library
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "rtl/rel11/lib/defs" :dir :system)
 (include-book "getbit")
+(include-book "bvcat")
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
@@ -44,3 +45,12 @@
            (equal (rtl::bvecp x n)
                   (unsigned-byte-p n x)))
   :hints (("Goal" :in-theory (enable rtl::bvecp unsigned-byte-p))))
+
+(defthm binary-cat-becomes-bvcat
+  (implies (and (integerp x)
+                (integerp y)
+                (posp m)
+                (posp n))
+           (equal (rtl::binary-cat x m y n)
+                  (bvcat m x n y)))
+  :hints (("Goal" :in-theory (e/d (bvcat rtl::binary-cat logapp) (logapp-equal-rewrite)))))

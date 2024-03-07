@@ -629,19 +629,37 @@
 
 ;; Ideally, these would all be rewritten away
 (defconst *symbols-from-rtl*
-  '(rtl::bitn
+  '(rtl::fl
+    rtl::bitn
     rtl::bits
+    rtl::binary-cat
     rtl::bvecp
     rtl::daz
+    rtl::nanp
     rtl::snanp
     rtl::qnanp
     rtl::denormp
     rtl::infp
+    rtl::unsupp
+    rtl::formatp
+    rtl::encodingp
+    rtl::explicitp
+    rtl::sigw
+    rtl::expf
+    rtl::sgnf
+    rtl::manf
+    rtl::sigf
+    rtl::prec
     rtl::mxcsr-masks
+    ;; rtl::set-flag ; conflict with our set-flag
     rtl::zencode
     rtl::iencode
     rtl::dencode
-    rtl::nencode))
+    rtl::nencode
+    rtl::decode
+    rtl::ddecode
+    rtl::zencode
+    rtl::mxcsr-rc))
 
 ;; formals that appear in theorems (or do we want to import these from acl2?):
 ;; also includes some vars that are let-bound in definitions
