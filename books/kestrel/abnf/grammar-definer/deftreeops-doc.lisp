@@ -72,6 +72,8 @@
        It could be a grammar introduced by @(tsee defgrammar).")
      (xdoc::p
       "The grammar must be "
+      (xdoc::seetopic "well-formedness" "well-formed")
+      " and "
       (xdoc::seetopic "closure" "closed")
       "."))
 
