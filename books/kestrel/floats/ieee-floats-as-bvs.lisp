@@ -1,6 +1,6 @@
 ; Representation of floats as bit-vectors (BVs)
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -87,7 +87,8 @@
                 (formatp k p))
            (equal (encode-bv-float k p (decode-bv-float k p bv) oracle)
                   bv))
-  :hints (("Goal" :in-theory (enable encode-bv-float decode-bv-float wfn formatp))))
+  :hints (("Goal" :in-theory (e/d (encode-bv-float decode-bv-float wfn formatp)
+                                  (equal-of-decode-and-float-nan)))))
 
 ;; Inversion
 (defthm decode-bv-float-of-encode-bv-float
@@ -169,3 +170,15 @@
 ;; TODO: Encode and inversion theorems
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm equal-of-decode-bv-float-and-float-nan
+  (equal (equal ':float-nan (decode-bv-float k p x))
+         (and (equal (slice (+ -2 k) (+ -1 p) x) (+ (expt 2 (- k p)) -1))
+              (not (equal 0 (bvchop (+ -1 p) x)))))
+  :hints (("Goal" :in-theory (enable decode-bv-float))))
+
+(defthm infinityp-of-decode-bv-float
+  (equal (infinityp (decode-bv-float k p x))
+         (and (equal (slice (+ -2 k) (+ -1 p) x) (+ (expt 2 (- k p)) -1))
+              (equal 0 (bvchop (+ -1 p) x))))
+  :hints (("Goal" :in-theory (enable decode-bv-float))))
