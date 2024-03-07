@@ -1143,11 +1143,10 @@
        ;; modr/m? below).
        ((when (and vex-byte0?
                    (or 64-bit-modep
-                       (and (not 64-bit-modep)
-                            (equal (part-select
-                                    les/lds-distinguishing-byte
-                                    :low 6 :high 7)
-                                   #b11)))))
+                       (equal (part-select
+                               les/lds-distinguishing-byte
+                               :low 6 :high 7)
+                              #b11))))
         ;; Handle VEX-encoded instructions separately.
         (b* (((mv flg temp-rip)
               (add-to-*ip proc-mode temp-rip 1 x86))
@@ -1195,11 +1194,10 @@
        ;; modr/m? below).
        ((when (and evex-byte0?
                    (or 64-bit-modep
-                       (and (not 64-bit-modep)
-                            (equal (part-select
-                                    bound-distinguishing-byte
-                                    :low 6 :high 7)
-                                   #b11)))))
+                       (equal (part-select
+                               bound-distinguishing-byte
+                               :low 6 :high 7)
+                              #b11))))
         ;; Handle EVEX-encoded instructions separately.
         (b* (((mv flg temp-rip)
               (add-to-*ip proc-mode temp-rip 1 x86))
