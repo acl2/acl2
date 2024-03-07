@@ -1,10 +1,10 @@
 ; Ordered Bags (Obags) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -61,17 +61,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert! (obag::empty nil))
+(assert! (obag::emptyp nil))
 
-(assert! (not (obag::empty '(4/5))))
+(assert! (not (obag::emptyp '(4/5))))
 
-(assert! (not (obag::empty '(5 68))))
+(assert! (not (obag::emptyp '(5 68))))
 
-(assert! (not (obag::empty '(x x))))
+(assert! (not (obag::emptyp '(x x))))
 
-(assert! (not (obag::empty '(5 5 5 68))))
+(assert! (not (obag::emptyp '(5 5 5 68))))
 
-(assert! (not (obag::empty '("a" "bb" "c" "c"))))
+(assert! (not (obag::emptyp '("a" "bb" "c" "c"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
