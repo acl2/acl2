@@ -273,6 +273,17 @@ most-negative-fixnum = ~s."
                           (= i 10)
                           (and (>= i 32)
                                (<= i 126))))
+               #+sbcl
+               (let ((v (lisp-implementation-version)))
+                 (when (and (string<= "2.4.2" v)
+                            (string< v "2.4.2.46"))
+                   (error "ACL2 build error: Please avoid SBCL versions 2.4.2 ~
+                           through 2.4.46).~%Instead use a later SBCL version ~
+                           (e.g., the latest from GitHub)~% or else SBCL ~
+                           version 2.4.1 or earlier.~%(Technical reason: ~
+                           function standard-char-p does not return t on a ~
+                           standard character input,~%but instead returns the ~
+                           input character.)")))
                (error "This Common Lisp is unsuitable for ACL2 because the ~
                        character~%with char-code ~d ~a standard in this ~
                        Common Lisp but should~%~abe."
