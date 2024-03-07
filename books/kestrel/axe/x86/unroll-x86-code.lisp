@@ -743,7 +743,7 @@
                                (print-base '10)       ; 10 or 16
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
                                (non-executable ':auto)  ;since stobj updates will not be let-bound
-                               (produce-theorem 't) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
+                               (produce-theorem 'nil) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
                                (prove-theorem 'nil) ;whether to try to prove the theorem with ACL2 (rarely works)
                                (restrict-theory 't)       ;todo: deprecate
                                )
