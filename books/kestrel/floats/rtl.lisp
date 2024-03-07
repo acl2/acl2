@@ -94,14 +94,6 @@
              (not (integerp (* rat (expt 2 i)))))))
 
 (local
-  (defthm <-of-log2-arg2
-    (implies (and (integerp i)
-                  (< 0 rat)
-                  (rationalp rat))
-             (equal (< i (log2 rat))
-                    (<= (expt 2 (+ 1 i)) rat)))))
-
-(local
   (defthm <-of-+-of-log2
     (implies (and (integerp i1)
                   (integerp i2)
