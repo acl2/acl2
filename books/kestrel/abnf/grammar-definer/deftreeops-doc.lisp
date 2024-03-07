@@ -72,6 +72,8 @@
        It could be a grammar introduced by @(tsee defgrammar).")
      (xdoc::p
       "The grammar must be "
+      (xdoc::seetopic "well-formedness" "well-formed")
+      " and "
       (xdoc::seetopic "closure" "closed")
       "."))
 
@@ -245,6 +247,22 @@
         in the alternation that defines the rule name,
         which asserts that the function returns @('<i>')
         iff the subtrees match the concatenation.")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
+
+    (xdoc::desc
+     "@('<prefix>-<rulename>-conc')"
+     (xdoc::p
+      "For each rule name defined in the grammar by
+       an alternation of one concatenation,
+       a function that, given a tree matching the rule name,
+       returns the subtrees of the tree.
+       The generated function is accompanied by the following theorems:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc-match'),
+        which asserts that the result of the function (the subtrees)
+        matches the concatenation.")
       (xdoc::li
        "@(tsee fty::deffixequiv) theorems for the function.")))
 
