@@ -347,6 +347,24 @@
   :hints (("Goal" :cases ((<= lowbit highbit))
            :in-theory (enable bvor))))
 
+;; We do it when at least one arg is a constant
+(defthm slice-of-bvor-when-constant
+  (implies (and (syntaxp (and (if (quotep x) t (quotep y))
+                              (quotep highbit)
+                              (quotep lowbit)
+                              ;; (quotep size)
+                              ))
+                (< highbit size)
+                (integerp size)
+                (natp lowbit)
+                (natp highbit))
+           (equal (slice highbit lowbit (bvor size x y))
+                  (bvor (+ 1 highbit (- lowbit))
+                        ;; at least one of these slices gets computed:
+                        (slice highbit lowbit x)
+                        (slice highbit lowbit y))))
+  :hints (("Goal" :by slice-of-bvor-gen)))
+
 (defthm <-of-bvor-and-expt
   (implies (and (integerp x)
                 (integerp y)

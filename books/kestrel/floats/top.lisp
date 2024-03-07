@@ -1,6 +1,6 @@
 ; Top level book for floats library
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,3 +15,4 @@
 (include-book "ieee-floats-as-bvs")
 (include-book "ieee-floats-validation")
 (include-book "rtl")
+(include-book "rtl-axe")
