@@ -80,6 +80,7 @@
     x86isa::rml64
     x86isa::rml80
     x86isa::rml128
+    x86isa::rml256
 
     ;; registers (the order is odd but follows the numeric values):
     x86isa::*rax*
