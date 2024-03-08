@@ -92,7 +92,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Maximum exponent
+;; Maximum exponent.  See Table 3.5.
 (defund emax (k p)
   (declare (xargs :guard (formatp k p)))
   (- (expt 2 (+ k (- p) -1))
@@ -111,8 +111,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Minimum exponent
-;; See 3.3
+;; Minimum exponent.  See Section 3.3.
 (defund emin (k p)
   (declare (xargs :guard (formatp k p)))
   (- 1 (emax k p)))
@@ -124,7 +123,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Exponent bias
+;; Exponent bias.  See Table 3.5.
 (defund bias (k p)
   (declare (xargs :guard (formatp k p)))
   (emax k p))
