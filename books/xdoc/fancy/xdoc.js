@@ -38,6 +38,7 @@ let xdata_loaded = false;
 const xdataObj = new XDocData();
 let xindex_loaded = false;
 const xindexObj = new XDocIndex();
+const xdocRenderer = new XdocRenderer();
 
 
 // --------------------------------------------------------------------------
@@ -52,7 +53,7 @@ function topicShortPlaintext(key) {
     if (key in short_plaintext_cache) {
 	return short_plaintext_cache[key];
     }
-    var ret = renderText(xindexObj.topicShort(key));
+    var ret = xdocRenderer.renderText(xindexObj.topicShort(key));
     short_plaintext_cache[key] = ret;
     return ret;
 }
@@ -689,7 +690,7 @@ function datShortSubtopics(key)
                   + xindexObj.topicName(child_key)
                   + "</dt>");
         var dd = jQuery("<dd></dd>");
-        dd.append(renderHtml(xindexObj.topicShort(child_key)));
+        dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(child_key)));
         dl.append(dd);
     }
     return dl;
@@ -764,7 +765,7 @@ function datLongTopic(key)
         div.append("<h1>" + key + " Not Found</h1>");
 
 	if (xindexObj.topicExists(BROKEN_KEY)) {
-        div.append(renderHtml(xdataObj.topicLong(BROKEN_KEY)));
+        div.append(xdocRenderer.renderHtml(xdataObj.topicLong(BROKEN_KEY)));
 	}
 
         return div;
@@ -809,9 +810,9 @@ function datLongTopic(key)
 	shortp = jQuery("<p align='center'></p>");
     }
 
-    shortp.append(renderHtml(xindexObj.topicShort(key)));
+    shortp.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     div.append(shortp);
-    div.append(renderHtml(xdataObj.topicLong(key)));
+    div.append(xdocRenderer.renderHtml(xdataObj.topicLong(key)));
     if (xindexObj.topicChildKeys(key).length != 0) {
         var acc = "<h3>";
         acc += "Subtopics ";
@@ -975,7 +976,7 @@ function searchAddHit(matches, hits, key) {
 //		+ " (" + xindexObj.topicUid(key) + ")" // nice for debugging
 		+ "</dt>");
     var dd = jQuery("<dd></dd>");
-    dd.append(renderHtml(xindexObj.topicShort(key)));
+    dd.append(xdocRenderer.renderHtml(xindexObj.topicShort(key)));
     hits.append(dd);
 }
 
@@ -1047,27 +1048,22 @@ function searchGoMain(query) {
 
 $(document).ready(function()
 {
-    // The below settings are needed to make this work with preload
-    // https://stackoverflow.com/a/63814972
     // Load the xindex content.
-    const xindexLoad = fetch("./xindex.js", {
-        method: 'GET',
-        credentials: 'include',
-        mode: 'no-cors',
-    }).then(res => res.text()).then(xindexSrc => {
-        let xindexData;
-        if (xindexSrc.startsWith("var xindex = ")) {
-            xindexData = JSON.parse(xindexSrc.slice(13, -1));
-        } else {
-            xindexData = JSON.parse(xindexSrc);
-        }
-
-        xindexObj.loadFromXindex(xindexData);
+    const xindexLoad = loadJS("./xindex.js").then(() => {
+        xindexObj.loadFromXindex(xindex);
         xindex_loaded = true;
+    });
+    const xsltLoad = loadJS("./render.js").then(() => {
+        const xsltDecoded = atob(xslt_base64);
+        xdocRenderer.init(xsltDecoded);
+    });
+    // Ensure that both the index and the XSL template are loaded before
+    // continuing.
+    Promise.all([xindexLoad, xsltLoad]).then(_ => {
         onIndexLoaded();
     });
     // This should fire when Katex is loaded.
-    document.getElementById("katexScript").addEventListener("load", () => {
+    document.getElementById("katexScript").addEventListener("load", _ => {
         onKatexLoaded();
     });
     maybePowertip(".toolbutton", {placement: 'se'});
@@ -1246,6 +1242,44 @@ function searchInit() {
 }
 
 
+/**
+ * Load a JS file. This function works regardless of whether the user
+ * is using the fancy XDOC viewer from a local file or viewing it online.
+ * Unfortunately we can't use fancy new JS APIs (like Fetch) since they
+ * rely on CORS, and ultimately a server is required. See
+ * https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSRequestNotHttp
+ * @param {string} file The path of the file to load, relative to index.html.
+ * @param {number} timeout A timeout (in seconds) before the load will be cancelled.
+ * @returns {Promise} A promise that resolves when the file is loaded, or rejects
+ *   if an error occurs during loading or a timeout is reached.
+ */
+function loadJS(file, timeoutArg) {
+    // Basically this function creates a script element with the
+    // appropriate src and waits for it to report "I'm loaded"
+    // before resolving the returned Promise.
+    const scriptElt = document.createElement("script");
+    scriptElt.setAttribute("src", file);
+    const timeout = timeoutArg == undefined ? -1 : timeoutArg;
+    document.body.appendChild(scriptElt);
+    return new Promise((resolve, reject) => {
+        let timeoutID;
+        if (timeout > 0) {
+            timeoutID = setTimeout(() => {
+                reject(new Error(`Timed out when loading ${file}`));
+            }, timeout);
+        }
+        scriptElt.addEventListener("load", _ => {
+            if (timeout > 0)
+                clearTimeout(timeoutID);
+            resolve();
+        });
+        scriptElt.addEventListener("error", e => {
+            if (timeout > 0)
+                clearTimeout(timeoutID);
+            reject(e.error);
+        });
+    });
+}
 
 
 /**
@@ -1256,18 +1290,10 @@ function onIndexLoaded()
     if (XDATAGET == "") {
         // Load xdata.js after xindexInit() because that way we know the
         // index is fully initialized by the time we run onDataLoaded.
-        fetch("xdata.js", {
-            method: 'GET',
-        }).then(res => res.text()).then(xdataSrc => {
-            let xdataParsed;
-            if (xdataSrc.startsWith("var xdata = ")) {
-                xdataParsed = JSON.parse(xdataSrc.slice(12, -1));
-            } else {
-                xdataParsed = JSON.parse(xdataSrc);
-            }
-            xdataObj.loadFromXdata(xdataParsed);
+        loadJS("./xdata.js").then(() => {
+            xdataObj.loadFromXdata(xdata);
             onDataLoaded();
-        })
+        });
     }
     else {
         // Running with the support of a server.  We can just regard the data
