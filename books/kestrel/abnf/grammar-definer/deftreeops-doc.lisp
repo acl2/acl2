@@ -225,7 +225,7 @@
        returns a positive integer
        indicating the concatenation matched by the subtrees,
        in the order in which the concatenation appears in the alternation,
-       starting from 1 for the first concatenation.
+       numbered starting from 1 for the first concatenation.
        If a rule name is defined by multiple rules
        (the first one non-incremental, the other ones incremental),
        the order of the concatenations
@@ -315,12 +315,30 @@
        when the concatenation is a singleton."))
 
     (xdoc::desc
+     "@('<prefix>-<rulename>-conc-rep<j>-matching')"
+     (xdoc::p
+      "For each rule name defined in the grammar by
+       an alternation of one concatenation,
+       and for each repetition @('<j>') (numbered starting from 1)
+       in that concatenation,
+       a theorem saying that
+       if a list of trees matches that repetition
+       then the list of trees has a length
+       within the range of the repetition
+       and each tree matches
+       the element of the repetition.
+       For now we only generate this theorem
+       when the repetition has a range of 1,
+       and when the concatenation is a singleton."))
+
+    (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>-rep<j>-matching')"
      (xdoc::p
-      "For each rule name defined in the grammar,
-       for each concatenation @('<i>') (starting from 1)
+      "For each rule name defined in the grammar by
+       an alternation of two or more concatenations,
+       and for each concatenation @('<i>') (numbered starting from 1)
        in the alternation that defines the rule name,
-       and for each repetition @('<j>') (starting from 1)
+       and for each repetition @('<j>') (numbered starting from 1)
        of that concatenation,
        a theorem saying that
        if a list of trees matches that repetition

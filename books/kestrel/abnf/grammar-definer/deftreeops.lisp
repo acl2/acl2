@@ -113,7 +113,8 @@
     "This information consists of:")
    (xdoc::ul
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-matching') theorem
+     "The name of the @('<prefix>-<rulename>-conc-rep<j>-matching')
+      or @('<prefix>-<rulename>-conc<i>-rep<j>-matching') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if the repetition does not have range 1
@@ -667,6 +668,8 @@
   ((rep repetitionp)
    (i posp "Indentifies the concatenation that this repetition is part of,
             starting from 1.")
+   (alt-singletonp booleanp "Whether the alternation that defines the rule name
+                             consists of a single concatenation or not.")
    (rulename-upstring acl2::stringp "Rule name normalized in uppercase.")
    (prefix acl2::symbolp))
   :returns (info deftreeops-rep-infop)
@@ -676,19 +679,26 @@
   (b* ((matching-thm
         (and (equal (repetition->range rep)
                     (make-repeat-range :min 1 :max (nati-finite 1)))
-             (packn-pos (list prefix
-                              '-
-                              rulename-upstring
-                              '-conc
-                              i
-                              '-rep1-matching)
-                        prefix))))
+             (if alt-singletonp
+                 (packn-pos (list prefix
+                                  '-
+                                  rulename-upstring
+                                  '-conc-rep1-matching)
+                            prefix)
+               (packn-pos (list prefix
+                                '-
+                                rulename-upstring
+                                '-conc
+                                i
+                                '-rep1-matching)
+                          prefix)))))
     (make-deftreeops-rep-info :matching-thm matching-thm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define deftreeops-gen-rep-info-list ((conc concatenationp)
                                       (i posp)
+                                      (alt-singletonp booleanp)
                                       (rulename-upstring acl2::stringp)
                                       (prefix acl2::symbolp))
   :returns (infos deftreeops-rep-info-listp)
@@ -696,9 +706,9 @@
           lists of repetitions, i.e. to concatenations."
   (b* (((when (endp conc)) nil)
        (info (deftreeops-gen-rep-info
-               (car conc) i rulename-upstring prefix))
+               (car conc) i alt-singletonp rulename-upstring prefix))
        (more-info (deftreeops-gen-rep-info-list
-                    (cdr conc) i rulename-upstring prefix)))
+                    (cdr conc) i alt-singletonp rulename-upstring prefix)))
     (cons info more-info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -739,7 +749,8 @@
                           prefix))))
        (rep-infos
         (and conc-singletonp
-             (deftreeops-gen-rep-info-list conc i rulename-upstring prefix)))
+             (deftreeops-gen-rep-info-list
+               conc i alt-singletonp rulename-upstring prefix)))
        (info (make-deftreeops-conc-info
               :conc conc
               :discriminant-term discriminant-term
