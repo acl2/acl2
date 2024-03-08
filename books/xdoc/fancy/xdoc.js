@@ -1442,24 +1442,28 @@ function actionGoBack(data) {
 
 function printerFriendly()
 {
-    var w = window.open("", "Printer",
-			"height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
+    const dataElement = document.getElementById("data");
+    const w = window.open("", "Printer",
+    "height=600,width=640,toolbar=1,location=0,resizable=1,scrollbars=1,status=0");
 
-    var html = "<html>\n"
-	+ "<head>\n"
-	+ "<title>Printer Friendly</title>\n"
-        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Noto+Serif\">"
-        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Lato\">"
-        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://fonts.googleapis.com/css?family=Source+Code+Pro\">"
-        + "<link rel=\"stylesheet\" type=\"text/css\" href=\"print.css\"/>"
-        + "<link rel=\"shortcut icon\" href=\"favicon.png\"/>"
-        + "</head><body>"
-	+ $("#data").html()
-	+ "</body></html>";
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <title>Printer Friendly</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital@0;1&family=Noto+Serif&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="print.css"/>
+    <link rel="shortcut icon" href="favicon.png"/>
+    </head>
+    <body>
+    ${dataElement.innerHTML}
+    </body>
+    </html>`;
 
     w.document.write(html);
-
-//    $(w.document.body).html(html);
 }
 
 function dolink(event, topic) {
