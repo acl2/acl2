@@ -263,60 +263,64 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
     return ret;
 }
 
-function xdataWhenReady (keys, whenReady)
-{
-    var missing = [];  // Optimization, don't load keys we've already loaded
-    for(var i in keys) {
-        if (!xdataObj.topicExists(keys[i]))
-            missing.push(keys[i]);
+/**
+ * Load the given set of keys into the local XDATA data structure
+ * This function returns a promise.
+ * @param {string[]} keys The keys to load.
+ * @returns {Promise} A promise that resolves when they keys have been
+ *   loaded and added to the local XDATA structure, or that resolves
+ *   with an error when an error occurs.
+ */
+function xdataLoadKeys(keys) {
+    // Optimization, don't load keys we've already loaded
+    const missing = [];
+    for(const key of keys) {
+        if (!xdataObj.topicExists(key))
+            missing.push(key);
     }
-
+    // If no keys are missing, we don't need to load anything!
     if (missing.length == 0) {
-        whenReady();
-        return;
+        return Promise.resolve();
     }
 
     if (!XDATAGET) {
         // We're running in local mode, so we can't load any more data from
         // the server.  Any missing keys are errors!
-        for(var i in missing)
-            xdataObj.addMissing(missing[i]);
-        whenReady();
-        return;
+        for(const missingKey of missing)
+            xdataObj.addError(missingKey, "Error: no such topic.");
+        return Promise.resolve();
     }
 
     // Else, running on a server and missing some keys.  Try to load them.
-    var url = XDATAGET + "?keys=" + missing.join(":");
+    const url = XDATAGET + "?keys=" + missing.join(":");
 
-    $.ajax({url: url,
-            type: "GET",
-            dataType: "json",
-            success: function(obj) {
-                var results = "results" in obj && obj["results"];
-                if (results && results.length == missing.length) {
-                    for(var i in results)
-                        xdataObj.add(missing[i], results[i]);
-                }
-                else {
-                    var val = "Error: malformed reply from " + url;
-                    if ("error" in obj)
-                        val = obj["error"];
-                    for(var i in missing)
-                        xdataObj.add(missing[i], val);
-                }
-                whenReady();
-                return;
-            },
-            error: function(xhr, status, exception) {
-                var val = "Error: AJAX query failed."
-                        + "xhr status " + xhr.status
-                        + ", text" + xhr.responseText
-                        + ", exception" + exception;
-                for(var i in missing)
-                    xdataObj.add(missing[i], val);
-                whenReady();
-                return;
-            }});
+    return fetch(url, {
+        method: 'GET',
+    }).then(res => res.json()).then(obj => {
+        const results = "results" in obj && obj["results"];
+        if (results && results.length == missing.length) {
+            // TODO: we need to assume that the order of the returned
+            // data is the same as the order of the requested keys.
+            for(let i = 0; i < results.length; i++) {
+                xdataObj.add(missing[i], results[i]);
+            }
+        } else {
+            let val = "Error: malformed reply from " + url;
+            if ("error" in obj)
+                val = obj["error"];
+            for(const missingKey of missing) {
+                xdataObj.addError(missingKey, val);
+            }
+        }
+    }).catch(err => {
+        const val = "Error: AJAX query failed."
+            + "xhr status " + xhr.status
+            + ", text" + xhr.responseText
+            + ", exception" + exception;
+        for(const missingKey of missing) {
+            xdataObj.addError(missingKey, val);
+        }
+    });
 }
 
 
@@ -708,8 +712,7 @@ function datExpand(dat_id)
     dat_id_table[dat_id]["ever_expanded"] = true;
     var key = dat_id_table[dat_id]["key"];
     var children = keySortedChildren(key);
-    xdataWhenReady(children,
-    function(){
+    xdataLoadKeys(children).then(() => {
         var div = $("#_dat_long" + dat_id);
         for(var i in children) {
             var child_key = children[i];
@@ -837,8 +840,7 @@ function datLoadKey(key, scroll_to)
     // hierarchy somewhere, to make the navigation follow along with you?
     var keys = [key];
 
-    xdataWhenReady(keys,
-    function() {
+    xdataLoadKeys(keys).then(() => {
         $("#parents").html("");
         $("#data").html("");
         $("#right").scrollTop(0);
@@ -1047,7 +1049,29 @@ function searchGoMain(query) {
 
 $(document).ready(function()
 {
-    LazyLoad.js('xindex.js', onIndexLoaded);
+    // The below settings are needed to make this work with preload
+    // https://stackoverflow.com/a/63814972
+    // Load the xindex content.
+    const xindexLoad = fetch("./xindex.js", {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'no-cors',
+    }).then(res => res.text()).then(xindexSrc => {
+        let xindexData;
+        if (xindexSrc.startsWith("var xindex = ")) {
+            xindexData = JSON.parse(xindexSrc.slice(13, -1));
+        } else {
+            xindexData = JSON.parse(xindexSrc);
+        }
+
+        xindexObj.loadFromXindex(xindexData);
+        xindex_loaded = true;
+        onIndexLoaded();
+    });
+    // This should fire when Katex is loaded.
+    document.getElementById("katexScript").addEventListener("load", () => {
+        onKatexLoaded();
+    });
     maybePowertip(".toolbutton", {placement: 'se'});
     maybePowertip(".rtoolbutton", {placement: 'sw'});
 });
@@ -1226,18 +1250,26 @@ function searchInit() {
 
 
 
-
+/**
+ * Callback for the XINDEX file being loaded.
+ */
 function onIndexLoaded()
 {
-    // LazyLoad.js will set the xindex var to the xindex data (see
-    // xdoc_index.js for more info)
-    xindexObj.loadFromXindex(xindex);
-    xindex_loaded = true;
-
     if (XDATAGET == "") {
         // Load xdata.js after xindexInit() because that way we know the
         // index is fully initialized by the time we run onDataLoaded.
-        LazyLoad.js('xdata.js', onDataLoaded);
+        fetch("xdata.js", {
+            method: 'GET',
+        }).then(res => res.text()).then(xdataSrc => {
+            let xdataParsed;
+            if (xdataSrc.startsWith("var xdata = ")) {
+                xdataParsed = JSON.parse(xdataSrc.slice(12, -1));
+            } else {
+                xdataParsed = JSON.parse(xdataSrc);
+            }
+            xdataObj.loadFromXdata(xdataParsed);
+            onDataLoaded();
+        })
     }
     else {
         // Running with the support of a server.  We can just regard the data
@@ -1262,21 +1294,17 @@ function onIndexLoaded()
 
     jumpInit();
     searchInit();
-
-    // Load katex after the other stuff is loaded.
-    LazyLoad.js('lib/katex/katex.min.js', onKatexLoaded);
 }
 
 function onDataLoaded()
 {
-    xdataObj.loadFromXdata(xdata);
     xdata_loaded = true;
     var params = getPageParameters();
 
     // Make sure that BROKEN_KEY gets loaded early on, so we can always just
     // assume it is loaded.
     if (xindexObj.topicExists(BROKEN_KEY)) {
-	xdataWhenReady([BROKEN_KEY], function() { return; });
+	xdataLoadKeys([BROKEN_KEY]).then(() => {});
     }
 
     if ("search" in params) {
