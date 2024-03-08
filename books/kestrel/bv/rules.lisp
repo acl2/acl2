@@ -4610,32 +4610,55 @@
                               0))))
   :hints (("Goal" :in-theory (enable slice-too-high-is-0 usb-slice-helper))))
 
-(defthm equal-of-slice-and-slice
-  (implies (and (<= high1 high2)
-                (<= low high1)
-                (natp low)
-                (natp high1)
-                (natp high2))
-           (equal (equal (slice high1 low x) (slice high2 low x))
-                  (equal 0 (slice high2 (+ 1 high1) x))))
-  :hints (("Goal"
-           :in-theory (enable natp)
-           :use (:instance rewrite-bv-equality-when-sizes-dont-match-core
-                           (x (slice high1 low x))
-                           (x-size (+ 1 (- high1 low)))
-                           (y (slice high2 low x))
-                           (y-size (+ 1 (- high2 low)))))))
+(local
+  (defthm equal-of-slice-and-slice
+    (implies (and (<= high1 high2)
+                  (<= low high1)
+                  (natp low)
+                  (natp high1)
+                  (natp high2))
+             (equal (equal (slice high1 low x) (slice high2 low x))
+                    (equal 0 (slice high2 (+ 1 high1) x))))
+    :hints (("Goal"
+             :in-theory (enable natp)
+             :use (:instance rewrite-bv-equality-when-sizes-dont-match-core
+                             (x (slice high1 low x))
+                             (x-size (+ 1 (- high1 low)))
+                             (y (slice high2 low x))
+                             (y-size (+ 1 (- high2 low))))))))
 
-(defthm equal-of-slice-and-slice-alt
-  (implies (and (<= high1 high2)
+(local
+  (defthm equal-of-slice-and-slice-alt
+    (implies (and (<= high1 high2)
+                  (<= low high1)
+                  (natp low)
+                  (natp high1)
+                  (natp high2))
+             (equal (equal (slice high2 low x) (slice high1 low x))
+                    (equal 0 (slice high2 (+ 1 high1) x))))
+    :hints (("Goal" :use equal-of-slice-and-slice
+             :in-theory (disable equal-of-slice-and-slice)))))
+
+(defthm equal-of-slice-and-slice-same-low
+  (implies (and (natp high1)
+                (natp high2)
                 (<= low high1)
+                (<= low high2)
+                (natp low))
+           (equal (equal (slice high1 low x) (slice high2 low x))
+                  (equal (slice (max high1 high2)
+                                (+ 1 (min high1 high2)) x)
+                         0))))
+
+(defthm equal-of-slice-and-getbit-same-low
+  (implies (and (<= low high)
                 (natp low)
-                (natp high1)
-                (natp high2))
-           (equal (equal (slice high2 low x) (slice high1 low x))
-                  (equal 0 (slice high2 (+ 1 high1) x))))
-  :hints (("Goal" :use equal-of-slice-and-slice
-           :in-theory (disable equal-of-slice-and-slice))))
+                (natp high))
+           (equal (equal (slice high low x) (getbit low x))
+                  (equal (slice high (+ 1 low) x) 0)))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (acl2::slice-becomes-getbit
+                                   acl2::bvchop-1-becomes-getbit)))))
 
 ;move
 (defthm not-equal-when-not-equal-bvchop

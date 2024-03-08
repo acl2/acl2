@@ -1213,7 +1213,8 @@
                                   (n 29)
                                   (x (slice 31 2 x))
                                   )
-           :in-theory (disable EQUAL-OF-SLICE-AND-SLICE
+           :in-theory (disable ;EQUAL-OF-SLICE-AND-SLICE
+                               EQUAL-OF-SLICE-AND-SLICE-same-low
                                BVCAT-OF-GETBIT-AND-X-ADJACENT
                                SLICE-WHEN-LOW-SLICE-KNOWN
                                BVCAT-TRIM-ARG4
