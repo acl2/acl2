@@ -313,10 +313,8 @@ function xdataLoadKeys(keys) {
             }
         }
     }).catch(err => {
-        const val = "Error: AJAX query failed."
-            + "xhr status " + xhr.status
-            + ", text" + xhr.responseText
-            + ", exception" + exception;
+        const val = `Error: AJAX query failed. ${err}`;
+        console.error(err);
         for(const missingKey of missing) {
             xdataObj.addError(missingKey, val);
         }
