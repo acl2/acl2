@@ -99,7 +99,7 @@
 //    KEY -> [uid, name, rawname, parentuids, parentkeys, short, childkeys, suborder-uids, suborder-keys].
 
 class XDocIndex {
-    #xhash = new Map();
+    _xhash = new Map();
 
     /**
      * Load raw xindex data into this object
@@ -114,12 +114,12 @@ class XDocIndex {
             const parentuids = entry[3];
             const shortstr = entry[4];
             const suborder = entry[5];
-            this.#xhash.set(key, [uid,name,rawname,parentuids,[],shortstr,[],suborder,[]]);
+            this._xhash.set(key, [uid,name,rawname,parentuids,[],shortstr,[],suborder,[]]);
         }
 
         // Fill in the parent_keys by resolving all parent uids
         const xl = xindex.length;
-        for(const entry of this.#xhash.values()) {
+        for(const entry of this._xhash.values()) {
             const parentuids = entry[3];
             for(const uid of parentuids) {
                 const parentkey = (0 <= uid && uid < xl)
@@ -130,7 +130,7 @@ class XDocIndex {
         }
 
         // Fill in suborder_keys by resolving all suborder uids
-        for(const entry of this.#xhash.values()) {
+        for(const entry of this._xhash.values()) {
             const subuids = entry[7];
             if(subuids) {
                 for(const uid of subuids) {
@@ -143,13 +143,13 @@ class XDocIndex {
         }
 
         // Fill in all child_keys by cross-referencing parents
-        for(const child_key of this.#xhash.keys()) {
+        for(const child_key of this._xhash.keys()) {
             const parent_keys = this.topicParentKeys(child_key);
             for(const parent_key of parent_keys) {
                 // It's incorrect, but possible for a child topic to list parents
                 // that don't exist, so we have to make sure it really exists:
                 if (this.topicExists(parent_key)) {
-                    const parent_node = this.#xhash.get(parent_key);
+                    const parent_node = this._xhash.get(parent_key);
                     parent_node[6].push(child_key);
                 }
             }
@@ -157,15 +157,15 @@ class XDocIndex {
     }
 
     allKeys() {
-        return this.#xhash.keys();
+        return this._xhash.keys();
     }
 
     topicExists(key) {
-        return this.#xhash.has(key);
+        return this._xhash.has(key);
     }
 
     getTopicField(key, field, defaultValue) {
-        return this.topicExists(key) ? this.#xhash.get(key)[field] : defaultValue;
+        return this.topicExists(key) ? this._xhash.get(key)[field] : defaultValue;
     }
 
     topicUid(key) {
@@ -217,7 +217,7 @@ const LAST_XD_IDX = XD_LONG;
 // - a "missing topic" XData entry
 // - an error XData entry
 class XDocData {
-    #xhash = new Map();
+    _xhash = new Map();
 
     loadFromXdata(xdata) {
         for(const [key, data] of Object.entries(xdata)) {
@@ -226,11 +226,11 @@ class XDocData {
     }
 
     add(key, data) {
-        this.#xhash.set(key, data);
+        this._xhash.set(key, data);
     }
 
     addError(key, data) {
-        this.#xhash.set(key, [[], data, data, data]);
+        this._xhash.set(key, [[], data, data, data]);
     }
 
     addMissing(key) {
@@ -238,15 +238,15 @@ class XDocData {
     }
 
     allKeys() {
-        return this.#xhash.keys();
+        return this._xhash.keys();
     }
 
     topicExists(key) {
-        return this.#xhash.has(key);
+        return this._xhash.has(key);
     }
 
     getTopicField(key, field, defaultValue) {
-        return this.topicExists(key) ? this.#xhash.get(key)[field] : defaultValue;
+        return this.topicExists(key) ? this._xhash.get(key)[field] : defaultValue;
     }
 
     topicParentNames(key) {
