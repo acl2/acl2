@@ -1046,6 +1046,10 @@ function searchGoMain(query) {
 //
 // --------------------------------------------------------------------------
 
+document.addEventListener("DOMContentLoaded", () => {
+    onKatexLoaded();
+});
+
 $(document).ready(function()
 {
     // Load the xindex content.
@@ -1062,14 +1066,9 @@ $(document).ready(function()
     Promise.all([xindexLoad, xsltLoad]).then(_ => {
         onIndexLoaded();
     });
-    // This should fire when Katex is loaded.
-    document.getElementById("katexScript").addEventListener("load", _ => {
-        onKatexLoaded();
-    });
     maybePowertip(".toolbutton", {placement: 'se'});
     maybePowertip(".rtoolbutton", {placement: 'sw'});
 });
-
 
 function jumpRender(datum) {
     var key = datum["value"];
