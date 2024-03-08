@@ -58,7 +58,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
 ;;                                        BVCHOP-OF-LOGTAIL)
 ;;                                   (BVCHOP-1-BECOMES-GETBIT
-;;                                    SLICE-BECOMES-GETBIT
+;;
 ;;                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 ;(in-theory (enable logext-of-sum-trim-constant))
@@ -97,7 +97,7 @@
   :hints (("Goal" :in-theory (e/d (getbit
                                    bvchop
                                    ifix)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit
                                    MOD-OF-EXPT-OF-2)))))
 
@@ -441,7 +441,7 @@
   :hints (("Goal" :in-theory (e/d (bvchop getbit)
                                   (mod-of-expt-of-2
                                    bvchop-1-becomes-getbit
-                                   slice-becomes-getbit)))))
+                                   )))))
 
 ;move to an arith library
 (defthm <-of-constant-when-<-of-constant-integer

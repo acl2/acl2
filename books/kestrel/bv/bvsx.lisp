@@ -96,7 +96,7 @@
                                     ;;BVCAT-OF-+-HIGH ;looped
                                     BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                     BVCHOP-1-BECOMES-GETBIT
-                                    SLICE-BECOMES-GETBIT
+
                                     ))
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 
@@ -124,7 +124,7 @@
   :hints (("Goal" :in-theory (e/d (repeatbit getbit slice
                                              expt-diff-collect)
                                   (BVCHOP-CHOP-LEADING-CONSTANT
-                                    BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                                    BVCHOP-1-BECOMES-GETBIT  BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defthm getbit-of-bvsx
   (implies (and (<= old-size new-size)

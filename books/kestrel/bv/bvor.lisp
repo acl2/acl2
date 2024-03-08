@@ -301,7 +301,7 @@
                    (and (integerp x) (not (integerp y)))
                    (and (not (integerp x)) (integerp y)))
     :in-theory (e/d (getbit)
-                    (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+                    (bvchop-1-becomes-getbit )))))
 
 ;this one does not push the getbit through
 (defthm getbit-0-of-bvor
@@ -329,7 +329,7 @@
            :in-theory (e/d (slice getbit)
                            (slice-becomes-bvchop
                             BVCHOP-1-BECOMES-GETBIT
-                            slice-becomes-getbit
+
                             BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                             )))))
 ;good

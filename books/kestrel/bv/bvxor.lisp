@@ -232,8 +232,7 @@
   :hints (("Goal"
            :in-theory (e/d (getbit slice bvxor
                                    bvchop-of-logtail)
-                           (slice-becomes-getbit
-                            bvchop-1-becomes-getbit
+                           (bvchop-1-becomes-getbit
                             bvchop-of-logtail-becomes-slice)))))
 
 ;if the size is 1 this rebuilds the term (bvxor 1 x y) - may be a bit innefficient

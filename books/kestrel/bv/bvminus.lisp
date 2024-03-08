@@ -159,7 +159,7 @@
          (getbit 0 x))
   :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
            :in-theory (e/d (bvminus getbit bvchop-when-i-is-not-an-integer)
-                           (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+                           (bvchop-1-becomes-getbit )))))
 
 (defthm bvchop-of-bvminus
   (implies (and (<= size1 size2)

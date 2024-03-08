@@ -114,7 +114,7 @@
   :hints
   (("Goal" :in-theory
     (e/d (bitor)
-         (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+         (bvchop-1-becomes-getbit)))))
 
 (defthmd bitor-combine-constants
   (implies (and (syntaxp (quotep y)) ;put this hyp first to fail faster

@@ -71,7 +71,7 @@
 ;;            (equal (evenp (bvchop size x))
 ;;                   (equal 0 (getbit 0 x))))
 ;;   :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit)
-;;                                   ( SLICE-BECOMES-GETBIT
+;;                                   (
 ;;                                     BVCHOP-1-BECOMES-GETBIT)))))
 
 (defthm bvcount-bound
