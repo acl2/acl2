@@ -113,8 +113,8 @@
     "This information consists of:")
    (xdoc::ul
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc-rep<j>-matching')
-      or @('<prefix>-<rulename>-conc<i>-rep<j>-matching') theorem
+     "The name of the @('<prefix>-<rulename>-conc-rep-matching')
+      or @('<prefix>-<rulename>-conc<i>-rep-matching') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if the repetition does not have range 1
@@ -683,14 +683,14 @@
                  (packn-pos (list prefix
                                   '-
                                   rulename-upstring
-                                  '-conc-rep1-matching)
+                                  '-conc-rep-matching)
                             prefix)
                (packn-pos (list prefix
                                 '-
                                 rulename-upstring
                                 '-conc
                                 i
-                                '-rep1-matching)
+                                '-rep-matching)
                           prefix)))))
     (make-deftreeops-rep-info :matching-thm matching-thm)))
 

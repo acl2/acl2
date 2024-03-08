@@ -315,12 +315,11 @@
        when the concatenation is a singleton."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc-rep<j>-matching')"
+     "@('<prefix>-<rulename>-conc-rep-matching')"
      (xdoc::p
       "For each rule name defined in the grammar by
        an alternation of one concatenation,
-       and for each repetition @('<j>') (numbered starting from 1)
-       in that concatenation,
+       if the concatenation consists of one repetition,
        a theorem saying that
        if a list of trees matches that repetition
        then the list of trees has a length
@@ -328,18 +327,16 @@
        and each tree matches
        the element of the repetition.
        For now we only generate this theorem
-       when the repetition has a range of 1,
-       and when the concatenation is a singleton."))
+       when the repetition has a range of 1."))
 
     (xdoc::desc
-     "@('<prefix>-<rulename>-conc<i>-rep<j>-matching')"
+     "@('<prefix>-<rulename>-conc<i>-rep-matching')"
      (xdoc::p
       "For each rule name defined in the grammar by
        an alternation of two or more concatenations,
        and for each concatenation @('<i>') (numbered starting from 1)
        in the alternation that defines the rule name,
-       and for each repetition @('<j>') (numbered starting from 1)
-       of that concatenation,
+       if the concatenation consists of one repetition,
        a theorem saying that
        if a list of trees matches that repetition
        then the list of trees has a length
@@ -347,5 +344,4 @@
        and each tree matches
        the element of the repetition.
        For now we only generate this theorem
-       when the repetition has a range of 1,
-       and when the concatenation is a singleton.")))))
+       when the repetition has a range of 1.")))))
