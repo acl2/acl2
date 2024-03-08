@@ -152,7 +152,8 @@
       This is @('nil') if the rule name is defined by
       an alternation of just one concatenation.")
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc<i>-matching') theorem
+     "The name of the @('<prefix>-<rulename>-conc-matching')
+      or @('<prefix>-<rulename>-conc<i>-matching') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       i.e. if the concatenation is not a singleton.")
@@ -720,8 +721,11 @@
                              (not (consp (cdr conc)))))
        (matching-thm
         (and conc-singletonp
-             (packn-pos (list prefix '- rulename-upstring '-conc i '-matching)
-                        prefix)))
+             (if alt-singletonp
+                 (packn-pos (list prefix '- rulename-upstring '-conc-matching)
+                            prefix)
+               (packn-pos (list prefix '- rulename-upstring '-conc i '-matching)
+                          prefix))))
        (check-conc-fn-equiv-thm
         (and check-conc-fn
              (packn-pos (list check-conc-fn '- i '-iff-match-conc)

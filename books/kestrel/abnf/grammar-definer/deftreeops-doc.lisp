@@ -287,11 +287,25 @@
        "@(tsee fty::deffixequiv) theorems for the function.")))
 
     (xdoc::desc
+     "@('<prefix>-<rulename>-conc-matching')"
+     (xdoc::p
+      "For each rule name defined in the grammar by
+       an alternation of one concatenation,
+       a theorem saying that
+       if a list of lists of trees matches that concatenation
+       then the list of lists of trees has the same length as the concatenation
+       and each list of trees matches
+       the corresponding repetition of the concatenation.
+       For now we only generate this theorem
+       when the concatenation is a singleton."))
+
+    (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>-matching')"
      (xdoc::p
-      "For each rule name defined in the grammar,
-       and for each concatenation @('<i>') (starting from 1)
-       in the alternation that defines the rule name,
+      "For each rule name defined in the grammar by
+       an alternation of two or more concatenations,
+       and for each concatenation @('<i>') (numbered starting from 1)
+       in the alternation,
        a theorem saying that
        if a list of lists of trees matches that concatenation
        then the list of lists of trees has the same length as the concatenation
