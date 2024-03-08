@@ -32,10 +32,12 @@
 
 "use strict";
 
-var TOP_KEY = "ACL2____TOP";
-var BROKEN_KEY = "ACL2____BROKEN-LINK";
-var xdata_loaded = false;
-var xdata = [];
+const TOP_KEY = "ACL2____TOP";
+const BROKEN_KEY = "ACL2____BROKEN-LINK";
+let xdata_loaded = false;
+const xdataObj = new XDocData();
+let xindex_loaded = false;
+const xindexObj = new XDocIndex();
 
 
 // --------------------------------------------------------------------------
@@ -50,7 +52,7 @@ function topicShortPlaintext(key) {
     if (key in short_plaintext_cache) {
 	return short_plaintext_cache[key];
     }
-    var ret = renderText(topicShort(key));
+    var ret = renderText(xindexObj.topicShort(key));
     short_plaintext_cache[key] = ret;
     return ret;
 }
@@ -206,28 +208,16 @@ function closeAllPowertips()
 // We load these files lazily to make the page seem to appear faster!  This
 // means you have to sort of be aware of when the data becomes available.  We
 // load xindex first, then once it's complete we load xdata.  The format of
-// xindex is described in xdoc_index.js.  The XDATA table is simpler:
-//
-//   xdata:         KEY -> {"pnames"  : [array of xml encoded nice parent names],
-//                          "from"    : "xml encoded string for topic location",
-//                          "basepkg" : "base package name (not encoded)",
-//                          "long"    : "xml encoded long topic description"}
-//
-// Except that we represent each entry with an array, instead of a hash, to
-// save a tiny amount of space.
+// both are described in xdoc_index.js.
 
-var XD_PNAMES = 0;
-var XD_FROM = 1;
-var XD_BASEPKG = 2;
-var XD_LONG = 3;
 
 function keyTitle(key)
 {
     var prefix = XDOCTITLE;
     if (!prefix) { prefix = "XDOC"; }
 
-    return (topicExists(key))
-       ? (prefix + " &mdash; " + topicName(key))
+    return (xindexObj.topicExists(key))
+       ? (prefix + " &mdash; " + xindexObj.topicName(key))
        : (prefix + " &mdash; " + key);
 }
 
@@ -250,12 +240,12 @@ function applySuborder(subkeys, keys) {
 }
 
 function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
-    var children = topicChildKeys(key);
+    var children = xindexObj.topicChildKeys(key);
 
     var tmp = [];
     for(var i in children) {
         var child_key = children[i];
-        var rawname = topicRawname(child_key);
+        var rawname = xindexObj.topicRawname(child_key);
         tmp.push({key:child_key, rawname:rawname});
     }
     tmp.sort(function(a,b) { return alphanum(a.rawname, b.rawname); });
@@ -265,7 +255,7 @@ function keySortedChildren(key) { // Returns a nicely sorted array of child_keys
         ret.push(tmp[i].key);
     }
 
-    var suborder = topicSuborder(key);
+    var suborder = xindexObj.topicSuborder(key);
     if (suborder.length > 0) {
 	return applySuborder(suborder, ret);
     }
@@ -277,7 +267,7 @@ function xdataWhenReady (keys, whenReady)
 {
     var missing = [];  // Optimization, don't load keys we've already loaded
     for(var i in keys) {
-        if (!xdata[keys[i]])
+        if (!xdataObj.topicExists(keys[i]))
             missing.push(keys[i]);
     }
 
@@ -290,7 +280,7 @@ function xdataWhenReady (keys, whenReady)
         // We're running in local mode, so we can't load any more data from
         // the server.  Any missing keys are errors!
         for(var i in missing)
-            xdata[missing[i]] = "Error: no such topic.";
+            xdataObj.addMissing(missing[i]);
         whenReady();
         return;
     }
@@ -305,14 +295,14 @@ function xdataWhenReady (keys, whenReady)
                 var results = "results" in obj && obj["results"];
                 if (results && results.length == missing.length) {
                     for(var i in results)
-                        xdata[missing[i]] = results[i];
+                        xdataObj.add(missing[i], results[i]);
                 }
                 else {
                     var val = "Error: malformed reply from " + url;
                     if ("error" in obj)
                         val = obj["error"];
                     for(var i in missing)
-                        xdata[missing[i]] = val;
+                        xdataObj.add(missing[i], val);
                 }
                 whenReady();
                 return;
@@ -323,7 +313,7 @@ function xdataWhenReady (keys, whenReady)
                         + ", text" + xhr.responseText
                         + ", exception" + exception;
                 for(var i in missing)
-                    xdata[missing[i]] = val;
+                    xdataObj.add(missing[i], val);
                 whenReady();
                 return;
             }});
@@ -380,12 +370,12 @@ function navMakeNode(key) {
     var id = nav_id_table.length;
     nav_id_table[id] = {"key":key, "ever_expanded":false};
 
-    var name = topicName(key);
+    var name = xindexObj.topicName(key);
     var tooltip = "<p>" + topicShortPlaintext(key) + "</p>";
 
     var node = "<ul class=\"hindex\" id=\"_nav" + id + "\">";
     node += "<li><nobr>";
-    if (topicChildKeys(key).length == 0) {
+    if (xindexObj.topicChildKeys(key).length == 0) {
         node += "<img src=\"leaf.png\"/>";
     }
     else {
@@ -457,7 +447,7 @@ var navFlat_top = 0;
 var navFlat_ever_shown = false;
 
 function navTree() {
-    if (!xindexReady()) {
+    if (!xindex_loaded) {
         pleaseWait();
         return;
     }
@@ -471,7 +461,7 @@ function navTree() {
 }
 
 function navFlat() {
-    if (!xindexReady()) {
+    if (!xindex_loaded) {
         pleaseWait();
         return;
     }
@@ -554,12 +544,11 @@ function navFlatReallyInstall()
     var big_z = "Z".charCodeAt(0);
 
     var myarr = [];
-    var keys = allKeys();
+    var keys = xindexObj.allKeys();
 
     // Preprocessing: upcase and chunkify everything
-    for(var i in keys) {
-	var key = keys[i];
-	var rawname = topicRawname(key).toUpperCase();
+    for(const key of keys) {
+	var rawname = xindexObj.topicRawname(key).toUpperCase();
         myarr.push({key:key, rawname: rawname, chunks: chunkify(rawname) });
     }
 
@@ -581,7 +570,7 @@ function navFlatReallyInstall()
 
     for(var i in myarr) {
         var key = myarr[i].key;
-        var name = topicName(key);
+        var name = xindexObj.topicName(key);
         var rawname = myarr[i].rawname;
 
 	// If you want to resurrect this, also need to add the data-powertip
@@ -655,8 +644,8 @@ var dat_id_table = []; // map of Occurrence ID to {"key":KEY,"ever_expanded":boo
 
 function datLoadParents(key) {
     // Assumes xdata[key] is ready
-    var parent_keys = topicParentKeys(key);
-    var parent_names = xdata[key][XD_PNAMES];
+    var parent_keys = xindexObj.topicParentKeys(key);
+    var parent_names = xdataObj.topicParentNames(key);
     var acc = "";
     if (parent_keys.length == 0) {
         $("#parents").hide();
@@ -668,7 +657,7 @@ function datLoadParents(key) {
         var pkey = parent_keys[i];
         var pname = parent_names[i];
         var tooltip = "Error: parent topic is missing!";
-        if (topicExists(key)) {
+        if (xindexObj.topicExists(key)) {
             tooltip = topicShortPlaintext(pkey);
         }
         acc += "<li>";
@@ -695,10 +684,10 @@ function datShortSubtopics(key)
         dl.append("<dt><a href=\"index.html?topic=" + child_key + "\""
                   + " onclick=\"return dolink(event, '" + child_key + "');\""
 		  + ">"
-                  + topicName(child_key)
+                  + xindexObj.topicName(child_key)
                   + "</dt>");
         var dd = jQuery("<dd></dd>");
-        dd.append(renderHtml(topicShort(child_key)));
+        dd.append(renderHtml(xindexObj.topicShort(child_key)));
         dl.append(dd);
     }
     return dl;
@@ -768,19 +757,19 @@ function datLongTopic(key)
     // for might be in the acl2-books docs; go try the Centaur manual."  Or the
     // internal manuals within, say, Centaur, might want to say, "please report
     // this broken link to Jared."
-    if (!topicExists(key)) {
+    if (!xindexObj.topicExists(key)) {
 	// I think it's nice to change the title dynamically, to say what topic
 	// they tried to access, instead of just generically saying Broken-Link.
         div.append("<h1>" + key + " Not Found</h1>");
 
-	if (topicExists(BROKEN_KEY)) {
-	    div.append(renderHtml(xdata[BROKEN_KEY][XD_LONG]));
+	if (xindexObj.topicExists(BROKEN_KEY)) {
+        div.append(renderHtml(xdataObj.topicLong(BROKEN_KEY)));
 	}
 
         return div;
     }
 
-    var from = xdata[key][XD_FROM];
+    var from = xdataObj.topicFrom(key);
     var fromp;
     if (from == "Unknown") {
         fromp = "<p class='from'>Unknown Origin</p>";
@@ -799,7 +788,7 @@ function datLongTopic(key)
         fromp = "<p class='from'>" + from + "</p>";
     }
 
-    var basepkg = htmlEncode(xdata[key][XD_BASEPKG]);
+    var basepkg = htmlEncode(xdataObj.topicBasepkg(key));
     var basediv = (basepkg == "ACL2")
                     ? ""
                     : "<div class='basepkg' data-powertip='"
@@ -812,17 +801,17 @@ function datLongTopic(key)
     var shortp;
     if (key != TOP_KEY) {
 	div.append(basediv);
-	div.append("<h1>" + topicName(key) + "</h1>" + fromp);
+	div.append("<h1>" + xindexObj.topicName(key) + "</h1>" + fromp);
 	shortp = jQuery("<p></p>");
     } else {
 	div.append("<div align=\"center\" style=\"margin-top: 1em;\"><img src='xdoc-logo.png'/></div>");
 	shortp = jQuery("<p align='center'></p>");
     }
 
-    shortp.append(renderHtml(topicShort(key)));
+    shortp.append(renderHtml(xindexObj.topicShort(key)));
     div.append(shortp);
-    div.append(renderHtml(xdata[key][XD_LONG]));
-    if (topicChildKeys(key).length != 0) {
+    div.append(renderHtml(xdataObj.topicLong(key)));
+    if (xindexObj.topicChildKeys(key).length != 0) {
         var acc = "<h3>";
         acc += "Subtopics ";
         acc += "<a id=\"_dat_ilink" + dat_id + "\""
@@ -900,11 +889,10 @@ function searchTokenize(plaintext) {
 function makeShortTokens() {
     if (short_tokens_initialized)
 	return;
-    var keys = allKeys();
-    for(var i in keys) {
-	var key = keys[i];
-	var name = topicName(key);
-	var rawname = topicRawname(key);
+    var keys = xindexObj.allKeys();
+    for(const key of keys) {
+	var name = xindexObj.topicName(key);
+	var rawname = xindexObj.topicRawname(key);
 	var plaintext = topicShortPlaintext(key);
 	var tokens = searchTokenize(name + " " + rawname + " " + plaintext);
 	short_tokens[key] = tokens;
@@ -982,12 +970,12 @@ function searchAddHit(matches, hits, key) {
     matches[key] = 1;
     hits.append("<dt><a href=\"index.html?topic=" + key + "\""
 		+ " onclick=\"return dolink(event, '" + key + "');\">"
-		+ topicName(key)
+		+ xindexObj.topicName(key)
 		+ "</a>"
-//		+ " (" + topicUid(key) + ")" // nice for debugging
+//		+ " (" + xindexObj.topicUid(key) + ")" // nice for debugging
 		+ "</dt>");
     var dd = jQuery("<dd></dd>");
-    dd.append(renderHtml(topicShort(key)));
+    dd.append(renderHtml(xindexObj.topicShort(key)));
     hits.append(dd);
 }
 
@@ -1009,31 +997,28 @@ function searchGoMain(query) {
 
     // Hits will collect all the results
     var hits = jQuery("<dl></dl>");
-    var keys = allKeys();
+    const keys = xindexObj.allKeys();
 
     // We'll start with a stupid topic name search, in case there are any very
     // exact hits.
-    for(var i in keys) {
-	var key = keys[i];
-	var name = topicRawname(key);
+    for(const key of keys) {
+	var name = xindexObj.topicRawname(key);
 	var tokens = searchTokenize(name);
 	if (subarrayp(query,tokens))
 	    searchAddHit(matches, hits, key);
     }
 
     // Next, expand to a basic topic name substring search
-    for(var i in keys) {
-	var key = keys[i];
-	var name = topicRawname(key);
+    for(const key of keys) {
+	var name = xindexObj.topicRawname(key);
 	if (name.toLowerCase().indexOf(query_str) != -1)
 	    searchAddHit(matches, hits, key);
     }
 
     // Next expand to a short-string search
-    for(var i in keys) {
-	var key = keys[i];
+    for(const key of keys) {
 	var tokens = short_tokens[key];
-	var uid = topicUid(key);
+	var uid = xindexObj.topicUid(key);
 	if (subarrayp(query, tokens))
 	    searchAddHit(matches, hits, key);
     }
@@ -1072,8 +1057,8 @@ function jumpRender(datum) {
     var key = datum["value"];
     var ret = "";
     ret += "<p>";
-//    ret += topicUid(key) + " &mdash; "; // nice for debugging
-    ret += "<b class=\"sf\">" + topicName(key) + "</b>";
+//    ret += xindexObj.topicUid(key) + " &mdash; "; // nice for debugging
+    ret += "<b class=\"sf\">" + xindexObj.topicName(key) + "</b>";
     var shortmsg = topicShortPlaintext(key);
     if (shortmsg != "") {
 	ret += " &mdash; " + shortmsg;
@@ -1085,17 +1070,16 @@ function jumpRender(datum) {
 function jumpInit() {
 
     var ta_data = [];
-    var keys = allKeys();
-    for(var i in keys) {
-	var key = keys[i];
+    var keys = xindexObj.allKeys();
+    for(const key of keys) {
         var tokens = [];
-        tokens.push(topicRawname(key));
+        tokens.push(xindexObj.topicRawname(key));
         var entry = {"value": key,
-		     "nicename": topicName(key),
+		     "nicename": xindexObj.topicName(key),
                      "tokens": tokens,
 		     // We precompute these for faster sorting:
-		     "nicelow": topicName(key).toLowerCase(),
-		     "uid": topicUid(key),
+		     "nicelow": xindexObj.topicName(key).toLowerCase(),
+		     "uid": xindexObj.topicUid(key),
 		     };
         ta_data.push(entry);
     }
@@ -1224,7 +1208,7 @@ function jumpInit() {
 
 function jumpGo(obj,datum) {
     var key = datum["value"];
-    if (topicExists(key)) {
+    if (xindexObj.topicExists(key)) {
         actionGoKey(key);
 	$("#jump").typeahead('val', "");
 	// $("#jump").typeahead('setQuery', '');
@@ -1245,7 +1229,10 @@ function searchInit() {
 
 function onIndexLoaded()
 {
-    xindexInit();
+    // LazyLoad.js will set the xindex var to the xindex data (see
+    // xdoc_index.js for more info)
+    xindexObj.loadFromXindex(xindex);
+    xindex_loaded = true;
 
     if (XDATAGET == "") {
         // Load xdata.js after xindexInit() because that way we know the
@@ -1282,12 +1269,13 @@ function onIndexLoaded()
 
 function onDataLoaded()
 {
+    xdataObj.loadFromXdata(xdata);
     xdata_loaded = true;
     var params = getPageParameters();
 
     // Make sure that BROKEN_KEY gets loaded early on, so we can always just
     // assume it is loaded.
-    if (topicExists(BROKEN_KEY)) {
+    if (xindexObj.topicExists(BROKEN_KEY)) {
 	xdataWhenReady([BROKEN_KEY], function() { return; });
     }
 
@@ -1344,8 +1332,8 @@ function srclink(key)
     // BOZO stupid hack, eventually generate this without the .xdoc-link part.
     key = key.replace(".xdoc-link", "");
     var rawname = key;
-    if (topicExists(key)) {
-        rawname = topicRawname(key);
+    if (xindexObj.topicExists(key)) {
+        rawname = xindexObj.topicRawname(key);
     }
 
     // Fancy Data URL generator
