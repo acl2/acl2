@@ -206,7 +206,7 @@
            (if (zp m)
                nil
                (car lst))))
-  :hints (("Goal" :use (:instance nth-of-take-gen)
+  :hints (("Goal" :use nth-of-take-gen
            :expand (take m lst)
            :in-theory (disable nth-of-take-gen))))
 

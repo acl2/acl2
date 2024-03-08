@@ -46,7 +46,7 @@
  (defthm make-list-ac-rewrite
    (equal (make-list-ac n val ac)
           (append (repeat n val) ac))
-   :hints (("subGoal *1/2" :use (:instance repeat-alt-def)
+   :hints (("subGoal *1/2" :use repeat-alt-def
             :in-theory (disable repeat-alt-def)))))
 
 (verify-guards repeat :hints (("Goal" :in-theory (enable repeat))))
