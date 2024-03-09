@@ -1613,7 +1613,8 @@ reference made from privilege level 3.</blockquote>"
                  (#.*gpr-access* (member operand-size '(1 2 4 8)))
                  (#.*xmm-access* (member operand-size '(4 8 16)))
                  (#.*vex-xmm-access* (member operand-size '(4 8 16)))
-                 (#.*ymm-access* (member operand-size '(4 8 16 32))))
+                 (#.*ymm-access* (member operand-size '(4 8 16 32)))
+                 (t t))
              (member operand-size '(member 1 2 4 6 8 10 16 32)))
 
     ;; [Shilpi] enabled segment-base-and-bounds for rme-size-opt.
@@ -1892,6 +1893,75 @@ reference made from privilege level 3.</blockquote>"
                  1
                  (x86-operand-to-xmm/mem
                   proc-mode operand-size inst-ac? operand
+                  seg-reg addr rex-byte r/m mod x86))))
+      :hints (("Goal" :in-theory (e/d () (force (force)))))))
+
+  (define x86-operand-to-zmm/mem
+    ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
+     (reg-type :type (member #.*vex-xmm-access*
+                             #.*ymm-access*
+                             #.*zmm-access*))
+     (operand-size  :type (member 4 8 16 32))
+     (inst-ac?      booleanp
+                    "@('t') if instruction does alignment checking,
+                     @('nil') otherwise")
+     (operand       :type (integer 0 *))
+     (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
+                    "Register of the segment to read the operand from
+                     (when reading the operand from memory).")
+     (addr          :type (signed-byte 64))
+     (rex-byte      :type (unsigned-byte 8))
+     (r/m           :type (unsigned-byte 3))
+     (mod           :type (unsigned-byte 2))
+     x86)
+
+    :guard (and (unsigned-byte-p (ash operand-size 3) operand)
+                (if (equal mod #b11)
+                    (case reg-type
+                      (#.*vex-xmm-access* (member operand-size '(4 8 16)))
+                      (#.*ymm-access* (member operand-size '(4 8 16 32)))
+                      (t t))
+                  (member operand-size '(4 8 16 32))))
+
+    :short "Write an operand to memory or a ZMM register."
+
+    :long
+    "<p>
+     Based on the ModR/M byte,
+     the operand is written to either a register or memory.
+     The address argument of this function is often
+     the effective address calculated and returned by
+     @(tsee x86-operand-from-modr/m-and-sib-bytes).
+     </p>
+     <p>
+     This covers writing to ZMM or YMM or XMM registers,
+     the latter for VEX instructions.
+     The 512-bit (i.e. 64-byte) writes are not supported yet,
+     because we first need to add appropriate memory writing functions.
+     </p>"
+
+    (b* (((when (equal mod #b11))
+          (let* ((x86 (!zmmi-size operand-size (reg-index r/m rex-byte #.*b*)
+                                  operand x86 :regtype reg-type)))
+            (mv nil x86)))
+
+         (check-alignment? (and inst-ac? (alignment-checking-enabled-p x86)))
+
+         ((mv flg x86)
+          ;; operand is never an m16:16 memory pointer here
+          (wme-size proc-mode operand-size addr seg-reg operand
+                    check-alignment? x86 :mem-ptr? nil)))
+      (mv flg x86))
+
+    ///
+
+    (defthm x86p-x86-operand-to-zmm/mem
+      (implies (force (x86p x86))
+               (x86p
+                (mv-nth
+                 1
+                 (x86-operand-to-zmm/mem
+                  proc-mode reg-type operand-size inst-ac? operand
                   seg-reg addr rex-byte r/m mod x86))))
       :hints (("Goal" :in-theory (e/d () (force (force))))))))
 
