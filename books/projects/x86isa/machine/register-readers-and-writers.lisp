@@ -1157,7 +1157,7 @@ pointer, or opcode registers\).</em></p>"
                              (force (force))))))
 
   (define zmmi-size
-    ((nbytes :type (unsigned-byte 5))
+    ((nbytes :type (unsigned-byte 7))
      (index  :type (unsigned-byte 5))
      x86)
     :enabled t
@@ -1175,7 +1175,7 @@ pointer, or opcode registers\).</em></p>"
        0)))
 
   (define !zmmi-size
-    ((nbytes :type (unsigned-byte 5))
+    ((nbytes :type (unsigned-byte 7))
      (index  :type (unsigned-byte 5))
      (val    :type integer)
      x86

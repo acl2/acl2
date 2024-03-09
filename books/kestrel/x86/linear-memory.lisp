@@ -93,7 +93,8 @@
                                      rml48
                                      rml64
                                      rml80
-                                     rml128))))
+                                     rml128
+                                     rml256))))
 
 (defthm mv-nth-1-of-rml-size-of-0
   (equal (mv-nth 1 (rml-size 0 addr r-x x86))

@@ -2515,13 +2515,13 @@
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups-vex-a) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVUPS"
           (OP :OP #xF10
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups-vex-a) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVSD"
           (OP :OP #xF10
               :EVEX '(:0F :LIG :F2 :W1)
@@ -2661,13 +2661,13 @@
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups-vex-b) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVUPS"
           (OP :OP #xF11
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(V PS) :OP2 '(W PS))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vmovups-vex-b) '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VMOVSD"
           (OP :OP #xF11
               :EVEX '(:0F :LIG :F2 :W1)
