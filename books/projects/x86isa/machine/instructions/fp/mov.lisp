@@ -744,4 +744,222 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+; =============================================================================
+; AVX Data Movement Instructions
+; =============================================================================
+
+(def-inst x86-vmovups-vex-a
+
+  :parents (two-byte-opcodes fp-opcodes)
+
+  :short "VMOVUPS: Move Unaligned Packed Single Precision Floating-Point Values
+          (VEX encoding, Op/En A)"
+
+  :long
+  "<p>
+   This instruction is listed under MOVUPS
+   in Intel Manuals Volume 2 (Dec 2023).
+   </p>
+   <p>
+   This semantic function covers the two VEX-encoded variants
+   that move from register or memory to register (i.e. Op/En A).
+   </p>
+   <code>
+   VMOVUPS xmm1, xmm2/m128
+   VMOVUPS ymm1, ymm2/m256
+   </code>"
+
+  :vex t
+
+  :modr/m t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+
+       ;; The operand size is determined by VEX.L, regardless of processor mode.
+       ((the (integer 16 32) operand-size)
+        (if (equal (vex->l vex-prefixes) 1)
+            32
+          16))
+
+       ;; Read the value from register or memory.
+       ;; There is no alignment check in this instruction,
+       ;; since it is an 'unaligned' move.
+       ;; Also see Intel Manuals Volume 1 (Dec 2023), Table 14-23.
+       (inst-ac? nil)
+       ((mv flg
+            (the (unsigned-byte 256) reg/mem-value)
+            (the (integer 0 4) increment-rip-by)
+            & ; address of the operand
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               (if (= operand-size 16)
+                                                   #.*vex-xmm-access*
+                                                 #.*ymm-access*)
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the destination register.
+       ;; Note that this operation zeros the upper bits,
+       ;; as required in the pseudocode of the instruction.
+       ;; In our model, MAXVL is 512,
+       ;; because our model of the x86 state has just the ZMM registers,
+       ;; whose lower bits are aliased to YMM and XMM.
+       (x86 (!zmmi-size operand-size
+                        (reg-index reg rex-byte #.*r*)
+                        reg/mem-value
+                        x86
+                        :regtype (if (= operand-size 16)
+                                     #.*vex-xmm-access*
+                                   #.*ymm-access*)))
+
+       ;; Update the instruction pointer in the state.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))
+
 ;; ======================================================================
+
+(def-inst x86-vmovups-vex-b
+
+  :parents (two-byte-opcodes fp-opcodes)
+
+  :short "VMOVUPS: Move Unaligned Packed Single Precision Floating-Point Values
+          (VEX encoding, Op/En B)"
+
+  :long
+  "<p>
+   This instruction is listed under MOVUPS
+   in Intel Manuals Volume 2 (Dec 2023).
+   </p>
+   <p>
+   This semantic function covers the two VEX-encoded variants
+   that move from register to to register or memory (i.e. Op/En B).
+   </p>
+   <code>
+   VMOVUPS xmm2/m128, xmm1
+   VMOVUPS ymm2/m256, ymm1
+   </code>"
+
+  :vex t
+
+  :modr/m t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+
+       ;; The operand size is determined by VEX.L, regardless of processor mode.
+       ((the (integer 16 32) operand-size)
+        (if (equal (vex->l vex-prefixes) 1)
+            32
+          16))
+
+       ;; Read the value from register.
+       ((the (unsigned-byte 256) reg-value)
+        (zmmi-size operand-size
+                   (reg-index reg rex-byte #.*r*)
+                   x86))
+
+       ;; Obtain the address of the destination operand, if in memory.
+       ;; There is no alignment check in this instruction,
+       ;; since it is an 'unaligned' move.
+       ;; Also see Intel Manuals Volume 1 (Dec 2023), Table 14-23.
+       (inst-ac? nil)
+       ((mv flg
+            & ; old value of the operand
+            (the (integer 0 4) increment-rip-by)
+            (the (signed-byte 64) addr) ; 0 if destination is register
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               (if (= operand-size 16)
+                                                   #.*vex-xmm-access*
+                                                 #.*ymm-access*)
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the destination operand, register or memory.
+       ;; Note that this operation zeros the upper bits,
+       ;; as required in the pseudocode of the instruction.
+       ;; In our model, MAXVL is 512,
+       ;; because our model of the x86 state has just the ZMM registers,
+       ;; whose lower bits are aliased to YMM and XMM.
+       ((mv flg x86)
+        (x86-operand-to-zmm/mem proc-mode
+                                (if (= operand-size 16)
+                                    #.*vex-xmm-access*
+                                  #.*ymm-access*)
+                                operand-size
+                                inst-ac?
+                                reg-value
+                                seg-reg
+                                addr
+                                rex-byte
+                                r/m
+                                mod
+                                x86))
+       ((when flg) (!!ms-fresh :x86-operand-to-zmm/mem flg))
+
+       ;; Update the instruction pointer in the state.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))

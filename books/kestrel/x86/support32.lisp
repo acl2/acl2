@@ -3920,6 +3920,7 @@
                                      x86isa::wml48
                                      x86isa::wml80
                                      x86isa::wml128
+                                     x86isa::wml256
                                      (:e expt)
                                      canonical-address-p
                                      signed-byte-p
@@ -4151,6 +4152,42 @@
            (equal (mv-nth 1 (x86isa::wml128 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 16 x86)) val x86))
                   (write-to-segment 16 eff-addr seg-reg val x86)))
   :hints (("Goal" :in-theory (e/d (x86isa::wml128
+                                   write-to-segment-base
+                                   write-to-segment-unroll
+                                   wb
+                                   wvm08
+                                   write-byte-to-segment
+                                   bvplus
+                                   acl2::bvchop-of-sum-cases
+                                   well-formed-32-bit-segmentp
+                                   segment-base-and-bounds
+                                   segment-max-eff-addr32
+                                   segment-min-eff-addr32
+                                   32-bit-segment-start
+                                   32-bit-segment-size
+                                   32-bit-segment-start-and-size
+                                   n48
+                                   acl2::slice-too-high-is-0-new
+                                   canonical-address-p$inline
+                                   signed-byte-p
+                                   (:e expt)
+                                   ifix
+                                   ea-to-la
+                                   acl2::bvchop-identity)
+                                  (
+                                   x86isa::xw-of-xw-both)))))
+
+(defthm mv-nth-1-of-wml256-of-mv-nth-1-of-ea-to-la
+  (implies (and (segment-is-32-bitsp seg-reg x86)
+                (eff-addrs-okp 32 eff-addr seg-reg x86)
+                (natp eff-addr)
+                (<= (+ 32 eff-addr) (expt 2 32))
+                (app-view x86)
+                (x86p x86)
+                (well-formed-32-bit-segmentp seg-reg x86))
+           (equal (mv-nth 1 (x86isa::wml256 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 32 x86)) val x86))
+                  (write-to-segment 32 eff-addr seg-reg val x86)))
+  :hints (("Goal" :in-theory (e/d (x86isa::wml256
                                    write-to-segment-base
                                    write-to-segment-unroll
                                    wb
