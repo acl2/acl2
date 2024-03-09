@@ -1579,21 +1579,27 @@ reference made from privilege level 3.</blockquote>"
 
   (define x86-operand-from-modr/m-and-sib-bytes
     ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))
-     (reg-type      :type (unsigned-byte  1)
-       "@('reg-type') is @('*gpr-access*') for GPRs, and
-                   @('*xmm-access*') for XMMs.")
-     (operand-size  :type (member 1 2 4 6 8 10 16))
+     (reg-type      :type (member #.*gpr-access*
+                                  #.*xmm-access*
+                                  #.*vex-xmm-access*
+                                  #.*ymm-access*)
+                    "@('reg-type') is @('*gpr-access*') for GPRs,
+                     @('*xmm-access*') for XMMs (non-VEX-encoded),
+                     @('*vex-xmm-access*') for XMMs (VEX-encoded), and
+                     @('*ymm-access*') for YMMs.
+                     (@('*zmm-access*'), for ZMMs, is not yet supported.")
+     (operand-size  :type (member 1 2 4 6 8 10 16 32))
      (inst-ac?      booleanp
                     "@('t') if instruction does alignment checking,
-                   @('nil') otherwise.")
+                     @('nil') otherwise.")
      (memory-ptr?   booleanp
                     "@('t') if the operand is a memory operand of the
-                   form m16:16, m16:32, or m16:64")
+                     form m16:16, m16:32, or m16:64")
      (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
                     "Register of the segment to read the operand from
-                   (when reading the operand from memory).")
+                     (when reading the operand from memory).")
      (p4?           :type (or t nil)
-       "Address-Size Override Prefix Present?")
+                    "Address-Size Override Prefix Present?")
      (temp-rip      :type (signed-byte   #.*max-linear-address-size*))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))
@@ -1603,11 +1609,13 @@ reference made from privilege level 3.</blockquote>"
      x86)
 
     :guard (if (equal mod #b11)
-               (cond
-                ((equal reg-type #.*gpr-access*)
-                 (member operand-size '(1 2 4 8)))
-                (t (member operand-size '(4 8 16))))
-             (member operand-size '(member 1 2 4 6 8 10 16)))
+               (case reg-type
+                 (#.*gpr-access* (member operand-size '(1 2 4 8)))
+                 (#.*xmm-access* (member operand-size '(4 8 16)))
+                 (#.*vex-xmm-access* (member operand-size '(4 8 16)))
+                 (#.*ymm-access* (member operand-size '(4 8 16 32))))
+             (member operand-size '(member 1 2 4 6 8 10 16 32)))
+
     ;; [Shilpi] enabled segment-base-and-bounds for rme-size-opt.
     :guard-hints (("Goal" :in-theory (e/d* (segment-base-and-bounds)
                                            (las-to-pas
@@ -1625,17 +1633,17 @@ reference made from privilege level 3.</blockquote>"
 
     :long
     "<p>
-   Based on the ModR/M byte,
-   the operand is read from either a register or memory.
-   In the latter case, we calculate the effective address
-   and the we read the operand from it.
-   Besides returning the operand,
-   we also return the calculated effective address.
-   This is useful for instructions that modify the operand after reading it
-   (e.g. the source/destination operand of ADD),
-   which pass the effective address calculated by this function
-   to @(tsee x86-operand-to-reg/mem) (which writes the result to memory).
-   </p>"
+     Based on the ModR/M byte,
+     the operand is read from either a register or memory.
+     In the latter case, we calculate the effective address
+     and then we read the operand from it.
+     Besides returning the operand,
+     we also return the calculated effective address.
+     This is useful for instructions that modify the operand after reading it
+     (e.g. the source/destination operand of ADD),
+     which pass the effective address calculated by this function
+     to @(tsee x86-operand-to-reg/mem) (which writes the result to memory).
+     </p>"
 
     (b* (((mv ?flg0
               (the (signed-byte 64) addr)
@@ -1647,21 +1655,28 @@ reference made from privilege level 3.</blockquote>"
              proc-mode p4? temp-rip rex-byte r/m mod sib num-imm-bytes x86)))
          ((when flg0)
           (mv (cons 'x86-effective-addr-error flg0) 0 0 0 x86))
-
          ((mv ?flg2 operand x86)
           (if (equal mod #b11)
-              (if (int= reg-type #.*gpr-access*)
-                  (mv nil
-                      (rgfi-size operand-size
-                                 (reg-index r/m rex-byte #.*b*)
-                                 rex-byte
-                                 x86)
-                      x86)
-                (mv nil
-                    (xmmi-size operand-size
-                               (reg-index r/m rex-byte #.*b*)
-                               x86)
-                    x86))
+              (case reg-type
+                (#.*gpr-access*
+                 (mv nil
+                     (rgfi-size operand-size
+                                (reg-index r/m rex-byte #.*b*)
+                                rex-byte
+                                x86)
+                     x86))
+                (#.*xmm-access*
+                 (mv nil
+                     (xmmi-size operand-size
+                                (reg-index r/m rex-byte #.*b*)
+                                x86)
+                     x86))
+                (t
+                 (mv nil
+                     (zmmi-size operand-size
+                                (reg-index r/m rex-byte #.*b*)
+                                x86)
+                     x86)))
             (b* ((check-alignment? (and inst-ac?
                                         (alignment-checking-enabled-p x86))))
               ;; The operand is being fetched from the memory, not the
@@ -1680,7 +1695,7 @@ reference made from privilege level 3.</blockquote>"
 
     (defthm-unsigned-byte-p bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (equal bound (ash operand-size 3))
-                (member operand-size '(1 2 4 8 16))
+                (member operand-size '(1 2 4 8 16 32))
                 (x86p x86))
       :bound bound
       :concl (mv-nth 1 (x86-operand-from-modr/m-and-sib-bytes
@@ -1693,7 +1708,7 @@ reference made from privilege level 3.</blockquote>"
 
     (defthm-unsigned-byte-p bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand
       :hyp (and (<= (ash operand-size 3) bound)
-                (member operand-size '(1 2 4 8 16))
+                (member operand-size '(1 2 4 8 16 32))
                 (integerp bound)
                 (x86p x86))
       :bound bound
@@ -1828,11 +1843,11 @@ reference made from privilege level 3.</blockquote>"
      (operand-size  :type (member 4 8 16))
      (inst-ac?      booleanp
                     "@('t') if instruction does alignment checking,
-                   @('nil') otherwise")
+                     @('nil') otherwise")
      (operand       :type (integer 0 *))
      (seg-reg       (integer-range-p 0 *segment-register-names-len* seg-reg)
                     "Register of the segment to read the operand from
-                   (when reading the operand from memory).")
+                     (when reading the operand from memory).")
      (addr          :type (signed-byte 64))
      (rex-byte      :type (unsigned-byte 8))
      (r/m           :type (unsigned-byte 3))
@@ -1843,12 +1858,15 @@ reference made from privilege level 3.</blockquote>"
 
     :long
     "<p>
-   Based on the ModR/M byte,
-   the operand is written to either a register or memory.
-   The address argument of this function is often
-   the effective address calculated and returned by
-   @(tsee x86-operand-from-modr/m-and-sib-bytes).
-   </p>"
+     Based on the ModR/M byte,
+     the operand is written to either a register or memory.
+     The address argument of this function is often
+     the effective address calculated and returned by
+     @(tsee x86-operand-from-modr/m-and-sib-bytes).
+     </p>
+     <p>
+     The writing to an XMM register is for a non-VEX-encoded instruction.
+     </p>"
 
     :guard (unsigned-byte-p (ash operand-size 3) operand)
 
