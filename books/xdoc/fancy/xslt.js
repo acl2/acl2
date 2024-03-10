@@ -48,7 +48,10 @@
  * @returns {string} The wrapped XML markup, ready for use with XSLT.
  */
 function wrapXdocFragment(str) {
+    // We do not need any declaration for the following standard predefiend XML entities:
+    // amp, lt, gt, quot, apos
     return `<!DOCTYPE xdoc [
+        <!ENTITY nbsp "&#160;">
         <!ENTITY ndash "&#8211;">
         <!ENTITY mdash "&#8212;">
         <!ENTITY larr "&#8592;">
@@ -57,7 +60,6 @@ function wrapXdocFragment(str) {
         <!ENTITY lang "&#9001;">
         <!ENTITY rang "&#9002;">
         <!ENTITY hellip "&#8230;">
-        <!ENTITY nbsp "&#160;">
         <!ENTITY lsquo "&#8216;">
         <!ENTITY rsquo "&#8217;">
         <!ENTITY ldquo "&#8220;">
