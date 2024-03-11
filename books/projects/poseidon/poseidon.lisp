@@ -419,7 +419,7 @@
                  :hyp (posp prime)
                  :name fep-of-dot-product)
   :parents (poseidon)
-  :short "Dot product of a matrix row and the state vecor."
+  :short "Dot product of a matrix row and the state vector."
   :long
   (xdoc::topstring
    (xdoc::p
