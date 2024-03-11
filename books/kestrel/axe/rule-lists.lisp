@@ -750,8 +750,7 @@
      not-equal-constant-when-unsigned-byte-p ;Fri Dec 17 01:47:42 2010
      ;;not-equal-constant-when-unsigned-byte-p-alt ;not needed since we commute constants forward?
 
-     equal-of-slice-and-slice    ;Tue Dec 14 22:39:31 2010
-     equal-of-slice-and-slice-alt ;Tue Dec 14 22:39:31 2010
+     equal-of-slice-and-slice-same-low
 
      getbit-of-bvcat-all ;newly moved here
 

@@ -2821,39 +2821,6 @@
            :in-theory (e/d (bitnot-becomes-bitxor-with-1)
                            (BITXOR-OF-1-BECOMES-BITNOT-ARG1 bvxor-1-becomes-bitxor)))))
 
-(defthm equal-of-bvmult-and-*
-  (implies (and (integerp x)
-                (integerp y)
-                (natp size))
-           (equal (equal (bvmult size x y) (* x y))
-                  (unsigned-byte-p size (* x y))))
-  :hints (("Goal" :in-theory (enable bvmult))))
-
-(defthm equal-of-bvmult-and-*-alt
-  (implies (and (integerp x)
-                (integerp y)
-                (natp size))
-           (equal (equal (* x y) (bvmult size x y))
-                  (unsigned-byte-p size (* x y))))
-  :hints (("Goal" :in-theory (enable bvmult))))
-
-;gen one of the sizes
-(defthm bvmult-of-expt
-  (implies (natp size)
-           (equal (bvmult size (expt 2 size) x)
-                  0))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
-
-(defthm bvmult-of-expt-alt
-  (implies (natp size)
-           (equal (bvmult size x (expt 2 size))
-                  0))
-  :hints (("Goal" :use bvmult-of-expt
-           :in-theory (disable bvmult-of-expt))))
-
-
-
-
 ;fixme use GETBIT-WHEN-NOT-0 instead of the cases rule?
 
 ;don't need if we have polarity?
@@ -2923,9 +2890,7 @@
   :hints (("Goal"
 ;           :cases ((equal 0 k) (not (integerp k)))
            :use (:instance bvmod-of-bvmult-of-expt (n (lg k)))
-           :in-theory (disable bvmod-of-bvmult-of-expt
-
-                               ))))
+           :in-theory (disable bvmod-of-bvmult-of-expt))))
 
 ;move this stuff?
 (defthm unsigned-byte-p-forced-of-bvchop
@@ -4645,32 +4610,55 @@
                               0))))
   :hints (("Goal" :in-theory (enable slice-too-high-is-0 usb-slice-helper))))
 
-(defthm equal-of-slice-and-slice
-  (implies (and (<= high1 high2)
-                (<= low high1)
-                (natp low)
-                (natp high1)
-                (natp high2))
-           (equal (equal (slice high1 low x) (slice high2 low x))
-                  (equal 0 (slice high2 (+ 1 high1) x))))
-  :hints (("Goal"
-           :in-theory (enable natp)
-           :use (:instance rewrite-bv-equality-when-sizes-dont-match-core
-                           (x (slice high1 low x))
-                           (x-size (+ 1 (- high1 low)))
-                           (y (slice high2 low x))
-                           (y-size (+ 1 (- high2 low)))))))
+(local
+  (defthm equal-of-slice-and-slice
+    (implies (and (<= high1 high2)
+                  (<= low high1)
+                  (natp low)
+                  (natp high1)
+                  (natp high2))
+             (equal (equal (slice high1 low x) (slice high2 low x))
+                    (equal 0 (slice high2 (+ 1 high1) x))))
+    :hints (("Goal"
+             :in-theory (enable natp)
+             :use (:instance rewrite-bv-equality-when-sizes-dont-match-core
+                             (x (slice high1 low x))
+                             (x-size (+ 1 (- high1 low)))
+                             (y (slice high2 low x))
+                             (y-size (+ 1 (- high2 low))))))))
 
-(defthm equal-of-slice-and-slice-alt
-  (implies (and (<= high1 high2)
+(local
+  (defthm equal-of-slice-and-slice-alt
+    (implies (and (<= high1 high2)
+                  (<= low high1)
+                  (natp low)
+                  (natp high1)
+                  (natp high2))
+             (equal (equal (slice high2 low x) (slice high1 low x))
+                    (equal 0 (slice high2 (+ 1 high1) x))))
+    :hints (("Goal" :use equal-of-slice-and-slice
+             :in-theory (disable equal-of-slice-and-slice)))))
+
+(defthm equal-of-slice-and-slice-same-low
+  (implies (and (natp high1)
+                (natp high2)
                 (<= low high1)
+                (<= low high2)
+                (natp low))
+           (equal (equal (slice high1 low x) (slice high2 low x))
+                  (equal (slice (max high1 high2)
+                                (+ 1 (min high1 high2)) x)
+                         0))))
+
+(defthm equal-of-slice-and-getbit-same-low
+  (implies (and (<= low high)
                 (natp low)
-                (natp high1)
-                (natp high2))
-           (equal (equal (slice high2 low x) (slice high1 low x))
-                  (equal 0 (slice high2 (+ 1 high1) x))))
-  :hints (("Goal" :use equal-of-slice-and-slice
-           :in-theory (disable equal-of-slice-and-slice))))
+                (natp high))
+           (equal (equal (slice high low x) (getbit low x))
+                  (equal (slice high (+ 1 low) x) 0)))
+  :hints (("Goal" :in-theory (e/d (getbit)
+                                  (acl2::slice-becomes-getbit
+                                   acl2::bvchop-1-becomes-getbit)))))
 
 ;move
 (defthm not-equal-when-not-equal-bvchop
@@ -5471,23 +5459,23 @@
                                      ))))
 
 (defthm bvmult-of-bvplus-1
-  (equal (bvmult '32 (bvplus '32 x y) z)
-         (bvplus '32 (bvmult '32 x z) (bvmult '32 y z)))
+  (equal (bvmult 32 (bvplus 32 x y) z)
+         (bvplus 32 (bvmult 32 x z) (bvmult 32 y z)))
   :hints (("Goal" :in-theory (enable bvmult bvplus))))
 
 (defthm bvmult-of-bvplus-2
-  (equal (bvmult '32 z (bvplus '32 x y))
-         (bvplus '32 (bvmult '32 x z) (bvmult '32 y z)))
+  (equal (bvmult 32 z (bvplus 32 x y))
+         (bvplus 32 (bvmult 32 x z) (bvmult 32 y z)))
   :hints (("Goal" :in-theory (enable bvmult bvplus))))
 
 (defthm bvmult-of-bvminus-1
-  (equal (bvmult '32 (bvminus '32 x y) z)
-         (bvminus '32 (bvmult '32 x z) (bvmult '32 y z)))
+  (equal (bvmult 32 (bvminus 32 x y) z)
+         (bvminus 32 (bvmult 32 x z) (bvmult 32 y z)))
   :hints (("Goal" :in-theory (enable bvmult bvminus))))
 
 (defthm bvmult-of-bvminus-2
-  (equal (bvmult '32 z (bvminus '32 x y))
-         (bvminus '32 (bvmult '32 z x) (bvmult '32 z y)))
+  (equal (bvmult 32 z (bvminus 32 x y))
+         (bvminus 32 (bvmult 32 z x) (bvmult 32 z y)))
   :hints (("Goal" :in-theory (enable bvmult bvminus))))
 
 ;needed for termination of loop functions
@@ -5751,9 +5739,9 @@
                 (unsigned-byte-p 31 x16)
                 (unsigned-byte-p 31 x7)
                 )
-           (equal (BVPLUS '32 x16 (BVUMINUS '31 x7))
+           (equal (BVPLUS 32 x16 (BVUMINUS '31 x7))
                   (if (equal 0 (bvchop 31 x7))
-                      (bvchop '32 x16)
+                      (bvchop 32 x16)
                     (bvplus 32 (expt 2 31) (BVPLUS '31 x16 (BVUMINUS '31 x7))))))
   :hints (("Goal" :in-theory (e/d (bvplus bvmod bvchop-of-sum-cases
                                           bvuminus
@@ -5982,7 +5970,7 @@
                 (< free 32)
                 (not (equal x 0)) ;limit?
                 )
-           (equal (BVPLUS '32 4294967295 x)
+           (equal (BVPLUS 32 4294967295 x)
                   (bvplus free (+ -1 (expt 2 free)) x)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
 

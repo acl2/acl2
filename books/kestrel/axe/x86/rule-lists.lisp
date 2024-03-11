@@ -1203,6 +1203,9 @@
     ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
     x86isa::dp-sse-cmp ; scary?
     dazify-of-0-arg2
+    unmasked-excp-p-of-63-arg2 ; may help a lot
+    mxcsr-rc-redef
+    mxcsr-masks-redef
     ))
 
 ;; Try to introduce is-nan as soon as possible:
