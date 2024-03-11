@@ -278,14 +278,13 @@
 
 ;; Decoding a non-zero number (not an infinity or a NAN):
 (defthm decode-becomes-decode-bv-float-usual-case
-  (implies (and (rtl::formatp f)
-                (rtl::encodingp x f)
-                (not (rtl::explicitp f))
-                ;; Decoding does not give one of the 5 special kinds of floating-point-datump:
-                (not (rtl::infp x f)) ; see below for this case
-                (not (rtl::nanp x f)) ; see below for this case
-                (not (rtl::zerp x f)) ; see below for this case
-                )
+  (implies (and ;; Decoding does not give one of the 5 special kinds of floating-point-datump:
+             (not (rtl::infp x f)) ; see below for this case
+             (not (rtl::nanp x f)) ; see below for this case
+             (not (rtl::zerp x f)) ; see below for this case
+             (rtl::formatp f)
+             (rtl::encodingp x f)
+             (not (rtl::explicitp f)))
            (equal (rtl::decode x f)
                   (decode-bv-float (format-k f) (format-p f) x)))
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
@@ -311,13 +310,12 @@
 
 ;; Decoding an infinity
 (defthm decode-bv-float-infinity-case
-  (implies (and (rtl::formatp f)
+  (implies (and (rtl::infp x f) ; this case
+                (rtl::formatp f)
                 (rtl::encodingp x f)
                 (not (rtl::explicitp f))
                 (equal k (+ (rtl::prec f) (rtl::expw f)))
-                (equal p (rtl::prec f))
-                (rtl::infp x f) ; this case
-                )
+                (equal p (rtl::prec f)))
            (equal (decode-bv-float k p x)
                   (if (equal (rtl::sgnf x f) 1)
                       *float-negative-infinity*
@@ -345,13 +343,12 @@
 
 ;; Decoding a NAN
 (defthm decode-bv-float-nan-case
-  (implies (and (rtl::formatp f)
+  (implies (and (rtl::nanp x f) ; this case
+                (rtl::formatp f)
                 (rtl::encodingp x f)
                 (not (rtl::explicitp f))
                 (equal k (+ (rtl::prec f) (rtl::expw f)))
-                (equal p (rtl::prec f))
-                (rtl::nanp x f) ; this case
-                )
+                (equal p (rtl::prec f)))
            (equal (decode-bv-float k p x)
                   *float-nan*))
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
@@ -377,13 +374,12 @@
 
 ;; Decoding a zero
 (defthm decode-bv-float-zero-case
-  (implies (and (rtl::formatp f)
+  (implies (and (rtl::zerp x f) ; this case
+                (rtl::formatp f)
                 (rtl::encodingp x f)
                 (not (rtl::explicitp f))
                 (equal k (+ (rtl::prec f) (rtl::expw f)))
-                (equal p (rtl::prec f))
-                (rtl::zerp x f) ; this case
-                )
+                (equal p (rtl::prec f)))
            (equal (decode-bv-float k p x)
                   (if (equal (rtl::sgnf x f) 1)
                       *float-negative-zero*
