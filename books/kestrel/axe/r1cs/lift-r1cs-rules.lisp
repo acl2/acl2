@@ -211,7 +211,7 @@
                 )
            (equal (add (mul k z p) (acl2::bvcat highsize x lowsize y) p)
                   (mod (acl2::bvcat 1 z (+ highsize lowsize) (acl2::bvcat highsize x lowsize y)) p)))
-  :hints (("Goal" :use (:instance add-of-bvcat-of-add-of-mul-combine-simp)
+  :hints (("Goal" :use add-of-bvcat-of-add-of-mul-combine-simp
            :in-theory (disable add-of-bvcat-of-add-of-mul-combine-simp))))
 
 (defthm mod-of-bvcat
@@ -483,7 +483,7 @@
                   (add (neg (acl2::bvcat 1 x (+ -1 (acl2::integer-length (- k))) y) p)
                                z
                                p)))
-  :hints (("Goal" :use (:instance add-of-mul-of-negated-power-of-2-and-add)
+  :hints (("Goal" :use add-of-mul-of-negated-power-of-2-and-add
            :in-theory (disable add-of-mul-of-negated-power-of-2-and-add))))
 
 (defthm add-of-mul-of-negated-power-of-2
@@ -505,7 +505,7 @@
                 (posp p))
            (equal (add (neg y p) (mul k x p) p)
                   (neg (acl2::bvcat 1 x (+ -1 (acl2::integer-length (- k))) y) p)))
-  :hints (("Goal" :use (:instance add-of-mul-of-negated-power-of-2)
+  :hints (("Goal" :use add-of-mul-of-negated-power-of-2
            :in-theory (disable add-of-mul-of-negated-power-of-2))))
 
 (defthm equal-of-add-and-mod-same-arg1
@@ -733,7 +733,7 @@
                                                              bv1)
                                              p)
                                z p)))
-  :hints (("Goal" :use (:instance add-of-mul-and-mul-combine)
+  :hints (("Goal" :use add-of-mul-and-mul-combine
            :in-theory (disable add-of-mul-and-mul-combine))))
 
 ;todo: use lg instead of ceiling-of-lg more in this file?
@@ -754,7 +754,7 @@
                 (posp p))
            (equal (add x (add (mul 2 bv p) z p) p)
                   (add (acl2::bvcat bvsize bv 1 x) z p)))
-  :hints (("Goal" :use (:instance add-of-mul-of-2-when-bitp)
+  :hints (("Goal" :use add-of-mul-of-2-when-bitp
            :in-theory (disable add-of-mul-of-2-when-bitp))))
 
 ;; (defthm add-of-mul-of--2-when-bitp
@@ -773,7 +773,7 @@
 ;;                 (posp p))
 ;;            (equal (add x (add (mul -2 bv p) z p) p)
 ;;                   (add (acl2::bvcat bvsize bv 1 x) z p)))
-;;   :hints (("Goal" :use (:instance add-of-mul-of-2-when-bitp)
+;;   :hints (("Goal" :use add-of-mul-of-2-when-bitp
 ;;            :in-theory (disable add-of-mul-of-2-when-bitp))))
 
 (defthm mul-of---arg2
@@ -906,7 +906,7 @@
                 (unsigned-byte-p bv-size bv))
            (equal (add (neg bit p) (add (mul -2 bv p) z p) p)
                   (add (neg (acl2::bvcat bv-size bv 1 bit) p) z p)))
-  :hints (("Goal" :use (:instance add-of-neg-of-mul-of--2)
+  :hints (("Goal" :use add-of-neg-of-mul-of--2
            :in-theory (disable add-of-neg-of-mul-of--2))))
 
 (defthm equal-of-0-and-add-of-add-of-neg-and-neg

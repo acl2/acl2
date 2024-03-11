@@ -209,3 +209,34 @@
                          (bvchop 32 (* x y)))
                   t))
   :hints (("Goal" :in-theory (enable bvmult))))
+
+(defthm equal-of-bvmult-and-*
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size))
+           (equal (equal (bvmult size x y) (* x y))
+                  (unsigned-byte-p size (* x y))))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+(defthm equal-of-bvmult-and-*-alt
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size))
+           (equal (equal (* x y) (bvmult size x y))
+                  (unsigned-byte-p size (* x y))))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+;todo: allow the sizes to differ
+(defthm bvmult-of-expt
+  (implies (natp size)
+           (equal (bvmult size (expt 2 size) x)
+                  0))
+  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+
+;todo: allow the sizes to differ
+(defthm bvmult-of-expt-alt
+  (implies (natp size)
+           (equal (bvmult size x (expt 2 size))
+                  0))
+  :hints (("Goal" :use bvmult-of-expt
+           :in-theory (disable bvmult-of-expt))))

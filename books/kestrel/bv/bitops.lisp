@@ -244,16 +244,16 @@
   (implies (and (natp width)
                 (natp x)
                 (natp places))
-           (equal (acl2::rotate-right x width places)
-                  (acl2::rightrotate width places x)))
+           (equal (rotate-right x width places)
+                  (rightrotate width places x)))
   :hints (("Goal"
-           :in-theory (enable acl2::rotate-right
-                              acl2::rightrotate
-                              acl2::bvchop-of-logior-becomes-bvor
+           :in-theory (enable rotate-right
+                              rightrotate
+                              bvchop-of-logior-becomes-bvor
                               ash-of-negative-becomes-logtail
                               logtail-of-bvchop-becomes-slice
-                              acl2::logtail-becomes-0
-                              acl2::bvchop-of-logior-becomes-bvor
+                              logtail-becomes-0
+                              bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))
 
@@ -262,15 +262,15 @@
   (implies (and (natp width)
                 (natp x)
                 (natp places))
-           (equal (acl2::rotate-left x width places)
-                  (acl2::leftrotate width places x)))
+           (equal (rotate-left x width places)
+                  (leftrotate width places x)))
   :hints (("Goal"
-           :in-theory (enable acl2::rotate-left
-                              acl2::leftrotate
-                              acl2::bvchop-of-logior-becomes-bvor
+           :in-theory (enable rotate-left
+                              leftrotate
+                              bvchop-of-logior-becomes-bvor
                               ash-of-negative-becomes-logtail
                               logtail-of-bvchop-becomes-slice
-                              acl2::logtail-becomes-0
-                              acl2::bvchop-of-logior-becomes-bvor
+                              logtail-becomes-0
+                              bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))

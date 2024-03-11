@@ -23,6 +23,7 @@
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system)
+(include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
@@ -34,6 +35,8 @@
 (local (include-book "kestrel/bv/logtail" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system))
+(local (include-book "kestrel/bv/rtl" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -520,10 +523,36 @@
 (defthm integerp-of-!MXCSRBITS->DE
   (integerp (!MXCSRBITS->DE$INLINE bit mxcsr)))
 
-(acl2::def-constant-opener FP-DECODE)
-(acl2::def-constant-opener fp-to-rat)
-(acl2::def-constant-opener rtl::bias)
-(acl2::def-constant-opener rtl::expw)
+(def-constant-opener fp-decode)
+(def-constant-opener fp-to-rat)
+(def-constant-opener rtl::bias)
+(def-constant-opener rtl::expw)
+(def-constant-opener snanp)
+(def-constant-opener qnanp)
+(def-constant-opener infp)
+(def-constant-opener nanp)
+(def-constant-opener bitn)
+(def-constant-opener prec)
+(def-constant-opener encodingp)
+(def-constant-opener expf)
+(def-constant-opener sgnf)
+(def-constant-opener manf)
+(def-constant-opener unsupp)
+(def-constant-opener explicitp)
+(def-constant-opener sigw)
+(def-constant-opener formatp)
+(def-constant-opener bits)
+(def-constant-opener bvecp)
+(def-constant-opener denormp)
+(def-constant-opener sigf)
+(def-constant-opener fl)
+(def-constant-opener mxcsr-masks)
+(def-constant-opener rtl::set-flag)
+(def-constant-opener mxcsr-rc)
+(def-constant-opener decode)
+(def-constant-opener ddecode)
+(def-constant-opener zencode)
+(def-constant-opener binary-cat)
 
 ;rename
 (defthm <-of-fp-to-rat
@@ -541,10 +570,10 @@
   :hints (("Goal" :in-theory (enable fp-to-rat))))
 
 (defthm integerp-of-xr-mxcsr
-  (INTEGERP (XR :MXCSR NIL X86)))
+  (integerp (xr :mxcsr nil x86)))
 
 (defthm dazify-of-0-arg2
-  (equal (rtl::dazify x 0 acl2::f)
+  (equal (rtl::dazify x 0 f)
          x)
   :hints (("Goal" :in-theory (enable rtl::dazify))))
 
@@ -600,3 +629,58 @@
 
 (defthmd acl2-numberp-of-decode
   (acl2-numberp (rtl::decode x f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm unmasked-excp-p-of-63-arg2
+  (equal (rtl::unmasked-excp-p flags 63)
+         nil)
+  :hints (("Goal" :in-theory (enable rtl::unmasked-excp-p
+                                     rtl::zbit
+                                     rtl::obit
+                                     rtl::pbit
+                                     rtl::ubit))))
+
+(defthm unmasked-excp-p-of-0-arg1
+  (equal (rtl::unmasked-excp-p 0 masks)
+         nil)
+  :hints (("Goal" :in-theory (enable rtl::unmasked-excp-p
+                                     rtl::zbit
+                                     rtl::obit
+                                     rtl::pbit
+                                     rtl::ubit
+                                     ))))
+
+;; since MXCSR-RC breaks the abstraction and accesses bits of the mxcsr directly
+(defthm mxcsr-rc-redef
+  (implies (integerp mxcsr) ;drop?
+           (equal (rtl::mxcsr-rc mxcsr)
+                  (case (mxcsrbits->rc mxcsr)
+                   (0 'rtl::rne)
+                   (1 'rtl::rdn)
+                   (2 'rtl::rup)
+                   (3 'rtl::rtz))))
+  :hints (("Goal" :in-theory (enable rtl::mxcsr-rc
+                                     ;acl2::bits-becomes-slice
+                                     mxcsrbits->rc
+                                     mxcsrbits-fix))))
+
+;; since RTL::MXCSR-MASKS breaks the abstraction and accesses bits of the mxcsr directly
+(defthm mxcsr-masks-redef
+  (implies (integerp mxcsr)
+           (equal (rtl::mxcsr-masks mxcsr)
+                  (acl2::bvcat2 1 (mxcsrbits->pm mxcsr)
+                                1 (mxcsrbits->um mxcsr)
+                                1 (mxcsrbits->om mxcsr)
+                                1 (mxcsrbits->zm mxcsr)
+                                1 (mxcsrbits->dm mxcsr)
+                                1 (mxcsrbits->im mxcsr))))
+  :hints (("Goal" :in-theory (enable rtl::mxcsr-masks
+                                     acl2::bits-becomes-slice
+                                     mxcsrbits->im
+                                     mxcsrbits->dm
+                                     mxcsrbits->zm
+                                     mxcsrbits->om
+                                     mxcsrbits->um
+                                     mxcsrbits->pm
+                                     mxcsrbits-fix))))

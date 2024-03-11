@@ -469,6 +469,8 @@
     putbits
     putbit
     putbyte
+    trim
+
     bool->bit$inline
     bool->bit
     boolif
@@ -476,6 +478,7 @@
     booland
     bool-fix
     bool-fix$inline
+
     loghead
     logapp
     logmask
@@ -552,6 +555,7 @@
     dagify-term2
     axe-syntaxp
     axe-bind-free
+    dag-array ; for axe-syntaxp
 
     ;; axe-syntaxp and axe-bind-free functions:
     bind-bv-size-axe
