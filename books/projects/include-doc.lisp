@@ -33,8 +33,7 @@
             (include-book "smtlink/examples/ringosc")
             :endif)
      (include-book "pfcs/top")
-
-
+     (include-book "poseidon/top")
 
      (defxdoc projects
        :parents (top)
