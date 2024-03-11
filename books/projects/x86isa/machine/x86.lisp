@@ -946,13 +946,24 @@
 ;; ----------------------------------------------------------------------
 
 ;; Smashed in raw lisp
-(defun write-console (c x86)
-  (declare (ignore c x86) (xargs :stobjs (x86)))
-  nil)
+(define write-tty ((c :type (unsigned-byte 8))
+                       x86)
+  :returns (x86 x86p :hyp (x86p x86))
+  (!tty-out (cons c (tty-out x86)) x86))
 
-(defun read-console (x86)
-  (declare (ignore x86) (xargs :stobjs (x86)))
-  nil)
+(define read-tty (x86)
+  :returns (mv byt
+               (x86 x86p :hyp (x86p x86)))
+  (b* ((buf (tty-in x86))
+       ((when (null buf)) (mv nil x86))
+       (byt (car buf))
+       (x86 (!tty-in (cdr buf) x86)))
+      (mv byt x86))
+  ///
+  (defthm unsigned-byte-p-8-non-nil-read-tty
+          (implies (and (x86p x86)
+                        (mv-nth 0 (read-tty x86)))
+                   (unsigned-byte-p 8 (mv-nth 0 (read-tty x86))))))
 
 (define x86-fetch-decode-execute (x86)
 
@@ -1297,15 +1308,15 @@
                  ((when (not tty-byte-valid)) x86)
                  (tty-output-byte (memi #x3F8 x86))
                  (x86 (!memi #x3F9 0 x86))
-                 (- (write-console (code-char tty-output-byte) x86)))
-                x86))
+                 (x86 (write-tty tty-output-byte x86)))
+              x86))
        ;; We check if the tty input buffer is empty
        ;; If so, we write the new byte and set valid flag
        (x86 (b* ((tty-write-byte-valid (not (equal (memi #x3FB x86) 0)))
                  ((when tty-write-byte-valid) x86)
-                 (tty-input-char (read-console x86))
-                 ((when (equal tty-input-char nil)) x86)
-                 (x86 (!memi #x3FA (char-code tty-input-char) x86))
+                 ((mv tty-input x86) (read-tty x86))
+                 ((when (equal tty-input nil)) x86)
+                 (x86 (!memi #x3FA tty-input x86))
                  (x86 (!memi #x3FB 1 x86)))
                 x86))
 
