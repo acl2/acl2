@@ -1014,7 +1014,6 @@
        (get-tree-list-fn-event?
         (and
          info.get-tree-list-fn
-         get-tree-list-list-fn
          `((define ,info.get-tree-list-fn ((cst treep))
              :guard ,(if check-conc-fn
                          `(and (,matchp cst ,rulename-string)
