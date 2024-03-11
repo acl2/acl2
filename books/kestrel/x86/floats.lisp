@@ -570,10 +570,10 @@
   :hints (("Goal" :in-theory (enable fp-to-rat))))
 
 (defthm integerp-of-xr-mxcsr
-  (INTEGERP (XR :MXCSR NIL X86)))
+  (integerp (xr :mxcsr nil x86)))
 
 (defthm dazify-of-0-arg2
-  (equal (rtl::dazify x 0 acl2::f)
+  (equal (rtl::dazify x 0 f)
          x)
   :hints (("Goal" :in-theory (enable rtl::dazify))))
 
@@ -640,6 +640,16 @@
                                      rtl::obit
                                      rtl::pbit
                                      rtl::ubit))))
+
+(defthm unmasked-excp-p-of-0-arg1
+  (equal (rtl::unmasked-excp-p 0 masks)
+         nil)
+  :hints (("Goal" :in-theory (enable rtl::unmasked-excp-p
+                                     rtl::zbit
+                                     rtl::obit
+                                     rtl::pbit
+                                     rtl::ubit
+                                     ))))
 
 ;; since MXCSR-RC breaks the abstraction and accesses bits of the mxcsr directly
 (defthm mxcsr-rc-redef
