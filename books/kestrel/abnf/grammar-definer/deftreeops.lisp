@@ -966,10 +966,10 @@
                           "The function @('<prefix>-<rulename>-conc')
                            or @('<prefix>-<rulename>-conc<i>')
                            described in @(tsee deftreeops).")
-   (get-tree-list-list-matchp-thm acl2::symbolp
-                                  "The theorem saying that
-                                   @('get-tree-list-list-fn'))
-                                   matches the concatenation.")
+   (get-tree-list-list-fn-match-thm acl2::symbolp
+                                    "The theorem saying that
+                                     @('get-tree-list-list-fn'))
+                                     matches the concatenation.")
    (conc-matching-thm acl2::symbolp)
    (check-conc-fn acl2::symbolp)
    (rulename rulenamep)
@@ -1037,7 +1037,7 @@
                                    get-tree-list-list-fn)
                              get-tree-list-list-fn)
                  (:e nfix))
-               :use (,get-tree-list-list-matchp-thm
+               :use (,get-tree-list-list-fn-match-thm
                      (:instance ,conc-matching-thm
                                 (cstss (,get-tree-list-list-fn cst))))))
              ///
@@ -1058,7 +1058,7 @@
                                    ,(packn-pos (list 'tree-list-listp-of-
                                                      get-tree-list-list-fn)
                                                get-tree-list-list-fn))
-                      :use ((:instance ,get-tree-list-list-matchp-thm
+                      :use ((:instance ,get-tree-list-list-fn-match-thm
                                        (cst cst))
                             (:instance ,conc-matching-thm
                                        (cstss
@@ -1143,10 +1143,10 @@
                           "The function @('<prefix>-<rulename>-conc')
                            or @('<prefix>-<rulename>-conc<i>')
                            described in @(tsee deftreeops).")
-   (get-tree-list-list-matchp-thm acl2::symbolp
-                                  "The theorem saying that
-                                   @('get-tree-list-list-fn'))
-                                   matches the concatenation.")
+   (get-tree-list-list-fn-match-thm acl2::symbolp
+                                    "The theorem saying that
+                                     @('get-tree-list-list-fn'))
+                                     matches the concatenation.")
    (conc-matching-thm acl2::symbolp)
    (check-conc-fn acl2::symbolp)
    (rulename rulenamep)
@@ -1165,7 +1165,7 @@
           (car infos)
           i
           get-tree-list-list-fn
-          get-tree-list-list-matchp-thm
+          get-tree-list-list-fn-match-thm
           conc-matching-thm
           check-conc-fn
           rulename
@@ -1178,7 +1178,7 @@
           (cdr infos)
           i
           get-tree-list-list-fn
-          get-tree-list-list-matchp-thm
+          get-tree-list-list-fn-match-thm
           conc-matching-thm
           check-conc-fn
           rulename
@@ -1267,7 +1267,7 @@
                              ,conc-equivs-thm
                              (:e rulename))
                 :use (:guard-theorem ,check-conc-fn)))))))
-       (get-tree-list-list-fn-matchp-thm
+       (get-tree-list-list-fn-match-thm
         (packn-pos (list info.get-tree-list-list-fn '-match)
                    info.get-tree-list-list-fn))
        (get-tree-list-list-fn-event?
@@ -1298,7 +1298,7 @@
                          `(and (,matchp cst ,rulename-string)
                                (equal (,check-conc-fn cst) ,i))
                        `(,matchp cst ,rulename-string))
-               :name ,get-tree-list-list-fn-matchp-thm
+               :name ,get-tree-list-list-fn-match-thm
                :hints
                ,(if check-conc-fn
                     `(("Goal"
@@ -1336,7 +1336,7 @@
               info.rep-infos
               i
               info.get-tree-list-list-fn
-              get-tree-list-list-fn-matchp-thm
+              get-tree-list-list-fn-match-thm
               info.matching-thm
               check-conc-fn
               rulename
