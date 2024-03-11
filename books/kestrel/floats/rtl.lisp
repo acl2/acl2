@@ -12,6 +12,7 @@
 
 (include-book "ieee-floats")
 (include-book "ieee-floats-as-bvs")
+(include-book "round")
 (include-book "rtl/rel11/lib/reps" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -21,7 +22,10 @@
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "kestrel/bv/rtl" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -72,6 +76,8 @@
   (declare (xargs :guard (rtl::formatp f)))
   (rtl::prec f))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm expo-becomes-log2
   (equal (rtl::expo rat)
          (if (rationalp rat)
@@ -88,12 +94,16 @@
 ;;                   (log2 (- rat))))
 ;;   :hints (("Goal" :in-theory (enable rtl::expo log2))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm encodingp-becomes-unsigned-byte-p
   (implies (and (rtl::formatp f)
                 (not (rtl::explicitp f)))
            (equal (rtl::encodingp x f)
                   (unsigned-byte-p (format-k f) x)))
   :hints (("Goal" :in-theory (enable rtl::encodingp rtl::sigw))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;drop?
 (defthmd representable-normalp-becomes-nrepp
@@ -130,8 +140,9 @@
                                      representable-positive-normalp
                                      *-of-/-of-expt-and-expt))))
 
-(local (include-book "ieee-floats-helpers")) ;todo: move up, but that may break a proof -- why?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (include-book "ieee-floats-helpers")) ;todo: move up, but that may break a proof -- why?
 
 (local
   (defthmd *-of-expt-and-/-of-expt
@@ -245,6 +256,8 @@
                                      decode-normal-number
                                      bias
                                      emax))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Our notion of largest (positive) normal agrees with RTL.
 (defthm lpn-becomes-largest-normal
@@ -409,6 +422,8 @@
                                    oracle)))
   :hints (("Goal" :in-theory (enable rtl::zencode encode-bv-float encode wfn encode-nonzero-rational rtl::sigw))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Encoding an infinity
 (defthm iencode-becomes-encode-bv-float
   (implies (and (rtl::formatp f)
@@ -419,6 +434,8 @@
                                    (if (equal 0 sgn) *float-positive-infinity* *float-negative-infinity*)
                                    oracle)))
   :hints (("Goal" :in-theory (enable rtl::iencode encode-bv-float encode wfn encode-nonzero-rational rtl::sigw))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm drepp-forward-to-rationalp
   (implies (rtl::drepp x f)
@@ -601,6 +618,8 @@
                                      rtl::manf
                                      rtl::sigw))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm nanp-in-terms-of-decode-bv-float
   (implies (and (rtl::formatp f)
                 (not (rtl::explicitp f)) ; we only handle implicit formats
@@ -616,3 +635,152 @@
                                      rtl::expf
                                      rtl::manf
                                      rtl::sigw))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm <-of-expt2-of-emin-and-expt2-of-emax-linear
+;;   (implies (formatp k p)
+;;            (< (expt 2 (emin k p))
+;;               (expt 2 (emax k p))))
+;;   :rule-classes :linear
+;;   :hints (("Goal" :in-theory (enable emax emin))))
+
+;; (defthm *-of-1/2-and-expt2-of-+-of-1
+;;   (implies (integerp i)
+;;            (equal  (* 1/2 (expt 2 (+ 1 i)))
+;;                    (expt 2 i)))
+;;   :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;; (defthm *-of-1/2-and-expt2-of-+-of-1-extra
+;;   (implies (integerp i)
+;;            (equal  (* 1/2 (expt 2 (+ 1 i)) x)
+;;                    (* (expt 2 i) x)))
+;;   :hints (("Goal" :in-theory (enable expt-of-+))))
+
+(defthm equal-of---of-*-and-*-cancel-1-1
+  (implies (and (rationalp x)
+                (< 0 x)
+                (rationalp y)
+                (rationalp z))
+           (equal (equal (- (* x y)) (* x z))
+                  (equal (- y) z)))
+  :hints (("Goal" :in-theory (e/d (--of-*-push-into-arg2)
+                                  (*-of---arg2)))))
+
+(defthmd frac-part-intro
+  (equal (+ x (- (floor x 1)))
+         (frac-part x))
+  :hints (("Goal" :in-theory (enable frac-part int-part))))
+
+(defthm round-to-nearest-integer-ties-to-even-when-<-of-frac-part-and-1/2
+  (implies (< (frac-part x) 1/2)
+           (equal (round-to-nearest-integer-ties-to-even x)
+                  (int-part x)))
+  :hints (("Goal" :in-theory (enable round-to-nearest-integer-ties-to-even))))
+
+(defthm round-to-nearest-integer-ties-to-even-when-<-of-1/2-and-frac-part
+  (implies (< 1/2 (frac-part x))
+           (equal (round-to-nearest-integer-ties-to-even x)
+                  (+ 1 (int-part x))))
+  :hints (("Goal" :in-theory (enable round-to-nearest-integer-ties-to-even))))
+
+(defthm round-to-nearest-integer-ties-to-even-when-equal-of-1/2-and-frac-part-even
+  (implies (and (equal 1/2 (frac-part x))
+                (evenp (int-part x)))
+           (equal (round-to-nearest-integer-ties-to-even x)
+                  (int-part x)))
+  :hints (("Goal" :in-theory (enable round-to-nearest-integer-ties-to-even))))
+
+(defthm round-to-nearest-integer-ties-to-even-when-equal-of-1/2-and-frac-part-not-even
+  (implies (and (equal 1/2 (frac-part x))
+                (not (evenp (int-part x))))
+           (equal (round-to-nearest-integer-ties-to-even x)
+                  (+ 1 (int-part x))))
+  :hints (("Goal" :in-theory (enable round-to-nearest-integer-ties-to-even))))
+
+;; Rephrase RND in terms of round-positive-normal-ties-to-even when the mode is RNE.
+;; TODO: Extend to handle non-positives.
+(defthm rnd-of-rne-becomes-round-positive-normal-ties-to-even
+  (implies (and (real/rationalp x)
+                (< 0 x) ; gen
+                (integerp p)
+                (< 1 p)
+                ;; (< x (infinity-threshold k p)) ; rtl doesn't handle infinities?
+                ;; (<= (smallest-positive-normal (format-k f) (format-p f)) x)
+                )
+           (equal (rtl::rnd x 'rtl::rne p)
+                  ;; todo: k is logically irrelevant here:
+                  (round-positive-normal-ties-to-even k p x)))
+  :hints (("Goal"
+           :cases ((equal (frac-part (* 1/2 x (expt 2 p) (/ (expt 2 (log2 x))))) 1/2))
+;           :use (<-of-largest-normal-and-infinity-threshold)
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (;round-to-nearest-integer-ties-to-even
+                            rtl::rnd
+                            rtl::rne
+                            rtl::formatp
+                            formatp
+                            round-positive-normal-ties-to-even
+                            emin
+                            ;;emax
+                            rtl::prec
+                            rtl::expw
+                            rtl::sig
+                            ;;largest-subnormal-redef
+                            ;;smallest-positive-normal-redef
+                            rtl::rtz
+                            rtl::raz
+                            rtl::fl
+                            rtl::cg
+                            rtl::sgn
+                            ;;infinity-threshold
+                            int-part
+                            expt-of-+
+                            floor-normalize-denominator
+                            frac-part-intro)
+                           (<-of-expt-2-of-log2-same
+                            distributivity
+                            floor-of-*-of-/-and-1
+                            floor-of-times-1/2)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Rephrase DRND in terms of round-positive-subnormal-ties-to-even when the mode is RNE.
+;; TODO: Extend to handle non-positives.
+(defthm drnd-of-rne-becomes-round-positive-subnormal-ties-to-even
+  (implies (and (real/rationalp x)
+                (< 0 x) ; gen
+                (rtl::formatp f))
+           (equal (rtl::drnd x 'rtl::rne f) ; takes a format, unlike rnd
+                  ;; todo: k is logically irrelevant here:
+                  (let ((res (round-positive-subnormal-ties-to-even (format-k f) (format-p f) x)))
+                    (if (equal *float-positive-zero* res)
+                        0
+                      res))))
+  :hints (("Goal"
+           :cases ((equal (frac-part (* 1/8 x (expt 2 (cadr f)) (expt 2 (* 1/2 (expt 2 (caddr f)))))) 1/2))
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (rtl::drnd
+                            rtl::rnd
+                            rtl::rne
+                            rtl::formatp
+                            formatp
+                            round-positive-subnormal-ties-to-even
+                            emin
+                            emax
+                            rtl::prec
+                            rtl::expw
+                            rtl::sig
+                            rtl::rtz
+                            rtl::raz
+                            rtl::fl
+                            rtl::cg
+                            rtl::sgn
+                            int-part
+                            expt-of-+
+                            floor-normalize-denominator
+                            frac-part-intro)
+                           (<-of-expt-2-of-log2-same
+                            distributivity
+                            floor-of-*-of-/-and-1
+                            floor-of-times-1/2)))))
