@@ -1,7 +1,7 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,43 +11,9 @@
 
 (in-package "X")
 
-(include-book "support32")
+(include-book "support32") ; reduce?  but we need at least the memory readers
 (include-book "register-readers-and-writers32")
 
-;; read-<reg> of set-eip
-
-(defthm eax-of-set-eip
-  (equal (eax (set-eip eip x86))
-         (eax x86))
-  :hints (("Goal" :in-theory (enable eax))))
-
-;;;
-
-(defthm ebx-of-set-eip
-  (equal (ebx (set-eip eip x86))
-         (ebx x86))
-  :hints (("Goal" :in-theory (enable ebx))))
-
-;;;
-
-(defthm ecx-of-set-eip
-  (equal (ecx (set-eip eip x86))
-         (ecx x86))
-  :hints (("Goal" :in-theory (enable ecx))))
-
-;;;
-
-(defthm edx-of-set-eip
-  (equal (edx (set-eip eip x86))
-         (edx x86))
-  :hints (("Goal" :in-theory (enable edx))))
-
-;;;
-
-(defthm esp-of-set-eip
-  (equal (esp (set-eip eip x86))
-         (esp x86))
-  :hints (("Goal" :in-theory (enable esp))))
 
 (defthm esp-of-write-byte-to-segment
   (equal (esp (write-byte-to-segment eff-addr seg-reg val x86))
@@ -58,13 +24,6 @@
   (equal (esp (write-to-segment n eff-addr seg-reg val x86))
          (esp x86))
   :hints (("Goal" :in-theory (enable write-to-segment))))
-
-;;;
-
-(defthm ebp-of-set-eip
-  (equal (ebp (set-eip eip x86))
-         (ebp x86))
-  :hints (("Goal" :in-theory (enable ebp))))
 
 ;;;
 
@@ -103,6 +62,11 @@
          (read-byte-from-segment eff-addr seg-reg x86))
   :hints (("Goal" :in-theory (enable set-ebp))))
 
+(defthm read-byte-from-segment-of-set-mxcsr
+  (equal (read-byte-from-segment eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-byte-from-segment eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
 ;;;
 
 (defthm read-from-segment-of-set-eip
@@ -140,69 +104,20 @@
          (read-from-segment n eff-addr seg-reg x86))
   :hints (("Goal" :in-theory (enable set-ebp))))
 
-;;;
+(defthm read-from-segment-of-set-flag
+  (equal (read-from-segment n eff-addr seg-reg (set-flag flg val x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-from-segment))))
 
-(defthm x86p-of-set-eax
-  (implies (x86p x86)
-           (x86p (set-eax eax x86)))
-  :hints (("Goal" :in-theory (enable set-eax))))
+(defthm read-from-segment-of-set-undef
+  (equal (read-from-segment n eff-addr seg-reg (set-undef undef x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-from-segment))))
 
-(defthm x86p-of-set-ebx
-  (implies (x86p x86)
-           (x86p (set-ebx ebx x86)))
-  :hints (("Goal" :in-theory (enable set-ebx))))
-
-(defthm x86p-of-set-ecx
-  (implies (x86p x86)
-           (x86p (set-ecx ecx x86)))
-  :hints (("Goal" :in-theory (enable set-ecx))))
-
-(defthm x86p-of-set-edx
-  (implies (x86p x86)
-           (x86p (set-edx edx x86)))
-  :hints (("Goal" :in-theory (enable set-edx))))
-
-(defthm x86p-of-set-esp
-  (implies (x86p x86)
-           (x86p (set-esp esp x86)))
-  :hints (("Goal" :in-theory (enable set-esp))))
-
-(defthm x86p-of-set-ebp
-  (implies (x86p x86)
-           (x86p (set-ebp ebp x86)))
-  :hints (("Goal" :in-theory (enable set-ebp))))
-
-;;;
-
-(defthm eip-of-set-eax
-  (equal (eip (set-eax eax x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-eax))))
-
-(defthm eip-of-set-ebx
-  (equal (eip (set-ebx ebx x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-ebx))))
-
-(defthm eip-of-set-ecx
-  (equal (eip (set-ecx ecx x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-ecx))))
-
-(defthm eip-of-set-edx
-  (equal (eip (set-edx edx x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-edx))))
-
-(defthm eip-of-set-esp
-  (equal (eip (set-esp esp x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-esp))))
-
-(defthm eip-of-set-ebp
-  (equal (eip (set-ebp ebp x86))
-         (eip x86))
-  :hints (("Goal" :in-theory (enable set-ebp))))
+(defthm read-from-segment-of-set-mxcsr
+  (equal (read-from-segment n eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-from-segment))))
 
 ;;;
 
