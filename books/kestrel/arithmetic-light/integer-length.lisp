@@ -297,10 +297,11 @@
    :hints (("Goal" :use (:instance integer-length-of-+-of--1-when-not-power-of-2 (i (+ 1 i)))
             :in-theory (disable integer-length-of-+-of--1-when-not-power-of-2)))))
 
-;loops
-(defthmd integer-length-of-+-of-1
+;loops if made a rewrite rule
+(defthm integer-length-of-+-of-1
   (implies (natp i)
            (equal (integer-length (+ 1 i))
                   (if (equal (+ 1 i) (expt 2 (+ -1 (integer-length (+ 1 i))))) ; i+1 is a power of 2
                       (+ 1 (integer-length i))
-                    (integer-length i)))))
+                    (integer-length i))))
+  :rule-classes nil)
