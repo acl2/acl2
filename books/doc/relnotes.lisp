@@ -522,6 +522,12 @@
     "Support has been added for the VEX-encoded
      SHLX, SHRX, and SARX instructions.")
 
+   (xdoc::p
+    "Support has been added for the VEX-encoded VMOVUPS instruction.")
+
+   (xdoc::p
+    "Some memory accessing functions for larger sizes have been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "xdoc::xdoc" "XDOC Library"))
