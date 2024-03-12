@@ -156,11 +156,8 @@
   :hints (("Goal" :in-theory (e/d (x::set-flag)
                                   ()))))
 
-(defthm segment-expand-down-bit-of-set-undef
-  (equal (x::segment-expand-down-bit seg-reg (set-undef undef x86))
-         (x::segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-undef)
-                                  ()))))
+(defthm segment-expand-down-bit-of-set-undef (equal (x::segment-expand-down-bit seg-reg (set-undef undef x86)) (x::segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm segment-expand-down-bit-of-set-mxcsr (equal (x::segment-expand-down-bit seg-reg (set-mxcsr mxcsr x86)) (x::segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 ;;;
 ;;; segment-base32
@@ -236,11 +233,8 @@
   :hints (("Goal" :in-theory (e/d (set-flag)
                                   ()))))
 
-(defthm segment-min-eff-addr32-of-set-undef
-  (equal (segment-min-eff-addr32 seg-reg (set-undef undef x86))
-         (segment-min-eff-addr32 seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-undef)
-                                  ()))))
+(defthm segment-min-eff-addr32-of-set-undef (equal (segment-min-eff-addr32 seg-reg (set-undef undef x86)) (segment-min-eff-addr32 seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm segment-min-eff-addr32-of-set-mxcsr (equal (segment-min-eff-addr32 seg-reg (set-mxcsr mxcsr x86)) (segment-min-eff-addr32 seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 (defthm natp-of-segment-min-eff-addr32
   (implies (and (seg-regp seg-reg)
@@ -280,6 +274,11 @@
   (equal (segment-max-eff-addr32 seg-reg (set-undef undef x86))
          (segment-max-eff-addr32 seg-reg x86))
   :hints (("Goal" :in-theory (e/d (set-undef) ()))))
+
+(defthm segment-max-eff-addr32-of-set-mxcsr
+  (equal (segment-max-eff-addr32 seg-reg (set-mxcsr mxcsr x86))
+         (segment-max-eff-addr32 seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (set-mxcsr) ()))))
 
 (defthm natp-of-segment-max-eff-addr32
   (implies (and (seg-regp seg-reg)
@@ -334,6 +333,11 @@
 
 (defthm segment-is-32-bitsp-of-set-undef
   (equal (segment-is-32-bitsp seg-reg (set-undef undef x86))
+         (segment-is-32-bitsp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
+
+(defthm segment-is-32-bitsp-of-set-mxcsr
+  (equal (segment-is-32-bitsp seg-reg (set-mxcsr mxcsr x86))
          (segment-is-32-bitsp seg-reg x86))
   :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
 
@@ -613,6 +617,11 @@
          (code-segment-readable-bit x86))
   :hints (("Goal" :in-theory (e/d (code-segment-readable-bit) (code-segment-readable-bit-intro)))))
 
+(defthm code-segment-readable-bit-of-set-mxcsr
+  (equal (code-segment-readable-bit (set-mxcsr undex x86))
+         (code-segment-readable-bit x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-readable-bit) (code-segment-readable-bit-intro)))))
+
 ;;;
 ;;; code-segment-well-formedp
 ;;;
@@ -837,6 +846,11 @@
 
 (defthm data-segment-writeable-bit-of-set-undef
   (equal (data-segment-writeable-bit seg-reg (set-undef undef x86))
+         (data-segment-writeable-bit seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (data-segment-writeable-bit) (data-segment-writeable-bit-intro)))))
+
+(defthm data-segment-writeable-bit-of-set-mxcsr
+  (equal (data-segment-writeable-bit seg-reg (set-mxcsr mxcsr x86))
          (data-segment-writeable-bit seg-reg x86))
   :hints (("Goal" :in-theory (e/d (data-segment-writeable-bit) (data-segment-writeable-bit-intro)))))
 
@@ -2072,6 +2086,11 @@
          (well-formed-32-bit-segmentp seg-reg x86))
   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
 
+(defthm well-formed-32-bit-segmentp-of-set-mxcsr
+  (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-mxcsr) ()))))
+
 (defthm read-byte-from-segment-of-set-flag
   (equal (read-byte-from-segment eff-addr seg-reg (set-flag flg val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
@@ -2124,6 +2143,11 @@
   (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
          (well-formed-32-bit-segmentp seg-reg x86))
   :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
+
+(defthm well-formed-32-bit-segmentp-of-set-mxcsr
+  (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-mxcsr) ()))))
 
 (defthm read-byte-from-segment-of-set-flag
   (equal (read-byte-from-segment eff-addr seg-reg (set-flag flg val x86))
@@ -2202,6 +2226,59 @@
   :hints (("Goal" :in-theory (e/d (code-segment-well-formedp set-undef)
                                   (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32p
                                    ;;                                  x86isa::seg-hidden-attri-is-n16p
+                                   )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm 32-bit-segment-size-of-set-mxcsr
+  (equal (32-bit-segment-size seg-reg (set-mxcsr mxcsr x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+
+(defthm 32-bit-segment-start-and-size-of-set-mxcsr
+  (equal (32-bit-segment-start-and-size seg-reg (set-mxcsr mxcsr x86))
+         (32-bit-segment-start-and-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+
+(defthm 32-bit-segment-start-of-set-mxcsr
+  (equal (32-bit-segment-start seg-reg (set-mxcsr mxcsr x86))
+         (32-bit-segment-start seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+
+(defthm well-formed-32-bit-segmentp-of-set-mxcsr
+  (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp) ()))))
+
+(defthm well-formed-32-bit-segmentp-of-set-mxcsr
+  (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-mxcsr) ()))))
+
+(defthm read-byte-from-segment-of-set-mxcsr
+  (equal (read-byte-from-segment eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-byte-from-segment eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
+(defthm read-byte-list-from-segment-of-set-mxcsr
+  (equal (read-byte-list-from-segment n eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (read-byte-list-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-byte-list-from-segment))))
+
+(defthm code-segment-assumptions32-for-code-of-set-mxcsr
+  (equal (code-segment-assumptions32-for-code code offset (set-mxcsr mxcsr x86))
+         (code-segment-assumptions32-for-code code offset x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-assumptions32-for-code set-mxcsr)
+                                  (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32pg
+                                   ;;                                  x86isa::seg-hidden-attri-is-n16p
+                                                                    )))))
+
+(defthm code-segment-well-formedp-of-set-mxcsr
+  (equal (code-segment-well-formedp (set-mxcsr mxcsr x86))
+         (code-segment-well-formedp x86))
+  :hints (("Goal" :in-theory (e/d (code-segment-well-formedp set-mxcsr)
+                                  (;; x86isa::seg-hidden-basei-is-n64p x86isa::seg-hidden-limiti-is-n32p
+                                   ;;                                  x86isa::seg-hidden-attri-is-n16p
                                                                     )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2214,6 +2291,11 @@
   (equal (eff-addr-okp eff-addr seg-reg (set-undef undef x86))
          (eff-addr-okp eff-addr seg-reg x86))
   :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm eff-addr-okp-of-set-mxcsr
+  (equal (eff-addr-okp eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (eff-addr-okp eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 (defthm eff-addr-okp-of-WRITE-TO-SEGMENT
   (equal (eff-addr-okp eff-addr seg-reg (WRITE-TO-SEGMENT N2 EFF-ADDR2 SEG-REG2 VAL2 X86))
@@ -2289,6 +2371,11 @@
   (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (set-undef undef x86))
          (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
   :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm ea-to-la-of-set-mxcsr
+  (equal (ea-to-la proc-mode eff-addr seg-reg nbytes (set-mxcsr mxcsr x86))
+         (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 ;; (defthm read-of-ea-to-la-becomes-read-from-segment
 ;;   (implies (and (eff-addrs-okp n eff-addr seg-reg x86-2)
@@ -3390,6 +3477,10 @@
   (equal (eff-addrs-okp n eff-addr seg-reg (set-undef undef x86))
          (eff-addrs-okp n eff-addr seg-reg x86)))
 
+(defthm eff-addrs-okp-of-set-mxcsr
+  (equal (eff-addrs-okp n eff-addr seg-reg (set-mxcsr mxcsr x86))
+         (eff-addrs-okp n eff-addr seg-reg x86)))
+
 (defthm eff-addrs-okp-of-write-to-segment
   (equal (eff-addrs-okp n eff-addr seg-reg (write-to-segment n2 eff-addr2 seg-reg2 val2 x86))
          (eff-addrs-okp n eff-addr seg-reg x86)))
@@ -3403,6 +3494,11 @@
 
 (defthm read-from-segment-of-set-undef
   (equal (read-from-segment n eff-addr seg-reg (set-undef undef x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable read-from-segment))))
+
+(defthm read-from-segment-of-set-mxcsr
+  (equal (read-from-segment n eff-addr seg-reg (set-mxcsr mxcsr x86))
          (read-from-segment n eff-addr seg-reg x86))
   :hints (("Goal" :in-theory (enable read-from-segment))))
 
@@ -4413,6 +4509,11 @@
          (segments-separate seg-reg1 seg-reg2 x86))
   :hints (("Goal" :in-theory (enable set-undef segments-separate segments-separate-helper))))
 
+(defthm segments-separate-of-set-mxcsr
+  (equal (segments-separate seg-reg1 seg-reg2 (set-mxcsr mxcsr x86))
+         (segments-separate seg-reg1 seg-reg2 x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr segments-separate segments-separate-helper))))
+
 (defthm code-and-stack-segments-separate-of-set-eip
   (equal (code-and-stack-segments-separate (set-eip eip x86))
          (code-and-stack-segments-separate x86))
@@ -4432,6 +4533,11 @@
 
 (defthm code-and-stack-segments-separate-of-set-undef
   (equal (code-and-stack-segments-separate (set-undef undef x86))
+         (code-and-stack-segments-separate x86))
+  :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
+
+(defthm code-and-stack-segments-separate-of-set-mxcsr
+  (equal (code-and-stack-segments-separate (set-mxcsr mxcsr x86))
          (code-and-stack-segments-separate x86))
   :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
 

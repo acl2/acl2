@@ -306,6 +306,9 @@
     undef-of-write-to-segment
     undef-of-write-byte-to-segment
 
+    mxcsr-of-write-to-segment
+    mxcsr-of-write-byte-to-segment
+
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
 ;;     ;; x86isa::set-flag-set-flag-different-concrete-indices
@@ -871,6 +874,8 @@
     if-of-set-flag-arg3-64
     if-of-set-undef-arg2-64
     if-of-set-undef-arg3-64
+    if-of-set-mxcsr-arg2-64
+    if-of-set-mxcsr-arg3-64
     if-of-write-byte-arg2-64
     if-of-write-byte-arg3-64
     if-of-write-arg2-64
@@ -892,6 +897,7 @@
     ;; feature-flag-of-if
     read-of-if
     undef-of-if
+    mxcsr-of-if
     ms-of-if
     fault-of-if
     acl2::mv-nth-of-if ;could restrict to when both branches are cons nests
@@ -1076,6 +1082,7 @@
     segment-base-and-bounds-of-set-rdi
     segment-base-and-bounds-of-set-flag
     segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-set-mxcsr
     segment-base-and-bounds-of-set-ms
     segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
@@ -1109,8 +1116,10 @@
     booleanp-of-is-nan
     not-mv-nth-0-of-sse-cmp
 
-    integerp-of-xr-mxcsr
-    x86isa::n32p-xr-mxcsr
+    integerp-of-mxcsr
+    ;; maybe drop these:
+    ;;integerp-of-xr-mxcsr
+    ;;x86isa::n32p-xr-mxcsr ; targets unsigned-byte-p-of-mxcsr
 
     x86isa::mxcsrbits-fix-constant-opener
     x86isa::mxcsrbits->ie$inline-constant-opener
@@ -1617,6 +1626,7 @@
             fault-of-!rflags ; why is !rflags not going away?
             fault-of-set-rip ; move to 64 rules?
             fault-of-set-undef
+            fault-of-set-mxcsr
             fault-of-xw ; currently needed at least for writes to float registers
 
             ;; Rules about SET-FAULT:
@@ -1631,6 +1641,7 @@
             ms-of-!rflags ; why is !rflags not going away?
             ms-of-set-rip ; move to 64 rules?
             ms-of-set-undef
+            ms-of-set-mxcsr
             ms-of-xw ; currently needed at least for writes to float registers
 
             ;; Rules about SET-MS:
@@ -1640,11 +1651,23 @@
 
             ;; x86isa::undef x86isa::undef$a
             xr-becomes-undef ; introduces undef
-            undef-of-set-undef
+            undef-of-set-undef ; read-of-write
+            undef-of-set-mxcsr
             undef-of-set-flag
             ;; undef-of-myif
             undef-of-!rflags ; why is !rflags not going away?
             undef-of-set-rip ; move to 64 rules?
+
+            ;;x86isa::mxcsr
+            ;;x86isa::mxcsr$a
+            xr-becomes-mxcsr ; introduces mxcsr
+            mxcsr-of-xw
+            mxcsr-of-set-flag
+            mxcsr-of-set-mxcsr ; read-of-write
+            mxcsr-of-set-undef
+            ;; mxcsr-of-myif
+            mxcsr-of-!rflags ; why is !rflags not going away?
+            mxcsr-of-set-rip ; move to 64 rules?
 
             xw-becomes-set-undef ; introduces set-undef
             x86isa::!undef-becomes-set-undef ; introduces set-undef
@@ -1652,24 +1675,41 @@
             64-bit-modep-of-set-undef
             ctri-of-set-undef
             msri-of-set-undef
-
             set-undef-of-set-undef
+;;            set-undef-of-set-mxcsr
             set-undef-of-set-flag
-            ;; set-undef-of-myif ; todo: think about this
+            ;; set-undef-of-myif
             set-undef-of-!rflags ; why is !rflags showing up?
             set-undef-of-set-rip ; move to 64 rules?
 
+            xw-becomes-set-mxcsr
+            x86isa::!mxcsr-becomes-set-mxcsr
+            alignment-checking-enabled-p-of-set-mxcsr
+            64-bit-modep-of-set-mxcsr
+            ctri-of-set-mxcsr
+            msri-of-set-mxcsr
+            set-mxcsr-of-set-mxcsr
+            set-mxcsr-of-set-flag
+            ;; set-mxcsr-of-myif
+            set-mxcsr-of-!rflags ; why is !rflags showing up?
+            set-mxcsr-of-set-rip ; move to 64 rules?
+
             rip-of-set-undef ; also used in 32-bit mode?  or not?
+            rip-of-set-mxcsr ; also used in 32-bit mode?  or not?
 
             rip-of-set-ms ; also used in 32-bit mode?  or not?
 
             app-view-of-set-undef
+            app-view-of-set-mxcsr
             app-view-of-set-ms
             x86p-of-set-undef
+            x86p-of-set-mxcsr
             x86p-of-set-ms
             xr-of-set-undef-irrel
+            xr-of-set-mxcsr-irrel
             xr-of-set-ms-irrel
             get-flag-of-set-undef
+            get-flag-of-set-mxcsr
             get-flag-of-set-ms
 
             x86isa::mv-nth-1-rb-xw-undef
@@ -2190,6 +2230,7 @@
     read-from-segment-of-xw
     read-from-segment-of-set-flag
     read-from-segment-of-set-undef
+    read-from-segment-of-set-mxcsr
     ;; read-from-segment-of-set-ms
 
     read-from-segment-of-1 ;; simplifies to read-byte-from-segment
@@ -2231,7 +2272,6 @@
 ;mv-nth-1-of-add-to-*ip
     mv-nth-1-of-add-to-*ip-gen
 
-
     undef-of-set-eip
     undef-of-set-eax
     undef-of-set-ebx
@@ -2239,6 +2279,14 @@
     undef-of-set-edx
     undef-of-set-esp
     undef-of-set-ebp
+
+    mxcsr-of-set-eip
+    mxcsr-of-set-eax
+    mxcsr-of-set-ebx
+    mxcsr-of-set-ecx
+    mxcsr-of-set-edx
+    mxcsr-of-set-esp
+    mxcsr-of-set-ebp
 
     ms-of-set-eip
     ms-of-set-eax
@@ -2267,6 +2315,17 @@
     set-undef-of-set-esp
     set-undef-of-set-ebp
 
+    ;; bury set-mxcsr deep in the term:
+    set-mxcsr-of-set-eip
+    set-mxcsr-of-set-eax
+    set-mxcsr-of-set-ebx
+    set-mxcsr-of-set-ecx
+    set-mxcsr-of-set-edx
+    ;; set-mxcsr-of-set-edi
+    ;; set-mxcsr-of-set-esi
+    set-mxcsr-of-set-esp
+    set-mxcsr-of-set-ebp
+
     eax-of-set-flag
     ebx-of-set-flag
     ecx-of-set-flag
@@ -2285,6 +2344,16 @@
     esp-of-set-undef
     ;; esi-of-set-undef
     ;; edi-of-set-undef
+    ;todo: more?
+
+    eax-of-set-mxcsr
+    ebx-of-set-mxcsr
+    ecx-of-set-mxcsr
+    edx-of-set-mxcsr
+    ebp-of-set-mxcsr
+    esp-of-set-mxcsr
+    ;; esi-of-set-mxcsr
+    ;; edi-of-set-mxcsr
     ;todo: more?
 
     ;; Rules about add-to-*sp
@@ -2318,6 +2387,7 @@
     read-byte-list-from-segment-of-write-to-segment-diff-segments
     read-byte-list-from-segment-of-set-flag
     ;; read-byte-list-from-segment-of-set-undef
+    ;; read-byte-list-from-segment-of-set-mxcsr
     ;; read-byte-list-from-segment-of-set-ms
 
     segment-expand-down-bit-of-cs-when-code-segment-well-formedp
@@ -2393,6 +2463,7 @@
     segment-is-32-bitsp-of-set-ebp
     segment-is-32-bitsp-of-set-flag
     segment-is-32-bitsp-of-set-undef
+    segment-is-32-bitsp-of-set-mxcsr
     segment-is-32-bitsp-of-xw-irrel
 
     ;;Rules about 32-bit-segment-size
@@ -2407,6 +2478,7 @@
     32-bit-segment-size-of-set-ebp
     32-bit-segment-size-of-set-flag
     32-bit-segment-size-of-set-undef
+    32-bit-segment-size-of-set-mxcsr
     32-bit-segment-size-of-xw
 
     ;;Rules about 32-bit-segment-start
@@ -2421,6 +2493,7 @@
     32-bit-segment-start-of-set-ebp
     32-bit-segment-start-of-set-flag
     32-bit-segment-start-of-set-undef
+    32-bit-segment-start-of-set-mxcsr
     32-bit-segment-start-of-xw
 
     ;; Rules about segment-expand-down-bit
@@ -2435,6 +2508,7 @@
     segment-expand-down-bit-of-set-ebp
     segment-expand-down-bit-of-set-flag
     segment-expand-down-bit-of-set-undef
+    segment-expand-down-bit-of-set-mxcsr
     segment-expand-down-bit-of-xw-irrel
 
     ;; Rules about well-formed-32-bit-segmentp
@@ -2449,8 +2523,8 @@
     well-formed-32-bit-segmentp-of-set-ebp
     well-formed-32-bit-segmentp-of-set-flag
     well-formed-32-bit-segmentp-of-set-undef
+    well-formed-32-bit-segmentp-of-set-mxcsr
     well-formed-32-bit-segmentp-of-xw
-    well-formed-32-bit-segmentp-of-set-undef
 
     ;; Rules about segments-separate
     segments-separate-of-write-byte-to-segment
@@ -2464,6 +2538,7 @@
     segments-separate-of-set-ebp
     segments-separate-of-set-flag
     segments-separate-of-set-undef
+    segments-separate-of-set-mxcsr
     segments-separate-of-xw-irrel
 
     ;; Rules about code-and-stack-segments-separate (todo: do we need these and the rules about segments-separate?)
@@ -2478,6 +2553,7 @@
     code-and-stack-segments-separate-of-set-ebp
     code-and-stack-segments-separate-of-set-flag
     code-and-stack-segments-separate-of-set-undef
+    code-and-stack-segments-separate-of-set-mxcsr
     code-and-stack-segments-separate-of-xw-irrel
 
     ;; Rules about alignment-checking-enabled-p
@@ -2526,6 +2602,7 @@
     esp-of-set-eip
     esp-of-set-flag
     esp-of-set-undef
+    esp-of-set-mxcsr
     esp-of-xw-irrel
     natp-of-esp-when-stack-segment-assumptions32
 
@@ -2540,6 +2617,7 @@
     read-byte-from-segment-of-set-ebp
     read-byte-from-segment-of-set-flag
     read-byte-from-segment-of-set-undef
+    read-byte-from-segment-of-set-mxcsr
 
     ;; Rules about 64-bit-modep
     64-bit-modep-of-write-bytes-to-segment
@@ -2573,6 +2651,7 @@
     code-segment-well-formedp-of-write-to-segment
     code-segment-well-formedp-of-set-flag
     code-segment-well-formedp-of-set-undef
+    code-segment-well-formedp-of-set-mxcsr
 
     ;; Rules about code-segment-assumptions32-for-code
     code-segment-assumptions32-for-code-of-xw
@@ -2586,6 +2665,7 @@
     code-segment-assumptions32-for-code-of-set-ebp
     code-segment-assumptions32-for-code-of-set-flag
     code-segment-assumptions32-for-code-of-set-undef
+    code-segment-assumptions32-for-code-of-set-mxcsr
 
     unsigned-byte-p-of-+-of-esp
     eff-addr-okp-of-+-of-esp-positive-offset
@@ -2623,6 +2703,7 @@
     eff-addrs-okp-of-write-to-segment
     eff-addrs-okp-of-set-flag
     eff-addrs-okp-of-set-undef
+    eff-addrs-okp-of-set-mxcsr
     eff-addrs-okp-of-set-eip
     eff-addrs-okp-of-set-eax
     eff-addrs-okp-of-set-ebx
@@ -2894,6 +2975,9 @@
     undef-of-write-byte
     undef-of-write
 
+    mxcsr-of-write-byte
+    mxcsr-of-write
+
     ms-of-write-byte
     ms-of-write
 
@@ -2973,6 +3057,7 @@
     read-of-set-rsp
     read-of-set-rbp
     read-of-set-undef
+    read-of-set-mxcsr
 
     read-byte-of-set-rip
     read-byte-of-set-rax
@@ -2992,6 +3077,7 @@
     read-byte-of-set-rsp
     read-byte-of-set-rbp
     read-byte-of-set-undef
+    read-byte-of-set-mxcsr
 
     get-flag-of-set-rip
     get-flag-of-set-rax
@@ -3029,6 +3115,7 @@
     rax-of-set-rsp
     rax-of-set-rbp
     rax-of-set-undef
+    rax-of-set-mxcsr
     rbx-of-set-rax
     rbx-of-set-rcx
     rbx-of-set-rdx
@@ -3045,6 +3132,7 @@
     rbx-of-set-rsp
     rbx-of-set-rbp
     rbx-of-set-undef
+    rbx-of-set-mxcsr
     rcx-of-set-rax
     rcx-of-set-rbx
     rcx-of-set-rdx
@@ -3061,6 +3149,7 @@
     rcx-of-set-rsp
     rcx-of-set-rbp
     rcx-of-set-undef
+    rcx-of-set-mxcsr
     rdx-of-set-rax
     rdx-of-set-rbx
     rdx-of-set-rcx
@@ -3077,6 +3166,7 @@
     rdx-of-set-rsp
     rdx-of-set-rbp
     rdx-of-set-undef
+    rdx-of-set-mxcsr
     rsi-of-set-rax
     rsi-of-set-rbx
     rsi-of-set-rcx
@@ -3093,6 +3183,7 @@
     rsi-of-set-rsp
     rsi-of-set-rbp
     rsi-of-set-undef
+    rsi-of-set-mxcsr
     rdi-of-set-rax
     rdi-of-set-rbx
     rdi-of-set-rcx
@@ -3109,6 +3200,7 @@
     rdi-of-set-rsp
     rdi-of-set-rbp
     rdi-of-set-undef
+    rdi-of-set-mxcsr
     r8-of-set-rax
     r8-of-set-rbx
     r8-of-set-rcx
@@ -3125,6 +3217,7 @@
     r8-of-set-rsp
     r8-of-set-rbp
     r8-of-set-undef
+    r8-of-set-mxcsr
     r9-of-set-rax
     r9-of-set-rbx
     r9-of-set-rcx
@@ -3141,6 +3234,7 @@
     r9-of-set-rsp
     r9-of-set-rbp
     r9-of-set-undef
+    r9-of-set-mxcsr
     r10-of-set-rax
     r10-of-set-rbx
     r10-of-set-rcx
@@ -3157,6 +3251,7 @@
     r10-of-set-rsp
     r10-of-set-rbp
     r10-of-set-undef
+    r10-of-set-mxcsr
 
     r11-of-set-rax
     r11-of-set-rbx
@@ -3174,6 +3269,7 @@
     r11-of-set-rsp
     r11-of-set-rbp
     r11-of-set-undef
+    r11-of-set-mxcsr
 
     r12-of-set-rax
     r12-of-set-rbx
@@ -3191,6 +3287,7 @@
     r12-of-set-rsp
     r12-of-set-rbp
     r12-of-set-undef
+    r12-of-set-mxcsr
 
     r13-of-set-rax
     r13-of-set-rbx
@@ -3208,6 +3305,7 @@
     r13-of-set-rsp
     r13-of-set-rbp
     r13-of-set-undef
+    r13-of-set-mxcsr
 
     r14-of-set-rax
     r14-of-set-rbx
@@ -3225,6 +3323,7 @@
     r14-of-set-rsp
     r14-of-set-rbp
     r14-of-set-undef
+    r14-of-set-mxcsr
 
     r15-of-set-rax
     r15-of-set-rbx
@@ -3242,6 +3341,7 @@
     r15-of-set-rsp
     r15-of-set-rbp
     r15-of-set-undef
+    r15-of-set-mxcsr
 
     rsp-of-set-rax
     rsp-of-set-rbx
@@ -3259,6 +3359,7 @@
     rsp-of-set-r15
     rsp-of-set-rbp
     rsp-of-set-undef
+    rsp-of-set-mxcsr
     rbp-of-set-rax
     rbp-of-set-rbx
     rbp-of-set-rcx
@@ -3275,6 +3376,7 @@
     rbp-of-set-r15
     rbp-of-set-rsp
     rbp-of-set-undef
+    rbp-of-set-mxcsr
 
     rax-of-set-flag
     rbx-of-set-flag
@@ -3328,6 +3430,23 @@
     undef-of-set-rsi
     undef-of-set-rsp
     undef-of-set-rbp
+
+    mxcsr-of-set-rax
+    mxcsr-of-set-rbx
+    mxcsr-of-set-rcx
+    mxcsr-of-set-rdx
+    mxcsr-of-set-rdi
+    mxcsr-of-set-r8
+    mxcsr-of-set-r9
+    mxcsr-of-set-r10
+    mxcsr-of-set-r11
+    mxcsr-of-set-r12
+    mxcsr-of-set-r13
+    mxcsr-of-set-r14
+    mxcsr-of-set-r15
+    mxcsr-of-set-rsi
+    mxcsr-of-set-rsp
+    mxcsr-of-set-rbp
 
     ms-of-set-rax
     ms-of-set-rbx
@@ -3811,6 +3930,7 @@
     mv-nth-0-of-rme-size-of-set-rsp
     mv-nth-0-of-rme-size-of-set-rbp
     mv-nth-0-of-rme-size-of-set-undef ; move?
+    mv-nth-0-of-rme-size-of-set-mxcsr ; move?
 
     mv-nth-1-of-rme-size-of-set-rip
     mv-nth-1-of-rme-size-of-set-rax
@@ -4246,8 +4366,6 @@
             integerp-of-PART-INSTALL-WIDTH-LOW$INLINE
             X86ISA::SP-SSE-CMP
             ;;X86ISA::SSE-CMP ;todo: limit?
-            X86ISA::MXCSR
-            X86ISA::MXCSR$A
             X86ISA::!MXCSR
             X86ISA::!MXCSR$A
             ;; FEATURE-FLAG-sse-of-xw

@@ -14,6 +14,7 @@
 ;; This book focues on things that are not specific to 32-bit or 64-bit mode.
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
+;(include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system) ; would support integerp-of-mxcsr, but it has a ttag
 (include-book "kestrel/utilities/myif" :dir :system)
 
 (in-theory (disable undef))
@@ -127,7 +128,7 @@
          val)
   :hints (("Goal" :in-theory (enable ms set-ms))))
 
-;; Not sure whether we need more rules about set-ms, as it generally caused the execution to stop.
+;; Not sure whether we need more rules about set-ms, as it generally causes the execution to stop.
 
 
 ;; (defund set-error (error x86)
@@ -191,3 +192,73 @@
   (equal (fault (set-fault val x86))
          val)
   :hints (("Goal" :in-theory (enable fault set-fault))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Introduces mxcsr
+(defthmd xr-becomes-mxcsr
+  (equal (xr :mxcsr nil x86)
+         (mxcsr x86))
+  :hints (("Goal" :in-theory (enable mxcsr))))
+
+(defthm mxcsr-of-xw (implies (not (equal fld :mxcsr)) (equal (mxcsr (xw fld index value x86)) (mxcsr x86))) :hints (("Goal" :in-theory (enable mxcsr))))
+
+(defthm mxcsr-of-if (equal (mxcsr (if test x y)) (if test (mxcsr x) (mxcsr y))))
+
+(defthm integerp-of-mxcsr
+  (integerp (mxcsr x86))
+  :hints (("Goal" :use (:instance x86isa::elem-p-of-xr-mxcsr (i nil) (x86isa::x86$a x86))
+           :in-theory (disable x86isa::elem-p-of-xr-mxcsr))))
+
+;(defthm mxcsr-of-myif (equal (mxcsr (myif test x y)) (myif test (mxcsr x) (mxcsr y))) :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Writes the mxcsr state component.
+(defund set-mxcsr (mxcsr x86)
+  (declare (xargs :guard (unsigned-byte-p 32 mxcsr)
+                  :stobjs x86))
+  (x86isa::!mxcsr mxcsr x86))
+
+;; Introduces set-mxcsr
+(defthmd x86isa::!mxcsr-becomes-set-mxcsr
+  (equal (x86isa::!mxcsr mxcsr x86)
+         (set-mxcsr mxcsr x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
+;; Introduces set-mxcsr
+(defthmd xw-becomes-set-mxcsr
+  (equal (xw :mxcsr nil mxcsr x86)
+         (set-mxcsr mxcsr x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
+;needed?
+(defthm xr-of-set-mxcsr-irrel
+  (implies (or (not (equal fld :mxcsr))
+               ;;(not (equal index *rax*))
+               )
+           (equal (xr fld index (set-mxcsr mxcsr x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
+;; read-of-write rule
+(defthm mxcsr-of-set-mxcsr
+  (equal (mxcsr (set-mxcsr val x86))
+         (loghead 32 val))
+  :hints (("Goal" :in-theory (enable mxcsr set-mxcsr))))
+
+;; write-of-write rule
+(defthm set-mxcsr-of-set-mxcsr
+  (equal (set-mxcsr mxcsr1 (set-mxcsr mxcsr2 x86))
+         (set-mxcsr mxcsr1 x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
+
+;; write-of-read rule
+(defthm set-mxcsr-of-mxcsr-same
+  (equal (set-mxcsr (mxcsr x86) x86)
+         x86)
+  :hints (("Goal" :in-theory (enable mxcsr set-mxcsr))))
+
+;(defthm set-mxcsr-of-myif (equal (set-mxcsr val (myif test x y)) (myif test (set-mxcsr val x) (set-mxcsr val y))) :hints (("Goal" :in-theory (enable myif))))
+
+(defthm set-mxcsr-of-if (equal (set-mxcsr val (if test x y)) (if test (set-mxcsr val x) (set-mxcsr val y))))

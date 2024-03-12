@@ -61,6 +61,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd if-of-set-mxcsr-arg2-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test (set-mxcsr mxcsr x86_1) x86_2) (set-mxcsr (if test mxcsr (mxcsr x86_2)) (if test x86_1 x86_2)))) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthmd if-of-set-mxcsr-arg3-64 (implies (mergeable-states64p x86_1 x86_2) (equal (if test x86_1 (set-mxcsr mxcsr x86_2)) (set-mxcsr (if test (mxcsr x86_1) mxcsr) (if test x86_1 x86_2)))) :hints (("Goal" :in-theory (enable set-mxcsr))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: add rules for write-byte, etc.
 (defthmd if-of-write-arg2-64
   (implies (mergeable-states64p x86_1 x86_2)

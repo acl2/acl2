@@ -1102,6 +1102,16 @@
 ;; (defthm edi-of-set-undef (equal (edi (set-undef undef x86)) (edi x86)) :hints (("Goal" :in-theory (enable set-undef))))
 ;todo: more?
 
+(defthm eax-of-set-mxcsr (equal (eax (set-mxcsr mxcsr x86)) (eax x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm ebx-of-set-mxcsr (equal (ebx (set-mxcsr mxcsr x86)) (ebx x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm ecx-of-set-mxcsr (equal (ecx (set-mxcsr mxcsr x86)) (ecx x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm edx-of-set-mxcsr (equal (edx (set-mxcsr mxcsr x86)) (edx x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm ebp-of-set-mxcsr (equal (ebp (set-mxcsr mxcsr x86)) (ebp x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm esp-of-set-mxcsr (equal (esp (set-mxcsr mxcsr x86)) (esp x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;; (defthm esi-of-set-mxcsr (equal (esi (set-mxcsr mxcsr x86)) (esi x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;; (defthm edi-of-set-mxcsr (equal (edi (set-mxcsr mxcsr x86)) (edi x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;todo: more?
+
 (defthm undef-of-set-eip (equal (undef (set-eip val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eip))))
 (defthm undef-of-set-eax (equal (undef (set-eax val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eax))))
 (defthm undef-of-set-ebx (equal (undef (set-ebx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebx))))
@@ -1112,6 +1122,16 @@
 (defthm undef-of-set-esp (equal (undef (set-esp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-esp))))
 (defthm undef-of-set-ebp (equal (undef (set-ebp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebp))))
 
+(defthm mxcsr-of-set-eip (equal (mxcsr (set-eip val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-eip))))
+(defthm mxcsr-of-set-eax (equal (mxcsr (set-eax val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-eax))))
+(defthm mxcsr-of-set-ebx (equal (mxcsr (set-ebx val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-ebx))))
+(defthm mxcsr-of-set-ecx (equal (mxcsr (set-ecx val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-ecx))))
+(defthm mxcsr-of-set-edx (equal (mxcsr (set-edx val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-edx))))
+;; (defthm mxcsr-of-set-esi (equal (mxcsr (set-esi val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-esi))))
+;; (defthm mxcsr-of-set-edi (equal (mxcsr (set-edi val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-edi))))
+(defthm mxcsr-of-set-esp (equal (mxcsr (set-esp val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-esp))))
+(defthm mxcsr-of-set-ebp (equal (mxcsr (set-ebp val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-ebp))))
+
 (defthm undef-of-write-byte-to-segment
   (equal (undef (write-byte-to-segment eff-addr seg-reg val x86))
          (undef x86))
@@ -1120,6 +1140,16 @@
 (defthm undef-of-write-to-segment
   (equal (undef (write-to-segment n eff-addr seg-reg val x86))
          (undef x86))
+  :hints (("Goal" :in-theory (enable write-to-segment))))
+
+(defthm mxcsr-of-write-byte-to-segment
+  (equal (mxcsr (write-byte-to-segment eff-addr seg-reg val x86))
+         (mxcsr x86))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+
+(defthm mxcsr-of-write-to-segment
+  (equal (mxcsr (write-to-segment n eff-addr seg-reg val x86))
+         (mxcsr x86))
   :hints (("Goal" :in-theory (enable write-to-segment))))
 
 
