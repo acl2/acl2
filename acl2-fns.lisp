@@ -1520,7 +1520,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                           (equal num 1D+-0))
           #+sbcl (or (= num #.sb-ext:double-float-positive-infinity)
                      (= num #.sb-ext:double-float-negative-infinity)
-                     (sb-ext:float-nan-p *))
+                     (sb-ext:float-nan-p num))
           #-(or allegro ccl cmucl gcl lispworks sbcl)
           (error "Missing case: This Lisp cannot host ACL2.")
           (error "The exceptional floating-point value ~s cannot be converted ~
