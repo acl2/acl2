@@ -42,8 +42,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod param
+(defxdoc+ poseidon-main-definition
   :parents (poseidon)
+  :short "Main definition of the Poseidon hash function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see poseidon) for an overview.")
+   (xdoc::p
+    "Poseidon is parameterized over a number of aspects,
+     such as the round constants, the MDS matrix, etc.
+     We capture all these parameters in the @(tsee param) data structure,
+     which also includes parameters for aspects that
+     are not explicitly described in the Poseidon paper
+     but that nevertheless need to be made precise in the definition.
+     Perhaps these latter aspects are disambiguated
+     by the reference implementation of Poseidon
+     (which is also linked from the aforementioned web site),
+     but it stil makes mathematical sense to parameterize the definition
+     over those aspects.
+     These are all described in detail in @(tsee param).
+     The top-level functions of our specification of Poseidon
+     take a @(tsee param) as an input.")
+   (xdoc::p
+    "Poseidon uses a sponge construction, which is a more general concept.
+     In a sponge construction,
+     one can absorb any number of elements,
+     squeeze any number of elements,
+     and again absorb more elements and then squeeze them,
+     and so on.
+     We formalize this by explicating the state of the sponge in @(tsee sponge),
+     which consists of not only the current vector of elements,
+     but also an index within the vector
+     where elements are absorbed or squeezed next,
+     and an indication of whether we are absorbing or squeezing;
+     this is described in more detail in @(tsee sponge).
+     We define functions @(tsee absorb) and @(tsee squeeze)
+     to absorb and squeeze elements,
+     which take as input and return as output a sponge state,
+     besides the other natural inputs and outputs.
+     This is similar to some existing implementations of Poseidon.")
+   (xdoc::p
+    "The aforementioned @(tsee absorb) and @(tsee squeeze) functions
+     take or return multiple input or output elements.
+     If these functions were defined ``directly'',
+     they would be somewhat complicated because of the need to handle
+     a number of inputs or outputs that will start from the current index
+     and that may require one or more permutations and index wrap-arounds.
+     This is especially the case because, as described in @(tsee param),
+     we support several different ways to absorb and squeeze elements.
+     To keep things simpler,
+     we define functions @(tsee absorb1) and @(tsee squeeze1)
+     that absorb or squeeze a single input or output element:
+     these are much simpler to define and understand,
+     even with the several different ways to absorb and squeeze elements.
+     Then we define @(tsee absorb) and @(tsee squeeze)
+     by simply iterating @(tsee absorb1) and @(tsee squeeze1).")
+   (xdoc::p
+    "At the very top level, we define a function @(tsee hash)
+     that maps any number of inputs to any number of outputs.
+     This is defined by internally creating and using a sponge state.
+     Note that there is no need to include any explicit notion of padding,
+     which can be performed externally to Poseidon proper as defined here."))
+  :order-subtopics t
+  :default-parent t)
+
+(fty::defprod param
   :short "Fixtype of Poseidon parameters."
   :long
   (xdoc::topstring
@@ -174,7 +238,6 @@
 
 (define param->capacity-then-rate-p ((param paramp))
   :returns (yes/no booleanp)
-  :parents (poseidon)
   :short "Negation of the @(tsee param->rate-then-capacity-p) parameter."
   (not (param->rate-then-capacity-p param))
   :hooks (:fix))
@@ -183,7 +246,6 @@
 
 (define param->descending-p ((param paramp))
   :returns (yes/no booleanp)
-  :parents (poseidon)
   :short "Negation of the @(tsee param->ascending-p) parameter."
   (not (param->ascending-p param))
   :hooks (:fix))
@@ -192,7 +254,6 @@
 
 (define param->partial-last-p ((param paramp))
   :returns (yes/no booleanp)
-  :parents (poseidon)
   :short "Negation of the @(tsee param->partial-first-p) parameter."
   (not (param->partial-first-p param))
   :hooks (:fix))
@@ -201,7 +262,6 @@
 
 (define param->size ((param paramp))
   :returns (r+c posp)
-  :parents (poseidon)
   :short "Size of the state vector, i.e. @($r + c$)."
   (+ (param->rate param)
      (param->capacity param))
@@ -211,7 +271,6 @@
 
 (define param->rounds ((param paramp))
   :returns (rounds natp)
-  :parents (poseidon)
   :short "Total number of rounds, i.e. @($2 R_f + R_P = R_F + R_P$)."
   (+ (param->full-rounds-half param)
      (param->partial-rounds param)
@@ -221,7 +280,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection param-additional-theorems
-  :parents (poseidon)
   :short "Additional theorems about the parameters in @(tsee param)."
 
   (defrule posp-of-param->prime
@@ -275,7 +333,6 @@
   :returns (new-stat (fe-listp new-stat prime)
                      :hyp (posp prime)
                      :name fe-listp-of-add-round-constants)
-  :parents (poseidon)
   :short "Add round constants to the state vector."
   :long
   (xdoc::topstring
@@ -305,7 +362,6 @@
   :returns (new-elem (fep new-elem prime)
                      :hyp (primep prime)
                      :name fep-of-pow-by-alpha)
-  :parents (poseidon)
   :short "Raise a field element to the @($\\alpha$) power."
   :long
   (xdoc::topstring
@@ -330,7 +386,6 @@
   :returns (new-stat (fe-listp new-stat prime)
                      :hyp (primep prime)
                      :name fe-listp-of-sub-wordsfull)
-  :parents (poseidon)
   :short "Apply the full S-box substitution to the state vector."
   :long
   (xdoc::topstring
@@ -356,7 +411,6 @@
                      :hyp (and (primep prime)
                                (fe-listp stat prime))
                      :name fe-listp-of-sub-words-partial)
-  :parents (poseidon)
   :short "Apply the partial S-box substitution to the state vector."
   :long
   (xdoc::topstring
@@ -391,7 +445,6 @@
                      :hyp (and (primep prime)
                                (fe-listp stat prime))
                      :name fe-listp-of-sub-words)
-  :parents (poseidon)
   :short "Apply the S-box substitution to the state vector."
   :long
   (xdoc::topstring
@@ -418,7 +471,6 @@
   :returns (elem (fep elem prime)
                  :hyp (posp prime)
                  :name fep-of-dot-product)
-  :parents (poseidon)
   :short "Dot product of a matrix row and the state vector."
   :long
   (xdoc::topstring
@@ -445,7 +497,6 @@
   :returns (elems (fe-listp elems prime)
                   :hyp (posp prime)
                   :name fe-listp-of-mix-layer)
-  :parents (poseidon)
   :short "Multiply the MDS matrix and the state vector."
   :long
   (xdoc::topstring
@@ -482,7 +533,6 @@
   :returns (new-stat (fe-listp new-stat prime)
                      :hyp (primep prime)
                      :name fe-listp-of-round)
-  :parents (poseidon)
   :short "Perform a round."
   :long
   (xdoc::topstring
@@ -520,7 +570,6 @@
                      :hyp (and (primep prime)
                                (fe-listp stat prime))
                      :name fe-listp-of-full-rounds)
-  :parents (poseidon)
   :short "Perform a sequence of full rounds."
   :long
   (xdoc::topstring
@@ -555,7 +604,6 @@
                      :hyp (and (primep prime)
                                (fe-listp stat prime))
                      :name fe-listp-of-partial-rounds)
-  :parents (poseidon)
   :short "Perform a sequence of partial rounds."
   :long
   (xdoc::topstring
@@ -593,7 +641,6 @@
                      :hyp (and (primep prime)
                                (fe-listp stat prime))
                      :name fe-listp-of-all-rounds)
-  :parents (poseidon)
   :short "Perform all the rounds in a permutation."
   :long
   (xdoc::topstring
@@ -653,7 +700,6 @@
   :guard (equal (len stat) (param->size param))
   :returns (new-stat (fe-listp new-stat (param->prime param))
                      :hyp (fe-listp stat (param->prime param)))
-  :parents (poseidon)
   :short "Permutation."
   :long
   (xdoc::topstring
@@ -683,7 +729,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum mode
-  :parents (poseidon)
   :short "Fixtype of sponge modes."
   :long
   (xdoc::topstring
@@ -696,7 +741,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod sponge
-  :parents (poseidon)
   :short "Fixtype of sponge states."
   :long
   (xdoc::topstring
@@ -724,7 +768,6 @@
 
 (define sponge-validp ((sponge spongep) (param paramp))
   :returns (yes/no booleanp)
-  :parents (poseidon)
   :short "Check if a sponge state is valid with respect to given parameters."
   :long
   (xdoc::topstring
@@ -750,7 +793,6 @@
 
 (define init-sponge ((size natp))
   :returns (sponge spongep)
-  :parents (poseidon)
   :short "Initial sponge state."
   :long
   (xdoc::topstring
@@ -775,7 +817,6 @@
                  (param paramp))
   :guard (sponge-validp sponge param)
   :returns (new-sponge spongep)
-  :parents (poseidon)
   :short "Absorb one element into the sponge."
   :long
   (xdoc::topstring
@@ -854,7 +895,6 @@
                                                           nfix
                                                           fix))))
                (new-sponge spongep))
-  :parents (poseidon)
   :short "Squeeze one element from the sponge."
   :long
   (xdoc::topstring
@@ -899,7 +939,6 @@
                 (param paramp))
   :guard (sponge-validp sponge param)
   :returns (new-sponge spongep)
-  :parents (poseidon)
   :short "Absorb any number of elements into the sponge."
   :long
   (xdoc::topstring
@@ -925,7 +964,6 @@
                         :hyp (sponge-validp sponge param)
                         :name fe-listp-of-squeeze.outputs)
                (new-sponge spongep))
-  :parents (poseidon)
   :short "Squeeze any number of elements into the sponge."
   :long
   (xdoc::topstring
@@ -957,7 +995,6 @@
               (count natp))
   :returns (outputs (fe-listp outputs (param->prime param))
                     :name fe-listp-of-hash)
-  :parents (poseidon)
   :short "Hash any number of inputs to any number of outputs."
   :long
   (xdoc::topstring
@@ -1022,7 +1059,6 @@
                               (<= (len inputs) (param->size param))
                               (<= count (param->size param)))
                     :hints (("Goal" :in-theory (enable nfix))))
-  :parents (poseidon)
   :short "Hash according to just the Poseidon permutation."
   :long
   (xdoc::topstring
