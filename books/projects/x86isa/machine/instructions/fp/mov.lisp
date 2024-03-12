@@ -745,7 +745,7 @@
     x86))
 
 ; =============================================================================
-; AVX Data Movement Instructions
+; INSTRUCTION: AVX Data Movement Instructions
 ; =============================================================================
 
 (def-inst x86-vmovups-vex-a
