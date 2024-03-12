@@ -42,7 +42,7 @@
   (implies (natp n)
 	   (equal (tri-recip-sum n)
 		  (* 2 (- 1 (/ (1+ n))))))
-  :hints (("Subgoal *1/4" ::use (hack-2))))
+  :hints (("Subgoal *1/4" :use (hack-2))))
 
 ;; Convergence follows easily:
 

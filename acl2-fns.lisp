@@ -620,13 +620,6 @@
           (t t)))
    ((eq (car form) 'unwind-protect)
     (output-type-for-declare-form-rec (cadr form) flet-alist))
-   ((and (eq (car form) 'ec-call) ; (ec-call x ...)
-         (let ((dfs-out (cadr (member :dfs-out (cddr form)))))
-           (and (consp dfs-out)
-                (eq (car dfs-out) 'quote) ; presumably always true
-                (cadr (car dfs-out)))))   ; rule out :dfs-out (quote nil)
-    (cons 'values (let ((dfs-out (cadr (member :dfs-out (cddr form)))))
-                    (cadr (car dfs-out)))))
    ((eq (car form) 'ec-call)
     (output-type-for-declare-form-rec (cadr form) flet-alist))
    ((member (car form) '(time progn) :test 'eq)
@@ -1489,16 +1482,51 @@ notation causes an error and (b) the use of ,. is not permitted."
              (t (unread-char next-char stream)
                 (if negp (- before-dot) before-dot)))))))
 
+#+gcl
+(progn
+(setq si::*print-nans* t)
+; We use read-from-string below to avoid getting an error when loading
+; acl2-fns.o.
+(defvar *fp-infinity* (read-from-string "1E310"))
+(defvar *fp-negative-infinity* (read-from-string "-1E310"))
+)
+
 (defun sharp-d-read (stream char n)
   (declare (ignore char n))
-  (let* ((num (read stream t nil t))
-         (val (and (typep num 'double-float)
-                   (rational num))))
-    (or val
-        (acl2-reader-error
-         "The value, ~s0, was read from a token following #d that did not ~
-          have the syntax of a double-float.  See :DOC df."
-         (format nil "~s" num)))))
+  (let ((num (read stream t nil t)))
+    (when (not (typep num 'double-float))
+      (acl2-reader-error
+       "The value, ~s0, was read from a token following #d that did not have ~
+        the syntax of a double-float.  See :DOC df."
+       (format nil "~s" num)))
+
+; We test for infinities and nans as a courtesy to the user.  In principle this
+; perhaps shouldn't be necessary; you get what you get when you read a weird
+; float.  But it seems courteous to cause an error when we can.  In GCL it
+; appears that a Nan is not equal to itself, not even with equalp, so we don't
+; test against Nans in GCL.
+
+    (when #+allegro (excl:exceptional-floating-point-number-p num)
+          #+ccl (or (= num 1D++0)
+                    (= num -1D++0)
+                    (equal num 1D+-0))
+          #+cmucl (or (= num #.ext:double-float-positive-infinity)
+                      (= num #.ext:double-float-negative-infinity)
+                      (ext:float-nan-p *))
+          #+gcl (or (= num *fp-infinity*)
+                    (= num *fp-negative-infinity*))
+          #+lispworks (or (= num +1D++0)
+                          (= num -1D++0)
+                          (equal num 1D+-0))
+          #+sbcl (or (= num #.sb-ext:double-float-positive-infinity)
+                     (= num #.sb-ext:double-float-negative-infinity)
+                     (sb-ext:float-nan-p num))
+          #-(or allegro ccl cmucl gcl lispworks sbcl)
+          (error "Missing case: This Lisp cannot host ACL2.")
+          (error "The exceptional floating-point value ~s cannot be converted ~
+                  to a rational number."
+                 num))
+    (rational num)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@

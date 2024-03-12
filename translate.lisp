@@ -21044,6 +21044,46 @@
     (and (or bad-in bad-out)
          (cons bad-in bad-out))))
 
+(defun remove-double-float-types-1 (edcls)
+
+; All type declarations that specify double-float are removed from edcls,
+; including e.g. (type (and double-float (satisfies ...)) ...), as well as
+; (type (or double-float ...) ...) if that's even possible.
+
+; The use of cons-with-hint below not only improves efficiency of this
+; computation, but it allows for an eq test in a common case; see the comment
+; in double-float-types-p.
+
+  (declare (xargs :guard (true-list-listp edcls)))
+  (cond ((endp edcls) nil)
+        (t (let ((rest (remove-double-float-types-1 (cdr edcls))))
+             (cond ((eq (car (car edcls)) 'type)
+                    (let ((tmp (df-type-p (cadr (car edcls)))))
+                      (cond ((eq tmp nil)
+                             (cons-with-hint (car edcls)
+                                             rest
+                                             edcls))
+                            (t ; tmp is t (or perhaps :unknown)
+                             rest))))
+                   (t (cons-with-hint (car edcls)
+                                      rest
+                                      edcls)))))))
+
+(defun remove-double-float-types (edcls)
+  (declare (xargs :guard (true-list-listp edcls)))
+  (remove-double-float-types-1 edcls))
+
+(defun double-float-types-p (dcl)
+
+; Return t if dcl may have double-float types, else nil.
+
+; This is not as inefficient as it may seem, since in the normal case that
+; there are no double-float type declarations, remove-double-float-types will
+; return its input unchanged, so the equal test will reduce to eq.
+
+  (not (equal (remove-double-float-types (cdr dcl))
+              (cdr dcl))))
+
 (mutual-recursion
 
 (defun translate11-local-def (form name bound-vars args edcls body
@@ -23040,7 +23080,9 @@
                                guard1)
                            guard2))
                 (ignores (ignore-vars edcls))
-                (ignorables (ignorable-vars edcls)))
+                (ignorables (ignorable-vars edcls))
+                (known-dfs (extend-known-dfs-with-declared-df-types
+                            edcls nil)))
            (trans-er-let*
             ((tguard (if lambda-casep
                          (if (termp guard wrld)
@@ -23057,12 +23099,7 @@
                                       stobjs-out-simple
                                       nil    ; bindings
                                       nil    ; known-stobjs
-
-; For lambda$ we translate without any known df values.  We can tolerate that
-; because it's not generally great to use apply$ on lambdas that involve dfs,
-; as discussed in books/demos/floating-point-input.lsp.
-
-                                      nil    ; known-dfs
+                                      known-dfs
                                       nil    ; flet-alist
                                       cform ctx wrld state-vars))))
             (let* ((bindings bindings0) ; Restore original bindings
@@ -23163,10 +23200,7 @@
                                     stobjs-out-simple
                                     bindings
                                     nil ; known-stobjs
-
-; See comment above about translating without any known df values.
-
-                                    nil ; known-dfs
+                                    known-dfs
 
 ; It is perhaps a bit subtle why we use flet-list = nil here.  The function
 ; apply$-lambda can reduce a call of apply$ on a lambda object to a
