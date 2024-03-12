@@ -1657,6 +1657,37 @@
 ; Notice *1*f0 being called:
 (apply$-f0-in-lambda)
 
+;;; More on apply$ and dfs
+
+; This section includes at least one test that could fail in previous ACL2
+; versions built on some Lisps.
+
+(defun$ apply$-f0-in-lambda-alt ()
+  (declare (xargs :guard t))
+  (apply$ (lambda$ (y)
+                   (declare (type double-float y))
+                   (from-df (f0 y)))
+          (list 3)))
+
+(apply$-f0-in-lambda-alt)
+
+; Fails, as it should: a lambda$ body must return a single ordinary value.
+(defun$ df1-as-lambda ()
+  (declare (xargs :guard t))
+  (apply$ (lambda$ ()
+                   (declare (xargs :guard 't :split-types t))
+                   (df1))
+          nil))
+
+(defun$ df1-as-lambda ()
+  (declare (xargs :guard t))
+  (apply$ (lambda$ ()
+                   (declare (xargs :guard 't :split-types t))
+                   (from-df (df1)))
+          nil))
+
+(df1-as-lambda)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Encapsulate and signatures
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

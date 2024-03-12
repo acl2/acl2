@@ -228,8 +228,10 @@
                           (min (length str) (+ pos3 10))))))
        ((the (unsigned-byte 60) n3)
         (the (unsigned-byte 60)
-; Note that (expt 10 18) is an (unsigned-byte 60).
-             (+ (* (the (unsigned-byte 60) (expt 10 n2-digits)) n1)
+; Note that (expt 10 18) is an (unsigned-byte 60).  However, GCL has generated
+; a compiler error if we replace (expt 10 n2-digits) by (the (unsigned-byte 60)
+; (expt 10 n2-digits)) below.
+             (+ (* (expt 10 n2-digits) n1)
                 n2)))
        ((the (signed-byte 60) n)
         (the (signed-byte 60) (if negp (the (signed-byte 60) (- n3)) n3))))
