@@ -3899,11 +3899,12 @@
                 (<= nbytes (expt 2 32))
                 (natp nbytes)
                 (app-view x86)
-                (or (equal seg-reg *cs*)
-                    (equal seg-reg *ss*)
-                    (not (< (xr :seg-visible seg-reg x86) 4)))
+                (equal seg-reg *ss*)
+                ;; (or (equal seg-reg *cs*)
+                ;;     (equal seg-reg *ss*)
+                ;;     (not (< (xr :seg-visible seg-reg x86) 4)))
                 (x86p x86)
-                (not (equal seg-reg *cs*))
+                ;; (not (equal seg-reg *cs*))
                 (equal 1 (data-segment-writeable-bit seg-reg x86)))
            (not (mv-nth 0 (x86isa::wme-size$inline *compatibility-mode*
                                                    nbytes
