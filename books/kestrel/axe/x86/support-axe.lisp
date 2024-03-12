@@ -435,7 +435,7 @@
 (def-constant-opener x86isa::mxcsrbits->reserved$inline)
 
 (def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
-(def-constant-opener x86isa::feature-flag)
+;(def-constant-opener x86isa::feature-flag) ; keep feature-flag disabled, for clarity
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
 
