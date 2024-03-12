@@ -7982,7 +7982,7 @@
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           NIL
-          NIL '((:EX (CHK-EXC :TYPE-8 (:AVX)))))
+          '(x86-vzeroupper) '((:EX (CHK-EXC :TYPE-8 (:AVX)))))
     (INST "MREAD" (OP :OP #xF78)
           (ARG :OP1 '(E Y) :OP2 '(G Y))
           'NIL

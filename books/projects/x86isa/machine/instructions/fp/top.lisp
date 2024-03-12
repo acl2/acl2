@@ -61,6 +61,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "mov"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "non-arith"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 ;; Exception Types and Alignment Checking: A Quick Reference
 ;; (TO-DO: make this into a doc topic or a function later...)
