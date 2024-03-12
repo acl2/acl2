@@ -189,8 +189,7 @@
          (getbit 0 x))
   :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
            :in-theory (e/d (bvuminus getbit)
-                           (bvchop-1-becomes-getbit
-                            slice-becomes-getbit)))))
+                           (bvchop-1-becomes-getbit)))))
 
 ;can loop
 ;restrict to constant width?

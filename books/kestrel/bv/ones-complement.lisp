@@ -342,7 +342,6 @@
  ;;                                  bvchop
  ;;                                  expt-of-+)
  ;;                                 (BVCHOP-1-BECOMES-GETBIT
- ;;                                  slice-BECOMES-GETBIT
  ;;                                  BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defthm bvplus1c-of-0-arg2

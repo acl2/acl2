@@ -720,7 +720,7 @@
            (equal (getbit n (+ (expt 2 n) x))
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))
 
@@ -730,7 +730,7 @@
            (equal (getbit n (+ x (expt 2 n)))
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))
 
@@ -813,7 +813,7 @@
                   (bitxor bit (getbit n x))))
   :hints (("Goal" :cases ((equal bit 0))
            :in-theory (e/d (getbit slice bitnot BVCHOP-OF-SUM-CASES)
-                           (slice-becomes-getbit
+                           (
                             bvchop-1-becomes-getbit
                             bvchop-of-logtail-becomes-slice)))))
 
@@ -835,6 +835,6 @@
            (equal (getbit n (+ x (* k bit)))
                   (bitxor bit (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))

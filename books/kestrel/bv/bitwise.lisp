@@ -383,7 +383,7 @@
     ;                                          bvchop
     ;lognot getbit
                                   )
-                           (SLICE-BECOMES-GETBIT
+                           (
                             GETBIT-WHEN-NOT-0
                             BVCHOP-LOGNOT-BVCHOP
     ;BVCHOP-1-BECOMES-GETBIT
@@ -491,7 +491,7 @@
                                   bitnot
                                   )
                            (bvchop-1-becomes-getbit
-                            slice-becomes-getbit
+
                             bvxor-1-becomes-bitxor)))))
 
 ;rewrite to have bitnot in lhs?
@@ -673,7 +673,7 @@
     :in-theory
     (e/d
      (getbit bvand bvchop-of-logtail slice)
-     (slice-becomes-getbit bvchop-1-becomes-getbit
+     ( bvchop-1-becomes-getbit
                            bvchop-of-logtail-becomes-slice
                            LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
 

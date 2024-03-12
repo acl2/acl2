@@ -19,15 +19,13 @@
   (equal (bvminus 1 (getbit 0 x) y)
          (bvminus 1 x y))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit
-                                   slice-becomes-getbit)))))
+                                  (bvchop-1-becomes-getbit)))))
 
 (defthm bvminus-of-1-and-getbit-of-0-arg3
   (equal (bvminus 1 x (getbit 0 y))
          (bvminus 1 x y))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (bvchop-1-becomes-getbit
-                                   slice-becomes-getbit)))))
+                                  (bvchop-1-becomes-getbit)))))
 
 (defthm bvminus-subst-arg1-constant
   (implies (and (syntaxp (not (quotep x)))

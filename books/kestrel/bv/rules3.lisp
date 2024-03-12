@@ -174,7 +174,7 @@
                   (* x y)))
   :hints (("Goal" :use split-when-low-bit-1
            :in-theory (e/d (getbit bvchop floor-of-when-mod-known)
-                           (slice-becomes-getbit
+                           (
                             bvchop-1-becomes-getbit)))))
 
 (defthm split-when-low-bit-0-hack
@@ -243,7 +243,7 @@
            (equal (getbit 0 (+ x y))
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (getbit bitxor-split)
-                                  (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+                                  (bvchop-1-becomes-getbit )))))
 
 ;gen? go to bvplus?
 (defthm bvchop-1-of-plus
@@ -252,7 +252,7 @@
            (equal (bvchop 1 (+ X Y))
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (getbit bitxor-split)
-                                  (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
+                                  (BVCHOP-1-BECOMES-GETBIT )))))
 
 
 (defthmd logtail-1-of-+
@@ -1396,7 +1396,7 @@
   (implies (posp size)
            (equal (EQUAL (GETBIT 0 (- (EXPT 2 SIZE))) 1)
                   nil))
-  :hints (("Goal" :in-theory (e/d (getbit) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
 
 (defthm <-of-+-of-slice-and-slice-and-expt
   (implies (posp size)
@@ -1570,7 +1570,7 @@
            (equal (getbit 0 (bvplus n x y))
                   (bitxor (getbit 0 x)
                           (getbit 0 y))))
-  :hints (("Goal" :in-theory (e/d (GETBIT-OF-BVPLUS getbit) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (GETBIT-OF-BVPLUS getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
 
 ;trying without these 2 Thu Mar 31 17:48:32 2011
 ;; ;for sha1? too gross of a hack?
@@ -1722,7 +1722,7 @@
                          1
                          0)))
   :hints (("Goal" :in-theory (e/d (bvmult bvcat GETBIT)
-                                  (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
+                                  (BVCHOP-1-BECOMES-GETBIT )))))
 
 ;(EQUAL y (BITOR X y))
 
@@ -1890,7 +1890,7 @@
                             ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4
                             )
                            (BVCHOP-1-BECOMES-GETBIT
-                            SLICE-BECOMES-GETBIT
+
                             anti-slice
                             ;anti-bvplus
                             )))))
@@ -1908,7 +1908,7 @@
            :in-theory (disable
                        logext-of-+-of-bvchop
                        BVCHOP-1-BECOMES-GETBIT
-                       SLICE-BECOMES-GETBIT
+
                        anti-slice
                        ;;anti-bvplus
                        ))))
@@ -1991,7 +1991,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
 ;;                                   (anti-bvplus
 ;;                                    bvchop-1-becomes-getbit
-;;                                    slice-becomes-getbit
 ;;                                    bvplus-1-becomes-bitxor)))))
 
 ;; (defthm bvcat-hack22b
@@ -2002,7 +2001,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
 ;;                                   (anti-bvplus
 ;;                                    bvchop-1-becomes-getbit
-;;                                    slice-becomes-getbit
 ;;                                    bvplus-1-becomes-bitxor)))))
 
 

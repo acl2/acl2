@@ -122,7 +122,7 @@
            :use (:instance BVCHOP-LOGNOT-BVCHOP (n 1) (X (LOGTAIL N X)))
            :in-theory (e/d (bvnot getbit slice)
                            (BVCHOP-LOGNOT-BVCHOP
-                            slice-becomes-getbit ;LOGTAIL-BVCHOP
+                             ;LOGTAIL-BVCHOP
                             bvchop-1-becomes-getbit BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 ;rename and gen

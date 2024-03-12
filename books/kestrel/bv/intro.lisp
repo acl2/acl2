@@ -53,8 +53,7 @@
                                    getbit
                                    SLICE-OF-SUM-CASES
                                    ifix)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    ;BITXOR-OF-SLICE-ARG2
                                    )))))
 

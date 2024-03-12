@@ -39,8 +39,7 @@
                  )
   :hints (("Goal" :in-theory (e/d (getbit slice logtail
                                           floor-when-negative-and-small)
-                                  (SLICE-BECOMES-GETBIT
-                                   BVCHOP-1-BECOMES-GETBIT
+                                  (BVCHOP-1-BECOMES-GETBIT
                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defthmd high-slice-when-negative
@@ -56,8 +55,7 @@
                   (repeatbit (+ 1 high (- low)) 1)))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail
                                           floor-when-negative-and-small)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice)))))
 
 ;may need GETBIT-EQUAL-1-POLARITY -- move it!
