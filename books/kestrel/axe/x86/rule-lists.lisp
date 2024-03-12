@@ -1667,6 +1667,7 @@
 
             ;; x86isa::undef x86isa::undef$a
             xr-becomes-undef ; introduces undef
+            undef-of-xw
             undef-of-set-undef
             undef-of-set-flag
             ;; undef-of-myif
