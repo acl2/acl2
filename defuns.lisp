@@ -9093,10 +9093,50 @@
 ; LAMBDA objects we encounter.
 
   (cond
+   ((let ((dcl (lambda-object-dcl x)))
+      (and dcl
+           (double-float-types-p dcl)))
+
+; Authenticate-tagged-lambda$ is called by
+; make-compileable-guard-and-body-lambdas to evaluate using the original
+; untranslated code when the lambda$ has already been translated (using
+; translate11-lambda-object, with stobjs-out set to (nil) to insist on
+; returning a single ordinary value).  The actuals for a call of apply$ are in
+; a list, so those are not dfs; therefore we have a problem when there is a
+; formal parameter is a df.  Consider for example the following (untranslated)
+; term.
+
+;   (lambda$ (y)
+;            (declare (type double-float y))
+;            (from-df (df- y)))
+
+; If the translation of that lambda$ is successfully authenticated by
+; authenticate-tagged-lambda$, then the following will be produced by
+; make-compileable-guard-and-body-lambdas (eliding the declare form, since it's
+; not relevant to the point here).
+
+;   (LAMBDA (Y)
+;           (DECLARE ...)
+;           (FROM-DF (DF- Y)))
+
+; The reason we can get a raw Lisp error when applying this lambda to a list of
+; ordinary ACL2 objects is that the definition of (unary-df- x) includes the
+; term (- (the double-float x)), and Lisp can complain when the wrong type is
+; supplied (i.e., integer instead of double-float).  This error may not be
+; signaled with all Lisps since ACL2 is built with safety 0, but we have seen a
+; similar such error in GCL with safety 0.
+
+; By returning nil here, we arrange that
+; make-compileable-guard-and-body-lambdas does what is necessary to get past
+; this issue.
+
+    nil)
    ((lambda$-bodyp (lambda-object-body x))
+
 ; X is tagged as having been a lambda$.  If we find it among the cdrs of
 ; lambda$-alist, we know it is authentic.  Otherwise, we translate the lambda$
 ; and check.
+
     (cond
      ((assoc-equal-cdr x (global-val 'lambda$-alist (w state)))
       t)
@@ -9182,7 +9222,8 @@
 ; anyway because quoted LAMBDA objects are not translated.
 
       (mv `(LAMBDA ,formals
-                   (DECLARE (IGNORABLE ,@formals))
+                   (DECLARE (IGNORABLE ,@formals)
+                            ,@(remove-double-float-types (cdr dcl)))
                    ,(logic-code-to-runnable-code
                      nil
                      (remove-guard-holders
@@ -9193,7 +9234,8 @@
                       wrld)
                      wrld))
           `(LAMBDA ,formals
-                   ,dcl
+                   ,@(let ((d (remove-double-float-types (cdr dcl))))
+                       (and d `((declare ,@d))))
                    ,(logic-code-to-runnable-code
                      nil
                      (remove-guard-holders body wrld)

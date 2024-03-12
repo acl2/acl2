@@ -4119,6 +4119,155 @@ ACL2 !>>(APPLY$-F0-IN-LAMBDA)
   <2 (F0 -3.0)
 <1 (ACL2_*1*_ACL2::F0 -3)
 -3
+ACL2 !>>(DEFUN$ APPLY$-F0-IN-LAMBDA-ALT
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ (LAMBDA$ (Y)
+                          (DECLARE (TYPE DOUBLE-FLOAT Y))
+                          (FROM-DF (F0 Y)))
+                        (LIST 3)))
+
+
+ACL2 !>>>(DEFUN APPLY$-F0-IN-LAMBDA-ALT NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ (LAMBDA$ (Y)
+                     (DECLARE (TYPE DOUBLE-FLOAT Y))
+                     (FROM-DF (F0 Y)))
+                   (LIST 3)))
+
+Since APPLY$-F0-IN-LAMBDA-ALT is non-recursive, its admission is trivial.
+We could deduce no constraints on the type of APPLY$-F0-IN-LAMBDA-ALT.
+
+Computing the guard conjecture for APPLY$-F0-IN-LAMBDA-ALT....
+
+The non-trivial part of the guard conjecture for APPLY$-F0-IN-LAMBDA-ALT,
+given the :executable-counterpart of APPLY$-GUARD, is
+
+Goal
+(IMPLIES (DFP Y) (DFP (F0 Y))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for APPLY$-F0-IN-LAMBDA-ALT.
+APPLY$-F0-IN-LAMBDA-ALT is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN APPLY$-F0-IN-LAMBDA-ALT ...)
+Rules: ((:DEFINITION F0)
+        (:DEFINITION UNARY-DF-)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:REWRITE DFP-DF-ROUND))
+APPLY$-F0-IN-LAMBDA-ALT
+
+
+ACL2 !>>>(DEFWARRANT APPLY$-F0-IN-LAMBDA-ALT)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+
+
+APPLY$-F0-IN-LAMBDA-ALT is now warranted by 
+APPLY$-WARRANT-APPLY$-F0-IN-LAMBDA-ALT, with badge (APPLY$-BADGE 0 1 . T).
+
+:WARRANTED
+
+Summary
+Form:  ( PROGN (DEFUN APPLY$-F0-IN-LAMBDA-ALT ...) ...)
+Rules: NIL
+ :WARRANTED
+ACL2 !>>(APPLY$-F0-IN-LAMBDA-ALT)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+-3
+ACL2 !>>(DEFUN$ DF1-AS-LAMBDA
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ (LAMBDA$ NIL
+                          (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                          (DF1))
+                        NIL))
+
+
+ACL2 !>>>(DEFUN DF1-AS-LAMBDA NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ (LAMBDA$ NIL
+                     (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                     (DF1))
+                   NIL))
+
+
+ACL2 Error [Translate] in ( DEFUN DF1-AS-LAMBDA ...):  It is illegal
+to invoke DF1 here because of a signature mismatch.  This function
+call returns a result of shape :DF where a result of shape * is required.
+Note:  this error occurred in the context (DF1).
+
+
+Summary
+Form:  ( DEFUN DF1-AS-LAMBDA ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN DF1-AS-LAMBDA ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (DEFUN DF1-AS-LAMBDA ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( PROGN (DEFUN DF1-AS-LAMBDA ...) ...):  See
+:DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN$ DF1-AS-LAMBDA
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ (LAMBDA$ NIL
+                          (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                          (FROM-DF (DF1)))
+                        NIL))
+
+
+ACL2 !>>>(DEFUN DF1-AS-LAMBDA NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ (LAMBDA$ NIL
+                     (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                     (FROM-DF (DF1)))
+                   NIL))
+
+Since DF1-AS-LAMBDA is non-recursive, its admission is trivial.  We
+could deduce no constraints on the type of DF1-AS-LAMBDA.
+
+Computing the guard conjecture for DF1-AS-LAMBDA....
+
+The guard conjecture for DF1-AS-LAMBDA is trivial to prove, given the
+:executable-counterparts of APPLY$-GUARD and DFP.  DF1-AS-LAMBDA is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN DF1-AS-LAMBDA ...)
+Rules: ((:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART DFP))
+DF1-AS-LAMBDA
+
+
+ACL2 !>>>(DEFWARRANT DF1-AS-LAMBDA)
+
+
+DF1-AS-LAMBDA is now warranted by APPLY$-WARRANT-DF1-AS-LAMBDA, with
+badge (APPLY$-BADGE 0 1 . T).
+
+:WARRANTED
+
+Summary
+Form:  ( PROGN (DEFUN DF1-AS-LAMBDA ...) ...)
+Rules: NIL
+ :WARRANTED
+ACL2 !>>(DF1-AS-LAMBDA)
+1
 ACL2 !>>(ENCAPSULATE (((F13 :DF) => *))
           (LOCAL (DEFUN F13 (X)
                    (DECLARE (TYPE DOUBLE-FLOAT X))

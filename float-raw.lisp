@@ -177,7 +177,14 @@
   (cond ((typep x 'double-float) x) ; See note above about ec-call.
         ((rationalp x)
          (let ((xf (to-df x)))
-           (and (= xf x)
+           (and #-gcl (= xf x)
+
+; As of this writing, GCL 2.6.14 (or at least one sub-version) and probably
+; previous versions (including at least one sub-version of 2.6.12) returned t
+; when evaluating (= (float 1/3 0.0d0) 1/3).  So the test (= xf x) above isn't
+; adequate in GCL.
+
+                #+gcl (= (rational xf) x)
                 xf)))
         (t nil)))
 
