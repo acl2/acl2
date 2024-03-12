@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -36,7 +37,7 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 ;; This book contains the specification of the following instructions:
 ;; sal  sar  shl  shr
