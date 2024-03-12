@@ -614,7 +614,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define deftreeops-gen-discriminant-terms ((alt alternationp))
-  :returns (terms pseudo-term-listp)
+  :returns (terms true-listp)
   :short "Generate the terms to discriminate among
           two or more concatenations that form
           the alternation that defines a rule name."
@@ -645,13 +645,13 @@
      each of which checks whether the one subtree
      has the corresponding rule name as root."))
   (b* (((when (endp alt)) nil) ; never happens
-       ((when (endp (cdr alt))) (list acl2::*t*)))
+       ((when (endp (cdr alt))) (list t)))
     (deftreeops-gen-discriminant-terms-aux alt))
 
   :prepwork
   ((define deftreeops-gen-discriminant-terms-aux ((alt alternationp))
      :guard (consp alt)
-     :returns (terms pseudo-term-listp)
+     :returns (terms true-listp)
      :parents nil
      (b* ((conc (car alt))
           ((unless (and (consp conc)
@@ -667,8 +667,8 @@
            nil)
           (rulename (element-rulename->get elem))
           (term `(equal (tree-nonleaf->rulename?
-                         (nth '0 (nth '0 (tree-nonleaf->branches cst))))
-                        ',rulename))
+                         (nth 0 (nth 0 (tree-nonleaf->branches cst))))
+                        (rulename ,(rulename->get rulename))))
           (alt (cdr alt))
           ((when (endp alt)) (list term))
           (terms (deftreeops-gen-discriminant-terms-aux alt))
