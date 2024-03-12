@@ -535,8 +535,6 @@
                               (rationalp rat)
                               (< 0 rat)
                               (< rat (smallest-positive-normal k p)))))
- ; can increase the exponent by 1 if rounded-significand is 2, but if the exponent is maxed out, that can't happen (see infinity threshold above)
-      ;; subnormal case:
   (let* ((emin (emin k p))
          (significand (/ rat (expt 2 emin))) ; in the range (0,1)
          (shifted-significand (* significand (expt 2 (- p 1)))) ; in the range (0, 2^(p-1)), so the integer-part of this is a BV of size p-1
