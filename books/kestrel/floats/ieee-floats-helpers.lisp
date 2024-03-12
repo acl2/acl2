@@ -322,6 +322,15 @@
            (equal (< (log2 rat) i)
                   (< rat (expt 2 i)))))
 
+(defthm <-of-log2-arg2
+  (implies (and (rationalp rat)
+                (< 0 rat)
+                (integerp i))
+           (equal (< i (log2 rat))
+                  (<= (expt 2 (+ 1 i)) rat)))
+  :hints (("Goal" :use (:instance <-of-log2-arg1 (i (+ 1 i)))
+           :in-theory (disable <-of-log2-arg1))))
+
 (defthm <=-of-+-of-1-and-log2-arg1
   (implies (and (rationalp rat)
                 (< 0 rat)

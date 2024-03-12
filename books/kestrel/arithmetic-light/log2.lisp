@@ -88,10 +88,12 @@
 
 ;; Could loop with the definition?
 (defthm log2-of-*-of-1/2
-  (implies (and (< 0 x)
-                (rationalp x))
-           (equal (log2 (* 1/2 x))
-                  (+ -1 (log2 x))))
+  (equal (log2 (* 1/2 x))
+         (if (and (rationalp x)
+                  (< 0 x))
+             ;; usual case:
+             (+ -1 (log2 x))
+           0))
   :hints (("Goal" :in-theory (enable log2))))
 
 (defthm log2-of-expt
@@ -123,7 +125,6 @@
            (+ -1 (log2-double-induct (* x 2) (* 2 y)))
          ;; x is in [1,2), so it's log2 is 0:
          0)))))
-
 
 (defthm log2-monotonic-weak
   (implies (and (<= x y)
@@ -261,3 +262,119 @@
            :in-theory (enable log2))))
 
 ;todo: log2 of mask?
+
+(local
+  (defun log2i (x i)
+  (declare (xargs :measure
+                  (if (and (rationalp x) (< 0 x))
+                      (if (<= 2 x)
+                          (floor x 1)
+                        (if (< x 1) (floor (/ x) 1) 0))
+                    0)))
+  (if (not (mbt (and (rationalp x) (< 0 x))))
+      (list x i)
+    (if (<= 2 x)
+        (+ 1 (log2i (/ x 2) (+ -1 i)))
+      (if (< x 1) (+ -1 (log2i (* x 2) (+ 1 i))) 0)))))
+
+;quite powerful
+(defthm log2-must-be
+  (implies (and (<= (expt 2 i) x)
+                (< x (expt 2 (+ 1 i)))
+                (rationalp x)
+                (integerp i))
+           (equal (log2 x)
+                  i))
+  :hints (("Subgoal *1/4" :cases ((< i 0) (> i 0)))
+          ("Goal" :induct (log2i x i)
+           :in-theory (enable log2 expt-of-+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthmd log2-of-+-of--1-when-power-of-2p
+    (implies (and (integerp n)
+                  (equal n (expt 2 (log2 n))) ; power of 2
+                  (<= 2 n) ; avoids log2 of 0
+                  )
+             (equal (log2 (+ -1 n))
+                    (+ -1 (log2 n))))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ -1 n))
+                                    (i (+ -1 (log2 n))))
+             :in-theory (disable log2-must-be)))))
+
+(local
+  (defthmd log2-of-+-of--1-when-not-power-of-2p
+    (implies (and (integerp n)
+                  (not (equal n (expt 2 (log2 n)))) ; not a power of 2
+                  (<= 2 n) ; avoids log2 of 0
+                  )
+             (equal (log2 (+ -1 n))
+                    (log2 n)))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ -1 n))
+                                    (i (log2 n)))
+           :in-theory (disable log2-must-be)))))
+
+(defthm log2-of-+-of--1
+  (implies (and (integerp n)
+                (<= 2 n) ; avoids log2 of 0
+                )
+           (equal (log2 (+ -1 n))
+                  (if (equal n (expt 2 (log2 n))) ;power of 2
+                      (+ -1 (log2 n))
+                    (log2 n))))
+  :hints (("Goal" :in-theory (enable log2-of-+-of--1-when-not-power-of-2p
+                                     log2-of-+-of--1-when-power-of-2p))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthmd log2-of-+-of-1-when-almost-power-of-2p
+    (implies (and (integerp n)
+                  (equal n (+ -1 (expt 2 (+ 1 (log2 n))))) ; almost the next power of 2
+                  (<= 1 n)
+                  )
+             (equal (log2 (+ 1 n))
+                    (+ 1 (log2 n))))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ 1 n))
+                                    (i (+ 1 (log2 n))))
+             :in-theory (disable log2-must-be)))))
+
+(local
+  (defthmd log2-of-+-of-1-when-not-almost-power-of-2p
+    (implies (and (integerp n)
+                  (not (equal n (+ -1 (expt 2 (+ 1 (log2 n)))))) ; not almost the next power of 2
+                  (<= 1 n)
+                  )
+             (equal (log2 (+ 1 n))
+                    (log2 n)))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ 1 n))
+                                    (i (log2 n)))
+             :in-theory (disable log2-must-be)))))
+
+(defthm log2-of-+-of-1
+  (implies (and (integerp n)
+                (<= 1 n))
+           (equal (log2 (+ 1 n))
+                  (if (equal n (+ -1 (expt 2 (+ 1 (log2 n))))) ;almost the next power of 2
+                      (+ 1 (log2 n))
+                    (log2 n))))
+  :hints (("Goal" :in-theory (enable log2-of-+-of-1-when-almost-power-of-2p
+                                     log2-of-+-of-1-when-not-almost-power-of-2p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm log2-of-floor-by-1
+  (implies (and (<= 1 x) ; avoids log2 of 0
+                (rationalp x))
+           (equal (log2 (floor x 1))
+                  (log2 x)))
+  :hints (("Goal" :use (:instance log2-must-be
+                                  (x (floor x 1))
+                                  (i (log2 x)))
+           :in-theory (disable log2-must-be))))

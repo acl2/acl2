@@ -12,6 +12,7 @@
 
 (include-book "ieee-floats-helpers") ; could omit
 (include-book "ieee-floats")
+(include-book "round")
 (include-book "ieee-floats-as-bvs")
 (include-book "ieee-floats-validation")
 (include-book "rtl")

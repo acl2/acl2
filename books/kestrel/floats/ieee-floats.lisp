@@ -92,7 +92,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Maximum exponent
+;; Maximum exponent.  See Table 3.5.
 (defund emax (k p)
   (declare (xargs :guard (formatp k p)))
   (- (expt 2 (+ k (- p) -1))
@@ -111,8 +111,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Minimum exponent
-;; See 3.3
+;; Minimum exponent.  See Section 3.3.
 (defund emin (k p)
   (declare (xargs :guard (formatp k p)))
   (- 1 (emax k p)))
@@ -124,7 +123,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Exponent bias
+;; Exponent bias.  See Table 3.5.
 (defund bias (k p)
   (declare (xargs :guard (formatp k p)))
   (emax k p))
@@ -190,6 +189,15 @@
   (not (representable-positive-normalp k p 0))
   :hints (("Goal" :in-theory (enable representable-positive-normalp))))
 
+(defthm representable-positive-normalp-forward
+  (implies (representable-positive-normalp k p rat)
+           (and (rationalp rat)
+                (< 0 rat)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable representable-positive-normalp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Checks whether the rational RAT is representable as a normal (i.e., not
 ;; subnormal) number in the floating-point format (K,P).  Note that 0 is not a
 ;; "normal" number (see Definitions in the standard).
@@ -235,6 +243,13 @@
 
 (defthm not-representable-positive-subnormalp-of-0
   (not (representable-positive-subnormalp k p 0))
+  :hints (("Goal" :in-theory (enable representable-positive-subnormalp))))
+
+(defthm representable-positive-subnormalp-forward
+  (implies (representable-positive-subnormalp k p rat)
+           (and (rationalp rat)
+                (< 0 rat)))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable representable-positive-subnormalp))))
 
 (defthmd subnormals-are-smaller
@@ -308,6 +323,18 @@
                                      representable-subnormalp
                                      representable-positive-subnormalp))))
 
+(defthm not-representable-nonzero-rationalp-of-0
+  (not (representable-nonzero-rationalp k p 0))
+  :hints (("Goal" :in-theory (enable representable-nonzero-rationalp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund representable-positive-rationalp (k p rat)
+  (declare (xargs :guard (and (rationalp rat) ;drop? implied?
+                              (formatp k p))))
+  (or (representable-positive-normalp k p rat)
+      (representable-positive-subnormalp k p rat)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A floating-point datum is a representable nonzero rational, or one of the 5
@@ -320,6 +347,49 @@
                              *float-positive-infinity*
                              *float-negative-infinity*
                              *float-nan*))))
+
+(defthm floating-point-datump-of-float-positive-zero
+  (floating-point-datump k p :float-positive-zero)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-negative-zero
+  (floating-point-datump k p :float-negative-zero)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-positive-infinity
+  (floating-point-datump k p :float-positive-infinity)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-negative-infinity
+  (floating-point-datump k p :float-negative-infinity)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-nan
+  (floating-point-datump k p :float-nan)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of--
+  (implies (floating-point-datump k p rat)
+           (equal (floating-point-datump k p (- rat))
+                  (rationalp rat)))
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+;; This doesn't check that rationals are representable, but we dont have to pass it k and p.
+(defund weak-floating-point-datump (datum)
+  (declare (xargs :guard t))
+  (or (and (rationalp datum)
+           (not (equal 0 datum)))
+      (member-eq datum (list *float-positive-zero*
+                             *float-negative-zero*
+                             *float-positive-infinity*
+                             *float-negative-infinity*
+                             *float-nan*))))
+
+(defthm weak-floating-point-datump-when-floating-point-datump
+  (implies (floating-point-datump k p datum) ;free vars
+           (weak-floating-point-datump datum))
+  :hints (("Goal" :in-theory (enable weak-floating-point-datump
+                                     floating-point-datump))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
