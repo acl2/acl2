@@ -184,6 +184,12 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;open less in the proof?
+(defthm 32-bit-segment-size-of-set-eip
+  (equal (32-bit-segment-size seg-reg (set-eip eip x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-eip 32-bit-segment-size 32-bit-segment-start-and-size))))
+
+;open less in the proof?
 (defthm 32-bit-segment-size-of-write-byte-to-segment
   (equal (32-bit-segment-size seg-reg1 (write-byte-to-segment eff-addr seg-reg2 val x86))
          (32-bit-segment-size seg-reg1 x86))

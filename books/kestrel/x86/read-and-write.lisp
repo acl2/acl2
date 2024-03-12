@@ -760,7 +760,7 @@
                   (nth (- addr addr2) bytes)))
   :hints (("Goal" :in-theory (e/d (program-at
                                    ;;rb
-                                   x::read-when-equal-of-read-gen
+                                   read-when-equal-of-read-gen
                                    )
                                   (read
                                    distributivity
@@ -3006,7 +3006,7 @@
     ;list::equal-append-reduction!
                             ;; for speed:
                             acl2::DISTRIBUTIVITY-OF-MINUS-OVER-+
-                            X::WRITE-BYTES-OF-WRITE-BYTES-SAME-GEN)))))
+                            WRITE-BYTES-OF-WRITE-BYTES-SAME-GEN)))))
 
 (local ; dup
   (DEFTHM ACL2::BVCHOP-IDENTITY-WHEN-<
@@ -3083,7 +3083,7 @@
                             ;; for speed:
                             acl2::BVCHOP-IDENTITY
                             ;acl2::LEN-OF-IF
-                            X::WRITE-BYTES-OF-WRITE-BYTES-SAME-GEN
+                            WRITE-BYTES-OF-WRITE-BYTES-SAME-GEN
                             )))))
 
 (defthmd write-bytes-of-write-bytes-same-contained

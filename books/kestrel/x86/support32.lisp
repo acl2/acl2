@@ -150,14 +150,13 @@
   :hints (("Goal" :in-theory (e/d (segment-expand-down-bit)
                                   (segment-expand-down-bit-intro)))))
 
-(defthm x::segment-expand-down-bit-of-set-flag
-  (equal (x::segment-expand-down-bit seg-reg (x::set-flag flg val x86))
-         (x::segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (x::set-flag)
-                                  ()))))
+(defthm segment-expand-down-bit-of-set-flag
+  (equal (segment-expand-down-bit seg-reg (set-flag flg val x86))
+         (segment-expand-down-bit seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-flag))))
 
-(defthm segment-expand-down-bit-of-set-undef (equal (x::segment-expand-down-bit seg-reg (set-undef undef x86)) (x::segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
-(defthm segment-expand-down-bit-of-set-mxcsr (equal (x::segment-expand-down-bit seg-reg (set-mxcsr mxcsr x86)) (x::segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm segment-expand-down-bit-of-set-undef (equal (segment-expand-down-bit seg-reg (set-undef undef x86)) (segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm segment-expand-down-bit-of-set-mxcsr (equal (segment-expand-down-bit seg-reg (set-mxcsr mxcsr x86)) (segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 ;;;
 ;;; segment-base32
@@ -403,6 +402,8 @@
                   4294967295))
   :hints (("Goal" :in-theory (enable 32-bit-segment-start-and-size))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund 32-bit-segment-size (seg-reg x86)
   (declare (xargs :stobjs x86
                   :guard (seg-regp seg-reg)))
@@ -427,6 +428,21 @@
            (equal (32-bit-segment-size code (xw fld index val x86))
                   (32-bit-segment-size code x86)))
   :hints (("Goal" :in-theory (enable 32-bit-segment-size))))
+
+(defthm 32-bit-segment-size-of-set-flag
+  (equal (32-bit-segment-size seg-reg (set-flag flg val x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+
+(defthm 32-bit-segment-size-of-set-undef
+  (equal (32-bit-segment-size seg-reg (set-undef undef x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+
+(defthm 32-bit-segment-size-of-set-mxcsr
+  (equal (32-bit-segment-size seg-reg (set-mxcsr mxcsr x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
 
 (defthm unsigned-byte-p-of-xr-of-seg-hidden-limit
   (implies (and ;(equal (segment-expand-down-bit seg-reg x86) 1)
@@ -2056,10 +2072,7 @@
            (canonical-address-p (+ k (mv-nth 1 (ea-to-la *compatibility-mode* eff-addr *ss* nbytes x86)))))
   :hints (("Goal" :in-theory (enable ea-to-la SIGNED-BYTE-P CANONICAL-ADDRESS-P))))
 
-(defthm 32-bit-segment-size-of-set-flag
-  (equal (32-bit-segment-size seg-reg (set-flag flg val x86))
-         (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+
 
 (defthm 32-bit-segment-start-and-size-of-set-flag
   (equal (32-bit-segment-start-and-size seg-reg (set-flag flg val x86))
@@ -2114,11 +2127,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (defthm 32-bit-segment-size-of-set-flag
-;;   (equal (32-bit-segment-size seg-reg (set-flag flg val x86))
-;;          (32-bit-segment-size seg-reg x86))
-;;   :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
-
 ;; (defthm 32-bit-segment-start-and-size-of-set-flag
 ;;   (equal (32-bit-segment-start-and-size seg-reg (set-flag flg val x86))
 ;;          (32-bit-segment-start-and-size seg-reg x86))
@@ -2172,11 +2180,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm 32-bit-segment-size-of-set-undef
-  (equal (32-bit-segment-size seg-reg (set-undef undef x86))
-         (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
-
 (defthm 32-bit-segment-start-and-size-of-set-undef
   (equal (32-bit-segment-start-and-size seg-reg (set-undef undef x86))
          (32-bit-segment-start-and-size seg-reg x86))
@@ -2224,11 +2227,6 @@
                                    )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm 32-bit-segment-size-of-set-mxcsr
-  (equal (32-bit-segment-size seg-reg (set-mxcsr mxcsr x86))
-         (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
 
 (defthm 32-bit-segment-start-and-size-of-set-mxcsr
   (equal (32-bit-segment-start-and-size seg-reg (set-mxcsr mxcsr x86))
@@ -3486,12 +3484,6 @@
   (equal (segment-is-32-bitsp seg-reg (set-eip eip x86))
          (segment-is-32-bitsp seg-reg x86))
   :hints (("Goal" :in-theory (enable set-eip))))
-
-;open less in the proof?
-(defthm 32-bit-segment-size-of-set-eip
-  (equal (32-bit-segment-size seg-reg (set-eip eip x86))
-         (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-eip 32-bit-segment-size 32-bit-segment-start-and-size))))
 
 (defthm 32-bit-segment-start-of-set-eip
   (equal (32-bit-segment-start seg-reg (set-eip eip x86))
