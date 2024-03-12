@@ -1149,6 +1149,23 @@
     mxcsrbits->fz-of-bvor
     mxcsrbits->reserved-of-bvor
 
+    mxcsrbits->ie-of-logior
+    mxcsrbits->de-of-logior
+    mxcsrbits->ze-of-logior
+    mxcsrbits->oe-of-logior
+    mxcsrbits->ue-of-logior
+    mxcsrbits->pe-of-logior
+    mxcsrbits->daz-of-logior
+    mxcsrbits->im-of-logior
+    mxcsrbits->dm-of-logior
+    mxcsrbits->zm-of-logior
+    mxcsrbits->om-of-logior
+    mxcsrbits->um-of-logior
+    mxcsrbits->pm-of-logior
+    mxcsrbits->rc-of-logior
+    mxcsrbits->fz-of-logior
+    mxcsrbits->reserved-of-logior
+
     ;todo: more
     mxcsrbits->daz-of-bvchop
     mxcsrbits->dm-of-bvchop
@@ -3921,7 +3938,6 @@
 ;;             acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-2
 ;; ;            rb-in-terms-of-nth-and-pos-eric-gen
 ;;             rb-returns-no-error-app-view
-;;             part-install-width-low-becomes-bvcat-axe
 ;;             car-create-canonical-address-list
 ;;             ;;canonical-address-p-between
 ;;             wb-returns-no-error-app-view
