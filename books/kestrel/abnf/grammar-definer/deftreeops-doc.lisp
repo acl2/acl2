@@ -377,4 +377,44 @@
        then the list of trees has a length
        within the range of the repetition
        and each tree matches
-       the element of the repetition.")))))
+       the element of the repetition."))
+
+    (xdoc::desc
+     "@('<prefix>-<rulename>-conc-rep-elem')"
+     (xdoc::p
+      "For each rule name defined in the grammar by
+       an alternation of one concatenation,
+       such that the concatenation consists of one repetition,
+       such that the repetition has a range of 1,
+       and such that the element of the repetition is a rule name:
+       a function that, given a tree matching the rule name,
+       returns the tree corresponding to the element of the repetition.
+       The generated function is accompanied by the following theorems:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc<i>-rep-elem-match'),
+        which asserts that the result of the function
+        matches the rule name of the element.")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function.")))
+
+    (xdoc::desc
+     "@('<prefix>-<rulename>-conc<i>-rep-elem')"
+     (xdoc::p
+      "For each rule name defined in the grammar by
+       an alternation of two or more concatenations,
+       and for each concatenation @('<i>') (numbered starting from 1)
+       in the alternation,
+       such that the concatenation consists of one repetition,
+       such that the repetition has a range of 1,
+       and such that the element of the repetition is a rule name:
+       a function that, given a tree matching the rule name,
+       returns the tree corresponding to the element of the repetition.
+       The generated function is accompanied by the following theorems:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<prefix>-<rulename>-conc<i>-rep-elem-match'),
+        which asserts that the result of the function
+        matches the rule name of the element.")
+      (xdoc::li
+       "@(tsee fty::deffixequiv) theorems for the function."))))))
