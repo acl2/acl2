@@ -29,7 +29,7 @@
          (logand (slice low high x)
                  (slice low high y)))
   :hints (("Goal" :cases ((equal low high) (< low high))
-           :in-theory (e/d (slice) (slice-becomes-bvchop slice-becomes-getbit BVCHOP-1-BECOMES-GETBIT
+           :in-theory (e/d (slice) (slice-becomes-bvchop  BVCHOP-1-BECOMES-GETBIT
                                                           BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defthmd getbit-of-logand
@@ -37,7 +37,7 @@
          (logand (getbit bit x)
                  (getbit bit y)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (slice-becomes-getbit bvchop-1-becomes-getbit)))))
+                                  ( bvchop-1-becomes-getbit)))))
 
 (defund bvand (size x y)
   (declare (type integer x y)

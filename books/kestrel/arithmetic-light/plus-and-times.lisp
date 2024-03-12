@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in operations + and *.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+;; Note that distributivity is an axiom of ACL2.
 (defthm distributivity-alt
   (equal (* (+ y z) x)
          (+ (* y x) (* z x))))

@@ -452,7 +452,6 @@
                   (bvcat (+ -1 n) x 1 0)))
   :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
                                   (bvchop-1-becomes-getbit
-                                   slice-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    logtail-of-bvchop-becomes-slice)))))
 

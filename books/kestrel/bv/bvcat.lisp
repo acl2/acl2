@@ -255,12 +255,12 @@
 (defthm bvcat-of-getbit-arg4
    (equal (bvcat n x 1 (getbit 0 y))
           (bvcat n x 1 y))
-   :hints (("Goal" :in-theory (e/d (getbit bvcat) (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
+   :hints (("Goal" :in-theory (e/d (getbit bvcat) (BVCHOP-1-BECOMES-GETBIT )))))
 
 (defthm bvcat-of-getbit-arg2
   (equal (bvcat 1 (getbit 0 x) n y)
          (bvcat 1 x n y))
-   :hints (("Goal" :in-theory (e/d (getbit bvcat) (BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT)))))
+   :hints (("Goal" :in-theory (e/d (getbit bvcat) (BVCHOP-1-BECOMES-GETBIT )))))
 
 (encapsulate
  ()
@@ -464,7 +464,7 @@
    :hints
    (("Goal" :in-theory (e/d (bvcat getbit slice logtail-logapp)
                             (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                             SLICE-BECOMES-GETBIT
+
                              bvchop-1-becomes-getbit))))))
 
 (defthm getbit-of-bvcat-low-better
@@ -507,7 +507,7 @@
                           (and (not (integerp lowval)) (integerp highval)))
            :do-not '(preprocess)
            :in-theory (e/d (bvcat getbit slice logtail-of-bvchop logtail-logapp)
-                           (bvchop-of-logtail slice-becomes-getbit
+                           (bvchop-of-logtail
                                                bvchop-1-becomes-getbit bvchop-of-logtail
                                                bvchop-of-logtail-becomes-slice
                                                logtail-of-bvchop-becomes-slice)))))
@@ -948,7 +948,7 @@
                    (equal (getbit 0 x) 0)))
    :hints (("Goal" :in-theory (e/d (;getbit bvcat slice
                                     )
-                                   (slice-becomes-getbit)))))
+                                   ()))))
 
 ;finally the full lemma!
 (defthm slice-of-bvcat-hack-gen
@@ -1307,7 +1307,7 @@
            (equal (bvcat 1 x n y)
                   (+ (expt 2 n) (bvchop n y))))
   :hints (("Goal" :in-theory (e/d (getbit bvcat logapp bvchop)
-                                  (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+                                  (bvchop-1-becomes-getbit )))))
 
 (defthm bvcat-when-equal-of-getbit-0-low
   (implies (and (equal (getbit 0 lowval) free)
@@ -1342,8 +1342,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil)))
   :hints (("Goal"
            :in-theory (e/d (bvcat logapp posp bvchop getbit)
-                           (SLICE-BECOMES-GETBIT
-                            BVCHOP-1-BECOMES-GETBIT))
+                           (BVCHOP-1-BECOMES-GETBIT))
            :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
 
 ;move?

@@ -106,6 +106,18 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
+(defthm intersection-equal-when-intersection-equal-of-cdr-arg2-cheap
+  (implies (intersection-equal x (cdr y))
+           (intersection-equal x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
+  (implies (and (not (intersection-equal x (cdr y)))
+                (consp y))
+           (iff (intersection-equal x y)
+                (member-equal (car y) x)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
 (defthmd intersection-equal-when-subsetp-equal-swapped-iff
   (implies (subsetp-equal y x)
            (iff (intersection-equal x y)

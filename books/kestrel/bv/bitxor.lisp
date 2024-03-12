@@ -222,7 +222,7 @@
            (equal (bitxor bit1 (* 2 bit2))
                   (bitxor bit1 0)))
   :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit)
-                                  (bvxor-1-becomes-bitxor bvchop-1-becomes-getbit slice-becomes-getbit)))))
+                                  (bvxor-1-becomes-bitxor bvchop-1-becomes-getbit )))))
 
 (defthm equal-of-0-and-bitxor
   (equal (equal 0 (bitxor x y))

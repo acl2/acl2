@@ -894,6 +894,47 @@
           ;; since x is sorted, (car y) cannot be in x, so we skip it:
           (disjointp-assuming-sortedp-<= x (rest y)))))))
 
+(local
+ (defthm <=-of-car-when-member-equal-and-sortedp-<=
+   (implies (and (member-equal a y)
+                 (sortedp-<= y)
+                 )
+            (<= (car y) a))
+   :hints (("Goal" :in-theory (enable sortedp-<= member-equal)))))
+
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+
+(local
+ (defthm member-equal-when-<=-of-len-and-1
+   (implies (<= (len y) 1)
+            (iff (member-equal a y)
+                 (and (consp y)
+                      (equal a (car y)))))
+   :hints (("Goal" :in-theory (enable member-equal)))))
+
+(local
+ (defthm not-member-equal-when-<-of-car
+   (implies (and (< a (car x))
+                 (rational-listp x)
+                 (sortedp-<= x)
+                 ;(consp x)
+                 )
+            (not (member-equal a x)))))
+
+;check that disjointp-assuming-sortedp-<= is correct
+(defthm disjointp-assuming-sortedp-<=-iff
+  (implies (and (rational-listp x)
+                (sortedp-<= x)
+                (rational-listp y)
+                (sortedp-<= y))
+           (iff (disjointp-assuming-sortedp-<= x y)
+                (not (intersection-equal x y))))
+  :hints (("Goal" :expand (disjointp-assuming-sortedp-<= x y)
+           :induct (disjointp-assuming-sortedp-<= x y)
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (disjointp-assuming-sortedp-<= intersection-equal sortedp-<= member-equal)
+                           (intersection-equal-symmetric-iff)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of subst-candidates suitable for simultaneous checking (no var in the set depends on any other vars in the set, or on itself).
