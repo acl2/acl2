@@ -418,7 +418,7 @@
     ))
 
 (defun if-becomes-bvif-rules ()
-  '(bvchop-of-if-becomes-bvchop-of-bvif
+  '(bvchop-of-if-becomes-bvif
     slice-of-if-becomes-slice-of-bvif
     bvcat-of-if-becomes-bvcat-of-bvif-arg2
     bvcat-of-if-becomes-bvcat-of-bvif-arg4
@@ -2063,7 +2063,7 @@
     nfix-does-nothing
     natp-of-len ;add to some rule list
     integerp-of-len
-    bvchop-of-*
+    bvchop-of-*-becomes-bvmult
     unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger
 ;    sha1-loop-10-theorem-1
     equal-of-constant-and-bitxor-1

@@ -61,7 +61,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
 ;;                                          ;acl2::slice-of-sum-cases
 ;;                                          )
-;;                                   (acl2::slice-of-*)))))
+;;                                   ()))))
 
 ;move
 (defthm slice-of-logapp-case-1

@@ -744,9 +744,7 @@
            (equal (logext '64 (+ k (+ (bvmult 64 val index) text-offset)))
                   (logext '64 (+ k (+ (* val index) text-offset)))))
   :hints (("Goal" :in-theory (e/d (acl2::equal-of-logext-and-logext bvmult)
-                                  (ACL2::SLICE-OF-* ;looped
-                                   acl2::getbit-of-* ; looped
-                                   ;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
+                                  (;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
                                    ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
                                    ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    )))))

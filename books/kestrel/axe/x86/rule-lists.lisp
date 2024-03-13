@@ -760,6 +760,14 @@
     acl2::integerp-of-logext
     acl2::integerp-of--))
 
+(defund arith-to-bv-rules ()
+  (declare (xargs :guard t))
+  '(acl2::bvchop-of-*-becomes-bvmult
+    acl2::getbit-of-*-becomes-getbit-of-bvmult
+    acl2::slice-of-*-becomes-slice-of-bvmult
+    ;; todo: more
+    ))
+
 ;; Rules to introduce our BV operators (todo: move these):
 ;rename bv-intro-rules-logops?
 ;move?  maybe only needed for x86 (for now?)
@@ -1326,6 +1334,7 @@
           (separate-rules)
           (x86-type-rules)
           (logops-to-bv-rules)
+          ;; (arith-to-bv-rules) ; todo: try
           (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::array-reduction-rules)
@@ -1743,7 +1752,7 @@
             x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
 
-            acl2::bvchop-of-*
+            acl2::bvchop-of-*-becomes-bvmult
             ;acl2::bvchop-of-bvmult
             acl2::bvmult-of-logext-gen-arg1
             acl2::bvmult-of-logext-gen-arg2
@@ -4151,7 +4160,7 @@
 ;; these are used both for lifting and proving
 (defun extra-tester-rules ()
   (declare (xargs :guard t))
-  (append '(acl2::bvchop-of-*
+  (append '(acl2::bvchop-of-*-becomes-bvmult
             acl2::integerp-of-expt
             acl2::integerp-of-*                 ; for array index calcs
             ACL2::<-OF-+-AND-+-CANCEL-CONSTANTS ; for array index calcs
