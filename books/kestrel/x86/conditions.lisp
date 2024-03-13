@@ -165,9 +165,9 @@
   (implies (and (equal (bvchop 4 opcode) 0)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jo-condition (x::get-flag :of x86))))
+                  (jo-condition (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jo-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -177,9 +177,9 @@
   (implies (and (equal (bvchop 4 opcode) 1)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jno-condition (x::get-flag :of x86))))
+                  (jno-condition (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jno-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -189,9 +189,9 @@
   (implies (and (equal (bvchop 4 opcode) 2)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jb-condition (x::get-flag :cf x86))))
+                  (jb-condition (get-flag :cf x86))))
   :hints (("Goal" :in-theory (e/d (jb-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -201,9 +201,9 @@
   (implies (and (equal (bvchop 4 opcode) 3)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnb-condition (x::get-flag :cf x86))))
+                  (jnb-condition (get-flag :cf x86))))
   :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -213,9 +213,9 @@
   (implies (and (equal (bvchop 4 opcode) 4)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jz-condition (x::get-flag :zf x86))))
+                  (jz-condition (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jz-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -225,9 +225,9 @@
   (implies (and (equal (bvchop 4 opcode) 5)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnz-condition (x::get-flag :zf x86))))
+                  (jnz-condition (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jnz-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -237,10 +237,10 @@
   (implies (and (equal (bvchop 4 opcode) 6)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jbe-condition (x::get-flag :cf x86)
-                                 (x::get-flag :zf x86))))
+                  (jbe-condition (get-flag :cf x86)
+                                 (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jbe-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -250,10 +250,10 @@
   (implies (and (equal (bvchop 4 opcode) 7)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnbe-condition (x::get-flag :cf x86)
-                                 (x::get-flag :zf x86))))
+                  (jnbe-condition (get-flag :cf x86)
+                                 (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jnbe-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -263,9 +263,9 @@
   (implies (and (equal (bvchop 4 opcode) 8)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (js-condition (x::get-flag :sf x86))))
+                  (js-condition (get-flag :sf x86))))
   :hints (("Goal" :in-theory (e/d (js-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -275,9 +275,9 @@
   (implies (and (equal (bvchop 4 opcode) 9)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jns-condition (x::get-flag :sf x86))))
+                  (jns-condition (get-flag :sf x86))))
   :hints (("Goal" :in-theory (e/d (jns-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -287,9 +287,9 @@
   (implies (and (equal (bvchop 4 opcode) 10)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jp-condition (x::get-flag :pf x86))))
+                  (jp-condition (get-flag :pf x86))))
   :hints (("Goal" :in-theory (e/d (jp-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -299,9 +299,9 @@
   (implies (and (equal (bvchop 4 opcode) 11)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnp-condition (x::get-flag :pf x86))))
+                  (jnp-condition (get-flag :pf x86))))
   :hints (("Goal" :in-theory (e/d (jnp-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -311,10 +311,10 @@
   (implies (and (equal (bvchop 4 opcode) 12)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jl-condition (x::get-flag :sf x86)
-                                (x::get-flag :of x86))))
+                  (jl-condition (get-flag :sf x86)
+                                (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jl-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -324,10 +324,10 @@
   (implies (and (equal (bvchop 4 opcode) 13)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnl-condition (x::get-flag :sf x86)
-                                 (x::get-flag :of x86))))
+                  (jnl-condition (get-flag :sf x86)
+                                 (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jnl-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -336,11 +336,11 @@
 (defthm jcc/cmovcc/setcc-spec-rewrite-jle
   (implies (equal (bvchop 4 opcode) 14)
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jle-condition (x::get-flag :zf x86)
-                                 (x::get-flag :sf x86)
-                                 (x::get-flag :of x86))))
+                  (jle-condition (get-flag :zf x86)
+                                 (get-flag :sf x86)
+                                 (get-flag :of x86))))
   :hints (("Goal" :in-theory (enable jle-condition
-                                     x::get-flag
+                                     get-flag
                                      x86isa::jcc/cmovcc/setcc-spec
                                      bvchop))))
 
@@ -348,11 +348,11 @@
   (implies (and (equal (bvchop 4 opcode) 15)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnle-condition (x::get-flag :zf x86)
-                                 (x::get-flag :sf x86)
-                                 (x::get-flag :of x86))))
+                  (jnle-condition (get-flag :zf x86)
+                                 (get-flag :sf x86)
+                                 (get-flag :of x86))))
   :hints (("Goal" :in-theory (enable jnle-condition
-                                     x::get-flag
+                                     get-flag
                                      x86isa::jcc/cmovcc/setcc-spec
                                      bvchop))))
 

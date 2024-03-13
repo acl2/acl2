@@ -186,3 +186,15 @@
 ;; (defthm set-undef-of-set-edi (equal (set-undef undef (set-edi rdi x86)) (set-edi rdi (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-edi))))
 (defthm set-undef-of-set-esp (equal (set-undef undef (set-esp rsp x86)) (set-esp rsp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-esp))))
 (defthm set-undef-of-set-ebp (equal (set-undef undef (set-ebp rbp x86)) (set-ebp rbp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ebp))))
+
+
+;; These push set-mxcsr inward:
+(defthm set-mxcsr-of-set-eip (equal (set-mxcsr mxcsr (set-eip rip x86)) (set-eip rip (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm set-mxcsr-of-set-eax (equal (set-mxcsr mxcsr (set-eax rax x86)) (set-eax rax (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-eax))))
+(defthm set-mxcsr-of-set-ebx (equal (set-mxcsr mxcsr (set-ebx rbx x86)) (set-ebx rbx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-ebx))))
+(defthm set-mxcsr-of-set-ecx (equal (set-mxcsr mxcsr (set-ecx rcx x86)) (set-ecx rcx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-ecx))))
+(defthm set-mxcsr-of-set-edx (equal (set-mxcsr mxcsr (set-edx rdx x86)) (set-edx rdx (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-edx))))
+;; (defthm set-mxcsr-of-set-esi (equal (set-mxcsr mxcsr (set-esi rsi x86)) (set-esi rsi (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-esi))))
+;; (defthm set-mxcsr-of-set-edi (equal (set-mxcsr mxcsr (set-edi rdi x86)) (set-edi rdi (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-edi))))
+(defthm set-mxcsr-of-set-esp (equal (set-mxcsr mxcsr (set-esp rsp x86)) (set-esp rsp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-esp))))
+(defthm set-mxcsr-of-set-ebp (equal (set-mxcsr mxcsr (set-ebp rbp x86)) (set-ebp rbp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-ebp))))

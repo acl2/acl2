@@ -1,7 +1,7 @@
 ; A theory of register readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,6 +35,11 @@
 (defund ebp (x86) (declare (xargs :stobjs x86)) (rgfi *rbp* x86))
 ;; todo: esi and edi!
 
+;; Get the 32-bit instruction pointer:
+(defun eip (x86)
+  (declare (xargs :stobjs x86))
+  (rip x86))
+
 ;; Register writers
 (defund set-eax (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rax* val x86))
 (defund set-ebx (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rbx* val x86))
@@ -42,6 +47,20 @@
 (defund set-edx (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rdx* val x86))
 (defund set-esp (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rsp* val x86))
 (defund set-ebp (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rbp* val x86))
+
+(defun set-eip (eip x86)
+  (declare (xargs :stobjs x86
+                  :guard (signed-byte-p 48 eip))) ;todo: tighten?
+  (x86isa::!rip eip x86))
+
+;; This introduces set-eip, if we want to.  We probably only want this for 32-bits!
+(defthmd xw-becomes-set-eip
+  (equal (xw :rip nil eip x86)
+         (set-eip eip x86)))
+
+(defthm eip-of-set-eip
+  (equal (eip (set-eip eip x86))
+         (logext 48 eip)))
 
 ;; Read of a write of the same register
 (defthm eax-of-set-eax (equal (eax (set-eax val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable eax set-eax))))
@@ -138,6 +157,17 @@
            (equal (xr fld index (set-ebp ebp x86))
                   (xr fld index x86)))
   :hints (("Goal" :in-theory (enable set-ebp))))
+
+(defthm xr-of-set-eip-irrel
+  (implies (not (equal fld :rip))
+           (equal (xr fld index (set-eip eip x86))
+                  (xr fld index x86))))
+
+;drop?
+(defthm xr-of-set-eip-same
+  (equal (xr :rip nil (set-eip eip x86))
+         (logext 48 eip))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 ;;;
 
@@ -387,3 +417,110 @@
 (defthm edx-of-xw (implies (not (equal fld :rgf)) (equal (edx (xw fld index value x86)) (edx x86))) :hints (("Goal" :in-theory (enable edx))))
 (defthm esp-of-xw (implies (not (equal fld :rgf)) (equal (esp (xw fld index value x86)) (esp x86))) :hints (("Goal" :in-theory (enable esp))))
 (defthm ebp-of-xw (implies (not (equal fld :rgf)) (equal (ebp (xw fld index value x86)) (ebp x86))) :hints (("Goal" :in-theory (enable ebp))))
+
+;; read-<reg> of set-eip
+
+(defthm eax-of-set-eip
+  (equal (eax (set-eip eip x86))
+         (eax x86))
+  :hints (("Goal" :in-theory (enable eax))))
+
+;;;
+
+(defthm ebx-of-set-eip
+  (equal (ebx (set-eip eip x86))
+         (ebx x86))
+  :hints (("Goal" :in-theory (enable ebx))))
+
+;;;
+
+(defthm ecx-of-set-eip
+  (equal (ecx (set-eip eip x86))
+         (ecx x86))
+  :hints (("Goal" :in-theory (enable ecx))))
+
+;;;
+
+(defthm edx-of-set-eip
+  (equal (edx (set-eip eip x86))
+         (edx x86))
+  :hints (("Goal" :in-theory (enable edx))))
+
+;;;
+
+(defthm esp-of-set-eip
+  (equal (esp (set-eip eip x86))
+         (esp x86))
+  :hints (("Goal" :in-theory (enable esp))))
+
+;;;
+
+(defthm ebp-of-set-eip
+  (equal (ebp (set-eip eip x86))
+         (ebp x86))
+  :hints (("Goal" :in-theory (enable ebp))))
+
+
+(defthm x86p-of-set-eax
+  (implies (x86p x86)
+           (x86p (set-eax eax x86)))
+  :hints (("Goal" :in-theory (enable set-eax))))
+
+(defthm x86p-of-set-ebx
+  (implies (x86p x86)
+           (x86p (set-ebx ebx x86)))
+  :hints (("Goal" :in-theory (enable set-ebx))))
+
+(defthm x86p-of-set-ecx
+  (implies (x86p x86)
+           (x86p (set-ecx ecx x86)))
+  :hints (("Goal" :in-theory (enable set-ecx))))
+
+(defthm x86p-of-set-edx
+  (implies (x86p x86)
+           (x86p (set-edx edx x86)))
+  :hints (("Goal" :in-theory (enable set-edx))))
+
+(defthm x86p-of-set-esp
+  (implies (x86p x86)
+           (x86p (set-esp esp x86)))
+  :hints (("Goal" :in-theory (enable set-esp))))
+
+(defthm x86p-of-set-ebp
+  (implies (x86p x86)
+           (x86p (set-ebp ebp x86)))
+  :hints (("Goal" :in-theory (enable set-ebp))))
+
+;;;
+
+(defthm eip-of-set-eax
+  (equal (eip (set-eax eax x86))
+         (eip x86))
+  :hints (("Goal" :in-theory (enable set-eax))))
+
+(defthm eip-of-set-ebx
+  (equal (eip (set-ebx ebx x86))
+         (eip x86))
+  :hints (("Goal" :in-theory (enable set-ebx))))
+
+(defthm eip-of-set-ecx
+  (equal (eip (set-ecx ecx x86))
+         (eip x86))
+  :hints (("Goal" :in-theory (enable set-ecx))))
+
+(defthm eip-of-set-edx
+  (equal (eip (set-edx edx x86))
+         (eip x86))
+  :hints (("Goal" :in-theory (enable set-edx))))
+
+(defthm eip-of-set-esp
+  (equal (eip (set-esp esp x86))
+         (eip x86))
+  :hints (("Goal" :in-theory (enable set-esp))))
+
+(defthm eip-of-set-ebp
+  (equal (eip (set-ebp ebp x86))
+         (eip x86))
+  :hints (("Goal" :in-theory (enable set-ebp))))
+
+;;;
