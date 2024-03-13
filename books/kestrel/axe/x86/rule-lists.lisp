@@ -782,8 +782,8 @@
     acl2::bvchop-of-logand-becomes-bvand
     acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
-    acl2::bvuminus-of-+
-    ))
+    acl2::bvchop-of-+-becomes-bvplus
+    acl2::bvuminus-of-+))
 
 ;; Rules to introduce our BV operators (todo: move these):
 (defund bitops-to-bv-rules ()
@@ -831,7 +831,6 @@
 
     acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
-    acl2::bvchop-of-+-becomes-bvplus ; move to logops-to-bv-rules
 
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
@@ -1684,6 +1683,13 @@
             ms-of-set-mxcsr
             ms-of-xw ; currently needed at least for writes to float registers
 
+            ctri-of-!rflags ; rename !rflags?
+            ctri-of-xw-irrel ; why?
+            ctri-of-set-flag
+            ctri-of-set-undef
+            ctri-of-set-mxcsr
+            integerp-of-ctri
+
             ;; Rules about SET-MS:
             xw-becomes-set-ms
             !ms-becomes-set-ms
@@ -1714,7 +1720,6 @@
             x86isa::!undef-becomes-set-undef ; introduces set-undef
             alignment-checking-enabled-p-of-set-undef
             64-bit-modep-of-set-undef
-            ctri-of-set-undef
             msri-of-set-undef
             set-undef-of-set-undef
 ;;            set-undef-of-set-mxcsr
@@ -1727,7 +1732,6 @@
             x86isa::!mxcsr-becomes-set-mxcsr
             alignment-checking-enabled-p-of-set-mxcsr
             64-bit-modep-of-set-mxcsr
-            ctri-of-set-mxcsr
             msri-of-set-mxcsr
             set-mxcsr-of-set-mxcsr
             set-mxcsr-of-set-flag
@@ -3610,11 +3614,7 @@
     ctri-of-set-r15
     ctri-of-set-rsp
     ctri-of-set-rbp
-    ctri-of-!rflags ; rename !rflags?
-    ctri-of-xw-irrel ; why?
     ctri-of-write
-    ctri-of-set-flag
-    integerp-of-ctri
 
     rax-of-write
     rbx-of-write
@@ -4430,9 +4430,9 @@
             ;X86ISA::IDIV-SPEC-32 ; trying
             ACL2::BVCHOP-WHEN-SIZE-IS-NOT-POSP
 
-            acl2::bvcat-of-if-arg2
+            acl2::bvcat-of-if-arg2 ; these just lift the IF
             acl2::bvcat-of-if-arg4
-            ACL2::BVIF-OF-0-ARG1
+            ;;ACL2::BVIF-OF-0-ARG1
             ;ACL2::BVPLUS-WHEN-SIZE-IS-NOT-POSITIVE ; todo: more like this, make a rule-list
             x86isa::X86-CWD/CDQ/CQO-alt-def
             acl2::bvcat-of-slice-of-bvsx-same
@@ -4469,7 +4469,7 @@
             ;; after adding core-rules-bv:
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
-            ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
+            ;;ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
             ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
             ;; bvlt-hack-1-gen
