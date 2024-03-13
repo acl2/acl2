@@ -531,7 +531,7 @@
                             acl2::bvminus-becomes-bvplus-of-bvuminus
 ;acl2::plus-bvcat-with-0 ;looped
 ;acl2::plus-bvcat-with-0-alt ;looped
-                            acl2::slice-of-+)))))
+                            )))))
 
 (defthmd jnl-condition-rewrite-1-32-helper
   (implies (and (signed-byte-p 32 x)
@@ -578,7 +578,7 @@
                             acl2::bvminus-becomes-bvplus-of-bvuminus
                             ;;acl2::plus-bvcat-with-0 ;looped
                             ;;acl2::plus-bvcat-with-0-alt ;looped
-                            acl2::slice-of-+)))))
+                            )))))
 
 (defthm jnl-condition-rewrite-1-32
   (implies (and (unsigned-byte-p 32 x)

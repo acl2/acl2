@@ -840,6 +840,7 @@
 
 ;; ;not used?
 ;; (defun canonical-address-rules ()
+;;  (declare (xargs :guard t))
 ;;   '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
 ;;     x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
 ;;     ;;not-member-p-canonical-address-listp-when-disjoint-p ;free vars? looped? ;why?
@@ -960,6 +961,7 @@
 ;; Instead, consider adding more rules like jle-condition-rewrite-1.
 ;; TODO: Some of these are only for 64 or only for 32 bit mode?
 ;; (defun branch-condition-openers ()
+;;  (declare (xargs :guard t))
 ;;   '(jo-condition
 ;;     jno-condition
 ;;     jb-condition
@@ -1334,6 +1336,7 @@
           (separate-rules)
           (x86-type-rules)
           (logops-to-bv-rules)
+          (acl2::bv-of-logext-rules)
           ;; (arith-to-bv-rules) ; todo: try
           (bitops-to-bv-rules)
           (x86-bv-rules)
@@ -1347,6 +1350,7 @@
           (acl2::core-rules-bv)
           (bitops-rules)
           (logops-rules)
+          (acl2::if-becomes-bvif-rules)
           '(myif ; trying this, so that we only have to deal with IF
 
             ;; Reading/writing registers (or parts of registers).  We leave
@@ -4298,8 +4302,8 @@
             logext-of-bool-to-bit
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
-            acl2::bvif-of-logext-1
-            acl2::bvif-of-logext-2
+            acl2::bvif-of-logext-arg3
+            acl2::bvif-of-logext-arg4
             equal-of-bvif-safe2
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )

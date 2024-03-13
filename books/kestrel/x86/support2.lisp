@@ -449,7 +449,6 @@
 ;;            :induct (read n1 addr1 x86)
 ;;            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus)
 ;;                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
-;;                                                     ACL2::SLICE-OF-+ ;looped
 ;;                                                     ACL2::BVCAT-OF-+-HIGH
 ;;                                                     )))))
 

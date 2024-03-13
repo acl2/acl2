@@ -1897,24 +1897,16 @@
   :hints (("Goal" :use bvplus-of-logext-arg2
            :in-theory (enable bvplus-of-logext-arg2))))
 
-(defthm bvif-of-logext-gen-arg1
+(defthm bvif-of-logext-arg3
    (implies (and (<= size1 size2)
-;               (integerp x)
-;                (integerp y)
-                 (< 0 size2)
-                 (natp size1)
-                 (natp size2))
+                 (integerp size2))
             (equal (bvif size1 test (logext size2 x) y)
                    (bvif size1 test x y)))
    :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthm bvif-of-logext-gen-arg2
+(defthm bvif-of-logext-arg4
    (implies (and (<= size1 size2)
-;               (integerp x)
-;                (integerp y)
-                 (< 0 size2)
-                 (natp size1)
-                 (natp size2))
+                 (integerp size2))
             (equal (bvif size1 test y (logext size2 x))
                    (bvif size1 test y x)))
    :hints (("Goal" :in-theory (enable bvif myif))))
@@ -4242,22 +4234,6 @@
                 (syntaxp (quotep free))
                 (not (unsigned-byte-p free k)))
            (not (equal x k))))
-
-(defthm bvif-of-logext-arg1
-  (implies (and (<= n m)
-                (integerp m)
-                )
-           (equal (bvif n test1 (logext m y) x)
-                  (bvif n test1 y x)))
-  :hints (("Goal" :in-theory (enable myif bvif))))
-
-(defthm bvif-of-logext-arg2
-  (implies (and (<= n m)
-                (integerp m)
-                )
-           (equal (bvif n test1 x (logext m y))
-                  (bvif n test1 x y)))
-  :hints (("Goal" :in-theory (enable myif bvif bvif))))
 
 ;fixme rename
 (defthm bvcat-of-logext-high-eric
