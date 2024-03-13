@@ -526,6 +526,9 @@
     "Support has been added for the VEX-encoded VMOVUPS instruction.")
 
    (xdoc::p
+    "Support has been added for the VEX-encoded VZEROUPPER instruction.")
+
+   (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
