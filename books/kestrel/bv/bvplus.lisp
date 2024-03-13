@@ -459,7 +459,7 @@
 
 (theory-invariant (incompatible (:rewrite slice-of-+-becomes-slice-of-bvplus) (:definition bvplus)))
 
-(defthmd getbit-of-+becomes-getbit-of-bvplus
+(defthmd getbit-of-+-becomes-getbit-of-bvplus
   (implies (and (natp n)
                 (integerp x)
                 (integerp y))
@@ -467,4 +467,4 @@
                   (getbit n (bvplus (+ 1 n) x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(theory-invariant (incompatible (:rewrite getbit-of-+becomes-getbit-of-bvplus) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite getbit-of-+-becomes-getbit-of-bvplus) (:definition bvplus)))
