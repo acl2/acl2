@@ -418,6 +418,7 @@
     ))
 
 (defun if-becomes-bvif-rules ()
+  (declare (xargs :guard t))
   '(bvchop-of-if-becomes-bvif
     slice-of-if-becomes-slice-of-bvif
     bvcat-of-if-becomes-bvcat-of-bvif-arg2
@@ -1905,6 +1906,7 @@
 ;; ;currently there seem to be lots of crashes when doing this, due to guard violations in eval-fn
 ;; ;rules that support eval-dag (may crash without these - unresolved ifs lead to bad calls)
 ;; (defun dag-val-rules ()
+;;   (declare (xargs :guard t))
 ;;   (append (lookup-rules)
 ;;           '(DAG-VAL-WITH-AXE-EVALUATOR
 ;;             dag-val2-no-array
@@ -3820,6 +3822,7 @@
      )))
 
 (defun unroll-spec-rules ()
+  (declare (xargs :guard t))
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
