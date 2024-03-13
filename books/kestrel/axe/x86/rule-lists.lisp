@@ -1336,6 +1336,7 @@
           (separate-rules)
           (x86-type-rules)
           (logops-to-bv-rules)
+          (acl2::bv-of-logext-rules)
           ;; (arith-to-bv-rules) ; todo: try
           (bitops-to-bv-rules)
           (x86-bv-rules)

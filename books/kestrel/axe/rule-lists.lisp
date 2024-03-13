@@ -1392,13 +1392,9 @@
     true-listp-of-bvchop-list
     bvchop-list-of-bvchop-list))
 
-(defun logext-rules ()
+(defun bv-of-logext-rules ()
   (declare (xargs :guard t))
-  '(logext-of-0
-
-    bv-array-read-of-logext-arg3
-
-    bvmult-of-logext-alt ;new
+  '(bvmult-of-logext-alt ;new
     bvmult-of-logext     ;new
 
     bvplus-of-logext-arg2
@@ -1422,7 +1418,6 @@
     getbit-of-logext-high
 
     bvuminus-of-logext
-    logext-equal-0-rewrite-32 ;bozo gen
 
     bvshr-of-logext-arg2
     bvshl-of-logext-arg2
@@ -1433,6 +1428,21 @@
     bitxor-of-logext-arg2
     bitxor-of-logext-arg1
     bvchop-of-logext-becomes-bvsx
+
+    high-slice-of-logext ;introduces bvsx
+    bvminus-of-logext-gen-arg1
+    bvminus-of-logext-gen-arg2
+
+    bv-array-read-of-logext-arg3))
+
+(defun logext-rules ()
+  (declare (xargs :guard t))
+  (append
+   (bv-of-logext-rules)
+  '(logext-of-0
+
+    logext-equal-0-rewrite-32 ;bozo gen
+
     ;;bvchop-32-logext-8 ;bozo
     logext-64-bound-hack-8 ;bozo
     logext-64-bound-hack ;bozo
@@ -1441,15 +1451,12 @@
     <-of-0-and-logext
     <-of-logext-when-signed-byte-p
     <-of-logext-when-signed-byte-p-alt
-    high-slice-of-logext ;introduces bvsx
     ;;replace these with a trim rule:
-    bvminus-of-logext-gen-arg1
-    bvminus-of-logext-gen-arg2
     equal-of-logext-and-logext
     logext-of-logext
 
     logext-not-nil1
-    logext-not-nil2))
+    logext-not-nil2)))
 
 ;; ;these are now all/mostly related to 2d arrays?
 ;; (defconst *misc-rules*
