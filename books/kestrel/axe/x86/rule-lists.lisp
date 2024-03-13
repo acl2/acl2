@@ -4257,8 +4257,8 @@
             logext-of-bool-to-bit
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
-            acl2::bvif-of-logext-1
-            acl2::bvif-of-logext-2
+            acl2::bvif-of-logext-arg3
+            acl2::bvif-of-logext-arg4
             equal-of-bvif-safe2
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )

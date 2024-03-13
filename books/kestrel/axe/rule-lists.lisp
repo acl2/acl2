@@ -1403,8 +1403,8 @@
     bvplus-of-logext-arg2
     bvplus-of-logext-arg3
 
-    bvif-of-logext-gen-arg1
-    bvif-of-logext-gen-arg2
+    bvif-of-logext-arg3
+    bvif-of-logext-arg4
 
 ;    bvcat-of-logext-high-eric ;trying without this one
     slice-of-logext
