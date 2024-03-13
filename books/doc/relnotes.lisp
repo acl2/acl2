@@ -519,14 +519,23 @@
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
 
    (xdoc::p
-    "Support has been added for the VEX-encoded
-     SHLX, SHRX, and SARX instructions.")
-
-   (xdoc::p
-    "Support has been added for the VEX-encoded VMOVUPS instruction.")
-
-   (xdoc::p
-    "Support has been added for the VEX-encoded VZEROUPPER instruction.")
+    "Support has been added for the following VEX instructions:")
+   (xdoc::ul
+    (xdoc::li
+     "SHL, SHRX, SARX")
+    (xdoc::li
+     "VMOVUPS")
+    (xdoc::li
+     "VZEROUPPER")
+    (xdoc::li
+     "VANDPD, VANDPS,
+      VANDNPD, VANDNPS,
+      VORPD, VORPS,
+      VXORPD, VXORPS,
+      VPAND,
+      VPANDN,
+      VPOR,
+      VPXOR"))
 
    (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")
