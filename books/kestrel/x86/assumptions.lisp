@@ -13,6 +13,7 @@
 
 (include-book "projects/x86isa/machine/state" :dir :system)
 (include-book "projects/x86isa/machine/cpuid" :dir :system) ; for feature-flag
+(include-book "projects/x86isa/utils/fp-structures" :dir :system) ; for mxcsrbits
 
 ;; Assumptions that are common to 32-bit and 64-bit mode.
 (defun standard-state-assumption (x86)
@@ -33,7 +34,29 @@
    (equal (feature-flag :avx) 1)
    (equal (feature-flag :bmi2) 1)
    (equal (feature-flag :sse) 1)
-   ))
+
+   ;; Instead of the assumptions below about the MXCSR, we could just assume
+   ;; that it is initially the constant #x1F80.
+
+   ;; Assume denormals are not treated as 0 (this is 0 upon power up or reset
+   ;; and is incompatible with IEEE 754)::
+   (equal (mxcsrbits->daz (mxcsr x86)) 0)
+
+   ;; Assume exceptions are being masked (these are 1 at power up or reset):
+   (equal (mxcsrbits->im (mxcsr x86)) 1)
+   (equal (mxcsrbits->dm (mxcsr x86)) 1)
+   (equal (mxcsrbits->zm (mxcsr x86)) 1)
+   (equal (mxcsrbits->om (mxcsr x86)) 1)
+   (equal (mxcsrbits->um (mxcsr x86)) 1)
+   (equal (mxcsrbits->pm (mxcsr x86)) 1)
+
+   ;; Assume the rounding mode is round-to-nearest-ties-to-even (the default
+   ;; rounding mode):
+   (equal (mxcsrbits->rc (mxcsr x86)) 0)
+
+   ;; Assume that we are are not flushing to 0 (this is 0 upon power up or reset and
+   ;; is incompatible with IEEE 754):
+   (equal (mxcsrbits->fz (mxcsr x86)) 0)))
 
 ;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
 (defun lifter-targetp (target)
