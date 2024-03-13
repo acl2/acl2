@@ -418,7 +418,7 @@
     ))
 
 (defun if-becomes-bvif-rules ()
-  '(bvchop-of-if-becomes-bvchop-of-bvif
+  '(bvchop-of-if-becomes-bvif
     slice-of-if-becomes-slice-of-bvif
     bvcat-of-if-becomes-bvcat-of-bvif-arg2
     bvcat-of-if-becomes-bvcat-of-bvif-arg4

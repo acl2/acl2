@@ -31,9 +31,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvchop-of-if-becomes-bvchop-of-bvif
+(defthmd bvchop-of-if-becomes-bvif
   (equal (bvchop size (if test x1 x2))
-         (bvchop size (bvif size test x1 x2)))
+         (bvif size test x1 x2))
   :hints (("Goal" :in-theory (enable bvif))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
