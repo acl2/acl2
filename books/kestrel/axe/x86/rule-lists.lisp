@@ -1945,11 +1945,19 @@
 
             program-at-of-set-flag
 
+            x86isa::rx32$inline ; these expose rz
+            x86isa::rx64$inline
+            x86isa::rx128$inline
+
             x86isa::rz32$inline ; these expose zmmi
             x86isa::rz64$inline
             x86isa::rz128$inline
             x86isa::rz256$inline
             x86isa::rz512$inline
+
+            x86isa::wx32$inline ; these expose wz
+            x86isa::wx64$inline
+            x86isa::wx128$inline
 
             x86isa::wz32$inline ; these do zmmi and then !zmmi to write part of the register
             x86isa::wz64$inline
@@ -1958,6 +1966,8 @@
             x86isa::wz512$inline
 
             x86isa::x86-operand-to-zmm/mem
+
+
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -4313,8 +4323,7 @@
   (declare (xargs :guard t))
   (append (lifter-rules64-new)
           (extra-tester-rules)
-          '(X86ISA::WX32$inline ; more?
-            <-of-fp-to-rat ; do we want this?
+          '(<-of-fp-to-rat ; do we want this?
 
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
@@ -4397,11 +4406,6 @@
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
-            X86ISA::WX128$inline
-            X86ISA::RX32$inline
-            X86ISA::RX64$inline
-
-            X86ISA::RX128$INLINE
 
             X86ISA::ZMMI
             X86ISA::ZMMI$A
