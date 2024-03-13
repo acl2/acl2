@@ -1537,7 +1537,6 @@
             x86isa::trunc$inline        ;shilpi leaves this enabled
 
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
-            acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
@@ -1595,7 +1594,6 @@
             acl2::unsigned-byte-p-of-if-two-constants
 
             ;; stuff from the timessix example:
-            acl2::bvchop-of-logext
             ;acl2::getbit-of-bvchop
 
             x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
@@ -1758,8 +1756,6 @@
 
             acl2::bvchop-of-*-becomes-bvmult
             ;acl2::bvchop-of-bvmult
-            acl2::bvmult-of-logext-gen-arg1
-            acl2::bvmult-of-logext-gen-arg2
             acl2::bvchop-of-ash
             acl2::nfix-does-nothing
             acl2::natp-of-+
@@ -4376,7 +4372,7 @@
             jnl-condition-of-getbit-31-and-0
             jnl-condition-rewrite-16
             jnl-condition-rewrite-16b
-            acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
+            ; acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
             ;ACL2::BVSX-WHEN-SIZES-MATCH
             ACL2::BVCHOP-OF-BVSX
             ;ACL2::BVCHOP-OF-BVCHOP
@@ -4398,8 +4394,6 @@
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
 
-            ;eql
-
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
@@ -4417,8 +4411,8 @@
             integerp-of-PART-INSTALL-WIDTH-LOW$INLINE
             X86ISA::SP-SSE-CMP
             ;;X86ISA::SSE-CMP ;todo: limit?
-            X86ISA::!MXCSR
-            X86ISA::!MXCSR$A
+            ;X86ISA::!MXCSR
+            ;X86ISA::!MXCSR$A
             ;; FEATURE-FLAG-sse-of-xw
             ;; FEATURE-FLAG-sse-of-write
             ;; FEATURE-FLAG-sse-of-set-flag
