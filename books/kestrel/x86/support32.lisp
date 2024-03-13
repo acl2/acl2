@@ -3325,7 +3325,6 @@
                             ;acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             ;rvm08-becomes-read-byte
-                            ;acl2::slice-of-+
                             )))))
 
 (defthm mv-nth-1-of-rme08-becomes-read-from-segment
@@ -3373,7 +3372,6 @@
 ;;acl2::bvcat-equal-rewrite-alt
                                    acl2::bvcat-equal-rewrite
 ;;rvm08-becomes-read-byte
-                                   acl2::slice-of-+
                                    )))))
 
 (defthm mv-nth-1-of-rme16-becomes-read-from-segment
@@ -3440,7 +3438,6 @@
 ;;;acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             ;;rvm08-becomes-read-byte
-                            acl2::slice-of-+
                             )))))
 
 (defthm eff-addrs-okp-of-xw-irrel
@@ -3750,7 +3747,7 @@
                             ;acl2::bvcat-equal-rewrite-alt
                             acl2::bvcat-equal-rewrite
                             ;rvm08-becomes-read-byte
-                            acl2::slice-of-+)))))
+                            )))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-2
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3806,7 +3803,6 @@
                            (
                             ;acl2::bvcat-equal-rewrite
                             ;acl2::bvcat-equal-rewrite-alt
-                            acl2::slice-of-+
                             ACL2::LOGEXT-OF-LOGIOR)))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-4
@@ -3862,7 +3858,6 @@
                             ea-to-la
                             acl2::bvchop-identity)
                            (
-                            ACL2::SLICE-OF-+
                             ACL2::LOGEXT-OF-LOGIOR)))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
@@ -3918,7 +3913,6 @@
                             ea-to-la
                             acl2::bvchop-identity)
                            (
-                            ACL2::SLICE-OF-+
                             ;for speed:
                             ACL2::LOGEXT-OF-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-LOGIOR
@@ -4387,8 +4381,6 @@
                             x86isa::wml128
                             ;;x86isa::wml-size
                             acl2::bvcat-equal-rewrite
-                            acl2::slice-of-+
-
                             write-to-segment-unroll
                             write-to-segment-base)))))
 

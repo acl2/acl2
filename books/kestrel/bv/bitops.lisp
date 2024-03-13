@@ -168,7 +168,6 @@
                                    LOGAND-BECOMES-BVAND-alt
                                    ash)
                                   (;EXPONENTS-ADD
-                                   ;SLICE-OF-+
                                    ;BVCAT-OF-+-HIGH   ;looped
                                    ;BVAND-OF-+-ARG3 ;looped (we should treat a mask of 2^n-1 differently from a generic +
                                    ;BVCAT-OF-+-LOW
@@ -195,7 +194,6 @@
                                                         ;;BVCAT-OF-+-HIGH
                             ;;EXPONENTS-ADD
                             ;;BVCAT-OF-+-LOW         ;looped
-                            ;;SLICE-OF-+             ;looped
                             ;;BVAND-OF-+-ARG3        ;looped
                             )))))
 

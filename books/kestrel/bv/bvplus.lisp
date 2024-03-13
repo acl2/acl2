@@ -401,14 +401,7 @@
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
 
-(defthmd bvchop-of-+-becomes-bvplus
-  (implies (and (integerp x) ;these are new, since bvplus ifixes its args
-                (integerp y))
-           (equal (bvchop size (+ x y))
-                  (bvplus size x y)))
-  :hints (("Goal" :in-theory (enable bvplus))))
 
-(theory-invariant (incompatible (:definition bvplus) (:rewrite bvchop-of-+-becomes-bvplus)))
 
 
 ;todo: instead, introduce bvminus
@@ -445,3 +438,33 @@
                                   (x y)
                                   (y x))
            :in-theory (disable bvplus-subst-smaller-term-arg2))))
+
+(defthmd bvchop-of-+-becomes-bvplus
+  (implies (and (integerp x) ;these are new, since bvplus ifixes its args
+                (integerp y))
+           (equal (bvchop size (+ x y))
+                  (bvplus size x y)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(theory-invariant (incompatible (:rewrite bvchop-of-+-becomes-bvplus) (:definition bvplus)))
+
+(defthmd slice-of-+-becomes-slice-of-bvplus
+  (implies (and (natp high)
+                (natp low) ;drop?
+                (integerp x)
+                (integerp y))
+           (equal (slice high low (+ x y))
+                  (slice high low (bvplus (+ 1 high) x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(theory-invariant (incompatible (:rewrite slice-of-+-becomes-slice-of-bvplus) (:definition bvplus)))
+
+(defthmd getbit-of-+becomes-getbit-of-bvplus
+  (implies (and (natp n)
+                (integerp x)
+                (integerp y))
+           (equal (getbit n (+ x y))
+                  (getbit n (bvplus (+ 1 n) x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(theory-invariant (incompatible (:rewrite getbit-of-+becomes-getbit-of-bvplus) (:definition bvplus)))

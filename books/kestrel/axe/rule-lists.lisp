@@ -2318,7 +2318,7 @@
      bvplus-minus-3-tighten-4
 ;sbvdiv-rewrite ;trying
      slice-31-2-minus-4
-     getbit-of-+
+     getbit-of-+-becomes-getbit-of-bvplus
      bvplus-minus-7-tighten-30
      unsigned-byte-p-of-plus-minus-4-gen-dag
      equal-1-slice-4-2-5
@@ -3344,7 +3344,7 @@
              bvif-of-myif-arg4
              bvplus-of-plus-arg3
              bvplus-of-plus-arg2
-             slice-of-+ ;ffixme complete set..
+             slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
              <-of-+-of-minus-and-bv
              equal-of-+-of-minus-and-bv

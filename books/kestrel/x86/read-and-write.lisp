@@ -1927,7 +1927,6 @@
                            ( ;read
 
                             write !memi
-                            ACL2::SLICE-OF-+ ;looped
                             ))
            :expand ((:free (x) (WRITE 3 (+ 1 WRITE-AD)
                                       (LOGTAIL 8 VAL) x))
@@ -2041,7 +2040,6 @@
                                    read-byte ; todo
                                    )
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    ACL2::SLICE-OF-+ ;looped
                                                     ACL2::BVCAT-OF-+-HIGH
                                                     ;; for speed:
                                                     X86ISA::MEMI
@@ -2095,7 +2093,6 @@
            :induct (read n1 addr1 x86)
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus read-byte)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    ACL2::SLICE-OF-+ ;looped
                                                     ACL2::BVCAT-OF-+-HIGH
                                                     )))))
 
@@ -2483,7 +2480,6 @@
            :induct (write-bytes addr1 bytes x86)
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes write-byte)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::slice-of-+ ;looped
                                                     acl2::bvcat-of-+-high
                                                     ACL2::BVCHOP-IDENTITY ;for speed
                                                     )))))
@@ -2499,7 +2495,6 @@
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes ;ACL2::NTH-WHEN-N-IS-ZP
                                    )
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::slice-of-+ ;looped
                                                     acl2::bvcat-of-+-high
 ;                                                    ACL2::NTH-OF-CDR
                                                     )))))
@@ -2518,7 +2513,6 @@
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus ;read-byte
                                    )
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    ACL2::SLICE-OF-+ ;looped
                                                     ACL2::BVCAT-OF-+-HIGH
                                                     )))))
 
@@ -2540,7 +2534,6 @@
            :induct (WRITE-BYTES ADDR2 BYTES X86)
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::slice-of-+ ;looped
                                                     acl2::bvcat-of-+-high
 ;                                                    ACL2::NTH-OF-CDR
                                                     )))))
@@ -2661,7 +2654,6 @@
            :induct (WRITE-BYTES ADDR1 VALS1 X86)
            :in-theory (e/d (write-bytes bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::slice-of-+ ;looped
                                                     acl2::bvcat-of-+-high)) )))
 
 (defthm write-bytes-of-append
