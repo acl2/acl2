@@ -12,6 +12,7 @@
 (in-package "X")
 
 (include-book "projects/x86isa/machine/state" :dir :system)
+(include-book "projects/x86isa/machine/cpuid" :dir :system) ; for feature-flag
 
 ;; Assumptions that are common to 32-bit and 64-bit mode.
 (defun standard-state-assumption (x86)
@@ -24,7 +25,15 @@
 
    ;; The initial state is error-free:
    (equal (ms x86) nil)
-   (equal (fault x86) nil)))
+   (equal (fault x86) nil)
+
+   ;; Certain CPU features are enabled (we can extend this list fairly freely as needed):
+   ;; Note that we leave the function feature-flag disabled and do not prove a constant opener for it.
+   ;; So far, all of these have been needed by actual examples:
+   (equal (feature-flag :avx) 1)
+   (equal (feature-flag :bmi2) 1)
+   (equal (feature-flag :sse) 1)
+   ))
 
 ;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
 (defun lifter-targetp (target)

@@ -161,7 +161,7 @@
                 (natp free))
            (equal (equal (take n y) (take n x))
                   (equal x (take (+ 1 free) y))))
-  :hints (("Goal" :use (:instance equal-of-takes-extend2)
+  :hints (("Goal" :use equal-of-takes-extend2
            :in-theory (disable equal-of-takes-extend2))))
 
 (local (in-theory (disable NTHCDR-OF-TRUE-LIST-FIX)))
@@ -217,7 +217,7 @@
                   (and (equal (len x) (* n (floor (len y) n)))
                        (equal (take (len x) x)
                               (take (len x) y)))))
-  :hints (("Goal" :use (:instance equal-of-group-and-group2)
+  :hints (("Goal" :use equal-of-group-and-group2
            :in-theory (disable equal-of-group-and-group2))))
 
 

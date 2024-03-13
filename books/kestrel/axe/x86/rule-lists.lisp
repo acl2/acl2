@@ -183,6 +183,8 @@
     x86isa::rml16
     x86isa::rml32
     x86isa::rml64           ;shilpi leaves this enabled
+    x86isa::rml128
+    x86isa::rml256
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
 
     x86isa::riml08
@@ -196,6 +198,7 @@
     x86isa::wml32
     x86isa::wml64           ;shilpi leaves this enabled, but this is big!
     x86isa::wml128
+    x86isa::wml256
     x86isa::wml-size$inline ;shilpi leaves this enabled
 
     x86isa::wiml08
@@ -1165,6 +1168,23 @@
     mxcsrbits->fz-of-bvor
     mxcsrbits->reserved-of-bvor
 
+    mxcsrbits->ie-of-logior
+    mxcsrbits->de-of-logior
+    mxcsrbits->ze-of-logior
+    mxcsrbits->oe-of-logior
+    mxcsrbits->ue-of-logior
+    mxcsrbits->pe-of-logior
+    mxcsrbits->daz-of-logior
+    mxcsrbits->im-of-logior
+    mxcsrbits->dm-of-logior
+    mxcsrbits->zm-of-logior
+    mxcsrbits->om-of-logior
+    mxcsrbits->um-of-logior
+    mxcsrbits->pm-of-logior
+    mxcsrbits->rc-of-logior
+    mxcsrbits->fz-of-logior
+    mxcsrbits->reserved-of-logior
+
     ;todo: more
     mxcsrbits->daz-of-bvchop
     mxcsrbits->dm-of-bvchop
@@ -1356,6 +1376,9 @@
             x86isa::n16$inline
             x86isa::n32$inline
             x86isa::n64$inline
+            x86isa::n128$inline
+            x86isa::n256$inline
+            x86isa::n512$inline
 
             ;; These are just logext:
             x86isa::i08$inline
@@ -1363,6 +1386,8 @@
             x86isa::i32$inline
             x86isa::i64$inline
             x86isa::i128$inline
+            x86isa::i256$inline
+            x86isa::i512$inline
 
             ;; These are just logext:
             x86isa::n08-to-i08$inline
@@ -1370,6 +1395,8 @@
             x86isa::n32-to-i32$inline
             x86isa::n64-to-i64$inline         ;shilpi leaves this enabled
             x86isa::n128-to-i128$inline
+            x86isa::n256-to-i256$inline
+            x86isa::n512-to-i512$inline
 
             ;; These turn jcc/cmovcc/setcc-spec into more specialized forms,
             ;; which can be either opened or, for some, turned into better
@@ -1663,7 +1690,8 @@
 
             ;; x86isa::undef x86isa::undef$a
             xr-becomes-undef ; introduces undef
-            undef-of-set-undef ; read-of-write
+            undef-of-xw
+            undef-of-set-undef
             undef-of-set-mxcsr
             undef-of-set-flag
             ;; undef-of-myif
@@ -1919,6 +1947,20 @@
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
             program-at-of-set-flag
+
+            x86isa::rz32$inline ; these expose zmmi
+            x86isa::rz64$inline
+            x86isa::rz128$inline
+            x86isa::rz256$inline
+            x86isa::rz512$inline
+
+            x86isa::wz32$inline ; these do zmmi and then !zmmi to write part of the register
+            x86isa::wz64$inline
+            x86isa::wz128$inline
+            x86isa::wz256$inline
+            x86isa::wz512$inline
+
+            x86isa::x86-operand-to-zmm/mem
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -4029,7 +4071,6 @@
 ;;             acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-2
 ;; ;            rb-in-terms-of-nth-and-pos-eric-gen
 ;;             rb-returns-no-error-app-view
-;;             part-install-width-low-becomes-bvcat-axe
 ;;             car-create-canonical-address-list
 ;;             ;;canonical-address-p-between
 ;;             wb-returns-no-error-app-view
@@ -4276,7 +4317,6 @@
   (append (lifter-rules64-new)
           (extra-tester-rules)
           '(X86ISA::WX32$inline ; more?
-            X86ISA::WZ32$inline ; more?
             <-of-fp-to-rat ; do we want this?
 
             !RFLAGS-of-if-arg1
@@ -4363,13 +4403,11 @@
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
             X86ISA::WX128$inline
-            X86ISA::WZ128$inline
             X86ISA::RX32$inline
             X86ISA::RX64$inline
-            X86ISA::RZ32$inline
-            X86ISA::RZ64$inline
+
             X86ISA::RX128$INLINE
-            X86ISA::RZ128$INLINE
+
             X86ISA::ZMMI
             X86ISA::ZMMI$A
             X86ISA::!ZMMI

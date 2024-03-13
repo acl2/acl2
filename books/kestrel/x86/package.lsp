@@ -441,6 +441,8 @@
     x86isa::vex->r
     x86isa::vex->w
 
+    x86isa::zmmi
+    x86isa::!zmmi
     ))
 
 (defconst *symbols-from-acl2-package*

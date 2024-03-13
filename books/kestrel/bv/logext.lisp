@@ -816,3 +816,7 @@
                            (equal -1 j))
                       (- (expt 2 (+ -1 size)))
                     (truncate i j)))))
+
+(defthm logext-of-fix
+  (equal (logext size (fix x))
+         (logext size x)))
