@@ -1366,7 +1366,7 @@
               (mv (erp-nil) ;we could return an error of :count-exceeded here if (zp-fast count), but that might be slower
                   nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
             (let* ((stored-rule (first stored-rules))
-                   (tries (and tries (increment-tries tries)))
+                   (tries (increment-tries tries))
                    ;;binds variables to nodenums or quoteps:
                    (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule)
                                                                   args-to-match
