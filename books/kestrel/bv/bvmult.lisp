@@ -192,14 +192,14 @@
            (equal (bvmult size z x)
                   (bvmult size z y))))
 
-(defthmd bvchop-of-*
+(defthmd bvchop-of-*-becomes-bvmult
   (implies (and (integerp x)
                 (integerp y))
            (equal (bvchop size (* x y))
                   (bvmult size x y)))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-(theory-invariant (incompatible (:rewrite bvchop-of-*) (:definition bvmult)))
+(theory-invariant (incompatible (:rewrite bvchop-of-*-becomes-bvmult) (:definition bvmult)))
 
 ;saves us from having to chose a prefered form.  maybe i'm just being a wimp
 (defthm bvmult-equal-bvchop-times-rewrite
@@ -240,3 +240,24 @@
                   0))
   :hints (("Goal" :use bvmult-of-expt
            :in-theory (disable bvmult-of-expt))))
+
+(defthmd getbit-of-*-becomes-getbit-of-bvmult
+  (implies (and (natp n)
+                (integerp x)
+                (integerp y))
+           (equal (getbit n (* x y))
+                  (getbit n (bvmult (+ 1 n) x y))))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+(theory-invariant (incompatible (:rewrite getbit-of-*-becomes-getbit-of-bvmult) (:definition bvmult)))
+
+(defthmd slice-of-*-becomes-slice-of-bvmult
+  (implies (and (natp high)
+                (natp low) ;drop?
+                (integerp x)
+                (integerp y))
+           (equal (slice high low (* x y))
+                  (slice high low (bvmult (+ 1 high) x y))))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+(theory-invariant (incompatible (:rewrite slice-of-*-becomes-slice-of-bvmult) (:definition bvmult)))
