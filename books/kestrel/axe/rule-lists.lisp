@@ -2063,7 +2063,7 @@
     nfix-does-nothing
     natp-of-len ;add to some rule list
     integerp-of-len
-    bvchop-of-*
+    bvchop-of-*-becomes-bvmult
     unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger
 ;    sha1-loop-10-theorem-1
     equal-of-constant-and-bitxor-1

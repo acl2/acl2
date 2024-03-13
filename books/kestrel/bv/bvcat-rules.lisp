@@ -523,8 +523,7 @@
   :hints (("Goal" :cases ((and (integerp z) (integerp y))
                           (and (integerp z) (not (integerp y)))
                           (and (not (integerp z)) (integerp y)))
-           :in-theory (e/d (bvcat) (;bvchop-of-* ;fixme
-                                    logtail-of-bvchop-becomes-slice)))))
+           :in-theory (e/d (bvcat) (logtail-of-bvchop-becomes-slice)))))
 
 ;move
 (DEFTHM BVCAT-SLICE-SLICE-SAME-2
