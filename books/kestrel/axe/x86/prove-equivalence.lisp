@@ -20,7 +20,9 @@
                                       output1
                                       executable2
                                       function2
-                                      output2)
+                                      output2
+                                      extra-rules ; a form to be evaluated
+                                      )
   (declare (xargs :guard (and (stringp executable1)
                               (stringp function1)
                               (output-indicatorp output1)
@@ -45,18 +47,25 @@
        (prove-equal-with-tactics '(,name1 x86) ; todo: check the arities of the functions (will need to use make-event)
                                  '(,name2 x86)
                                  :tactics '(:rewrite :stp)
-                                 ;; todo: support extra rules and default rules:
-                                 :rules '(,name1 ,name2)))))
+                                 ;; todo: automatically add some rules here
+                                 :rules (append '(,name1 ,name2)
+                                                ;; incase there are embedded dags:
+                                                '(acl2::lookup-equal-of-acons-same
+                                                  acl2::lookup-equal-of-acons-diff)
+                                                ,extra-rules)))))
 
 (defmacro prove-functions-equivalent (executable1
                                       function1
                                       output1
                                       executable2
                                       function2
-                                      output2)
+                                      output2
+                                      &key
+                                      (extra-rules 'nil))
   (prove-functions-equivalent-fn executable1
                                  function1
                                  output1
                                  executable2
                                  function2
-                                 output2))
+                                 output2
+                                 extra-rules))
