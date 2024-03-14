@@ -277,19 +277,21 @@ most-negative-fixnum = ~s."
                (let ((v (lisp-implementation-version)))
                  (when (and (string<= "2.4.2" v)
                             (string< v "2.4.2.46"))
-                   (error "ACL2 build error: Please avoid SBCL versions 2.4.2 ~
-                           through 2.4.46).~%Instead use a later SBCL version ~
-                           (e.g., the latest from GitHub)~% or else SBCL ~
-                           version 2.4.1 or earlier.~%(Technical reason: ~
-                           function standard-char-p does not return t on a ~
-                           standard character input,~%but instead returns the ~
-                           input character.)")))
-               (error "This Common Lisp is unsuitable for ACL2 because the ~
-                       character~%with char-code ~d ~a standard in this ~
-                       Common Lisp but should~%~abe."
-                      i
-                      (if (standard-char-p ch) "is" "is not")
-                      (if (standard-char-p ch) "not " "")))))
+                   (exit-with-build-error
+                    "Please avoid SBCL versions 2.4.2 through ~
+                     2.4.2.45.~%Instead use a later SBCL version --~%2.4.3 or ~
+                     later or, for example, the latest from GitHub --~%or ~
+                     else SBCL version 2.4.1 or earlier.~%(Technical reason: ~
+                     function standard-char-p does not return t on ~
+                     a~%standard character input, but instead returns the ~
+                     input character.)")))
+               (exit-with-build-error
+                "This Common Lisp is unsuitable for ACL2 because the ~
+                 character~%with char-code ~d ~a standard in this Common Lisp ~
+                 but should~%~abe."
+                i
+                (if (standard-char-p ch) "is" "is not")
+                (if (standard-char-p ch) "not " "")))))
 
 ; Check that char-upcase and char-downcase have the same values in all lisps,
 ; and in particular, keep us in the realm of ACL2 characters.  Starting with
@@ -305,14 +307,15 @@ most-negative-fixnum = ~s."
                              (<= i 90))
                         (code-char (+ i 32))
                       ch))
-               (error "This Common Lisp is unsuitable for ACL2 because ~
-                      (char-downcase ~s)~%is ~s but should be ~s."
-                      ch
-                      (char-downcase ch)
-                      (if (and (>= i 65)
-                               (<= i 90))
-                          (code-char (+ i 32))
-                        ch)))))
+               (exit-with-build-error
+                "This Common Lisp is unsuitable for ACL2 because ~
+                 (char-downcase ~s)~%is ~s but should be ~s."
+                ch
+                (char-downcase ch)
+                (if (and (>= i 65)
+                         (<= i 90))
+                    (code-char (+ i 32))
+                  ch)))))
 
 (dotimes (i 256)
          (let ((ch (code-char i)))
@@ -322,14 +325,15 @@ most-negative-fixnum = ~s."
                              (<= i 122))
                         (code-char (- (char-code ch) 32))
                       ch))
-               (error "This Common Lisp is unsuitable for ACL2 because ~
-                      (char-upcase ~s)~%is ~s but should be ~s."
-                      ch
-                      (char-upcase ch)
-                      (if (and (>= i 65)
-                               (<= i 90))
-                          (code-char (- (char-code ch) 32))
-                        ch)))))
+               (exit-with-build-error
+                "This Common Lisp is unsuitable for ACL2 because (char-upcase ~
+                 ~s)~%is ~s but should be ~s."
+                ch
+                (char-upcase ch)
+                (if (and (>= i 65)
+                         (<= i 90))
+                    (code-char (- (char-code ch) 32))
+                  ch)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           FEATURES, MISC.
@@ -340,23 +344,25 @@ most-negative-fixnum = ~s."
 ; is.
 
 #-(or unix mswindows)
-(error "This Common Lisp is unsuitable for ACL2 because~%~
-        neither :UNIX nor :MSWINDOWS is a member of *features*.")
+(exit-with-build-error
+ "This Common Lisp is unsuitable for ACL2 because~%neither :UNIX nor ~
+  :MSWINDOWS is a member of *features*.")
 
 (or (typep array-dimension-limit 'fixnum)
 
 ; We assume this explicitly in the various copy-array functions.
 
-    (error "We assume that ARRAY-DIMENSION-LIMIT is a fixnum.  CLTL2 ~
-            requires this.  ACL2 will not work in this Common Lisp."))
+    (exit-with-build-error
+     "We assume that ARRAY-DIMENSION-LIMIT is a fixnum.  CLTL2 requires ~
+      this.~%ACL2 will not work in this Common Lisp."))
 
 (or (>= multiple-values-limit *number-of-return-values*)
-    (error "We assume that multiple-values-limit is at least ~s, but in this ~
-            Common Lisp its value is ~s.  Please contact the ACL2 implementors ~
-            about lowering the value of ACL2 constant ~
-            *NUMBER-OF-RETURN-VALUES*."
-           multiple-values-limit
-           *number-of-return-values*))
+    (exit-with-build-error
+     "We assume that multiple-values-limit is at least ~s, but in this Common ~
+      Lisp its value is ~s.  Please contact the ACL2 implementors about ~
+      lowering the value of ACL2 constant *NUMBER-OF-RETURN-VALUES*."
+     multiple-values-limit
+     *number-of-return-values*))
 
 ; The following check must be put last in this file, since we don't entirely
 ; trust that it won't corrupt the current image.  We collect all symbols in
@@ -365,12 +371,12 @@ most-negative-fixnum = ~s."
 
 (let ((badvars nil))
   (dolist (var *copy-of-common-lisp-symbols-from-main-lisp-package*)
-          (or (member var *copy-of-common-lisp-specials-and-constants*
-                      :test #'eq)
-              (if (and (let ((s (symbol-name var)))
-                         (or (= (length s) 0)
-                             (not (eql (char s 0) #\&))))
-                       (eval `(let ((,var (gensym)))
+    (or (member var *copy-of-common-lisp-specials-and-constants*
+                :test #'eq)
+        (if (and (let ((s (symbol-name var)))
+                   (or (= (length s) 0)
+                       (not (eql (char s 0) #\&))))
+                 (eval `(let ((,var (gensym)))
 
 ; We are not aware of any predicate, defined in all Common Lisp
 ; implementations, for checking that a variable is special; so we write our own
@@ -380,15 +386,15 @@ most-negative-fixnum = ~s."
 ; which case it remains not boundp, or else its global value is not the above
 ; gensym value.
 
-                                (and (boundp ',var)
-                                     (eq ,var (symbol-value ',var))))))
-                  (setq badvars (cons var badvars)))))
+                          (and (boundp ',var)
+                               (eq ,var (symbol-value ',var))))))
+            (setq badvars (cons var badvars)))))
   (if badvars
-      (error "The following constants or special variables in the main~%~
-              Lisp package needs to be included in the list~%~
-              *common-lisp-specials-and-constants*:~%~
-              ~s."
-             badvars)))
+      (exit-with-build-error
+       "The following constants or special variables in the main~%Lisp ~
+        package needs to be included in the ~
+        list~%*common-lisp-specials-and-constants*:~%~s."
+       badvars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

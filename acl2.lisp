@@ -1387,6 +1387,46 @@ ACL2 from scratch.")
 
   (progn status-p status))
 
+#+lispworks
+(defun my-debugger-wrapper (func condition)
+  (declare (ignore func condition))
+  (exit-lisp 1))
+
+(defmacro exit-with-build-error (str &rest args)
+
+; This macro may be used when intending to cause an error that aborts an ACL2
+; build.  It needs to be defined after exit-lisp is defined.  It's not ever
+; critical to use this, but it's polite when the error message is likely to be
+; meaningful to the user; for a low-level ACL2 implementation error, the user
+; would just pass along to the ACL2 implementors whatever was printed, and that
+; would likely suffice.
+
+; Causing such an error is straightforward for Allegro CL, CCL, and GCL, but as
+; of this writing (3/2024) there are issues for the others.  For SBCL and
+; CMUCL, errors are signalled by printing the source error form to the
+; terminal, not by printing the error message.  In LispWorks, an error does
+; print as one might expect, but below that one also gets a potentially huge
+; amount of output with debugging information that is likely not relevant when
+; ACL2 deliberately causes a build-time error.
+
+  (let ((prefix "~%***** ERROR ******~%ACL2 build error: ")
+        (suffix "~%******************~%"))
+    (declare (ignorable prefix suffix))
+    #+(or sbcl cmucl)
+    `(progn (format t (concatenate 'string ,prefix ,str ,suffix) ,@args)
+            (exit-lisp 1))
+    #+lispworks
+    `(dbg:with-debugger-wrapper
+      'my-debugger-wrapper
+      (progn (format t (concatenate 'string ,prefix ,str ,suffix) ,@args)
+
+; The following error will probably not print anything, but we need the error
+; in order to get Lisp to quit.
+
+             (error "Build error encountered")))
+    #-(or sbcl cmucl lispworks)
+    `(error (concatenate 'string ,prefix ,str ,suffix) ,@args)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                CHECKS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

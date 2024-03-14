@@ -8317,7 +8317,7 @@
                        They probably should be added to ~s.~%~%"
                       bad-logic
                       '*initial-logic-fns-with-raw-code*))
-            (error "Check failed!")))))
+            (exit-with-build-error "Check failed!")))))
     (let* ((wrld (w state))
            (fns (loop for fn in (append (strip-cars *ttag-fns*)
                                         *initial-untouchable-fns*)
@@ -8384,7 +8384,7 @@
   (cond
    ((null trips)
     (cond ((null acc) nil)
-          (t (error
+          (t (exit-with-build-error
               "The following are :ideal mode functions that are not ~%~
                non-executable.  We rely in oneify-cltl-code on the absence ~%~
                of such functions in the boot-strap world (see the comment ~%~
@@ -8420,7 +8420,7 @@
            (push (cons acl2-sym (symbol-value sym))
                  bad)))))
     (when bad
-      (error
+      (exit-with-build-error
        "The following symbols, perhaps with the values shown, need to~%~
         be added to *initial-global-table*:~%~s~%"
        bad))))
@@ -8519,8 +8519,8 @@
   (check-none-ideal (w *the-live-state*) nil)
   (check-state-globals-initialized)
   (or (plist-worldp-with-formals (w *the-live-state*))
-      (error "The initial ACL2 world does not satisfy ~
-              plist-worldp-with-formals!"))
+      (exit-with-build-error
+       "The initial ACL2 world does not satisfy plist-worldp-with-formals!"))
   (check-slashable)
   (check-some-builtins-for-executability)
   nil)
