@@ -378,6 +378,7 @@
     unsigned-byte-p-of-bvshl-gen
     unsigned-byte-p-of-bvshr-gen
     unsigned-byte-p-of-bvashr-gen
+    unsigned-byte-p-of-0-arg1
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
@@ -2938,7 +2939,6 @@
 
              bvcat-when-top-bit-0-2
              bvcat-when-top-bit-0
-             unsigned-byte-p-of-0-arg1
              nth-of-nil
              equal-of-nil-when-equal-of-len
              move-minus-hack

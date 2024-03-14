@@ -1548,7 +1548,7 @@
              (bvcat highsize highval1 lowsize lowval)
            (bvcat highsize highval2 lowsize lowval))))
 
-(defthmd bvcat-of-if2-arg3
+(defthmd bvcat-of-if-arg3
   (equal (bvcat highsize highval (if test lowsize1 lowsize2) lowval)
          (if test
              (bvcat highsize highval lowsize1 lowval)
