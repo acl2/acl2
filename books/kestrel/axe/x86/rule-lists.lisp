@@ -1340,6 +1340,7 @@
           ;; (arith-to-bv-rules) ; todo: try
           (bitops-to-bv-rules)
           (x86-bv-rules)
+          (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
@@ -1966,8 +1967,6 @@
             x86isa::wz512$inline
 
             x86isa::x86-operand-to-zmm/mem
-
-
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -4321,7 +4320,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new)
+  (append (lifter-rules64-new) ; todo: drop?
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
@@ -4411,7 +4410,6 @@
             X86ISA::ZMMI$A
             X86ISA::!ZMMI
             X86ISA::!ZMMI$A
-            X86ISA::N128$inline
             integerp-of-PART-INSTALL-WIDTH-LOW$INLINE
             X86ISA::SP-SSE-CMP
             ;;X86ISA::SSE-CMP ;todo: limit?
