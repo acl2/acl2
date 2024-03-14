@@ -242,16 +242,6 @@
   :hints (("Goal" :cases ((integerp lowval))
            :in-theory (enable bvcat))))
 
-;rename
-(defthm bvcat-slice-same
-  (implies (and (natp n)
-                (equal n (+ 1 k (- m)))
-                (natp m)
-                (integerp k))
-           (equal (bvcat m (slice k n x) n x)
-                  (slice k 0 x)))
-  :hints (("Goal" :cases ((< k 0)))))
-
 (defthm bvcat-of-getbit-arg4
    (equal (bvcat n x 1 (getbit 0 y))
           (bvcat n x 1 y))
@@ -421,12 +411,13 @@
 
 (defthm bvcat-of-slice-and-x-adjacent
   (implies (and (equal size1 (+ 1 high1 (- low1)))
-                (<= low1 high1)
+                (natp size1)
                 (natp low1)
                 (integerp high1))
            (equal (bvcat size1 (slice high1 low1 x) low1 x)
                   (bvchop (+ 1 high1) x)))
-  :hints (("Goal" :in-theory (enable natp))))
+  :hints (("Goal" :cases ((< high1 0))
+           :in-theory (enable natp))))
 
 (defthm bvcat-of-getbit-and-x-adjacent
   (implies (natp n)
@@ -1404,7 +1395,7 @@
            (not (equal (bvchop size x) 0)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
   :hints (("Goal"
-           :in-theory (disable BVCHOP-SUBST-CONSTANT BVCAT-SLICE-SAME)
+           :in-theory (disable BVCHOP-SUBST-CONSTANT)
            :use (:instance split-with-bvcat (hs (+ -1 size)) (ls 1)))))
 
 (defthm bvchop-of-bvcat-cases-gen

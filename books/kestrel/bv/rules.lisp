@@ -5128,8 +5128,7 @@
            (equal (getbit size x)
                   0))
   :hints (("Goal" :in-theory (e/d (bvlt)
-                                  (BVCAT-SLICE-SAME ;BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
-
+                                  ( ;BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
                                    BVCHOP-1-BECOMES-GETBIT
                                    BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
@@ -5213,7 +5212,7 @@
            :use ((:instance split-with-bvcat (x k) (hs 1) (ls 31)))
            :in-theory (e/d (bvlt getbit-when-bvlt-of-small-helper slice-becomes-getbit)
                            (EQUAL-OF-BVCHOP-AND-BVCHOP-SAME
-                                           BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
+                            BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT)))))
 
 (defthm bvchop-plus-bvchop-bound
   (implies (integerp size)
