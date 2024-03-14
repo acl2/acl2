@@ -1339,6 +1339,7 @@
           ;; (arith-to-bv-rules) ; todo: try
           (bitops-to-bv-rules)
           (x86-bv-rules)
+          (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
@@ -1536,7 +1537,6 @@
             x86isa::trunc$inline        ;shilpi leaves this enabled
 
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
-            acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
@@ -1594,7 +1594,6 @@
             acl2::unsigned-byte-p-of-if-two-constants
 
             ;; stuff from the timessix example:
-            acl2::bvchop-of-logext
             ;acl2::getbit-of-bvchop
 
             x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
@@ -1762,8 +1761,6 @@
 
             acl2::bvchop-of-*-becomes-bvmult
             ;acl2::bvchop-of-bvmult
-            acl2::bvmult-of-logext-gen-arg1
-            acl2::bvmult-of-logext-gen-arg2
             acl2::bvchop-of-ash
             acl2::nfix-does-nothing
             acl2::natp-of-+
@@ -1953,11 +1950,19 @@
 
             program-at-of-set-flag
 
+            x86isa::rx32$inline ; these expose rz
+            x86isa::rx64$inline
+            x86isa::rx128$inline
+
             x86isa::rz32$inline ; these expose zmmi
             x86isa::rz64$inline
             x86isa::rz128$inline
             x86isa::rz256$inline
             x86isa::rz512$inline
+
+            x86isa::wx32$inline ; these expose wz
+            x86isa::wx64$inline
+            x86isa::wx128$inline
 
             x86isa::wz32$inline ; these do zmmi and then !zmmi to write part of the register
             x86isa::wz64$inline
@@ -4315,10 +4320,9 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new)
+  (append (lifter-rules64-new) ; todo: drop?
           (extra-tester-rules)
-          '(X86ISA::WX32$inline ; more?
-            <-of-fp-to-rat ; do we want this?
+          '(<-of-fp-to-rat ; do we want this?
 
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
@@ -4376,7 +4380,7 @@
             jnl-condition-of-getbit-31-and-0
             jnl-condition-rewrite-16
             jnl-condition-rewrite-16b
-            acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
+            ; acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
             ;ACL2::BVSX-WHEN-SIZES-MATCH
             ACL2::BVCHOP-OF-BVSX
             ;ACL2::BVCHOP-OF-BVCHOP
@@ -4398,27 +4402,19 @@
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
 
-            ;eql
-
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
             X86ISA::X86-OPERAND-TO-XMM/MEM
-            X86ISA::WX128$inline
-            X86ISA::RX32$inline
-            X86ISA::RX64$inline
-
-            X86ISA::RX128$INLINE
 
             X86ISA::ZMMI
             X86ISA::ZMMI$A
             X86ISA::!ZMMI
             X86ISA::!ZMMI$A
-            X86ISA::N128$inline
             integerp-of-PART-INSTALL-WIDTH-LOW$INLINE
             X86ISA::SP-SSE-CMP
             ;;X86ISA::SSE-CMP ;todo: limit?
-            X86ISA::!MXCSR
-            X86ISA::!MXCSR$A
+            ;X86ISA::!MXCSR
+            ;X86ISA::!MXCSR$A
             ;; FEATURE-FLAG-sse-of-xw
             ;; FEATURE-FLAG-sse-of-write
             ;; FEATURE-FLAG-sse-of-set-flag

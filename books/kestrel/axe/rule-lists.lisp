@@ -1395,22 +1395,36 @@
 
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
-  '(bvmult-of-logext-alt ;new
-    bvmult-of-logext     ;new
-
-    bvplus-of-logext-arg2
+  '(bvplus-of-logext-arg2
     bvplus-of-logext-arg3
+
+    bvminus-of-logext-arg2
+    bvminus-of-logext-arg3
+
+    bvmult-of-logext-arg2
+    bvmult-of-logext-arg3
+
+    bvuminus-of-logext
+
+    bvand-of-logext-arg2
+    bvand-of-logext-arg3
+    bvor-of-logext-arg2
+    bvor-of-logext-arg3
+    bvxor-of-logext-arg2
+    bvxor-of-logext-arg3
+
+    bitand-of-logext-arg1
+    bitand-of-logext-arg2
+    bitor-of-logext-arg1
+    bitor-of-logext-arg2
+    bitxor-of-logext-arg1
+    bitxor-of-logext-arg2
 
     bvif-of-logext-arg3
     bvif-of-logext-arg4
 
 ;    bvcat-of-logext-high-eric ;trying without this one
     slice-of-logext
-    bvxor-of-logext
-    bvxor-of-logext-alt
-
-    bvor-of-logext ;clean these up.  add more?
-    bvor-of-logext-2-gen
 
     bvcat-of-logext-high
     bvchop-of-logext
@@ -1418,21 +1432,13 @@
     getbit-of-logext
     getbit-of-logext-high
 
-    bvuminus-of-logext
-
     bvshr-of-logext-arg2
     bvshl-of-logext-arg2
     bvshr-of-logext-arg2
     bvshl-of-logext-arg2
-    bitand-of-logext-arg2
-    bitand-of-logext-arg1
-    bitxor-of-logext-arg2
-    bitxor-of-logext-arg1
     bvchop-of-logext-becomes-bvsx
 
     high-slice-of-logext ;introduces bvsx
-    bvminus-of-logext-gen-arg1
-    bvminus-of-logext-gen-arg2
 
     bv-array-read-of-logext-arg3))
 

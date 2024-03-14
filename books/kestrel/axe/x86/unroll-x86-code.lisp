@@ -623,8 +623,13 @@
        (result-dag-vars (acl2::dag-vars result-dag))
        (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
        (defconst-form `(defconst ,defconst-name ',result-dag))
-       ;; TODO: Consider the order of these (seems arbitrary?  maybe sort them)
        (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
+       ;; Now sort the formals:
+       (common-formals '(rdi rsi rdx rcx r8 r9 x86)) ; todo: handle 32-bit calling convention
+       ;; these will be ordered like common-formals:
+       (expected-formals (intersection-eq common-formals fn-formals))
+       (unexpected-formals (set-difference-eq fn-formals common-formals))
+       (fn-formals (append expected-formals unexpected-formals))
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))

@@ -944,8 +944,8 @@
             default-value
 ;    strip-cars-opener
             strip-cars-of-non-consp
-            bvand-of-logext
-            bvand-of-logext-alt
+            ;bvand-of-logext
+            ;bvand-of-logext-alt
 
             ;; rules about get-field:
             get-field-of-set-field-both ;todo: try this one first
