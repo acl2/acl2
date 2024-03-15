@@ -2143,7 +2143,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; not really a bv rule
+;; not really bv rules...
 ;; Only needed by Axe
-(defthmd integerp-of-logior
-  (integerp (logior x y)))
+
+(defthmd integerp-of-logand (integerp (logand x y)))
+(defthmd integerp-of-logior (integerp (logior x y)))
+(defthmd integerp-of-logxor (integerp (logxor x y)))
