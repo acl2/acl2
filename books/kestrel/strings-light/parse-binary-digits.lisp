@@ -127,7 +127,7 @@
     (if res
         ;; At least one binary digit is present:
         (parse-binary-digits-from-chars chars res)
-      ;; No binary digts preseent:
+      ;; No binary digts present:
       (mv nil chars))))
 
 (defthm parse-binary-number-from-chars-len-bound
