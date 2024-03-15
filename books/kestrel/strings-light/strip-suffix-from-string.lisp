@@ -1,6 +1,6 @@
 ; Strip a suffix from a string, if it is present
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,3 +20,8 @@
   (if (string-ends-withp string suffix)
       (subseq string 0 (- (length string) (length suffix)))
     string))
+
+(defthm stringp-of-strip-suffix-from-string
+  (implies (stringp string)
+           (stringp (strip-suffix-from-string suffix string)))
+  :hints (("Goal" :in-theory (enable strip-suffix-from-string))))
