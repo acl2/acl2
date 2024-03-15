@@ -32,6 +32,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "known-booleans")
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
@@ -2149,3 +2150,6 @@
 (defthmd integerp-of-logand (integerp (logand x y)))
 (defthmd integerp-of-logior (integerp (logior x y)))
 (defthmd integerp-of-logxor (integerp (logxor x y)))
+
+(def-constant-opener acl2::logmask$inline)
+(def-constant-opener acl2::binary-logand)

@@ -1066,6 +1066,9 @@
 
     x86isa::one-byte-opcode-modr/m-p$inline-constant-opener
     x86isa::two-byte-opcode-modr/m-p$inline-constant-opener
+
+    acl2::logmask$inline-constant-opener
+    acl2::binary-logand-constant-opener
     ))
 
 (defun get-prefixes-openers ()

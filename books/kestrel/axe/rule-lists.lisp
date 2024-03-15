@@ -1001,7 +1001,10 @@
      sbvdiv-of-0-arg1
      sbvdiv-of-0-arg2 ; unusual casae
      sbvdiv-of-1-arg3
-     sbvdiv-same)))
+     sbvdiv-same
+
+     bvchop-of-ifix ; more like this?
+     )))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
