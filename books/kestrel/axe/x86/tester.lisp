@@ -325,13 +325,8 @@
                       (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
                       (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
                       (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
-                      (equal (x86isa::feature-flag ':sse) 1)
-                      (equal (x86isa::feature-flag ':sse2) 1)
-                      (equal (x86isa::mxcsrbits->daz$inline (mxcsr x86)) 0) ; denormals are not 0 (true at reset)
-                      (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
-                      (equal (x86isa::mxcsrbits->im$inline (mxcsr x86)) 1) ; invalid operations are being masked (true at reset)
-                      (equal (x86isa::mxcsrbits->dm$inline (mxcsr x86)) 1) ; denormal operations are being masked (true at reset)
-                      (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
+                      ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
+                      ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
                       ;; todo: build this stuff into def-unrolled:
                       ,@register-replacement-assumptions
                       ,@register-type-assumptions
@@ -352,6 +347,7 @@
           nil ;suppress-assumptions
           stack-slots
           position-independentp
+          :skip ; no input assumptions -- todo
           '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
           t                   ; use-internal-contextsp
           prune

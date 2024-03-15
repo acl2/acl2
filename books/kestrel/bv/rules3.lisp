@@ -2317,7 +2317,6 @@
   :hints (("Goal" :in-theory (e/d (bvmult bvplus) (;anti-bvplus
 ;                                                   BVLT-OF-PLUS-ARG1
 ;                                                  BVLT-OF-PLUS-ARG2
-;                                                 SLICE-OF-+ ; fixme looped with meta rule?
 ;                                                PLUS-BECOMES-BVPLUS
                                                    BVPLUS-OF-BVCHOP-ARG3 ;fixme
                                                    )))))

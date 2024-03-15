@@ -125,16 +125,6 @@
                                 )
                            (BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-;move
-(defthmd slice-of-+
-  (implies (and (natp high)
-                (natp low) ;drop?
-                (integerp x)
-                (integerp y))
-           (equal (slice high low (+ x y))
-                  (slice high low (bvplus (+ 1 high) x y))))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
 (defthmd bvand-of-+-arg2
   (implies (and (natp width)
                 (integerp x)

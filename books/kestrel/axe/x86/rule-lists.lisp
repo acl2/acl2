@@ -156,7 +156,8 @@
             x86isa::sar-spec-16-redef
             x86isa::sar-spec-32-redef
             x86isa::sar-spec-64-redef
-            )
+
+            x86isa::x86-operand-to-xmm/mem)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
@@ -782,7 +783,13 @@
     acl2::bvchop-of-logand-becomes-bvand
     acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
+    acl2::bvchop-of-+-becomes-bvplus
     acl2::bvuminus-of-+
+
+    ;; Can help get rid of an intervening ifix:
+    acl2::integerp-of-logand
+    acl2::integerp-of-logior ; useful for mxcsr bits
+    acl2::integerp-of-logxor
     ))
 
 ;; Rules to introduce our BV operators (todo: move these):
@@ -831,7 +838,6 @@
 
     acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
-    acl2::bvchop-of-+-becomes-bvplus ; move to logops-to-bv-rules
 
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
@@ -840,6 +846,7 @@
 
 ;; ;not used?
 ;; (defun canonical-address-rules ()
+;;  (declare (xargs :guard t))
 ;;   '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
 ;;     x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
 ;;     ;;not-member-p-canonical-address-listp-when-disjoint-p ;free vars? looped? ;why?
@@ -960,6 +967,7 @@
 ;; Instead, consider adding more rules like jle-condition-rewrite-1.
 ;; TODO: Some of these are only for 64 or only for 32 bit mode?
 ;; (defun branch-condition-openers ()
+;;  (declare (xargs :guard t))
 ;;   '(jo-condition
 ;;     jno-condition
 ;;     jb-condition
@@ -1334,9 +1342,11 @@
           (separate-rules)
           (x86-type-rules)
           (logops-to-bv-rules)
+          (acl2::bv-of-logext-rules)
           ;; (arith-to-bv-rules) ; todo: try
           (bitops-to-bv-rules)
           (x86-bv-rules)
+          (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
           (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
@@ -1347,6 +1357,7 @@
           (acl2::core-rules-bv)
           (bitops-rules)
           (logops-rules)
+          (acl2::if-becomes-bvif-rules)
           '(myif ; trying this, so that we only have to deal with IF
 
             ;; Reading/writing registers (or parts of registers).  We leave
@@ -1533,7 +1544,6 @@
             x86isa::trunc$inline        ;shilpi leaves this enabled
 
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
-            acl2::slice-of-logext
             x86isa::alignment-checking-enabled-p-and-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
@@ -1591,7 +1601,6 @@
             acl2::unsigned-byte-p-of-if-two-constants
 
             ;; stuff from the timessix example:
-            acl2::bvchop-of-logext
             ;acl2::getbit-of-bvchop
 
             x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
@@ -1680,6 +1689,13 @@
             ms-of-set-mxcsr
             ms-of-xw ; currently needed at least for writes to float registers
 
+            ctri-of-!rflags ; rename !rflags?
+            ctri-of-xw-irrel ; why?
+            ctri-of-set-flag
+            ctri-of-set-undef
+            ctri-of-set-mxcsr
+            integerp-of-ctri
+
             ;; Rules about SET-MS:
             xw-becomes-set-ms
             !ms-becomes-set-ms
@@ -1710,7 +1726,6 @@
             x86isa::!undef-becomes-set-undef ; introduces set-undef
             alignment-checking-enabled-p-of-set-undef
             64-bit-modep-of-set-undef
-            ctri-of-set-undef
             msri-of-set-undef
             set-undef-of-set-undef
 ;;            set-undef-of-set-mxcsr
@@ -1723,7 +1738,6 @@
             x86isa::!mxcsr-becomes-set-mxcsr
             alignment-checking-enabled-p-of-set-mxcsr
             64-bit-modep-of-set-mxcsr
-            ctri-of-set-mxcsr
             msri-of-set-mxcsr
             set-mxcsr-of-set-mxcsr
             set-mxcsr-of-set-flag
@@ -1754,8 +1768,6 @@
 
             acl2::bvchop-of-*-becomes-bvmult
             ;acl2::bvchop-of-bvmult
-            acl2::bvmult-of-logext-gen-arg1
-            acl2::bvmult-of-logext-gen-arg2
             acl2::bvchop-of-ash
             acl2::nfix-does-nothing
             acl2::natp-of-+
@@ -1945,11 +1957,19 @@
 
             program-at-of-set-flag
 
+            x86isa::rx32$inline ; these expose rz
+            x86isa::rx64$inline
+            x86isa::rx128$inline
+
             x86isa::rz32$inline ; these expose zmmi
             x86isa::rz64$inline
             x86isa::rz128$inline
             x86isa::rz256$inline
             x86isa::rz512$inline
+
+            x86isa::wx32$inline ; these expose wz
+            x86isa::wx64$inline
+            x86isa::wx128$inline
 
             x86isa::wz32$inline ; these do zmmi and then !zmmi to write part of the register
             x86isa::wz64$inline
@@ -3606,11 +3626,7 @@
     ctri-of-set-r15
     ctri-of-set-rsp
     ctri-of-set-rbp
-    ctri-of-!rflags ; rename !rflags?
-    ctri-of-xw-irrel ; why?
     ctri-of-write
-    ctri-of-set-flag
-    integerp-of-ctri
 
     rax-of-write
     rbx-of-write
@@ -4298,8 +4314,8 @@
             logext-of-bool-to-bit
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
-            acl2::bvif-of-logext-1
-            acl2::bvif-of-logext-2
+            acl2::bvif-of-logext-arg3
+            acl2::bvif-of-logext-arg4
             equal-of-bvif-safe2
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )
@@ -4311,10 +4327,9 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new)
+  (append (lifter-rules64-new) ; todo: drop?
           (extra-tester-rules)
-          '(X86ISA::WX32$inline ; more?
-            <-of-fp-to-rat ; do we want this?
+          '(<-of-fp-to-rat ; do we want this?
 
             !RFLAGS-of-if-arg1
             !RFLAGS-of-if-arg2
@@ -4372,7 +4387,7 @@
             jnl-condition-of-getbit-31-and-0
             jnl-condition-rewrite-16
             jnl-condition-rewrite-16b
-            acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
+            ; acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
             ;ACL2::BVSX-WHEN-SIZES-MATCH
             ACL2::BVCHOP-OF-BVSX
             ;ACL2::BVCHOP-OF-BVCHOP
@@ -4394,27 +4409,18 @@
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
 
-            ;eql
-
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
-            X86ISA::X86-OPERAND-TO-XMM/MEM
-            X86ISA::WX128$inline
-            X86ISA::RX32$inline
-            X86ISA::RX64$inline
-
-            X86ISA::RX128$INLINE
 
             X86ISA::ZMMI
             X86ISA::ZMMI$A
             X86ISA::!ZMMI
             X86ISA::!ZMMI$A
-            X86ISA::N128$inline
             integerp-of-PART-INSTALL-WIDTH-LOW$INLINE
             X86ISA::SP-SSE-CMP
             ;;X86ISA::SSE-CMP ;todo: limit?
-            X86ISA::!MXCSR
-            X86ISA::!MXCSR$A
+            ;X86ISA::!MXCSR
+            ;X86ISA::!MXCSR$A
             ;; FEATURE-FLAG-sse-of-xw
             ;; FEATURE-FLAG-sse-of-write
             ;; FEATURE-FLAG-sse-of-set-flag
@@ -4426,9 +4432,9 @@
             ;X86ISA::IDIV-SPEC-32 ; trying
             ACL2::BVCHOP-WHEN-SIZE-IS-NOT-POSP
 
-            acl2::bvcat-of-if-arg2
+            acl2::bvcat-of-if-arg2 ; these just lift the IF
             acl2::bvcat-of-if-arg4
-            ACL2::BVIF-OF-0-ARG1
+            ;;ACL2::BVIF-OF-0-ARG1
             ;ACL2::BVPLUS-WHEN-SIZE-IS-NOT-POSITIVE ; todo: more like this, make a rule-list
             x86isa::X86-CWD/CDQ/CQO-alt-def
             acl2::bvcat-of-slice-of-bvsx-same
@@ -4465,7 +4471,7 @@
             ;; after adding core-rules-bv:
             ACL2::BVUMINUS-OF-LOGEXT
             acl2::bvlt-tighten-bind-and-bind-dag
-            ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
+            ;;ACL2::UNSIGNED-BYTE-P-OF-0-ARG1 ; move to a more fundamental rule list
             ;; ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
             boolor-becomes-boolif
             ;; bvlt-hack-1-gen

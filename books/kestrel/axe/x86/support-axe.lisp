@@ -63,20 +63,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;todo: we could use unsigned-byte-p-forced in these rules!
+
 (defthmd acl2::part-install-width-low-becomes-bvcat-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)
                 (unsigned-byte-p xsize x)
-                (natp xsize)              ;drop?
+                (natp xsize) ;drop?
 ;                (< (+ width low) xsize)   ;allow = ?
                 (natp low)
                 (natp width))
            (equal (bitops::part-install-width-low val x width low)
-                  (bvcat (max xsize (+ width low))
-                               (slice (+ -1 xsize) (+ low width) x)
-                               (+ width low)
-                               (bvcat width val low x)))))
-
-;todo: we could use unsigned-byte-p-forced in these rules...:
+                  (bvcat (- xsize (+ width low))
+                         (slice (+ -1 xsize) (+ low width) x)
+                         (+ width low)
+                         (bvcat width val low x)))))
 
 (defthmd ash-negative-becomes-slice-axe
   (implies (and (< n 0)

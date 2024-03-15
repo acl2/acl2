@@ -368,7 +368,8 @@ implementations.")
 
   #+gcl
   (when (not (fboundp 'si::system))
-    (error "SYSTEM-CALL is not defined in this version of GCL."))
+    (exit-with-build-error
+     "SYSTEM-CALL is not defined in this version of GCL."))
 
   #+gcl
   (si::system ; if undefined, ignore compiler warning; see check above
@@ -504,7 +505,8 @@ implementations.")
 
   #+gcl
   (when (not (fboundp 'si::system))
-    (error "SYSTEM-CALL is not defined in this version of GCL."))
+    (exit-with-build-error
+     "SYSTEM-CALL is not defined in this version of GCL."))
 
   (let* (exit-code ; assigned below
          #+(or gcl clisp)
@@ -660,6 +662,10 @@ implementations.")
 ; calls this function to return an error status, thus halting the make of which
 ; this operation is a part.  Wart:  Since probe-file does not check names with
 ; wildcards, we skip those.
+
+; This function calls error rathert than exit-with-build-error simply because
+; we don't expect it to be called much by users and if a user does call it,
+; then it might be from within an existing session, not at build time.
 
 ; Note:  This function does not actually do any copying or directory creation;
 ; rather, it creates a file that can be executed.
@@ -865,7 +871,7 @@ implementations.")
           (coerce (remove #\Newline (coerce hash 'list))
                   'string))
          (quiet nil)
-         (t (error "Unable to determine git commit hash.")))))
+         (t (exit-with-build-error "Unable to determine git commit hash.")))))
 
 (defvar *acl2-release-p*
 
@@ -901,7 +907,7 @@ implementations.")
                       (format nil
                               "~% +   (Git commit hash: ~a)~72t+"
                               h))
-                     (t (error err-string var))))))))
+                     (t (exit-with-build-error err-string var))))))))
 
 (defvar *saved-string*
   (concatenate
@@ -1884,10 +1890,11 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
       (namestring sbcl-home-env))
      (sbcl-home-detected
       (namestring sbcl-home-detected))
-     (t (error "Could not determine a suitable value for the environment ~
-                variable SBCL_HOME.  If it is set, please try unsetting it or ~
-                correcting it.  If it is not set, please try setting it to an ~
-                appropriate value.")))))
+     (t (exit-with-build-error
+         "Could not determine a suitable value for the environment variable ~
+          SBCL_HOME.~%If it is set, please try unsetting it or correcting ~
+          it.~%If it is not set, please try setting it to an appropriate ~
+          value.")))))
 
 #+sbcl
 (defun save-acl2-in-sbcl-aux (sysout-name core-name
@@ -2039,8 +2046,9 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
              (eventual-sysout-dxl
               (if dxl-name
                   (unix-full-pathname dxl-name "dxl")
-                (error "An image file must be specified when building ACL2 in ~
-                        Allegro 5.0 or later.")))
+                (exit-with-build-error
+                 "An image file must be specified when building ACL2 in ~
+                  Allegro 5.0 or later.")))
              (sysout-dxl
               (unix-full-pathname sysout-name "dxl")))
     (if (probe-file eventual-sysout-dxl)
@@ -2196,7 +2204,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                                          inert-args)
   (let* ((ccl-program0
           (or (car ccl::*command-line-argument-list*) ; Gary Byers suggestion
-              (error "Unable to determine CCL program pathname!")))
+              (exit-with-build-error
+               "Unable to determine CCL program pathname!")))
          (os (get-os))
          (ccl-program1 (ignore-errors (our-truename ccl-program0 :safe)))
          (ccl-program (cond
@@ -2208,14 +2217,14 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                        (t
                         (when (probe-file *acl2-status-file*)
                           (delete-file *acl2-status-file*))
-                        (error "Your CCL was apparently invoked as ~s.~%~
-                                In order to save an ACL2 executable, ACL2~%~
-                                must determine the absolute pathname of the~%~
-                                CCL executable.  That determination failed.~%~
-                                Failure can occur if you invoked CCL as a~%~
-                                soft link on your Unix PATH rather than as a~%~
-                                regular file."
-                               ccl-program0))))
+                        (exit-with-build-error
+                         "Your CCL was apparently invoked as ~s.~%In order to ~
+                          save an ACL2 executable, ACL2~%must determine the ~
+                          absolute pathname of the~%CCL executable.  That ~
+                          determination failed.~%Failure can occur if you ~
+                          invoked CCL as a~%soft link on your Unix PATH ~
+                          rather than as a~%regular file."
+                         ccl-program0))))
          (use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))
          (core-name-given core-name)
          (core-name (unix-full-pathname core-name
@@ -2366,7 +2375,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                              :direction :input)
                         (not (eq (read str nil)
                                  :initialized))))
-    (error "Initialization has failed.  Try INITIALIZE-ACL2 again.")))
+    (exit-with-build-error
+     "Initialization has failed.  Try INITIALIZE-ACL2 again.")))
 
   #+gcl
   (save-acl2-in-gcl "nsaved_acl2" other-info mode do-not-save-gcl)
@@ -2399,7 +2409,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
      ((eq *do-proclaims* :gcl)
       (cond ((probe-file "sys-proclaim.lisp")
              (rename-file "sys-proclaim.lisp" filename))
-            (t (error "File sys-proclaim.lisp does not exist!"))))
+            (t (exit-with-build-error
+                "File sys-proclaim.lisp does not exist!"))))
      (*do-proclaims*
       (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
                  generate-acl2-proclaims.~%")

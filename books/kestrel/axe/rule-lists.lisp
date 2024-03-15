@@ -378,6 +378,7 @@
     unsigned-byte-p-of-bvshl-gen
     unsigned-byte-p-of-bvshr-gen
     unsigned-byte-p-of-bvashr-gen
+    unsigned-byte-p-of-0-arg1
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
@@ -418,6 +419,7 @@
     ))
 
 (defun if-becomes-bvif-rules ()
+  (declare (xargs :guard t))
   '(bvchop-of-if-becomes-bvif
     slice-of-if-becomes-slice-of-bvif
     bvcat-of-if-becomes-bvcat-of-bvif-arg2
@@ -1391,28 +1393,38 @@
     true-listp-of-bvchop-list
     bvchop-list-of-bvchop-list))
 
-(defun logext-rules ()
+(defun bv-of-logext-rules ()
   (declare (xargs :guard t))
-  '(logext-of-0
-
-    bv-array-read-of-logext-arg3
-
-    bvmult-of-logext-alt ;new
-    bvmult-of-logext     ;new
-
-    bvplus-of-logext-arg2
+  '(bvplus-of-logext-arg2
     bvplus-of-logext-arg3
 
-    bvif-of-logext-gen-arg1
-    bvif-of-logext-gen-arg2
+    bvminus-of-logext-arg2
+    bvminus-of-logext-arg3
+
+    bvmult-of-logext-arg2
+    bvmult-of-logext-arg3
+
+    bvuminus-of-logext
+
+    bvand-of-logext-arg2
+    bvand-of-logext-arg3
+    bvor-of-logext-arg2
+    bvor-of-logext-arg3
+    bvxor-of-logext-arg2
+    bvxor-of-logext-arg3
+
+    bitand-of-logext-arg1
+    bitand-of-logext-arg2
+    bitor-of-logext-arg1
+    bitor-of-logext-arg2
+    bitxor-of-logext-arg1
+    bitxor-of-logext-arg2
+
+    bvif-of-logext-arg3
+    bvif-of-logext-arg4
 
 ;    bvcat-of-logext-high-eric ;trying without this one
     slice-of-logext
-    bvxor-of-logext
-    bvxor-of-logext-alt
-
-    bvor-of-logext ;clean these up.  add more?
-    bvor-of-logext-2-gen
 
     bvcat-of-logext-high
     bvchop-of-logext
@@ -1420,18 +1432,24 @@
     getbit-of-logext
     getbit-of-logext-high
 
-    bvuminus-of-logext
+    bvshr-of-logext-arg2
+    bvshl-of-logext-arg2
+    bvshr-of-logext-arg2
+    bvshl-of-logext-arg2
+    bvchop-of-logext-becomes-bvsx
+
+    high-slice-of-logext ;introduces bvsx
+
+    bv-array-read-of-logext-arg3))
+
+(defun logext-rules ()
+  (declare (xargs :guard t))
+  (append
+   (bv-of-logext-rules)
+  '(logext-of-0
+
     logext-equal-0-rewrite-32 ;bozo gen
 
-    bvshr-of-logext-arg2
-    bvshl-of-logext-arg2
-    bvshr-of-logext-arg2
-    bvshl-of-logext-arg2
-    bitand-of-logext-arg2
-    bitand-of-logext-arg1
-    bitxor-of-logext-arg2
-    bitxor-of-logext-arg1
-    bvchop-of-logext-becomes-bvsx
     ;;bvchop-32-logext-8 ;bozo
     logext-64-bound-hack-8 ;bozo
     logext-64-bound-hack ;bozo
@@ -1440,15 +1458,12 @@
     <-of-0-and-logext
     <-of-logext-when-signed-byte-p
     <-of-logext-when-signed-byte-p-alt
-    high-slice-of-logext ;introduces bvsx
     ;;replace these with a trim rule:
-    bvminus-of-logext-gen-arg1
-    bvminus-of-logext-gen-arg2
     equal-of-logext-and-logext
     logext-of-logext
 
     logext-not-nil1
-    logext-not-nil2))
+    logext-not-nil2)))
 
 ;; ;these are now all/mostly related to 2d arrays?
 ;; (defconst *misc-rules*
@@ -1905,6 +1920,7 @@
 ;; ;currently there seem to be lots of crashes when doing this, due to guard violations in eval-fn
 ;; ;rules that support eval-dag (may crash without these - unresolved ifs lead to bad calls)
 ;; (defun dag-val-rules ()
+;;   (declare (xargs :guard t))
 ;;   (append (lookup-rules)
 ;;           '(DAG-VAL-WITH-AXE-EVALUATOR
 ;;             dag-val2-no-array
@@ -2316,7 +2332,7 @@
      bvplus-minus-3-tighten-4
 ;sbvdiv-rewrite ;trying
      slice-31-2-minus-4
-     getbit-of-+
+     getbit-of-+-becomes-getbit-of-bvplus
      bvplus-minus-7-tighten-30
      unsigned-byte-p-of-plus-minus-4-gen-dag
      equal-1-slice-4-2-5
@@ -2923,7 +2939,6 @@
 
              bvcat-when-top-bit-0-2
              bvcat-when-top-bit-0
-             unsigned-byte-p-of-0-arg1
              nth-of-nil
              equal-of-nil-when-equal-of-len
              move-minus-hack
@@ -3342,7 +3357,7 @@
              bvif-of-myif-arg4
              bvplus-of-plus-arg3
              bvplus-of-plus-arg2
-             slice-of-+ ;ffixme complete set..
+             slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
              <-of-+-of-minus-and-bv
              equal-of-+-of-minus-and-bv
@@ -3820,6 +3835,7 @@
      )))
 
 (defun unroll-spec-rules ()
+  (declare (xargs :guard t))
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops

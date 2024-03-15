@@ -1897,24 +1897,16 @@
   :hints (("Goal" :use bvplus-of-logext-arg2
            :in-theory (enable bvplus-of-logext-arg2))))
 
-(defthm bvif-of-logext-gen-arg1
+(defthm bvif-of-logext-arg3
    (implies (and (<= size1 size2)
-;               (integerp x)
-;                (integerp y)
-                 (< 0 size2)
-                 (natp size1)
-                 (natp size2))
+                 (integerp size2))
             (equal (bvif size1 test (logext size2 x) y)
                    (bvif size1 test x y)))
    :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthm bvif-of-logext-gen-arg2
+(defthm bvif-of-logext-arg4
    (implies (and (<= size1 size2)
-;               (integerp x)
-;                (integerp y)
-                 (< 0 size2)
-                 (natp size1)
-                 (natp size2))
+                 (integerp size2))
             (equal (bvif size1 test y (logext size2 x))
                    (bvif size1 test y x)))
    :hints (("Goal" :in-theory (enable bvif myif))))
@@ -2131,29 +2123,49 @@
                   (bitand y (bitnot x))))
   :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) (bitnot-becomes-bitxor-with-1)))))
 
-(defthm bvand-of-logext
+(defthm bvand-of-logext-arg2
   (implies (and (<= size1 size2)
-                (< 0 size2)
-                (natp size1)
-                (natp size2)
-                ;(integerp x)
-                ;(integerp y)
-                )
-           (equal (BVAND size1 (LOGEXT size2 x) y)
-                  (BVAND size1 x y)))
+                (natp size2))
+           (equal (bvand size1 (logext size2 x) y)
+                  (bvand size1 x y)))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthm bvand-of-logext-alt
+(defthm bvand-of-logext-arg3
   (implies (and (<= size1 size2)
-                (< 0 size2)
-                (natp size1)
-                (natp size2)
-                ;(integerp x)
-                ;(integerp y)
-                )
-           (equal (BVAND size1 y (LOGEXT size2 x))
-                  (BVAND size1 x y)))
+                (natp size2))
+           (equal (bvand size1 y (logext size2 x))
+                  (bvand size1 x y)))
   :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm bvor-of-logext-arg2
+  (implies (and (<= size1 size2)
+                (natp size2))
+           (equal (bvor size1 (logext size2 x) y)
+                  (bvor size1 x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-logext-arg3
+  (implies (and (<= size1 size2)
+                (natp size2))
+           (equal (bvor size1 x (logext size2 y))
+                  (bvor size1 x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+;do we trim logexts?
+(defthm bvxor-of-logext-arg2
+  (implies (and (<= size1 size2)
+                (natp size2)
+                )
+           (equal (bvxor size1 (logext size2 x) y)
+                  (bvxor size1 x y)))
+  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
+
+(defthm bvxor-of-logext-arg3
+  (implies (and (<= size1 size2)
+                (natp size2))
+           (equal (bvxor size1 x (logext size2 y))
+                  (bvxor size1 x y)))
+  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
 
 (defthm bitand-of-logext-arg2
   (implies (and (< 0 n) ;bozo would it be faster to write these as a single hyp since usually it will be executed?
@@ -2168,6 +2180,20 @@
            (equal (bitand (logext n y) x)
                   (bitand y x)))
   :hints (("Goal" :in-theory (enable bitand))))
+
+(defthm bitor-of-logext-arg2
+  (implies (and (< 0 n) ;bozo would it be faster to write these as a single hyp since usually it will be executed?
+                (integerp n))
+           (equal (bitor x (logext n y))
+                  (bitor x y)))
+  :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm bitor-of-logext-arg1
+  (implies (and (< 0 n) ;bozo would it be faster to write these as a single hyp since usually it will be executed?
+                (integerp n))
+           (equal (bitor (logext n y) x)
+                  (bitor y x)))
+  :hints (("Goal" :in-theory (enable bitor))))
 
 (defthm bitxor-of-logext-arg2
   (implies (and (< 0 n) ;bozo would it be faster to write these as a single hyp since usually it will be executed?
@@ -2368,45 +2394,7 @@
   (equal (logtail 7 (bvcat 8 x 24 y))
          (bvcat 8 x 17 (slice 23 7 y))))
 
-(defthm bvor-of-logext-1
-  (implies (and (integerp size)
-                (< 0 size)
-                (integerp x)
-                (integerp y))
-           (equal (bvor size (logext size x) y)
-                  (bvor size x y)))
-  :hints (("Goal" :in-theory (enable bvor))))
 
-(defthm bvor-of-logext-2
-  (implies (and (integerp size)
-                (< 0 size)
-                (integerp x)
-                (integerp y))
-           (equal (bvor size y (logext size x))
-                  (bvor size y x)))
-  :hints (("Goal" :in-theory (enable bvor))))
-
-(defthm bvor-of-logext
-  (implies (and (<= size size2)
-                (natp size2)
-                (natp size)
-;                (integerp x)
-                ;(integerp y)
-                )
-           (equal (bvor size x (logext size2 y))
-                  (bvor size x y)))
-  :hints (("Goal" :in-theory (enable bvor))))
-
-(defthm bvor-of-logext-2-gen
-  (implies (and (<= size size2)
-                (natp size2)
-                (natp size)
-                ;(integerp x)
-                ;(integerp y)
-                )
-           (equal (bvor size (logext size2 y) x)
-                  (bvor size y x)))
-  :hints (("Goal" :in-theory (enable bvor))))
 
 ;gen!
 (defthm bvand-128-hack
@@ -4038,30 +4026,6 @@
          (equal 0 (bvchop 32 x)))
   :hints (("Goal" :in-theory (enable ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4))))
 
-;should bvmult ifix its args?
-(defthm bvmult-of-logext
-  (implies (and (<= size size2)
-                (integerp x) ;drop?
-                (integerp y) ;drop?
-                (natp size)
-                (integerp size2)
-                )
-           (equal (bvmult size x (logext size2 y))
-                  (bvmult size x y)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
-
-;BOZO add to meta.lisp for bvmult and bvplus...??
-(defthm bvmult-of-logext-alt
-  (implies (and (<= size size2)
-                (integerp x) ;drop?
-                (integerp y) ;drop?
-                (natp size)
-                (integerp size2)
-                )
-           (equal (bvmult size (logext size2 y) x)
-                  (bvmult size y x)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
-
 ;BOZO gen
 (defthm bvplus-constant-equal-constant
   (implies (integerp x)
@@ -4243,22 +4207,6 @@
                 (not (unsigned-byte-p free k)))
            (not (equal x k))))
 
-(defthm bvif-of-logext-arg1
-  (implies (and (<= n m)
-                (integerp m)
-                )
-           (equal (bvif n test1 (logext m y) x)
-                  (bvif n test1 y x)))
-  :hints (("Goal" :in-theory (enable myif bvif))))
-
-(defthm bvif-of-logext-arg2
-  (implies (and (<= n m)
-                (integerp m)
-                )
-           (equal (bvif n test1 x (logext m y))
-                  (bvif n test1 x y)))
-  :hints (("Goal" :in-theory (enable myif bvif bvif))))
-
 ;fixme rename
 (defthm bvcat-of-logext-high-eric
   (implies (and (<= highsize size2)
@@ -4305,54 +4253,43 @@
                   (bvshr width x shift-amount)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-(DEFTHM bvminus-OF-LOGEXT-gen-arg2
-  (IMPLIES (AND (<= SIZE1 SIZE2)
-                (< 0 SIZE2)
-                (NATP SIZE1)
-                (NATP SIZE2))
-           (EQUAL (bvminus SIZE1 Y (LOGEXT SIZE2 X))
-                  (bvminus SIZE1 Y X)))
-  :HINTS (("Goal" :IN-THEORY (enable bvminus))))
+(defthm bvminus-of-logext-arg2
+  (implies (and (<= size1 size2)
+                (natp size2))
+           (equal (bvminus size1 (logext size2 x) y)
+                  (bvminus size1 x y)))
+  :hints (("Goal" :in-theory (enable bvminus))))
 
-(DEFTHM bvminus-OF-LOGEXT-gen-arg1
-  (IMPLIES (AND (<= SIZE1 SIZE2)
-                (< 0 SIZE2)
-                (NATP SIZE1)
-                (NATP SIZE2))
-           (EQUAL (bvminus SIZE1 (LOGEXT SIZE2 X) Y)
-                  (bvminus SIZE1 X Y)))
-  :HINTS (("Goal" :IN-THEORY (enable bvminus))))
+(defthm bvminus-of-logext-arg3
+  (implies (and (<= size1 size2)
+                (natp size2))
+           (equal (bvminus size1 y (logext size2 x))
+                  (bvminus size1 y x)))
+  :hints (("Goal" :in-theory (enable bvminus))))
 
 ;use trim?
 (defthm bvuminus-of-logext
   (implies (and (<= size1 size2)
-                (< 0 size2)
-                (natp size1)
                 (natp size2))
            (equal (bvuminus size1 (logext size2 x))
                   (bvuminus size1 x)))
   :hints (("Goal" :in-theory (e/d (bvuminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
-(defthm bvmult-of-logext-gen-arg2
-  (implies (and (<= size size2)
-;                (integerp x)
- ;               (integerp y)
-                (natp size)
+;; ;should bvmult ifix its args?
+;; add to meta.lisp for bvmult and bvplus...??
+(defthm bvmult-of-logext-arg2
+  (implies (and (<= size1 size2)
                 (integerp size2))
-           (equal (bvmult size x (logext size2 y))
-                  (bvmult size x y)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+           (equal (bvmult size1 (logext size2 x) y)
+                  (bvmult size1 x y)))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
-(defthm bvmult-of-logext-gen-arg1
-  (implies (and (<= size size2)
-;                (integerp x)
- ;               (integerp y)
-                (natp size)
+(defthm bvmult-of-logext-arg3
+  (implies (and (<= size1 size2)
                 (integerp size2))
-           (equal (bvmult size (logext size2 y) x)
-                  (bvmult size y x)))
-  :hints (("Goal" :use bvmult-of-logext-gen-arg2
-           :in-theory (disable bvmult-of-logext-gen-arg2))))
+           (equal (bvmult size1 x (logext size2 y))
+                  (bvmult size1 x y)))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 ;for when we prefer to know the logexts are equal (e.g., when we know signed-byte-p)
 (defthmd equal-of-bvchop-and-bvchop

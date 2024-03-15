@@ -107,32 +107,6 @@
   :hints (("Goal" :in-theory (e/d (xor bvif myif) (;bvchop-bvchop
                                                    )))))
 
-(defthm bvif-of-logext-1
-  (implies (and (<= size size2)
-                (natp size)
-                (integerp size2) ;new
-                (< 0 size))
-           (equal (bvif size test (logext size2 x) y)
-                  (bvif size test x y)))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (getbit bvif BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
-                                   LOGTAIL-OF-BVCHOP-BECOMES-SLICE)
-                           (;BVCHOP-BVCHOP
-                            BVCHOP-1-BECOMES-GETBIT
-                            )))))
-
-(defthm bvif-of-logext-2
-  (implies (and (<= size size2)
-                (integerp size2)
-                (natp size)
-                (< 0 size))
-           (equal (bvif size test y (logext size2 x))
-                  (bvif size test y x)))
-  :hints (("Goal" :in-theory (e/d (bvif BVCHOP-WHEN-I-IS-NOT-AN-INTEGER getbit LOGTAIL-OF-BVCHOP-BECOMES-SLICE)
-                                  ( ;BVCHOP-BVCHOP
-                                   BVCHOP-1-BECOMES-GETBIT
-                                   )))))
-
 (defthm myif-equal-bit-0-expt-2-n
   (implies (and (unsigned-byte-p 1 bit)
                 (natp n))
