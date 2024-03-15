@@ -72,7 +72,12 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "kestrel/strings-light/string-ends-withp" :dir :system)
+(include-book "kestrel/strings-light/strip-suffix-from-string" :dir :system)
+(include-book "kestrel/strings-light/split-string" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
+(local (include-book "kestrel/utilities/doublet-listp" :dir :system))
+(local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
 
 (acl2::ensure-rules-known (lifter-rules32-all))
 (acl2::ensure-rules-known (lifter-rules64-all))
@@ -163,6 +168,80 @@
     (cw "nil") ; or could do ()
     ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bytes-in-scalar-type (type)
+  (declare (xargs :guard (stringp type)))
+  (cond
+   ;; todo: think about signed (i) vs unsigned (u)
+   ((member-equal type '("U8" "I8")) 1)
+   ((member-equal type '("U16" "I16")) 2)
+   ((member-equal type '("U32" "I32")) 4)
+   ((member-equal type '("U64" "I64")) 8)
+   ((member-equal type '("U128" "I128")) 16)
+   ((member-equal type '("U256" "I256")) 32)
+   (t (prog2$ (er hard? 'bytes-in-scalar-type "Unsupported type: ~x0." type)
+              ;; for guard proof:
+              1))))
+
+(defund assumptions-for-input (var-name
+                               type ;; examples: :u32 or :u32* or :u32[4]
+                               state-component)
+  (declare (xargs :guard (and (symbolp var-name)
+                              (keywordp type)
+                              ;;state-component might be rdi or (rdi x86)
+                              )))
+  (let* ((type-str (symbol-name type))
+         (pointerp (acl2::string-ends-withp type-str "*"))
+         (arrayp (acl2::string-ends-withp type-str "]")))
+    (if (and (not pointerp)
+             (not arrayp))
+        `((equal ,state-component ,var-name)) ; just put the var name in for the state component
+      (b* (((mv & ;base-type
+                numbytes)
+            (if pointerp
+                (let ((base-type (acl2::strip-suffix-from-string "*" type-str)))
+                  (mv base-type (bytes-in-scalar-type base-type)))
+              ;; array:
+              (b* (((mv foundp base-type rest) (acl2::split-string type-str #\[))
+                   ((when (not foundp)) (er hard? 'assumptions-for-input "Unsupported type: ~x0." type)
+                    ;; fake value for guard proof:
+                    (mv "u8" 1))
+                   (element-count (acl2::parse-string-as-decimal-number (acl2::strip-suffix-from-string "]" rest))))
+                (mv base-type (* element-count (bytes-in-scalar-type base-type))))))
+           (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
+           )
+        `((equal ,state-component ,pointer-name)
+          (equal (read ,numbytes ,pointer-name x86) ,var-name)
+          (canonical-address-p$inline ,pointer-name) ; first address
+          (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
+          (separate :r ,numbytes ,pointer-name
+                    :r 80 ;todo: assuming 10 stack slots
+                    (+ -80 (rsp x86))))))))
+
+(defun names-and-typesp (names-and-types)
+  (declare (xargs :guard t))
+  (and (doublet-listp names-and-types)
+       (symbol-listp (strip-cars names-and-types))
+       (acl2::keyword-listp (acl2::strip-cadrs names-and-types))))
+
+;; might have extra, unneeded items in state-components
+(defun assumptions-for-inputs (names-and-types state-components)
+  (declare (xargs :mode :program ; todo
+                  :guard (names-and-typesp names-and-types)))
+  (if (endp names-and-types)
+      nil
+    (let* ((name-and-type (first names-and-types))
+           (name (first name-and-type))
+           (type (second name-and-type))
+           (state-component (first state-components))
+           )
+      (append (assumptions-for-input name type state-component)
+              (assumptions-for-inputs (rest names-and-types) (rest state-components))))))
+
+;; Example: (assumptions-for-inputs '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -351,6 +430,7 @@
                              suppress-assumptions
                              stack-slots
                              position-independentp
+                             inputs
                              output
                              use-internal-contextsp
                              prune
@@ -371,6 +451,7 @@
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (booleanp position-independentp)
+                              (or (eq :skip inputs) (names-and-typesp inputs))
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -442,7 +523,13 @@
                     ;;todo: add support for :elf-32
                     (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                             assumptions))))))))
-       (assumptions (append automatic-assumptions assumptions))
+       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
+       (input-assumptions (if (and 64-bitp ; todo
+                                   (not (equal inputs :skip)) ; really means generate no assumptions
+                                   )
+                              (assumptions-for-inputs inputs '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))) ; todo: handle zmm regs and values passed on the stack?!
+                            nil))
+       (assumptions (append automatic-assumptions input-assumptions assumptions))
        (assumptions-to-return assumptions)
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
        (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
@@ -536,6 +623,7 @@
                         suppress-assumptions
                         stack-slots
                         position-independent
+                        inputs
                         output
                         use-internal-contextsp
                         prune
@@ -562,6 +650,7 @@
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
+                              (or (eq :skip inputs) (names-and-typesp inputs))
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -611,7 +700,7 @@
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
-          output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
+          inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base :legacy state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
@@ -624,11 +713,18 @@
        (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
        (defconst-form `(defconst ,defconst-name ',result-dag))
        (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
+       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; Now sort the formals:
-       (common-formals '(rdi rsi rdx rcx r8 r9 x86)) ; todo: handle 32-bit calling convention
+       (param-names (if (and 64-bitp
+                             (not (equal :skip inputs)))
+                        ;; The user gave names to the params, and those vars will be put in for the registers:
+                        (strip-cars inputs)
+                      ;; The register names may be being introduced (todo: deprecate this?):
+                      '(rdi rsi rdx rcx r8 r9))) ; todo: handle 32-bit calling convention
+       (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
        ;; these will be ordered like common-formals:
        (expected-formals (intersection-eq common-formals fn-formals))
-       (unexpected-formals (set-difference-eq fn-formals common-formals))
+       (unexpected-formals (set-difference-eq fn-formals common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
        (fn-formals (append expected-formals unexpected-formals))
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
@@ -734,6 +830,7 @@
                                (suppress-assumptions 'nil) ;suppress the standard assumptions
                                (stack-slots '100) ;; tells us what to assume about available stack space
                                (position-independent ':auto)
+                               (inputs ':skip) ; :skip means no input-assumptions
                                (output ':all)
                                (use-internal-contextsp 't)
                                (prune '1000)
@@ -761,6 +858,7 @@
       ',suppress-assumptions
       ',stack-slots
       ',position-independent
+      ',inputs
       ',output
       ',use-internal-contextsp
       ',prune
