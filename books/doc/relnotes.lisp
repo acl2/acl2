@@ -287,6 +287,9 @@
     (xdoc::seetopic "fty::defresult" "result types")
     ", some names have been improved.")
 
+   (xdoc::p
+    "A fixtype @(tsee pos-set) for sets of positive integers has been added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
