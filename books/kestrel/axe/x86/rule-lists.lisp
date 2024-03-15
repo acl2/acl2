@@ -156,7 +156,8 @@
             x86isa::sar-spec-16-redef
             x86isa::sar-spec-32-redef
             x86isa::sar-spec-64-redef
-            )
+
+            x86isa::x86-operand-to-xmm/mem)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
@@ -783,7 +784,13 @@
     acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
-    acl2::bvuminus-of-+))
+    acl2::bvuminus-of-+
+
+    ;; Can help get rid of an intervening ifix:
+    acl2::integerp-of-logand
+    acl2::integerp-of-logior ; useful for mxcsr bits
+    acl2::integerp-of-logxor
+    ))
 
 ;; Rules to introduce our BV operators (todo: move these):
 (defund bitops-to-bv-rules ()
@@ -4404,7 +4411,6 @@
 
             X86ISA::XMMI-SIZE$inline ;trying
             X86ISA::!XMMI-SIZE$inline
-            X86ISA::X86-OPERAND-TO-XMM/MEM
 
             X86ISA::ZMMI
             X86ISA::ZMMI$A
