@@ -991,7 +991,7 @@ functions over natural numbers.
 If @('l') is a true list then @('(remove-dups l)') is a true list with
 no duplicates. In contrast with @(see? remove-duplicates), the order of
 elements is the same. That is, if @('x') and @('y') appear in @('l')
-and the first occurrence @('x') appears before the first occurrence of
+and the first occurrence of @('x') appears before the first occurrence of
 @('y') in @('l'), then @('x') appears before @('y') in
 @('(remove-dups l)').
 </p>
