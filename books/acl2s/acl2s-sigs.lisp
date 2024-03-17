@@ -87,3 +87,6 @@
 ;; This is in sorting/sorting.lisp
 ; (sig evens ((listof :a)) => (listof :a))
 ; (sig odds ((listof :a)) => (listof :a))
+
+(sig remove-dups-aux ((listof :a) (listof :a)) => (listof :a))
+(sig remove-dups ((listof :a)) => (listof :a))

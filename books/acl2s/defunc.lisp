@@ -489,7 +489,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun just-type-hyps (ic M P)
   (cond ((atom ic) nil)
         ((equal (car ic) 'and)
-         (remove-duplicates-equal (just-type-hyps1 (cdr ic) M P)))
+         (remove-dups (just-type-hyps1 (cdr ic) M P)))
         ((symbolp (car ic))
          (b* ((t-pred (type-of-pred (car ic) M P)))
            (and t-pred
@@ -805,7 +805,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (t (gather-alias1 alias (cdr alist)))))
 
 (defun gather-alias (alias alist)
-  (remove-duplicates-equal (gather-alias1 alias alist)))
+  (remove-dups (gather-alias1 alias alist)))
 
 (defun make-contract (name args pred)
   (declare (xargs :guard (and (symbolp name)
@@ -867,7 +867,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                               (pkgp pkg))
                   :verify-guards nil))
   (b* ((sct (simplify-constant-types l nil name formals tbl atbl pkg))
-       (sct (remove-duplicates-equal sct)))
+       (sct (remove-dups sct)))
     (cond ((null sct) t)
           ((null (cdr sct)) (car sct))
           (t `(and ,@sct)))))
@@ -1247,7 +1247,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 
 (defun print-guard-extra-info-hyps (hyps yesp)
   (declare (xargs :guard (booleanp yesp)))
-  (let ((ei (remove-duplicates-equal (extract-extra-info hyps))))
+  (let ((ei (remove-dups (extract-extra-info hyps))))
     (print-guard-extra-info-hyps-aux ei yesp)))
 
 ;; ((acl2::fun (check-syntax form logicp state)) ;flet
