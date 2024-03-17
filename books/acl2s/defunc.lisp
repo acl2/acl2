@@ -1219,15 +1219,36 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         ;(make-event ,(print-summary-ev name oc kwd-alist pkg))
         )))))
 
-(defun print-guard-extra-info-hyps (hyps yesp)
-  (if (endp hyps)
+(defun car-eq-extra-info (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (consp (car x))
+       (eq (car (car x)) 'ACL2::EXTRA-INFO)))
+  
+(defun extract-extra-info (hyps)
+  (declare (xargs :guard t))
+  (cond
+   ((atom hyps) nil)
+   ((car-eq-extra-info hyps)
+    (cons (car hyps)
+          (extract-extra-info (cdr hyps))))
+   ((atom (car hyps))
+    (extract-extra-info (cdr hyps)))
+   (t (append (extract-extra-info (car hyps))
+              (extract-extra-info (cdr hyps))))))
+
+(defun print-guard-extra-info-hyps-aux (x yesp)
+  (declare (xargs :guard (booleanp yesp)))
+  (if (atom x)
       nil
-    (if (and (consp (car hyps))
-             (eq (car (car hyps)) 'ACL2::EXTRA-INFO))
-        (prog2$
-         (cgen::cw? yesp "~| -- ~x0~%" (car hyps))
-         (print-guard-extra-info-hyps (cdr hyps) yesp))
-      (print-guard-extra-info-hyps (cdr hyps) yesp))))
+    (prog2$
+     (cgen::cw? yesp "~| -- ~x0~%" (car x))
+     (print-guard-extra-info-hyps-aux (cdr x) yesp))))
+
+(defun print-guard-extra-info-hyps (hyps yesp)
+  (declare (xargs :guard (booleanp yesp)))
+  (let ((ei (remove-duplicates-equal (extract-extra-info hyps))))
+    (print-guard-extra-info-hyps-aux ei yesp)))
 
 ;; ((acl2::fun (check-syntax form logicp state)) ;flet
 ;;          (acl2::state-global-let*
