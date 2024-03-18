@@ -1004,6 +1004,7 @@
      sbvdiv-same
 
      bvchop-of-ifix ; more like this?
+     acl2::slice-tighten-top-dag
      )))
 
 ;todo combine this with core-rules-bv
