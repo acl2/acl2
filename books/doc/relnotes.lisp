@@ -288,7 +288,8 @@
     ", some names have been improved.")
 
    (xdoc::p
-    "A fixtype @(tsee pos-set) for sets of positive integers has been added.")
+    "A fixtype @(tsee pos-set) for sets of positive integers has been added,
+     along with some operations on these sets.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
