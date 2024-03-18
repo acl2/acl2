@@ -669,7 +669,32 @@
 
   (defruled consp-of-in-iff-in
     (iff (consp (in key map))
-         (in key map))))
+         (in key map)))
+
+  (defruled head-key-minimal
+    (implies (<< key (mv-nth 0 (head map)))
+             (not (in key map)))
+    :induct t
+    :hints ('(:use (:instance head-tail-order (x map)))))
+
+  (defrule head-key-not-in-tail
+    (not (in (mv-nth 0 (head map))
+             (tail map)))
+    :disable in
+    :use ((:instance head-key-minimal
+                     (key (mv-nth 0 (head map)))
+                     (map (tail map)))
+          (:instance head-tail-order (x map))))
+
+  (defruled in-of-tail-when-in-of-tail
+    (implies (in key (tail map))
+             (equal (in key (tail map))
+                    (in key map))))
+
+  (defruled in-of-tail-when-not-head
+    (implies (not (equal key (mv-nth 0 (head map))))
+             (equal (in key (tail map))
+                    (in key map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -788,7 +813,13 @@
              (< (acl2-count (lookup key map))
                 (acl2-count map)))
     :hints (("Goal" :in-theory (disable acl2-count-in-<-map)
-             :use acl2-count-in-<-map))))
+             :use acl2-count-in-<-map)))
+
+  (defruled lookup-of-tail-when-in-tail
+    (implies (in key (tail map))
+             (equal (lookup key (tail map))
+                    (lookup key map)))
+    :enable in-of-tail-when-in-of-tail))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
