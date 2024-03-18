@@ -608,7 +608,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The number of full rounds in the sequence is determined by
+    "The number of partial rounds in the sequence is determined by
      the length of the list of lists of constants passed as input."))
   (b* (((when (endp constants)) stat)
        (stat (round stat (car constants) alpha partial-first-p mds prime nil)))
@@ -964,7 +964,7 @@
                         :hyp (sponge-validp sponge param)
                         :name fe-listp-of-squeeze.outputs)
                (new-sponge spongep))
-  :short "Squeeze any number of elements into the sponge."
+  :short "Squeeze any number of elements from the sponge."
   :long
   (xdoc::topstring
    (xdoc::p
