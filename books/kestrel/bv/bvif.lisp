@@ -475,14 +475,38 @@
                   (bvif ysize test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
+;; or we could rewrite the arg to the BVIF in an IFF context
 (defthmd bvif-of-if-constants-nil-nonnil
   (implies (and (syntaxp (quotep k))
                 (not (equal nil k)))
            (equal (bvif size (if test nil k) tp ep)
                   (bvif size (not test) tp ep))))
 
+;; or we could rewrite the arg to the BVIF in an IFF context
 (defthmd bvif-of-if-constants-nonnil-nil
   (implies (and (syntaxp (quotep k))
                 (not (equal nil k)))
            (equal (bvif size (if test k nil) tp ep)
                   (bvif size test tp ep))))
+
+(defthm bvif-when-not-integerp-arg3-cheap
+  (implies (not (integerp thenpart))
+           (equal (bvif size test thenpart elsepart)
+                  (bvif size test 0 elsepart)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-when-not-integerp-arg4-cheap
+  (implies (not (integerp elsepart))
+           (equal (bvif size test thenpart elsepart)
+                  (bvif size test thenpart 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+;weird but showed up in the sha1 loop proof (during backchaining)
+(defthm bvif-of-equal-of-bvchop-same
+  (implies (and (syntaxp (and (quotep k)
+                              (not (quotep x)))))
+           (equal (bvif size (equal k (bvchop size x)) x y)
+                  (bvif size (equal k (bvchop size x)) k y)))
+  :hints (("Goal" :in-theory (enable bvif))))
