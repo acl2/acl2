@@ -160,6 +160,7 @@
 (include-book "single-bit")
 
 ;; Mixed rules:
+(include-book "unsigned-byte-p-forced-rules")
 (include-book "bvcat-rules")
 (include-book "bvsx-rules")
 (include-book "rules0")

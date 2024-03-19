@@ -1,7 +1,7 @@
 ; Left shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,22 +11,10 @@
 
 (in-package "ACL2")
 
-(include-book "bvcat-def")
 (include-book "slice-def")
+(include-book "bvshl-def")
 (local (include-book "bvcat"))
 (local (include-book "unsigned-byte-p"))
-
-;often we will let this open to bvcat
-;we expect (<= shift-amount width)
-;left shift within a fixed range
-;see bvshl-rewrite-with-bvchop for a version that puts a bvchop around x to help us simplify stuff
-;; TODO: Consider chopping the shift amount (but what if the width is not a power of 2)?
-(defund bvshl (width x shift-amount)
-  (declare (type (integer 0 *) shift-amount)
-           (type (integer 0 *) width)
-           (type integer x)
-           (xargs :guard (<= shift-amount width)))
-  (bvcat (- width shift-amount) x shift-amount 0))
 
 (defthm bvshl-of-0-arg1
   (implies (natp amt)
@@ -59,23 +47,19 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable bvshl))))
 
-
-;bozo shouldn't need the first 2 hyps?
 (defthm unsigned-byte-p-of-bvshl
-  (implies (and (natp amt)
-                (<= amt size)
-                (natp size))
+  (implies (natp size)
            (unsigned-byte-p size (bvshl size x amt)))
-  :hints (("Goal" :in-theory (enable bvshl))))
+  :hints (("Goal" :cases ((<= amt size))
+           :in-theory (enable bvshl))))
 
 (defthm unsigned-byte-p-of-bvshl-gen
   (implies (and (<= size size2)
-                (<= amt size)
-                (natp amt)
                 (integerp size2)
                 (natp size))
            (unsigned-byte-p size2 (bvshl size x amt)))
-  :hints (("Goal" :in-theory (enable bvshl))))
+  :hints (("Goal" :use unsigned-byte-p-of-bvshl
+           :in-theory (disable unsigned-byte-p-of-bvshl))))
 
 ;also consider n > size (easy)
 (defthm unsigned-byte-p-of-bvshl-other
