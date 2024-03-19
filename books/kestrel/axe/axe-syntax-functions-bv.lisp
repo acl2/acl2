@@ -59,7 +59,9 @@
                     bvdiv bvmod
                     sbvdiv sbvrem
                     leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
-                    bvif))
+                    bvif
+                    bvshl
+                    bvshr))
     (and (consp dargs)
          (let ((width (first dargs)))
            (and (darg-quoted-natp width)

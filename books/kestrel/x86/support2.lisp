@@ -245,9 +245,7 @@
 (defthm bvchop-of-ash-when-negative-becomes-bvshr
   (implies (and (< c 0)
                 (integerp c)
-                ;(integerp i)
-                ;(natp places)
-                )
+                (natp places))
            (equal (bvchop places (ash i c))
                   (acl2::bvshr (- places c) i (- c))))
   :hints (("Goal" :in-theory (e/d (ash acl2::bvshr slice logtail ifix)

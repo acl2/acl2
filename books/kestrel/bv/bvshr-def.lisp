@@ -1,7 +1,7 @@
 ; BV Library: Definitions of logical right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,4 +26,6 @@
                   :split-types t)
            (type (integer 0 *) shift-amount width)
            (type integer x))
-  (slice (+ -1 width) shift-amount x))
+  (let ((width (mbe :logic (nfix width) :exec width))
+        (shift-amount (mbe :logic (nfix shift-amount) :exec shift-amount)))
+    (slice (+ -1 width) shift-amount x)))

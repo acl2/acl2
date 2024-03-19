@@ -24,6 +24,7 @@
 (include-book "kestrel/bv/rules" :dir :system) ; todo: reduce, for the unsigned-byte-p-forced rules
 (include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
+(include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system) ; for rules mentioned below
 (include-book "kestrel/utilities/myif-def" :dir :system) ; do not remove (since this book knows about myif)

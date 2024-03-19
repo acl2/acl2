@@ -412,8 +412,8 @@
     unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-repeatbit
     unsigned-byte-p-forced-of-bool-to-bit
-    ;;todo bvshl
-    ;;todo bvshr
+    unsigned-byte-p-forced-of-bvshl
+    unsigned-byte-p-forced-of-bvshr
     ;;todo bvashr
     unsigned-byte-p-forced-of-bv-array-read
     ))
