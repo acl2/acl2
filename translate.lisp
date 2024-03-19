@@ -15781,7 +15781,7 @@
         ((or (null (car stobjs-in))
              (eq (car stobjs-in) :df))
          (stobjs-in-out1 (cdr stobjs-in) (cdr args) stobjs-out wrld alist
-                         (cons nil new-stobjs-in-rev)))
+                         (cons (car stobjs-in) new-stobjs-in-rev)))
         (t
          (let ((s ; Since (car stobjs-in) is a stobj, s is also a stobj.
                 (if (or (eq (car stobjs-in) (car args)) ; optimization
