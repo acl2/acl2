@@ -4253,7 +4253,6 @@
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::<-of-+-cancel-3-1
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
-            acl2::bvchop-of-bvshl-same ; move?
             acl2::equal-of-myif-arg1-safe
             acl2::equal-of-myif-arg2-safe
             write-of-write-same

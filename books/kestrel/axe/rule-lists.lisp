@@ -537,10 +537,28 @@
     ;; todo: sbvmoddown?
     ))
 
+(defun bvchop-of-bv-rules ()
+  (declare (xargs :guard t))
+  '(bvchop-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
+    bvchop-of-bvminus
+    bvchop-of-bvuminus
+    bvchop-of-bvmult
+    bvchop-of-bvif
+    bvchop-of-bvnot
+    bvchop-of-bvand
+    bvchop-of-bvor
+    bvchop-of-bvxor                 ;dup in core rules
+    ;;    bvchop-of-bv-array-read ;;we are no longer trimming array reads
+    bvchop-of-bvsx
+    bvchop-of-slice-both
+    bvchop-of-bvchop
+    bvchop-of-bvcat-cases))
+
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
+   (bvchop-of-bv-rules)
    (unsigned-byte-p-rules)
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
@@ -686,6 +704,8 @@
      bvshl-of-0-arg1
      bvshl-of-0-arg2
      bvshl-of-0-arg3
+     bvchop-of-bvshl
+     bvchop-of-bvshl-does-nothing
 
      equal-of-bvplus-and-bvplus-cancel-arg2-arg2 ;sat feb 19 17:28:05 2011
      equal-of-bvplus-and-bvplus-cancel-arg1-arg2
@@ -1725,22 +1745,8 @@
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
-  '(bvchop-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
-    bvchop-of-bvminus
-    bvchop-of-bvuminus
-    bvchop-of-bvmult
-    bvchop-of-bvif
-    bvchop-of-bvnot
-    bvchop-of-bvand
-    bvchop-of-bvor
-    bvchop-of-bvxor                 ;dup in core rules
-;;    bvchop-of-bv-array-read ;;we are no longer trimming array reads
-    bvchop-of-bvsx
-    bvchop-of-slice-both
-    bvchop-of-bvchop
-    bvchop-of-bvcat-cases
-
-    ;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
+  (append ;(bvchop-of-bv-rules) ; why?
+  '(;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
     trim-of-repeatbit ;improve?
     trim-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
     trim-of-bvmult
@@ -1758,7 +1764,7 @@
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
     trim-does-nothing-axe ; should not be needed?
-    ))
+    )))
 
 (defun all-trim-rules ()
   (declare (xargs :guard t))
