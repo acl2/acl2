@@ -1,7 +1,7 @@
 ; Left shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -187,7 +187,8 @@
                                    )))))
 
 ;todo: gen, or change bvshl to always return a bv, or change the bvchop-identity rule to know about bvshl
-(defthm bvchop-of-bvshl-same
+;; subsumed by the rule below
+(defthmd bvchop-of-bvshl-same
   (implies (and (natp size)
                 (< amt size)
                 (natp amt))
@@ -203,4 +204,12 @@
                 (natp amt))
            (equal (bvchop size1 (bvshl size2 x amt))
                   (bvshl size1 x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+(defthm bvchop-of-bvshl-does-nothing
+  (implies (and (<= size2 size1)
+                (natp amt)
+                (integerp size1))
+           (equal (bvchop size1 (bvshl size2 x amt))
+                  (bvshl size2 x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
