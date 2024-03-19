@@ -811,7 +811,7 @@
                      node-replacement-array node-replacement-count refined-assumption-alist
                      rewrite-stobj
                      (+ -1 count)))
-                   (tries (and tries (increment-tries tries)))
+                   (tries (increment-tries tries))
                    ;; Try to match the args-to-match with the args of the LHS of the rule:
                    (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match dag-array dag-len)))
                 (if (eq :fail alist-or-fail)

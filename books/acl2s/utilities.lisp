@@ -962,3 +962,41 @@ functions over natural numbers.
        (ecw ,@rst)
      nil))
 
+(defun remove-dups-aux (l seen)
+  (declare (xargs :guard (and (true-listp l) (true-listp seen))))
+  (cond ((endp l) (revappend seen nil))
+        ((member-equal (car l) seen) (remove-dups-aux (cdr l) seen))
+        (t (remove-dups-aux (cdr l) (cons (car l) seen)))))
+
+(defthm remove-dups-aux-tp
+  (implies (and (true-listp l)
+                (true-listp seen))
+           (true-listp (remove-dups-aux l seen)))
+  :rule-classes :type-prescription)
+
+; Remove duplicates, but leave order of elements the same
+(defun remove-dups (l)
+  (declare (xargs :guard (true-listp l)))
+  (remove-dups-aux l nil))
+
+(defthm remove-dups-tp
+  (implies (true-listp l)
+           (true-listp (remove-dups l)))
+  :rule-classes :type-prescription)
+
+(defxdoc remove-dups
+  :parents (acl2s-utilities)
+  :short "Remove duplicates from a true list and maintain the order of elements."
+  :long "<p>
+If @('l') is a true list then @('(remove-dups l)') is a true list with
+no duplicates. In contrast with @(see? remove-duplicates), the order of
+elements is the same. That is, if @('x') and @('y') appear in @('l')
+and the first occurrence of @('x') appears before the first occurrence of
+@('y') in @('l'), then @('x') appears before @('y') in
+@('(remove-dups l)').
+</p>
+")
+
+; (sig remove-dups-aux ((listof :a) (listof :a)) => (listof :a))
+
+; (sig remove-dups ((listof :a)) => (listof :a))

@@ -54,6 +54,10 @@
 (add-known-boolean sbvle)
 (add-known-boolean unsigned-byte-p-forced)
 
+;justifies adding unsigned-byte-p-forced to the list of known predicates
+(defthmd booleanp-of-unsigned-byte-p-forced
+  (booleanp (unsigned-byte-p-forced size x)))
+
 (defthmd <-of-constant-when-unsigned-byte-p
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p size x) ; size is a free var
@@ -2143,7 +2147,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; not really a bv rule
+;; not really bv rules...
 ;; Only needed by Axe
-(defthmd integerp-of-logior
-  (integerp (logior x y)))
+
+(defthmd integerp-of-logand (integerp (logand x y)))
+(defthmd integerp-of-logior (integerp (logior x y)))
+(defthmd integerp-of-logxor (integerp (logxor x y)))

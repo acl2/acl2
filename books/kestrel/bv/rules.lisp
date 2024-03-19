@@ -62,6 +62,7 @@
 ;(include-book "bvsx-rules")
 (include-book "bitwise")
 (include-book "trim")
+(include-book "unsigned-byte-p-forced-rules") ; since some of the rules in this file introduce unsigned-byte-p-forced
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
@@ -2880,151 +2881,6 @@
            :use (:instance bvmod-of-bvmult-of-expt (n (lg k)))
            :in-theory (disable bvmod-of-bvmult-of-expt))))
 
-;move this stuff?
-(defthm unsigned-byte-p-forced-of-bvchop
-  (equal (unsigned-byte-p-forced size (bvchop size x))
-         (natp size))
-  :hints (("Goal"
-           :in-theory (enable unsigned-byte-p-forced bvchop-when-i-is-not-an-integer natp)
-           :cases ((integerp size)))))
-
-(defthm unsigned-byte-p-forced-of-bvand
-  (equal (unsigned-byte-p-forced size (bvand size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvor
-  (equal (unsigned-byte-p-forced size (bvor size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvxor
-  (equal (unsigned-byte-p-forced size (bvxor size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvnot
-  (equal (unsigned-byte-p-forced size (bvnot size x))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvplus
-  (equal (unsigned-byte-p-forced size (bvplus size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvmult
-  (equal (unsigned-byte-p-forced size (bvmult size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvdiv
-  (equal (unsigned-byte-p-forced size (bvdiv size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvmod
-  (equal (unsigned-byte-p-forced size (bvmod size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvminus
-  (equal (unsigned-byte-p-forced size (bvminus size x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvuminus
-  (equal (unsigned-byte-p-forced size (bvuminus size x))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvif
-  (equal (unsigned-byte-p-forced size (bvif size test x y))
-         (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvif))))
-
-(defthm unsigned-byte-p-forced-of-if
-  (equal (unsigned-byte-p-forced size (if test x y))
-         (if test
-             (unsigned-byte-p-forced size x)
-           (unsigned-byte-p-forced size y))))
-
-(defthm unsigned-byte-p-forced-of-slice
-  (implies (and (equal size (+ 1 high (- low)))
-                (integerp low)
-                (integerp high))
-           (equal (unsigned-byte-p-forced size (slice high low x))
-                  (natp size)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvcat
-  (implies (and (equal size (+ highsize lowsize))
-                (natp lowsize)
-                (natp highsize))
-           (unsigned-byte-p-forced size (bvcat highsize highval lowsize lowval)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-;will we really be trimming a 1-bit quantitiy down to 0 bits? maybe the trim rule can be simplified and sped up. fixme
-(defthm unsigned-byte-p-forced-of-getbit
-  (unsigned-byte-p-forced 1 (getbit n x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bitnot
-  (unsigned-byte-p-forced 1 (bitnot x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bitor
-  (unsigned-byte-p-forced 1 (bitor x y))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bitxor
-  (unsigned-byte-p-forced 1 (bitxor x y))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bitand
-  (unsigned-byte-p-forced 1 (bitand x y))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-leftrotate
-  (implies (natp width)
-           (unsigned-byte-p-forced width (leftrotate width amt val)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-rightrotate
-  (implies (natp width)
-           (unsigned-byte-p-forced width (rightrotate width amt val)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-leftrotate32
-  (unsigned-byte-p-forced 32 (leftrotate32 amt val))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-rightrotate32
-  (unsigned-byte-p-forced 32 (rightrotate32 amt val))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bvsx
-  (implies (and (posp oldsize) ;gen?
-                (<= oldsize size)
-                (natp size))
-           (unsigned-byte-p-forced size (bvsx size oldsize x)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-repeatbit
-  (implies (natp n)
-           (unsigned-byte-p-forced n (repeatbit n bit)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-(defthm unsigned-byte-p-forced-of-bool-to-bit
-  (unsigned-byte-p-forced 1 (bool-to-bit x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
-
-;fixme add the rest of the unsigned-byte-p-forced rules!
-
-;justifies adding unsigned-byte-p-forced to the list of known predicates
-(defthm booleanp-of-unsigned-byte-p-forced
-  (booleanp (unsigned-byte-p-forced size x)))
-
 (defthmd logtail-becomes-slice-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (integerp newsize)
@@ -4109,7 +3965,7 @@
   :hints (("Goal"
            :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE (x (bvand size x y))
                            (newsize size))
-           :in-theory (disable LOGTAIL-BECOMES-SLICE-BIND-FREE))))
+           :in-theory (e/d (unsigned-byte-p-forced) (LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
 
 ;use the non-bind-free one..
 (defthm logtail-of-bvor
@@ -4120,7 +3976,7 @@
   :hints (("Goal"
            :use (:instance LOGTAIL-BECOMES-SLICE-BIND-FREE (x (bvor size x y))
                            (newsize size))
-           :in-theory (disable LOGTAIL-BECOMES-SLICE-BIND-FREE))))
+           :in-theory (e/d (unsigned-byte-p-forced) (LOGTAIL-BECOMES-SLICE-BIND-FREE)))))
 
 ;bozo adapt to bitxor, etc.
 (defthm bitand-of-repeatbit-arg2
@@ -5739,7 +5595,7 @@
          (if (equal (bvchop 32 x) 2147483648)
              t
            (sbvlt 32 0 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvchop-when-i-is-not-an-integer sbvlt-rewrite)
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvchop-when-i-is-not-an-integer sbvlt-rewrite unsigned-byte-p-forced)
                                   (LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP logext-identity ;integer-tighten-bound
                                                                            )))))
 
@@ -5748,7 +5604,7 @@
          (if (equal (bvchop 32 x) 2147483648)
              nil
            (sbvlt 32 x 0)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvchop-when-i-is-not-an-integer sbvlt-rewrite)
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvchop-when-i-is-not-an-integer sbvlt-rewrite unsigned-byte-p-forced)
                                   (logext-identity ;integer-tighten-bound
                                    )))))
 
@@ -6013,7 +5869,7 @@
   (equal (EQUAL (BVCHOP 32 X) (BVCHOP 31 Y))
          (and (equal 0 (getbit 31 x))
               (EQUAL (BVCHOP 31 X) (BVCHOP 31 Y))))
-  :hints (("Goal" :in-theory (enable REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-2))))
+  :hints (("Goal" :in-theory (enable REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-2 unsigned-byte-p-forced))))
 
 (defthm bvif-of-equal-1-0
   (implies (and (unsigned-byte-p 1 x)
