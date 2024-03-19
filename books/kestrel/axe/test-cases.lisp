@@ -20,9 +20,9 @@
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+;(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
 (local (in-theory (disable randp symbol-alistp)))
 
@@ -402,7 +402,6 @@
                           (mv erp test-cases rand)))))
 
 (defthm test-casesp-of-mv-nth-1-of-make-test-cases
-  (implies (and (test-case-type-alistp test-case-type-alist)
-                (test-casesp acc))
+  (implies (test-case-type-alistp test-case-type-alist)
            (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
   :hints (("Goal" :in-theory (enable make-test-cases))))
