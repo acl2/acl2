@@ -63,6 +63,12 @@
   :hints (("Goal" :use slice-when-val-is-not-an-integer
            :in-theory (disable slice-when-val-is-not-an-integer))))
 
+(defthmd slice-when-low-is-not-an-integer
+  (implies (not (integerp low))
+           (equal (slice high low val)
+                  (slice high 0 val)))
+  :hints (("Goal" :in-theory (enable slice))))
+
 (defthm slice-too-high-is-0
   (implies (unsigned-byte-p low x)
            (equal (slice high low x)

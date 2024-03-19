@@ -205,7 +205,7 @@
   (defthmd bvshl-becomes-*-of-expt
     (implies (and (integerp x)
                   (natp shift-amount)
-                  (integerp width))
+                  (natp width))
              (equal (acl2::bvshl width x shift-amount)
                     (acl2::bvchop width (* (expt 2 shift-amount) x))))
     :hints (("Goal" :in-theory (enable acl2::bvshl acl2::bvcat)))))

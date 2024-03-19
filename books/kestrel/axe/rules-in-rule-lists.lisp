@@ -64,6 +64,7 @@
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)  ;drop?  ;for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv/rightrotate32" :dir :system)
+(include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 (include-book "list-rules-axe")
 (include-book "packbv-axe")
 (include-book "kestrel/lists-light/finalcdr" :dir :system)

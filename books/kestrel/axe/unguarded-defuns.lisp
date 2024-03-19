@@ -624,7 +624,8 @@
 
 (defund bvshl-unguarded (width x shift-amount)
   (declare (xargs :guard t))
-  (bvcat-unguarded (- (fix width) (fix shift-amount)) x shift-amount 0))
+  (let ((shift-amount (nfix shift-amount)))
+    (bvcat-unguarded (- (nfix width) shift-amount) x shift-amount 0)))
 
 (defthm bvshl-unguarded-correct
   (equal (bvshl-unguarded width x shift-amount)
@@ -635,7 +636,8 @@
 
 (defund bvshr-unguarded (width x shift-amount)
   (declare (xargs :guard t))
-  (slice-unguarded (+ -1 (fix width)) shift-amount x))
+  (let ((shift-amount (nfix shift-amount)))
+    (slice-unguarded (+ -1 (nfix width)) shift-amount x)))
 
 (defthm bvshr-unguarded-correct
   (equal (bvshr-unguarded width x shift-amount)
