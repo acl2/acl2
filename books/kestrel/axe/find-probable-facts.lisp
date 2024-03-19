@@ -1953,7 +1953,7 @@
                               ;; print
                               (booleanp keep-test-casesp)
                               (nat-listp debug-nodes)
-                              (ALL-< DEBUG-NODES MITER-LEN))
+                              (all-< debug-nodes miter-len))
                   :guard-hints (("Goal" :in-theory (disable natp)))))
   (b* ((test-cases test-cases ;(firstn 1024 test-cases) ;Thu Feb 17 20:25:10 2011
                    )
@@ -2014,3 +2014,64 @@
         never-used-nodes
         probably-constant-node-alist
         test-case-array-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv all-passedp probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist).
+(defund find-probable-facts-for-dag (dag
+                                     test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
+                                     interpreted-function-alist
+                                     ;print keep-test-casesp
+                                     ;debug-nodes
+                                     )
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (<= (len dag) 2147483646)
+                              (test-casesp test-cases)
+                              (interpreted-function-alistp interpreted-function-alist))))
+  (let* ((miter-array-name 'probable-facts-array)
+         (miter-array (make-into-array miter-array-name dag))
+         (miter-len (len dag)))
+    (find-probable-facts miter-array-name
+                         miter-array
+                         miter-len
+                         0 ; miter-depth
+                         test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
+                         interpreted-function-alist
+                         nil ; print
+                         nil ; keep-test-casesp
+                         nil ; debug-nodes
+                         )))
+
+(defund print-probable-facts-for-test-cases (dag
+                                             test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
+                                             interpreted-function-alist)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (<= (len dag) 2147483646)
+                              (test-casesp test-cases)
+                              (interpreted-function-alistp interpreted-function-alist))))
+  (mv-let (all-passedp probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist)
+    (find-probable-facts-for-dag dag test-cases interpreted-function-alist)
+    ;(declare (ignore test-case-array-alist))
+    (progn$ (cw "All passed: ~x0.~%" all-passedp)
+            (cw "probably-equal-node-sets: ~x0.~%" probably-equal-node-sets)
+            (cw "never-used-nodes: ~x0.~%" never-used-nodes)
+            (cw "probably-constant-node-alist: ~x0.~%" probably-constant-node-alist)
+            ;; Do we always want to print this one?:
+            (cw "test-case-array-alist ~x0.~%" test-case-array-alist))))
+
+;; Returns rand.
+(defund print-probable-facts-for-dag (dag test-case-count test-case-type-alist interpreted-fns wrld rand)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (<= (len dag) 2147483646)
+                              (natp test-case-count)
+                              (test-case-type-alistp test-case-type-alist)
+                              (symbol-listp interpreted-fns)
+                              (plist-worldp wrld))
+                  :stobjs rand))
+  (mv-let (erp test-cases rand)
+    (make-test-cases test-case-count test-case-type-alist nil rand)
+    (if erp
+        (prog2$ (cw "Error making test cases.")
+                rand)
+      (prog2$ (print-probable-facts-for-test-cases dag test-cases (make-interpreted-function-alist interpreted-fns wrld))
+              rand))))
