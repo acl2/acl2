@@ -188,6 +188,10 @@ with the same hints and directives that defthm accepts.
 
 (sig find-first-duplicate ((listof :a)) => (listof :a))
 
+#|
+
+Moved to utilities.lisp and acl2s-sigs.lisp
+
 (definec remove-dups-aux (l :tl seen :tl) :tl
   (cond ((endp l) (revappend seen nil))
         ((in (car l) seen) (remove-dups-aux (cdr l) seen))
@@ -202,6 +206,7 @@ with the same hints and directives that defthm accepts.
 (sig remove-dups ((listof :a)) => (listof :a))
 
 ; (remove-dups '(1 2 3 3 1 3 2 1 1 3))
+|#
 
 #|
 (definec extract-hyps (x :all) :tl
