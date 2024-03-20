@@ -6089,17 +6089,17 @@
 ;;                   (bvlt size free y)))
 ;;   :hints (("Goal" :use (:instance bvlt-when-bvchop-known-subst-alt))))
 
-(defthm equal-of-bvif-hack
-  (implies (posp size)
-           (equal (equal (bvif size test '1 '0) '0)
-                  (not test)))
-  :hints (("Goal" :in-theory (enable bvif))))
+;; (defthm equal-of-bvif-hack
+;;   (implies (posp size)
+;;            (equal (equal (bvif size test '1 '0) '0)
+;;                   (not test)))
+;;   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm equal-of-bvif-hack2
-  (implies (posp size)
-           (equal (equal (bvif size test '0 '1) '0)
-                  (bool-fix test)))
-  :hints (("Goal" :in-theory (enable bvif))))
+;; (defthm equal-of-bvif-hack2
+;;   (implies (posp size)
+;;            (equal (equal (bvif size test '0 '1) '0)
+;;                   (bool-fix test)))
+;;   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm bvchop-equal-when-bvlt-hack
   (implies (and (BVLT 31 free x) ;syntaxp??
@@ -6468,21 +6468,6 @@
   :hints (("Goal" :use (:instance bvplus-of-bvplus-narrower-when-no-carry
                                   (x y) (y x))
            :in-theory (disable bvplus-of-bvplus-narrower-when-no-carry))))
-
-(defthm equal-of-bvif
-  (equal (equal x (bvif size test a b))
-         (boolif test (equal x (bvchop size a)) (equal x (bvchop size b))))
-  :hints (("Goal" :in-theory (enable bvif
-                                     boolor ;why?
-                                     ))))
-
-(defthm equal-of-bvif-alt
-  (equal (equal (bvif size test a b) x)
-         (boolif test (equal x (bvchop size a))
-                 (equal x (bvchop size b))))
-  :hints (("Goal" :in-theory (enable bvif boolor))))
-
-
 
 (defthm bvplus-of-bvuminus-same-gen
   (implies (and (unsigned-byte-p size x)
@@ -13520,17 +13505,9 @@
            :in-theory (e/d (bvlt
                             ) (BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE
-;BVCAT-OF-0
+                            ;;BVCAT-OF-0
                             BVCAT-TIGHTEN-UPPER-SIZE
                             REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-2)))))
-
-;weird but showed up in the sha1 loop proof (during backchaining)
-(defthm bvif-of-equal-of-bvchop-same
-  (implies (and (syntaxp (and (quotep k)
-                              (not (quotep x)))))
-           (equal (bvif size (equal k (bvchop size x)) x y)
-                  (bvif size (equal k (bvchop size x)) k y)))
-  :hints (("Goal" :in-theory (enable boolif))))
 
 ;gen
 (defthm bvlt-of-constant-and-slice

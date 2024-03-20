@@ -606,9 +606,13 @@
      bvif-of-equal-0-1                       ;Mon Apr 25 14:56:14 2016
      equal-of-constant-and-bitxor-of-constant ;Sun Apr 24 19:42:42 2016
 
+     ;; or should we always open bvminus to bvplus of bvuminus?
      bvminus-same                             ;tue dec 15 12:03:12 2015
      bvplus-bvminus-same
      bvplus-bvminus-same-arg2
+     bvminus-of-0-arg1
+     bvminus-of-0-arg2
+     bvminus-of-0-arg3
 
      bvplus-of-0-arg2
 
@@ -1001,7 +1005,11 @@
      sbvdiv-of-0-arg1
      sbvdiv-of-0-arg2 ; unusual casae
      sbvdiv-of-1-arg3
-     sbvdiv-same)))
+     sbvdiv-same
+
+     bvchop-of-ifix ; more like this?
+     acl2::slice-tighten-top-dag
+     )))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1378,7 +1386,10 @@
   '(bvif-same-branches
     bvif-equal-1-usb1
     bvif-when-true
-    bvif-when-false))
+    bvif-when-false
+    bvif-of-bool-fix
+    equal-of-bvif-same-1
+    equal-of-bvif-same-2))
 
 (defun bvchop-list-rules ()
   (declare (xargs :guard t))
@@ -2135,8 +2146,8 @@
 ;                        SBVLT-REWRITE ;trying without this..
 
 ;                        GETBIT-OF-BVPLUS-SPLIT ;bad?
-     equal-of-bvif-hack
-     equal-of-bvif-hack2
+     ;equal-of-bvif-hack
+     ;equal-of-bvif-hack2
      bvchop-equal-when-bvlt-hack
      bvchop-equal-when-bvlt-hack-32
 ;     bvplus-trim-constant-arg1

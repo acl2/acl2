@@ -49,6 +49,12 @@
            (LET
             ((ARG1 (NTH 0 ARGS)))
             (IF
+             (EQ 'NUMERATOR FN)
+             (MV T (NUMERATOR-UNGUARDED ARG1))
+            (IF
+             (EQ 'DENOMINATOR FN)
+             (MV T (DENOMINATOR-UNGUARDED ARG1))
+            (IF
              (EQ 'COMPLEX-RATIONALP FN)
              (MV T (COMPLEX-RATIONALP ARG1))
              (IF
@@ -123,7 +129,7 @@
                                     (EQ 'WIDTH-OF-WIDEST-INT FN)
                                     (MV
                                      T
-                                     (WIDTH-OF-WIDEST-INT-unguarded ARG1))
+                                     (WIDTH-OF-WIDEST-INT-UNGUARDED ARG1))
                                     (IF
                                      (EQ 'BYTES-TO-BITS FN)
                                      (MV T (BYTES-TO-BITS ARG1))
@@ -307,7 +313,7 @@
                                                                   (QUOTEP ARG1))
                                                                  (MV
                                                                   NIL
-                                                                  NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                                                  NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
            (LET
             ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
             (IF
@@ -1511,6 +1517,12 @@
           (ENDP ARGS-TO-WALK-DOWN)
           (LET
            ((ARG1 (UNQUOTE (NTH 0 ARGS))))
+            (IF
+             (EQ 'NUMERATOR FN)
+             (MV T (NUMERATOR-UNGUARDED ARG1))
+            (IF
+             (EQ 'DENOMINATOR FN)
+             (MV T (DENOMINATOR-UNGUARDED ARG1))
            (IF
             (EQ 'COMPLEX-RATIONALP FN)
             (MV T (COMPLEX-RATIONALP ARG1))
@@ -1766,7 +1778,7 @@
                                                                   ARG1))
                                                                 (MV
                                                                  NIL
-                                                                 NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                                                 NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
           (LET
            ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
            (IF

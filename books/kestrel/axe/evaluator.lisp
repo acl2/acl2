@@ -412,6 +412,8 @@
            (symbolp symbolp arg1) ;guard of t
            (characterp characterp arg1) ;guard of t
            (complex-rationalp complex-rationalp arg1) ;guard of t
+           (denominator denominator-unguarded arg1)
+           (numerator numerator-unguarded arg1)
            )
          (acons 2
                 '((mv-nth mv-nth-unguarded arg1 arg2)
