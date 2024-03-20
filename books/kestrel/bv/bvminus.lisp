@@ -71,6 +71,11 @@
   :hints (("Goal" :cases ((natp n))
            :in-theory (enable bvminus bvchop-of-sum-cases))))
 
+(defthmd bvminus-of-0-arg1
+  (equal (bvminus 0 x y)
+         0)
+  :hints (("Goal" :in-theory (enable bvminus bvuminus))))
+
 (defthmd bvminus-of-0-arg2
   (equal (bvminus size 0 y)
          (bvuminus size y))

@@ -1066,6 +1066,9 @@
 
     x86isa::one-byte-opcode-modr/m-p$inline-constant-opener
     x86isa::two-byte-opcode-modr/m-p$inline-constant-opener
+
+    acl2::logmask$inline-constant-opener
+    acl2::binary-logand-constant-opener
     ))
 
 (defun get-prefixes-openers ()
@@ -1355,6 +1358,7 @@
           (segment-base-and-bounds-rules) ; I've seen these needed for 64-bit code
           (float-rules)
           (acl2::core-rules-bv)
+          (acl2::bvif-rules)
           (bitops-rules)
           (logops-rules)
           (acl2::if-becomes-bvif-rules)
@@ -4282,13 +4286,9 @@
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
             acl2::bvif-of-if-constants-nonnil-nil
-            acl2::bvminus-of-0-arg3
-            acl2::bvif-same-branches
             acl2::equal-of-1-and-bitand
             ACL2::BOOLIF-OF-NIL-AND-T
-            ACL2::BVIF-OF-BOOL-FIX
-            acl2::boolif-same-branches
-            ACL2::BOOLEANP-OF-MYIF ; or convert myif to boolif when needed
+            ;; ACL2::BOOLEANP-OF-MYIF ; or convert myif to boolif when needed
             ACL2::BITXOR-OF-1-BECOMES-BITNOT-ARG1
             ACL2::BITXOR-OF-1-BECOMES-BITNOT-ARG2
             ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these):
@@ -4302,11 +4302,6 @@
             ACL2::EQUAL-OF-1-AND-BITNOT ; todo: add 0 version
             ;;ACL2::BVIF-OF-1-AND-0-BECOMES-BOOL-TO-BIT ; introduces bool-to-bit?  maybe bad.
             ;; todo: just include boolean-rules?:
-            acl2::bool-fix-when-booleanp
-            acl2::booland-of-constant-arg1
-            acl2::booland-of-constant-arg2
-            acl2::boolor-of-constant-arg1
-            acl2::boolor-of-constant-arg2
             ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
             ;; acl2::bvplus-of-bvmult-when-power-of-2p-tighten ; todo: uncomment
             bvchop-of-bool-to-bit ;todo: drop
@@ -4315,7 +4310,7 @@
             ;; acl2::<-of-if-arg2-safe
             acl2::bvif-of-logext-arg3
             acl2::bvif-of-logext-arg4
-            equal-of-bvif-safe2
+            acl2::equal-of-bvif-safe2
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )
           (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor

@@ -279,7 +279,7 @@
                          (quotep k2)))
            (equal (bvuminus '32 (bvif '1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
-  :hints (("Goal" :in-theory (enable boolif))))
+  :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm of-spec-of-logext-32
   (equal (of-spec32$inline (logext '32 x))
@@ -1042,18 +1042,3 @@
                 (integerp n))
            (equal (logext n (bool-to-bit bool))
                   (bool-to-bit bool))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm equal-of-bvif-safe2 ; todo: replace the other
-  (implies (syntaxp (and (quotep x)
-                         ;; ;;could drop this one?:
-                         ;; (or (quotep a)
-                         ;;     (quotep b))
-                         (quotep size)))
-           (equal (equal x (bvif size test a b))
-                  ;one of the branches here will be computed
-                  (boolif test
-                          (equal x (bvchop size a))
-                          (equal x (bvchop size b)))))
-    :hints (("Goal" :in-theory (enable bvif))))

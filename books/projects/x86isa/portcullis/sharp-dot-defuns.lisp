@@ -47,8 +47,8 @@
 
 (defun define-general-purpose-registers ()
 
-  ;; These indices are from Tables 2-1, 2-2, and 2-3 (addressing modes) of
-  ;; Intel manual, May'18, Volume 2:
+  ;; These indices are from Tables 2-1, 2-2, and 2-3 (addressing modes), as well
+  ;; as Tables B-2, B-3, B-4, and B-5 of Intel Manual Volume 2 (Dec 2023):
   `(defconsts (*RAX* *RCX* *RDX* *RBX* *RSP* *RBP* *RSI* *RDI*
                      *R8* *R9* *R10* *R11* *R12* *R13* *R14* *R15*
                      *64-bit-general-purpose-registers-len*)
@@ -67,10 +67,11 @@
 
 (defun define-segment-registers ()
 
-  ;; These indices are used in the Reg field of the ModR/M byte of the
-  ;; instructions 'MOV ..., <seg-reg>', to represent <seg-reg>. 'MOV ..., CS'
+  ;; These are from Table B-8 of the Intel Manual Volume 2 (Dec 2023);
+  ;; these indices are used in the Reg field of the ModR/M byte of the
+  ;; instructions 'MOV ..., <seg-reg>', to represent <seg-reg> ('MOV ..., CS'
   ;; is disallowed, but the only index not used for the other segment registers
-  ;; is 1:
+  ;; is 1):
   `(defconsts (*ES* *CS* *SS* *DS* *FS* *GS*
                     *segment-register-names-len*)
      ,(b* ((lst (increasing-list 0 1 6))
@@ -93,11 +94,12 @@
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
-;; Source: Intel Manual, Feb-14, Vol. 3A, Section 2.5
+;; Source: Intel Manual Volume 3 Section 2.5 (Dec 2023)
 (defun define-control-registers ()
 
   ;; These indices are used in the Reg field of the ModR/M byte of the
-  ;; instructions MOV from/to control registers:
+  ;; instructions MOV from/to control registers (also see Intel Manual
+  ;; Volume 2 Table B-9 and Section 2.2.2 (Dec 2023)):
   `(defconsts (*CR0* ;; cr0 controls operating mode and states of
                      ;; processor
                *CR1* ;; cr1 is reserved
@@ -111,7 +113,8 @@
                *CR7* ;; cr7 is reserved
                *CR8* ;; cr8 provides read/write access to the TPR.
                      ;; (Task Priority Register) available only in 64
-                     ;; bit mode
+                     ;; bit mode (see Intel Manual Volume 2 Section 2.2.2
+                     ;; (Dec 2023))
                ;; cr9 thru cr15 are not implemented in our model yet.
                *CR9* *CR10* *CR11* *CR12* *CR13* *CR14* *CR15*
                *XCR0* ; TODO: separate this from the *CR...*s
@@ -123,7 +126,8 @@
 (defun define-debug-registers ()
 
   ;; These indices are used in the Reg field of the ModR/M byte of the
-  ;; instructions MOV from/to debug registers:
+  ;; instructions MOV from/to debug registers (also see Intel Manual
+  ;; Volume 2 Table B-9 and Section 2.2.2 (Dec 2023)):
   `(defconsts (*DR0* ;; dr0 holds breakpoint 0 virtual address, 64/32 bit
                *DR1* ;; dr1 holds breakpoint 1 virtual address, 64/32 bit
                *DR2* ;; dr2 holds breakpoint 2 virtual address, 64/32 bit
@@ -137,12 +141,13 @@
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
+;; Source: Intel Manual Volume 1 Section 8.1.2 (Dec 2023)
 (defun define-fp-registers ()
   ;; 80-bit registers
 
-  ;; Note: The Intel manual refers to these registers as R0, R1, ... ,
-  ;; R7, but in our model, we will refer to them as FP0, FP1, ...,
-  ;; FP7.
+  ;; Note: The Intel manual refers to these registers as R0, R1, ... , R7
+  ;; (see Intel Manual Volume 1 Figure 8-1 (Dec 2023),
+  ;; but in our model, we will refer to them as FP0, FP1, ..., FP7.
 
   `(defconsts (*FP0* *FP1* *FP2* *FP3* *FP4* *FP5* *FP6* *FP7*
                      *fp-data-register-names-len*)
@@ -151,11 +156,12 @@
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
+;; Source: Intel Manual Volume 1 Section 9.2.2 (Dec 2023)
 (defun define-mmx-registers ()
   ;; 64-bit registers
 
-  ;; The MM registers (MM0 through MM7) are aliased to the low 64-bits
-  ;; of the FPU data registers.
+  ;; The MM registers (MM0 through MM7) are aliased to the low 64-bits of
+  ;; the FPU data registers (see Intel Manual Volume 1 Section 8.1 (Dec 2023)).
 
   `(defconsts (*MM0* *MM1* *MM2* *MM3* *MM4* *MM5* *MM6* *MM7*
                      *mmx-register-names-len*)
@@ -164,6 +170,7 @@
            (len  (len lst)))
           (cons 'mv (append lst (list len))))))
 
+;; Source: Intel Manual Volume 1 Sections 10.2.1 and 10.2.2 (Dec 2023)
 (defun define-xmm-registers ()
   ;; 128-bit registers
 
@@ -176,6 +183,7 @@
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
+;; Source: Intel Manual Volume 1 Figure 14-1 (Dec 2023)
 (defun define-ymm-registers ()
   ;; 256-bit registers
 
@@ -188,6 +196,7 @@
            (len  (len lst)))
         (cons 'mv (append lst (list len))))))
 
+;; Source: Intel Manual Volume 1 Figure 15-1 (Dec 2023)
 (defun define-zmm-registers ()
   ;; 512-bit registers
 
@@ -207,6 +216,7 @@
              (len  (len lst)))
           (cons 'mv (append lst (list len)))))))
 
+;; Source: Intel Manual Volume 1 Section 15.1.3 (Dec 2023)
 (defun define-opmsk-registers ()
   ;; 64-bit registers
 
@@ -219,8 +229,7 @@
 
 (defun define-model-specific-registers ()
 
-  ;; Source: Section 2.1 (Architectural MSRs), Intel Vol. 4, Model-Specific
-  ;; Registers
+  ;; Source: Intel Manual Volume 4 Section 2.1 (Architectural MSRs) (Dec 2023)
 
   ;; At this point, we only model the MSRs that we need.  Remember,
   ;; these are Intel-specific registers, and may or may not be
