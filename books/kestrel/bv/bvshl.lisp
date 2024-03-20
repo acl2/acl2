@@ -171,7 +171,7 @@
                                    )))))
 
 ;todo: gen, or change bvshl to always return a bv, or change the bvchop-identity rule to know about bvshl
-;; subsumed by the rule below
+;; subsumed by the rule below, but that one can change the size of the bvshl
 (defthmd bvchop-of-bvshl-same
   (implies (and (natp size)
                 (< amt size)
