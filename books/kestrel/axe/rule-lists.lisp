@@ -704,7 +704,8 @@
      bvshl-of-0-arg1
      bvshl-of-0-arg2
      bvshl-of-0-arg3
-     bvchop-of-bvshl
+     ;; bvchop-of-bvshl ; this can change the size of the bvshl, so refrain until we improve the pre-stp translation to handle arbitrary sizes
+     bvchop-of-bvshl-same
      bvchop-of-bvshl-does-nothing
 
      equal-of-bvplus-and-bvplus-cancel-arg2-arg2 ;sat feb 19 17:28:05 2011
