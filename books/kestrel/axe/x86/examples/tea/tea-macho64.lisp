@@ -31,13 +31,13 @@
                                             (acl2::tea-encrypt (acl2::pack-tea-input ,(symbolic-list 'in 8))
                                                                (acl2::pack-tea-key ,(symbolic-list 'key 16))))
                          ;; Extra rules to use for unrolling:
-                         :extra-rules (append '(BV-ARRAY-TO-LIST
-                                                BV-ARRAY-TO-LIST-AUX ;risky
-                                                )
+                         :extra-rules (append '(bv-array-to-list
+                                                acl2::bv-array-to-list-aux-base
+                                                acl2::bv-array-to-list-aux-unroll)
                                               (acl2::tea-spec-rules))
                          ;; Type assumptions on the input variables:
-                         :assumptions (append (symbolic-byte-assumptions 'key 16)
-                                              (symbolic-byte-assumptions 'in 8)))
+                         :assumptions (append (symbolic-byte-assumptions 'in 8)
+                                              (symbolic-byte-assumptions 'key 16)))
 
 ; (depends-on "tea.macho64")
 
