@@ -112,12 +112,6 @@
            (true-listp x))
   :hints (("Goal" :in-theory (enable nat-list-listp))))
 
-;; todo: why both notions?
-(defthmd all-nat-listp-when-nat-list-listp
-  (implies (nat-list-listp x)
-           (all-nat-listp x))
-  :hints (("Goal" :in-theory (enable nat-list-listp all-nat-listp))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund all-all-< (x bound)
@@ -2134,6 +2128,12 @@
      (if (atom y) 0 (minelem y))))
 
 (defmergesort merge-sort-<-of-mins merge-<-of-mins <-of-mins nat-listp)
+
+;; todo: why both notions?
+(defthmd all-nat-listp-when-nat-list-listp
+  (implies (nat-list-listp x)
+           (all-nat-listp x))
+  :hints (("Goal" :in-theory (enable nat-list-listp all-nat-listp))))
 
 (defund print-probable-facts-for-test-cases (dag
                                              test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
