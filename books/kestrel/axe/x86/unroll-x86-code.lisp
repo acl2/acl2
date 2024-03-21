@@ -212,7 +212,7 @@
            (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
            )
         `((equal ,state-component ,pointer-name)
-          (equal (read ,numbytes ,pointer-name x86) ,var-name)
+          (equal (read ,numbytes ,pointer-name x86) ,var-name) ; todo: option to make vars for each element, as a bvcat nest
           (canonical-address-p$inline ,pointer-name) ; first address
           (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
           (separate :r ,numbytes ,pointer-name
