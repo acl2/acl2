@@ -15,15 +15,16 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
 
+;; why "normal"?  maybe "component" ?
 (mutual-recursion
  (defun normal-output-indicatorp (x)
    (declare (xargs :guard t))
-   (or ;; TODO: Deprecate this case:
-    (member-equal x '(:rax
-                      :eax
-                      ;; todo: more
-                      :zmm0 :ymm0 :xmm0
-                      ))
+   (or (member-equal x '(:rax
+                         :eax
+                         ;; todo: more
+                         :zmm0 :ymm0 :xmm0
+                         ))
+       ;; TODO: Deprecate this case but the tester used :register-bool
        (and (true-listp x) ;; (:register <N>) or (:register-bool <N>)
             (member-eq (first x) '(:register :register-bool))
             (eql 2 (len x))
@@ -33,9 +34,9 @@
        (and (true-listp x) ;; (:mem32 <ADDR-TERM>)
             (eq (first x) :mem32)
             (eql 2 (len x))
-            (pseudo-termp (second x)); argument should be a term (should we translate it)
+            (pseudo-termp (second x)) ; argument should be a term (should we translate it)
             )
-       (and (true-listp x)
+       (and (true-listp x) ;; (:tuple ... output-indicators ...)
             (eq (first x) :tuple)
             (normal-output-indicatorsp (rest x)))))
  (defun normal-output-indicatorsp (x)
