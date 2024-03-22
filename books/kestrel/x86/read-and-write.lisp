@@ -70,12 +70,12 @@
 (defthm <-of-bvchop-same
   (implies (integerp x)
            (equal (< (bvchop 48 x) x)
-                  (and (natp x)
+                  (and (<= 0 x)
                        (not (unsigned-byte-p 48 x))))))
 
 (defthm bvplus-of-bvplus-tighten ;todo: gen?
-  (equal (bvplus '48 (bvplus '64 x y) z)
-         (bvplus '48 (bvplus '48 x y) z))
+  (equal (bvplus 48 (bvplus 64 x y) z)
+         (bvplus 48 (bvplus 48 x y) z))
   :hints (("Goal" :in-theory (e/d (bvplus) ()))))
 
 (defthm bvplus-combine-constants-hack
@@ -847,7 +847,7 @@
 ;; Splits into individual reads, which then get resolved
 ;; TODO: Instead, resolve a read of 2 bytes when we have an appropriate program-at claim
 (defthm read-of-2
-  (equal (read '2 addr x86)
+  (equal (read 2 addr x86)
          (bvcat 8 (read 1 (+ 1 addr) x86)
                 8 (read 1 addr x86)))
   :hints (("Goal" :in-theory (enable read))))
@@ -1360,7 +1360,7 @@
         ;        (natp n)
                 (integerp addr1)
                 (integerp addr2)
-;                (< N '281474976710656)
+;                (< N 281474976710656)
  ;               (canonical-address-p addr1)
                 (canonical-address-p addr2)
                 (implies (posp n) (canonical-address-p (+ -1 n addr2)))
