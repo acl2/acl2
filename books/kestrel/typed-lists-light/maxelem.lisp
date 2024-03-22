@@ -1,7 +1,7 @@
 ; A function to get the maximum of a list of numbers
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -105,6 +105,11 @@
   (implies (and (integer-listp lst)
                 (consp lst))
            (integerp (maxelem lst))))
+
+(defthm natp-of-maxelem
+  (implies (and (nat-listp lst)
+                (consp lst))
+           (natp (maxelem lst))))
 
 ;bozo make a theory of this for a generic (numeric?) type?
 (defthm acl2-numberp-of-maxelem
