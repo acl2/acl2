@@ -275,7 +275,6 @@
 ;;                         (:instance ACL2::split-bv (x k) (n 32) (m 1))
 ;;                         )
 ;;           :in-theory (disable ACL2::BVCAT-OF-SLICE-AND-X-ADJACENT
-;;                               ACL2::BVCAT-SLICE-SAME
 ;;                               ACL2::BVCAT-EQUAL-REWRITE-ALT
 ;;                               ACL2::BVCAT-EQUAL-REWRITE
 ;;                               )
@@ -294,7 +293,6 @@
            :cases ((equal 0 (acl2::getbit 0 x)))
            :in-theory (e/d (acl2::bvcat acl2::logapp)
                            ( ACL2::BVCAT-OF-SLICE-AND-X-ADJACENT
-                             ACL2::BVCAT-SLICE-SAME
                              ACL2::BVCAT-EQUAL-REWRITE-ALT
                              ACL2::BVCAT-EQUAL-REWRITE)))))
 

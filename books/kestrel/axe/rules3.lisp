@@ -224,11 +224,8 @@
   (implies (unsigned-byte-p 32 x) ;expensive?
            (equal (equal (slice 31 5 x) 0)
                   (unsigned-byte-p 5 x)))
-  :hints (("Goal" :use (:instance BVCAT-SLICE-SAME
-                                  (x x)
-                                  (k 31) (n 5)
-                                  (m 27))
-           :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-AND-X-ADJACENT))))
+  :hints (("Goal"
+           :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-AND-X-ADJACENT))))
 
 (defthm bvplus-of-bvplus-trim-5-32
   (equal (bvplus 5 x (bvplus 32 y z))
@@ -1244,9 +1241,7 @@
                 (unsigned-byte-p 32 x))
            (equal (bvlt 32 3 x)
                   nil))
-  :hints (("Goal"
-           :use (:instance bvcat-slice-same (m 30) (k 31) (n 2) (x x))
-           :in-theory (e/d (bvlt) (bvcat-slice-same)))))
+  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
 
 (defthm bvchop-tighten-when-slice-0
   (implies (and (equal (slice k free x) 0)
@@ -1378,8 +1373,8 @@
                   (and (< (bvchop y-size x) y)
                        (equal (slice (+ -1 x-size) y-size x)
                               0))))
-  :hints (("Goal" :use (:instance bvcat-slice-same (x x) (k (+ -1 x-size)) (n y-size) (m (+ x-size (- y-size))))
-           :in-theory (disable bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite BVCAT-OF-SLICE-AND-X-ADJACENT
+  :hints (("Goal" :use (:instance bvcat-of-slice-and-x-adjacent (x x) (high1 (+ -1 x-size)) (low1 y-size) (size1 (+ x-size (- y-size))))
+           :in-theory (disable bvcat-of-slice-and-x-adjacent bvcat-equal-rewrite-alt bvcat-equal-rewrite BVCAT-OF-SLICE-AND-X-ADJACENT
                                ))))
 
 ;can loop?
@@ -1398,8 +1393,8 @@
                   (or (< x (bvchop x-size y))
                       (not (equal (slice (+ -1 y-size) x-size y)
                                   0)))))
-  :hints (("Goal" :use (:instance BVCAT-SLICE-SAME (x y) (k (+ -1 y-size)) (n x-size) (m (+ y-size (- x-size))))
-           :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-AND-X-ADJACENT))))
+  :hints (("Goal" :use (:instance bvcat-of-slice-and-x-adjacent (x y) (high1 (+ -1 y-size)) (low1 x-size) (size1 (+ y-size (- x-size))))
+           :in-theory (disable bvcat-of-slice-and-x-adjacent BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-AND-X-ADJACENT))))
 
 (local (in-theory (enable bvchop-identity))) ;sigh
 
@@ -1658,7 +1653,7 @@
 (defthmd bvchop-32-split-30-hack
   (equal (bvchop 32 x)
          (+ (bvchop 30 x) (* (expt 2 30) (slice 31 30 x))))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) ( BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
            :use ((:instance split-with-bvcat (hs 2) (ls 30))))))
 
 (defthm bvplus-30-expand
@@ -1679,7 +1674,7 @@
                                         plus-1-and-bvchop-becomes-bvplus
                                         ;slice-when-bvlt
                                         bvchop-tighten-when-slice-0
-                                        BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE)))))
+                                        BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE)))))
 
 ;can loop...
 (defthmd bvplus-32-of-bvplus-30
@@ -1700,7 +1695,7 @@
 (defthmd bvchop-32-split-30-hack2
   (equal (bvchop 32 x)
          (bvcat 2 (slice 31 30 x) 30 x))
-  :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
+  :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
            :use ((:instance split-with-bvcat (hs 2) (ls 30))))))
 
 (defthm bvplus-3221225472-hack
@@ -1765,7 +1760,7 @@
                   (and (unsigned-byte-p 3 x)
                        (equal 1 (getbit 2 x)))))
   :hints (("Goal" :use ((:instance split-with-bvcat (hs 30) (ls 2)))
-           :in-theory (disable bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite BVCAT-OF-SLICE-AND-X-ADJACENT))))
+           :in-theory (disable bvcat-equal-rewrite-alt bvcat-equal-rewrite BVCAT-OF-SLICE-AND-X-ADJACENT))))
 
 (defthm sbvmoddown-of-minus-4
   (implies (integerp x)
@@ -1918,7 +1913,7 @@
 ;;  :otf-flg t
 ;;  :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 30) (ls 2)))
 ;;           :in-theory (e/d (slice bvchop-of-sum-cases) (anti-slice
-;;                                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT
+;;                                                         BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT
 ;;                                                         BVCAT-OF-GETBIT-AND-X-ADJACENT
 ;;                                                         )))))
 
@@ -4106,7 +4101,6 @@
 ;;   :hints (("Goal"
 ;;            :use (:instance split-with-bvcat (x k) (hs 2) (ls 5))
 ;;            :in-theory (e/d () ( ;anti-slice
-;;                                BVCAT-SLICE-SAME
 ;;                                BVCAT-EQUAL-REWRITE-ALT
 ;;                                BVCAT-EQUAL-REWRITE)))))
 
@@ -4474,7 +4468,7 @@
   (equal (equal 0 (slice 4 2 x))
          (< (bvchop 5 x) 4))
   :hints (("Goal" :use (:instance split-with-bvcat (hs 3) (ls 2))
-           :in-theory (disable bvcat-slice-same BVCAT-OF-SLICE-AND-X-ADJACENT
+           :in-theory (disable BVCAT-OF-SLICE-AND-X-ADJACENT
                                bvlt-of-0-arg2 ;fixme use polarity
                                rewrite-bv-equality-when-sizes-dont-match-1
                                bvcat-equal-rewrite-alt
@@ -6635,7 +6629,7 @@
                            (ls free)
                            (x k))
            :in-theory (e/d (slice-when-bvchop-bound)
-                           (BVCAT-SLICE-SAME ;PLUS-CANCEL-HACK-LEMMA
+                           ( ;PLUS-CANCEL-HACK-LEMMA
                             BVCAT-EQUAL-REWRITE-ALT
                             BVCAT-EQUAL-REWRITE)))))
 
@@ -6948,7 +6942,7 @@
                             bvlt-of-plus-arg1 bvlt-of-plus-arg2
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
-                            bvcat-slice-same)))))
+                            )))))
 
 ;; ;do i need this?
 ;; ;might be nicer to use an iff rule if the axe rewriter supported that
@@ -6979,7 +6973,7 @@
                             bvlt-of-plus-arg1 bvlt-of-plus-arg2
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
-                            bvcat-slice-same)))))
+                            )))))
 
 (defthm bvplus-hack-for-rc6
   (implies (and (unsigned-byte-p 2 x)
@@ -7003,7 +6997,7 @@
                             bvlt-of-plus-arg1 bvlt-of-plus-arg2
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
-                            bvcat-slice-same)))))
+                            )))))
 
 
 
@@ -7037,7 +7031,7 @@
                             bvlt-of-plus-arg1 bvlt-of-plus-arg2
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite
-                            bvcat-slice-same)))))
+                            )))))
 
 
 
@@ -9185,7 +9179,7 @@
                              BVLT-OF-*-ARG3
                                          ;*-OF-2-BECOMES-BVMULT
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9220,7 +9214,7 @@
                             bvchop-when-top-bit-1)
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9262,7 +9256,7 @@
                             PLUS-OF-MINUS-3-BV-5
                                                       BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                                       TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                                     BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                                      BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                                      getbit-of-plus
                                                      <-of-bvchop-arg1
                                                      <-when-unsigned-byte-p
@@ -9301,7 +9295,7 @@
                             PLUS-OF-MINUS-3-BV-5 MINUS-BECOMES-BV-2
                                                       BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                                       TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                                     BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                                      BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                                      getbit-of-plus
                                                      <-of-bvchop-arg1
                                                      <-when-unsigned-byte-p
@@ -9341,7 +9335,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9380,7 +9374,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9424,7 +9418,7 @@
                              bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                              times-4-of-slice-becomes-logapp
-                            bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                             bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                             getbit-of-plus
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
@@ -9463,7 +9457,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9498,7 +9492,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9539,7 +9533,7 @@
                            (  BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                           PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9579,7 +9573,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9622,7 +9616,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9658,7 +9652,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9692,7 +9686,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9745,7 +9739,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -9887,7 +9881,7 @@
                              BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                             PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                              TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                            BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                             BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                             getbit-of-plus
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
@@ -9953,7 +9947,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           TIMES-4-OF-SLICE-BECOMES-LOGAPP
-                                         BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
+                                          BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -10006,7 +10000,7 @@
                   (equal x y)))
   :hints (("Goal" :use ((:instance split-bv (x y) (n 31) (m 2))
                         (:instance split-bv (x x) (n 31) (m 2)))
-           :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
+           :in-theory (disable BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 
 ;; ;rename
@@ -10045,7 +10039,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -10076,7 +10070,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -10111,7 +10105,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -10148,7 +10142,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -10204,7 +10198,7 @@
                              bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                             plus-becomes-bvplus-free plus-of-minus-3-bv-5
                              times-4-of-slice-becomes-logapp
-                            bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                             bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                             getbit-of-plus
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
@@ -10276,7 +10270,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -10315,7 +10309,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           times-4-of-slice-becomes-logapp
-                                         bvcat-slice-same bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
+                                          bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
                                          getbit-of-plus
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
@@ -13386,8 +13380,7 @@
                      (bvchop size k))
                   (not (equal 0 (bvchop lowsize k)))))
   :hints (("Goal" :in-theory (e/d (bvcat logapp)
-                                  (BVCAT-SLICE-SAME
-                                   BVCAT-EQUAL-REWRITE-ALT
+                                  (BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    LOGAPP-EQUAL-REWRITE
                                    LOGAPP-EQUAL-REWRITE))
@@ -13467,7 +13460,7 @@
                             (bvcat 25 33554431 6 k)
                             (bvchop 31 x23)))))
   :hints (("Goal" :use (:instance split-bv (x (bvchop 31 x23)) (n 31) (m 6))
-           :in-theory (e/d (bvlt) (bvcat-slice-same BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-ONTO-CONSTANT BVCAT-OF-SLICE-AND-X-ADJACENT
+           :in-theory (e/d (bvlt) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-ONTO-CONSTANT BVCAT-OF-SLICE-AND-X-ADJACENT
                                                     )))))
 
 ;move
@@ -15460,7 +15453,7 @@
            :in-theory (e/d (bvlt ;slice
                             bvcat logapp
                             ) (bvchop-of-logtail-becomes-slice
-                            bvcat-slice-same
+
                             bvcat-equal-rewrite-alt)))))
 
 
