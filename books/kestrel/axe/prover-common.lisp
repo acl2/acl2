@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1602,14 +1602,18 @@
   `(mbe :logic (zp ,x)
         :exec (= 0 ,x)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund simple-prover-optionsp (options)
   (declare (xargs :guard t))
   (and (symbol-alistp options)
        (subsetp-eq (strip-cars options) '(:no-splitp ;whether to split into cases
                                           :print-as-clausesp ;whether to print cases as clauses
                                           :no-print-fns
+                                          :count-hits
                                           ))
        (booleanp (lookup-equal :print-as-clausesp options))
+       (member-equal (lookup-equal :count-hits options) '(t nil :brief))
        (symbol-listp (lookup-equal :no-print-fns options))))
 
 (defthm simple-prover-optionsp-forward-to-symbol-alistp
@@ -1635,6 +1639,14 @@
            (equal (simple-prover-optionsp (acons :no-print-fns no-print-fns options))
                   (symbol-listp no-print-fns)))
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-of-acons-of-count-hits
+  (implies (simple-prover-optionsp options)
+           (iff (simple-prover-optionsp (acons :count-hits count-hits options))
+                (member-equal count-hits '(t nil :brief))))
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm axe-tree-listp-of-wrap-all
   (equal (axe-tree-listp (wrap-all 'not atoms))
