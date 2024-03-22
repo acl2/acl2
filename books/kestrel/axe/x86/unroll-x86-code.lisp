@@ -170,6 +170,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: strengthen (allow any package for the types):
+(defun names-and-typesp (names-and-types)
+  (declare (xargs :guard t))
+  (and (doublet-listp names-and-types)
+       (symbol-listp (strip-cars names-and-types))
+       (acl2::keyword-listp (acl2::strip-cadrs names-and-types))))
+
 (defund bytes-in-scalar-type (type)
   (declare (xargs :guard (stringp type)))
   (cond
@@ -186,17 +193,22 @@
 
 (defund assumptions-for-input (var-name
                                type ;; examples: :u32 or :u32* or :u32[4]
-                               state-component)
+                               state-component
+                               stack-slots
+                               text-offset
+                               code-length)
   (declare (xargs :guard (and (symbolp var-name)
                               (keywordp type)
                               ;;state-component might be rdi or (rdi x86)
-                              )))
+                              (natp stack-slots)
+                              ;; text-offset is a term
+                              (natp code-length))))
   (let* ((type-str (symbol-name type))
          (pointerp (acl2::string-ends-withp type-str "*"))
          (arrayp (acl2::string-ends-withp type-str "]")))
     (if (and (not pointerp)
              (not arrayp))
-        `((equal ,state-component ,var-name)) ; just put the var name in for the state component
+        `((equal ,state-component ,var-name)) ; just put in the var name for the state component
       (b* (((mv & ;base-type
                 numbytes)
             (if pointerp
@@ -210,25 +222,30 @@
                    (element-count (acl2::parse-string-as-decimal-number (acl2::strip-suffix-from-string "]" rest))))
                 (mv base-type (* element-count (bytes-in-scalar-type base-type))))))
            (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
-           )
+           (stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
         `((equal ,state-component ,pointer-name)
-          (equal (read ,numbytes ,pointer-name x86) ,var-name) ; todo: option to make vars for each element, as a bvcat nest
+          (equal (read ,numbytes ,pointer-name x86) ,var-name) ; todo: option to make vars for each element, if an array
           (canonical-address-p$inline ,pointer-name) ; first address
           (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
+          ;; The input is disjount from the space into which the stack will grow:
           (separate :r ,numbytes ,pointer-name
-                    :r 80 ;todo: assuming 10 stack slots
-                    (+ -80 (rsp x86))))))))
-
-(defun names-and-typesp (names-and-types)
-  (declare (xargs :guard t))
-  (and (doublet-listp names-and-types)
-       (symbol-listp (strip-cars names-and-types))
-       (acl2::keyword-listp (acl2::strip-cadrs names-and-types))))
+                    :r ,stack-byte-count
+                    (+ ,(- stack-byte-count) (rsp x86)))
+          ;; The input is disjoint from the code:
+          (separate :r ,numbytes ,pointer-name
+                    :r ,code-length ,text-offset)
+          ;; The input is disjoint from the saved return address:
+          ;; todo: reorder args?
+          (separate :r 8 (rsp x86)
+                    :r ,numbytes ,pointer-name))))))
 
 ;; might have extra, unneeded items in state-components
-(defun assumptions-for-inputs (names-and-types state-components)
+(defun assumptions-for-inputs (names-and-types state-components stack-slots text-offset code-length)
   (declare (xargs :mode :program ; todo
-                  :guard (names-and-typesp names-and-types)))
+                  :guard (and (names-and-typesp names-and-types)
+                              (natp stack-slots)
+                              ;; text-offset is a term
+                              (natp code-length))))
   (if (endp names-and-types)
       nil
     (let* ((name-and-type (first names-and-types))
@@ -236,8 +253,8 @@
            (type (second name-and-type))
            (state-component (first state-components))
            )
-      (append (assumptions-for-input name type state-component)
-              (assumptions-for-inputs (rest names-and-types) (rest state-components))))))
+      (append (assumptions-for-input name type state-component stack-slots text-offset code-length)
+              (assumptions-for-inputs (rest names-and-types) (rest state-components) stack-slots text-offset code-length)))))
 
 ;; Example: (assumptions-for-inputs '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
 
@@ -492,7 +509,38 @@
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil state))
-       ;; assumptions (these get simplified below to put them into normal form):
+       ;; Generate assumptions (these get simplified below to put them into normal form):
+       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
+       (text-offset
+         (and 64-bitp ; todo
+              (if (eq :mach-o-64 executable-type)
+                  (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
+                (if (eq :pe-64 executable-type)
+                    'text-offset ; todo: match what we do for other executable types
+                  (if (eq :elf-64 executable-type)
+                      (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
+                    (if (eq :mach-o-32 executable-type)
+                        nil ; todo
+                      (if (eq :pe-32 executable-type)
+                          nil ; todo
+                        ;;todo: add support for :elf-32
+                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
+                                assumptions))))))))
+       (code-length
+         (and 64-bitp ; todo
+              (if (eq :mach-o-64 executable-type)
+                  (len (acl2::get-mach-o-code parsed-executable))
+                (if (eq :pe-64 executable-type)
+                    10000 ; fixme
+                  (if (eq :elf-64 executable-type)
+                      (len (acl2::get-elf-code parsed-executable))
+                    (if (eq :mach-o-32 executable-type)
+                        nil ; todo
+                      (if (eq :pe-32 executable-type)
+                          nil ; todo
+                        ;;todo: add support for :elf-32
+                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
+                                assumptions))))))))
        (automatic-assumptions
         (if suppress-assumptions
             ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
@@ -501,7 +549,7 @@
               `((standard-assumptions-mach-o-64 ',target
                                                 ',parsed-executable
                                                 ',stack-slots
-                                                ,(if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
+                                                ,text-offset
                                                 x86))
             (if (eq :pe-64 executable-type)
                 `((standard-assumptions-pe-64 ',target
@@ -513,7 +561,7 @@
                   `((standard-assumptions-elf-64 ',target
                                                  ',parsed-executable
                                                  ',stack-slots
-                                                 ,(if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
+                                                 ,text-offset
                                                  x86))
                 (if (eq :mach-o-32 executable-type)
                     (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
@@ -523,11 +571,15 @@
                     ;;todo: add support for :elf-32
                     (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
                             assumptions))))))))
-       (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        (input-assumptions (if (and 64-bitp ; todo
                                    (not (equal inputs :skip)) ; really means generate no assumptions
                                    )
-                              (assumptions-for-inputs inputs '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))) ; todo: handle zmm regs and values passed on the stack?!
+                              (assumptions-for-inputs inputs
+                                                      ;; todo: handle zmm regs and values passed on the stack?!:
+                                                      '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                                      stack-slots
+                                                      text-offset
+                                                      code-length)
                             nil))
        (assumptions (append automatic-assumptions input-assumptions assumptions))
        (assumptions-to-return assumptions)
