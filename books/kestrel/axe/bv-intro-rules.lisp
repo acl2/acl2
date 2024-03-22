@@ -276,3 +276,10 @@
                   (slice (+ -1 newsize) n x)))
   :hints (("Goal" :use (:instance logtail-becomes-slice-bind-free)
            :in-theory (e/d (unsigned-byte-p-forced) (logtail-becomes-slice-bind-free)))))
+
+(defthmd logapp-becomes-bvcat-bind-free-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe j 'jsize dag-array) '(jsize))
+                (unsigned-byte-p-forced jsize j))
+           (equal (logapp size i j)
+                  (bvcat jsize j size i)))
+  :hints (("Goal" :in-theory (enable bvcat))))
