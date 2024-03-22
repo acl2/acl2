@@ -4493,11 +4493,8 @@
   (declare (xargs :guard t))
   (append '(myif-of-sub-zf-spec32-arg2
             myif-of-sub-zf-spec32-arg3
-            ACL2::INTEGERP-OF-BVPLUS ;todo: more
-            ACL2::INTEGERP-OF-BVCHOP
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
-            acl2::if-of-t-and-nil-when-booleanp
             acl2::equal-of-if-constants
             acl2::if-becomes-myif ; todo: do we want this when lifting?
             ACL2::MYIF-BECOMES-BVIF-1-axe
@@ -4506,33 +4503,20 @@
             ACL2::BVIF-OF-+-ARG3
             ACL2::BVIF-OF---ARG3
             ACL2::BVIF-OF---ARG4
-            ACL2::INTEGERP-OF-BVIF
             ACL2::INTEGERP-OF---when-integerp
             ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER
             ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-ALT-BETTER
             ACL2::BVPLUS-COMMUTATIVE-INCREASING-AXE
-            ACL2::BVCHOP-OF-BVMOD
-            ACL2::BVPLUS-OF-0-ARG2
-            ACL2::BVMOD-OF-BVCHOP-ARG2
-            ACL2::BVMOD-OF-BVCHOP-ARG3
+            ;ACL2::BVCHOP-OF-BVMOD ; just use bvchop-identity-axe
             bvuminus-of-bvif-constants
-            ACL2::BVPLUS-OF-BVIF-ARG2-SAFE
-            ACL2::BVPLUS-OF-BVIF-ARG3-SAFE
             ACL2::EQUAL-OF-BVIF ;restrict to constant x?
             ACL2::EQUAL-OF-BVIF-alt ;restrict to constant x?
-            ACL2::BVCHOP-OF-BVIF
             ;; just include boolean-rules?
             acl2::boolif-when-quotep-arg2
             acl2::boolif-when-quotep-arg3
-            acl2::bvchop-1-becomes-getbit
             ACL2::BVCHOP-OF-BVSX
             ACL2::BVCHOP-OF-BVUMINUS-SAME
-            ACL2::BVUMINUS-OF-BVUMINUS
             ACL2::BVSX-OF-BVCHOP
-            ACL2::BVCHOP-OF-BVCHOP
-            ACL2::BVPLUS-OF-BVCHOP-ARG2
-            ACL2::EQUAL-OF-BVSX-AND-BVSX
-            acl2::equal-same
             ACL2::BVPLUS-OF-LOGEXT-arg2
             ACL2::BVPLUS-OF-LOGEXT-arg3
             ACL2::BVUMINUS-OF-LOGEXT
@@ -4540,12 +4524,10 @@
             ACL2::LOGEXT-IDENTITY
             ACL2::SIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-ONE-LESS
             ;ACL2::BOOLIF-X-X-Y-BECOMES-BOOLOR ; introduces boolor
-            ACL2::BVLT-OF-CONSTANT-WHEN-USB-DAG
             boolor-becomes-boolif
             ;bvlt-hack-1-gen
             ACL2::BVCHOP-SUBST-CONSTANT
             ACL2::BVCHOP-SUBST-CONSTANT-alt
-            ;; acl2::boolif-of-t-and-nil-when-booleanp
             ACL2::BOOL-FIX$INLINE-CONSTANT-OPENER
             boolif-of-bvlt-strengthen-to-equal
             bvlt-reduce-when-not-equal-one-less
