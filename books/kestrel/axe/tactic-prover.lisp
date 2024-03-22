@@ -579,6 +579,7 @@
           (prog2$
            (cw "Note: The DAG (after applying pre-STP rules) is the constant NIL.~%")
            (mv *invalid* nil state))))
+       (- (and print (cw "(Pre-STP DAG: ~X01.~%" dag nil)))
        (- (and print (cw "(Using ~x0 assumptions: ~X12.~%" (len assumptions) assumptions nil)))
        (dag-size (dag-size dag))
        (- (and print (cw " Calling STP to prove: ~x0.~%" (if (< dag-size 100) (dag-to-term dag) dag))))

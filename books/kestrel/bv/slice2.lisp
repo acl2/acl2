@@ -48,11 +48,8 @@
                 (NATP N)
                 )
            (UNSIGNED-BYTE-P M X))
-  :hints (("Goal" :use (:instance BVCAT-SLICE-SAME ;(x x)
-                                  (n m)
-                                  (k (+ -1 n))
-                                  (m (- n m)))
-           :in-theory (disable BVCAT-SLICE-SAME BVCAT-EQUAL-REWRITE
+  :hints (("Goal"
+           :in-theory (disable BVCAT-EQUAL-REWRITE
                                ;;DAGIFY-INSIDE-HIDE-META-RULE
                                ))))
 
