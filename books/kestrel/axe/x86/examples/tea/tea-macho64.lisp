@@ -45,42 +45,15 @@
 ;; Produces the DAG *tea*.
 (def-unrolled tea
   "tea.macho64"
-  :stack-slots 8
   :target "_encrypt"
+  :stack-slots 8
+  :inputs ((v :u32[2]) (k :u32[4]))
   ;; todo: have the tool translate the items in the tuple:
   :output (:tuple (:mem32 (rdi x86)) ;extract v0
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
   ;; TODO: How much of this can we automate?
   ;; TODO: Can we just make stronger assumptions about things being loaded at concrete addresses?
-  :assumptions '((canonical-address-p$inline (rdi x86))
-                 (canonical-address-p$inline (binary-+ 7 (rdi x86))) ; first arg has 2 32-bit elements = 8 bytes
-                 (canonical-address-p$inline (rsi x86))
-                 (canonical-address-p$inline (binary-+ 15 (rsi x86))) ; second arg has 4 32-bit elements = 16 bytes
-
-                 ;;disjointness of v and stack:
-                 ;; TODO: Why does separate take the :r arguments?
-                 (separate :r 8 (rdi x86)
-                           :r 80 ;assuming 10 stack slots
-                           (binary-+ -80 (rsp x86)))
-
-                 ;;disjointness of k and stack:
-                 (separate :r 16 (rsi x86)
-                           :r 80 ;assuming 10 stack slots
-                           (binary-+ -80 (rsp x86)))
-
-                 ;;disjointness of v and code:
-                 (separate :r 8 (rdi x86)
-                           :r 651 text-offset)
-
-                 ;; ;;disjointness of k and code (not needed, because k is not written):
-                 ;; (separate :r 16 (rsi x86)
-                 ;;           :r 651 text-offset)
-
-                 ;;disjointness of return address and v:
-                 (separate :r 8 (rsp x86)
-                           :r 8 (rdi x86))
-
-                 ;; introduce vars (todo: automate):
+  :assumptions '(;; introduce vars (todo: automate):
 
                  (equal (read 4 (rsi x86) x86)
                         ;; todo: check endianness:
