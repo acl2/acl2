@@ -1961,6 +1961,18 @@
 
             program-at-of-set-flag
 
+            X86ISA::XMMI-SIZE$inline
+            X86ISA::!XMMI-SIZE$inline
+            X86ISA::zMMI-SIZE$inline
+            X86ISA::!zMMI-SIZE$inline
+
+            X86ISA::ZMMI
+            X86ISA::ZMMI$A
+            X86ISA::!ZMMI
+            X86ISA::!ZMMI$A
+
+            x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
+
             x86isa::rx32$inline ; these expose rz
             x86isa::rx64$inline
             x86isa::rx128$inline
@@ -4403,13 +4415,6 @@
             ACL2::SBVLT-OF-BVSX-ARG2
             ACL2::BVSX-OF-BVCHOP
 
-            X86ISA::XMMI-SIZE$inline ;trying
-            X86ISA::!XMMI-SIZE$inline
-
-            X86ISA::ZMMI
-            X86ISA::ZMMI$A
-            X86ISA::!ZMMI
-            X86ISA::!ZMMI$A
             integerp-of-PART-INSTALL-WIDTH-LOW$INLINE
             X86ISA::SP-SSE-CMP
             ;;X86ISA::SSE-CMP ;todo: limit?
