@@ -115,7 +115,7 @@
 (defconst *2^32-16*   (- *2^32* 16))
 
 ;; ======================================================================
-;; Prefixes (Intel manual, Mar'17, Vol. 2A, Section 2):
+;; Prefixes (Intel manual, Dec'23, Vol. 2A, Section 2):
 
 (defconst *prefixes-width*
   ;; Width of the prefixes layout structure; see :doc
@@ -141,7 +141,7 @@
 ;; Group 4:
 (defconst *addr-size-override*    #x67)
 
-;; SIMD Prefixes:
+;; Mandatory Prefixes (for certain instructions):
 (defconst *mandatory-66h*         #x66)
 (defconst *mandatory-f2h*         #xF2)
 (defconst *mandatory-f3h*         #xF3)
@@ -165,21 +165,21 @@
 
 (defconst *evex-byte0*            #x62) ;; First byte of the 4-byte EVEX prefix
 
-;; The following constants apply to both VEX and EVEX prefixes.
+;; The following constants apply to both VEX and EVEX prefixes:
 
 ;; Two-bit values of the PP field:
 (defconst *v66*                   #b01)
 (defconst *vF3*                   #b10)
 (defconst *vF2*                   #b11)
-;; 4-bit values of the M-MMMM field:
+;; 4-bit values of the M-MMMM field (MMM for EVEX):
 (defconst *v0F*                   #b00001)
 (defconst *v0F38*                 #b00010)
 (defconst *v0F3A*                 #b00011)
 
 ;; ======================================================================
 
-;; Identifiers of some arithmetic and logical instructions: (note: different
-;; from the opcode; specific to the formal model)
+;; Identifiers of some arithmetic and logical instructions:
+;; (note: different from the opcode; specific to the formal model)
 
 ;; Even IDs: Arithmetic Instructions
 
@@ -242,29 +242,29 @@
 (defconst *OP-UCOMI*      9)
 
 ;; ======================================================================
-;; REX bits (Intel manual, Mar'17, Vol. 2A, Section 2.2.1.2):
+;; REX bits (Intel manual, Dec'23, Vol. 2A, Section 2.2.1.2):
 
 (defconst *b* 0)
 (defconst *x* 1)
 (defconst *r* 2)
 (defconst *w* 3)
 
-;; Rflags (Intel manual, Mar'17, Vol. 1, Figure 3-8):
+;; Rflags (Intel manual, Dec'23, Vol. 1, Figure 3-8):
 
 (defconst *cf*    0) ;; Carry Flag
 (defconst *pf*    2) ;; Parity Flag
-(defconst *af*    4) ;; Auxiliary-carry Flag
+(defconst *af*    4) ;; Auxiliary Carry Flag
 (defconst *zf*    6) ;; Zero Flag
 (defconst *sf*    7) ;; Sign Flag
 (defconst *tf*    8) ;; Trap Flag
-(defconst *if*    9) ;; Interrupt-enable Flag
+(defconst *if*    9) ;; Interrupt Enable Flag
 (defconst *df*   10) ;; Direction Flag
 (defconst *of*   11) ;; Overflow Flag
-(defconst *iopl* 12) ;; I/O Privilege Level
+(defconst *iopl* 12) ;; I/O Privilege Level (also includes bit 13)
 (defconst *nt*   14) ;; Nested Task
 (defconst *rf*   16) ;; Resume Flag
 (defconst *vm*   17) ;; Virtual-8086 Mode
-(defconst *ac*   18) ;; Alignment Check
+(defconst *ac*   18) ;; Alignment Check / Access Control
 (defconst *vif*  19) ;; Virtual Interrupt Flag
 (defconst *vip*  20) ;; Virtual Interrupt Pending
 (defconst *id*   21) ;; ID flag
@@ -277,7 +277,7 @@
  `(defconst *max-flg-index*
     ,(max-list *flg-names*)))
 
-;; FP Status Register (Intel Manual, Feb'14, Vol. 1, Section 8.1.3)
+;; FP Status Register (Intel Manual, Dec'23, Vol. 1, Figure 8-4):
 
 (defconst *fp-ie*   0) ;; Invalid Operation Flag
 (defconst *fp-de*   1) ;; Denormalized Operand Flag
@@ -290,7 +290,7 @@
 (defconst *fp-c0*   8) ;; Condition Code
 (defconst *fp-c1*   9) ;; Condition Code
 (defconst *fp-c2*  10) ;; Condition Code
-(defconst *fp-top* 11) ;; Top of stack pointer
+(defconst *fp-top* 11) ;; Top of Stack Pointer
 (defconst *fp-c3*  14) ;; Condition Code
 (defconst *fp-b*   15) ;; FPU Busy
 
@@ -298,7 +298,7 @@
   (list *fp-ie* *fp-de* *fp-ze* *fp-oe* *fp-ue* *fp-pe* *fp-sf*
         *fp-es* *fp-c0* *fp-c1* *fp-c2* *fp-top* *fp-c3* *fp-b*))
 
-;; MXCSR (Intel Manual, Feb'14, Vol. 1, Section 10.2.3)
+;; MXCSR (Intel Manual, Dec'23, Vol. 1, Figure 10-3):
 
 ;;    Bits 16 through 31 of the MXCSR register are reserved and are
 ;;    cleared on a power-up or reset of the processor; attempting to
@@ -312,7 +312,7 @@
 (defconst *mxcsr-oe*        3) ;; Overflow Flag
 (defconst *mxcsr-ue*        4) ;; Underflow Flag
 (defconst *mxcsr-pe*        5) ;; Precision Flag
-(defconst *mxcsr-daz*       6) ;; Denormals are Zeros
+(defconst *mxcsr-daz*       6) ;; Denormals Are Zeros
 (defconst *mxcsr-im*        7) ;; Invalid Operation Mask
 (defconst *mxcsr-dm*        8) ;; Denormal Mask
 (defconst *mxcsr-zm*        9) ;; Divide-by-Zero Mask
@@ -339,7 +339,7 @@
 (defconst *ymm-access*     3)
 (defconst *zmm-access*     4)
 
-;; Rounding Control bit definitions (Intel manual, Mar'17, Vol. 1, Table 4-8):
+;; Rounding Control bit definitions (Intel manual, Dec'23, Vol. 1, Table 4-8):
 
 (defconst *rc-rn*             0)
 (defconst *rc-rd*             1)
@@ -355,18 +355,18 @@
 (defconst *equal*        3)
 
 ;; Single-precision floating-point
-;; format (Intel manual, Mar'17, Vol. 1, Table 4-3)
+;; format (Intel manual, Dec'23, Vol. 1, Table 4-3):
 
 (defconst *ieee-sp-exp-width*          8)
 (defconst *ieee-sp-frac-width*        23)
 
 ;; Double-precision floating-point format
-;; format (Intel manual, Mar'17, Vol. 1, Table 4-3)
+;; format (Intel manual, Dec'23, Vol. 1, Table 4-3):
 
 (defconst *ieee-dp-exp-width*         11)
 (defconst *ieee-dp-frac-width*        52)
 
-;; Extended Feature Enable Register (Intel manual, Mar'17, Vol. 3A, Table 2-1)
+;; Extended Feature Enable Register (Intel manual, Dec'23, Vol. 3A, Table 2-1)
 
 (defconst *ia32_efer-sce*  0)  ;; Syscall Enable (R/W) --- enables
                                ;; SYSCALL/SYSRET
@@ -457,7 +457,7 @@
 
 ; Physical Memory:
 
-(defconst *physical-address-size* 52)
+(defconst *physical-address-size* 52) ; Intel Manual Dec'23 Vol 1 Section 3.2.1
 (defconst *physical-address-size+1* (+ 1 *physical-address-size*))
 (defconst *physical-address-size+2* (+ 2 *physical-address-size*))
 (defconst *physical-address-size+4* (+ 4 *physical-address-size*))
@@ -526,7 +526,7 @@
 ;; ======================================================================
 
 ;; Exceptions and Interrupts
-;; Reference: Table 6-1, Chapter 6 (Interrupts and Exceptions), Intel Vol. 1
+;; Reference: Intel Manual Dec'23 Volume 1 Table 6-1
 
 ;     Mnemonic    Vector     Description &
 ;                            Source
@@ -599,14 +599,20 @@
                         ;    This exception was introduced in the Pentium III
                         ;    processor.
 
-
 (defconst *#VE*     20) ;    Virtualization Exception
                         ;    EPT violations
                         ;    This exception can occur only on processors that
                         ;    support the 1-setting of the “EPT-violation #VE”
                         ;    VM-execution control.
 
-;; 21-31   Reserved
+(defconst *#CP*     21) ;    Control Protection Exception
+                        ;    The RET, IRET, RSTORSSP, and SETSSBSY instructions
+                        ;    can generate this exception. When CET indirect
+                        ;    branch tracking is enabled, this exception can be
+                        ;    generated due to a missing ENDBRANCH instruction
+                        ;    at the target of an indirect call or jump.
+
+;; 22-31   Reserved
 ;;
 ;; 32-255  Maskable Interrupts
 ;;         External interrupt from INTR pin or INT n instruction.

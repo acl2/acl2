@@ -10071,7 +10071,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPADDQ"
           (OP :OP #xFD4
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -10079,7 +10080,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPADDQ"
           (OP :OP #xFD4
               :EVEX '(:0F :NDS :512 :66 :W1)
@@ -12080,7 +12082,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPADDB"
           (OP :OP #xFFC
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -12088,7 +12091,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPADDB"
           (OP :OP #xFFC
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -12128,7 +12132,8 @@
        (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+       '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+       '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
  (INST "VPADDW"
        (OP :OP #xFFD
            :VEX '(:0F :NDS :256 :66 :WIG)
@@ -12136,7 +12141,8 @@
        (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+       '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+       '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
  (INST "VPADDW"
        (OP :OP #xFFD
            :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -12176,7 +12182,8 @@
        (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+       '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+       '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
  (INST "VPADDD"
        (OP :OP #xFFE
            :VEX '(:0F :NDS :256 :66 :WIG)
@@ -12184,7 +12191,8 @@
        (ARG :OP1 '(V X)
             :OP2 '(H X)
             :OP3 '(W X))
-       NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+       '(x86-vpaddb/vpaddw/vpaddd/vpaddq-vex)
+       '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
  (INST "VPADDD"
        (OP :OP #xFFE
            :EVEX '(:0F :NDS :512 :66 :W0)

@@ -539,7 +539,9 @@
       VPAND,
       VPANDN,
       VPOR,
-      VPXOR"))
+      VPXOR")
+    (xdoc::li
+     "VPADDB, VPADDW, VPADDD, VPADDQ (VEX versions)"))
 
    (xdoc::p
     "Some memory accessing functions for larger sizes have been added.")

@@ -37,7 +37,7 @@
 ; Original Author(s):
 ; Cuong Chau          <ckcuong@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
 
@@ -725,22 +725,22 @@
 
        ;; The operand size is determined by VEX.L,
        ;; based on the VEX.128 and VEX.256 notation
-       ;; (see Intel Manuals Volume 2 Section 3.1.1.2 of Dec 2023).
+       ;; (see Intel Manual Volume 2 Section 3.1.1.2 (Dec 2023)).
        ((the (integer 16 32) operand-size)
         (if (equal (vex->l vex-prefixes) 1)
             32
           16))
 
-       ;; The first source operand (Operand 2 in the Interl manual)
+       ;; The first source operand (Operand 2 in the Intel Manual)
        ;; is the XMM or YMM register specified in VEX.vvvv.
        ((the (unsigned-byte 4) src1-index) (vex->vvvv vex-prefixes))
        ((the (unsigned-byte 256) src1) (zmmi-size operand-size src1-index x86))
 
-       ;; The second source operand (Operand 3 in the Intel manual)
+       ;; The second source operand (Operand 3 in the Intel Manual)
        ;; is the XMM or YMM register, or memory operand,
        ;; specified in the ModR/M byte.
        ;; There is no alignment checking
-       ;; (see Intel Manuals Volume 2 Table 2-21).
+       ;; (see Intel Manual Volume 2 Table 2-21 (Dec 2023)).
        (inst-ac? nil) ; Exceptions Type 4
        ((mv flg
             src2
@@ -765,10 +765,9 @@
                                                x86))
        ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
 
-       ;; The destination operand (Operand 1 in the Intel manual)
+       ;; The destination operand (Operand 1 in the Intel Manual)
        ;; is the XMM or YMM register specified in the reg bits of ModR/M.
        ((the (unsigned-byte 4) dst-index) (reg-index reg rex-byte #.*r*))
-
 
        ;; Increment the instruction pointer in the temp-rip variable.
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
