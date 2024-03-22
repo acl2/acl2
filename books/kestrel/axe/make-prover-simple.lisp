@@ -5623,7 +5623,8 @@
                (mv (erp-nil) :proved state))
               (- (and (member-eq print '(t :verbose :verbose!))
                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
-              (info (if (member-eq print '(nil :brief))
+              (count-hits (lookup-eq :count-hits options)) ; t, nil, or :brief
+              (info (if count-hits
                         nil ; do not count hits
                       (empty-info-world)))
               (tries (if (member-eq print '(nil :brief))
@@ -5639,7 +5640,8 @@
                                           state))
               ((when erp) (mv erp :failed state))
               (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
-              (- (and info (maybe-print-hit-counts print info))))
+              (- (maybe-print-hit-counts print info)) ; cases for t, nil, and :brief
+              )
            (mv nil result state)))
 
        (defthm ,(pack$ prove-disjunction-name '-return-type)
@@ -5776,6 +5778,7 @@
                                             no-splitp
                                             print-as-clausesp
                                             no-print-fns
+                                            count-hits
                                             monitor
                                             print
                                             use
@@ -5828,7 +5831,7 @@
                (er hard? ',prove-dag-implication-name "Bad world (this should not happen).")
                (mv :bad-input nil state))
               ((when (not (axe-use-hintp use)))
-               (er hard? ',prove-dag-implication-name "Bad :use hint: ~x0." use)
+               (er hard? ',prove-dag-implication-name "Bad :use hint: ~x0." use) ; todo: don't use the term "hint" for these?
                (mv :bad-input nil state))
               ((when (not (print-levelp print)))
                (er hard? ',prove-dag-implication-name "Bad :print option: ~x0." print)
@@ -5844,6 +5847,9 @@
                (mv :bad-input nil state))
               ((when (not (symbol-listp no-print-fns)))
                (er hard? ',prove-dag-implication-name "Bad :no-print-fns hint: ~x0." no-print-fns)
+               (mv :bad-input nil state))
+              ((when (not (member-eq count-hits '(t nil :brief))))
+               (er hard? ',prove-dag-implication-name "Bad :count-hits hint: ~x0." count-hits)
                (mv :bad-input nil state))
               ;; Form the implication to prove:
               ((mv erp implication-dag-or-quotep) (make-implication-dag dag1 dag2)) ; todo: we will end up having to extract disjuncts from this implication
@@ -5895,6 +5901,7 @@
               (options (if no-splitp (acons :no-splitp t options) options))
               (options (if print-as-clausesp (acons :print-as-clausesp t options) options))
               (options (if no-print-fns (acons :no-print-fns no-print-fns options) options))
+              (options (if count-hits (acons :count-hits count-hits options) options))
               (- (and print (cw "(Proving ~s0:~%" case-designator)))
               ((mv erp result state)
                (,prove-disjunction-name (list top-nodenum) ;; just one disjunct
@@ -5933,6 +5940,7 @@
                                            no-splitp
                                            print-as-clausesp
                                            no-print-fns
+                                           count-hits
                                            monitor
                                            print
                                            use
@@ -5947,6 +5955,7 @@
                                      (booleanp no-splitp)
                                      (booleanp print-as-clausesp)
                                      (symbol-listp no-print-fns)
+                                     (member-eq count-hits '(t nil :brief))
                                      (symbol-listp monitor)
                                      (print-levelp print)
                                      ;; use
@@ -5964,7 +5973,7 @@
            ;; This helper function is in :logic mode and is guard-verified:
            (,prove-dag-implication-name dag1 dag2
                                         tactic rule-lists global-rules extra-global-rules interpreted-function-alist
-                                        no-splitp print-as-clausesp no-print-fns monitor print use var-ordering state)))
+                                        no-splitp print-as-clausesp no-print-fns count-hits monitor print use var-ordering state)))
 
        ;; Attempts to prove that DAG-OR-TERM1 implies DAG-OR-TERM2.
        ;; Causes an error if the proof attempt fails.
@@ -5979,6 +5988,7 @@
                                           (no-splitp 'nil) ; whether to prevent splitting into cases
                                           (print-as-clausesp 'nil)
                                           (no-print-fns 'nil)
+                                          (count-hits 'nil)
                                           (monitor 'nil)
                                           (print ':brief)
                                           (use 'nil)
@@ -5987,7 +5997,7 @@
          (list 'make-event
                (list ',prove-implication-fn-name dag-or-term1 dag-or-term2
                      tactic rule-lists global-rules extra-global-rules interpreted-function-alist
-                     no-splitp print-as-clausesp no-print-fns monitor print use var-ordering 'state)))
+                     no-splitp print-as-clausesp no-print-fns count-hits monitor print use var-ordering 'state)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6052,6 +6062,7 @@
                                      (booleanp (lookup-equal :no-splitp hint))
                                      (booleanp (lookup-equal :print-as-clausesp hint))
                                      (symbol-listp (lookup-equal :no-print-fns hint))
+                                     (member-eq (lookup-equal :no-print-fns hint) '(t nil :brief))
                                      (symbol-listp (lookup-equal :monitor hint))
                                      (axe-use-hintp (lookup-equal :use hint))
                                      (print-levelp (lookup-equal :print hint))
@@ -6086,6 +6097,10 @@
               (no-splitp (lookup-eq :no-splitp hint))
               (print-as-clausesp (lookup-eq :print-as-clausesp hint))
               (no-print-fns (lookup-eq :no-print-fns hint))
+              (count-hits (lookup-eq :count-hits hint))
+              ((when (not (member-equal count-hits '(t nil :brief))))
+               (er hard? ',clause-processor-name "Bad :count-hits argument: ~x0." count-hits)
+               (mv (erp-t) (list clause) state))
               (var-ordering (lookup-eq :var-ordering hint))
               (print (lookup-eq :print hint))
               ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
@@ -6095,6 +6110,7 @@
               (options (if no-splitp (acons :no-splitp t options) options))
               (options (if print-as-clausesp (acons :print-as-clausesp t options) options))
               (options (if no-print-fns (acons :no-print-fns no-print-fns options) options))
+              (options (if count-hits (acons :count-hits count-hits options) options))
               ;; Attempt the proof:
               ((mv erp provedp state)
                (,prove-clause-name clause

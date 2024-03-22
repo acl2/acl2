@@ -1,6 +1,6 @@
 ; Prime fields library: additional rules
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -224,7 +224,7 @@
                   (mod (ifix y) p)))
   :hints (("Goal" :in-theory (enable neg add acl2::mod-sum-cases))))
 
-;; If the resulting constant (* x y) is too large, the next rule below will
+;; If the resulting constant (* x y) is too large, a rule below will
 ;; reduce it.
 (defthm mul-of-mul-combine-constants
   (implies (and (syntaxp (and (quotep x)
@@ -241,7 +241,8 @@
 
 (defthmd mul-of-mul-combine-constants-alt
   (implies (syntaxp (and (quotep x)
-                         (quotep y)))
+                         (quotep y)
+                         (quotep p)))
            (equal (mul x (mul y z p) p)
                   (mul (mul x y p) z p)))
   :hints (("Goal" :in-theory (enable mul))))
