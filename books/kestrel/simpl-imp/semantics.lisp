@@ -1,10 +1,10 @@
 ; Simple Programming Language Imp Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author: Teruhiro Tagomori (NRI SecureTechnologies, Ltd.)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,7 +109,7 @@
      as 0, as if the variable were explicitly present and had value 0.
      This way, this reading function is total:
      it always yields an integer value for each variable and environment."))
-  (b* ((var-val (omap::in (str-fix var) (env-fix env))))
+  (b* ((var-val (omap::assoc (str-fix var) (env-fix env))))
     (if (null var-val)
         0
       (cdr var-val)))
