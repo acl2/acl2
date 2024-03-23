@@ -553,7 +553,7 @@
                           (< (+ (,keycount (mv-nth 0 (omap::head (,omap.fix ,omap.xvar))))
                                 (,valcount (mv-nth 1 (omap::head (,omap.fix ,omap.xvar)))))
                              (,omap.count ,omap.xvar)))
-                 :hints (("Goal" :in-theory (enable ,omap.fix omap::mapp-non-nil-implies-non-empty)))
+                 :hints (("Goal" :in-theory (enable ,omap.fix omap::mapp-non-nil-implies-not-emptyp)))
                  :rule-classes :linear)))
 
       (defthm ,omap-count-of-tail
@@ -568,7 +568,7 @@
                  (< (,omap.count (omap::tail (,omap.fix ,omap.xvar)))
                     (,omap.count ,omap.xvar)))
         :rule-classes :linear
-        :hints (("Goal" :in-theory (enable ,omap.count ,omap.fix omap::mapp-non-nil-implies-non-empty))))
+        :hints (("Goal" :in-theory (enable ,omap.count ,omap.fix omap::mapp-non-nil-implies-not-emptyp))))
 
       (defthm ,omap-count-of-lookup
         (implies (and (not (omap::emptyp map))

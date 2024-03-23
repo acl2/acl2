@@ -166,7 +166,7 @@
 ; but its implicit tau rule is apparently used in other proofs,
 ; so for now we cannot just make it local to the theorem that enables it.
 ; We should see if we can eliminate this altogether.
-(defruledl consp-car-when-non-empty-mapp
+(defruledl consp-car-when-mapp-non-nil
   (implies (and map
                 (mapp map))
            (consp (car map)))
@@ -212,12 +212,12 @@
     (implies (emptyp x)
              (equal (mfix x) nil)))
 
-  (defrule mapp-non-nil-implies-non-empty
+  (defrule mapp-non-nil-implies-not-emptyp
     (implies (and (mapp map)
                   map)
              (not (emptyp map))))
 
-  (defrule acl2-count-head-when-non-empty
+  (defrule acl2-count-head-when-not-emptyp
     (implies (not (emptyp map))
              (< (+ (acl2-count (car (car map)))
                    (acl2-count (cdr (car map))))
@@ -640,7 +640,7 @@
              head
              emptyp
              mfix
-             consp-car-when-non-empty-mapp
+             consp-car-when-mapp-non-nil
              alistp-when-mapp))
 
   (defrule assoc-of-update
