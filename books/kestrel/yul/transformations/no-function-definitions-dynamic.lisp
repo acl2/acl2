@@ -73,8 +73,8 @@
   (defrule funinfo-nofunp-of-cdr-of-in-when-funscope-nofunp
     (implies (and (funscopep funscope)
                   (funscope-nofunp funscope)
-                  (consp (omap::in fun funscope)))
-             (funinfo-nofunp (cdr (omap::in fun funscope)))))
+                  (consp (omap::assoc fun funscope)))
+             (funinfo-nofunp (cdr (omap::assoc fun funscope)))))
 
   (defrule funscope-nofunp-of-update
     (implies (and (funscopep funscope)

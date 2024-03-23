@@ -161,25 +161,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (omap::in #\a nil)
+(assert-equal (omap::assoc #\a nil)
               nil)
 
-(assert-equal (omap::in #\a '(("key" . #\v)))
+(assert-equal (omap::assoc #\a '(("key" . #\v)))
               nil)
 
-(assert-equal (omap::in "key" '(("key" . #\v)))
+(assert-equal (omap::assoc "key" '(("key" . #\v)))
               '("key" . #\v))
 
-(assert-equal (omap::in "key" '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc "key" '((a . 1) (b . 2) (c . 3)))
               nil)
 
-(assert-equal (omap::in 'a '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc 'a '((a . 1) (b . 2) (c . 3)))
               '(a . 1))
 
-(assert-equal (omap::in 'b '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc 'b '((a . 1) (b . 2) (c . 3)))
               '(b . 2))
 
-(assert-equal (omap::in 'c '((a . 1) (b . 2) (c . 3)))
+(assert-equal (omap::assoc 'c '((a . 1) (b . 2) (c . 3)))
               '(c . 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

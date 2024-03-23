@@ -177,7 +177,7 @@
      This property is used to show the existence of the maximum
      defined by @(tsee mmp-encode-c-max)."))
   (forall (key)
-          (implies (omap::in key (nibblelist-bytelist-mfix map))
+          (implies (omap::assoc key (nibblelist-bytelist-mfix map))
                    (equal (take x key) (nibble-list-fix l))))
   :guard-hints (("Goal"
                  :in-theory
@@ -192,7 +192,7 @@
                   (nibblelist-bytelist-mapp map)
                   (natp x)
                   (nibble-listp l)
-                  (omap::in key map))
+                  (omap::assoc key map))
              (>= (len key) x))
     :rule-classes nil
     :use (mmp-encode-c-forall-necc lemma)
@@ -239,7 +239,7 @@
     (implies (and (mmp-encode-c-exists map x)
                   (nibblelist-bytelist-mapp map)
                   (natp x)
-                  (omap::in key map))
+                  (omap::assoc key map))
              (>= (len key) x))
     :rule-classes nil
     :use (:instance mmp-encode-c-forall-len-key-geq-x
@@ -281,12 +281,12 @@
   ///
 
   (defrule nibblelist-bytelist-map-sup-len-key-geq-len-key
-    (implies (and (omap::in key map) ; bind free KEY
+    (implies (and (omap::assoc key map) ; bind free KEY
                   (nibblelist-bytelist-mapp map))
              (>= (nibblelist-bytelist-map-sup-len-key map)
                  (len key)))
     :rule-classes :linear
-    :enable omap::in)
+    :enable omap::assoc)
 
   (defrule nibblelist-bytelist-map-sup-len-key-of-update
     (implies (and (nibble-listp key)
@@ -554,7 +554,7 @@
     (implies (and (nibblelist-bytelist-mapp map)
                   (natp x)
                   (mmp-encode-c-max.elementp map x)
-                  (omap::in key map)) ; bind free KEY
+                  (omap::assoc key map)) ; bind free KEY
              (<= x (len key)))
     :rule-classes ((:linear
                     :trigger-terms ((mmp-encode-c-max.elementp map x))))
@@ -564,7 +564,7 @@
   (defruled mmp-encode-c-max-leq-len-key
     (implies (and (nibblelist-bytelist-mapp map)
                   (not (omap::emptyp map))
-                  (omap::in key map)) ; bind free KEY
+                  (omap::assoc key map)) ; bind free KEY
              (<= (mmp-encode-c-max map)
                  (len key)))
     :rule-classes ((:linear :trigger-terms ((mmp-encode-c-max map))))
@@ -638,16 +638,16 @@
   (defruled nth-of-key-in-mmp-encode-u-map
     (implies (and (nibblelist-bytelist-mapp map) ; bind free MAP
                   (nibblep nibble) ; bind free NIBBLE
-                  (omap::in key (mmp-encode-u-map map i nibble)))
+                  (omap::assoc key (mmp-encode-u-map map i nibble)))
              (equal (nth i key) nibble))
-    :enable omap::in)
+    :enable omap::assoc)
 
   (defrule in-of-mmp-encode-u-map
     (implies (and (nibblelist-bytelist-mapp map)
                   (nibblep nibble))
-             (equal (omap::in key (mmp-encode-u-map map i nibble))
+             (equal (omap::assoc key (mmp-encode-u-map map i nibble))
                     (and (equal (nth i key) nibble)
-                         (omap::in key map)))))
+                         (omap::assoc key map)))))
 
   (defrule mmp-encode-c-forall-of-mmp-encode-u-map
     (implies (and (nibblelist-bytelist-mapp map)
@@ -1022,7 +1022,7 @@
          ((when c-error?) (mv c-error? nil nil))
          ((when (< (len c-root) 32)) (mv nil c-root c-database))
          (hash (keccak-256-bytes c-root))
-         (pair? (omap::in hash c-database))
+         (pair? (omap::assoc hash c-database))
          (collisionp (and pair?
                           (not (equal (cdr pair?)
                                       c-root))))
@@ -1071,7 +1071,7 @@
                ((when u-error?) (mv u-error? (rlp-tree-leaf nil) nil))
                ((mv any-key &) (omap::head map))
                (key-prefix (take i any-key))
-               (pair (omap::in key-prefix map))
+               (pair (omap::assoc key-prefix map))
                (v (and pair (cdr pair)))
                (v-tree (if v (rlp-tree-leaf v) (rlp-tree-branch nil))))
             (mv nil
@@ -1356,8 +1356,8 @@
      and we return the byte array value associated to key
      (@('nil') if the key is absent."))
   (b* (((mv & map) (mmp-decode root database))
-       (pair? (omap::in (byte-list-fix key)
-                        (bytelist-bytelist-mfix map))))
+       (pair? (omap::assoc (byte-list-fix key)
+                           (bytelist-bytelist-mfix map))))
     (if (consp pair?)
         (mv t (cdr pair?))
       (mv nil nil)))

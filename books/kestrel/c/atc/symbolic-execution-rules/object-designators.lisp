@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,7 +53,7 @@
     :enable (objdesign-of-var
              var-autop
              read-static-var)
-    :disable omap::in-when-in-tail
+    :disable omap::assoc-when-assoc-tail
     :prep-lemmas
     ((defrule lemma
        (iff (objdesign-of-var-aux var frame scopes)
@@ -112,7 +112,7 @@
              push-frame
              top-frame
              read-object)
-    :disable omap::in-when-in-tail)
+    :disable omap::assoc-when-assoc-tail)
 
   (defruled objdesign-of-var-aux-iff-var-in-scopes
     (iff (objdesign-of-var-aux var frame scopes)

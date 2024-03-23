@@ -163,7 +163,7 @@
      i.e. from innermost to outermost block."))
   (b* (((unless (mbt (consp vartab))) nil)
        (varscope (var-table-scope-fix (car vartab)))
-       (pair (omap::in (ident-fix var) varscope))
+       (pair (omap::assoc (ident-fix var) varscope))
        ((when (consp pair)) (cdr pair))
        (vartab (cdr vartab))
        ((when (endp vartab)) nil))
@@ -255,7 +255,7 @@
   (b* ((var (ident-fix var))
        (vartab (var-table-fix vartab))
        (varscope (car vartab))
-       (var-info (omap::in var varscope))
+       (var-info (omap::assoc var varscope))
        ((when (not (consp var-info)))
         (b* ((info (make-var-sinfo :type type
                                    :defstatus defstatus))
@@ -411,7 +411,7 @@
    (xdoc::p
     "We return the type of the function, if the function is present.
      Otherwise, we return @('nil')."))
-  (cdr (omap::in (ident-fix fun) (fun-table-fix funtab)))
+  (cdr (omap::assoc (ident-fix fun) (fun-table-fix funtab)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
