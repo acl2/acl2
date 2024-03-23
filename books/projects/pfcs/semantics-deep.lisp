@@ -122,8 +122,8 @@
 
   (defrule natp-of-cdr-of-in-when-assignmentp-type
     (implies (and (assignmentp asg)
-                  (omap::in str asg))
-             (natp (cdr (omap::in str asg))))
+                  (omap::assoc str asg))
+             (natp (cdr (omap::assoc str asg))))
     :rule-classes :type-prescription)
 
   (defrule assignmentp-of-from-lists
@@ -167,8 +167,8 @@
   (defruled fep-of-cdr-of-in-when-assignment-wfp
     (implies (and (assignmentp asg)
                   (assignment-wfp asg p)
-                  (consp (omap::in var asg)))
-             (fep (cdr (omap::in var asg)) p)))
+                  (consp (omap::assoc var asg)))
+             (fep (cdr (omap::assoc var asg)) p)))
 
   (defrule assignment-wfp-of-tail
     (implies (and (assignmentp asg)
@@ -251,7 +251,7 @@
   (expression-case
    expr
    :const (mod expr.value p)
-   :var (b* ((pair (omap::in expr.name (assignment-fix asg))))
+   :var (b* ((pair (omap::assoc expr.name (assignment-fix asg))))
           (if (consp pair)
               (nfix (cdr pair))
             (reserr nil)))

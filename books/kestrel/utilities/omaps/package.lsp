@@ -18,7 +18,8 @@
                 (append *std-pkg-symbols*
                         '(defxdoc+
                           fast-<<))
-                '(map
+                '(assoc
+                  map
                   values
                   set::emptyp
                   set::delete

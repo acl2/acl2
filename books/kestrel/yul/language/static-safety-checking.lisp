@@ -123,7 +123,7 @@
     "The lookup is by name.
      If a function is found, we return its type.
      Otherwise we return an error."))
-  (b* ((pair (omap::in (identifier-fix name) (funtable-fix funtab))))
+  (b* ((pair (omap::assoc (identifier-fix name) (funtable-fix funtab))))
     (if (consp pair)
         (cdr pair)
       (reserrf (list :function-not-found (identifier-fix name)))))
@@ -156,7 +156,7 @@
        ((okf funtab) (funtable-for-fundefs (cdr fundefs)))
        (fundef (car fundefs))
        (fun (fundef->name fundef))
-       ((when (consp (omap::in fun funtab)))
+       ((when (consp (omap::assoc fun funtab)))
         (reserrf (list :duplicate-function fun))))
     (omap::update fun (funtype-for-fundef fundef) funtab))
   :hooks (:fix))

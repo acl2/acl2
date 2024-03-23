@@ -722,14 +722,14 @@
 
 (defruled omap-in-of-supermap-when-submap
   (implies (and (omap::submap sub sup)
-                (omap::in key sub))
-           (equal (omap::in key sup)
-                  (omap::in key sub)))
+                (omap::assoc key sub))
+           (equal (omap::assoc key sup)
+                  (omap::assoc key sub)))
   :induct t
   :enable omap::submap)
 
 (defruled omap-submap-of-update-right
-  (implies (not (omap::in key map))
+  (implies (not (omap::assoc key map))
            (equal (omap::submap map (omap::update key val map2))
                   (omap::submap map map2)))
   :induct t
@@ -738,9 +738,9 @@
 (defruled omap-not-in-when-key-less
   (implies (or (omap::emptyp map)
                (<< key (mv-nth 0 (omap::head map))))
-           (not (omap::in key map)))
+           (not (omap::assoc key map)))
   :induct t
-  :enable (omap::in
+  :enable (omap::assoc
            omap::head
            omap::tail
            omap::mapp
@@ -749,7 +749,7 @@
 
 (defruled omap-head-not-in-tail
   (implies (not (omap::emptyp map))
-           (not (omap::in (mv-nth 0 (omap::head map))
+           (not (omap::assoc (mv-nth 0 (omap::head map))
                           (omap::tail map))))
   :enable omap::head-tail-order
   :use (:instance omap-not-in-when-key-less
@@ -781,14 +781,14 @@
 
 (defruled omap-in-of-car-of-from-lists
   (implies (consp keys)
-           (equal (omap::in (car keys) (omap::from-lists keys vals))
+           (equal (omap::assoc (car keys) (omap::from-lists keys vals))
                   (cons (car keys) (car vals))))
   :enable omap::from-lists)
 
 (defruled omap-in-of-car-of-supermap-of-from-lists
   (implies (and (consp keys)
                 (omap::submap (omap::from-lists keys vals) map))
-           (equal (omap::in (car keys) map)
+           (equal (omap::assoc (car keys) map)
                   (cons (car keys) (car vals))))
   :use (:instance omap-in-of-supermap-when-submap
                   (key (car keys))
@@ -799,7 +799,7 @@
 (defruled omap-in-of-cadr-of-from-lists
   (implies (and (consp (cdr keys))
                 (not (member-equal (car keys) (cdr keys))))
-           (equal (omap::in (cadr keys) (omap::from-lists keys vals))
+           (equal (omap::assoc (cadr keys) (omap::from-lists keys vals))
                   (cons (cadr keys) (cadr vals))))
   :enable omap::from-lists)
 
@@ -807,7 +807,7 @@
   (implies (and (consp (cdr keys))
                 (not (member-equal (car keys) (cdr keys)))
                 (omap::submap (omap::from-lists keys vals) map))
-           (equal (omap::in (cadr keys) map)
+           (equal (omap::assoc (cadr keys) map)
                   (cons (cadr keys) (cadr vals))))
   :use (:instance omap-in-of-supermap-when-submap
                   (key (cadr keys))
@@ -817,7 +817,7 @@
 
 (defruled omap-not-in-from-lists-when-not-member
   (implies (not (member-equal key keys))
-           (not (omap::in key (omap::from-lists keys vals))))
+           (not (omap::assoc key (omap::from-lists keys vals))))
   :induct t
   :enable omap::from-lists)
 

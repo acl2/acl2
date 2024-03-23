@@ -723,7 +723,7 @@
      A variable is always single-valued."))
   (b* ((var-ctxt (context->variables ctxt))
        (var (identifier-fix var))
-       (pair? (omap::in var var-ctxt))
+       (pair? (omap::assoc var var-ctxt))
        ((when (not pair?)) (type-result-err
                             (list :variable-not-in-context
                               var

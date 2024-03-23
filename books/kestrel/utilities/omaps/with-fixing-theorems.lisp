@@ -48,10 +48,10 @@
   (fty::deffixequiv delete*
     :hints (("Goal" :in-theory (enable delete*)))))
 
-(defsection in-fix
-  :extension in
-  (fty::deffixequiv in
-    :hints (("Goal" :in-theory (enable in)))))
+(defsection assoc-fix
+  :extension assoc
+  (fty::deffixequiv assoc
+    :hints (("Goal" :in-theory (enable assoc)))))
 
 (defsection in*-fix
   :extension in*

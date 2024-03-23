@@ -2297,8 +2297,8 @@
                                (:e type-ullong)
                                (:e type-sllong)
                                (:e type-pointer)
-                               omap::in-of-update
-                               (:e omap::in)
+                               omap::assoc-of-update
+                               (:e omap::assoc)
                                scopep-of-update
                                omap-update-of-const-identifier
                                (:e identp)

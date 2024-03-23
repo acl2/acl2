@@ -200,14 +200,14 @@
 
   (defrule consp-of-in-of-funscope-dead
     (implies (funscopep funscope)
-             (equal (consp (omap::in fun (funscope-dead funscope)))
-                    (consp (omap::in fun funscope)))))
+             (equal (consp (omap::assoc fun (funscope-dead funscope)))
+                    (consp (omap::assoc fun funscope)))))
 
   (defrule cdr-of-in-of-funscope-dead
     (implies (and (funscopep funscope)
-                  (omap::in fun funscope))
-             (equal (cdr (omap::in fun (funscope-dead funscope)))
-                    (funinfo-dead (cdr (omap::in fun funscope))))))
+                  (omap::assoc fun funscope))
+             (equal (cdr (omap::assoc fun (funscope-dead funscope)))
+                    (funinfo-dead (cdr (omap::assoc fun funscope))))))
 
   (defrule funscope-dead-of-update
     (implies (and (identifierp name)

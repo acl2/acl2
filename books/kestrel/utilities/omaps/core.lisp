@@ -166,7 +166,7 @@
 ; but its implicit tau rule is apparently used in other proofs,
 ; so for now we cannot just make it local to the theorem that enables it.
 ; We should see if we can eliminate this altogether.
-(defruledl consp-car-when-non-empty-mapp
+(defruledl consp-car-when-mapp-non-nil
   (implies (and map
                 (mapp map))
            (consp (car map)))
@@ -212,12 +212,12 @@
     (implies (emptyp x)
              (equal (mfix x) nil)))
 
-  (defrule mapp-non-nil-implies-non-empty
+  (defrule mapp-non-nil-implies-not-emptyp
     (implies (and (mapp map)
                   map)
              (not (emptyp map))))
 
-  (defrule acl2-count-head-when-non-empty
+  (defrule acl2-count-head-when-not-emptyp
     (implies (not (emptyp map))
              (< (+ (acl2-count (car (car map)))
                    (acl2-count (cdr (car map))))
@@ -598,116 +598,111 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define in (key (map mapp))
+(define assoc (key (map mapp))
   :returns (pair? listp)
-  :short "Check if a key is in an omap."
+  :short "Find the pair in the omap with a given key."
   :long
   (xdoc::topstring
    (xdoc::p
     "If the key is present, return the @(tsee cons) pair with the key.
      Otherwise, return @('nil').")
    (xdoc::p
-    "This is similar to @(tsee set::in) for osets."))
+    "This is similar to @(tsee acl2::assoc) for alists."))
   (cond ((emptyp map) nil)
         (t (mv-let (key0 val0)
              (head map)
              (cond ((equal key key0) (cons key0 val0))
-                   (t (in key (tail map)))))))
+                   (t (assoc key (tail map)))))))
   ///
 
-  (defrule in-of-mfix
-    (equal (in key (mfix map))
-           (in key map)))
+  (defrule assoc-of-mfix
+    (equal (assoc key (mfix map))
+           (assoc key map)))
 
-  (defrule in-when-emptyp
+  (defrule assoc-when-emptyp
     (implies (emptyp map)
-             (equal (in key map) nil))
+             (equal (assoc key map) nil))
     :rule-classes (:rewrite :type-prescription))
 
-  (defrule in-of-head
-    (iff (in (mv-nth 0 (head map)) map)
+  (defrule assoc-of-head
+    (iff (assoc (mv-nth 0 (head map)) map)
          (not (emptyp map))))
 
-  (defrule in-when-in-tail
-    (implies (in key (tail map))
-             (in key map)))
+  (defrule assoc-when-assoc-tail
+    (implies (assoc key (tail map))
+             (assoc key map)))
 
-  (defrule acl2-count-in-<-map
+  (defrule acl2-count-assoc-<-map
     (implies (not (emptyp map))
-             (< (acl2-count (in key map))
+             (< (acl2-count (assoc key map))
                 (acl2-count map)))
     :enable (mv-nth
              head
              emptyp
              mfix
-             consp-car-when-non-empty-mapp
+             consp-car-when-mapp-non-nil
              alistp-when-mapp))
 
-  (defrule in-of-update
-    (equal (in key1 (update key val map))
+  (defrule assoc-of-update
+    (equal (assoc key1 (update key val map))
            (if (equal key1 key)
                (cons key val)
-             (in key1 map)))
+             (assoc key1 map)))
     :enable (update head tail emptyp mfix mapp))
 
-  (defrule in-of-update*
-    (equal (in key (update* map1 map2))
-           (or (in key map1)
-               (in key map2)))
+  (defrule assoc-of-update*
+    (equal (assoc key (update* map1 map2))
+           (or (assoc key map1)
+               (assoc key map2)))
     :enable update*)
 
-  (defrule consp-of-in-of-update*
-    (equal (consp (in key (update* map1 map2)))
-           (or (consp (in key map1))
-               (consp (in key map2))))
+  (defrule consp-of-assoc-of-update*
+    (equal (consp (assoc key (update* map1 map2)))
+           (or (consp (assoc key map1))
+               (consp (assoc key map2))))
     :enable update*)
 
-  (defrule update-of-cdr-of-in-when-in
-    (implies (in k m)
-             (equal (update k (cdr (in k m)) m)
+  (defrule update-of-cdr-of-assoc-when-assoc
+    (implies (assoc k m)
+             (equal (update k (cdr (assoc k m)) m)
                     m)))
 
-  (defruled consp-of-in-iff-in
-    (iff (consp (in key map))
-         (in key map)))
+  (defruled consp-of-assoc-iff-assoc
+    (iff (consp (assoc key map))
+         (assoc key map)))
 
   (defruled head-key-minimal
     (implies (<< key (mv-nth 0 (head map)))
-             (not (in key map)))
+             (not (assoc key map)))
     :induct t
     :hints ('(:use (:instance head-tail-order (x map)))))
 
-  (defrule head-key-not-in-tail
-    (not (in (mv-nth 0 (head map))
-             (tail map)))
-    :disable in
+  (defrule head-key-not-assoc-tail
+    (not (assoc (mv-nth 0 (head map))
+                (tail map)))
+    :disable assoc
     :use ((:instance head-key-minimal
                      (key (mv-nth 0 (head map)))
                      (map (tail map)))
           (:instance head-tail-order (x map))))
 
-  (defruled in-of-tail-when-in-of-tail
-    (implies (in key (tail map))
-             (equal (in key (tail map))
-                    (in key map))))
+  (defruled assoc-of-tail-when-assoc-of-tail
+    (implies (assoc key (tail map))
+             (equal (assoc key (tail map))
+                    (assoc key map))))
 
-  (defruled in-of-tail-when-not-head
+  (defruled assoc-of-tail-when-not-head
     (implies (not (equal key (mv-nth 0 (head map))))
-             (equal (in key (tail map))
-                    (in key map)))))
+             (equal (assoc key (tail map))
+                    (assoc key map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define in* ((keys set::setp) (map mapp))
   :returns (yes/no booleanp)
   :short "Check if every key in a set is in an omap."
-  :long
-  (xdoc::topstring-p
-   "This lifts @(tsee in) to sets of keys.
-    However, this returns a boolean,
-    while @(tsee in) returns a @(tsee listp).")
   (cond ((set::emptyp keys) t)
-        (t (and (in (set::head keys) map)
+        (t (and (assoc (set::head keys) map)
                 (in* (set::tail keys) map))))
   ///
 
@@ -762,21 +757,21 @@
 
   (defthm weak-update-induction-helper-1
     (implies (and (mapp M)
-                  (not (in key M))
+                  (not (assoc key M))
                   (not (equal (mv-nth 0 (head (update key val M))) key)))
              (equal (head (update key val M))
                     (head M)))
     :hints (("Goal" :in-theory (acl2::enable* order-rules))))
 
   (defthm weak-update-induction-helper-2
-    (implies (and (not (in key M))
+    (implies (and (not (assoc key M))
                   (not (equal (mv-nth 0 (head (update key val M))) key)))
              (equal (tail (update key val M))
                     (update key val (tail M))))
     :hints (("Goal" :in-theory (acl2::enable* order-rules))))
 
   (defthm weak-update-induction-helper-3
-    (implies (and (not (in key M))
+    (implies (and (not (assoc key M))
                   (equal (mv-nth 0 (head (update key val M))) key))
              (equal (tail (update key val M))
                     (mfix M)))
@@ -785,7 +780,7 @@
   (defun weak-update-induction (key val M)
     (declare (xargs :guard (mapp M)))
     (cond ((emptyp M) nil)
-          ((in key M) nil)
+          ((assoc key M) nil)
           ((equal (head-key (update key val M)) key) nil)
           (t (list (weak-update-induction key val (tail M))))))
 
@@ -797,10 +792,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lookup (key (map mapp))
-  :guard (in key map)
+  :guard (assoc key map)
   :returns (val)
   :short "Value associated to a key in an omap."
-  (cdr (in key map))
+  (cdr (assoc key map))
   ///
 
   (defrule lookup-when-emptyp
@@ -812,14 +807,14 @@
     (implies (not (emptyp map))
              (< (acl2-count (lookup key map))
                 (acl2-count map)))
-    :hints (("Goal" :in-theory (disable acl2-count-in-<-map)
-             :use acl2-count-in-<-map)))
+    :hints (("Goal" :in-theory (disable acl2-count-assoc-<-map)
+             :use acl2-count-assoc-<-map)))
 
-  (defruled lookup-of-tail-when-in-tail
-    (implies (in key (tail map))
+  (defruled lookup-of-tail-when-assoc-tail
+    (implies (assoc key (tail map))
              (equal (lookup key (tail map))
                     (lookup key map)))
-    :enable in-of-tail-when-in-of-tail))
+    :enable assoc-of-tail-when-assoc-of-tail))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -831,7 +826,7 @@
   (xdoc::topstring-p
    "This lifts @(tsee lookup) to sets of keys.")
   (cond ((set::emptyp keys) nil)
-        ((mbt (if (in (set::head keys) map) t nil))
+        ((mbt (if (assoc (set::head keys) map) t nil))
          (set::insert (lookup (set::head keys) map)
                       (lookup* (set::tail keys) map)))
         (t (lookup* (set::tail keys) map)))
@@ -931,15 +926,15 @@
              (equal (restrict keys map) nil))
     :rule-classes (:rewrite :type-prescription))
 
-  (defruled in-of-restrict
-    (equal (in key (restrict keys map))
+  (defruled assoc-of-restrict
+    (equal (assoc key (restrict keys map))
            (and (set::in key keys)
-                (in key map))))
+                (assoc key map))))
 
-  (defruled in-of-restrict-when-in-keys
+  (defruled assoc-of-restrict-when-in-keys
     (implies (set::in key keys)
-             (equal (in key (restrict keys map))
-                    (in key map)))))
+             (equal (assoc key (restrict keys map))
+                    (assoc key map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -969,31 +964,31 @@
     (iff (keys map)
          (not (emptyp map))))
 
-  (defruled consp-of-in-to-in-of-keys
-    (equal (consp (in key map))
+  (defruled consp-of-assoc-to-in-of-keys
+    (equal (consp (assoc key map))
            (set::in key (keys map)))
-    :enable in)
+    :enable assoc)
 
-  (defruled in-to-in-of-keys
-    (iff (in key map)
+  (defruled assoc-to-in-of-keys
+    (iff (assoc key map)
          (set::in key (keys map)))
-    :enable in)
+    :enable assoc)
 
-  (defruled in-of-keys-to-in
+  (defruled in-of-keys-to-assoc
     (iff (set::in key (keys map))
-         (in key map))
-    :enable in)
+         (assoc key map))
+    :enable assoc)
 
-  (theory-invariant (incompatible (:rewrite in-to-in-of-keys)
-                                  (:rewrite in-of-keys-to-in)))
+  (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
+                                  (:rewrite in-of-keys-to-assoc)))
 
-  (defruled in-keys-when-in-forward
-    (implies (in key map)
+  (defruled in-keys-when-assoc-forward
+    (implies (assoc key map)
              (set::in key (keys map)))
     :rule-classes :forward-chaining)
 
-  (defruled in-keys-when-in-is-cons
-    (implies (equal (in a m)
+  (defruled in-keys-when-assoc-is-cons
+    (implies (equal (assoc a m)
                     (cons a b))
              (set::in a (keys m))))
 
@@ -1057,13 +1052,13 @@
              (equal (values map) nil))
     :rule-classes (:rewrite :type-prescription))
 
-  (defruled in-values-when-in
-    (implies (equal (in a m)
+  (defruled in-values-when-assoc
+    (implies (equal (assoc a m)
                     (cons a b))
              (set::in b (values m))))
 
-  (defrule value-of-update-when-not-in
-    (implies (not (consp (in key map)))
+  (defrule value-of-update-when-not-assoc
+    (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
                     (set::insert val (values map))))))
 
@@ -1083,7 +1078,7 @@
   (cond ((emptyp map1) t)
         ((mv-let (key1 val1)
            (head map1)
-           (let ((pair2 (in key1 map2)))
+           (let ((pair2 (assoc key1 map2)))
              (and pair2
                   (not (equal val1 (cdr pair2))))))
          nil)
@@ -1113,7 +1108,7 @@
   (cond ((emptyp sub) t)
         (t (mv-let (key val)
              (head sub)
-             (and (equal (in key sup)
+             (and (equal (assoc key sup)
                          (cons key val))
                   (submap (tail sub) sup)))))
   ///
@@ -1187,7 +1182,7 @@
 
   ;; (defrule size-update
   ;;   (equal (size (update key val m))
-  ;;          (if (in key m)
+  ;;          (if (assoc key m)
   ;;              (size m)
   ;;            (1+ (size m)))))
 
