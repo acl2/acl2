@@ -785,6 +785,9 @@
     acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
     acl2::bvuminus-of-+
+    acl2::logapp-becomes-bvcat-bind-free-axe
+    acl2::logtail-becomes-slice-bind-free-axe
+    acl2::logtail-of-bvchop-becomes-slice ; todo: other way?
 
     ;; Can help get rid of an intervening ifix:
     acl2::integerp-of-logand
