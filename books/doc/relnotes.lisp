@@ -337,6 +337,9 @@
    (xdoc::p
     "Renamed @('omap::empty') to @(tsee omap::emptyp).")
 
+   (xdoc::p
+    "Renamed @('omap::in') to @(tsee omap::assoc).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"

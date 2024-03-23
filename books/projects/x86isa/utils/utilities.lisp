@@ -52,6 +52,7 @@
 (include-book "centaur/gl/defthm-using-gl" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
+(local (include-book "std/alists/alistp" :dir :system))
 
 ;; =============================================================================
 
@@ -151,26 +152,28 @@ constants and functions; it also proves some associated lemmas.</p>")
 ;; Lemmas to help in the MBE proof obligations
 ;; of the generated NTOI and ITON functions below:
 
-(defruledl logext-when-unsigned-byte-p-and-sign-changes
-  (implies (and (unsigned-byte-p size x)
-                (<= (expt 2 (1- size)) x))
-           (equal (logext size x) (- x (expt 2 size))))
-  :prep-books ((include-book "arithmetic-5/top" :dir :system))
-  :enable (logext logapp loghead))
+(local
+ (encapsulate ()
 
-(defruledl loghead-when-signed-byte-p-and-sign-changes
-  (implies (and (signed-byte-p size x)
-                (< x 0))
-           (equal (loghead size x) (+ (expt 2 size) x)))
-  :prep-books ((include-book "arithmetic-5/top" :dir :system))
-  :enable loghead
-  :prep-lemmas
-  ((defrule lemma
-     (implies (posp size)
-              (< (expt 2 (1- size))
-                 (expt 2 size)))
-     :rule-classes :linear
-     :prep-books ((include-book "arithmetic/top" :dir :system)))))
+   (local (include-book "arithmetic-5/top" :dir :system))
+
+   (defruled logext-when-unsigned-byte-p-and-sign-changes
+     (implies (and (unsigned-byte-p size x)
+                   (<= (expt 2 (1- size)) x))
+              (equal (logext size x) (- x (expt 2 size))))
+     :enable (logext logapp loghead))
+
+   (defruled loghead-when-signed-byte-p-and-sign-changes
+     (implies (and (signed-byte-p size x)
+                   (< x 0))
+              (equal (loghead size x) (+ (expt 2 size) x)))
+     :enable loghead
+     :prep-lemmas
+     ((defrule lemma
+        (implies (posp size)
+                 (< (expt 2 (1- size))
+                    (expt 2 size)))
+        :rule-classes :linear)))))
 
 (def-ruleset nwp-defs       nil)
 (def-ruleset nw-defs        nil)
@@ -334,13 +337,6 @@ constants and functions; it also proves some associated lemmas.</p>")
         (t (list-to-alist (cdr x)
                           (1+ i)
                           (acons i (car x) acc)))))
-
-(defthm alistp-revappend
-  (implies (true-listp x)
-           (equal (alistp (revappend x y))
-                  (and (alistp x)
-                       (alistp y))))
-  :hints (("Goal" :induct (revappend x y))))
 
 (defthm alistp-of-list-to-alist
   (implies (alistp acc)
