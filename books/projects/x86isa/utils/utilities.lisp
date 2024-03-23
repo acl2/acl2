@@ -52,6 +52,7 @@
 (include-book "centaur/gl/defthm-using-gl" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
+(local (include-book "std/alists/alistp" :dir :system))
 
 ;; =============================================================================
 
@@ -336,13 +337,6 @@ constants and functions; it also proves some associated lemmas.</p>")
         (t (list-to-alist (cdr x)
                           (1+ i)
                           (acons i (car x) acc)))))
-
-(defthm alistp-revappend
-  (implies (true-listp x)
-           (equal (alistp (revappend x y))
-                  (and (alistp x)
-                       (alistp y))))
-  :hints (("Goal" :induct (revappend x y))))
 
 (defthm alistp-of-list-to-alist
   (implies (alistp acc)
