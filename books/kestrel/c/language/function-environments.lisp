@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,8 +106,8 @@
 (define fun-env-lookup ((name identp) (fenv fun-envp))
   :returns (info? fun-info-optionp)
   :short "Look up a function in an environment by name."
-  (cdr (omap::in (ident-fix name)
-                 (fun-env-fix fenv)))
+  (cdr (omap::assoc (ident-fix name)
+                    (fun-env-fix fenv)))
   :prepwork ((local (in-theory (enable fun-info-optionp))))
   :hooks (:fix))
 

@@ -170,7 +170,7 @@
      (if (or (omap::emptyp map)
              (not (int-term-m-map-p map)))
          0
-       (let ((i-pr (omap::in i map)))
+       (let ((i-pr (omap::assoc i map)))
          (if i-pr
              (sum-i-values-m i (omap::lookup i map))
            0))))
