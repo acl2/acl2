@@ -319,10 +319,57 @@
     x86isa::!rip
 
     x86isa::ctri
-    ;; todo: more like this:
-    x86isa::cr0bits->ts
+
+    x86isa::cr0bits-p$inline
+    x86isa::cr0bits->pe
+    x86isa::cr0bits->mp
     x86isa::cr0bits->em
+    x86isa::cr0bits->ts
+    x86isa::cr0bits->et
+    x86isa::cr0bits->ne
+    x86isa::cr0bits->res1
+    x86isa::cr0bits->wp
+    x86isa::cr0bits->res2
+    x86isa::cr0bits->am
+    x86isa::cr0bits->res3
+    x86isa::cr0bits->nw
+    x86isa::cr0bits->cd
+    x86isa::cr0bits->pg
+
+    x86isa::cr3bits-p$inline
+    x86isa::cr3bits->res1
+    x86isa::cr3bits->pwt
+    x86isa::cr3bits->pcd
+    x86isa::cr3bits->res2
+    x86isa::cr3bits->pdb
+    x86isa::cr3bits->res3
+
+    x86isa::cr4bits-p$inline
+    x86isa::cr4bits->vme
+    x86isa::cr4bits->pvi
+    x86isa::cr4bits->tsd
+    x86isa::cr4bits->de
+    x86isa::cr4bits->pse
+    x86isa::cr4bits->pae
+    x86isa::cr4bits->mce
+    x86isa::cr4bits->pge
+    x86isa::cr4bits->pce
     x86isa::cr4bits->osfxsr
+    x86isa::cr4bits->osxmmexcpt
+    x86isa::cr4bits->umip
+    x86isa::cr4bits->la57
+    x86isa::cr4bits->vmxe
+    x86isa::cr4bits->smxe
+    x86isa::cr4bits->res1
+    x86isa::cr4bits->fsgsbase
+    x86isa::cr4bits->pcide
+    x86isa::cr4bits->osxsave
+    x86isa::cr4bits->res2
+    x86isa::cr4bits->smep
+    x86isa::cr4bits->smap
+
+    x86isa::cr8bits-p$inline
+    x86isa::cr8bits->cr8-trpl
 
     x86isa::msri
 

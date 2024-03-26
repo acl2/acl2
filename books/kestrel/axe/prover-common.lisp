@@ -28,6 +28,7 @@
 (include-book "merge-sort-less-than")
 (include-book "supporting-nodes")
 (include-book "dag-array-builders")
+(include-book "dag-array-info")
 (include-book "renaming-array")
 (include-book "translation-array")
 (include-book "unify-tree-and-dag")
@@ -1455,20 +1456,24 @@
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
+                              (stringp case-adjective)
                               (booleanp print-as-clausesp)
                               (symbol-listp no-print-fns))))
-  (if print-as-clausesp
-      (progn$ (cw "~s0 clause:~%(OR " case-adjective)
+  (if (not (consp literal-nodenums))
+      (er hard? 'print-axe-prover-case "ERROR: No literals.") ; todo: For guards. Prove that this cannot happen.
+    (prog2$ (print-dag-array-info dag-array-name dag-array dag-len case-adjective t)
+            (if print-as-clausesp
+                (progn$ (cw "~s0 clause:~%(OR " case-adjective)
               ;; warning: can blow up:
               ;; todo: should this respect the no-print-fns?  maybe not, if this is for debugging
-              (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
-              (cw ")~%"))
-    (progn$
-      (cw "(Negated lits (~x0) for ~s1 case" (len literal-nodenums) case-adjective)
-      (and no-print-fns (cw " (NOTE: Not printing calls to ~x0)" no-print-fns))
-      (cw ":~%")
-      (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len no-print-fns)
-      (cw ")~%"))))
+                        (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
+                        (cw ")~%"))
+              (progn$
+                (cw "(Negated lits (~x0) for ~s1 case" (len literal-nodenums) case-adjective)
+                (and no-print-fns (cw " (NOTE: Not printing calls to ~x0)" no-print-fns))
+                (cw ":~%")
+                (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len no-print-fns)
+                (cw ")~%"))))))
 
 (defthm <-of-+-1-of-maxelem
   (implies (and (all-< lst x)
