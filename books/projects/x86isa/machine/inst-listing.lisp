@@ -11890,7 +11890,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPSUBB"
           (OP :OP #xFF8
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -11898,7 +11899,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPSUBB"
           (OP :OP #xFF8
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -11938,7 +11940,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPSUBW"
           (OP :OP #xFF9
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -11946,7 +11949,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPSUBW"
           (OP :OP #xFF9
               :EVEX '(:0F :NDS :128 :66 :WIG)
@@ -11986,7 +11990,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPSUBD"
           (OP :OP #xFFA
               :VEX '(:0F :NDS :256 :66 :WIG)
@@ -11994,7 +11999,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPSUBD"
           (OP :OP #xFFA
               :EVEX '(:0F :NDS :128 :66 :W0)
@@ -12034,7 +12040,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPSUBQ"
           (OP :OP #xFFB
               :VEX '(:0F :NDS :128 :66 :WIG)
@@ -12042,7 +12049,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
+          '(x86-vpsubb/vpsubw/vpsubd/vpsubq-vex)
+          '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPSUBQ"
           (OP :OP #xFFB
               :EVEX '(:0F :NDS :128 :66 :W1)
