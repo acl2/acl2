@@ -321,10 +321,6 @@
             (mv nil nil)
           (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
        (assumptions `(,@user-assumptions
-                      ;; these help with floating point code:
-                      (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
-                      (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
-                      (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
                       ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
                       ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
                       ;; todo: build this stuff into def-unrolled:

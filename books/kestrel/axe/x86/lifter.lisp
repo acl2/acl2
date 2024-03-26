@@ -352,22 +352,12 @@
      acl2::bvchop-numeric-bound
      x86isa::xw-of-rip-and-if
      acl2::if-x-x-y-when-booleanp
-     x86p-of-write ;move
-     read-of-write-same ;move
-     get-flag-of-write
-     xr-of-write-when-not-mem
      read-of-xw-irrel
-     64-bit-modep-of-write
-     program-at-of-write
-     alignment-checking-enabled-p-of-write
      mod-of-plus-reduce-constants
      mv-nth-1-of-rb-becomes-read
      mv-nth-1-of-wb-becomes-write
-     write-of-xw-irrel
      read-of-xw-irrel
      read-of-set-flag
-     x86p-of-write
-     set-flag-of-write
      read-of-write-disjoint2
      write-of-write-same
      read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
@@ -381,6 +371,7 @@
      acl2::mod-of-+-of-constant
      xr-of-if
      )
+   (write-rules)
 ;(x86isa::lifter-rules)
    ))
 
