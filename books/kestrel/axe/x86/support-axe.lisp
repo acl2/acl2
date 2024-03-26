@@ -61,6 +61,11 @@
 
 (add-known-boolean return-address-okp)
 
+(add-known-boolean x86isa::cr0bits-p$inline)
+(add-known-boolean x86isa::cr3bits-p$inline)
+(add-known-boolean x86isa::cr4bits-p$inline)
+(add-known-boolean x86isa::cr8bits-p$inline)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: we could use unsigned-byte-p-forced in these rules!
