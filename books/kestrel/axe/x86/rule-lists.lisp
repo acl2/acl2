@@ -157,7 +157,10 @@
             x86isa::sar-spec-32-redef
             x86isa::sar-spec-64-redef
 
-            x86isa::x86-operand-to-xmm/mem)
+            x86isa::x86-operand-to-xmm/mem
+
+            x86isa::simd-add-spec
+            x86isa::simd-sub-spec)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
@@ -797,6 +800,9 @@
     acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
     acl2::bvuminus-of-+
+    acl2::logapp-becomes-bvcat-bind-free-axe
+    acl2::logtail-becomes-slice-bind-free-axe
+    acl2::logtail-of-bvchop-becomes-slice ; todo: other way?
 
     ;; Can help get rid of an intervening ifix:
     acl2::integerp-of-logand
@@ -1972,6 +1978,18 @@
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
             program-at-of-set-flag
+
+            X86ISA::XMMI-SIZE$inline
+            X86ISA::!XMMI-SIZE$inline
+            X86ISA::zMMI-SIZE$inline
+            X86ISA::!zMMI-SIZE$inline
+
+            X86ISA::ZMMI
+            X86ISA::ZMMI$A
+            X86ISA::!ZMMI
+            X86ISA::!ZMMI$A
+
+            x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
 
             x86isa::rx32$inline ; these expose rz
             x86isa::rx64$inline
