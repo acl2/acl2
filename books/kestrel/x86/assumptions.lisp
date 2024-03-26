@@ -51,6 +51,13 @@
    (equal (mxcsrbits->um (mxcsr x86)) 1)
    (equal (mxcsrbits->pm (mxcsr x86)) 1)
 
+   ;; These help with things like SSE/AVX/etc
+   (x86isa::cr0bits-p (x86isa::ctri 0 x86)) ; so we can extract the bits
+   (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
+   (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
+   (x86isa::cr4bits-p (x86isa::ctri 4 x86)) ; so we can call x86isa::cr4bits->osfxsr
+   (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
+
    ;; Assume the rounding mode is round-to-nearest-ties-to-even (the default
    ;; rounding mode):
    (equal (mxcsrbits->rc (mxcsr x86)) 0)
