@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -62,6 +62,7 @@
 (include-book "dag-array-builders2")
 (include-book "dag-array-builders3")
 (include-book "dag-array-builders")
+(include-book "dag-array-info")
 (include-book "dag-array-printing2")
 (include-book "dag-array-printing")
 (include-book "dag-arrays")

@@ -4373,8 +4373,11 @@
                 (mv (erp-nil)
                     nil ; did not prove the goal
                     changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-              (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-                    (,apply-tactic-name (first tactics)
+              (b* ((tactic (first tactics))
+                   (- (and print "(Applying tactic ~x0:~%" tactic))
+                   ((mv start-time state) (get-cpu-time state))
+                   ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+                    (,apply-tactic-name tactic
                                         literal-nodenums
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         rule-alist rule-set-number
@@ -4383,6 +4386,12 @@
                                         info tries prover-depth known-booleans var-ordering options (+ -1 count) state))
                    ((when erp)
                     (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+                   ((mv end-time state) (get-cpu-time state))
+                   (elapsed-time (let ((diff (- end-time start-time))) (if (<= 0 diff) diff 0)))
+                   (- (and print (progn$ (cw "End tactic ~x0: " tactic)
+                                         (print-to-hundredths elapsed-time)
+                                         (cw "s.)~%") ; s for "seconds"
+                                         )))
                    ((when provedp)
                     (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
                 (,apply-tactics-name (rest tactics)
@@ -4649,7 +4658,9 @@
                    (prog2$ (cw "Case ~s0 didn't simplify to true.~%" case-designator)
                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len case-designator (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
               (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-           (b* (((mv erp provedp
+           (b* ((- (and print "(Applying rule set #~x0:~%" rule-set-number))
+                ((mv start-time state) (get-cpu-time state))
+                ((mv erp provedp
                      & ;;changep
                      literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
                  (,apply-tactic-name tactic
@@ -4660,6 +4671,12 @@
                                      interpreted-function-alist monitored-symbols case-designator print
                                      info tries prover-depth known-booleans var-ordering options (+ -1 (expt 2 59)) state))
                 ((when erp) (mv erp nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+                ((mv end-time state) (get-cpu-time state))
+                (elapsed-time (let ((diff (- end-time start-time))) (if (<= 0 diff) diff 0)))
+                (- (and print (progn$ (cw "End rule set #~x0: " rule-set-number)
+                                      (print-to-hundredths elapsed-time)
+                                      (cw "s.)~%") ; s for "seconds"
+                                      )))
                 ((when provedp) (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
              ;; Continue with the rest of the rule-alists:
              (,apply-tactic-for-rule-alists-name tactic
