@@ -394,6 +394,10 @@
 
       acl2s
       acl2-sedan
+      alist-keys
+      alist-vals
+      repeat
+      
       )
    (union-eq
     (union-eq 
