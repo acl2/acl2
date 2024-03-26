@@ -175,7 +175,8 @@
   (declare (xargs :guard t))
   (and (doublet-listp names-and-types)
        (symbol-listp (strip-cars names-and-types))
-       (acl2::keyword-listp (acl2::strip-cadrs names-and-types))))
+       ;; (acl2::keyword-listp (acl2::strip-cadrs names-and-types))
+       ))
 
 (defund bytes-in-scalar-type (type)
   (declare (xargs :guard (stringp type)))
@@ -220,7 +221,7 @@
                                text-offset
                                code-length)
   (declare (xargs :guard (and (symbolp var-name)
-                              (keywordp type)
+                              (symbolp type)
                               ;;state-component might be rdi or (rdi x86)
                               (natp stack-slots)
                               ;; text-offset is a term
