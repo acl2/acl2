@@ -157,7 +157,10 @@
             x86isa::sar-spec-32-redef
             x86isa::sar-spec-64-redef
 
-            x86isa::x86-operand-to-xmm/mem)
+            x86isa::x86-operand-to-xmm/mem
+
+            x86isa::simd-add-spec
+            x86isa::simd-sub-spec)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
