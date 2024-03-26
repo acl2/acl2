@@ -63,6 +63,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "padd"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "psub"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "push-and-pop"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "rotate-and-shift"

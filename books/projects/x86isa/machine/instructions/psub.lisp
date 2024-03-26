@@ -1,0 +1,214 @@
+; X86ISA Library
+
+; Note: The license below is based on the template at:
+; http://opensource.org/licenses/BSD-3-Clause
+
+; Copyright (C) 2024, Kestrel Technology LLC
+; All rights reserved.
+
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are
+; met:
+
+; o Redistributions of source code must retain the above copyright
+;   notice, this list of conditions and the following disclaimer.
+
+; o Redistributions in binary form must reproduce the above copyright
+;   notice, this list of conditions and the following disclaimer in the
+;   documentation and/or other materials provided with the distribution.
+
+; o Neither the name of the copyright holders nor the names of its
+;   contributors may be used to endorse or promote products derived
+;   from this software without specific prior written permission.
+
+; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+; HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+; Original Author(s):
+; Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "X86ISA")
+
+(include-book "../decoding-and-spec-utils"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+
+(local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "ihs/logops-lemmas" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simd-sub-spec ((total-size natp)
+                       (chunk-size posp)
+                       (x (unsigned-byte-p total-size x))
+                       (y (unsigned-byte-p total-size y)))
+  :guard (integerp (/ total-size chunk-size))
+  :returns (result (unsigned-byte-p total-size result)
+                   :hyp :guard
+                   :hints
+                   (("Goal" :induct (simd-sub-spec total-size chunk-size x y))
+                    '(:cases ((>= total-size chunk-size)))))
+  :parents (instruction-semantic-functions)
+  :short "Specification for the SIMD subtraction instructions."
+  :long
+  "<p>
+   This is for the (V)PSUBB/(V)PSUBW/(V)PSUBD/(V)PSUBQ instructions.
+   </p>
+   <p>
+   Given @('x') and @('y') of size @('total-size') in bits,
+   we perform a subtraction on each chunk of size @('chunk-size') in bits,
+   independently from the other chunks,
+   keeping the low @('chunk-size') bits of each result,
+   and putting the resulting chunks together, in the same order,
+   to obtain the final result of size @('total-size').
+   This kind of operation is illustrated in
+   Intel Manual Volume 1 Figure 9-4 (Dec 2023).
+   </p>
+   <p>
+   The @('total-size') must be a multiple of @('chunk-size').
+   For instance, for the VEX form of VPSUBW,
+   @('total-size') is 128 and @('chunk-size') is 16.
+   </p>"
+  (b* (((when (zp total-size)) 0)
+       ((unless (mbt (posp chunk-size))) 0)
+       (x-lo (loghead chunk-size x))
+       (y-lo (loghead chunk-size y))
+       (result-lo (loghead chunk-size (+ x-lo y-lo)))
+       (x-hi (logtail chunk-size x))
+       (y-hi (logtail chunk-size y))
+       (result-hi
+        (simd-sub-spec (- total-size chunk-size) chunk-size x-hi y-hi)))
+    (logapp chunk-size result-lo result-hi))
+  :measure (nfix total-size))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-vpsubb/vpsubw/vpsubd/vpsubq-vex
+
+  :parents (two-byte-opcodes)
+
+  :short "Subtract packed integers (VEX variants)."
+
+  :long
+  "<code>
+   VPSUBB xmm1, xmm2, xmm3/m128
+   VPSUBW xmm1, xmm2, xmm3/m128
+   VPSUBD xmm1, xmm2, xmm3/m128
+   VPSUBQ xmm1, xmm2, xmm3/m128
+
+   VPSUBB ymm1, ymm2, ymm3/m128
+   VPSUBW ymm1, ymm2, ymm3/m128
+   VPSUBD ymm1, ymm2, ymm3/m128
+   VPSUBQ ymm1, ymm2, ymm3/m128
+   </code>"
+
+  :vex t
+
+  :modr/m t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+
+       ;; The operand size is determined by VEX.L,
+       ;; based on the VEX.128 and VEX.256 notation
+       ;; (see Intel Manual Volume 2 Section 3.1.1.2 (Dec 2023)).
+       ((the (integer 16 32) operand-size)
+        (if (equal (vex->l vex-prefixes) 1)
+            32
+          16))
+
+       ;; The first source operand (Operand 2 in the Intel Manual)
+       ;; is the XMM or YMM register specified in VEX.vvvv.
+       ((the (unsigned-byte 4) src1-index) (vex->vvvv vex-prefixes))
+       ((the (unsigned-byte 256) src1) (zmmi-size operand-size src1-index x86))
+
+       ;; The second source operand (Operand 3 in the Intel Manual)
+       ;; is the XMM or YMM register, or memory operand,
+       ;; specified in the ModR/M byte.
+       ;; There is no alignment checking
+       ;; (see Intel Manual Volume 2 Table 2-21 (Dec 2023)).
+       (inst-ac? nil) ; Exceptions Type 4
+       ((mv flg
+            src2
+            (the (integer 0 4) increment-rip-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               (if (= operand-size 16)
+                                                   #.*VEX-XMM-ACCESS*
+                                                 #.*YMM-ACCESS*)
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; The destination operand (Operand 1 in the Intel Manual)
+       ;; is the XMM or YMM register specified in the reg bits of ModR/M.
+       ((the (unsigned-byte 4) dst-index) (reg-index reg rex-byte #.*r*))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Calculate the result.
+       (result (case opcode
+                 (#xfc (simd-sub-spec (* 8 operand-size) 08 src1 src2))
+                 (#xfd (simd-sub-spec (* 8 operand-size) 16 src1 src2))
+                 (#xfe (simd-sub-spec (* 8 operand-size) 32 src1 src2))
+                 (#xd4 (simd-sub-spec (* 8 operand-size) 64 src1 src2))
+                 (t 0))) ; unreachable
+
+       ;; Store the result into the destination register.
+       (x86 (!zmmi-size operand-size
+                        dst-index
+                        result
+                        x86
+                        :regtype (if (= operand-size 16)
+                                     #.*vex-xmm-access*
+                                   #.*ymm-access*)))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
+
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (unsigned-byte-p 4 x)
+              (unsigned-byte-p 5 x)))))
