@@ -47,7 +47,7 @@
   "tea.macho64"
   :target "_encrypt"
   :stack-slots 8
-  :inputs ((v :u32[2]) (k :u32[4]))
+  :inputs ((v u32[2]) (k u32[4]))
   ;; todo: have the tool translate the items in the tuple:
   :output (:tuple (:mem32 (rdi x86)) ;extract v0
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
