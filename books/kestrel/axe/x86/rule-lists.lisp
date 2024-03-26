@@ -1979,15 +1979,15 @@
 
             program-at-of-set-flag
 
-            X86ISA::XMMI-SIZE$inline
-            X86ISA::!XMMI-SIZE$inline
-            X86ISA::zMMI-SIZE$inline
-            X86ISA::!zMMI-SIZE$inline
+            x86isa::xmmi-size$inline
+            x86isa::!xmmi-size$inline
+            x86isa::zmmi-size$inline
+            x86isa::!zmmi-size$inline
 
-            X86ISA::ZMMI
-            X86ISA::ZMMI$A
-            X86ISA::!ZMMI
-            X86ISA::!ZMMI$A
+            x86isa::zmmi
+            x86isa::zmmi$a
+            x86isa::!zmmi
+            x86isa::!zmmi$a
 
             x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
 
@@ -4427,13 +4427,6 @@
             acl2::sbvlt-of-bvsx-arg2
             acl2::bvsx-of-bvchop
 
-            x86isa::xmmi-size$inline ;trying
-            x86isa::!xmmi-size$inline
-
-            x86isa::zmmi
-            x86isa::zmmi$a
-            x86isa::!zmmi
-            x86isa::!zmmi$a
             integerp-of-part-install-width-low$inline
             x86isa::sp-sse-cmp
             ;;x86isa::sse-cmp ;todo: limit?
