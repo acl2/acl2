@@ -214,6 +214,7 @@
   '(mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read))
 
+;; When using these, also include (write-rules).
 (defun write-introduction-rules ()
   (declare (xargs :guard t))
   '(mv-nth-1-of-wb-1-becomes-write
@@ -246,32 +247,43 @@
     svblt-of-read-trim-arg2
     svblt-of-read-trim-arg3))
 
-(defun write-rules ()
+(defund write-rules ()
   (declare (xargs :guard t))
-  '(write-of-bvchop-arg3-gen
-    xr-of-write-when-not-mem
+  '(xr-of-write-when-not-mem
     x86p-of-write
     64-bit-modep-of-write
     app-view-of-write
     alignment-checking-enabled-p-of-write
+    get-flag-of-write
+    ctri-of-write ; may be needed for lifter, which does not use the lifter-rules64-new (todo: move other similar rules here?)
+    program-at-of-write
+    undef-of-write
+    mxcsr-of-write
+    ms-of-write
+    fault-of-write
+    set-undef-of-write
+    msri-of-write
+
     write-of-xw-irrel
     set-flag-of-write
-    get-flag-of-write
+
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     read-of-write-disjoint
     read-of-write-disjoint2
     ;; todo: more variants of these:
     ;; todo: uncomment:
-    ;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
-    ;read-of-write-of-write-of-set-flag
-    ;read-of-write-of-write-write-of-of-set-flag
-    program-at-of-write
+    ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
+    ;;read-of-write-of-write-of-set-flag
+    ;;read-of-write-of-write-write-of-of-set-flag
+
     ;; todo: uncomment these but first organize rules:
     ;;write-of-write-same
     ;;write-of-write-of-write-same
     ;;write-of-write-of-write-of-write-same
     ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
+
+    write-of-bvchop-arg3-gen
     ))
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
@@ -3047,17 +3059,14 @@
     rsp-of-set-rsp
     rbp-of-set-rbp
 
-    undef-of-write-byte
-    undef-of-write
+    undef-of-write-byte ; todo: does write-byte actually get introduced?
 
     mxcsr-of-write-byte
-    mxcsr-of-write
 
     ms-of-write-byte
-    ms-of-write
 
     fault-of-write-byte
-    fault-of-write
+
 
     app-view-of-set-rip
     app-view-of-set-rax
@@ -3630,7 +3639,6 @@
     ctri-of-set-r15
     ctri-of-set-rsp
     ctri-of-set-rbp
-    ctri-of-write
 
     rax-of-write
     rbx-of-write
@@ -3737,7 +3745,6 @@
     set-undef-of-set-rbp
 
     set-undef-of-write-byte
-    set-undef-of-write
 
     set-rbx-of-set-rax
     set-rcx-of-set-rax
@@ -3978,7 +3985,6 @@
     msri-of-set-r15
     msri-of-set-rsp
     msri-of-set-rbp
-    msri-of-write
     msri-of-set-flag
 
     ;; These help make failures more clear, by dropping irrelevant
@@ -4266,7 +4272,7 @@
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             acl2::equal-of-myif-arg1-safe
             acl2::equal-of-myif-arg2-safe
-            write-of-write-same
+            write-of-write-same ; todo: move to write-rules?
             write-of-write-of-write-same
             write-of-write-of-write-of-write-same
             acl2::bvminus-of-+-arg2
