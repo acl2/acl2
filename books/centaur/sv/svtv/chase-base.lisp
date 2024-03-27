@@ -958,6 +958,8 @@
                                  (mask2 4vmask-p)
                                  (print-overrides)
                                  &key
+                                 ((override-name/range msgp) '"")
+                                 (skip-caremask)
                                  ((moddb moddb-ok) 'moddb)
                                  (svtv-chase-data 'svtv-chase-data))
   :guard (and ;; (svar-addr-p var)
@@ -968,7 +970,8 @@
                                                  acl2::append-when-not-consp not
                                                  moddb->nmods moddb->nmods1p
                                                  nth
-                                                 moddbp)))))
+                                                 moddbp
+                                                 if*)))))
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable svtv-chase-datap))))
   :returns (lines 3col4vecs-p)
@@ -1008,10 +1011,13 @@
        (printed-val2 (if print-with-masked-val
                          masked-val2
                        shifted-val2))
+       (name/range-display (if* (equal (msg-fix override-name/range) "")
+                                name/range
+                                (msg-fix override-name/range)))
        (first-lines (append (list (3col4vecline
                                    (msg "~@0 ~@1~@2"
                                         (if index (msg "~x0." index) "")
-                                        name/range
+                                        name/range-display
                                         delay-msg)
                                    printed-val
                                    printed-val2))
@@ -1026,7 +1032,8 @@
                                                  "  non-Boolean portion:"
                                                  (2vec nonbool-mask)
                                                  (and val2 (2vec nonbool-mask2)))))
-       (caremask-lines (list (3col4vecline "  caremask:" (2vec mask) (and val2 (2vec mask2)))))
+       (caremask-lines (and (not skip-caremask)
+                            (list (3col4vecline "  caremask:" (2vec mask) (and val2 (2vec mask2))))))
        ((unless print-overrides)
         (append first-lines caremask-lines))
 
@@ -1662,34 +1669,35 @@
   (b* (((chase-position pos))
        (var (make-svar :name (make-address :path pos.path)))
        ((mv var phase) (svtv-chase-normalize-var/phase var pos.phase))
-       (signal-lines (svtv-chase-print-signal nil var phase pos.rsh pos.mask pos.mask t))
-       (phase-line (list (3col4vecline
-                          (msg "(Phase ~@0.)"
-                               (b* ((pair (svtv-chase-phase-labelpair
-                                           phase (svtv-chase-data->phaselabels svtv-chase-data))))
-                                 (if (equal pair phase)
-                                     (msg "~x0" phase)
-                                   (msg "~x0 = ~x1" pair phase))))
-                          nil nil)))
+       (phase-label (msg "(Phase ~@0.)"
+                         (b* ((pair (svtv-chase-phase-labelpair
+                                     phase (svtv-chase-data->phaselabels svtv-chase-data))))
+                           (if (equal pair phase)
+                               (msg "~x0" phase)
+                             (msg "~x0 = ~x1" pair phase)))))
+       (signal-lines (svtv-chase-print-signal
+                      nil var phase pos.rsh pos.mask pos.mask t
+                      :override-name/range phase-label
+                      :skip-caremask t))
        (next-phase (+ pos.phase (lifix incr)))
        ((when (or (< next-phase 0)
                   (zip incr)
                   (and (< 0 incr) (< (lifix last) next-phase))
                   (and (> 0 incr) (> (lifix last) next-phase))))
-        (append (list (3col4vecline
-                       (if (svtv-chase-data->evaldata2 svtv-chase-data)
-                           "----              -----              -----              -----              -----              -----              -----              -----"
-                         "----              -----              -----              -----              -----")
-                       nil nil))
-                signal-lines phase-line))
+        (cons (3col4vecline
+               (if (svtv-chase-data->evaldata2 svtv-chase-data)
+                   "----              -----              -----              -----              -----              -----              -----              -----"
+                 "----              -----              -----              -----              -----")
+               nil nil)
+              signal-lines))
        (next-pos (change-chase-position pos :phase next-phase))
        (rest-lines (svtv-chase-print-history-range next-pos last incr)))
-    (append (list (3col4vecline
-                   (if (svtv-chase-data->evaldata2 svtv-chase-data)
-                       "----              -----              -----              -----              -----              -----              -----              -----"
-                     "----              -----              -----              -----              -----")
-                   nil nil))
-            signal-lines phase-line rest-lines)))
+    (cons (3col4vecline
+           (if (svtv-chase-data->evaldata2 svtv-chase-data)
+               "----              -----              -----              -----              -----              -----              -----              -----"
+             "----              -----              -----              -----              -----")
+           nil nil)
+          (append signal-lines rest-lines))))
 
 
 (define svtv-chase-print-history ((by posp)
@@ -1795,21 +1803,21 @@
 
 (define svtv-chase-follow-x-select-var ((vars 4vmask-alist-p)
                                         (vals 4veclist-p))
-  :returns (chosen-var (iff (svar-p chosen-var) chosen-var))
+  :returns (mv multiple ;; true if we gave up because there was more than one
+               (chosen-var (iff (svar-p chosen-var) chosen-var)))
   :guard (eql (len vals) (len vars))
-  (b* (((when (atom vars)) nil)
+  (b* (((when (atom vars)) (mv nil nil))
        ((unless (mbt (consp (car vars))))
         (svtv-chase-follow-x-select-var (cdr vars) vals))
        ((cons var mask) (car vars))
        (val (car vals))
        ((4vec masked-val) (4vec-mask-to-zero mask val))
        (has-xes (not (eql 0 (logandc2 masked-val.upper masked-val.lower))))
-       (rest-var (svtv-chase-follow-x-select-var (cdr vars) (cdr vals))))
-    ;; Return a value only if there was a unique variable with masked xes.
-    (if has-xes
-        (and (not rest-var)
-             (svar-fix var))
-      rest-var))
+       ((mv multi rest-var) (svtv-chase-follow-x-select-var (cdr vars) (cdr vals)))
+       (multi (or multi (and has-xes rest-var))))
+    (mv multi
+        (and (not multi)
+             (if has-xes (svar-fix var) rest-var))))
   ///
   (defret <fn>-lookup-in-vars
     (implies (and chosen-var
@@ -1840,7 +1848,7 @@
         (mv nil svtv-chase-data))
        (varnames (alist-keys vars))
        (vals (svtv-chase-evallist varnames pos.phase evaldata))
-       (chosen-var (svtv-chase-follow-x-select-var vars vals))
+       ((mv & chosen-var) (svtv-chase-follow-x-select-var vars vals))
        ((unless chosen-var)
         ;; Couldn't follow it back, so just stay here
         (mv nil svtv-chase-data))
@@ -1935,10 +1943,10 @@
 (define svtv-chase-follow-compare-select-var ((vars 4vmask-alist-p)
                                               (vals 4veclist-p)
                                               (vals2 4veclist-p))
-  :returns (chosen-var (iff (svar-p chosen-var) chosen-var))
+  :returns (mv multiple (chosen-var (iff (svar-p chosen-var) chosen-var)))
   :guard (and (eql (len vals) (len vars))
               (eql (len vals2) (len vars)))
-  (b* (((when (atom vars)) nil)
+  (b* (((when (atom vars)) (mv nil nil))
        ((unless (mbt (consp (car vars))))
         (svtv-chase-follow-compare-select-var (cdr vars) vals vals2))
        ((cons var mask) (car vars))
@@ -1947,12 +1955,13 @@
        (masked-val1 (4vec-mask-to-zero mask val1))
        (masked-val2 (4vec-mask-to-zero mask val2))
        (diff (not (equal masked-val1 masked-val2)))
-       (rest-var (svtv-chase-follow-compare-select-var (cdr vars) (cdr vals) (cdr vals2))))
-    ;; Return a value only if there was a unique variable with masked xes.
-    (if diff
-        (and (not rest-var)
-             (svar-fix var))
-      rest-var))
+       ((mv multi rest-var) (svtv-chase-follow-compare-select-var (cdr vars) (cdr vals) (cdr vals2)))
+       (multi (or multi (and diff rest-var))))
+    (mv multi
+        (and (not multi)
+             (if diff
+                 (svar-fix var)
+               rest-var))))
   ///
   (defret <fn>-lookup-in-vars
     (implies (and chosen-var
@@ -1986,7 +1995,7 @@
        (varnames (alist-keys vars))
        (vals (svtv-chase-evallist varnames pos.phase evaldata))
        (vals2 (svtv-chase-evallist varnames pos.phase evaldata2))
-       (chosen-var (svtv-chase-follow-compare-select-var vars vals vals2))
+       ((mv & chosen-var) (svtv-chase-follow-compare-select-var vars vals vals2))
        ((unless chosen-var)
         ;; Couldn't follow it back, so just stay here
         (mv nil svtv-chase-data))
@@ -2114,9 +2123,9 @@
                                            (clocks svarlist-p)
                                            (vars 4vmask-alist-p)
                                            (vals 4veclist-p))
-  :returns (chosen-var (iff (svar-p chosen-var) chosen-var))
+  :returns (mv multiple (chosen-var (iff (svar-p chosen-var) chosen-var)))
   :guard (eql (len vals) (len vars))
-  (b* (((when (atom vars)) nil)
+  (b* (((when (atom vars)) (mv nil nil))
        ((unless (mbt (consp (car vars))))
         (svtv-chase-follow-x-select-var (cdr vars) vals))
        ((cons var mask) (car vars))
@@ -2129,12 +2138,13 @@
        (norm-val (4vec-mask-to-zero norm-mask (4vec-rsh (2vec mask-rsh) val)))
        (match (and (sparseint-equal norm-mask (4vmask-fix in-mask))
                    (equal norm-val (4vec-fix in-val))))
-       (rest-var (svtv-chase-follow-data-select-var in-val in-mask clocks (cdr vars) (cdr vals))))
-    ;; Return a value only if there was a unique variable with masked xes.
-    (if match
-        (and (not rest-var)
-             (svar-fix var))
-      rest-var))
+       ((mv multi rest-var) (svtv-chase-follow-data-select-var in-val in-mask clocks (cdr vars) (cdr vals)))
+       (multi (or multi (and match rest-var))))
+    (mv multi
+        (and (not multi)
+             (if match
+                 (svar-fix var)
+               rest-var))))
   ///
   (defret <fn>-lookup-in-vars
     (implies (and chosen-var
@@ -2171,7 +2181,7 @@
        (varnames (alist-keys vars))
        (vals (svtv-chase-evallist varnames pos.phase evaldata))
        (clocks (svtv-chase-detect-clock-deps vars vars))
-       (chosen-var (svtv-chase-follow-data-select-var val norm-mask clocks vars vals))
+       ((mv & chosen-var) (svtv-chase-follow-data-select-var val norm-mask clocks vars vals))
        ((unless chosen-var)
         ;; Couldn't follow it back, so just stay here
         (mv nil svtv-chase-data))

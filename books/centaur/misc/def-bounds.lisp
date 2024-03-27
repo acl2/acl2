@@ -177,8 +177,8 @@
          (margin (min (nfix (and (boundp-global 'fmt-hard-right-margin state)
                                  (f-get-global 'fmt-hard-right-margin state)))
                       120)))
-       (and lower-bound (cw "Lower bound: ~t0~s1~%" (- margin (length lower-str)) lower-str))
-       (and upper-bound (cw "Upper bound: ~t0~s1~%" (- margin (length upper-str)) upper-str)))))
+       (and lower-bound (cw "Lower bound: ~t0~s1~%" (max 0 (- margin (length lower-str))) lower-str))
+       (and upper-bound (cw "Upper bound: ~t0~s1~%" (max 0 (- margin (length upper-str))) upper-str)))))
   ///
   (defattach (defbounds-print-case-bounds defbounds-print-case-bounds-default)))
 
