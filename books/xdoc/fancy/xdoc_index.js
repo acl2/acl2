@@ -30,7 +30,21 @@
 ; Original author: Jared Davis <jared@centtech.com>
 */
 
-"use strict";
+// --------------------------------------------------------------------------
+//
+//                          MAIN DATA STRUCTURES
+//
+// --------------------------------------------------------------------------
+//
+// The XDOC database is split up into two files: XINDEX and XDATA.  Both of
+// these files are generated ahead of time by the ACL2 code for XDOC.
+//    - xindex is smaller and contains just the navigation data
+//    - xdata is larger and has the full "long" strings for each topic
+//
+// We load these files lazily to make the page seem to appear faster!  This
+// means you have to sort of be aware of when the data becomes available.  We
+// load xindex first, then once it's complete we load xdata.  The formats of
+// both files are described below.
 
 // Public:
 //
@@ -84,92 +98,170 @@
 //             0    1      2         3          4           5       6          7             8
 //    KEY -> [uid, name, rawname, parentuids, parentkeys, short, childkeys, suborder-uids, suborder-keys].
 
-var xindex_loaded = false;
-var xhash = {};
+class XDocIndex {
+    _xhash = new Map();
 
-function xindexReady()
-{ return xindex_loaded; }
+    /**
+     * Load raw xindex data into this object
+     * @param {Array} xindex The xindex data, of the form described in the above comment.
+     */
+    loadFromXindex(xindex) {
+        // Fill in most of the xhash directly from the xindex
+        for(const [uid, entry] of xindex.entries()) {
+            const key = entry[0];
+            const name = entry[1];
+            const rawname = entry[2];
+            const parentuids = entry[3];
+            const shortstr = entry[4];
+            const suborder = entry[5];
+            this._xhash.set(key, [uid,name,rawname,parentuids,[],shortstr,[],suborder,[]]);
+        }
 
-function allKeys()
-{ return Object.keys(xhash); }
+        // Fill in the parent_keys by resolving all parent uids
+        const xl = xindex.length;
+        for(const entry of this._xhash.values()) {
+            const parentuids = entry[3];
+            for(const uid of parentuids) {
+                const parentkey = (0 <= uid && uid < xl)
+                                ? xindex[uid][0]
+                                : "XDOC____ERROR-BROKEN-PARENT";
+                entry[4].push(parentkey);
+            }
+        }
 
-function topicExists(key)
-{ return key in xhash; }
+        // Fill in suborder_keys by resolving all suborder uids
+        for(const entry of this._xhash.values()) {
+            const subuids = entry[7];
+            if(subuids) {
+                for(const uid of subuids) {
+                    if (0 <= uid && uid < xl) {
+                        const subkey = xindex[uid][0];
+                        entry[8].push(subkey);
+                    }
+                }
+            }
+        }
 
-function topicUid(key)
-{ return key in xhash ? xhash[key][0] : null; }
-
-function topicName(key)
-{ return key in xhash ? xhash[key][1] : "Error: Key " + key + " not found"; }
-
-function topicRawname(key)
-{ return key in xhash ? xhash[key][2] : "Error: Key " + key + " not found"; }
-
-function topicParentKeys(key)
-{ return key in xhash ? xhash[key][4] : []; }
-
-function topicShort(key)
-{ return key in xhash ? xhash[key][5] : "Error: Key " + key + " not found"; }
-
-function topicChildKeys(key)
-{ return key in xhash ? xhash[key][6] : []; }
-
-function topicSuborder(key)
-{ return key in xhash ? xhash[key][8] : []; }
-
-function xindexInit()
-{
-    // Fill in most of the xhash directly from the xindex
-    for(var uid in xindex) {
-	var entry = xindex[uid];
-	var key = entry[0];
-	var name = entry[1];
-	var rawname = entry[2];
-	var parentuids = entry[3];
-	var shortstr = entry[4];
-	var suborder = entry[5];
-	xhash[key] = [uid,name,rawname,parentuids,[],shortstr,[],suborder,[]];
-    }
-
-    // Fill in the parent_keys by resolving all parent uids
-    var xl = xindex.length;
-    for(var key in xhash) {
-	var parentuids = xhash[key][3];
-	for(var i in parentuids) {
-	    var uid = parentuids[i];
-	    var parentkey = (0 <= uid && uid < xl)
-	                      ? xindex[uid][0]
-	                      : "XDOC____ERROR-BROKEN-PARENT";
-	    xhash[key][4].push(parentkey);
-	}
-    }
-
-    // Fill in suborder_keys by resolving all suborder uids
-    var xl = xindex.length;
-    for(var key in xhash) {
-	var subuids = xhash[key][7];
-	for(var i in subuids) {
-	    var uid = subuids[i];
-	    if (0 <= uid && uid < xl) {
-		var subkey = xindex[uid][0];
-		xhash[key][8].push(subkey);
-	    }
-	}
-    }
-
-    // Fill in all child_keys by cross-referencing parents
-    for(var child_key in xhash) {
-        var parent_keys = topicParentKeys(child_key);
-        for(var i in parent_keys) {
-            var parent_key = parent_keys[i];
-            // It's incorrect, but possible for a child topic to list parents
-            // that don't exist, so we have to make sure it really exists:
-            if (parent_key in xhash) {
-                var parent_node = xhash[parent_key];
-                parent_node[6].push(child_key);
+        // Fill in all child_keys by cross-referencing parents
+        for(const child_key of this._xhash.keys()) {
+            const parent_keys = this.topicParentKeys(child_key);
+            for(const parent_key of parent_keys) {
+                // It's incorrect, but possible for a child topic to list parents
+                // that don't exist, so we have to make sure it really exists:
+                if (this.topicExists(parent_key)) {
+                    const parent_node = this._xhash.get(parent_key);
+                    parent_node[6].push(child_key);
+                }
             }
         }
     }
 
-    xindex_loaded = true;
+    allKeys() {
+        return this._xhash.keys();
+    }
+
+    topicExists(key) {
+        return this._xhash.has(key);
+    }
+
+    getTopicField(key, field, defaultValue) {
+        return this.topicExists(key) ? this._xhash.get(key)[field] : defaultValue;
+    }
+
+    topicUid(key) {
+        return this.getTopicField(key, 0, null);
+    }
+
+    topicName(key) {
+        return this.getTopicField(key, 1, `Error: Key ${key} not found`);
+    }
+
+    topicRawname(key) {
+        return this.getTopicField(key, 2, `Error: Key ${key} not found`);
+    }
+
+    topicParentKeys(key) {
+        return this.getTopicField(key, 4, []);
+    }
+
+    topicShort(key) {
+        return this.getTopicField(key, 5, `Error: Key ${key} not found`);
+    }
+
+    topicChildKeys(key) {
+        return this.getTopicField(key, 6, []);
+    }
+
+    topicSuborder(key) {
+        return this.getTopicField(key, 8, []);
+    }
+}
+
+const XD_PNAMES = 0;
+const XD_FROM = 1;
+const XD_BASEPKG = 2;
+const XD_LONG = 3;
+const LAST_XD_IDX = XD_LONG;
+
+// The XDATA table has the following format:
+//
+//   xdata:         KEY -> {"pnames"  : [array of xml encoded nice parent names],
+//                          "from"    : "xml encoded string for topic location",
+//                          "basepkg" : "base package name (not encoded)",
+//                          "long"    : "xml encoded long topic description"}
+//
+// Except that we represent each entry with an array, instead of a hash, to
+// save a tiny amount of space.
+// An entry in this structure can be either:
+// - a regular XData entry (a length-4 list)
+// - a "missing topic" XData entry
+// - an error XData entry
+class XDocData {
+    _xhash = new Map();
+
+    loadFromXdata(xdata) {
+        for(const [key, data] of Object.entries(xdata)) {
+            this.add(key, data);
+        }
+    }
+
+    add(key, data) {
+        this._xhash.set(key, data);
+    }
+
+    addError(key, data) {
+        this._xhash.set(key, [[], data, data, data]);
+    }
+
+    addMissing(key) {
+        this.addError(key, "Error: no such topic.");
+    }
+
+    allKeys() {
+        return this._xhash.keys();
+    }
+
+    topicExists(key) {
+        return this._xhash.has(key);
+    }
+
+    getTopicField(key, field, defaultValue) {
+        return this.topicExists(key) ? this._xhash.get(key)[field] : defaultValue;
+    }
+
+    topicParentNames(key) {
+        return this.getTopicField(key, XD_PNAMES, []);
+    }
+
+    topicFrom(key) {
+        return this.getTopicField(key, XD_FROM, `Error: Key ${key} not found`);
+    }
+
+    topicBasepkg(key) {
+        return this.getTopicField(key, XD_BASEPKG, `Error: Key ${key} not found`);
+    }
+
+    topicLong(key) {
+        return this.getTopicField(key, XD_LONG, `Error: Key ${key} not found`);
+    }
 }

@@ -33,7 +33,7 @@ javascript files:
     xindex.js has been loaded, which improves the initial display times.
 
 In the server-supported case, we still load the whole xindex.js file, but we do
-not load xdata.js.  Instead, the :long data is gotten via ajax queries as
+not load xdata.js.  Instead, the :long data is gotten via AJAX queries as
 needed.  This requires, on the server side, converting the xdata.js file into
 an sqlite database, and then using a little perl script to extract the data
 from it.
@@ -42,11 +42,12 @@ from it.
 Effective Development
 =====================
 
-The particular mode being used is mainly hidden by xdataWhenReady().  This
-function runs an arbitrary callback only after the :long data for certain
-topics is loaded.  In local mode, it just runs your callback right away.  In
-server-supported mode, it runs an AJAX query to get the desired data, and
-invokes your callback once the data is ready.
+The particular mode being used is mainly hidden by xdataLoadKeys().
+This function returns a promise that resolves only after the :long
+data for certain topics is loaded.  In local mode, it just runs your
+callback right away.  In server-supported mode, it runs an AJAX query
+to get the desired data, and invokes your callback once the data is
+ready.
 
 This wrapper means that almost all development can be done in local mode,
 without worrying about the server-supported mode at all.
@@ -107,12 +108,35 @@ So as an embarassingly awful workaround:
 This could probably be cleaned up.  For instance, there's really no reason we
 need to use base64 here at all; doing so was merely expedient...
 
+Note that modern security features like CORS preclude the use of more modern
+JavaScript interfaces for requesting content like the Fetch API as long as we
+support loading the manual directly from a HTML file without the use of an
+intermediate server. Therefore, we will likely need to continue using the above
+workaround for the forseeable future.
+
 
 Stylesheet Matters
 ==================
 
-The main stylesheet is style.css.  This is generated from style.scss via Sass,
-which you can get via "gem install sass" or similar, see:
+The main stylesheet is style.css.  This is generated from style.scss via Sass.
+Sass now recommends using the Dart version of their compiler over the old Ruby
+version; see the Sass website for more information about installation:
 
-    http://sass-lang.com
+    https://sass-lang.com
 
+
+Deploying a Local Server
+========================
+
+A Dockerfile is provided that allows one to deploy a local instance of the XDOC
+server, useful for testing the server-supported mode. It is possible to use the
+existing XDOC server(s) (the ones used by the UT-hosted XDOC deployment) but
+this typically requires working around CORS, a security feature that makes it
+difficult to access content on domain B from a website hosted at domain A
+without the server at domain B providing permission. For more information, the
+MDN has a good introductory article:
+
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+
+See the comments at the top of the Dockerfile for more information on how to use
+it.
