@@ -12374,7 +12374,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The following declaration allows a check at translate time that any part
 ; (satisfies pred) of x is such that pred is a unary function symbol in the
 ; current world.  An optimization in dcl-guardian guarantees that this
-; declaration won't generate any proof obligations.
+; declaration won't generate any proof obligations.  Don't be concerned that
+; (or t ,x) carries no restriction on the type -- the type declaration is only
+; for the syntactic check mentioned above, not for efficiency (since after all,
+; THE only generates this code in the logic, not in raw Lisp).
 
 ; WARNING: Do not change the form of this declaration without visiting the
 ; corresponding code for the-fn in chk-dcl-lst and dcl-guardian.
