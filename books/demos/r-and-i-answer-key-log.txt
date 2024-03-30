@@ -42215,8 +42215,8 @@ Subgoal *1/1.8'
               (TAUTP (CADDR X) A))
          (PEVAL X (APP A B))).
 
-This simplifies, using primitive type reasoning, the :forward-chaining
-rule CONSP-ASSOC-EQUAL and the :type-prescription rule ALISTP, to
+This simplifies, using the :forward-chaining rule CONSP-ASSOC-EQUAL
+and the :type-prescription rule ALISTP, to
 
 Subgoal *1/1.8''
 (IMPLIES (AND (CONSP X)
@@ -42589,8 +42589,8 @@ Subgoal *1/1.4'
               (TAUTP (CADDR X) A))
          (PEVAL X (APP A B))).
 
-This simplifies, using primitive type reasoning, the :forward-chaining
-rule CONSP-ASSOC-EQUAL and the :type-prescription rule ALISTP, to
+This simplifies, using the :forward-chaining rule CONSP-ASSOC-EQUAL
+and the :type-prescription rule ALISTP, to
 
 Subgoal *1/1.4''
 (IMPLIES (AND (CONSP X)

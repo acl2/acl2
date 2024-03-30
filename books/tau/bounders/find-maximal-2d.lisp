@@ -151,7 +151,12 @@
                                             HIX
                                             LOY HIY
                                             (FIND-MAXIMAL2 LOX LOY HIY XXX)))
-                       (max2 (FIND-MAXIMAL2 LOX LOY HIY XXX)))))))
+                       (max2 (FIND-MAXIMAL2 LOX LOY HIY XXX))))
+
+; Matt K. mod to accommodate change to strong-recognizer-expr-p in ACL2 near
+; the end of March 2024:
+
+           :do-not '(generalize))))
 
 (defthm above-all2-is-a-universal-quantifier
   (implies (and (above-all2 max x loy hiy)

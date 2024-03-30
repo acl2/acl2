@@ -7599,6 +7599,9 @@
       (push-lemma rune ttree)
     ttree))
 
+(defstub use-enhanced-recognizer () t)
+(defattach use-enhanced-recognizer constant-t-function-arity-0)
+
 (defun strong-recognizer-expr-p (var x ens w)
 
 ; At the top level var is nil and x is a call of IF (which is why we test for
@@ -7658,6 +7661,14 @@
    ((eq (ffn-symb x) 'not)
     (mv-let (var not-true-ts not-false-ts runes)
       (strong-recognizer-expr-p var (fargn x 1) ens w)
+
+; We considered using here the approach below for (equal TERM nil) when the
+; call of strong-recognizer-expr-p fails (i.e., var is nil).  However, we got
+; nearly 30 regression failures in that case, and presumably there could have
+; been many more once those were fixed.  It seems reasonable anyhow not to
+; treat NOT as a recognizer -- one might naturally instead use NULL, which is a
+; compound recognizer, or (equal TERM nil).
+
       (mv var not-false-ts not-true-ts
           (if (and var (not (eq var :empty)))
               (add-to-set-equal '(:definition not) runes)
@@ -7674,6 +7685,33 @@
                  (access recognizer-tuple r :false-ts)
                  (list (access recognizer-tuple r :rune))))
             (t (mv nil nil nil nil)))))
+   ((and (eq (ffn-symb x) 'equal)
+         (use-enhanced-recognizer))
+    (mv-let (arg evg)
+      (cond ((quotep (fargn x 1))
+             (mv (fargn x 2) (unquote (fargn x 1))))
+            ((quotep (fargn x 2))
+             (mv (fargn x 1) (unquote (fargn x 2))))
+            (t (mv nil nil)))
+      (cond ((or (null arg)
+                 (not (or (eq var nil)
+                          (eq var :empty)
+                          (equal var arg))))
+             (mv nil nil nil nil))
+            (t (let ((ts (case evg ; see *singleton-type-sets*
+                           ((t) *ts-t*)
+                           ((nil) *ts-nil*)
+                           (0 *ts-zero*)
+                           (1 *ts-one*)
+                           (otherwise nil))))
+                 (cond
+                  ((null ts)
+                   (mv nil nil nil nil))
+                  (t
+                   (mv arg
+                       ts                 ; :true-ts
+                       (ts-complement ts) ; :false-ts
+                       (list *fake-rune-for-anonymous-enabled-rule*)))))))))
    (t (mv nil nil nil nil))))
 
 (defun recognizer-expr-p (x ens w)

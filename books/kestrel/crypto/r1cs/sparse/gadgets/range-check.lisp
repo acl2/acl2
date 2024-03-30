@@ -1646,6 +1646,11 @@
            :in-theory (e/d (make-range-check-pi-constraints pi INDICES-FOR-0S INDICES-FOR-1S)
                            (MAKE-RANGE-CHECK-PI-CONSTRAINTS-AUX-CORRECT-1-FORWARD)))))
 
+; Matt K. mod to accommodate change to strong-recognizer-expr-p in ACL2 near
+; the end of March 2024.  Note that this event is local to this book.
+(defattach-system acl2::use-enhanced-recognizer
+  acl2::constant-nil-function-arity-0)
+
 (defthm make-range-check-pi-constraints-aux-correct-1-backward
   (implies (and (pivars-correctp (indices-for-1s (+ -2 n) tvar c) valuation avars pivars c n p)
                 (r1cs-valuationp valuation p)
