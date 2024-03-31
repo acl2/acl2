@@ -27870,7 +27870,7 @@
 (set-guard-msg add-invisible-fns
                (msg "The call ~x0 is illegal, because the arguments are not ~
                      all symbols.  See :DOC add-invisible-fns."
-                      (cons 'add-invisible-fns args)))
+                    (cons 'add-invisible-fns args)))
 
 (set-guard-msg remove-invisible-fns
                (msg "The call ~x0 is illegal, because the arguments are not ~

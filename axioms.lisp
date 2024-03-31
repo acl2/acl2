@@ -13083,7 +13083,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :rule-classes ((:linear :match-free :all)))
 
 (defun bounded-integer-alistp2 (l i j)
-  (declare (xargs :guard t))
+  (declare (xargs :guard (and (posp i)
+                              (posp j))))
   (cond ((atom l) (null l))
         (t (and (consp (car l))
                 (let ((key (caar l)))
@@ -13093,8 +13094,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                       (j1 (cdr key)))
                                   (and (integerp i1)
                                        (integerp j1)
-                                       (integerp i)
-                                       (integerp j)
                                        (>= i1 0)
                                        (< i1 i)
                                        (>= j1 0)
@@ -22811,6 +22810,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           :clear))
 
 (defun unary-function-symbol-listp (lst wrld)
+
+; This function is no longer used in the sources or community books after March
+; 2024.  However, it has long been in *acl2-exports*, so we leave it here.
+
   (declare (xargs :guard (plist-worldp wrld)))
   (cond ((atom lst) (null lst))
         (t (and (symbolp (car lst))
@@ -22827,15 +22830,54 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (null (cdr formals))))
                 (unary-function-symbol-listp (cdr lst) wrld)))))
 
+(defun get-non-unary-function-symbol (lst wrld)
+
+; See unary-function-symbol-listp for comments on the coding style here, which
+; follows that coding style.
+
+; The idea is to return the first member x of lst that is not a known unary
+; function symbol of wrld.  However, x might be nil, which is the same result
+; when there is no such x.  So we return (mv flg x) where flg is t if x is such
+; a member and flg is nil if there is no such x.
+
+  (declare (xargs :guard (and (true-listp lst)
+                              (plist-worldp wrld))))
+  (cond ((endp lst) (mv nil nil))
+        ((and (symbolp (car lst))
+              (let ((formals (getpropc (car lst) 'formals nil wrld)))
+                (and (consp formals)
+                     (null (cdr formals)))))
+         (get-non-unary-function-symbol (cdr lst) wrld))
+        (t (mv t (car lst)))))
+
 (defun invisible-fns-entryp (key val wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (and (symbolp key)
        (function-symbolp key wrld)
-       (unary-function-symbol-listp val wrld)))
+       (true-listp val)
+       (mv-let (flg x)
+         (get-non-unary-function-symbol val wrld)
+         (declare (ignore x))
+         (null flg))))
 
 (set-table-guard invisible-fns-table
                  (invisible-fns-entryp key val world)
-                 :show t)
+                 :show t
+                 :coda (msg "Note that the test for ~x0 has failed because ~
+                             ~#1~[~x2 is not a symbol~/~x2 is not a known ~
+                             function symbol~/~x3 does not satisfy ~x4~/~x5 ~
+                             is not a known unary function symbol~]."
+                            'invisible-fns-entryp
+                            (cond ((not (symbolp key)) 0)
+                                  ((not (function-symbolp key world)) 1)
+                                  ((not (true-listp val)) 2)
+                                  (t 3))
+                            key
+                            val
+                            'true-listp
+                            (mv-let (flg x)
+                              (get-non-unary-function-symbol val world)
+                              (assert$ flg x))))
 
 (set-invisible-fns-table t)
 
