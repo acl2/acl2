@@ -1535,16 +1535,16 @@
 ;   (f-prog2 st) ; should return (MV LOGIC <updated-state>)
 
 ; If we use the oneify call above (from the case that (not (eq program-p
-; 'invariant-risk))), then EXEC would returned as a first value by the call of
-; f-prog2 just above, which we consider to be incorrect.  The EXEC return value
-; would be OK if f-prog2 were defined with the ec-call wrapper removed, because
-; f-log has no invariant-risk and hence we want it to execute fast using the
-; :exec form from its mbe.  But the ec-call means that we really want to call
-; *1*f-log -- we are no longer slipping into raw Lisp and hence we no longer
-; want the special **1*-as-raw* handling, which is inappropriate here since it
-; is intended to give the illusion that we are in raw Lisp.  Thus, we call
-; *1*f-log and what's more, we bind **1*-as-raw* to nil, to signify that we
-; intend to execute the function call in the logic.
+; 'invariant-risk))), then EXEC would be returned as a first value by the call
+; of f-prog2 just above, which we consider to be incorrect.  The EXEC return
+; value would be OK if f-prog2 were defined with the ec-call wrapper removed,
+; because f-log has no invariant-risk and hence we want it to execute fast
+; using the :exec form from its mbe.  But the ec-call means that we really want
+; to call *1*f-log -- we are no longer slipping into raw Lisp and hence we no
+; longer want the special **1*-as-raw* handling, which is inappropriate here
+; since it is intended to give the illusion that we are in raw Lisp.  Thus, we
+; call *1*f-log and what's more, we bind **1*-as-raw* to nil, to signify that
+; we intend to execute the function call in the logic.
 
                (let ((form (car (last x))))
                  `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
@@ -2693,11 +2693,11 @@
                                            ignore-vars ignorable-vars
                                            super-stobjs-in super-stobjs-chk
                                            guard wrld)))
-                                     (if cont-p
-                                         `(state-free-global-let*
+                                     `(if ,cont-p
+                                          (state-free-global-let*
                                            ((check-invariant-risk t))
                                            ,labels-form)
-                                       labels-form))))
+                                        ,labels-form))))
                                 (t ,(df-call fn formals)))))))
                         (t `(,(df-call fn formals))))))
                      (trace-rec-for-none

@@ -2633,12 +2633,15 @@
                         &key dir)
   `(rebuild-fn ,file ,filter ,filterp ,dir state))
 
-;           The Tall Texas Tale about  BIG-CLOCK
+;           The Tall Texas Tale about BIG-CLOCK
 
 ; PREFACE.  The big-clock-entry field of the state is no longer present after
-; 4/2023.  We have left the essay below unchanged when removing that field;
-; think of changes to the acl2-oracle field of state as taking the place of
-; changes to the big-clock-entry field of state.  End of PREFACE.
+; 4/2023.  We have left the essays below -- about big-clock and also about
+; "Common LISP IO" and "The ACL2 ld theorem" -- unchanged when removing that
+; field.  We might think of changes to the acl2-oracle field of state as taking
+; the place of changes to the big-clock-entry field of state, but it could be
+; useful to revisit these comments in light of removal of big-clock.  End of
+; PREFACE.
 
 ; Like any Lisp system, it may be said, loosely speaking, that ACL2
 ; typically reads a form, evaluates it in the current state, and
@@ -2743,8 +2746,7 @@
 ; In the extremely important degenerate case, old and new are
 ; consistent with the Common Lisp IO system's behavior over a time
 ; interval if all the fields of old and new are identical, excepting
-; only the global-table, stacks, and big-clock entries, and no IO
-; occurred in the time interval.
+; only the global-table, and no IO occurred in the time interval.
 
 
 ;                        The ACL2 ld theorem

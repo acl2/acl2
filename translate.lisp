@@ -1510,18 +1510,33 @@
 ; *1* :logic-mode function that calls mbe is itself called under a *1*
 ; :program-mode function, then the :exec code of that mbe call is evaluated,
 ; not the :logic code.  Our approach is basically as follows.  Globally,
-; **1*-as-raw* is nil.  But we arrange the following, and explain below.
+; **1*-as-raw* is nil.  But we arrange the following, and explain further
+; below.  (Consider ignoring the bracket comments here on a first read.)
 ;
 ; (a) The *1* code for an invariant-risk :program mode function binds
 ;     **1*-as-raw* to t.
+;     [This arranges that when a :program mode function is forced to evaluate
+;      using *1* functions, at least we still get the desired program-mode
+;      behavior where mbe evaluation uses the :exec code, by (b) below.]
 ;
 ; (b) The *1* code for an mbe call reduces to its *1* :exec code when
 ;     **1*-as-raw* is true.
+;     [See (a) above.]
 ;
 ; (c) Raw-ev-fncall binds **1*-as-raw* to nil for :logic mode functions.
+;     [We want :logic mode functions to evaluate in the logic, which suggests
+;      that evaluation of an mbe call provably returns the result from its
+;      :logic code.  Of course, for guard-verified code evaluating in raw Lisp
+;      we can expect the :exec code to be executed; but guard verification
+;      guarnatees that this gives the same result as evaluation of the :logic
+;      code.]
 ;
 ; (d) Oneify binds **1*-as-raw* to nil when ec-call is applied to a :logic
 ;     mode function.
+;     [The presumed intention of ec-call is to evaluate *1* code logically,
+;      which suggests using the :logic branch.  So this is just a way to do
+;      what (c) does when we see ec-call.  See the handling of ec-call in
+;      oneify for relevant examples.]
 
 ; Without invariant-risk, none of this would be necessary: a :program mode
 ; function call would lead to raw Lisp evaluation, where each mbe call
@@ -3402,8 +3417,9 @@
 ; in the logic.  Note that we don't restrict this special treatment to
 ; :common-lisp-compliant functions, because such a function might call an
 ; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
-; functions, since they cannot call :program mode functions and hence there
-; cannot be a subsidiary rebinding of **1*-as-raw* to t.
+; functions, since they cannot call :program mode functions (enforced by
+; chk-logic-subfunctions) and hence there cannot be a subsidiary rebinding of
+; **1*-as-raw* to t.
 
                (if (logicp fn w)
                    nil

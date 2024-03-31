@@ -1105,9 +1105,9 @@
 ; put-global, f-put-global, princ$, write-byte$, open-input-channel,
 ; close-input-channel, open-output-channel, fmt-to-comment-window-raw,
 ; get-output-stream-string$-fn, close-output-channel, read-char$, peek-char$,
-; read-byte$, read-object, prin1-with-slashes, f-decrement-big-clock,
-; decrement-big-clock, read-idate, read-run-time, prin1$, wormhole1,
-; wormhole-p, wormhole-eval, sync-ephemeral-whs-with-persistent-whs, one-output,
+; read-byte$, read-object, prin1-with-slashes, read-idate, read-run-time,
+; prin1$, wormhole1, wormhole-p, wormhole-eval,
+; sync-ephemeral-whs-with-persistent-whs, one-output,
 ; write-user-stobj-alist-raw, make-closure-expr-with-acl2-bindings, set-w,
 ; oneify-cltl-code, ld-loop, ld-fn-body, and ev-rec.  These functions are not
 ; in the nexus, they are not necessarily even called by wormhole but instead
