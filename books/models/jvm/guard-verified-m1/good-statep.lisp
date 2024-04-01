@@ -494,7 +494,7 @@ to students to see their definitions as warm-up exercises.
 (verify-guards gsm1
                :hints
                (("Goal" :do-not-induct t)
-                ("Subgoal 5'"
+                ("Goal'"
                  :use ((:instance subsetp-strip-cars-gsm1
                                   (pc (+ pc (arg1 (nth pc program))))
                                   (stackn (+ -1 stackn))

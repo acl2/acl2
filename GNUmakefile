@@ -319,8 +319,8 @@ set-up-log:
 # Build tags table for acl2-doc, with ACL2 topics first.
 TAGS-acl2-doc: $(ACL2_DEPS)
 	rm -f TAGS-acl2-doc
-	etags *.lisp -o TAGS-acl2-doc
-	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append)
+	etags -o TAGS-acl2-doc -- *.lisp
+	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append --)
 
 # The targets acl2r and acl2r.lisp were originally created to support
 # ACL2(r) builds.  It has more uses that that now.

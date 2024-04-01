@@ -8176,7 +8176,9 @@
 ; conceivable that without the guarantee, a :logic mode function could lead to
 ; a call of a :program mode function that violates stobj invariants or writes
 ; past the end of an array.  So be careful when considering a relaxation of
-; this guarantee!
+; this guarantee!  For more reasons why :logic mode functions must not call
+; :program mode functions, see comments in raw-ev-fncall and
+; raw-ev-fncall-simple and see :DOC program-only.
 
   (cond
    ((null names) (value nil))

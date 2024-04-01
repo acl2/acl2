@@ -1737,3 +1737,30 @@ ACL2 !>
    (mv x scal-and-ht)))
 
 )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Allow the parent stobj of a stobj-let expression to occur free in the
+;;; producer when no variable bound in the bindings occurs in the producer.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; In this example, we use the prefix "OCC-OK-" to suggest that it's OK for the
+; parent stobj to OCCur in the producer when no variable bound in the bindings
+; occurs in the producer.
+
+(defstobj occ-ok-child occ-ok-fld)
+(defstobj occ-ok-parent
+  (occ-ok-fld2 :type occ-ok-child)
+  occ-ok-fld3)
+
+; The following formerly failed (before late March 2024) because occ-ok-parent
+; occurs in the producer.  But that restriction no longer applies here, since
+; no variable bound by bindings is among the producer variables,
+(defun occ-ok-test (occ-ok-parent)
+  (declare (xargs :stobjs occ-ok-parent))
+  (stobj-let
+   ((occ-ok-child (occ-ok-fld2 occ-ok-parent))) ; bindings
+   (x y)                                        ; producer variable(s)
+   (mv (occ-ok-fld occ-ok-child)
+       (occ-ok-fld3 occ-ok-parent)) ; producer
+   (cons x y))                      ; consumer
+  )

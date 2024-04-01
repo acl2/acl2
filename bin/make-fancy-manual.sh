@@ -107,7 +107,7 @@ gzip $destdir/acl2-doc-search
 chmod ugo+r $destdir/acl2-doc-search.gz
 
 # Run update script, if available
-cd $destdirmain
+cd $destdirmain || ( echo "ERROR: Failed to find directory $destdirmain" ; exit 1 )
 if [ -x update.sh ] ; then \
     echo "Running ./update.sh $destdirsub in directory $destdirmain"
     ./update.sh $destdirsub
