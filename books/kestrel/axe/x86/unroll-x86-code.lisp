@@ -83,16 +83,6 @@
 (acl2::ensure-rules-known (lifter-rules64-all))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 
-;; move to lifter-support?
-(defconst *executable-types32* '(:pe-32 :mach-o-32 :elf-32))
-(defconst *executable-types64* '(:pe-64 :mach-o-64 :elf-64))
-(defconst *executable-types* (append *executable-types32* *executable-types64*))
-
-;; The type of an x86 executable
-(defun executable-typep (type)
-  (declare (xargs :guard t))
-  (member-eq type *executable-types*))
-
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
 (deftheory 32-bit-reg-rules
   '(xw-becomes-set-eip
@@ -116,20 +106,6 @@
 
 (defttag invariant-risk)
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
-
-;move?
-;; Returns a symbol-list.
-(defund maybe-add-debug-rules (debug-rules monitor)
-  (declare (xargs :guard (and (or (eq :debug monitor)
-                                  (symbol-listp monitor))
-                              (symbol-listp debug-rules))))
-  (if (eq :debug monitor)
-      debug-rules
-    (if (member-eq :debug monitor)
-        ;; replace :debug in the list with all the debug-rules:
-        (union-eq debug-rules (remove-eq :debug monitor))
-      ;; no special treatment:
-      monitor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
