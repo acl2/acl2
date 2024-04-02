@@ -686,3 +686,43 @@
                                      mxcsrbits->um
                                      mxcsrbits->pm
                                      mxcsrbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; we've already turned the bitn into getbit
+(defthm getbit-of-daz-becomes-mxcsrbits->daz
+  (implies (integerp mxcsr)
+           (equal (getbit (daz) mxcsr)
+                  (mxcsrbits->daz mxcsr)))
+  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->daz
+                                     rtl::daz
+;                                    getbit
+                                     x86isa::mxcsrbits-fix))))
+
+;; helps when a bvif gets tightened
+;more like this?
+(defthm mxcsrbits->daz-when-unsigned-byte-p-too-small
+  (implies (unsigned-byte-p 6 mxcsr)
+           (equal (mxcsrbits->daz$inline mxcsr)
+                  0))
+  :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+
+
+;daz remains 0
+(defthm mxcsrbits->daz-of-mv-nth-1-of-sse-post-comp
+  (implies (equal 0 (mxcsrbits->daz mxcsr))
+           (equal (mxcsrbits->daz (mv-nth '1 (rtl::sse-post-comp u mxcsr f)))
+                  0))
+  :hints (("Goal" :in-theory (enable rtl::sse-post-comp rtl::obit rtl::pbit rtl::ubit ))))
+
+;daz remains 0
+(defthm mxcsrbits->daz-of-mv-nth-1-of-sse-binary-comp
+  (implies (equal 0 (mxcsrbits->daz mxcsr))
+           (equal (mxcsrbits->daz (mv-nth '1 (rtl::sse-binary-comp op a b mxcsr f)))
+                  0))
+  :hints (("Goal" :in-theory (enable rtl::sse-binary-comp
+;                                     rtl::sse-post-comp ; todo
+                                     rtl::obit rtl::pbit rtl::ubit ))))
+
+(defthm integerp-of-qnanize
+  (integerp (rtl::qnanize x f)))

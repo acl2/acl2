@@ -62,6 +62,7 @@
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
 (include-book "kestrel/bv/intro" :dir :system)
+(include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 (include-book "ihs/logops-lemmas" :dir :system) ;reduce? for logext-identity
 (include-book "kestrel/arithmetic-light/mod" :dir :system)

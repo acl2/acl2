@@ -1272,6 +1272,9 @@
     unmasked-excp-p-of-63-arg2 ; may help a lot
     mxcsr-rc-redef
     mxcsr-masks-redef
+
+    acl2::bitn-becomes-getbit ; the rules below target getbit
+    getbit-of-daz-becomes-mxcsrbits->daz
     ))
 
 ;; Try to introduce is-nan as soon as possible:
