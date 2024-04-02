@@ -80,6 +80,8 @@
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
 
+(in-theory (disable str::coerce-to-list-removal)) ;todo
+
 (acl2::ensure-rules-known (lifter-rules32-all))
 (acl2::ensure-rules-known (lifter-rules64-all))
 (acl2::ensure-rules-known (assumption-simplification-rules))
@@ -160,20 +162,32 @@
               (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with normal-output-indicatorp
               (acl2::symbol-listp types)))))
 
+;; todo: think about signed (i) vs unsigned (u)
+(defconst *scalar-type-to-bytes-alist*
+  '(("U8" . 1)
+    ("I8" . 1)
+    ("U16" . 2)
+    ("I16" . 2)
+    ("U32" . 4)
+    ("I32" . 4)
+    ("U64" . 8)
+    ("I64" . 8)
+    ;; anything larger would not fit in register
+    ))
+
 (defund bytes-in-scalar-type (type)
   (declare (xargs :guard (stringp type)))
-  (cond
-   ;; todo: think about signed (i) vs unsigned (u)
-   ((member-equal type '("U8" "I8")) 1)
-   ((member-equal type '("U16" "I16")) 2)
-   ((member-equal type '("U32" "I32")) 4)
-   ((member-equal type '("U64" "I64")) 8)
-   ;; These would not fit in a register:
-   ;; ((member-equal type '("U128" "I128")) 16)
-   ;; ((member-equal type '("U256" "I256")) 32)
-   (t (prog2$ (er hard? 'bytes-in-scalar-type "Unsupported type: ~x0." type)
+  (let ((res (acl2::lookup-equal type *scalar-type-to-bytes-alist*)))
+    (if res
+        res
+      (prog2$ (er hard? 'bytes-in-scalar-type "Unsupported type: ~x0." type)
               ;; for guard proof:
               1))))
+
+(defthm posp-of-bytes-in-scalar-type
+  (posp (bytes-in-scalar-type type))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable bytes-in-scalar-type ACL2::LOOKUP-EQUAL))))
 
 (defund var-intro-assumptions-for-array-input (index len element-size pointer-name var-name)
   (declare (xargs :guard (and (natp index)
@@ -196,6 +210,29 @@
 
 ;; (var-intro-assumptions-for-array-input '0 '6 '4 'foo-ptr 'foo)
 
+;;Rreturns a parsed-type or :error.
+;; Types are parsed right-to-left, with the rightmost thing being the top construct.
+(defund parse-type-string (type-str)
+  (declare (xargs :guard (stringp type-str)
+                  :measure (length type-str)
+                  :hints (("Goal" :in-theory (disable length)))))
+  (if (acl2::string-ends-withp type-str "*")
+      `(:pointer ,(parse-type-string (acl2::strip-suffix-from-string "*" type-str)))
+    (if (acl2::string-ends-withp type-str "]")
+        (b* (((mv foundp base-type rest) (acl2::split-string type-str #\[))
+             ((when (not foundp)) :error)
+             (element-count-string (acl2::strip-suffix-from-string "]" rest))
+             (element-count (acl2::parse-string-as-decimal-number element-count-string))
+             ((when (not (posp element-count))) :error))
+          `(:array ,(parse-type-string base-type) ,element-count))
+      ;; a scalar type:
+      (if (assoc-equal type-str *scalar-type-to-bytes-alist*)
+          type-str
+        :error))))
+
+(defund parse-type (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (parse-type-string (symbol-name sym)))
 
 (defund assumptions-for-input (var-name
                                type ;; examples: :u32 or :u32* or :u32[4]
@@ -209,58 +246,64 @@
                               (natp stack-slots)
                               ;; text-offset is a term
                               (natp code-length))))
-  (let* ((type-str (symbol-name type))
-         (pointerp (acl2::string-ends-withp type-str "*"))
-         (arrayp (acl2::string-ends-withp type-str "]"))
-         (stack-byte-count (* 8 stack-slots)) ; each stack element is 64-bits
-         )
-    (if pointerp
-        (b* ((base-type (acl2::strip-suffix-from-string "*" type-str))
-             (numbytes (bytes-in-scalar-type base-type))
-             (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
-             )
-          `((equal ,state-component ,pointer-name)
-            ;; todo: what about reading individual bytes?:  don't trim down reads?
-            (equal (read ,numbytes ,pointer-name x86) ,var-name)
-            (canonical-address-p$inline ,pointer-name) ; first address
-            (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
-            ;; The input is disjount from the space into which the stack will grow:
-            (separate :r ,numbytes ,pointer-name
-                      :r ,stack-byte-count
-                      (+ ,(- stack-byte-count) (rsp x86)))
-            ;; The input is disjoint from the code:
-            (separate :r ,numbytes ,pointer-name
-                      :r ,code-length ,text-offset)
-            ;; The input is disjoint from the saved return address:
-            ;; todo: reorder args?
-            (separate :r 8 (rsp x86)
-                      :r ,numbytes ,pointer-name)))
-      (if arrayp
-          (b* (((mv foundp base-type rest) (acl2::split-string type-str #\[))
-               ((when (not foundp)) (er hard? 'assumptions-for-input "Unsupported type: ~x0." type)
-                nil)
-               (element-count (acl2::parse-string-as-decimal-number (acl2::strip-suffix-from-string "]" rest)))
-               (element-size (bytes-in-scalar-type base-type))
-               (numbytes (* element-count element-size))
-               (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
-               )
-            (append (var-intro-assumptions-for-array-input 0 element-count element-size pointer-name var-name)
-                    `((equal ,state-component ,pointer-name)
-                      (canonical-address-p$inline ,pointer-name) ; first address
-                      (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
-                      ;; The input is disjount from the space into which the stack will grow:
-                      (separate :r ,numbytes ,pointer-name
-                                :r ,stack-byte-count
-                                (+ ,(- stack-byte-count) (rsp x86)))
-                      ;; The input is disjoint from the code:
-                      (separate :r ,numbytes ,pointer-name
-                                :r ,code-length ,text-offset)
-                      ;; The input is disjoint from the saved return address:
-                      ;; todo: reorder args?
-                      (separate :r 8 (rsp x86)
-                                :r ,numbytes ,pointer-name))))
-        ;; just put in the var name for the state component:
-        `((equal ,state-component ,var-name))))))
+  (let ((type (parse-type type)))
+    (if (eq :error type)
+        (er hard? 'assumptions-for-input "Bad type: ~x0." type)
+      (if (atom type) ; scalar
+          ;; just put in the var name for the state component:
+          `((equal ,state-component ,var-name))
+        (let ((stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
+          (if (and (call-of :pointer type)
+                   (stringp (farg1 type)) ; for guards
+                   )
+              (let* ((base-type (farg1 type))
+                     (numbytes (bytes-in-scalar-type base-type))
+                     (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
+                     )
+                `((equal ,state-component ,pointer-name)
+                  ;; todo: what about reading individual bytes?:  don't trim down reads?
+                  (equal (read ,numbytes ,pointer-name x86) ,var-name)
+                  (canonical-address-p$inline ,pointer-name) ; first address
+                  (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
+                  ;; The input is disjount from the space into which the stack will grow:
+                  (separate :r ,numbytes ,pointer-name
+                            :r ,stack-byte-count
+                            (+ ,(- stack-byte-count) (rsp x86)))
+                  ;; The input is disjoint from the code:
+                  (separate :r ,numbytes ,pointer-name
+                            :r ,code-length ,text-offset)
+                  ;; The input is disjoint from the saved return address:
+                  ;; todo: reorder args?
+                  (separate :r 8 (rsp x86)
+                            :r ,numbytes ,pointer-name)))
+            (if (and (call-of :array type)
+                     (stringp (farg1 type)) ; for guards
+                     (natp (farg2 type)) ; for guards
+                     )
+
+                ;; must be an :array type:
+                (b* ((base-type (farg1 type))
+                     (element-count (farg2 type))
+                     (element-size (bytes-in-scalar-type base-type))
+                     (numbytes (* element-count element-size))
+                     (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
+                     )
+                  (append (var-intro-assumptions-for-array-input 0 element-count element-size pointer-name var-name)
+                          `((equal ,state-component ,pointer-name)
+                            (canonical-address-p$inline ,pointer-name) ; first address
+                            (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
+                            ;; The input is disjount from the space into which the stack will grow:
+                            (separate :r ,numbytes ,pointer-name
+                                      :r ,stack-byte-count
+                                      (+ ,(- stack-byte-count) (rsp x86)))
+                            ;; The input is disjoint from the code:
+                            (separate :r ,numbytes ,pointer-name
+                                      :r ,code-length ,text-offset)
+                            ;; The input is disjoint from the saved return address:
+                            ;; todo: reorder args?
+                            (separate :r 8 (rsp x86)
+                                      :r ,numbytes ,pointer-name))))
+              (er hard? 'assumptions-for-input "Bad type: ~x0." type))))))))
 
 ;; might have extra, unneeded items in state-components
 (defun assumptions-for-inputs (names-and-types state-components stack-slots text-offset code-length)
