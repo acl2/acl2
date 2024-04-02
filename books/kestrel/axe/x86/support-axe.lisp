@@ -341,6 +341,9 @@
 (defopeners acl2::get-pe-section-aux)
 (defopeners acl2::lookup-pe-symbol)
 
+(defopeners x86isa::simd-add-spec)
+(defopeners x86isa::simd-sub-spec)
+
 ;; ;todo
 ;; (thm
 ;;  (equal (bitops::rotate-left-32 x places)

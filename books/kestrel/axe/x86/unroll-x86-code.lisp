@@ -641,6 +641,7 @@
        ;; others, because opening things like read64 involves testing
        ;; canonical-addressp (which we know from other assumptions is true):
        (assumption-rules (append extra-assumption-rules
+                                 (reader-and-writer-intro-rules)
                                  (assumption-simplification-rules)
                                  (if 32-bitp
                                      nil

@@ -159,8 +159,8 @@
 
             x86isa::x86-operand-to-xmm/mem
 
-            x86isa::simd-add-spec
-            x86isa::simd-sub-spec)
+            x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
+            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll)
           *instruction-decoding-and-spec-rules*))
 
 (defun list-rules-x86 ()
@@ -289,32 +289,141 @@
     write-of-bvchop-arg3-gen
     ))
 
-;; 'Read Over Write' and similar rules for state components. Our normal form
-;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
-;; to XW, WRITE, and SET-FLAG (todo: update this comment).
-(defun state-rules ()
+(defund reader-and-writer-intro-rules ()
   (declare (xargs :guard t))
-  '(
-    ;x86isa::x86p-set-flag
-    force ;todo: think about this
+  '(xr-becomes-fault
+    xr-becomes-ms
+    xr-becomes-undef
+    xr-becomes-mxcsr
+    xw-becomes-set-fault
+    xw-becomes-set-ms
+    xw-becomes-set-undef
+    xw-becomes-set-mxcsr
+    !fault-becomes-set-fault
+    !ms-becomes-set-ms
+    x86isa::!mxcsr-becomes-set-mxcsr ; package
+    x86isa::!undef-becomes-set-undef ; package
+    ))
+
+;; For the loop lifter
+(defund reader-and-writer-opener-rules ()
+  (declare (xargs :guard t))
+  '(x86isa::undef x86isa::undef$a ; exposes xr
+    x86isa::!undef x86isa::!undef$a ; exposes xw
+    x86isa::ms x86isa::ms$a ; exposes xr
+    x86isa::!ms x86isa::!ms$a ; exposes xw
+    x86isa::fault x86isa::fault$a ; exposes xr
+    x86isa::!fault x86isa::!fault$a ; exposes xw
+    ))
+
+
+(defund read-over-write-rules ()
+  (declare (xargs :guard t))
+  '( ; rule to intro app-view?
+    x86isa::app-view-of-xw ; needed?
+    app-view-of-set-flag
+    app-view-of-set-ms
+    app-view-of-set-mxcsr
+    app-view-of-set-undef
+
     x86isa::x86p-xw ;big rule with forced hyps
-    x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
-
-    ;; Flags:
     x86p-of-set-flag
-    get-flag-of-xw
-    xr-of-set-flag
-    set-flag-of-xw
-    get-flag-of-set-flag
-    set-flag-of-set-flag-diff-axe
-    set-flag-of-set-flag-same
-    set-flag-of-get-flag-same
-    x86isa::alignment-checking-enabled-p-of-set-flag
-    X86ISA::XW-RGF-OF-XR-RGF-SAME
+    x86p-of-set-ms
+    x86p-of-set-mxcsr
+    x86p-of-set-undef
 
-    ;; Rules about get-flag
+    x86p-of-!rflags
+
+    ;; Rules about fault:
+
+    ;; fault x86isa::fault$a  ;expose the call to xr
+    fault-of-set-ms
+    fault-of-set-flag
+    ;; fault-of-myif
+    fault-of-!rflags ; why is !rflags not going away?
+    fault-of-set-rip ; move to 64 rules?
+    fault-of-set-undef
+    fault-of-set-mxcsr
+    fault-of-xw ; currently needed at least for writes to float registers
+
+    xr-of-set-undef-irrel
+    xr-of-set-mxcsr-irrel
+    xr-of-set-ms-irrel
+
+    get-flag-of-set-undef
+    get-flag-of-set-mxcsr
+    get-flag-of-set-ms
+
+    ;; Rules about set-fault:
+
+    ;; Rules about ms:
+
+    ms-of-set-ms
+    ms-of-set-flag
+    ;; ms-of-myif
+    ms-of-!rflags         ; why is !rflags not going away?
+    ms-of-set-rip         ; move to 64 rules?
+    ms-of-set-undef
+    ms-of-set-mxcsr
+    ms-of-xw ; currently needed at least for writes to float registers
+
+    ctri-of-!rflags          ; rename !rflags?
+    ctri-of-xw-irrel         ; why?
+    ctri-of-set-flag
+    ctri-of-set-undef
+    ctri-of-set-mxcsr
+    integerp-of-ctri
+
+    ;; Rules about set-ms:
+    ;; set-ms-of-set-rip ; move to 64 rules?
+
+    ;; x86isa::undef x86isa::undef$a
+    undef-of-xw
+    undef-of-set-undef
+    undef-of-set-mxcsr
+    undef-of-set-flag
+    ;; undef-of-myif
+    undef-of-!rflags         ; why is !rflags not going away?
+    undef-of-set-rip         ; move to 64 rules?
+
+    ;;x86isa::mxcsr
+    ;;x86isa::mxcsr$a
+    mxcsr-of-xw
+    mxcsr-of-set-flag
+    mxcsr-of-set-mxcsr ; read-of-write
+    mxcsr-of-set-undef
+    ;; mxcsr-of-myif
+    mxcsr-of-!rflags         ; why is !rflags not going away?
+    mxcsr-of-set-rip         ; move to 64 rules?
+
+    alignment-checking-enabled-p-of-set-undef
+    64-bit-modep-of-set-undef
+    msri-of-set-undef
+    set-undef-of-set-undef
+    ;;            set-undef-of-set-mxcsr
+    set-undef-of-set-flag
+    ;; set-undef-of-myif
+    set-undef-of-!rflags         ; why is !rflags showing up?
+    set-undef-of-set-rip         ; move to 64 rules?
+
+    alignment-checking-enabled-p-of-set-mxcsr
+    64-bit-modep-of-set-mxcsr
+    msri-of-set-mxcsr
+    set-mxcsr-of-set-mxcsr
+    set-mxcsr-of-set-flag
+    ;; set-mxcsr-of-myif
+    set-mxcsr-of-!rflags         ; why is !rflags showing up?
+    set-mxcsr-of-set-rip         ; move to 64 rules?
+
+    rip-of-set-undef         ; also used in 32-bit mode?  or not?
+    rip-of-set-mxcsr         ; also used in 32-bit mode?  or not?
+    rip-of-set-ms            ; also used in 32-bit mode?  or not?
+    ))
+
+(defund read-over-write-rules32 ()
+  (declare (xargs :guard t))
+  '(get-flag-of-write-to-segment
     get-flag-of-write-byte-to-segment
-    get-flag-of-write-to-segment
 
     ms-of-write-to-segment
     ms-of-write-byte-to-segment
@@ -327,6 +436,31 @@
 
     mxcsr-of-write-to-segment
     mxcsr-of-write-byte-to-segment
+    ))
+
+
+
+;; 'Read Over Write' and similar rules for state components. Our normal form
+;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
+;; to XW, WRITE, and SET-FLAG (todo: update this comment).
+(defun state-rules ()
+  (declare (xargs :guard t))
+  '(
+    ;x86isa::x86p-set-flag
+    force ;todo: think about this
+        x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
+
+    ;; Flags:
+
+    get-flag-of-xw
+    xr-of-set-flag
+    set-flag-of-xw
+    get-flag-of-set-flag
+    set-flag-of-set-flag-diff-axe
+    set-flag-of-set-flag-same
+    set-flag-of-get-flag-same
+    x86isa::alignment-checking-enabled-p-of-set-flag
+    X86ISA::XW-RGF-OF-XR-RGF-SAME
 
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
@@ -525,9 +659,9 @@
 ;    x86isa::get-flag-wb-in-app-view
     x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
 
-    ACL2::BFIX-WHEN-BITP ; move? or drop if we go to unsigned-byte-p
+    acl2::bfix-when-bitp ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
-    ACL2::BITP-BECOMES-UNSIGNED-BYTE-P
+    acl2::bitp-becomes-unsigned-byte-p
     ))
 
 (defun decoding-and-dispatch-rules ()
@@ -630,8 +764,6 @@
     x86isa::4bits-fix
     x86isa::8bits-fix
 
-
-
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
 
@@ -642,8 +774,6 @@
     x86isa::vex->w$inline-constant-opener
     x86isa::vex->b$inline-constant-opener
     x86isa::vex->x$inline-constant-opener
-
-
 
     ;; todo: more constant-openers for the bitstructs (or add to evaluator)
 
@@ -973,7 +1103,6 @@
 ;;   ;; or lower ifs with if-of-write
 ;;   xr-of-if ; too much?  need ms
 ;;   x86isa::alignment-checking-enabled-p-of-if
-
 
 (defun simple-opener-rules ()
   (declare (xargs :guard t))
@@ -1345,6 +1474,8 @@
 (defun lifter-rules-common ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules)
+          (reader-and-writer-intro-rules)
+          (read-over-write-rules)
           (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
@@ -1364,7 +1495,7 @@
           (x86-type-rules)
           (logops-to-bv-rules)
           (acl2::bv-of-logext-rules)
-          ;; (arith-to-bv-rules) ; todo: try
+          (arith-to-bv-rules) ; todo: try
           (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
@@ -1456,8 +1587,6 @@
 
             ;; todo: organize these:
 
-            x86isa::app-view-of-xw
-            app-view-of-set-flag
 
             x86isa::rb-wb-equal
             x86isa::rb-of-if-arg2
@@ -1684,111 +1813,12 @@
             ;;x86isa::rip$a                           ;expose the call to xr
             ;;app-view$inline         ;expose the call to xr
 
-            ;; Rules about fault:
-            xr-becomes-fault
-            ;; fault x86isa::fault$a                         ;expose the call to xr
-            fault-of-set-ms
-            fault-of-set-flag
-            ;; fault-of-myif
-            fault-of-!rflags ; why is !rflags not going away?
-            fault-of-set-rip ; move to 64 rules?
-            fault-of-set-undef
-            fault-of-set-mxcsr
-            fault-of-xw ; currently needed at least for writes to float registers
 
-            ;; Rules about set-fault:
-            xw-becomes-set-fault
-            !fault-becomes-set-fault
 
-            ;; Rules about ms:
-            xr-becomes-ms
-            ms-of-set-ms
-            ms-of-set-flag
-            ;; ms-of-myif
-            ms-of-!rflags ; why is !rflags not going away?
-            ms-of-set-rip ; move to 64 rules?
-            ms-of-set-undef
-            ms-of-set-mxcsr
-            ms-of-xw ; currently needed at least for writes to float registers
-
-            ctri-of-!rflags ; rename !rflags?
-            ctri-of-xw-irrel ; why?
-            ctri-of-set-flag
-            ctri-of-set-undef
-            ctri-of-set-mxcsr
-            integerp-of-ctri
-
-            ;; Rules about set-ms:
-            xw-becomes-set-ms
-            !ms-becomes-set-ms
-            ;; set-ms-of-set-rip ; move to 64 rules?
-
-            ;; x86isa::undef x86isa::undef$a
-            xr-becomes-undef ; introduces undef
-            undef-of-xw
-            undef-of-set-undef
-            undef-of-set-mxcsr
-            undef-of-set-flag
-            ;; undef-of-myif
-            undef-of-!rflags ; why is !rflags not going away?
-            undef-of-set-rip ; move to 64 rules?
-
-            ;;x86isa::mxcsr
-            ;;x86isa::mxcsr$a
-            xr-becomes-mxcsr ; introduces mxcsr
-            mxcsr-of-xw
-            mxcsr-of-set-flag
-            mxcsr-of-set-mxcsr ; read-of-write
-            mxcsr-of-set-undef
-            ;; mxcsr-of-myif
-            mxcsr-of-!rflags ; why is !rflags not going away?
-            mxcsr-of-set-rip ; move to 64 rules?
-
-            xw-becomes-set-undef ; introduces set-undef
-            x86isa::!undef-becomes-set-undef ; introduces set-undef
-            alignment-checking-enabled-p-of-set-undef
-            64-bit-modep-of-set-undef
-            msri-of-set-undef
-            set-undef-of-set-undef
-;;            set-undef-of-set-mxcsr
-            set-undef-of-set-flag
-            ;; set-undef-of-myif
-            set-undef-of-!rflags ; why is !rflags showing up?
-            set-undef-of-set-rip ; move to 64 rules?
-
-            xw-becomes-set-mxcsr
-            x86isa::!mxcsr-becomes-set-mxcsr
-            alignment-checking-enabled-p-of-set-mxcsr
-            64-bit-modep-of-set-mxcsr
-            msri-of-set-mxcsr
-            set-mxcsr-of-set-mxcsr
-            set-mxcsr-of-set-flag
-            ;; set-mxcsr-of-myif
-            set-mxcsr-of-!rflags ; why is !rflags showing up?
-            set-mxcsr-of-set-rip ; move to 64 rules?
-
-            rip-of-set-undef ; also used in 32-bit mode?  or not?
-            rip-of-set-mxcsr ; also used in 32-bit mode?  or not?
-
-            rip-of-set-ms ; also used in 32-bit mode?  or not?
-
-            app-view-of-set-undef
-            app-view-of-set-mxcsr
-            app-view-of-set-ms
-            x86p-of-set-undef
-            x86p-of-set-mxcsr
-            x86p-of-set-ms
-            xr-of-set-undef-irrel
-            xr-of-set-mxcsr-irrel
-            xr-of-set-ms-irrel
-            get-flag-of-set-undef
-            get-flag-of-set-mxcsr
-            get-flag-of-set-ms
 
             x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
 
-            acl2::bvchop-of-*-becomes-bvmult
             ;acl2::bvchop-of-bvmult
             acl2::bvchop-of-ash
             acl2::nfix-does-nothing
@@ -1956,7 +1986,7 @@
             x86isa::seg-hidden-basei$a
             seg-hidden-limiti
             x86isa::seg-hidden-limiti$a
-            x86isa::!ms
+            x86isa::!ms ; todo: use set-ms?
             x86isa::!ms$a
 
             acl2::bv-array-read-shorten-axe
@@ -2120,13 +2150,7 @@
      x86isa::canonical-address-listp-of-nil
      acl2::integerp-of-+-when-integerp-1-cheap
      x86isa::integerp-of-xr-rgf-4
-     x86isa::fix-of-xr-rgf-4
-
-     ;; Enforce normal forms:
-     xr-becomes-ms
-     ;; ms X86ISA::ms$A
-     xr-becomes-fault
-     )
+     x86isa::fix-of-xr-rgf-4)
    (acl2::lookup-rules)))
 
 ;move?
@@ -2151,6 +2175,7 @@
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
+          (read-over-write-rules32)
           '(x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
             ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
@@ -3083,8 +3108,7 @@
 
     ms-of-write-byte
 
-    fault-of-write-byte
-
+    fault-of-write-byte ; todo: move?
 
     app-view-of-set-rip
     app-view-of-set-rax
@@ -3584,7 +3608,6 @@
     fault-of-set-rsp
     fault-of-set-rbp
 
-    xw-becomes-set-rip
     xw-becomes-set-rax
     xw-becomes-set-rbx
     xw-becomes-set-rcx
@@ -4204,8 +4227,7 @@
 ;; these are used both for lifting and proving
 (defun extra-tester-rules ()
   (declare (xargs :guard t))
-  (append '(acl2::bvchop-of-*-becomes-bvmult
-            acl2::integerp-of-expt
+  (append '(acl2::integerp-of-expt
             acl2::integerp-of-*                 ; for array index calcs
             acl2::<-of-+-and-+-cancel-constants ; for array index calcs
             acl2::my-integerp-<-non-integerp    ; for array index calcs
@@ -4269,7 +4291,6 @@
             xr-of-!rflags-irrel ; todo: better normal form?
             64-bit-modep-of-!rflags
             app-view-of-!rflags
-            x86p-of-!rflags
             read-of-!rflags
             logext-of-+-of-bvplus-same-size
             logext-of-+-of-+-of-mult-same-size
