@@ -63,3 +63,8 @@
            (equal (div x (+ y p) p)
                   (div x y p)))
   :hints (("Goal" :in-theory (enable div))))
+
+(defthm div-of-0-arg1
+  (equal (div 0 y p)
+         0)
+  :hints (("Goal" :in-theory (enable div))))
