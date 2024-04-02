@@ -502,6 +502,7 @@
     sbvlt
     sbvle
     bvcat
+    bvcat2
     bvplus
     bvminus
     bvuminus
