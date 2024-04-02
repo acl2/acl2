@@ -2106,7 +2106,7 @@
                            user-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
                            non-executable
                            ;;restrict-theory
-                           rules-to-monitor
+                           monitor
                            print
                            measures
                            whole-form
@@ -2117,7 +2117,8 @@
                               (stringp subroutine-name)
 ;                              (output-indicatorp output)
                               (booleanp non-executable)
-                              (symbol-listp rules-to-monitor))
+                              (or (symbol-listp monitor)
+                                  (eq :debug monitor)))
                   :mode :program)
            (ignore produce-theorem non-executable))
   (b* ( ;; Check whether this call to the lifter has already been made:
@@ -2202,6 +2203,9 @@
                         '(xr-becomes-undef
                           x86isa::!undef-becomes-set-undef
                           xw-becomes-set-undef))))
+       (32-bitp (member-eq executable-type *executable-types32*))
+       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ((mv erp dag events
             ;; & ;;rules
             & ;;next-loop-num
