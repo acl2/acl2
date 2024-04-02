@@ -690,14 +690,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; we've already turned the bitn into getbit
-(defthm getbit-of-daz-becomes-mxcsrbits->daz
-  (implies (integerp mxcsr)
-           (equal (getbit (daz) mxcsr)
-                  (mxcsrbits->daz mxcsr)))
-  :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->daz
-                                     rtl::daz
-;                                    getbit
-                                     x86isa::mxcsrbits-fix))))
+(defthm getbit-of-daz-becomes-mxcsrbits->daz (equal (getbit (rtl::daz) mxcsr) (mxcsrbits->daz mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->daz rtl::daz))))
+;; (defthm getbit-of-ie-becomes-mxcsrbits->-ie (equal (getbit (rtl::ie) mxcsr) (mxcsrbits->ie mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ie rtl::ie))))
+;; (defthm getbit-of-de-becomes-mxcsrbits->-de (equal (getbit (rtl::de) mxcsr) (mxcsrbits->de mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->de rtl::de))))
+;; (defthm getbit-of-ze-becomes-mxcsrbits->-ze (equal (getbit (rtl::ze) mxcsr) (mxcsrbits->ze mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ze rtl::ze))))
+;; (defthm getbit-of-oe-becomes-mxcsrbits->-oe (equal (getbit (rtl::oe) mxcsr) (mxcsrbits->oe mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->oe rtl::oe))))
+;; (defthm getbit-of-ue-becomes-mxcsrbits->-ue (equal (getbit (rtl::ue) mxcsr) (mxcsrbits->ue mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ue rtl::ue))))
+;; (defthm getbit-of-pe-becomes-mxcsrbits->-pe (equal (getbit (rtl::pe) mxcsr) (mxcsrbits->pe mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->pe rtl::pe))))
+;; (defthm getbit-of-da-becomes-mxcsrbits->-da (equal (getbit (rtl::da) mxcsr) (mxcsrbits->da mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->da rtl::da))))
+;; (defthm getbit-of-im-becomes-mxcsrbits->-im (equal (getbit (rtl::im) mxcsr) (mxcsrbits->im mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->im rtl::im))))
+;; (defthm getbit-of-dm-becomes-mxcsrbits->-dm (equal (getbit (rtl::dm) mxcsr) (mxcsrbits->dm mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->dm rtl::dm))))
+;; (defthm getbit-of-zm-becomes-mxcsrbits->-zm (equal (getbit (rtl::zm) mxcsr) (mxcsrbits->zm mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->zm rtl::zm))))
+(defthm getbit-of-omsk-becomes-mxcsrbits->-om (equal (getbit (rtl::omsk) mxcsr) (mxcsrbits->om mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->om rtl::omsk mxcsrbits-fix))))
+(defthm getbit-of-umsk-becomes-mxcsrbits->-um (equal (getbit (rtl::umsk) mxcsr) (mxcsrbits->um mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->um rtl::umsk mxcsrbits-fix))))
+;; (defthm getbit-of-pm-becomes-mxcsrbits->-pm (equal (getbit (rtl::pm) mxcsr) (mxcsrbits->pm mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->pm rtl::pm))))
+
+;; (rc 2bits)        ;; Rounding Control
+(defthm getbit-of-ftz-becomes-mxcsrbits->-fz (equal (getbit (rtl::ftz) mxcsr) (mxcsrbits->fz mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->fz rtl::ftz mxcsrbits-fix))))
+
+(defthm natp-of-daz (natp (rtl::daz)))
+(defthm natp-of-omsk (natp (rtl::omsk)))
+(defthm natp-of-umsk (natp (rtl::umsk)))
+(defthm natp-of-ftz (natp (rtl::ftz)))
 
 ;; helps when a bvif gets tightened
 ;more like this?

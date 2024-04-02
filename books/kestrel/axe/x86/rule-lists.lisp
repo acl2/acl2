@@ -1275,6 +1275,13 @@
 
     acl2::bitn-becomes-getbit ; the rules below target getbit
     getbit-of-daz-becomes-mxcsrbits->daz
+    getbit-of-omsk-becomes-mxcsrbits->-om
+    getbit-of-umsk-becomes-mxcsrbits->-um
+    getbit-of-ftz-becomes-mxcsrbits->-fz
+    natp-of-omsk
+    natp-of-umsk
+    natp-of-ftz
+    natp-of-daz
     ))
 
 ;; Try to introduce is-nan as soon as possible:
