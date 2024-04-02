@@ -55,6 +55,7 @@
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+(include-book "kestrel/utilities/map-symbol-name" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -93,6 +94,7 @@
   (declare (xargs :guard t))
   (member-eq type *executable-types*))
 
+;move
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
 (deftheory 32-bit-reg-rules
   '(xw-becomes-set-eip
@@ -102,6 +104,7 @@
     xw-becomes-set-edx
     xw-becomes-set-esp
     xw-becomes-set-ebp
+    ;; introduce eip too?
     xr-becomes-eax
     xr-becomes-ebx
     xr-becomes-ecx
@@ -170,13 +173,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: strengthen (allow any package for the types):
+;; todo: strengthen:
 (defun names-and-typesp (names-and-types)
   (declare (xargs :guard t))
   (and (doublet-listp names-and-types)
-       (symbol-listp (strip-cars names-and-types))
-       ;; (acl2::keyword-listp (acl2::strip-cadrs names-and-types))
-       ))
+       (let ((names (strip-cars names-and-types))
+             (types (acl2::strip-cadrs names-and-types)))
+         (and (symbol-listp names)
+              ;; Can't use the same name as a register (would make the output-indicator ambiguous):
+              (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with normal-output-indicatorp
+              (acl2::symbol-listp types)))))
 
 (defund bytes-in-scalar-type (type)
   (declare (xargs :guard (stringp type)))
@@ -186,8 +192,9 @@
    ((member-equal type '("U16" "I16")) 2)
    ((member-equal type '("U32" "I32")) 4)
    ((member-equal type '("U64" "I64")) 8)
-   ((member-equal type '("U128" "I128")) 16)
-   ((member-equal type '("U256" "I256")) 32)
+   ;; These would not fit in a register:
+   ;; ((member-equal type '("U128" "I128")) 16)
+   ;; ((member-equal type '("U256" "I256")) 32)
    (t (prog2$ (er hard? 'bytes-in-scalar-type "Unsupported type: ~x0." type)
               ;; for guard proof:
               1))))
