@@ -20,6 +20,7 @@
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
 (include-book "kestrel/typed-lists-light/minelem" :dir :system) ; todo: include just the def?
+(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "numeric-lists"))
@@ -69,48 +70,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund nat-list-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (nat-listp (first x))
-         (nat-list-listp (rest x)))))
-
-(defthm nat-list-listp-of-cons
-  (equal (nat-list-listp (cons a x))
-         (and (nat-listp a)
-              (nat-list-listp x)))
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
-
-(defthmd nat-listp-of-car-when-nat-list-listp
-  (implies (nat-list-listp x)
-           (nat-listp (car x)))
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
-
-(local (in-theory (enable nat-listp-of-car-when-nat-list-listp)))
-
-(defthm nat-list-listp-forward-to-true-listp
-  (implies (nat-list-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
-
-(defthm nat-list-listp-of-append
-  (equal (nat-list-listp (append x y))
-         (and (nat-list-listp (true-list-fix x))
-              (nat-list-listp y)))
-  :hints (("Goal" :in-theory (enable nat-list-listp append))))
-
+;make local?
 (defthm nat-listp-of-lookup-equal
   (implies (nat-list-listp (strip-cdrs alist))
            (nat-listp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs
                                      nat-list-listp))))
-
-(defthmd true-listp-when-nat-list-listp
-  (implies (nat-list-listp x)
-           (true-listp x))
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
