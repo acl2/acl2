@@ -34,14 +34,13 @@
   (implies (integerp x)
            (equal (integerp (+ 1/2 (- (* 1/2 x))))
                   (integerp (+ 1/2 (* 1/2 x)))))
-  :hints (("Goal" :use (:instance integerp-of--
-                                  (x (+ 1/2 (* 1/2 x))))
+  :hints (("Goal" :use (:instance integerp-of-- (x (+ 1/2 (* 1/2 x))))
            :in-theory (disable integerp-of--))))
 
 (defthm integerp-of-+-of---and--
   (equal (integerp (+ (- x) (- y)))
          (integerp (+ x y)))
-  :hints (("Goal" :use (:instance integerp-of--(x (+ x y)))
+  :hints (("Goal" :use (:instance integerp-of-- (x (+ x y)))
            :in-theory (disable integerp-of--))))
 
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
@@ -58,4 +57,4 @@
   (implies (integerp x)
            (equal (integerp (+ 1/2 (* 1/2 x)))
                   (not (integerp (* 1/2 x)))))
-  :hints (("Goal" :use (:instance integerp-choice))))
+  :hints (("Goal" :use integerp-choice)))

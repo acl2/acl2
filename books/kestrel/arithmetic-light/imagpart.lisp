@@ -26,7 +26,7 @@
                       (* #C(0 1) (imagpart x)))
                    x))
    :rule-classes nil
-   :hints (("Goal" :use (:instance realpart-imagpart-elim)))))
+   :hints (("Goal" :use realpart-imagpart-elim))))
 
 (local
  (defthmd --becomes-*-of--1
