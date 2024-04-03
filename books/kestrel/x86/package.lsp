@@ -502,6 +502,7 @@
     sbvlt
     sbvle
     bvcat
+    bvcat2
     bvplus
     bvminus
     bvuminus
@@ -620,6 +621,8 @@
     core-rules-bv
     amazing-rules-bv
     set-axe-rule-priority
+    unroll-spec-basic
+    unroll-spec
 
     memberp
 

@@ -39,23 +39,18 @@
                    :assumptions (append (symbolic-byte-assumptions 'in 8)
                                         (symbolic-byte-assumptions 'key 16)))
 
-; (depends-on "tea.macho64")
+; (depends-on "tea.elf64")
 
 ;; Lift the subroutine into logic:
 ;; Produces the DAG *tea*.
 (def-unrolled tea
-  "tea.macho64"
-  :target "_encrypt"
-  :stack-slots 8
+  "tea.elf64"
+  :target "encrypt"
+  :stack-slots 9
   :inputs ((v u32[2]) (k u32[4]))
-  ;; todo: have the tool translate the items in the tuple:
-  ;; todo: allow the :output to be just "v":
   :output (:tuple (:mem32 (rdi x86)) ;extract v0
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
-  ;; TODO: How much of this can we automate?
-  ;; TODO: Can we just make stronger assumptions about things being loaded at concrete addresses?
   :assumptions '(;; Introduce byte vars for v:
-                 ;; Each of v0, etc is a u32, so we split it into 8 bytes:
                  (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
                  (equal v1 (bvcat2 8 in4 8 in5 8 in6 8 in7))
                  ;; Introduce byte vars for k:

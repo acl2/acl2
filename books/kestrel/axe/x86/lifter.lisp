@@ -2027,6 +2027,7 @@
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
          (make-rule-alist (append '(x86isa::rip) ;why was this not needed before?
+                                  (reader-and-writer-opener-rules) ; don't use the new normal forms
                                   (assumption-simplification-rules))
                           (w state)))
         ((when erp) (mv erp nil nil nil state))
@@ -2191,19 +2192,14 @@
                             !fault-becomes-set-fault))
                        (set-difference-eq
                         (append (lifter-rules64)
-                                '(x86isa::rip x86isa::rip$a ; todo?
-                                  x86isa::undef x86isa::undef$a ; exposes xr
-                                  x86isa::!undef x86isa::!undef$a ; exposes xw
-                                  x86isa::ms x86isa::ms$a ; exposes xr
-                                  x86isa::!ms x86isa::!ms$a ; exposes xw
-                                  x86isa::fault x86isa::fault$a ; exposes xr
-                                  x86isa::!fault x86isa::!fault$a ; exposes xw
-                                  )
-                               ;(lifter-rules64-new); todo
+                                (append '(x86isa::rip x86isa::rip$a ; todo?
+
+                                          )
+                                        (reader-and-writer-opener-rules))
+                                ;;(lifter-rules64-new); todo
                                 )
-                        '(xr-becomes-undef
-                          x86isa::!undef-becomes-set-undef
-                          xw-becomes-set-undef))))
+                        ;; we don't use these usual normal forms:
+                        (reader-and-writer-intro-rules))))
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))

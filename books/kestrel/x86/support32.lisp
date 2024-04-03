@@ -2796,25 +2796,6 @@
                                   (eff-addr2 (bvchop 32 eff-addr)))
            :in-theory (disable write-to-segment-of-bvchop-helper))))
 
-(defthm logtail-of-logtail-gen
-  (equal (logtail m (logtail n x))
-         (logtail (+ (nfix m) (nfix n)) x))
-  :hints (("Goal" :in-theory (enable logtail acl2::expt-of-+))))
-
-;move
-(defthm acl2::bvchop-of-logtail-becomes-slice-gen
-  (implies (and (natp acl2::size1)
-                ;;(natp acl2::size2)
-                )
-           (equal (bvchop acl2::size1 (logtail acl2::size2 x))
-                  (slice (+ -1 acl2::size1 (nfix acl2::size2))
-                         (nfix acl2::size2)
-                         x)))
-  :hints (("Goal" :in-theory (enable nfix acl2::bvchop-of-logtail-becomes-slice))))
-
-(theory-invariant (incompatible (:definition slice)
-                                (:rewrite acl2::bvchop-of-logtail-becomes-slice-gen)))
-
 ;simple ordering
 (defthm read-byte-from-segment-of-write-to-segment-not-irrel-1
   (implies (and (<= eff-addr2 eff-addr1)
@@ -3089,14 +3070,13 @@
   :hints (("Goal"
            :induct (WRITE-TO-SEGMENT N EFF-ADDR SEG-REG VAL X86)
            :expand ((write-to-segment n eff-addr seg-reg val x86))
-           :in-theory (e/d (WRITE-TO-SEGMENT
-                            WRITE-TO-SEGMENT-OF-WRITE-BYTE-TO-SEGMENT
-                            unsigned-byte-p)
-                           ((:e expt)
-                            acl2::bvcat-equal-rewrite-alt
-                            acl2::bvcat-equal-rewrite)))))
+           :in-theory (e/d (write-to-segment
+                            write-to-segment-of-write-byte-to-segment
+                            unsigned-byte-p
+                            acl2::bvchop-of-logtail-becomes-slice)
+                           ((:e expt))))))
 
-
+;rename, move?
 (defthm bvminus-cancel-2-2
   (implies (and (integerp a)
                 (integerp b)

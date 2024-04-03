@@ -122,10 +122,8 @@
 ;;            (NATP (LOGTAIL HIGH X))))
 
 (defthm logtail-of-logtail
-  (implies (and (natp pos1)
-                (natp pos))
-           (equal (logtail pos1 (logtail pos i))
-                  (logtail (+ pos pos1) i)))
+  (equal (logtail pos1 (logtail pos i))
+         (logtail (+ (nfix pos) (nfix pos1)) i))
   :hints (("Goal" :use logtail-logtail
            :in-theory (disable logtail-logtail))))
 
