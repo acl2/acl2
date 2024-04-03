@@ -71,4 +71,4 @@
                   (if (equal n 0)
                       0
                     (+ i (ceiling-of-lg n)))))
-  :hints (("Goal" :in-theory (e/d (expt) ()))))
+  :hints (("Goal" :in-theory (enable expt))))
