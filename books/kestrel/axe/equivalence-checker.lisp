@@ -7763,8 +7763,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;rename to set-node-tag
-(defund set-tag (nodenum tag val sweep-array)
+(defund set-node-tag (nodenum tag val sweep-array)
   (declare (xargs :guard (and (natp nodenum)
                               (symbolp tag)
                               (sweep-info-tag-and-valuep tag val)
@@ -7778,37 +7777,37 @@
     (aset1-safe 'sweep-array sweep-array nodenum new-node-tags)))
 
 (local
- (defthm sweep-arrayp-of-set-tag
+ (defthm sweep-arrayp-of-set-node-tag
    (implies (and (natp nodenum)
                  (sweep-info-tag-and-valuep tag val)
                  (sweep-arrayp 'sweep-array sweep-array)
                  (< nodenum (alen1 'sweep-array sweep-array))
                  )
-            (sweep-arrayp 'sweep-array (set-tag nodenum tag val sweep-array)))
-   :hints (("Goal" :in-theory (enable set-tag sweep-infop)))))
+            (sweep-arrayp 'sweep-array (set-node-tag nodenum tag val sweep-array)))
+   :hints (("Goal" :in-theory (enable set-node-tag sweep-infop)))))
 
 (local
- (defthm alen1-of-set-tag
+ (defthm alen1-of-set-node-tag
    (implies (and (natp nodenum)
                  (sweep-info-tag-and-valuep tag val)
                  (sweep-arrayp 'sweep-array sweep-array)
                  (< nodenum (alen1 'sweep-array sweep-array))
                  )
-            (equal (alen1 'sweep-array (set-tag nodenum tag val sweep-array))
+            (equal (alen1 'sweep-array (set-node-tag nodenum tag val sweep-array))
                    (alen1 'sweep-array sweep-array)))
-   :hints (("Goal" :in-theory (enable set-tag sweep-infop)))))
+   :hints (("Goal" :in-theory (enable set-node-tag sweep-infop)))))
 
 (local
-  (defthm get-node-tag-of-set-tag-diff
+  (defthm get-node-tag-of-set-node-tag-diff
     (implies (and (not (equal tag1 tag2))
                   (array1p 'sweep-array sweep-array)
                   (natp nodenum2)
                   (< nodenum2 (alen1 'sweep-array sweep-array))
                   (natp nodenum)
                   (< nodenum (alen1 'sweep-array sweep-array)))
-             (equal (get-node-tag nodenum tag1 (set-tag nodenum2 tag2 val sweep-array))
+             (equal (get-node-tag nodenum tag1 (set-node-tag nodenum2 tag2 val sweep-array))
                     (get-node-tag nodenum tag1 sweep-array)))
-    :hints (("Goal" :in-theory (enable get-node-tag set-tag)))))
+    :hints (("Goal" :in-theory (enable get-node-tag set-node-tag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -7826,8 +7825,8 @@
       sweep-array
     (let* ((node (car node-set))
            ;;fixme could handle the tagging stuff better with separate arrays? but that would mean more consing?
-           (sweep-array (set-tag node *larger-nodes-that-might-be-equal* (cdr node-set) sweep-array)) ;don't bother to record for the smallest node in each set?
-           (sweep-array (set-tag node *smaller-nodes-that-might-be-equal* smaller-nodes-from-this-set sweep-array)))
+           (sweep-array (set-node-tag node *larger-nodes-that-might-be-equal* (cdr node-set) sweep-array)) ;don't bother to record for the smallest node in each set?
+           (sweep-array (set-node-tag node *smaller-nodes-that-might-be-equal* smaller-nodes-from-this-set sweep-array)))
       (tag-probably-equal-node-set (cdr node-set)
                                    (add-to-end node smaller-nodes-from-this-set) ;preserves sorting
                                    sweep-array))))
@@ -7887,19 +7886,8 @@
            (nodenum (car entry))
            (value (cdr entry))
            ;;fixme, can we handle this for every type of constant (like lists and other non-bv stuff)?
-           (sweep-array (set-tag nodenum *probable-constant* (enquote value) sweep-array)))
+           (sweep-array (set-node-tag nodenum *probable-constant* (enquote value) sweep-array)))
       (tag-probably-constant-nodes2 (cdr probably-constant-node-alist) sweep-array))))
-
-;make tail-recursive
-;; ;todo: use REMOVE1-EQL?
-;; (defun remove-one-eql (item lst)
-;;   (declare (xargs :guard (and (EQLABLEP ITEM)
-;;                               (true-listp lst))))
-;;   (if (endp lst)
-;;       nil
-;;     (if (eql (car lst) item)
-;;         (cdr lst) ;stop looking
-;;       (cons (car lst) (remove-one-eql item (cdr lst))))))
 
 (defun remove-node-from-smaller-nodes-that-might-be-equal (nodenum nodenum-to-remove sweep-array)
   (declare (xargs :guard (and (natp nodenum)
@@ -7908,7 +7896,7 @@
                               (< nodenum (alen1 'sweep-array sweep-array)))))
   (let* ((smaller-nodes-that-might-be-equal (get-node-tag nodenum *smaller-nodes-that-might-be-equal* sweep-array))
          (smaller-nodes-that-might-be-equal (remove1 nodenum-to-remove smaller-nodes-that-might-be-equal))
-         (sweep-array (set-tag nodenum *smaller-nodes-that-might-be-equal* smaller-nodes-that-might-be-equal sweep-array)))
+         (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* smaller-nodes-that-might-be-equal sweep-array)))
     sweep-array))
 
 (defun remove-node-from-smaller-nodes-that-might-be-equal-list (nodenums nodenum-to-remove sweep-array)
@@ -7928,7 +7916,7 @@
   ;; (declare (xargs :guard (and (natp nodenum)
   ;;                             (sweep-arrayp 'sweep-array sweep-array)
   ;;                             (< nodenum (alen1 'sweep-array sweep-array)))))
-  (let* ((sweep-array (set-tag nodenum *probable-constant* nil sweep-array)) ;don't try to prove the node is constant (we just proved it)
+  (let* ((sweep-array (set-node-tag nodenum *probable-constant* nil sweep-array)) ;don't try to prove the node is constant (we just proved it)
          ;;don't try to prove some other node is equal to this one:
          (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-array))
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
@@ -7939,14 +7927,19 @@
   (declare (xargs :guard (and (natp nodenum)
                               (sweep-arrayp 'sweep-array sweep-array)
                               (< nodenum (alen1 'sweep-array sweep-array)))))
-  (let* ((sweep-array (set-tag nodenum *probable-constant* nil sweep-array))) ;don't try to prove that it is the constant
+  (let* ((sweep-array (set-node-tag nodenum *probable-constant* nil sweep-array))) ;don't try to prove that it is the constant
     ;;we leave the node among the smaller-nodes-that-might-be-equal for larger nodes in its set
     sweep-array))
 
 ;we proved that nodenum equals some smaller node (and we changed refs to it to point to that smaller node)
 ;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
 (defun update-tags-for-proved-equal-node (nodenum sweep-array)
-  (let* ((sweep-array (set-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
+  ;; (declare (xargs :guard (and (natp nodenum)
+  ;;                             (sweep-arrayp 'sweep-array sweep-array)
+  ;;                             (< nodenum (alen1 'sweep-array sweep-array)))
+  ;;                 :verify-guards nil ; todo (but need the notion of a bounded-sweep-array)
+  ;;                 ))
+  (let* ((sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
          ;;don't try to prove some other node is equal to this one (we've essentially removed this one from the dag):
          (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-array))
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
@@ -17384,7 +17377,7 @@
 ;;                )
 ;;           (let ((nodenum (car entry)))
 ;;             (tag-probably-constant-nodes (cdr signature-alist)
-;;                                          (set-tag nodenum
+;;                                          (set-node-tag nodenum
 ;;                                                   *probable-constant-that-needs-to-be-replaced*
 ;;                                                   ;always quoting distinguishes between a node that is the constant nil and a node that's just not constant
 ;;                                                   (list 'quote (car sig))
@@ -18061,7 +18054,7 @@
 ;;   (if (not (consp set))
 ;;       sweep-array
 ;;     (let* ((nodenum (car set)))
-;;       (set-tag nodenum
+;;       (set-node-tag nodenum
 ;;                *probably-equal-node-that-needs-to-be-replaced*
 ;;                whole-set
 ;;                (tag-nodes-as-probably-equal (cdr set) sweep-array whole-set)))))
@@ -18225,7 +18218,7 @@
 ;;       (compute-initial-readiness-info (+ 1 n)
 ;;                                       len dag-array-name
 ;;                                       dag-array
-;;                                       (if node-is-ready (set-tag n *ready* t sweep-array) sweep-array)))))
+;;                                       (if node-is-ready (set-node-tag n *ready* t sweep-array) sweep-array)))))
 
 ;; ;this dag-array already has array-names put in? - where else do such dags get used?
 ;; (skip -proofs
@@ -18252,7 +18245,7 @@
 ;;                                                      (cdr nodenums))
 ;;                                           dag-array-name dag-array
 ;;                                           parent-array
-;;                                           (set-tag nodenum *ready* t sweep-array))
+;;                                           (set-node-tag nodenum *ready* t sweep-array))
 ;;               ;;otherwise, skip the node (and don't add its parents for consideration)
 ;;               (propagate-readiness-info (cdr nodenums)
 ;;                                          dag-array-name dag-array
@@ -18265,7 +18258,7 @@
 ;;    (aref1 'parent-array parent-array nodenum)
 ;;    dag-array-name dag-array
 ;;    parent-array
-;;    (set-tag nodenum *ready* t sweep-array)))
+;;    (set-node-tag nodenum *ready* t sweep-array)))
 
 ;; ;returns sweep-array
 ;; (defun make-ancestors-ready-if-appropriate (nodenum dag-array-name dag-array parent-array sweep-array)
@@ -18278,7 +18271,7 @@
 ;;   (if (atom nodenums)
 ;;       sweep-array
 ;;     (set-ready-lst (cdr nodenums)
-;;                    (set-tag (car nodenums) *ready* t sweep-array))))
+;;                    (set-node-tag (car nodenums) *ready* t sweep-array))))
 
 ;; ;can we save consing this up?
 ;; (defun get-all-parents (nodenums parent-array)
@@ -19700,7 +19693,7 @@
 ;;            (expr (cdr entry)))
 ;;       (if (or (not (consp expr))
 ;;               (fquotep expr))
-;;           (mark-initital-safe-nodes (cdr dag) (set-tag (car entry) *safe* t tag-alist))
+;;           (mark-initital-safe-nodes (cdr dag) (set-node-tag (car entry) *safe* t tag-alist))
 ;;         (mark-initital-safe-nodes (cdr dag) tag-alist)))))
 
 
@@ -19747,7 +19740,7 @@
 ;;                                   (cw "Nodenum: ~x0. Wait set: ~x1.~%" nodenum 'dummy)
 ;;                                          len)
 ;;                                  dag-array
-;;                                  (set-tag nodenum *wait-set* wait-set tag-array))))))
+;;                                  (set-node-tag nodenum *wait-set* wait-set tag-array))))))
 
 
 ;could instead keep a count of nodes left to replace?
@@ -19805,7 +19798,7 @@
 ;;                 (and (all-safe children tag-alist)
 ;;                      (none-tagged-for-replacement children tag-alist))))
 ;;          (propagate-safe-tags-aux (+ 1 start-nodenum)
-;;                                   (set-tag start-nodenum *safe* 't tag-alist)
+;;                                   (set-node-tag start-nodenum *safe* 't tag-alist)
 ;;                                   len
 ;;                                   children-alist)
 ;;        (propagate-safe-tags-aux (+ 1 start-nodenum)

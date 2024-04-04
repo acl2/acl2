@@ -20,6 +20,8 @@
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
 (include-book "kestrel/typed-lists-light/minelem" :dir :system) ; todo: include just the def?
+(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
+(include-book "kestrel/alists-light/acons-all-to-val" :dir :system)
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "numeric-lists"))
@@ -69,48 +71,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund nat-list-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (nat-listp (first x))
-         (nat-list-listp (rest x)))))
+(local
+ (defthm nat-listp-of-strip-cars-of-cdr
+   (implies (nat-listp (strip-cars x))
+            (nat-listp (strip-cars (cdr x))))
+   :hints (("Goal" :in-theory (enable array-to-alist)))))
 
-(defthm nat-list-listp-of-cons
-  (equal (nat-list-listp (cons a x))
-         (and (nat-listp a)
-              (nat-list-listp x)))
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
+(local
+ (defthm nat-listp-of-reverse-list
+   (implies (nat-listp x)
+            (nat-listp (reverse-list x)))
+   :hints (("Goal" :in-theory (enable reverse-list nat-listp)))))
 
-(defthmd nat-listp-of-car-when-nat-list-listp
-  (implies (nat-list-listp x)
-           (nat-listp (car x)))
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable nat-listp-of-car-when-nat-list-listp)))
-
-(defthm nat-list-listp-forward-to-true-listp
-  (implies (nat-list-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
-
-(defthm nat-list-listp-of-append
-  (equal (nat-list-listp (append x y))
-         (and (nat-list-listp (true-list-fix x))
-              (nat-list-listp y)))
-  :hints (("Goal" :in-theory (enable nat-list-listp append))))
-
+;make local?
 (defthm nat-listp-of-lookup-equal
   (implies (nat-list-listp (strip-cdrs alist))
            (nat-listp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs
                                      nat-list-listp))))
-
-(defthmd true-listp-when-nat-list-listp
-  (implies (nat-list-listp x)
-           (true-listp x))
-  :hints (("Goal" :in-theory (enable nat-list-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,23 +204,6 @@
               (aref1 test-case-array-name test-case-array darg))
             (get-vals-of-args (rest dargs) test-case-array-name test-case-array)))))
 
-(defund num-true-nodes (n array-name array)
-  (declare (xargs :measure (nfix (+ 1 n))))
-  (if (not (natp n))
-      0
-      (if (aref1 array-name array n)
-          (+ 1
-             (num-true-nodes (+ -1 n) array-name array))
-        (num-true-nodes (+ -1 n) array-name array))))
-
-(defthm <=-of-num-true-nodes-linear
-  (implies (and (integerp n)
-                (<= -1 n))
-           (<= (num-true-nodes n array-name array)
-               (+ 1 n)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable num-true-nodes))))
-
 (defund print-vals-of-nodes (nodenums array-name array)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (array1p array-name array)
@@ -250,47 +213,12 @@
     (prog2$ (cw "Node ~x0 is ~x1.~%" (first nodenums) (aref1 array-name array (car nodenums)))
             (print-vals-of-nodes (rest nodenums) array-name array))))
 
-
-;; ;move, optimize
-;; (defund evens-tail (lst acc)
-;;   (declare (xargs :guard (true-listp acc)
-;;                   ))
-;;   (if (atom lst)
-;;       (reverse acc)
-;;     (if (atom (cdr lst))
-;;         (reverse (cons (car lst) acc))
-;;       (evens-tail (cddr lst)
-;;                   (cons (car lst) acc)))))
-
-;; (defthm len-of-evens-tail-bound
-;;   (implies (< 1 (len l))
-;;            (< (len (evens-tail l acc))
-;;               (+ (len acc) (len l))))
-;;   :hints (("Goal" :expand (evens-tail (cddr l)
-;;                                       (cons (car l) acc))
-;;            :in-theory (enable evens-tail))))
-
-;; (defthm evens-tail-of-singleton
-;;   (implies (equal (len l) 1)
-;;            (equal (evens-tail l nil)
-;;                   (list (car l))))
-;;   :hints (("Goal" :in-theory (enable evens-tail reverse))))
-
-;; ;; (defun odds-tail (l)
-;; ;;   (declare (xargs :guard t))
-;; ;;   (if (consp l)
-;; ;;       (evens-tail (cdr l) nil)
-;; ;;     nil))
-
-;; (in-theory (disable evens-tail))
-
 ;; comparison function for the sort
 (defun-inline lexorder-of-cdrs (x y)
   (declare (xargs :guard (and (consp x)
                               (consp y))))
   (lexorder (cdr x) (cdr y)))
 
-;; todo: put the merge-sort arg first
 ;; todo: pass in a list-pred (a kind of alist)?
 (defmergesort merge-sort-lexorder-of-cdrs
   merge-lexorder-of-cdrs
@@ -478,6 +406,23 @@
 ;;   :hints (("Goal" :in-theory (enable merge-sort-<))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defund num-true-nodes (n array-name array)
+;;   (declare (xargs :measure (nfix (+ 1 n))))
+;;   (if (not (natp n))
+;;       0
+;;       (if (aref1 array-name array n)
+;;           (+ 1
+;;              (num-true-nodes (+ -1 n) array-name array))
+;;         (num-true-nodes (+ -1 n) array-name array))))
+
+;; (defthm <=-of-num-true-nodes-linear
+;;   (implies (and (integerp n)
+;;                 (<= -1 n))
+;;            (<= (num-true-nodes n array-name array)
+;;                (+ 1 n)))
+;;   :rule-classes :linear
+;;   :hints (("Goal" :in-theory (enable num-true-nodes))))
 
 ;; (defthm num-true-nodes-of-aset1
 ;;   (implies (and (array1p array-name array)
@@ -920,10 +865,11 @@
    :hints (("Goal" :in-theory (enable new-probably-equal-node-sets)))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Looks for an initial segment of NODE-TO-VALUE-ALIST all of whose vals are SIG.
+;; Looks for an initial segment of NODE-TO-VALUE-ALIST all of whose vals are VALUE.
 ;; Returns (mv entries-with-value remaining-node-to-value-alist).
-(defund find-entries-with-value (node-to-value-alist value acc)
+(defund leading-entries-with-value (node-to-value-alist value acc)
   (declare (xargs :guard (and (alistp node-to-value-alist)
                               (nat-listp (strip-cars node-to-value-alist))
                               (nat-listp acc))))
@@ -931,108 +877,106 @@
       (mv acc node-to-value-alist)
     (let* ((entry (car node-to-value-alist))
            (nodenum (car entry))
-           (value2 (cdr entry)))
-      (if (equal value value2)
-          (find-entries-with-value (cdr node-to-value-alist) value (cons nodenum acc))
+           (this-value (cdr entry)))
+      (if (equal this-value value)
+          (leading-entries-with-value (cdr node-to-value-alist) value (cons nodenum acc))
         ;; stop looking, since the entries are sorted by value and we found a difference:
         (mv acc node-to-value-alist)))))
 
 (local
- (defthm nat-listp-of-mv-nth-0-of-find-entries-with-value
+ (defthm nat-listp-of-mv-nth-0-of-leading-entries-with-value
    (implies (and (nat-listp (strip-cars node-to-value-alist))
                  (nat-listp acc))
-            (nat-listp (mv-nth 0 (find-entries-with-value node-to-value-alist value acc))))
-   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+            (nat-listp (mv-nth 0 (leading-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm all-<-of-mv-nth-0-of-find-entries-with-value
+ (defthm all-<-of-mv-nth-0-of-leading-entries-with-value
    (implies (and (all-< (strip-cars node-to-value-alist) bound)
                  (all-< acc bound)
                  )
-            (all-< (mv-nth 0 (find-entries-with-value node-to-value-alist value acc)) bound))
-   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+            (all-< (mv-nth 0 (leading-entries-with-value node-to-value-alist value acc)) bound))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm <=-of-len-of-mv-nth-1-of-find-entries-with-value
-   (<= (len (mv-nth 1 (find-entries-with-value node-to-value-alist value acc)))
+ (defthm <=-of-len-of-mv-nth-1-of-leading-entries-with-value
+   (<= (len (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc)))
        (len node-to-value-alist))
    :rule-classes :linear
-   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+ (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-leading-entries-with-value
    (implies (nat-listp (strip-cars node-to-value-alist))
-            (nat-listp (strip-cars (mv-nth 1 (find-entries-with-value node-to-value-alist value acc)))))
-   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+            (nat-listp (strip-cars (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc)))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm alistp-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+ (defthm alistp-of-strip-cars-of-mv-nth-1-of-leading-entries-with-value
    (implies (alistp node-to-value-alist)
-            (alistp (mv-nth 1 (find-entries-with-value node-to-value-alist value acc))))
-   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
+            (alistp (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm all-<-of-strip-cars-of-mv-nth-1-of-find-entries-with-value
+ (defthm all-<-of-strip-cars-of-mv-nth-1-of-leading-entries-with-value
    (implies (and (all-< (strip-cars node-to-value-alist) bound)
                  (all-< acc bound)
                  )
-            (all-< (strip-cars (mv-nth 1 (find-entries-with-value node-to-value-alist value acc))) bound))
-   :hints (("Goal" :in-theory (enable find-entries-with-value)))))
-
-;; Returns (mv sets singleton-count).
-(defund group-same-entries (node-to-value-alist acc singleton-count)
-  (declare (xargs :guard (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
-                              (nat-listp (strip-cars node-to-value-alist))
-                              (nat-list-listp acc)
-                              (natp singleton-count))
-                  :measure (len node-to-value-alist)))
-  (if (atom node-to-value-alist)
-      (mv acc singleton-count)
-    (let* ((entry (car node-to-value-alist))
-           (nodenum (car entry))
-           (value (cdr entry)))
-      (mv-let (equiv-set node-to-value-alist)
-        (find-entries-with-value (cdr node-to-value-alist) value nil)
-        (if equiv-set ; there's at least one other node with the same value
-            (group-same-entries node-to-value-alist (cons (cons nodenum equiv-set) acc) singleton-count)
-          (group-same-entries node-to-value-alist acc (+ 1 singleton-count)))))))
+            (all-< (strip-cars (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc))) bound))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm all-all-<-of-mv-nth-0-of-group-same-entries
-   (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
-                 (nat-listp (strip-cars node-to-value-alist))
-                 (all-< (strip-cars node-to-value-alist) bound)
-                 (nat-list-listp acc)
-                 (all-all-< acc bound)
-                 (natp singleton-count))
-            (all-all-< (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count)) bound))
-   :hints (("Goal" :in-theory (enable group-same-entries)))))
+ (defthm true-listp-of-mv-nth-1-of-leading-entries-with-value
+   (implies (alistp node-to-value-alist)
+            (true-listp (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm all-consp-of-mv-nth-0-of-group-same-entries
-   (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
-                 (nat-listp (strip-cars node-to-value-alist))
-                 (nat-list-listp acc)
-                 (all-consp acc)
-                 (natp singleton-count))
-            (all-consp (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count))))
-   :hints (("Goal" :in-theory (enable group-same-entries)))))
+ (defthm consp-of-mv-nth-1-of-leading-entries-with-value
+   (implies (alistp node-to-value-alist)
+            (iff (consp (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc)))
+                 (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
-(local
- (defthm nat-list-listp-of-mv-nth-0-of-group-same-entries
-   (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
-                 (nat-listp (strip-cars node-to-value-alist))
-                 (nat-list-listp acc)
-                 (all-consp acc)
-                 (natp singleton-count))
-            (nat-list-listp (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count))))
-   :hints (("Goal" :in-theory (enable group-same-entries)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (defthm natp-of-mv-nth-1-of-group-same-entries
-   (implies (natp singleton-count)
-            (natp (mv-nth 1 (group-same-entries node-to-value-alist acc singleton-count))))
-   :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+;; (local
+;;  (defthm all-all-<-of-mv-nth-0-of-group-same-entries
+;;    (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+;;                  (nat-listp (strip-cars node-to-value-alist))
+;;                  (all-< (strip-cars node-to-value-alist) bound)
+;;                  (nat-list-listp acc)
+;;                  (all-all-< acc bound)
+;;                  (natp singleton-count))
+;;             (all-all-< (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count)) bound))
+;;    :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+;; (local
+;;  (defthm all-consp-of-mv-nth-0-of-group-same-entries
+;;    (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+;;                  (nat-listp (strip-cars node-to-value-alist))
+;;                  (nat-list-listp acc)
+;;                  (all-consp acc)
+;;                  (natp singleton-count))
+;;             (all-consp (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count))))
+;;    :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+;; (local
+;;  (defthm nat-list-listp-of-mv-nth-0-of-group-same-entries
+;;    (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+;;                  (nat-listp (strip-cars node-to-value-alist))
+;;                  (nat-list-listp acc)
+;;                  (all-consp acc)
+;;                  (natp singleton-count))
+;;             (nat-list-listp (mv-nth 0 (group-same-entries node-to-value-alist acc singleton-count))))
+;;    :hints (("Goal" :in-theory (enable group-same-entries)))))
+
+;; (local
+;;  (defthm natp-of-mv-nth-1-of-group-same-entries
+;;    (implies (natp singleton-count)
+;;             (natp (mv-nth 1 (group-same-entries node-to-value-alist acc singleton-count))))
+;;    :hints (("Goal" :in-theory (enable group-same-entries)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1204,164 +1148,299 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
+(local (in-theory (disable append mv-nth strip-cars natp)))
+
+(local (in-theory (enable true-listp-when-nat-listp-rewrite)))
+
+;; Returns (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes).
+(defun initial-probable-facts-aux (node-to-value-alist ; grouped so that each group of nodes with the same val forms a contiguous block
+                                   ;; accumulators:
+                                   probably-equal-node-sets
+                                   singleton-count
+                                   probably-constant-node-alist
+                                   never-used-nodes)
+  (declare (xargs :guard (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                              (nat-listp (strip-cars node-to-value-alist))
+                              (nat-list-listp probably-equal-node-sets)
+                              (natp singleton-count)
+                              (alistp probably-constant-node-alist)
+                              (nat-listp never-used-nodes))
+                  :guard-hints (("Goal" :in-theory (enable (:d strip-cars))))
+                  :measure (len node-to-value-alist)))
+  (if (atom node-to-value-alist)
+      (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)
+    (b* ((entry (first node-to-value-alist))
+         (nodenum (car entry))
+         (value (cdr entry))
+         ;; Skip this node and gather all immediately subsequent nodes with the same value.
+         ((mv equiv-set node-to-value-alist)
+          (leading-entries-with-value (rest node-to-value-alist) value nil))
+         ((mv probably-equal-node-sets singleton-count)
+          (if equiv-set ; there's at least one other node with the same value
+              (mv (cons (cons nodenum equiv-set) probably-equal-node-sets) singleton-count)
+            ;; only NODENUM has the value VALUE, so it is a singleton:
+            (mv probably-equal-node-sets (+ 1 singleton-count))))
+         ((mv probably-constant-node-alist never-used-nodes)
+          (if (eq :unused value)
+              ;; NODENUM is unused, as are all nodes in EQUIV-SET:
+              (mv probably-constant-node-alist (cons nodenum (append equiv-set never-used-nodes)))
+            ;; NODENUM and all nodes in EQUIV-SET candidates for always being equal to VALUE:
+            (mv (acons-fast nodenum value (acons-all-to-val equiv-set value probably-constant-node-alist))
+                never-used-nodes))))
+      (initial-probable-facts-aux node-to-value-alist ; we've already moved past at least one entry
+                                  probably-equal-node-sets
+                                  singleton-count
+                                  probably-constant-node-alist
+                                  never-used-nodes))))
+(local
+ (defthm natp-of-car-of-car
+   (implies (and (nat-listp (strip-cars alist))
+                 (consp alist))
+            (natp (car (car alist))))
+   :hints (("Goal" :in-theory (enable strip-cars)))))
+
+(local
+ (defthm <-of-car-of-car
+   (implies (and (all-< (strip-cars alist) bound)
+                 (consp alist))
+            (< (car (car alist)) bound))
+   :hints (("Goal" :in-theory (enable strip-cars)))))
+
+;dup
+(local
+ (defthm strip-cars-of-cons
+   (equal (strip-cars (cons a x))
+          (cons (car a)
+                (strip-cars x)))
+   :hints (("Goal" :in-theory (enable strip-cars)))))
+
+(local
+ (defthm initial-probable-facts-aux-return-type
+   (implies (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                 (nat-listp (strip-cars node-to-value-alist))
+                 (nat-list-listp probably-equal-node-sets)
+                 (all-consp probably-equal-node-sets) ; no empty sets (in fact, there can't be singletons either)
+                 (natp singleton-count)
+                 (alistp probably-constant-node-alist)
+                 (nat-listp (strip-cars probably-constant-node-alist))
+                 (nat-listp never-used-nodes))
+            (and (nat-list-listp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
+                 (all-consp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
+                 (natp (mv-nth 1 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
+                 (alistp (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
+                 (nat-listp (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))))
+                 (nat-listp (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))))
+   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+            :in-theory (enable ;(:d strip-cars)
+                        )))))
+
+(local
+ (defthm strip-cars-of-cdr
+   (equal (strip-cars (cdr x))
+          (cdr (strip-cars x)))
+   :hints (("Goal" :in-theory (enable strip-cars)))))
+
+(local
+ (defthm initial-probable-facts-aux-return-type-with-bound
+   (implies (and (all-all-< probably-equal-node-sets bound)
+                 (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                 (nat-listp (strip-cars node-to-value-alist))
+                 (all-< (strip-cars node-to-value-alist) bound)
+                 (nat-list-listp probably-equal-node-sets)
+                 (natp singleton-count)
+                 (alistp probably-constant-node-alist)
+                 (nat-listp never-used-nodes)
+                 (all-< (strip-cars probably-constant-node-alist)
+                        bound)
+                 (all-< never-used-nodes bound))
+            (and (all-all-< (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
+                            bound)
+                 (all-< (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
+                        bound)
+                 (all-< (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
+                        bound)))
+   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+            :in-theory (enable ;(:d strip-cars)
+                        )))))
+
+;test-case-array maps nodenums 0..(dag-len - 1) to their values for the current test case
 ;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
-;returns (mv initial-probably-equal-node-sets initial-singleton-count)
-(defund initial-probably-equal-node-sets (dag-len test-case-array-name test-case-array)
+;; Returns (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes).
+(defund initial-probable-facts (dag-len test-case-array-name test-case-array)
   (declare (xargs :guard (and (array1p test-case-array-name test-case-array)
                               (natp dag-len)
                               (<= dag-len (alen1 test-case-array-name test-case-array)))))
-  (let* ((node-to-value-alist (array-to-alist test-case-array-name test-case-array dag-len)) ; avoid this?
+  (let* ((node-to-value-alist (array-to-alist test-case-array-name test-case-array dag-len))
+         ;; We sort here just to group entries with the same value together:
          (sorted-node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist)) ; sorted by the values
          )
-    (group-same-entries sorted-node-to-value-alist nil 0)))
+    (initial-probable-facts-aux sorted-node-to-value-alist nil 0 nil nil)))
 
 (local
- (defthm all-all-<-of-mv-nth-0-of-initial-probably-equal-node-sets
+ (defthm all-all-<-of-mv-nth-0-of-initial-probable-facts
    (implies (and (array1p test-case-array-name test-case-array)
                  (natp dag-len)
                  (<= dag-len (alen1 test-case-array-name test-case-array))
                  (<= dag-len bound))
-            (all-all-< (mv-nth 0 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array)) bound))
-   :hints (("Goal" :in-theory (enable initial-probably-equal-node-sets)))))
+            (all-all-< (mv-nth 0 (initial-probable-facts dag-len test-case-array-name test-case-array)) bound))
+   :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
- (defthm all-consp-of-mv-nth-0-of-initial-probably-equal-node-sets
+ (defthm all-consp-of-mv-nth-0-of-initial-probable-facts
   (implies (and (array1p test-case-array-name test-case-array)
                 (natp dag-len)
                 (<= dag-len (alen1 test-case-array-name test-case-array))
                 )
-           (all-consp (mv-nth 0 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array))))
-  :hints (("Goal" :in-theory (enable initial-probably-equal-node-sets)))))
+           (all-consp (mv-nth 0 (initial-probable-facts dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
- (defthm nat-list-listp-of-mv-nth-0-of-initial-probably-equal-node-sets
+ (defthm nat-list-listp-of-mv-nth-0-of-initial-probable-facts
   (implies (and (array1p test-case-array-name test-case-array)
                 (natp dag-len)
                 (<= dag-len (alen1 test-case-array-name test-case-array))
                 )
-           (nat-list-listp (mv-nth 0 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array))))
-  :hints (("Goal" :in-theory (enable initial-probably-equal-node-sets)))))
+           (nat-list-listp (mv-nth 0 (initial-probable-facts dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
- (defthm natp-of-mv-nth-1-of-initial-probably-equal-node-sets
+ (defthm natp-of-mv-nth-1-of-initial-probable-facts
   (implies (and (array1p test-case-array-name test-case-array)
                 (natp dag-len)
                 (<= dag-len (alen1 test-case-array-name test-case-array))
                 )
-           (natp (mv-nth 1 (initial-probably-equal-node-sets dag-len test-case-array-name test-case-array))))
-  :hints (("Goal" :in-theory (e/d (initial-probably-equal-node-sets) (natp))))))
-
-
-;; Returns (mv never-used-nodes probably-constant-node-alist ;pairs nodenums used on the first test case with their values
-;;         )
-(defund harvest-probable-constants-from-first-test-case (nodenum
-                                                         miter-len
-                                                         test-case-array-name test-case-array
-                                                         never-used-nodes
-                                                         probably-constant-node-alist)
-  (declare (xargs :guard (and (natp nodenum)
-                              (natp miter-len)
-                              (array1p test-case-array-name test-case-array)
-                              (<= miter-len (alen1 test-case-array-name test-case-array))
-                              (nat-listp never-used-nodes)
-                              (alistp probably-constant-node-alist))
-                  :measure (nfix (+ 1 (- miter-len nodenum)))))
-  (if (or (<= miter-len nodenum)
-          (not (integerp miter-len))
-          (not (integerp nodenum))
-          )
-      (mv never-used-nodes probably-constant-node-alist)
-    (let* ((value (aref1 test-case-array-name test-case-array nodenum)))
-      (if (eq :unused value)
-          (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
-                                                           (cons nodenum never-used-nodes)
-                                                           probably-constant-node-alist)
-        (harvest-probable-constants-from-first-test-case (+ 1 nodenum) miter-len test-case-array-name test-case-array
-                                                         never-used-nodes
-                                                         (acons-fast nodenum value probably-constant-node-alist))))))
+           (natp (mv-nth 1 (initial-probable-facts dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (e/d (initial-probable-facts) (natp))))))
 
 (local
- (defthm all-<-of-mv-nth-0-of-harvest-probable-constants-from-first-test-case
-   (implies (and (natp nodenum)
-                 (natp miter-len)
-                 (array1p test-case-array-name test-case-array)
-                 (<= miter-len (alen1 test-case-array-name test-case-array))
-                 (nat-listp never-used-nodes)
-                 (ALL-< NEVER-USED-NODES MITER-LEN)
-                 (alistp probably-constant-node-alist))
-            (all-< (mv-nth 0 (harvest-probable-constants-from-first-test-case nodenum
-                                                                              miter-len
-                                                                              test-case-array-name test-case-array
-                                                                              never-used-nodes
-                                                                              probably-constant-node-alist))
-                   miter-len))
-   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+ (defthm alistp-of-mv-nth-2-of-initial-probable-facts
+  (implies (and (array1p test-case-array-name test-case-array)
+                (natp dag-len)
+                (<= dag-len (alen1 test-case-array-name test-case-array))
+                )
+           (alistp (mv-nth 2 (initial-probable-facts dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
 
 (local
- (defthm nat-listp-of-mv-nth-0-of-harvest-probable-constants-from-first-test-case
-   (implies (and (natp nodenum)
-                 (natp miter-len)
+ (defthm all-<-of-strip-cars-of-mv-nth-2-of-initial-probable-facts
+   (implies (and (<= dag-len bound)
                  (array1p test-case-array-name test-case-array)
-                 (<= miter-len (alen1 test-case-array-name test-case-array))
-                 (nat-listp never-used-nodes)
-                 (ALL-< NEVER-USED-NODES MITER-LEN)
-                 (alistp probably-constant-node-alist))
-            (nat-listp (mv-nth 0 (harvest-probable-constants-from-first-test-case nodenum
-                                                                                  miter-len
-                                                                                  test-case-array-name test-case-array
-                                                                                  never-used-nodes
-                                                                                  probably-constant-node-alist))))
-   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+                 (natp dag-len)
+                 (<= dag-len (alen1 test-case-array-name test-case-array))
+                 )
+            (all-< (strip-cars (mv-nth 2 (initial-probable-facts dag-len test-case-array-name test-case-array)))
+                   bound))
+   :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
 
 (local
- (defthm alistp-of-mv-nth-1-of-harvest-probable-constants-from-first-test-case
-   (implies (and (natp nodenum)
-                 (natp miter-len)
-                 (array1p test-case-array-name test-case-array)
-                 (<= miter-len (alen1 test-case-array-name test-case-array))
-                 (nat-listp never-used-nodes)
-                 (alistp probably-constant-node-alist))
-            (alistp (mv-nth 1 (harvest-probable-constants-from-first-test-case nodenum
-                                                                               miter-len
-                                                                               test-case-array-name test-case-array
-                                                                               never-used-nodes
-                                                                               probably-constant-node-alist))))
-   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+ (defthm nat-listp-of-strip-cars-of-mv-nth-2-of-initial-probable-facts
+  (implies (and (array1p test-case-array-name test-case-array)
+                (natp dag-len)
+                (<= dag-len (alen1 test-case-array-name test-case-array))
+                )
+           (nat-listp (strip-cars (mv-nth 2 (initial-probable-facts dag-len test-case-array-name test-case-array)))))
+  :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
 
 (local
- (defthm all-<-of-strip-cars-of-mv-nth-1-of-harvest-probable-constants-from-first-test-case
-   (implies (and (natp nodenum)
-                 (natp miter-len)
-                 (array1p test-case-array-name test-case-array)
-                 (<= miter-len (alen1 test-case-array-name test-case-array))
-                 (nat-listp never-used-nodes)
-                 (alistp probably-constant-node-alist)
-                 (all-< (strip-cars probably-constant-node-alist) miter-len))
-            (all-< (strip-cars (mv-nth 1 (harvest-probable-constants-from-first-test-case nodenum
-                                                                                          miter-len
-                                                                                          test-case-array-name test-case-array
-                                                                                          never-used-nodes
-                                                                                          probably-constant-node-alist)))
-                   miter-len))
-   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+ (defthm nat-listp-of-mv-nth-3-of-initial-probable-facts
+  (implies (and (array1p test-case-array-name test-case-array)
+                (natp dag-len)
+                (<= dag-len (alen1 test-case-array-name test-case-array))
+                )
+           (nat-listp (mv-nth 3 (initial-probable-facts dag-len test-case-array-name test-case-array))))
+  :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
 
 (local
- (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-harvest-probable-constants-from-first-test-case
-   (implies (and (natp nodenum)
-                 (natp miter-len)
+ (defthm all-<-of-mv-nth-3-of-initial-probable-facts
+   (implies (and (<= dag-len bound)
                  (array1p test-case-array-name test-case-array)
-                 (<= miter-len (alen1 test-case-array-name test-case-array))
-                 (nat-listp never-used-nodes)
-                 (alistp probably-constant-node-alist)
-                 (all-< (strip-cars probably-constant-node-alist) miter-len)
-                 (NAT-LISTP (STRIP-CARS PROBABLY-CONSTANT-NODE-ALIST)))
-            (nat-listp (strip-cars (mv-nth 1 (harvest-probable-constants-from-first-test-case nodenum
-                                                                                              miter-len
-                                                                                              test-case-array-name test-case-array
-                                                                                              never-used-nodes
-                                                                                              probably-constant-node-alist)))))
-   :hints (("Goal" :in-theory (enable harvest-probable-constants-from-first-test-case)))))
+                 (natp dag-len)
+                 (<= dag-len (alen1 test-case-array-name test-case-array))
+                 )
+            (all-< (mv-nth 3 (initial-probable-facts dag-len test-case-array-name test-case-array)) bound))
+   :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
+
+;; (local
+;;  (defthm all-<-of-mv-nth-0-of-initial-probable-constants
+;;    (implies (and (natp nodenum)
+;;                  (natp miter-len)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (<= miter-len (alen1 test-case-array-name test-case-array))
+;;                  (nat-listp never-used-nodes)
+;;                  (ALL-< NEVER-USED-NODES MITER-LEN)
+;;                  (alistp probably-constant-node-alist))
+;;             (all-< (mv-nth 0 (initial-probable-constants nodenum
+;;                                                          miter-len
+;;                                                          test-case-array-name test-case-array
+;;                                                          never-used-nodes
+;;                                                          probably-constant-node-alist))
+;;                    miter-len))
+;;    :hints (("Goal" :in-theory (enable initial-probable-constants)))))
+
+;; (local
+;;  (defthm nat-listp-of-mv-nth-0-of-initial-probable-constants
+;;    (implies (and (natp nodenum)
+;;                  (natp miter-len)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (<= miter-len (alen1 test-case-array-name test-case-array))
+;;                  (nat-listp never-used-nodes)
+;;                  (ALL-< NEVER-USED-NODES MITER-LEN)
+;;                  (alistp probably-constant-node-alist))
+;;             (nat-listp (mv-nth 0 (initial-probable-constants nodenum
+;;                                                              miter-len
+;;                                                              test-case-array-name test-case-array
+;;                                                              never-used-nodes
+;;                                                              probably-constant-node-alist))))
+;;    :hints (("Goal" :in-theory (enable initial-probable-constants)))))
+
+;; (local
+;;  (defthm alistp-of-mv-nth-1-of-initial-probable-constants
+;;    (implies (and (natp nodenum)
+;;                  (natp miter-len)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (<= miter-len (alen1 test-case-array-name test-case-array))
+;;                  (nat-listp never-used-nodes)
+;;                  (alistp probably-constant-node-alist))
+;;             (alistp (mv-nth 1 (initial-probable-constants nodenum
+;;                                                           miter-len
+;;                                                           test-case-array-name test-case-array
+;;                                                           never-used-nodes
+;;                                                           probably-constant-node-alist))))
+;;    :hints (("Goal" :in-theory (enable initial-probable-constants)))))
+
+;; (local
+;;  (defthm all-<-of-strip-cars-of-mv-nth-1-of-initial-probable-constants
+;;    (implies (and (natp nodenum)
+;;                  (natp miter-len)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (<= miter-len (alen1 test-case-array-name test-case-array))
+;;                  (nat-listp never-used-nodes)
+;;                  (alistp probably-constant-node-alist)
+;;                  (all-< (strip-cars probably-constant-node-alist) miter-len))
+;;             (all-< (strip-cars (mv-nth 1 (initial-probable-constants nodenum
+;;                                                                      miter-len
+;;                                                                      test-case-array-name test-case-array
+;;                                                                      never-used-nodes
+;;                                                                      probably-constant-node-alist)))
+;;                    miter-len))
+;;    :hints (("Goal" :in-theory (enable initial-probable-constants)))))
+
+;; (local
+;;  (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-initial-probable-constants
+;;    (implies (and (natp nodenum)
+;;                  (natp miter-len)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (<= miter-len (alen1 test-case-array-name test-case-array))
+;;                  (nat-listp never-used-nodes)
+;;                  (alistp probably-constant-node-alist)
+;;                  (all-< (strip-cars probably-constant-node-alist) miter-len)
+;;                  (NAT-LISTP (STRIP-CARS PROBABLY-CONSTANT-NODE-ALIST)))
+;;             (nat-listp (strip-cars (mv-nth 1 (initial-probable-constants nodenum
+;;                                                                          miter-len
+;;                                                                          test-case-array-name test-case-array
+;;                                                                          never-used-nodes
+;;                                                                          probably-constant-node-alist)))))
+;;    :hints (("Goal" :in-theory (enable initial-probable-constants)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1988,17 +2067,20 @@
                                                                             num-of-last-interesting-test-case))))
   :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
 
-
 ;; Repeatedly generates a test case and then use it to split possibly-equal node sets and eliminate possibly-constant nodes.
 ;; Returns (mv all-passedp probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist),
 ;; where probably-equal-node-sets includes nodes believed to be constant and probably-constant-node-alist pairs nodes with the constants they seem to be equal to
 ;; and test-case-array-alist is valid iff keep-test-casesp is non-nil and pairs array names with arrays that give values to all the nodes.
 ;todo: should this return the used test cases (I guess they can be extracted from the test-case-array-alist)?
-(defund find-probable-facts (miter-array-name miter-array miter-len
-                                         miter-depth
-                                         test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
-                                         interpreted-function-alist print keep-test-casesp
-                                         debug-nodes)
+(defund find-probable-facts (miter-array-name
+                             miter-array
+                             miter-len
+                             miter-depth
+                             test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
+                             interpreted-function-alist
+                             print
+                             keep-test-casesp
+                             debug-nodes)
   (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                               (< 0 miter-len)
                               (natp miter-depth)
@@ -2024,19 +2106,14 @@
                                       interpreted-function-alist
                                       first-test-case-array-name
                                       debug-nodes))
-       ((when (not test-case-array)) ; actually, a hard erorr will have already been thrown
+       ((when (not test-case-array)) ; actually, a hard error will have already been thrown
         (mv nil                      ; all-passedp
             nil nil nil nil))
-       ((mv initial-probably-equal-node-sets initial-singleton-count)
-        (initial-probably-equal-node-sets miter-len first-test-case-array-name test-case-array))
-       ((mv initial-never-used-nodes
+       ((mv initial-probably-equal-node-sets
+            initial-singleton-count
             initial-probably-constant-node-alist ;pairs nodenums used on the first test case with their values
-            )
-        (harvest-probable-constants-from-first-test-case 0
-                                                         miter-len
-                                                         first-test-case-array-name test-case-array
-                                                         nil
-                                                         nil))
+            initial-never-used-nodes)
+        (initial-probable-facts miter-len first-test-case-array-name test-case-array))
        ;;((array-to-alist first-test-case-array-name test-case-array miter-len)) ;slow?
        ;;save the first test case in the test-case-array-alist:
        (test-case-array-alist (if keep-test-casesp
@@ -2089,6 +2166,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv all-passedp probably-equal-node-sets never-used-nodes probably-constant-node-alist test-case-array-alist).
+;; Only used to compute the facts for printing, since usually we have a dag-array rather than a dag.
 (defund find-probable-facts-for-dag (dag
                                      test-cases ;each test case gives values to the input vars (there may be more here than we want to use..)
                                      interpreted-function-alist
@@ -2124,6 +2202,8 @@
            (nat-list-listp (mv-nth 1 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
   :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun <-of-mins (x y)
   (declare (xargs :guard (and (nat-listp x)
                               ;; (consp x) ; todo members of the set should be non-empty
@@ -2134,6 +2214,7 @@
   (< (if (atom x) 0 (minelem x))
      (if (atom y) 0 (minelem y))))
 
+;; For sorting probably-equal-node-sets.
 (defmergesort merge-sort-<-of-mins merge-<-of-mins <-of-mins nat-listp)
 
 ;; todo: why both notions?
@@ -2165,6 +2246,7 @@
             ;; Do we always want to print this one?:
             (cw "test-case-array-alist: ~x0.~%" test-case-array-alist))))
 
+;; Just prints the probable facts for a DAG (e.g., for examination to find new rewrite rules).
 ;; Returns rand.
 (defund print-probable-facts-for-dag (dag test-case-count test-case-type-alist interpreted-fns keep-test-casesp wrld rand)
   (declare (xargs :guard (and (pseudo-dagp dag)
@@ -2175,10 +2257,8 @@
                               (booleanp keep-test-casesp)
                               (plist-worldp wrld))
                   :stobjs rand))
-  (mv-let (erp test-cases rand)
-    (make-test-cases test-case-count test-case-type-alist nil rand)
-    (if erp
-        (prog2$ (cw "Error making test cases.")
-                rand)
-      (prog2$ (print-probable-facts-for-test-cases dag test-cases (make-interpreted-function-alist interpreted-fns wrld) keep-test-casesp)
-              rand))))
+  (b* (((mv erp test-cases rand)
+        (make-test-cases test-case-count test-case-type-alist nil rand))
+       ((when erp) (cw "Error making test cases.") rand)
+       (- (print-probable-facts-for-test-cases dag test-cases (make-interpreted-function-alist interpreted-fns wrld) keep-test-casesp)))
+    rand))

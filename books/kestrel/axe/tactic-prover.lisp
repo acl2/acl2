@@ -89,7 +89,10 @@
   (declare (xargs :guard t))
   (or (member-eq tac '(:rewrite
                        :rewrite-with-precise-contexts
-                       :prune :prune-with-rules :acl2 :stp))
+                       :prune
+                       :prune-with-rules
+                       :acl2
+                       :stp))
       (and (consp tac)
            (eq :cases (car tac)))))
 

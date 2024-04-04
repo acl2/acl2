@@ -1,6 +1,6 @@
 ; A tool to get proof advice from a server over the web
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,6 +92,7 @@
 (include-book "kestrel/typed-lists-light/string-list-listp" :dir :system)
 (include-book "kestrel/untranslated-terms/conjuncts-of-uterm" :dir :system)
 (include-book "kestrel/alists-light/string-string-alistp" :dir :system)
+(include-book "kestrel/alists-light/acons-all-to-val" :dir :system)
 (include-book "kestrel/htclient/post-light" :dir :system) ; todo: slow
 (include-book "kestrel/json-parser/parse-json" :dir :system)
 (include-book "kestrel/big-data/packages" :dir :system) ; try to ensure all packages that might arise are known ; todo: very slow
@@ -128,15 +129,6 @@
 
 (defconst *step-limit* 100000)
 (defconst *time-limit* 5)
-
-;;move
-;; does this already exist somewhere?
-(defund acons-all-to-val (keys val alist)
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      alist
-    (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
 
 ;; See :doc lemma-instance
 (defund symbol-that-can-be-usedp (sym wrld)
@@ -3107,7 +3099,7 @@
                                         (acons "broken-theorem" (fms-to-string "~X01" (acons #\0 broken-theorem (acons #\1 nil nil))) ;; todo: should we translate this?
                                                (make-numbered-checkpoint-entries 0 checkpoint-clauses-top)))))
                ;; Turn off certain recommendation types (TODO: Could a generative model return something like :exact-hints?):
-               (post-data (acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
+               (post-data (acl2::acons-all-to-val (rec-types-to-strings (remove-eq :exact-hints disallowed-rec-types)) ; todo: drop this?  can the models handle disallowed unknown rec types?
                                             "off"
                                             post-data))
                (post-data (if (eq :start phase)
@@ -3702,7 +3694,7 @@
                                (set-difference-eq (set-difference-eq models function-models) server-models))))
         (if unknown-models
             (er hard? 'make-model-info-alist "Unknown models: ~x0." unknown-models)
-          (append (acons-all-to-val function-models :function nil)
+          (append (acl2::acons-all-to-val function-models :function nil)
                   (filter-advice-server-alist advice-server-alist server-models)))))))
 
 ;; Returns (mv erp event state).
