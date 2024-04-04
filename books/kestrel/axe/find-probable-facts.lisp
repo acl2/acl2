@@ -189,23 +189,6 @@
               (aref1 test-case-array-name test-case-array darg))
             (get-vals-of-args (rest dargs) test-case-array-name test-case-array)))))
 
-(defund num-true-nodes (n array-name array)
-  (declare (xargs :measure (nfix (+ 1 n))))
-  (if (not (natp n))
-      0
-      (if (aref1 array-name array n)
-          (+ 1
-             (num-true-nodes (+ -1 n) array-name array))
-        (num-true-nodes (+ -1 n) array-name array))))
-
-(defthm <=-of-num-true-nodes-linear
-  (implies (and (integerp n)
-                (<= -1 n))
-           (<= (num-true-nodes n array-name array)
-               (+ 1 n)))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable num-true-nodes))))
-
 (defund print-vals-of-nodes (nodenums array-name array)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (array1p array-name array)
@@ -408,6 +391,23 @@
 ;;   :hints (("Goal" :in-theory (enable merge-sort-<))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defund num-true-nodes (n array-name array)
+;;   (declare (xargs :measure (nfix (+ 1 n))))
+;;   (if (not (natp n))
+;;       0
+;;       (if (aref1 array-name array n)
+;;           (+ 1
+;;              (num-true-nodes (+ -1 n) array-name array))
+;;         (num-true-nodes (+ -1 n) array-name array))))
+
+;; (defthm <=-of-num-true-nodes-linear
+;;   (implies (and (integerp n)
+;;                 (<= -1 n))
+;;            (<= (num-true-nodes n array-name array)
+;;                (+ 1 n)))
+;;   :rule-classes :linear
+;;   :hints (("Goal" :in-theory (enable num-true-nodes))))
 
 ;; (defthm num-true-nodes-of-aset1
 ;;   (implies (and (array1p array-name array)
