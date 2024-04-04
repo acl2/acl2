@@ -55,14 +55,13 @@
                 (app-view x86))
            (equal (mv-nth 0 (rml-size nbytes addr r-x (xw fld index val x86)))
                   (mv-nth 0 (rml-size nbytes addr r-x x86))))
-  :hints (("Goal" :in-theory (e/d (rml-size
-                                   rml16
-                                   rml32
-                                   rml48
-                                   rml64
-                                   rml80
-                                   rml128)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable rml-size
+                                     rml16
+                                     rml32
+                                     rml48
+                                     rml64
+                                     rml80
+                                     rml128))))
 
 ;TODO: The r-x param of rb-1 is irrelevant (drop it?)
 ;; This clearly shows that the param is irrelevant, but this would loop as a rewrite rule.

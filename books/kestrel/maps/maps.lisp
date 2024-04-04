@@ -164,7 +164,7 @@
                 A
                 (G A R))
            (EQUAL (CAAR R) A))
-  :hints (("Goal" :in-theory (e/d (g wfr WFKEYED) ()))))
+  :hints (("Goal" :in-theory (enable g wfr wfkeyed))))
 
 (defthm g-of-caar
   (IMPLIES (AND (not (ifrp r))

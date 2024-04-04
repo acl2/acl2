@@ -3928,7 +3928,7 @@
       nil)))
 
 ;returns a method-info/class-name pair, or nil
-(defun lookup-method-in-classes (method-id class-names class-table)
+(defund lookup-method-in-classes (method-id class-names class-table)
   (declare (xargs :guard (and (method-idp method-id)
                               (true-listp class-names)
                               (all-class-namesp class-names)

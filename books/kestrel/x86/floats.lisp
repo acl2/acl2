@@ -130,7 +130,7 @@
 (defthm mxcsrbits->reserved-of-loghead-32 (equal (mxcsrbits->reserved (loghead 32 mxcsr)) (mxcsrbits->reserved mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
 
 (encapsulate ()
-  (local (in-theory (e/d (mxcsrbits-fix) ())))
+  (local (in-theory (enable mxcsrbits-fix)))
   (defthm mxcsrbits->ie-of-bvchop (implies (and (<= 1 size) (natp size)) (equal (mxcsrbits->ie (bvchop size mxcsr)) (mxcsrbits->ie mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
   (defthm mxcsrbits->de-of-bvchop (implies (and (<= 2 size) (natp size)) (equal (mxcsrbits->de (bvchop size mxcsr)) (mxcsrbits->de mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
   (defthm mxcsrbits->ze-of-bvchop (implies (and (<= 3 size) (natp size)) (equal (mxcsrbits->ze (bvchop size mxcsr)) (mxcsrbits->ze mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))

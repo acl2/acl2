@@ -735,8 +735,7 @@
 (defthm lane-listp-of-theta-d
   (implies (w-valp w)
            (lane-listp (theta-d c w) w))
-  :hints (("Goal" :in-theory (e/d (lanep theta-d)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable lanep theta-d))))
 
 (defthm len-of-theta-d
   (implies (w-valp w)
@@ -1004,7 +1003,7 @@
                 (< n w)
                 (lanep lane w))
            (lanep (update-nth-bit n bit lane w) w))
-  :hints (("Goal" :in-theory (e/d (lanep update-nth-bit) ()))))
+  :hints (("Goal" :in-theory (enable lanep update-nth-bit))))
 
 ;; Set bit (x,y,z) in the state-array to the given bit.
 (defund update-bit (x y z bit a w)

@@ -1615,7 +1615,7 @@
 ;;                   (if (equal x (+ -1 (expt 2 32)))
 ;;                       (- x)
 ;;                     1)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases) ()))))
+;;   :hints (("Goal" :in-theory (enable bvplus acl2::bvchop-of-sum-cases))))
 
 (in-theory (enable x86isa::x86-operation-mode)) ;for non-axe symbolic execution
 

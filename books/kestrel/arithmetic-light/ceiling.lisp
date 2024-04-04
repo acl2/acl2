@@ -159,7 +159,7 @@
                 (< 0 j))
            (equal (< k (ceiling i j))
                   (< (* j k) i)))
-  :hints (("Goal" :use ((:instance my-floor-lower-bound)
+  :hints (("Goal" :use (my-floor-lower-bound
                         (:instance <-of-*-of-/-arg2-arg1
                                    (z k)
                                    (y i)
@@ -180,7 +180,7 @@
                 (rationalp j)
                 (< 0 j))
            (< (ceiling i j) k))
-  :hints (("Goal" :use (:instance ceiling-upper-bound)
+  :hints (("Goal" :use ceiling-upper-bound
            :in-theory (disable ceiling-upper-bound
                                <-*-/-left-with-addend-alt))))
 

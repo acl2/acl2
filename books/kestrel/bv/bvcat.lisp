@@ -82,8 +82,7 @@
            (unsigned-byte-p (+ size size2) x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p expt-of-+ logtail))))
 
-(encapsulate
- ()
+(encapsulate ()
  (local (defthm bvcat-equal-rewrite-fw
           (implies (and (natp lowsize)
                         (natp highsize))
@@ -252,8 +251,7 @@
          (bvcat 1 x n y))
    :hints (("Goal" :in-theory (e/d (getbit bvcat) (BVCHOP-1-BECOMES-GETBIT )))))
 
-(encapsulate
- ()
+(encapsulate ()
 
  (local (defthm unsigned-byte-p-of-bvcat-all-cases-helper
           (implies (and (integerp lowval) ;todo
@@ -932,14 +930,14 @@
                                   )
            :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat-all-cases)))))
 
-;fixme gen the 1
-(defthm bvcat-equal-0-rewrite2
-   (implies (natp size)
-            (equal (equal 0 (bvcat 1 x size 0))
-                   (equal (getbit 0 x) 0)))
-   :hints (("Goal" :in-theory (e/d (;getbit bvcat slice
-                                    )
-                                   ()))))
+;; ;todo: gen the 1
+;; (defthm bvcat-equal-0-rewrite2
+;;    (implies (natp size)
+;;             (equal (equal 0 (bvcat 1 x size 0))
+;;                    (equal (getbit 0 x) 0)))
+;;    :hints (("Goal" :in-theory (e/d (;getbit bvcat slice
+;;                                     )
+;;                                    ()))))
 
 ;finally the full lemma!
 (defthm slice-of-bvcat-hack-gen

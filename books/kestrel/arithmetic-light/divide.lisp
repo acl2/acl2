@@ -261,7 +261,7 @@
                               (+ (* c c) (* d d)))
                            (/ (- (* b c) (* a d))
                               (+ (* c c) (* d d))))))
-  :hints (("Goal" :use (:instance /-of-complex-and-complex-step1)
+  :hints (("Goal" :use /-of-complex-and-complex-step1
            :in-theory (enable complex-opener))))
 
 (defthm <-of-*-of-/-arg1
@@ -289,7 +289,7 @@
                     (if (equal 0 y)
                         (< 0 z)
                       (< (* y z) x)))))
-  :hints (("Goal" :use (:instance <-of-*-of-/-arg1))))
+  :hints (("Goal" :use <-of-*-of-/-arg1)))
 
 (defthm <-of-*-of-/-arg2
   (implies (and (rationalp x)
@@ -319,7 +319,7 @@
                     (if (equal 0 y)
                         (< z 0)
                       (< x (* y z))))))
-  :hints (("Goal" :use (:instance <-of-*-of-/-arg2)
+  :hints (("Goal" :use <-of-*-of-/-arg2
            :in-theory (disable <-of-*-of-/-arg2))))
 
 ;combine with rules above?
