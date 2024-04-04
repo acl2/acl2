@@ -86,7 +86,7 @@
 
 ;gen the -1
 (defthm ash-of-bvchop-32-and-minus1
-  (equal (ash (bvchop '32 x) '-1)
+  (equal (ash (bvchop 32 x) -1)
          (slice 31 1 x))
   :hints (("Goal" :in-theory (enable ash LOGTAIL-BECOMES-SLICE-BIND-FREE floor-of-2-becomes-logtail-of-1))))
 
