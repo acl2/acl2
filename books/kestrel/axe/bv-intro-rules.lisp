@@ -246,22 +246,36 @@
   :hints (("Goal":use (:instance logand-becomes-bvand (size xsize) (y y))
            :in-theory (disable logand-becomes-bvand))))
 
-(defthmd logior-becomes-bvor-axe
+(defthmd logior-becomes-bvor-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
+                (unsigned-byte-p xsize y)
+                (unsigned-byte-p-forced xsize x))
            (equal (logior x y)
-                  (bvor (max xsize ysize) x y)))
+                  (bvor xsize x y)))
   :hints (("Goal" :in-theory (enable bvor))))
 
-(defthmd logxor-becomes-bvxor-axe
+(defthmd logior-becomes-bvor-arg2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p ysize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (logior x y)
+                  (bvor ysize x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthmd logxor-becomes-bvxor-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p xsize y)
+                (unsigned-byte-p-forced xsize x))
+           (equal (logxor x y)
+                  (bvxor xsize x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(defthmd logxor-becomes-bvxor-arg2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p ysize x)
                 (unsigned-byte-p-forced ysize y))
            (equal (logxor x y)
-                  (bvxor (max xsize ysize) x y)))
+                  (bvxor ysize x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;rename?

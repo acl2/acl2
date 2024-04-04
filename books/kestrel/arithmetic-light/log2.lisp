@@ -76,7 +76,7 @@
   :rule-classes :type-prescription
   :hints (("Goal"; :expand (log2 x)
            :induct (log2 x)
-           :in-theory (e/d (log2) ()))))
+           :in-theory (enable log2))))
 
 ;; Could loop with the definition?
 (defthm log2-of-*-of-2

@@ -708,10 +708,10 @@
          (need-to-splitp (find-val-other-than first-val (rest set) test-case-array test-case-array-name)))
     (if (not need-to-splitp)
         ;;in this case we don't recons the whole set
-        (mv (cons set acc) 0 nil) ;fixme try to save even this cons?
+        (mv (cons set acc) 0 nil)
       (prog2$ (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set)))
               (mv-let (new-sets new-singleton-count)
-                      (split-set set test-case-array test-case-array-name) ;fixme pass acc into this?
+                      (split-set set test-case-array test-case-array-name) ;todo: pass acc into this?
                       (mv (append new-sets acc)
                           new-singleton-count t))))))
 
@@ -775,10 +775,10 @@
    :rule-classes :type-prescription
    :hints (("Goal" :in-theory (enable try-to-split-set)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;try to split the sets using test-case-array
-;returns (mv new-sets new-singleton-count changep)
+;; Tries to split the sets using test-case-array.
+;; Returns (mv new-sets new-singleton-count changep),
 ;sets are moved from SETS to ACC.  as they are moved they are split if indicated by this test case.
 ;sets are lists of nodenums.  each set has length at least 2 (singleton sets are dropped).
 (defund new-probably-equal-node-sets (sets test-case-array acc singleton-count-acc print test-case-array-name changep)
@@ -983,7 +983,6 @@
 ;Handles nodes that are used on this test case but have not been used on a previous test case.
 ;Such nodes are moved from the never-used-nodes list to the probably-constant-node-alist, where they are paired with their value on this test case.
 ;Returns (mv never-used-nodes probably-constant-node-alist changep) where changep remains true if it was initially true.
-;fixme might be faster to process more than 1 test case at a time
 (defund handle-newly-used-nodes (never-used-nodes ;these are moved to acc or get entries in the alist
                                  probably-constant-node-alist ;;pairs nodenums with probable constants
                                  test-case-array-name test-case-array
@@ -1104,6 +1103,19 @@
                  (alistp acc)
                  (booleanp changep))
             (alistp (mv-nth 0 (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array acc changep))))
+   :hints (("Goal" :in-theory (enable new-probably-constant-alist)))))
+
+(local
+ (defthm booleanp-of-mv-nth-1-of-new-probably-constant-alist
+   (implies (and (alistp probably-constant-node-alist)
+                 (nat-listp (strip-cars probably-constant-node-alist))
+                 (array1p test-case-array-name test-case-array)
+                 (all-< (strip-cars probably-constant-node-alist)
+                        (alen1 test-case-array-name test-case-array))
+                 (nat-listp (strip-cars acc))
+                 (alistp acc)
+                 (booleanp changep))
+            (booleanp (mv-nth 1 (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array acc changep))))
    :hints (("Goal" :in-theory (enable new-probably-constant-alist)))))
 
 (local
@@ -1984,21 +1996,16 @@
                                         debug-nodes))
          ((when (not test-case-array)) ; some test failed! (rare)
           (mv nil probably-equal-node-sets never-used-nodes probably-constant-node-alist nil))
-         (changep nil)
+         (changep nil) ; track whether this test case was interesting
          ;; Update the probably-equal-node-sets:
          ((mv new-sets new-singleton-count changep)
           (new-probably-equal-node-sets probably-equal-node-sets test-case-array nil 0 print test-case-array-name changep))
-         ;; Handle nodes that are used for the first time on this test case (they become probable constants):
-         ((mv never-used-nodes probably-constant-node-alist changep)
-          (handle-newly-used-nodes never-used-nodes
-                                   probably-constant-node-alist
-                                   test-case-array-name
-                                   test-case-array
-                                   nil
-                                   changep))
-         ;; Update the probable constants (TODO: Do this before handle-newly-used-nodes):
+         ;; Maybe invalidate some probable constants (done before handle-newly-used-nodes, which may add new probable constants):
          ((mv probably-constant-node-alist changep)
           (new-probably-constant-alist probably-constant-node-alist test-case-array-name test-case-array nil changep))
+         ;; Handle nodes that are used for the first time on this test case (they become probable constants):
+         ((mv never-used-nodes probably-constant-node-alist changep)
+          (handle-newly-used-nodes never-used-nodes probably-constant-node-alist test-case-array-name test-case-array nil changep))
          (- (if (and (or (eq print :verbose)
                          (eq print :verbose!))
                      changep) ; todo: use this value to decide whether to keep the test case? maybe keep the first few boring ones so we have enough..

@@ -873,7 +873,7 @@
 
 (DEFTHM LOGBITP-LOGTAIL-better
   (IMPLIES (AND (INTEGERP POS)
-                (NOT (< POS '0))
+                (NOT (< POS 0))
 ;               (INTEGERP I)
                 (INTEGERP POS1)
                 (>= POS1 0)
@@ -1139,9 +1139,9 @@
           (logtail 8 x)))
 
 (defthm shift-compare-hack
-   (< (logtail '8
+   (< (logtail 8
                (BVCHOP 16 x))
-      '256)
+      256)
    :hints (("Goal" :in-theory (disable LOGTAIL-OF-BVCHOP-BECOMES-SLICE))))
 
 (defthm shift-compare-hack-24-16
@@ -1405,7 +1405,7 @@
 ;;                          (:instance multiply-both-sides-hack (x (* (/ (EXPT 2 N)) (BVCHOP N A))) (y (* 1/2 (EXPT 2 M) (/ (EXPT 2 N)))) (z (expt 2 n)))
 ;;                          (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i n) (j (- m 1)))
 ;;                          )
-;;             :cases ((and (EQUAL (BVCHOP N A) '0) (<= 0 b)))
+;;             :cases ((and (EQUAL (BVCHOP N A) 0) (<= 0 b)))
 ;;             :in-theory (e/d (logapp expt-of-+
 ;;                                     signed-byte-p) (<-*-/-RIGHT-COMMUTED <-*-/-left-COMMUTED <-*-LEFT-CANCEL
 ;;                                     <-*-/-LEFT
@@ -1464,19 +1464,19 @@
 ;; (defthmd sbp-32-logapp-24
 ;;   (implies (and (integerp x)
 ;;                 (integerp v))
-;;            (equal (signed-byte-p '32 (logapp '24 v x))
+;;            (equal (signed-byte-p 32 (logapp 24 v x))
 ;;                   (signed-byte-p 8 x))))
 
 ;; (defthmd sbp-32-logapp-8
 ;;   (implies (and (integerp x)
 ;;                 (integerp v))
-;;            (equal (signed-byte-p '32 (logapp 8 v x))
+;;            (equal (signed-byte-p 32 (logapp 8 v x))
 ;;                   (signed-byte-p 24 x))))
 
 ;; (defthmd sbp-32-logapp-16
 ;;   (implies (and (integerp x)
 ;;                 (integerp v))
-;;            (equal (signed-byte-p '32 (logapp 16 v x))
+;;            (equal (signed-byte-p 32 (logapp 16 v x))
 ;;                   (signed-byte-p 16 x))))
 
 ;kill?
@@ -2212,7 +2212,7 @@
 
 ;fixme
 (defthmd introduce-bvsx-25-7
-  (equal (bvcat '25 (repeatbit '25 (getbit '7 x)) '7 x)
+  (equal (bvcat 25 (repeatbit 25 (getbit 7 x)) 7 x)
          (bvsx 32 8 x))
   :hints (("Goal" :in-theory (enable bvsx))))
 
@@ -2419,7 +2419,7 @@
 ;move
 (defthm usb-33-of-one-more
   (implies (and (< 0 x)
-                (unsigned-BYTE-P '33 X))
+                (unsigned-BYTE-P 33 X))
            (unsigned-BYTE-P 33 (+ -1 X)))
   :hints (("Goal" :in-theory (enable unsigned-BYTE-P))))
 
@@ -2970,8 +2970,8 @@
 
 (defthm unsigned-byte-p-of-floor-25-64
   (implies (natp x)
-           (equal (unsigned-byte-p '25 (floor x '64))
-                  (unsigned-byte-p '31 x)))
+           (equal (unsigned-byte-p 25 (floor x 64))
+                  (unsigned-byte-p 31 x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm slice-bound-hack-31-64-6
@@ -3555,15 +3555,15 @@
 ;gen!
 (defthm bvplus-of-floor-4-32
   (implies (integerp i)
-           (equal (BVPLUS '4 x (FLOOR i '32))
-                  (BVPLUS '4 x (slice 8 5 i))))
+           (equal (BVPLUS 4 x (FLOOR i 32))
+                  (BVPLUS 4 x (slice 8 5 i))))
   :hints (("Goal" :in-theory (enable BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION))))
 
 ;gen!
 (defthm bvplus-of-floor-4-32-alt
   (implies (integerp i)
-           (equal (BVPLUS '4 x (FLOOR i '32))
-                  (BVPLUS '4 x (slice 8 5 i))))
+           (equal (BVPLUS 4 x (FLOOR i 32))
+                  (BVPLUS 4 x (slice 8 5 i))))
   :hints (("Goal" :in-theory (enable BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION))))
 
 (defthm unsigned-byte-p-of-floor-of-expt-constant-version
@@ -5527,14 +5527,14 @@
            :in-theory (disable bvlt-add-to-both-sides-constant-lemma))))
 
 (defthm bvplus-of-bvuminus-32-31-special-case
-  (implies (and (not (BVLT '31 x16 x7))
+  (implies (and (not (BVLT 31 x16 x7))
                 (unsigned-byte-p 31 x16)
                 (unsigned-byte-p 31 x7)
                 )
-           (equal (BVPLUS 32 x16 (BVUMINUS '31 x7))
+           (equal (BVPLUS 32 x16 (BVUMINUS 31 x7))
                   (if (equal 0 (bvchop 31 x7))
                       (bvchop 32 x16)
-                    (bvplus 32 (expt 2 31) (BVPLUS '31 x16 (BVUMINUS '31 x7))))))
+                    (bvplus 32 (expt 2 31) (BVPLUS 31 x16 (BVUMINUS 31 x7))))))
   :hints (("Goal" :in-theory (e/d (bvplus bvmod bvchop-of-sum-cases
                                           bvuminus
                                           bvminus
@@ -5735,7 +5735,7 @@
 (defthm bvlt-of-bvuminus
   (implies (and (unsigned-byte-p 31 x)
                 (unsigned-byte-p 31 y))
-           (equal (bvlt '31 x (bvuminus '31 y))
+           (equal (bvlt 31 x (bvuminus 31 y))
                   (if (equal 0 y)
                       nil
                     (bvlt 32 (bvplus 32 x y) (expt 2 31)))))

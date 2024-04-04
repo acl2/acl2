@@ -186,10 +186,10 @@
 
        ;; Calculate the result.
        (result (case opcode
-                 (#xfc (simd-sub-spec (* 8 operand-size) 08 src1 src2))
-                 (#xfd (simd-sub-spec (* 8 operand-size) 16 src1 src2))
-                 (#xfe (simd-sub-spec (* 8 operand-size) 32 src1 src2))
-                 (#xd4 (simd-sub-spec (* 8 operand-size) 64 src1 src2))
+                 (#xf8 (simd-sub-spec (* 8 operand-size) 08 src1 src2))
+                 (#xf9 (simd-sub-spec (* 8 operand-size) 16 src1 src2))
+                 (#xfa (simd-sub-spec (* 8 operand-size) 32 src1 src2))
+                 (#xfb (simd-sub-spec (* 8 operand-size) 64 src1 src2))
                  (t 0))) ; unreachable
 
        ;; Store the result into the destination register.

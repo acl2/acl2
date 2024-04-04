@@ -815,9 +815,8 @@
                          (bvchop 8 x)))
              (not (equal (bvchop 8 -23)
                          (bvchop 8 x)))))
- :hints (("Goal" :in-theory (e/d (jnbe-condition
-                                  bvlt bvplus acl2::bvchop-of-sum-cases)
-                                 ()))))
+ :hints (("Goal" :in-theory (enable jnbe-condition
+                                    bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -829,7 +828,7 @@
                                  (x86isa::sub-sf-spec8 dst src)
                                  (x86isa::sub-of-spec8 dst src))
                   (acl2::sbvle 8 dst src)))
-  :hints (("Goal" :in-theory (e/d (jle-condition
+  :hints (("Goal" :in-theory (enable jle-condition
                                      ;zf-spec
                                      x86isa::OF-SPEC8 ;import
                                      x86isa::sF-SPEC8 ; import
@@ -842,8 +841,7 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits)
-                                  ()))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
@@ -853,10 +851,10 @@
                                  (x86isa::sub-sf-spec16 dst src)
                                  (x86isa::sub-of-spec16 dst src))
                   (acl2::sbvle 16 dst src)))
-  :hints (("Goal" :in-theory (e/d (jle-condition
+  :hints (("Goal" :in-theory (enable jle-condition
                                      ;zf-spec
-                                   x86isa::OF-SPEC16 ; import
-                                   x86isa::sF-SPEC16 ; import
+                                     x86isa::OF-SPEC16 ; import
+                                     x86isa::sF-SPEC16 ; import
                                      acl2::bvlt
                                      x86isa::sub-zf-spec16
                                      x86isa::sub-sf-spec16
@@ -866,8 +864,7 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits)
-                                  ()))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
@@ -877,7 +874,7 @@
                                  (x86isa::sub-sf-spec32 dst src)
                                  (x86isa::sub-of-spec32 dst src))
                   (acl2::sbvle 32 dst src)))
-  :hints (("Goal" :in-theory (e/d (jle-condition
+  :hints (("Goal" :in-theory (enable jle-condition
                                      ;zf-spec
                                      OF-SPEC32
                                      sF-SPEC32
@@ -890,8 +887,7 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits)
-                                  ()))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
@@ -924,10 +920,9 @@
                 (unsigned-byte-p 8 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC8 dst src))
                   (bvle 8 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC8
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC8
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC16
@@ -935,10 +930,9 @@
                 (unsigned-byte-p 16 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC16 dst src))
                   (bvle 16 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC16
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC16
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC32
@@ -946,10 +940,9 @@
                 (unsigned-byte-p 32 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC32 dst src))
                   (bvle 32 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC32
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC32
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC64
@@ -957,10 +950,9 @@
                 (unsigned-byte-p 64 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC64 dst src))
                   (bvle 64 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC64
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC64
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;; fixme; add the rest of these condition rules from tester-rules.
 

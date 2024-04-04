@@ -39,7 +39,7 @@
                 (symbolp key)
                 (not (member-equal key '(current-acl2-world timer-alist))))
            (state-p1 (update-global-table (add-pair key value (global-table state)) state)))
-  :hints (("Goal" :in-theory (e/d (update-global-table global-table) ()))))
+  :hints (("Goal" :in-theory (enable update-global-table global-table))))
 
 (defthm state-p1-of-put-global
   (implies (and (state-p1 state)

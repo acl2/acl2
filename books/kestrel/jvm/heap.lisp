@@ -482,7 +482,7 @@
   (implies (not (equal pair (CLASS-PAIR)))
            (equal (GET-CLASS REF (set-FIELD REF2 pair val HEAP))
                   (GET-CLASS REF HEAP)))
-  :hints (("Goal" :in-theory (e/d (get-class) ()))))
+  :hints (("Goal" :in-theory (enable get-class))))
 
 (defthm in-rkeys-when-get-field-non-nil-two
   (implies (get-field ad pair heap)

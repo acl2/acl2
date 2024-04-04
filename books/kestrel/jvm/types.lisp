@@ -263,10 +263,9 @@
            (typep (get-array-component-type type)))
   :hints (("Goal" :expand ((TYPEP TYPE)
                            (REFERENCE-TYPEP TYPE))
-           :in-theory (e/d (array-typep reference-typep
-                              TYPEP
-                              get-array-component-type)
-                           ()))))
+           :in-theory (enable array-typep reference-typep
+                              typep
+                              get-array-component-type))))
 
 (defthm primitive-typep-forward-to-symbolp
   (implies (primitive-typep type)

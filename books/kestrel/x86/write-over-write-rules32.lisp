@@ -52,32 +52,32 @@
 (defthm write-byte-to-segment-of-set-eax
   (equal (write-byte-to-segment eff-addr seg-reg val (set-eax eax x86))
          (set-eax eax (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-eax) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-eax))))
 
 (defthm write-byte-to-segment-of-set-ebx
   (equal (write-byte-to-segment eff-addr seg-reg val (set-ebx ebx x86))
          (set-ebx ebx (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-ebx) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-ebx))))
 
 (defthm write-byte-to-segment-of-set-ecx
   (equal (write-byte-to-segment eff-addr seg-reg val (set-ecx ecx x86))
          (set-ecx ecx (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-ecx) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-ecx))))
 
 (defthm write-byte-to-segment-of-set-edx
   (equal (write-byte-to-segment eff-addr seg-reg val (set-edx edx x86))
          (set-edx edx (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-edx) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-edx))))
 
 (defthm write-byte-to-segment-of-set-esp
   (equal (write-byte-to-segment eff-addr seg-reg val (set-esp esp x86))
          (set-esp esp (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-esp) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-esp))))
 
 (defthm write-byte-to-segment-of-set-ebp
   (equal (write-byte-to-segment eff-addr seg-reg val (set-ebp ebp x86))
          (set-ebp ebp (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (write-byte-to-segment set-ebp) ()))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-ebp))))
 
 ;;; write-to-segment of write-<reg>
 

@@ -300,8 +300,7 @@
                       (- (floor x y))
                       (- (- (floor x y)) 1)))))
 
-(encapsulate
-  ()
+(encapsulate ()
   (local
    (defthm floor-of-sum-case-1
      (implies (and (< (+ (mod i1 j) (mod i2 j)) j) ;case 1
