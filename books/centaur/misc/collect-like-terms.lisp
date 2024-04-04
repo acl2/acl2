@@ -529,6 +529,12 @@
     :hints (("goal" :in-theory (enable factor-out-trigger)))
     :rule-classes ((:meta :trigger-fns (factor-out-trigger)))))
 
+
+;; Utility to check whether a factor exists in a sum
+(define factor-present-in-sum ((factor pseudo-termp) (x pseudo-termp))
+  (b* (((mv fact ?unfact) (factor-out-from-sum factor x)))
+    (not (equal fact ''0))))
+
 ;;; Example usage of factor-out-metafn -- needs to be triggered by some kind of
 ;;; bind-free rule.
 
