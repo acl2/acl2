@@ -850,10 +850,11 @@
    :hints (("Goal" :in-theory (enable new-probably-equal-node-sets)))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Looks for an initial segment of NODE-TO-VALUE-ALIST all of whose vals are SIG.
+;; Looks for an initial segment of NODE-TO-VALUE-ALIST all of whose vals are VALUE.
 ;; Returns (mv entries-with-value remaining-node-to-value-alist).
-(defund initial-entries-with-value (node-to-value-alist value acc)
+(defund leading-entries-with-value (node-to-value-alist value acc)
   (declare (xargs :guard (and (alistp node-to-value-alist)
                               (nat-listp (strip-cars node-to-value-alist))
                               (nat-listp acc))))
@@ -861,53 +862,55 @@
       (mv acc node-to-value-alist)
     (let* ((entry (car node-to-value-alist))
            (nodenum (car entry))
-           (value2 (cdr entry)))
-      (if (equal value value2)
-          (initial-entries-with-value (cdr node-to-value-alist) value (cons nodenum acc))
+           (this-value (cdr entry)))
+      (if (equal this-value value)
+          (leading-entries-with-value (cdr node-to-value-alist) value (cons nodenum acc))
         ;; stop looking, since the entries are sorted by value and we found a difference:
         (mv acc node-to-value-alist)))))
 
 (local
- (defthm nat-listp-of-mv-nth-0-of-initial-entries-with-value
+ (defthm nat-listp-of-mv-nth-0-of-leading-entries-with-value
    (implies (and (nat-listp (strip-cars node-to-value-alist))
                  (nat-listp acc))
-            (nat-listp (mv-nth 0 (initial-entries-with-value node-to-value-alist value acc))))
-   :hints (("Goal" :in-theory (enable initial-entries-with-value)))))
+            (nat-listp (mv-nth 0 (leading-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm all-<-of-mv-nth-0-of-initial-entries-with-value
+ (defthm all-<-of-mv-nth-0-of-leading-entries-with-value
    (implies (and (all-< (strip-cars node-to-value-alist) bound)
                  (all-< acc bound)
                  )
-            (all-< (mv-nth 0 (initial-entries-with-value node-to-value-alist value acc)) bound))
-   :hints (("Goal" :in-theory (enable initial-entries-with-value)))))
+            (all-< (mv-nth 0 (leading-entries-with-value node-to-value-alist value acc)) bound))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm <=-of-len-of-mv-nth-1-of-initial-entries-with-value
-   (<= (len (mv-nth 1 (initial-entries-with-value node-to-value-alist value acc)))
+ (defthm <=-of-len-of-mv-nth-1-of-leading-entries-with-value
+   (<= (len (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc)))
        (len node-to-value-alist))
    :rule-classes :linear
-   :hints (("Goal" :in-theory (enable initial-entries-with-value)))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-initial-entries-with-value
+ (defthm nat-listp-of-strip-cars-of-mv-nth-1-of-leading-entries-with-value
    (implies (nat-listp (strip-cars node-to-value-alist))
-            (nat-listp (strip-cars (mv-nth 1 (initial-entries-with-value node-to-value-alist value acc)))))
-   :hints (("Goal" :in-theory (enable initial-entries-with-value)))))
+            (nat-listp (strip-cars (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc)))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm alistp-of-strip-cars-of-mv-nth-1-of-initial-entries-with-value
+ (defthm alistp-of-strip-cars-of-mv-nth-1-of-leading-entries-with-value
    (implies (alistp node-to-value-alist)
-            (alistp (mv-nth 1 (initial-entries-with-value node-to-value-alist value acc))))
-   :hints (("Goal" :in-theory (enable initial-entries-with-value)))))
+            (alistp (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc))))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
- (defthm all-<-of-strip-cars-of-mv-nth-1-of-initial-entries-with-value
+ (defthm all-<-of-strip-cars-of-mv-nth-1-of-leading-entries-with-value
    (implies (and (all-< (strip-cars node-to-value-alist) bound)
                  (all-< acc bound)
                  )
-            (all-< (strip-cars (mv-nth 1 (initial-entries-with-value node-to-value-alist value acc))) bound))
-   :hints (("Goal" :in-theory (enable initial-entries-with-value)))))
+            (all-< (strip-cars (mv-nth 1 (leading-entries-with-value node-to-value-alist value acc))) bound))
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv sets singleton-count).
 (defund group-same-entries (node-to-value-alist acc singleton-count)
@@ -922,7 +925,7 @@
            (nodenum (car entry))
            (value (cdr entry)))
       (mv-let (equiv-set node-to-value-alist)
-        (initial-entries-with-value (cdr node-to-value-alist) value nil)
+        (leading-entries-with-value (cdr node-to-value-alist) value nil)
         (if equiv-set ; there's at least one other node with the same value
             (group-same-entries node-to-value-alist (cons (cons nodenum equiv-set) acc) singleton-count)
           (group-same-entries node-to-value-alist acc (+ 1 singleton-count)))))))
@@ -1122,7 +1125,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;test-case-array maps nodenums 0..(1 - dag-len) to their values for the current test case
+;test-case-array maps nodenums 0..(dag-len - 1) to their values for the current test case
 ;each pair in the resulting alist pairs a value with the list of nodenums that have that value under the current test case
 ;returns (mv initial-probably-equal-node-sets initial-singleton-count)
 (defund initial-probably-equal-node-sets (dag-len test-case-array-name test-case-array)
