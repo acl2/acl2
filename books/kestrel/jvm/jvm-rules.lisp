@@ -219,10 +219,7 @@
                       val2)))
  :hints (("Goal" :in-theory (enable myif))))
 
-
-(in-theory (disable JVM::LOOKUP-METHOD-IN-CLASSES))
-(in-theory (enable JVM::LOOKUP-METHOD))
-
+(in-theory (enable jvm::lookup-method)) ; why?
 (in-theory (disable s==r)) ;bozo
 
 ;disable?
@@ -234,26 +231,22 @@
   :HINTS (("Goal" :IN-THEORY (ENABLE GET-FIELD))))
 
 (defthm 2set-of-reverse
-  (equal (LIST::|2SET| (REVERSE-LIST lst))
-         (LIST::|2SET| lst))
-  :hints (("Goal" :in-theory (enable LIST::|2SET| reverse-list append))))
-
+  (equal (list::|2SET| (reverse-list lst))
+         (list::|2SET| lst))
+  :hints (("Goal" :in-theory (enable list::|2SET| reverse-list append))))
 
 (defthm initialize-one-dim-array-of-set-field
   (implies (not (equal ref1 ref2))
            (equal (jvm::initialize-one-dim-array ref1 type contents (set-field ref2 pair value heap))
-                  (set-field ref2 pair value (jvm::initialize-one-dim-array ref1 type contents heap))
-                  ))
+                  (set-field ref2 pair value (jvm::initialize-one-dim-array ref1 type contents heap))))
   :rule-classes ((:rewrite :loop-stopper ((ref1 ref2))))
   :hints (("Goal" :in-theory (enable JVM::INITIALIZE-ONE-DIM-ARRAY))))
 
 (defthm set-field-of-initialize-one-dim-array
   (implies (not (equal ref1 ref2))
            (equal (set-field ref1 pair value (jvm::initialize-one-dim-array ref2 type contents heap))
-                  (jvm::initialize-one-dim-array ref2 type contents (set-field ref1 pair value heap))
-                  ))
-  :rule-classes
-  ((:rewrite :loop-stopper ((ref1 ref2)))))
+                  (jvm::initialize-one-dim-array ref2 type contents (set-field ref1 pair value heap))))
+  :rule-classes ((:rewrite :loop-stopper ((ref1 ref2)))))
 
 (in-theory (enable (:executable-counterpart s)))  ;BOZO think about this... when s is called to make a class info object it's nice to have it reduced to a constant?
 
@@ -398,8 +391,6 @@
 (in-theory (disable array-contents2))
 
 (in-theory (enable array-elem-2d-recollapse))
-
-
 
 (defthm array-row-recollapse
   (equal (get-field (nth n (get-field ref (array-contents-pair) heap)) (array-contents-pair) heap)
@@ -719,8 +710,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (JVM::S-SHL) (JVM::SBVMULT-RECOLLAPSE)))))
 
 ;bozo?
-(in-theory (e/d (ARRAY-ELEM-2D2) (ARRAY-ELEM-2D2-RECOLLAPSE)))
-
+(in-theory (e/d (array-elem-2d2) (array-elem-2d2-recollapse)))
 
 (defthm byte-p-list-list-of-array-contents-list
   (implies (array-ref-listp ref-list
@@ -751,8 +741,8 @@
 
 ;(in-theory (disable ADD-BVCHOP-INSIDE-GETBIT)) ;bozo
 
-(in-theory (disable ;ARRAY-REFP-OPEN-FIRST-DIMENSION-WHEN-SMALL-CONSTANT ;array-refp
-                    ))
+;; (in-theory (disable ;ARRAY-REFP-OPEN-FIRST-DIMENSION-WHEN-SMALL-CONSTANT ;array-refp
+;;                     ))
 
 ;; (defthm get-row-contents-of-2d-array
 ;;   (implies (and (array-refp ref (list numrows numcols) type heap)
@@ -816,8 +806,6 @@
            :in-theory (e/d (ARRAY-ROW) (ARRAY-ROW-RECOLLAPSE
                                         ;ARRAY-REF-LISTP-OPEN-WHEN-CONSP
                                         )))))
-
-
 
 ;(in-theory (disable NTH1-WHEN-NOT-CDR))
 
@@ -942,7 +930,7 @@
                             (take (+ -1 (len x)) x))
                       x))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :use (:instance split-list-hack)
+           :use split-list-hack
            :in-theory (e/d ( ;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
                             ) (equal-of-append
                                )))))
@@ -1012,7 +1000,7 @@
                 (no-duplicatesp-equal (addresses-of-array-ref ref (list dim1 dim2) heap))
                 )
            (array-refp ref (list dim1 dim2) ':int (set-field (nth n (get-field ref (array-contents-pair) heap2)) (array-contents-pair) val heap)))
-  :hints (("Goal" :use (:instance array-refp-of-set-row)
+  :hints (("Goal" :use array-refp-of-set-row
            :in-theory (disable array-refp-of-set-row
                                addresses-of-array-ref
                                ;array-refp
@@ -1680,10 +1668,7 @@
                 (natp element-size))
            (equal (getbit n (bv-array-read element-size len index data))
                   (bv-array-read 1 len index (getbit-list n data))))
-  :hints (("Goal" :in-theory (e/d (getbit-list ;LIST::NTH-WITH-LARGE-INDEX
-                                   natp posp bv-array-read GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                                  (; LIST::NTH-OF-CONS
-                                   )))))
+  :hints (("Goal" :in-theory (enable getbit-list natp posp bv-array-read getbit-when-val-is-not-an-integer bvchop-when-i-is-not-an-integer))))
 
 (defthmd getbit-of-bv-array-read
   (implies (and (syntaxp (and (quotep n)
@@ -1695,7 +1680,7 @@
                 (natp element-size))
            (equal (getbit n (bv-array-read element-size len index data))
                   (bv-array-read 1 len index (getbit-list n data)))) ;the getbit-list gets computed
-  :hints (("Goal" :use (:instance getbit-of-bv-array-read-helper)
+  :hints (("Goal" :use getbit-of-bv-array-read-helper
            :in-theory (e/d (getbit-list) ( getbit-of-bv-array-read-helper)))))
 
 ;disable?
@@ -1711,7 +1696,7 @@
             (NATP ELEMENT-SIZE))
            (EQUAL (GETBIT N (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA))
                   (BV-ARRAY-READ 1 LEN INDEX (GETBIT-LIST N DATA))))
-  :HINTS (("Goal" :use (:instance getbit-of-bv-array-read)
+  :HINTS (("Goal" :use getbit-of-bv-array-read
            :IN-THEORY (Enable GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER))))
 
 ;useful when get-field gets opened (e.g., for baload)

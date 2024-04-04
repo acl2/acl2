@@ -154,9 +154,7 @@
     (NEW-AD (SET::UNION (LIST::|2SET| (N-new-ads2 N DOM)) DOM))
     (NTH-NEW-AD (+ 1 N) DOM)))
   :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2)( IN-OF-NEW-AD-AND-N-NEW-ADS IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt))
-          :use (:instance NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt)))
-  :OTF-FLG T
-)
+          :use NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt)))
 
 (DEFTHM INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
   (IMPLIES
@@ -174,7 +172,7 @@
    (EQUAL
     (SET::INSERT (NTH-NEW-AD M DOM) (SET::UNION (LIST::|2SET| (N-new-ads2 N DOM)) DOM))
     (SET::UNION DOM (LIST::|2SET| (N-new-ads2 M DOM)))))
-  :hints (("Goal" :use (:instance INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt)
+  :hints (("Goal" :use INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
            :in-theory (disable INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
                                INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADS))))
 
@@ -184,7 +182,7 @@
    (EQUAL
     (SET::INSERT (NTH-NEW-AD M DOM) (SET::UNION DOM (LIST::|2SET| (N-new-ads2 N DOM))))
     (SET::UNION DOM (LIST::|2SET| (N-new-ads2 M DOM)))))
-  :hints (("Goal" :use (:instance INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt)
+  :hints (("Goal" :use INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
            :in-theory (disable INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
                                INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADS))))
 
@@ -212,7 +210,7 @@
   (IMPLIES (SET::IN AD DOM)
            (equal (MEMBERP AD (N-new-ads2 N DOM))
                   nil))
-  :hints (("Goal" :use (:instance  NOT-MEMBERP-N-NEW-ADS2)
+  :hints (("Goal" :use NOT-MEMBERP-N-NEW-ADS2
            :in-theory (e/d (n-new-ads-becomes-n-new-ads2) (  NOT-MEMBERP-N-NEW-ADS2 NOT-MEMBERP-N-NEW-ADS)))))
 
 
@@ -541,7 +539,7 @@
   (implies (natp n)
            (equal (NEW-AD (SET::UNION dom (LIST::|2SET| (N-NEW-ADS2 n dom))))
                   (NTH-NEW-AD (+ 1 N) DOM)))
-  :hints (("Goal" :use (:instance NEW-AD-OF-UNION-DOM-AND-N-NEW-ADS)
+  :hints (("Goal" :use NEW-AD-OF-UNION-DOM-AND-N-NEW-ADS
            :in-theory (disable NEW-AD-OF-UNION-DOM-AND-N-NEW-ADS))))
 
 (DEFTHM NTH-NEW-AD-OF-UNION-DOM-N-new-ads-better
@@ -551,7 +549,7 @@
              M
              (SET::UNION DOM (LIST::|2SET| (N-new-ads2 N DOM))))
             (NTH-NEW-AD (+ M N) DOM)))
-  :hints (("Goal" :use (:instance NTH-NEW-AD-OF-UNION-DOM-N-NEW-ADS)
+  :hints (("Goal" :use NTH-NEW-AD-OF-UNION-DOM-N-NEW-ADS
            :in-theory (disable NTH-NEW-AD-OF-UNION-DOM-N-NEW-ADS))))
 
 
@@ -590,29 +588,20 @@
            (equal (set::insert (nth-new-ad m x) (set::insert (nth-new-ad n x) s))
                   (set::insert (nth-new-ad n x) (set::insert (nth-new-ad m x) s)))))
 
-
-
-
-
-
-
-
-
-
 ;trying...
 ;; ;bozo handle this stuff better?
 ;; (skip -proofs
 ;;  (defthm nth-1-insert-new-ad-nth-new-ad-2
 ;;   (equal (NTH 1 (SET::INSERT (NEW-AD dom) (SET::INSERT (NTH-NEW-AD 2 dom) NIL)))
 ;;          (NTH-NEW-AD 2 dom))
-;;   :hints (("Goal" :use (:instance LIST-NEW-AD-NTH-NEW-AD-2)
+;;   :hints (("Goal" :use LIST-NEW-AD-NTH-NEW-AD-2
 ;;            :in-theory (disable LIST-NEW-AD-NTH-NEW-AD-2)))))
 
 ;; (skip -proofs
 ;;  (defthm nth-0-insert-new-ad-nth-new-ad-2
 ;;   (equal (NTH 0 (SET::INSERT (NEW-AD dom) (SET::INSERT (NTH-NEW-AD 2 dom) NIL)))
 ;;          (NEW-AD dom))
-;;   :hints (("Goal" :use (:instance LIST-NEW-AD-NTH-NEW-AD-2)
+;;   :hints (("Goal" :use LIST-NEW-AD-NTH-NEW-AD-2
 ;;            :in-theory (disable LIST-NEW-AD-NTH-NEW-AD-2)))))
 
 (defthm memberp-of-nth-new-ad-and-N-NEW-ADS-aux
