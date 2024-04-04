@@ -1,6 +1,6 @@
 ; Recognizing lists of symbol-alists
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,12 +11,12 @@
 (in-package "ACL2")
 
 ;; Also appears elsewhere in the books.
+;; This is defined using COND to match books/kestrel/utilities/auto-instance.lisp.
 (defund symbol-alist-listp (lst)
   (declare (xargs :guard t))
-  (if (atom lst)
-      (null lst)
-    (and (symbol-alistp (car lst))
-         (symbol-alist-listp (cdr lst)))))
+  (cond ((atom lst) (null lst))
+        (t (and (symbol-alistp (car lst))
+                (symbol-alist-listp (cdr lst))))))
 
 (defthm symbol-alistp-of-car-when-symbol-alist-listp
   (implies (symbol-alist-listp lst)
