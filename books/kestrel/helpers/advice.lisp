@@ -136,7 +136,7 @@
                               (alistp alist))))
   (if (endp keys)
       alist
-    (acons (first keys) val (acons-all-to-val (rest keys) val alist))))
+    (acons-all-to-val (rest keys) val (acons (first keys) val alist))))
 
 ;; See :doc lemma-instance
 (defund symbol-that-can-be-usedp (sym wrld)
