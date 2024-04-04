@@ -7362,47 +7362,46 @@
           (< max-depth min-depth))
       (prog2$ (cw "!! We failed to find a cut depth at which STP can prove the goal !!~%")
               (mv nil state))
-    (let* (;; todo: drop this supporters-tag-array because the depth-array already tracks supporters (but consider what happens with cutting at bvmult and bvif nodes)
-           (supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
-           ;;mark the two nodes as supporters:
-           (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array larger-nodenum t))
-           (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array smaller-nodenum t))
-           (current-depth (integer-average-round-up min-depth max-depth)))
-      (mv-let (nodenums-to-translate cut-nodenum-type-alist extra-asserts)
-        ;; TODO: Consider a worklist algorithm:
-        (gather-nodes-to-translate-up-to-depth larger-nodenum current-depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
-                                   nil
-                                   nil ;initial cut-nodenum-type-alist
-                                   nil)
-        ;; Call STP:
-        (prog2$
-         (and print (cw "Attempting STP proof at depth ~x0.~%" current-depth))
-         (mv-let (result state)
-           (prove-equality-query-with-stp smaller-nodenum larger-nodenum
-                                          dag-array-name dag-array dag-len
-                                          nodenums-to-translate
-                                          (string-append base-filename (nat-to-string current-depth))
-                                          cut-nodenum-type-alist
-                                          extra-asserts
-                                          print
-                                          max-conflicts
-                                          nil ;no counterexample (for now)
-                                          nil
-                                          state)
-           (if (eq result *error*)
-               (prog2$ (hard-error 'attempt-cut-equivalence-proofs "Error calling STP." nil)
-                       (mv nil ;success flag
-                           state))
-             (if (eq result *valid*)
-                 (mv t state)
-               (if (eq result *timedout*)
-                   ;;since the current depth timed out, we go shallower
-                   (attempt-cut-equivalence-proofs min-depth (+ -1 current-depth)
-                                                   depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
-                 ;;the goal was invalid, so we go deeper:
-                 ;;todo: use the counterexample?
-                 (attempt-cut-equivalence-proofs (+ 1 current-depth) max-depth
-                                                 depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state))))))))))
+    (b* (;; todo: drop this supporters-tag-array because the depth-array already tracks supporters (but consider what happens with cutting at bvmult and bvif nodes)
+         (supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
+         ;;mark the two nodes as supporters:
+         (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array larger-nodenum t))
+         (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array smaller-nodenum t))
+         (current-depth (integer-average-round-up min-depth max-depth))
+         ;; TODO: Consider a worklist algorithm:
+         ((mv nodenums-to-translate cut-nodenum-type-alist extra-asserts)
+          (gather-nodes-to-translate-up-to-depth larger-nodenum current-depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
+                                                 nil
+                                                 nil ;initial cut-nodenum-type-alist
+                                                 nil))
+         ;; Call STP:
+         (- (and print (cw "Attempting STP proof at depth ~x0.~%" current-depth)))
+         ((mv result state)
+          (prove-equality-query-with-stp smaller-nodenum larger-nodenum
+                                         dag-array-name dag-array dag-len
+                                         nodenums-to-translate
+                                         (string-append base-filename (nat-to-string current-depth))
+                                         cut-nodenum-type-alist
+                                         extra-asserts
+                                         print
+                                         max-conflicts
+                                         nil ;no counterexample (for now)
+                                         nil
+                                         state))
+         ((when (eq result *error*))
+          (hard-error 'attempt-cut-equivalence-proofs "Error calling STP." nil)
+          (mv nil ;success flag
+              state)))
+      (if (eq result *valid*)
+          (mv t state)
+        (if (eq result *timedout*)
+            ;;since the current depth timed out, we go shallower
+            (attempt-cut-equivalence-proofs min-depth (+ -1 current-depth)
+                                            depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
+          ;;the goal was invalid, so we go deeper:
+          ;;todo: use the counterexample?
+          (attempt-cut-equivalence-proofs (+ 1 current-depth) max-depth
+                                          depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state))))))
 
 ;fixme: other strategies to consider here: rewriting, using the prover, using contexts (should we cut the context too?  what if the context is huge an unrelated to the goal nodes?)
 ;not currently doing any of these things because we want this to be fast
