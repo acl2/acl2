@@ -7227,14 +7227,18 @@
             nodenum)))))))
 
 ;this one takes a list of array indices to check
+;rename to remove the 2
 (defun max-array-elem2 (nodenums current-max array-name array)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (array1p array-name array)
+                              (all-< nodenums (alen1 array-name array))
+                              (rationalp current-max))))
   (if (endp nodenums)
       current-max
     (let* ((nodenum (first nodenums))
-           (val (aref1 array-name array nodenum)))
+           (val (rfix (aref1 array-name array nodenum))) ; the rfix may not be needed in some cases
+           )
       (max-array-elem2 (rest nodenums) (max current-max val) array-name array))))
-
-(skip-proofs (verify-guards max-array-elem2))
 
 ;Tries to prove that smaller-nodenum equals larger-nodenum, but replaces some (all?) shared supporting nodes by variables (and so proves a more general goal).
 ;If this succeeds, the nodes are equal.  If this fails, they may still be equal, because the failure might be due to the cutting.
@@ -7317,12 +7321,39 @@
                               nodenums-to-translate
                               state))))))))
 
+(defund integer-average-round-up (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y))))
+  (ceiling (/ (+ x y) 2) 1))
+
+(local
+  (defthm <=-of-integer-average-round-up-1
+    (implies (and (<= x y)
+                  (natp x)
+                  (natp y))
+             (<= (integer-average-round-up x y) y))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-average-round-up)))))
+
+(local
+  (defthm <=-of-integer-average-round-up-2
+    (implies (and (<= x y)
+                  (natp x)
+                  (natp y))
+             (<= x (integer-average-round-up x y)))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-average-round-up)))))
+
 ;binary search to try to find a cut depth at which the goal is valid.
 ;would like to reuse this for pure constants
-;returns (mv success-flg state)
-(defun attempt-cut-equivalence-proofs (min-depth max-depth depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
-  (declare (xargs :mode :program
-                  :verify-guards nil
+;; Returns (mv success-flg state).
+(defund attempt-cut-equivalence-proofs (min-depth
+                                        max-depth
+                                        depth-array ; depths wrt the set containing smaller-nodenum and larger-nodenum
+                                        smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
+  (declare (xargs; :mode :program
+             :measure (nfix (+ 1 (- max-depth min-depth)))
+                  :verify-guards nil ; todo: first do gather-nodes-to-translate-up-to-depth
                   :stobjs state)
            (irrelevant miter-name) ;todo
            )
@@ -7331,11 +7362,12 @@
           (< max-depth min-depth))
       (prog2$ (cw "!! We failed to find a cut depth at which STP can prove the goal !!~%")
               (mv nil state))
-    (let* ((supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
+    (let* (;; todo: drop this supporters-tag-array because the depth-array already tracks supporters (but consider what happens with cutting at bvmult and bvif nodes)
+           (supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
            ;;mark the two nodes as supporters:
            (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array larger-nodenum t))
            (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array smaller-nodenum t))
-           (current-depth (ceiling (/ (+ min-depth max-depth) 2) 1)))
+           (current-depth (integer-average-round-up min-depth max-depth)))
       (mv-let (nodenums-to-translate cut-nodenum-type-alist extra-asserts)
         ;; TODO: Consider a worklist algorithm:
         (gather-nodes-to-translate-up-to-depth larger-nodenum current-depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
@@ -7383,7 +7415,7 @@
   (declare (xargs :mode :program
                   :verify-guards nil
                   :stobjs state))
-  (b* ( ;;(- (and print (cw "(Subdag that supports the nodes:~%")))
+  (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
        ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
        ;;(- (and print (cw ")~%")))
        ;;todo: move this printing to the caller?
@@ -7406,47 +7438,47 @@
         (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
        (- (if provedp
               (cw "  Proved.)~%")
-            (cw "  Failed.)~%"))))
-    (if provedp
-        (mv t state)
-      (mv-let (depth-array max-depth)
+            (cw "  Failed.)~%")))
+       ((when provedp) (mv t state))
+       ;; The aggressively cut proof did not work, so try to find a depth that does work:
+       ((mv depth-array max-depth)
         (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;todo: any way to avoid rebuilding this?
-        (let ( ;;deepest node translated when we tried our heuristic: (attempt-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
-              (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
-                                                                 0 ;fixme think about the 0..
-                                                                 'depth-array depth-array)))
-          ;;fixme we should start this at a depth at least deep enough for every path from the root to end on a shared var?
-          ;;fixme maybe the depth should be measured from the shared-var frontier?
-          (mv-let (success-flg state)
-            (prog2$
-             (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth)
-             (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ;(ffixme should we add 1 to start?)
-                                             ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
-                                             ;;                                                              starting-depth
-                                             ;;                                                              )
-                                             ;;                                                         ;; the min above prevents us form starting out over max depth
-                                             max-depth
-                                             depth-array
-                                             smaller-nodenum
-                                             larger-nodenum
-                                             miter-array-name
-                                             miter-array
-                                             miter-len
-                                             var-type-alist
-                                             print max-conflicts miter-name
-                                             (n-string-append (symbol-name miter-name)
-                                                              "-"
-                                                              (nat-to-string smaller-nodenum)
-                                                              "="
-                                                              (nat-to-string larger-nodenum)
-                                                              "-depth-")
-                                             state))
-            (prog2$ (cw ")")
-                    (mv (if success-flg
-                            t
-                          (prog2$ (cw "!! STP failed to prove the equality of nodes ~x0 and ~x1. !!~%" smaller-nodenum larger-nodenum)
-                                  nil))
-                        state))))))))
+        )
+       ;;deepest node translated when we tried our heuristic: (attempt-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
+       (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
+                                                          0 ;fixme think about the 0..
+                                                          'depth-array depth-array))
+       ;;fixme we should start this at a depth at least deep enough for every path from the root to end on a shared var?
+       ;;fixme maybe the depth should be measured from the shared-var frontier?
+       (- (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth))
+       ((mv success-flg state)
+        (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ;(ffixme should we add 1 to start?)
+                                        ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
+                                        ;;                                                              starting-depth
+                                        ;;                                                              )
+                                        ;;                                                         ;; the min above prevents us form starting out over max depth
+                                        max-depth
+                                        depth-array
+                                        smaller-nodenum
+                                        larger-nodenum
+                                        miter-array-name
+                                        miter-array
+                                        miter-len
+                                        var-type-alist
+                                        print max-conflicts miter-name
+                                        (n-string-append (symbol-name miter-name)
+                                                         "-"
+                                                         (nat-to-string smaller-nodenum)
+                                                         "="
+                                                         (nat-to-string larger-nodenum)
+                                                         "-depth-")
+                                        state))
+       (-  (cw ")")))
+    (mv (if success-flg
+            t
+          (prog2$ (cw "!! STP failed to prove the equality of nodes ~x0 and ~x1. !!~%" smaller-nodenum larger-nodenum)
+                  nil))
+        state)))
 
 ;a worklist algorithm:
 ;returns the list of all fns on nodes that 1) support nodes in NODENUMS and 2) are not tagged
