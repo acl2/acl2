@@ -542,8 +542,8 @@
 (theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-and-bvchop)))
 
 (defthmd logxor-of-bvchop-becomes-bvxor-arg1
-  (implies (and (integerp x)
-                (unsigned-byte-p size y)
+  (implies (and (unsigned-byte-p size y)
+                (integerp x)
                 (natp size))
            (equal (logxor (bvchop size x) y)
                   (bvxor size x y)))
@@ -552,8 +552,8 @@
 (theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-becomes-bvxor-arg1)))
 
 (defthmd logxor-of-bvchop-becomes-bvxor-arg2
-  (implies (and (integerp y)
-                (unsigned-byte-p size x)
+  (implies (and (unsigned-byte-p size x)
+                (integerp y)
                 (natp size))
            (equal (logxor x (bvchop size y))
                   (bvxor size x y)))

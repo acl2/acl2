@@ -921,8 +921,15 @@
   (declare (xargs :guard t))
   '(acl2::logand-becomes-bvand-arg1-axe
     acl2::logand-becomes-bvand-arg2-axe
-    acl2::logior-becomes-bvor-axe
-    acl2::logxor-becomes-bvxor-axe
+    acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg1
+    acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg2
+    acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg1
+    acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg2
+    ;acl2::logxor-bvchop-bvchop        ; introduce bvxor
+    ;acl2::logxor-of-bvchop-becomes-bvxor-arg1 ; introduce bvxor
+    ;;            bvplus-of-logxor-arg1                     ; introduce bvxor
+    ;;            bvxor-of-logxor-arg2                      ; introduce bvxor
+
     acl2::loghead-becomes-bvchop
     acl2::bvchop-of-lognot-becomes-bvnot
     acl2::bvchop-of-logand-becomes-bvand
@@ -4414,11 +4421,6 @@
             logand-of-1-becomes-getbit-arg2 ;move
             acl2::ifix-does-nothing
             of-spec-of-logext-32
-            acl2::logxor-bvchop-bvchop        ; introduce bvxor
-            acl2::logxor-of-bvchop-becomes-bvxor-arg1 ; introduce bvxor
-;            bvplus-of-logxor-arg1                     ; introduce bvxor
-;            bvxor-of-logxor-arg2                      ; introduce bvxor
-            integerp-of-logxor                        ;todo: more
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
             acl2::bvchop-of-myif
