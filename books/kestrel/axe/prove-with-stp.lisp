@@ -1582,6 +1582,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local
+  (defthm rationalp-when-natp
+    (implies (natp x)
+             (rationalp x))))
+
 ;Used in equivalence-checker.lisp
 ;TODO: Consider using a worklist algorithm.
 ;returns (mv nodenums-to-translate ;in decreasing order
@@ -1595,7 +1600,6 @@
                                                depth-array
                                                dag-array-name dag-array dag-len ; dag-len is only used for the guard
                                                var-type-alist
-
                                                supporters-tag-array ;bad name? todo: would the depth-array alone be sufficient (if it only has entries for supporters).  maybe this restricts us to supporters within the depth limit
                                                nodenums-to-translate ;an accumulator, in increasing order
                                                cut-nodenum-type-alist ;an accumulator
@@ -1604,6 +1608,7 @@
   (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
                               (natp depth)
+                              (depth-arrayp 'depth-array depth-array (+ 1 n))
                               (array1p 'depth-array depth-array)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< n dag-len)
@@ -1613,66 +1618,58 @@
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
                               (string-treep extra-asserts))
-                  :verify-guards nil ; todo
+                  :verify-guards nil ; todo: need to know that var-type-alist assigns types to all vars in the dag (or use most-general-type if we have to?)  also need to know that all nodes this will touch are pure?
                   :measure (nfix (+ 1 n))))
   (if (not (natp n))
-      (mv (reverse-list nodenums-to-translate)
-          cut-nodenum-type-alist
-          extra-asserts)
-    (let ((depth2 (aref1 'depth-array depth-array n))
+      (mv (reverse-list nodenums-to-translate) cut-nodenum-type-alist extra-asserts)
+    (let ((this-depth (aref1 'depth-array depth-array n))
           (supporterp (aref1 'supporters-tag-array supporters-tag-array n)))
-      (if (or (not depth2) ;node isn't needed anywhere is the dag (actually, doesn't support either node being merged?), so skip it
+      (if (or (not this-depth) ;node isn't needed anywhere is the dag (actually, doesn't support either node being merged?), so skip it
               (not supporterp)) ;fixme why both of these tests?
-          (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
-                                                 supporters-tag-array
-                                                 nodenums-to-translate
-                                                 cut-nodenum-type-alist
-                                                 extra-asserts)
+          (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts)
         (let ((expr (aref1 dag-array-name dag-array n)))
           (if (variablep expr)
               ;;it's a variable.  we always cut:
-              (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
-                                         supporters-tag-array
-                                         nodenums-to-translate
-                                         (acons-fast n (lookup-eq-safe expr var-type-alist) cut-nodenum-type-alist)
-                                         extra-asserts)
+              (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
+                                                     nodenums-to-translate
+                                                     (acons-fast n (lookup-eq-safe expr var-type-alist) cut-nodenum-type-alist)
+                                                     extra-asserts)
             (if (fquotep expr)
                 ;;it's a constant: we'll translate it:
-                (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
-                                           supporters-tag-array
-                                           (cons n nodenums-to-translate)
-                                           cut-nodenum-type-alist
-                                           extra-asserts)
+                (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
+                                                       (cons n nodenums-to-translate)
+                                                       cut-nodenum-type-alist
+                                                       extra-asserts)
               ;;expr is a function call.  check the depth to decide whether to translate or cut:
-              (let ((translatep (and (<= depth2 depth)
+              (let ((translatep (and (<= this-depth depth)
                                      (not (eq 'bvmult (ffn-symb expr))) ;ffffixme new! instead, pass in a list of functions at which to always cut?))
                                      ;;new, since the child of a bvif may be :irrelevant:
                                      (if (eq 'bvif (ffn-symb expr))
                                          (can-translate-bvif-args (dargs expr))
                                        t))))
-              (if translatep
-                  ;;translate it and mark its children (if any) as supporters
-                  (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
-                                             (tag-nodenums-with-name (dargs expr) 'supporters-tag-array supporters-tag-array)
-                                             (cons n nodenums-to-translate)
-                                             cut-nodenum-type-alist
-                                              extra-asserts)
-                ;;cut and make it a variable:
-                (let ((extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist
-                                                           nil ;fixme print
-                                                           extra-asserts)))
-                  (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
-                                             supporters-tag-array
-                                             nodenums-to-translate
-                                             ;; FIXME think about array nodes here
-                                             ;;fixme what if a hyp gives expr its width/type?
-                                             ;;do this in the other tagging function?
-;fixme will expr always have a known type?
-                                             (acons-fast n ; todo: do we need the checking here?
-                                                         (get-type-of-function-call-checked (ffn-symb expr)
-                                                                                            (dargs expr))
-                                                         cut-nodenum-type-alist)
-                                              extra-asserts)))))))))))
+                (if translatep
+                    ;;translate it and mark its children (if any) as supporters
+                    (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
+                                                           (tag-nodenums-with-name (dargs expr) 'supporters-tag-array supporters-tag-array)
+                                                           (cons n nodenums-to-translate)
+                                                           cut-nodenum-type-alist
+                                                           extra-asserts)
+                  ;;cut and make it a variable:
+                  (let ((extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist
+                                                             nil ;fixme print
+                                                             extra-asserts)))
+                    (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
+                                                           supporters-tag-array
+                                                           nodenums-to-translate
+                                                           ;; FIXME think about array nodes here
+                                                           ;;fixme what if a hyp gives expr its width/type?
+                                                           ;;do this in the other tagging function?
+                                                           ;;fixme will expr always have a known type?
+                                                           (acons-fast n ; todo: do we need the checking here?
+                                                                       (get-type-of-function-call-checked (ffn-symb expr)
+                                                                                                          (dargs expr))
+                                                                       cut-nodenum-type-alist)
+                                                           extra-asserts)))))))))))
 
 (local (in-theory (disable darg-quoted-posp
                            ;; natp
@@ -2364,8 +2361,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (;all-<-of-strip-nots-from-possibly-negated-nodenums-when-bounded-axe-disjunctionp ; for the call of build-known-nodenum-type-alist
                                                          myquotep-when-axe-disjunctionp
                                                          quotep-when-axe-disjunctionp)
-                                                        (make-depth-array-for-nodes
-                                                         myquotep
+                                                        (myquotep
                                                          quotep))))))
   (b* (((when (not (consp disjuncts)))
         (cw "(No disjuncts, so no point in calling STP.)~%")
