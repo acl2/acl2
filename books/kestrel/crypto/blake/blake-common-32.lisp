@@ -237,28 +237,28 @@
                 (< n (len x))
                 (all-nat16 x))
            (< (nth n x) 16))
-  :hints (("Goal" :in-theory (e/d (nth) ()))))
+  :hints (("Goal" :in-theory (enable nth))))
 
 (defthm <=-of-0-and-nth-when-all-nat16
   (implies (and (natp n)
                 (< n (len x))
                 (all-nat16 x))
            (<= 0 (nth n x)))
-  :hints (("Goal" :in-theory (e/d (nth) ()))))
+  :hints (("Goal" :in-theory (enable nth))))
 
 (defthm natp-of-nth-when-all-nat16
   (implies (and (natp n)
                 (< n (len x))
                 (all-nat16 x))
            (natp (nth n x)))
-  :hints (("Goal" :in-theory (e/d (nth) ()))))
+  :hints (("Goal" :in-theory (enable nth))))
 
 (defthm integerp-of-nth-when-all-nat16
   (implies (and (natp n)
                 (< n (len x))
                 (all-nat16 x))
            (integerp (nth n x)))
-    :hints (("Goal" :in-theory (e/d (nth) ()))))
+  :hints (("Goal" :in-theory (enable nth))))
 
 (defun all-all-nat16 (items)
   (if (endp items)
@@ -275,7 +275,7 @@
                 (< n (len x))
                 (all-all-nat16 x))
            (all-nat16 (nth n x)))
-  :hints (("Goal" :in-theory (e/d (nth) ()))))
+  :hints (("Goal" :in-theory (enable nth))))
 
 (defund rot-word (amt word)
   (declare (xargs :guard (and (wordp word)
