@@ -71,7 +71,7 @@
 (defthm w-of-write-string-tree-to-channel
   (equal (w (write-string-tree-to-channel string-tree channel state))
          (w state))
-  :hints (("Goal" :in-theory (e/d (write-string-tree-to-channel) ()))))
+  :hints (("Goal" :in-theory (enable write-string-tree-to-channel))))
 
 ;(in-theory (disable OPEN-OUTPUT-CHANNEL-ANY-P1))
 

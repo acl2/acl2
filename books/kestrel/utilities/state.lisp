@@ -546,8 +546,7 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-open-input-channels x state))
                   (open-channels-p x)))
-  :hints (("Goal" :in-theory (e/d (state-p1)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable state-p1))))
 
 (defthm state-p-of-update-open-input-channels
   (implies (state-p state)
@@ -559,9 +558,8 @@
   (implies (state-p1 state)
            (equal (state-p1 (update-open-output-channels x state))
                   (open-channels-p x)))
-  :hints (("Goal" :in-theory (e/d (state-p1 ;UPDATE-OPEN-OUTPUT-CHANNELS
-                                   )
-                                  ()))))
+  :hints (("Goal" :in-theory (enable state-p1 ;UPDATE-OPEN-OUTPUT-CHANNELS
+                                   ))))
 
 (defthm state-p-of-update-open-output-channels
   (implies (state-p state)
