@@ -179,7 +179,7 @@
                               (= (alen1 'worklist-array worklist-array)
                                  (alen1 size-array-name size-array))
                               (all-< worklist (alen1 'worklist-array worklist-array)))
-                  ;;measure is: first, the number of examined nodes, then the length of the worklist
+                  ;;measure is: first, the number of unexamined nodes, then the length of the worklist
                   :measure (make-ord 1 (+ 1 (- (nfix (alen1 'worklist-array worklist-array))
                                                (num-examined-nodes (+ -1 (alen1 'worklist-array worklist-array))
                                                                    'worklist-array worklist-array)))

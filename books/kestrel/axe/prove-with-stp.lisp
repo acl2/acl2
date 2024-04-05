@@ -1353,7 +1353,7 @@
 ;            cut-nodenum-type-alist ;now includes vars
 ;            extra-asserts ;can arise, e.g., from cutting out a BVMULT of two 4-bit values, where the maximum product is 15x15=225, not 255.
 ;            )
-(defund gather-nodes-to-translate-for-heuristically-cut-proof (n ;counts down and stops at -1
+(defund gather-nodes-to-translate-for-aggressively-cut-proof (n ;counts down and stops at -1
                                                                dag-array-name dag-array dag-len
                                                                needed-for-node1-tag-array ;initially only node1 is tagged (there are nodes that support node1 and are above the shared nodes)
                                                                needed-for-node2-tag-array ;initially only node2 is tagged (there are nodes that support node2 and are above the shared nodes)
@@ -1382,21 +1382,21 @@
       (if (and (not needed-for-node1p)
                (not needed-for-node2p))
           ;; Node n is not needed for either node, so skip it:
-          (gather-nodes-to-translate-for-heuristically-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate
+          (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate
                                                                  cut-nodenum-type-alist extra-asserts print var-type-alist)
         ;; Node n is needed for at least one of node1 and node2:
         ;;fixme move these tests down?  constants and variables are rare?
         (let ((expr (aref1 dag-array-name dag-array n)))
           (if (variablep expr)
               ;; if it's a variable, we will cut (the variable generated in STP will be named NODEXXX, so we don't have to worry about the actual name of expr clashing with something) and add info about its type to cut-nodenum-type-alist:
-              (gather-nodes-to-translate-for-heuristically-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+              (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                                                      nodenums-to-translate ;not adding n
                                                                      (acons-fast n (lookup-eq-safe expr var-type-alist) cut-nodenum-type-alist)
                                                                      extra-asserts print var-type-alist)
             (if (fquotep expr)
                 ;; it's a constant; we'll always translate it:
                 ;; fixme can this happen?  or when we merge a node with a constant, does the value get changed in each parent?
-                (gather-nodes-to-translate-for-heuristically-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                                                        (cons n nodenums-to-translate) ;translate it
                                                                        cut-nodenum-type-alist
                                                                        extra-asserts print var-type-alist)
@@ -1405,7 +1405,7 @@
                        (= 4 (len (dargs expr)))
                        (not (can-translate-bvif-args (dargs expr))))
                   ;; cut out a bad call to BVIF: todo: can this happen?  isn't the miter pure?
-                  (gather-nodes-to-translate-for-heuristically-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                  (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                                                          nodenums-to-translate ;don't translate
                                                                          (acons-fast n (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)
                                                                          extra-asserts print var-type-alist)
@@ -1425,7 +1425,7 @@
                                 ;;values for the product is: (2^m-1)*(2^n-1).
                                 (let ((extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts)))
                                   (prog2$ (and print (cw ".)"))
-                                          (gather-nodes-to-translate-for-heuristically-cut-proof
+                                          (gather-nodes-to-translate-for-aggressively-cut-proof
                                            (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                            nodenums-to-translate ;don't translate
                                            ;;fixme will expr always have a known type? ;;FIXME think about arrays here?
@@ -1433,7 +1433,7 @@
                                            extra-asserts print var-type-alist))))
                       ;;needed for node1 but not node2
                       ;; translate it and mark its children as being needed for node1
-                      (gather-nodes-to-translate-for-heuristically-cut-proof
+                      (gather-nodes-to-translate-for-aggressively-cut-proof
                        (+ -1 n) dag-array-name dag-array dag-len
                        (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
                        needed-for-node2-tag-array
@@ -1441,19 +1441,19 @@
                        cut-nodenum-type-alist extra-asserts print var-type-alist))
                   ;; needed for node2 but not node1
                   ;; translate it and mark its children as being needed for node2
-                  (gather-nodes-to-translate-for-heuristically-cut-proof
+                  (gather-nodes-to-translate-for-aggressively-cut-proof
                    (+ -1 n) dag-array-name dag-array dag-len
                    needed-for-node1-tag-array
                    (tag-nodenums-with-name (dargs expr) 'needed-for-node2-tag-array needed-for-node2-tag-array)
                    (cons n nodenums-to-translate)
                    cut-nodenum-type-alist extra-asserts print var-type-alist))))))))))
 
-(defthm nat-listp-of-mv-nth-0-of-gather-nodes-to-translate-for-heuristically-cut-proof
+(defthm nat-listp-of-mv-nth-0-of-gather-nodes-to-translate-for-aggressively-cut-proof
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (integerp n)
                 (<= -1 n)
                 (nat-listp nodenums-to-translate))
-           (nat-listp (mv-nth 0 (gather-nodes-to-translate-for-heuristically-cut-proof n
+           (nat-listp (mv-nth 0 (gather-nodes-to-translate-for-aggressively-cut-proof n
                                                                                        dag-array-name
                                                                                        dag-array
                                                                                        dag-len
@@ -1463,16 +1463,16 @@
                                                                                        cut-nodenum-type-alist
                                                                                        extra-asserts
                                                                                        print var-type-alist))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-heuristically-cut-proof))))
+  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
-(defthm all-<-of-mv-nth-0-of-gather-nodes-to-translate-for-heuristically-cut-proof
+(defthm all-<-of-mv-nth-0-of-gather-nodes-to-translate-for-aggressively-cut-proof
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (integerp n)
                 (<= -1 n)
                 (< n dag-len)
                 (nat-listp nodenums-to-translate)
                 (all-< nodenums-to-translate dag-len))
-           (all-< (mv-nth 0 (gather-nodes-to-translate-for-heuristically-cut-proof n
+           (all-< (mv-nth 0 (gather-nodes-to-translate-for-aggressively-cut-proof n
                                                                                    dag-array-name
                                                                                    dag-array
                                                                                    dag-len
@@ -1483,15 +1483,16 @@
                                                                                    extra-asserts
                                                                                    print var-type-alist))
                   dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-heuristically-cut-proof))))
+  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
-;todo
-;; (defthm nodenum-type-listp-of-mv-nth-1-of-gather-nodes-to-translate-for-heuristically-cut-proof
+;todo: may need the ability to return an error
+;; (defthm nodenum-type-alistp-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
 ;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                 (integerp n)
 ;;                 (<= -1 n)
-;;                 (nat-listp nodenums-to-translate))
-;;            (nodenum-type-listp (mv-nth 1 (gather-nodes-to-translate-for-heuristically-cut-proof n
+;;                 (nat-listp nodenums-to-translate)
+;;                 (nodenum-type-alistp cut-nodenum-type-alist))
+;;            (nodenum-type-alistp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n
 ;;                                                                                        dag-array-name
 ;;                                                                                        dag-array
 ;;                                                                                        dag-len
@@ -1501,11 +1502,11 @@
 ;;                                                                                        cut-nodenum-type-alist
 ;;                                                                                        extra-asserts
 ;;                                                                                        print var-type-alist))))
-;;   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-heuristically-cut-proof))))
+;;   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
-(defthm string-treep-of-mv-nth-2-of-gather-nodes-to-translate-for-heuristically-cut-proof
+(defthm string-treep-of-mv-nth-2-of-gather-nodes-to-translate-for-aggressively-cut-proof
   (implies (string-treep extra-asserts)
-           (string-treep (mv-nth 2 (gather-nodes-to-translate-for-heuristically-cut-proof n
+           (string-treep (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n
                                                                                           dag-array-name
                                                                                           dag-array
                                                                                           dag-len
@@ -1515,7 +1516,7 @@
                                                                                           cut-nodenum-type-alist
                                                                                           extra-asserts
                                                                                           print var-type-alist))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-heuristically-cut-proof))))
+  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
 ;;only used for probably-constant nodes
 ;;only cuts at variables (and BVIFs we can't translate)
@@ -1595,6 +1596,7 @@
 ;where cut-nodenum-type-alist gives types for any new vars introduced at the cut
 ;we will translate nodes that are supporters and are above the cut
 ;; todo: do guards for functions like this cause expensive checks when we call them from :program mode code?
+;; All nodes involved (everything tagged in the depth-array and supporters-tag-array) will be pure nodes.
 (defund gather-nodes-to-translate-up-to-depth (n
                                                depth
                                                depth-array

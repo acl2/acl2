@@ -7245,7 +7245,7 @@
 ;returns (mv provedp
 ;            nodenums-translated ;;in decreasing order
 ;            state)
-
+;; Assumes that smaller-nodenum and larger-nodenum are pure.
 (defund attempt-aggressively-cut-equivalence-proof (smaller-nodenum
                                                    larger-nodenum
                                                    dag-array-name
@@ -7261,65 +7261,60 @@
                               (< smaller-nodenum dag-len)
                               (< larger-nodenum dag-len)
                               (symbol-alistp var-type-alist)
-                              ;; print
+                              (print-levelp print) ; tighter?
                               (natp max-conflicts) ; allow nil?
                               (symbolp miter-name))
-            :verify-guards nil
-            :stobjs state))
-  (b* (
-       (- (and print (cw " (Cutting at shared nodes...")))
+                  :verify-guards nil ; todo
+                  :stobjs state))
+  (b* ((- (and print (cw " (Cutting at shared nodes...")))
        (num-nodes-to-consider (+ 1 larger-nodenum))
        ;;both of these arrays must have length (+ 1 larger-nodenum), since nodes up to larger-nodenum will be looked up?  could skip the array access for nodenums larger that smaller-nodenum (they obviously can't support it)
        (needed-for-smaller-nodenum-tag-array (make-empty-array 'needed-for-node1-tag-array num-nodes-to-consider)) ;ffixme rename these arrays (but have to do it everywhere!)
-       (needed-for-larger-nodenum-tag-array  (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider)))
-
-    ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
-    (mv-let (nodenums-to-translate ;in decreasing order
-             cut-nodenum-type-alist
-             extra-asserts)
-      (gather-nodes-to-translate-for-heuristically-cut-proof ; todo: consider a worklist algorithm for this
-       larger-nodenum ;skip everything above larger-nodenum
-       dag-array-name
-       dag-array
-       dag-len
-       (aset1-safe 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t)
-       (aset1-safe 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t)
-       nil   ;nodenums-to-translate
-       nil ;cut-nodenum-type-alist ;fffixme use an array for this?
-       nil   ;extra asserts
-       print var-type-alist)
-      (progn$ (and print (cw ")~%"))
-              ;; Call STP:
-              (and print ;(cw "Proving with STP...~%" nil)
-                   )
-              (mv-let (result state)
-                (prove-equality-query-with-stp smaller-nodenum
-                                               larger-nodenum
-                                               dag-array-name
-                                               dag-array
-                                               dag-len
-                                               nodenums-to-translate
-                                               (n-string-append (symbol-name miter-name) ;use concatenate? ;fixme pass the miter-name as a string throughout?
-                                                                "-"
-                                                                (nat-to-string smaller-nodenum)
-                                                                "="
-                                                                (nat-to-string larger-nodenum))
-                                               cut-nodenum-type-alist
-                                               extra-asserts
-                                               print
-                                               max-conflicts
-                                               nil ;no counterexample (for now)
-                                               nil
-                                               state)
-                (if (eq result *error*)
-                    (prog2$ (hard-error 'attempt-aggressively-cut-equivalence-proof "Error calling STP." nil)
-                            (mv nil ;not proved
-                                nodenums-to-translate
-                                state))
-                  (prog2$ (and (eq result *timedout*) (cw "STP timed out.~%"))
-                          (mv (eq result *valid*) ;ttodo: user the counterexample, if present?
-                              nodenums-to-translate
-                              state))))))))
+       (needed-for-smaller-nodenum-tag-array (aset1-safe 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
+       (needed-for-larger-nodenum-tag-array  (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
+       (needed-for-larger-nodenum-tag-array (aset1-safe 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
+       ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
+       ((mv nodenums-to-translate ;in decreasing order
+            cut-nodenum-type-alist extra-asserts)
+        (gather-nodes-to-translate-for-aggressively-cut-proof ; todo: consider a worklist algorithm for this
+          larger-nodenum ;skip everything above larger-nodenum
+          dag-array-name
+          dag-array
+          dag-len
+          needed-for-smaller-nodenum-tag-array
+          needed-for-larger-nodenum-tag-array
+          nil ;nodenums-to-translate
+          nil ;cut-nodenum-type-alist ;fffixme use an array for this?
+          nil ;extra asserts
+          print var-type-alist))
+       (- (and print (cw ")~%")))
+       ;; Call STP:
+       (- (and print ;(cw "Proving with STP...~%" nil)
+               ))
+       ((mv result state)
+        (prove-equality-query-with-stp smaller-nodenum larger-nodenum dag-array-name dag-array dag-len
+                                       nodenums-to-translate
+                                       (n-string-append (symbol-name miter-name) ;use concatenate? ;fixme pass the miter-name as a string throughout?
+                                                        "-"
+                                                        (nat-to-string smaller-nodenum)
+                                                        "="
+                                                        (nat-to-string larger-nodenum))
+                                       cut-nodenum-type-alist
+                                       extra-asserts
+                                       print
+                                       max-conflicts
+                                       nil ;no counterexample (for now)
+                                       nil
+                                       state)))
+    (if (eq result *error*)
+        (prog2$ (hard-error 'attempt-aggressively-cut-equivalence-proof "Error calling STP." nil)
+                (mv nil ;not proved
+                    nodenums-to-translate
+                    state))
+      (prog2$ (and (eq result *timedout*) (cw "STP timed out.~%"))
+              (mv (eq result *valid*) ;ttodo: user the counterexample, if present?
+                  nodenums-to-translate
+                  state)))))
 
 (defund integer-average-round-up (x y)
   (declare (xargs :guard (and (integerp x)
@@ -7347,6 +7342,7 @@
 ;binary search to try to find a cut depth at which the goal is valid.
 ;would like to reuse this for pure constants
 ;; Returns (mv success-flg state).
+;; The two nodes must be pure nodes.
 (defund attempt-cut-equivalence-proofs (min-depth
                                         max-depth
                                         depth-array ; depths wrt the set containing smaller-nodenum and larger-nodenum
@@ -8304,6 +8300,7 @@
       (prog2$ (cw "(Node ~x0 is not pure.)~%" index)
               nil))))
 
+
 ; todo: ;use property lists?
 ;ffixme check indices, sizes, and shift amounts, etc.!
 (defun miter-is-purep (miter-array-name miter-array miter-len)
@@ -8316,37 +8313,103 @@
               (cw "(Miter is not pure.)~%"))
             result)))
 
-(skip-proofs
- (defun nodes-are-purep (worklist dag-array-name dag-array done-array)
-   ;; (declare (xargs :guard (and (nat-listp worklist)
-   ;;                             (all-< worklist ..))))
-   (if (endp worklist)
-       t
-     (let ((nodenum (first worklist)))
-       (if (aref1 'done-array-temp done-array nodenum)
-           (nodes-are-purep (rest worklist) dag-array-name dag-array done-array)
-         (let ((expr (aref1 dag-array-name dag-array nodenum)))
-           (if (variablep expr) ;check more?
-               (nodes-are-purep (rest worklist) dag-array-name dag-array done-array)
-             (if (fquotep expr) ;fixme check the value?!
-                 (nodes-are-purep (rest worklist) dag-array-name dag-array done-array)
-               (and (pure-fn-call-exprp expr)
-                    ;;we checked nodenum, and now we have to check its children (the non-quotep args):
-                    (nodes-are-purep (append-atoms (fargs expr) (rest worklist)) dag-array-name dag-array
-                                     (aset1 'done-array-temp done-array nodenum t)))))))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(skip-proofs (verify-guards nodes-are-purep))
+;; For use in the measure
+(defun num-true-nodes (n array-name array)
+  (declare (xargs :measure (nfix (+ 1 n))))
+  (if (not (natp n))
+      0
+    (if (aref1 array-name array n)
+        ;; count this node:
+        (+ 1 (num-true-nodes (+ -1 n) array-name array))
+      (num-true-nodes (+ -1 n) array-name array))))
+
+(defthm num-true-nodes-bound
+  (implies (and (integerp n)
+                (<= -1 n))
+           (<= (num-true-nodes n array-name array)
+               (+ 1 n)))
+  :rule-classes ((:linear :trigger-terms ((num-true-nodes n array-name array))))
+  :hints (("Goal" :expand ((num-true-nodes 0 array-name array)))))
+
+(defthm num-true-nodes-of-aset1-irrel
+  (implies (and ;val
+                (array1p array-name array)
+                ;; (natp n)
+                (< index (alen1 array-name array))
+                (natp index)
+                (< n index))
+           (equal (num-true-nodes n array-name (aset1 array-name array index val))
+                  (num-true-nodes n array-name array)))
+  :hints (("Goal" :expand ((num-true-nodes 0 array-name array)
+                           (num-true-nodes 0 array-name (aset1 array-name array index val))))))
+
+(defthm num-true-nodes-of-aset1
+  (implies (and val
+                (array1p array-name array)
+                (natp n)
+                (< n (alen1 array-name array))
+                (natp index)
+                (<= index n))
+           (equal (num-true-nodes n array-name (aset1 array-name array index val))
+                  (if (aref1 array-name array index)
+                      ;; already true:
+                      (num-true-nodes n array-name array)
+                    (+ 1 (num-true-nodes n array-name array)))))
+  :hints (("Goal" :expand ((num-true-nodes 0 array-name (aset1 array-name array 0 val))))))
+
+;(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(defun nodes-are-purep (worklist dag-array-name dag-array dag-len done-array)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (nat-listp worklist)
+                              (all-< worklist dag-len)
+                              (array1p 'done-array-temp done-array)
+                              (all-< worklist (alen1 'done-array-temp done-array)))
+                  :measure (make-ord 1 (+ 1 (- (nfix (alen1 'done-array-temp done-array))
+                                               (num-true-nodes (+ -1 (alen1 'done-array-temp done-array))
+                                                               'done-array-temp done-array)))
+                                     (len worklist))
+                  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                           :in-theory (e/d (not-<-of-car-when-all-< ; drop?
+                                            <-OF-CAR-WHEN-ALL-<
+                                            <-OF-+-OF-1-WHEN-INTEGERP)
+                                           (natp))))))
+  (if (or (endp worklist)
+          ;; for termination:
+          (not (mbt (and (array1p 'done-array-temp done-array)
+                         ;; (array1p dag-array-name dag-array)
+                         (nat-listp worklist)
+                         (all-< worklist (alen1 'done-array-temp done-array))
+                         ))))
+      t
+    (let ((nodenum (first worklist)))
+      (if (aref1 'done-array-temp done-array nodenum)
+          (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
+        (let ((expr (aref1 dag-array-name dag-array nodenum)))
+          (if (variablep expr) ;check more?
+              (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
+            (if (fquotep expr) ;fixme check the value?!
+                (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
+              (and (pure-fn-call-exprp expr)
+                   ;;we checked nodenum, and now we have to check its children (the non-quotep args):
+                   (nodes-are-purep (append-atoms (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
+                                    (aset1 'done-array-temp done-array nodenum t))))))))))
 
 (defun node-is-purep (nodenum dag-array-name dag-array)
-  (nodes-are-purep (list nodenum) dag-array-name dag-array (make-empty-array 'done-array-temp (+ 1 nodenum))))
-
-(skip-proofs (verify-guards node-is-purep))
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                              )))
+  (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (make-empty-array 'done-array-temp (+ 1 nodenum))))
 
 ;shares the work of computing whether the individual nodes are pure
 (defun both-nodes-are-purep (smaller-nodenum larger-nodenum dag-array-name dag-array)
-  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (make-empty-array 'done-array-temp (+ 1 larger-nodenum))))
-
-(skip-proofs (verify-guards both-nodes-are-purep))
+  (declare (xargs :guard (and (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (< smaller-nodenum larger-nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
+                              )))
+  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (make-empty-array 'done-array-temp (+ 1 larger-nodenum))))
 
 ;returns (mv core-term fns-called) where fns-called includes all the functions called in the lambda args (which correspond to the values bound to variables in the let)
 (defun strip-lambdas-and-gather-called-fns-aux (term acc)
