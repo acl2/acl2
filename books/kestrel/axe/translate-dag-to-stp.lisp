@@ -1919,19 +1919,25 @@
            (no-nodes-are-variablesp (rest nodenums) dag-array-name dag-array dag-len)))))
 
 (defthm no-nodes-are-variablesp-of-append
-  (equal (no-nodes-are-variablesp (append list1 list2) dag-array-nae dag-array dag-len)
-         (and (no-nodes-are-variablesp list1 dag-array-nae dag-array dag-len)
-              (no-nodes-are-variablesp list2 dag-array-nae dag-array dag-len)))
+  (equal (no-nodes-are-variablesp (append list1 list2) dag-array-name dag-array dag-len)
+         (and (no-nodes-are-variablesp list1 dag-array-name dag-array dag-len)
+              (no-nodes-are-variablesp list2 dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
+
+(defthm no-nodes-are-variablesp-of-cons
+  (equal (no-nodes-are-variablesp (cons node nodes) dag-array-name dag-array dag-len)
+         (and (consp (aref1 dag-array-name dag-array node))
+              (no-nodes-are-variablesp nodes dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable no-nodes-are-variablesp))))
 
 (defthm no-nodes-are-variablesp-of-when-not-consp
   (implies (not (consp list))
-           (no-nodes-are-variablesp list dag-array-nae dag-array dag-len))
+           (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
 
 (defthm no-nodes-are-variablesp-of-reverse-list
-  (equal (no-nodes-are-variablesp (reverse-list list) dag-array-nae dag-array dag-len)
-         (no-nodes-are-variablesp list dag-array-nae dag-array dag-len))
+  (equal (no-nodes-are-variablesp (reverse-list list) dag-array-name dag-array dag-len)
+         (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
 
 ;; Returns (mv translation constant-array-info opened-paren-count) where TRANSLATION is a string-tree.
