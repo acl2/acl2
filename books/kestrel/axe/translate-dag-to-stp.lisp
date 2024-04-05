@@ -1,7 +1,7 @@
 ; Creating STP queries from DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,8 @@
 
 ;; Ensures this book and all STP examples get rebuilt when the script changes:
 ;; (depends-on "callstp.bash")
+
+;; This book has a trust tag due to the use of tshell (via call-axe-script).
 
 ;; TODO: Use an array instead of nodenum-type-alist everywhere?
 
@@ -54,7 +56,7 @@
 (include-book "depth-array")
 (include-book "known-predicates")
 (include-book "stp-counterexamples")
-(include-book "call-axe-script")
+(include-book "call-axe-script") ; has ttags
 (include-book "pure-dags")
 (include-book "axe-syntax-functions-bv") ;for maybe-get-type-of-bv-function-call, todo reduce
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
@@ -2299,7 +2301,7 @@
 
 ;INPUT-FILENAME is the STP input (.cvc) file name
 ;OUTPUT-FILENAME is the STP output (.out) file name
-;Runs an external script to call STP, using sys-call.
+;Runs an external script to call STP, using tshell-call.
 ;FFIXME think about which STP options to use. pass them in via this function?
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, or (:counterexample <raw-counterexample>)
 ;; We don't fix up the counterexample here because we don't have access to the cut-nodenum-type-alist, etc.
@@ -2681,7 +2683,7 @@
 ;; ;pass in a dag-array-name?
 ;; ;; returns (mv validp timedoutp state) where validp indicates whether STP said "Valid."
 ;; (defun prove-with-stp-quick (dag-lst var-type-alist max-conflicts state)
-;;   (declare (xargs :mode :program
+;;   (declare (xargs
 ;;                   :stobjs state))
 ;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
 ;;          (dag-len (len dag-lst)))
@@ -2705,7 +2707,7 @@
 ;; (defun prove-array-node-with-stp (dag-array
 ;;                                   nodenum ;; the node to be proved true
 ;;                                   var-type-alist max-conflicts state)
-;;   (declare (xargs :mode :program
+;;   (declare (xargs
 ;;                   :stobjs state))
 ;;   (prove-equality-query-with-stp nodenum
 ;;                            *t*
