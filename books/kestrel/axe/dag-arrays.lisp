@@ -1434,6 +1434,17 @@
                 (not (eq 'quote (car expr))))
            (all-natp (keep-atoms (dargs expr)))))
 
+;; (defthm nat-listp-of-keep-atoms
+;;   (implies (darg-listp x)
+;;            (nat-listp (keep-atoms x)))
+;;   :hints (("Goal" :in-theory (enable keep-atoms))))
+
+;; (defthm nat-listp-of-keep-atoms-of-dargs-when-dag-exprp
+;;   (implies (and (dag-exprp expr)
+;;                 (not (eq 'quote (car expr))))
+;;            (nat-listp (keep-atoms (dargs expr))))
+;;   :hints (("Goal" :in-theory (enable keep-atoms))))
+
 ;; (defthm <-of-lemma-for-arg4-when-pseudo-dag-arrayp-aux
 ;;   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
 ;;                 (cadr (cdddr (dargs (aref1 dag-array-name dag-array nodenum))))
