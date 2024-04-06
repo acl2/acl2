@@ -12,6 +12,7 @@
 
 (include-book "defevaluator-plus")
 (include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "std/portcullis" :dir :system) ; bring in STD package, for example below
 
 (deftest
   (defevaluator+ myev binary-*)
@@ -49,3 +50,7 @@
 
 (deftest
   (defevaluator+ math-and-if-ev binary-+ binary-* if))
+
+;; Test where the eval-name is not in the ACL2 package:
+(deftest
+  (defevaluator+ std::math-and-if-ev binary-+ binary-* if))
