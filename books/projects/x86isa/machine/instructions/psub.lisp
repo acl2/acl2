@@ -138,7 +138,8 @@
 
        ;; The first source operand (Operand 2 in the Intel Manual)
        ;; is the XMM or YMM register specified in VEX.vvvv.
-       ((the (unsigned-byte 4) src1-index) (vex->vvvv vex-prefixes))
+       ((the (unsigned-byte 4) src1-index)
+        (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
        ((the (unsigned-byte 256) src1) (zmmi-size operand-size src1-index x86))
 
        ;; The second source operand (Operand 3 in the Intel Manual)
