@@ -1016,7 +1016,12 @@
                                    test-case ;the test case
                                    test-case-array-name
                                    test-case-array)
-  (declare (xargs :verify-guards nil))
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (test-casep test-case)
+                              (array1p test-case-array-name test-case-array)
+                              (< nodenum (alen1 test-case-array-name test-case-array)))))
   (let* (;(dummy (cw "(debug"))
          (value (and test-case-array (aref1 test-case-array-name test-case-array nodenum))) ;fixme slow array-warning?
          ;(dummy2 (cw "debug)"))
@@ -1062,11 +1067,22 @@
                     (declare (ignore value)) ;compare this to the value from the array (if any?)
                     trace)))))))
 
-(skip-proofs (verify-guards get-trace-for-node))
-
 ;;returns (mv traces test-cases count) where test-cases are the ones on which the function is actually used
 ;;ffixme test-case-array-alist may be nil?
 (defun get-traces-for-node-aux (test-cases nodenum dag-array-name dag-array interpreted-function-alist test-case-array-alist traces-acc test-cases-acc count)
+  (declare (xargs :guard (and (test-casesp test-cases)
+                              (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                              (interpreted-function-alistp interpreted-function-alist)
+                              ;(test-casep test-case)
+                              ;(array1p test-case-array-name test-case-array)
+                              ;(< nodenum (alen1 test-case-array-name test-case-array))
+                              (true-listp traces-acc)
+                              (true-listp test-cases-acc)
+                              (natp count)
+                              )
+                  :verify-guards nil ; todo
+                  ))
   (if (endp test-cases)
       (mv (reverse traces-acc) (reverse test-cases-acc) count) ;fixme drop the reverses?
     (let* ((test-case (first test-cases))
@@ -1088,6 +1104,10 @@
 ;;TEST-CASE-ARRAY-ALIST may be nil? or the test-cases match up with the test-case-array-alist?
 ;drops test-cases for which the node is unused, so TRACES and TEST-CASES should be in sync
 (defun get-traces-for-node (nodenum dag-array-name dag-array interpreted-function-alist test-cases test-case-array-alist)
+  (declare (xargs :guard (and (natp nodenum)
+                              (test-casesp test-cases)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
   (declare (type (integer 1 1073741823) nodenum)
            (xargs :guard (true-listp test-cases)))
   (progn$ (cw "  (Getting traces for node ~x0 from ~x1 test-cases.~%" nodenum (len test-cases)) ;print the fn?
@@ -1179,6 +1199,7 @@
 
 ;gen the 32?
 (defun get-diffs (tag lst)
+  (declare (xargs :guard (integer-listp lst)))
   (if (endp lst)
       (hard-error 'get-diffs "empty lst in get-diffs on behalf of ~x0.~%" (acons #\0 tag nil))
     (if (endp (cdr lst))
@@ -1192,11 +1213,12 @@
                        (first lst))
               (get-diffs tag (cdr lst)))))))
 
-(skip-proofs (verify-guards get-diffs))
-
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
 (defun min-and-max-integer-list (list min-so-far max-so-far)
+  (declare (xargs :guard (and (and (integer-listp list)
+                                   (integerp min-so-far)
+                                   (integerp max-so-far)))))
   (if (endp list)
       (mv min-so-far max-so-far)
     (let* ((item (first list))
@@ -1205,18 +1227,24 @@
            (min-so-far (min min-so-far integer-value)))
       (min-and-max-integer-list (rest list) min-so-far max-so-far))))
 
-(skip-proofs (verify-guards min-and-max-integer-list))
+(defun integer-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (integer-listp (first x))
+         (integer-list-listp (rest x)))))
 
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
 (defun min-and-max-integer-list-list (list-of-lists min-so-far max-so-far)
+  (declare (xargs :guard (and (and (integer-list-listp list-of-lists)
+                                   (integerp min-so-far)
+                                   (integerp max-so-far)))))
   (if (endp list-of-lists)
       (mv min-so-far max-so-far)
     (mv-let (min-so-far max-so-far)
-            (min-and-max-integer-list (car list-of-lists) min-so-far max-so-far)
-            (min-and-max-integer-list-list (cdr list-of-lists) min-so-far max-so-far))))
-
-(skip-proofs (verify-guards min-and-max-integer-list-list))
+      (min-and-max-integer-list (car list-of-lists) min-so-far max-so-far)
+      (min-and-max-integer-list-list (cdr list-of-lists) min-so-far max-so-far))))
 
 ;fixme -maybe whether we want to say not greater than 43 vs less then 44 depends on whether we are generating hyps or conclusions
 ;fixme - gen the 32s!
@@ -1252,7 +1280,7 @@
 ;;     (cons (bvplus-list n (car x) (car y))
 ;;           (bvplus-list-list n (cdr x) (cdr y)))))
 
-;; (skip-proofs (verify-guards bvplus-list-list))
+;; (skip- proofs (verify-guards bvplus-list-list))
 
 (defun nth-list-aux (n items acc)
   (declare (type (integer 0 *) n)
@@ -1269,81 +1297,33 @@
 
 ;dup
 (defun g-list (key records)
+  (declare (xargs :guard (and (true-listp records)))) ; strengthen?
   (if (endp records)
       nil
     (cons (g key (car records))
           (g-list key (cdr records)))))
 
-(defun bvminus-list (n items1 items2)
-  (if (endp items1)
-      nil
-    (cons (bvminus n (car items1) (car items2))
-          (bvminus-list n (cdr items1) (cdr items2)))))
+;; (defun bvminus-list (n items1 items2)
+;;   (if (endp items1)
+;;       nil
+;;     (cons (bvminus n (car items1) (car items2))
+;;           (bvminus-list n (cdr items1) (cdr items2)))))
 
-(skip-proofs (verify-guards bvminus-list))
+;; (skip-proofs (verify-guards bvminus-list))
 
 (defun g-list-list (key vals)
+  (declare (xargs :guard (and (true-list-listp vals)))) ; strengthen?
   (if (endp vals)
       nil
     (cons (g-list key (car vals))
           (g-list-list key (cdr vals)))))
 
 (defun len-list-list (items)
+  (declare (xargs :guard (true-list-listp items)))
   (if (endp items)
       nil
     (cons (len-list (car items))
           (len-list-list (cdr items)))))
-
-(skip-proofs (verify-guards len-list-list))
-
-(defun nth-list-list-aux (n items acc)
-  (if (endp items)
-      (reverse acc)
-    (nth-list-list-aux n (cdr items) (cons (nth-list n (car items)) acc))))
-
-(skip-proofs (verify-guards nth-list-list-aux))
-
-(defun nth-list-list (n items)
-  (nth-list-list-aux n items nil))
-
-(skip-proofs (verify-guards nth-list-list))
-
-(defun all-equal-list (item lsts)
-  (if (endp lsts)
-      t
-    (and (all-equal$ item (car lsts))
-         (all-equal-list item (cdr lsts)))))
-
-(skip-proofs (verify-guards all-equal-list))
-
-;; (defun all-same-lst (lsts)
-;;   (all-equal-list (car (car lsts)) lsts))
-
-;fixme not tail rec
-(defun get-nths-from-traces-rev (count traces)
-  (if (zp count)
-      nil
-    (cons (nth-list-list (+ -1 count) traces)
-          (get-nths-from-traces-rev (+ -1 count) traces))))
-
-(skip-proofs (verify-guards get-nths-from-traces-rev))
-
-;use this more?
-(defun get-nths-from-traces (arg-count args-traces)
-  (reverse (get-nths-from-traces-rev arg-count args-traces)))
-
-(skip-proofs (verify-guards get-nths-from-traces))
-
-(defun get-nths-from-values-rev (count values)
-  (if (zp count)
-      nil
-    (cons (nth-list (+ -1 count) values)
-          (get-nths-from-values-rev (+ -1 count) values))))
-
-(skip-proofs (verify-guards get-nths-from-values-rev))
-
-(defun get-nths-from-values (count values)
-  (reverse-list (get-nths-from-values-rev count values)))
 
 ;use a forall?
 (defun true-list-list-listp (x)
@@ -1351,6 +1331,59 @@
   (cond ((atom x) (eq x nil))
         (t (and (true-list-listp (car x))
                 (true-list-list-listp (cdr x))))))
+
+(defun nth-list-list-aux (n items acc)
+  (declare (xargs :guard (and (natp n)
+                              (true-list-list-listp items)
+                              (true-listp acc))))
+  (if (endp items)
+      (reverse acc)
+    (nth-list-list-aux n (cdr items) (cons (nth-list n (car items)) acc))))
+
+(defun nth-list-list (n items)
+  (declare (xargs :guard (and (natp n)
+                              (true-list-list-listp items))))
+  (nth-list-list-aux n items nil))
+
+(defun all-equal-list (item lsts)
+  (declare (xargs :guard (true-list-listp lsts)))
+  (if (endp lsts)
+      t
+    (and (all-equal$ item (car lsts))
+         (all-equal-list item (cdr lsts)))))
+
+;; (defun all-same-lst (lsts)
+;;   (all-equal-list (car (car lsts)) lsts))
+
+;fixme not tail rec
+(defun get-nths-from-traces-rev (count traces)
+  (declare (xargs :guard (and (natp count)
+                              (true-list-list-listp traces))))
+  (if (zp count)
+      nil
+    (cons (nth-list-list (+ -1 count) traces)
+          (get-nths-from-traces-rev (+ -1 count) traces))))
+
+;use this more?
+(defun get-nths-from-traces (arg-count args-traces)
+  (declare (xargs :guard (and (natp arg-count)
+                              (true-list-list-listp args-traces))))
+  (reverse (get-nths-from-traces-rev arg-count args-traces)))
+
+(defun get-nths-from-values-rev (count values)
+  (declare (xargs :guard (and (natp count)
+                              (true-list-listp values))))
+  (if (zp count)
+      nil
+    (cons (nth-list (+ -1 count) values)
+          (get-nths-from-values-rev (+ -1 count) values))))
+
+(defun get-nths-from-values (count values)
+  (declare (xargs :guard (and (natp count)
+                              (true-list-listp values))))
+  (reverse-list (get-nths-from-values-rev count values)))
+
+
 
 ;these are things that look like lists (not requiring true-listp though)
 (defun nil-or-consp (x)
@@ -1434,21 +1467,37 @@
 
 (verify-guards maxnat)
 
+(defun rational-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (rational-listp (first x))
+         (rational-list-listp (rest x)))))
+
+(defun rational-list-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (rational-list-listp (first x))
+         (rational-list-list-listp (rest x)))))
+
 (defun maxnat-list (x)
+  (declare (xargs :guard (rational-list-listp x)))
   (if (endp x)
       0 ;fixme
     (max (maxnat (car x))
          (maxnat-list (cdr x)))))
 
-(skip-proofs (verify-guards maxnat-list))
+(defthm rationalp-of-maxnat-list
+  (implies (rational-list-listp lst)
+           (rationalp (maxnat-list lst))))
 
 (defun maxnat-list-list (x)
+  (declare (xargs :guard (rational-list-list-listp x)))
   (if (endp x)
       0 ;fixme
     (max (maxnat-list (car x))
          (maxnat-list-list (cdr x)))))
-
-(skip-proofs (verify-guards maxnat-list-list))
 
 ;find a non-empty list in the trace, if one is present, otherwise nil
 (defun find-a-list-element-in-trace (trace)
@@ -1470,22 +1519,17 @@
 
 (defun all-have-bit (bit-index bit-value nats)
   (declare (xargs :guard (and (natp bit-index)
-                              (true-listp nats)
-                              (all-integerp nats))))
+                              (integer-listp nats))))
   (if (endp nats)
       t
     (and (equal bit-value (getbit bit-index (first nats)))
          (all-have-bit bit-index bit-value (rest nats)))))
 
-(skip-proofs (verify-guards all-have-bit))
-
 ;returns (mv num-bits constant-value) where if num-bits is 0, no pattern was found
 (defun find-constant-low-bits-aux (nats highest-index-to-check bit-index constant-value)
-  (declare (xargs :guard (and (true-listp nats)
+  (declare (xargs :guard (and (integer-listp nats)
                               (consp nats)
-                              (all-integerp nats)
-                              (INTEGERP CONSTANT-VALUE)
-                              )
+                              (integerp constant-value))
                   :measure (nfix (+ 1 (- highest-index-to-check bit-index)))
                   :hints (("Goal" :in-theory (enable natp)))
                   ))
@@ -1504,26 +1548,24 @@
 ;nats must be non-empty
 ;example: (find-constant-low-bits '(62 126 190 254 318)) = (mv 6 62) meaning every value has 62 as it low 6 bits
 (defun find-constant-low-bits (nats)
-  (declare (xargs :guard (and (true-listp nats)
-                              (consp nats)
-                              (all-integerp nats))))
+  (declare (xargs :guard (and (integer-listp nats)
+                              (consp nats))))
   (find-constant-low-bits-aux nats 32 0 0)) ;fixme pass in a size instead of hard-coding 32 here
 
 (defun all-all-have-bit (bit-index bit-value list-of-lists)
+  (declare (xargs :guard (and (natp bit-index)
+                              (integer-list-listp list-of-lists))))
   (if (endp list-of-lists)
       t
     (and (all-have-bit bit-index bit-value (first list-of-lists))
          (all-all-have-bit bit-index bit-value (rest list-of-lists)))))
 
-(skip-proofs (verify-guards all-all-have-bit))
-
 ;returns (mv num-bits constant-value) where if num-bits is 0, no pattern was found
 (defun find-constant-low-bits2-aux (list-of-lists highest-index-to-check bit-index constant-value)
-  (declare (xargs;;  :guard (and (true-listp list-of-lists)
-;;                               (consp list-of-lists)
-;;                               (all-integerp list-of-lists)
-;;                               (INTEGERP CONSTANT-VALUE)
-;;                               )
+  (declare (xargs :guard (and (integer-list-listp list-of-lists)
+                              (consp list-of-lists)
+                              (all-consp list-of-lists)
+                              (integerp constant-value))
                   :measure (nfix (+ 1 (- highest-index-to-check bit-index)))
                   :hints (("Goal" :in-theory (enable natp)))
                   ))
@@ -1538,18 +1580,13 @@
           (find-constant-low-bits2-aux list-of-lists highest-index-to-check (+ 1 bit-index) (bvcat 1 this-bit-of-first-nat bit-index constant-value))
         (mv bit-index constant-value)))))
 
-(skip-proofs (verify-guards find-constant-low-bits2-aux))
-
 ;example: (find-constant-low-bits2 '((62) (126 190) (254 318))) = (mv 6 62) meaning every value has 62 as it low 6 bits
 ;returns (mv num-bits constant-value) where if num-bits is 0, no pattern was found
 (defun find-constant-low-bits2 (list-of-lists)
-;;   (declare (xargs :guard (and (true-listp list-of-lists)
-;;                               (consp list-of-lists)
-;;                               (all-integerp list-of-lists))))
+  (declare (xargs :guard (and (integer-list-listp list-of-lists)
+                              (consp list-of-lists)
+                              (all-consp list-of-lists))))
   (find-constant-low-bits2-aux list-of-lists 32 0 0)) ;fixme pass in a size instead of hard-coding 32 here
-
-(skip-proofs (verify-guards find-constant-low-bits2))
-
 
 ;; (defun contiguousp-list (lists)
 ;;   (declare (xargs :guard (and (true-list-listp lists)
@@ -1561,8 +1598,7 @@
 
 ;each item is a list (items may be a single trace)
 (defun all-same-lengthp (items)
-  (declare (xargs :guard (and (all-true-listp items)
-                              (true-listp items))))
+  (declare (xargs :guard (true-list-listp items)))
   (if (endp items)
       t
     (let ((len (length (first items))))
@@ -1570,12 +1606,11 @@
 
 ;each item is a list of lists (a trace)
 (defun all-all-same-lengthp (items)
+  (declare (xargs :guard (true-list-list-listp items)))
   (if (endp items)
       t
     (and (all-same-lengthp (first items))
          (all-all-same-lengthp (rest items)))))
-
-(skip-proofs (verify-guards all-all-same-lengthp))
 
 ;some of the traces might be empty - this finds the first value in the first-non-empty trace
 ;fixme or should we remove empty traces before pattern finding?
@@ -2115,7 +2150,8 @@
   (make-nth-list-for-firstn-list-aux target-seqs value-seqs nil))
 
 (defun cdr-of-alist-values (alist)
-;  (declare (xargs :guard (alistp alist)))
+  (declare (xargs :guard (and (alistp alist)
+                              (all-consp (strip-cdrs alist)))))
   (if (endp alist)
       nil
     (let* ((pair (car alist))
@@ -2125,9 +2161,9 @@
            (pair (cons key value)))
       (cons pair (cdr-of-alist-values (cdr alist))))))
 
-(skip-proofs (verify-guards cdr-of-alist-values))
-
 (defun car-of-alist-values (alist)
+  (declare (xargs :guard (and (alistp alist)
+                              (all-consp (strip-cdrs alist)))))
   (if (endp alist)
       nil
     (let* ((pair (car alist))
@@ -2136,8 +2172,6 @@
            (value (car value))
            (pair (cons key value)))
       (cons pair (car-of-alist-values (cdr alist))))))
-
-(skip-proofs (verify-guards car-of-alist-values))
 
 ;; (defun enquote-of-alist-values (alist)
 ;;   (if (endp alist)
@@ -2149,17 +2183,16 @@
 ;;            (pair (cons key value)))
 ;;       (cons pair (enquote-of-alist-values (cdr alist))))))
 
-(skip-proofs
- (mutual-recursion
+(mutual-recursion
 ;the cars of alist can be big terms (not just symbols)
 ;the cdrs of alist are non quoted
 ;returns the value of FORM when the cars are ALIST are replaced with their corresponding cdrs
 ;the cars of alist should be disjoint (e.g., (nth '0 x) and (nth '1 x))
 ;ffixme compare to SUBLIS-VAR-AND-EVAL - not the same, i guess
   (defun subst-and-eval (alist form interpreted-function-alist)
-    (declare (xargs :verify-guards nil
-                    :guard (and (alistp alist)
-                                (pseudo-termp form))))
+    (declare (xargs :guard (and (alistp alist)
+                                (pseudo-termp form)
+                                (interpreted-function-alistp interpreted-function-alist))))
     (cond ((quotep form) (unquote form))
           (t (let ((a (assoc-equal form alist)))
                (if a
@@ -2172,21 +2205,20 @@
                        (t (let ((args (subst-and-eval-lst alist (fargs form) interpreted-function-alist)))
                             (apply-axe-evaluator (ffn-symb form) args interpreted-function-alist 0)))))))))
 
- ;;returns a list of values
- (defun subst-and-eval-lst (alist l interpreted-function-alist)
-   (declare (xargs :verify-guards nil
-                   :guard (and (alistp alist)
-                               (pseudo-term-listp l))))
-   (if (null l)
-       nil
-     (cons (subst-and-eval alist (car l) interpreted-function-alist)
-           (subst-and-eval-lst alist (cdr l) interpreted-function-alist))))))
-
-
-(skip-proofs (verify-guards subst-and-eval))
+  ;;returns a list of values
+  (defun subst-and-eval-lst (alist l interpreted-function-alist)
+    (declare (xargs :guard (and (alistp alist)
+                                (pseudo-term-listp l)
+                                (interpreted-function-alistp interpreted-function-alist))))
+    (if (atom l)
+        nil
+      (cons (subst-and-eval alist (car l) interpreted-function-alist)
+            (subst-and-eval-lst alist (cdr l) interpreted-function-alist)))))
 
 ;the cars of value-value-alist are not always vars!
 (defun pattern-works-on-element (target pattern value-value-alist)
+  (declare (xargs :guard (and (alistp value-value-alist)
+                              (pseudo-termp pattern))))
 ;;   (let* ((quoted-expected-target ))
 ;;     (if (not (quotep quoted-expected-target))
 ;;         (prog2$ (print-list value-value-alist)
@@ -2202,14 +2234,16 @@
                target))
 ;        ))))
 
-(skip-proofs (verify-guards PATTERN-WORKS-ON-element))
-
 ;walk down the target sequence, making sure it matches the pattern
 ;the pattern mentions symbols that are keys in value-trace-alist
 ;the values in value-trace-alist are single traces
 ;we walk down the values in the alist in sync with the target-trace
 ;fixme - what if things have different lengths?
 (defun pattern-works-on-trace (pattern target-trace value-trace-alist)
+  ;; (declare (xargs :guard (and (true-listp target-trace)
+  ;;                             (pseudo-termp pattern)
+  ;;                             (alistp value-trace-alist)
+  ;;                             (all-consp (strip-cdrs value-trace-alist)))))
   (if (endp target-trace)
       t
     (and (pattern-works-on-element (car target-trace) pattern (car-of-alist-values value-trace-alist))
@@ -2273,6 +2307,7 @@
     `(bvplus '32 ',constant ,term)))
 
 (defun make-div-patterns (shift-constants vertical-shift scale-factor)
+  (declare (xargs :guard (true-listp shift-constants)))
   (if (endp shift-constants)
       nil
     (cons (add-constant
@@ -2282,11 +2317,11 @@
                         ',scale-factor))
           (make-div-patterns (cdr shift-constants) vertical-shift scale-factor))))
 
-(skip-proofs (verify-guards make-div-patterns))
-
 ;fixme think about large scale-factors and also about negative scale-factors
 ;fixme think more about large moduluses!
 (defun possible-div-patterns (scale-factor first-value first-target)
+  ;; (declare (xargs :guard (and (integerp scale-factor)
+  ;;                             (integerp first-value))))
   (if (equal 0 scale-factor)
       nil
     (let* ((modulus (rem first-value scale-factor)) ;bvmod? sbvmod? using rem in case scale factor is negative..
@@ -2312,27 +2347,31 @@
 (skip-proofs (verify-guards possible-div-patterns))
 
 (defun seqs-match (s1 s2)
+  (declare (xargs :guard (and (true-listp s1)
+                              (true-listp s2))))
   (if (or (endp s1)
           (endp s2))
       t
     (and (equal (car s1) (car s2))
          (seqs-match (cdr s1) (cdr s2)))))
 
-(skip-proofs (verify-guards seqs-match))
-
-(skip-proofs
- (defun sequence-repeats (candidate rest)
-   (if (or (endp rest)
-           (endp candidate) ;just to prevent loops?
-       )
-       t
-     (and (seqs-match candidate rest)
-          (sequence-repeats candidate (nthcdr (len candidate) rest))))))
-
-(skip-proofs (verify-guards sequence-repeats))
+(defun sequence-repeats (candidate rest)
+  (declare (xargs :guard (and (true-listp candidate)
+                              (consp candidate)
+                              (true-listp rest))))
+  (if (or (not (mbt (consp candidate)))
+          (endp rest)
+          (endp candidate) ;just to prevent loops?
+          )
+      t
+    (and (seqs-match candidate rest)
+         (sequence-repeats candidate (nthcdr (len candidate) rest)))))
 
 (defun find-repeating-sequence-aux (candidate rest)
-  (declare (xargs :measure (ACL2-COUNT rest)))
+  (declare (xargs :guard (and (true-listp candidate)
+                              (consp candidate)
+                              (true-listp rest))
+                  :measure (ACL2-COUNT rest)))
   (if (endp rest)
       candidate
     (if (sequence-repeats candidate rest)
@@ -2340,18 +2379,19 @@
       (find-repeating-sequence-aux (append candidate (list (car rest))) ;expensive?
                                    (cdr rest)))))
 
-(skip-proofs (verify-guards find-repeating-sequence-aux))
-
 ;finds the shortest sequence that repeats until seq runs out of values
 ;if there's no nice pattern it will be the whole sequence
 (defun find-repeating-sequence (seq)
+  (declare (xargs :guard (true-listp seq)))
   (find-repeating-sequence-aux (list (car seq)) (cdr seq)))
-
-(skip-proofs (verify-guards find-repeating-sequence))
 
 ;returns the height of a sawtooth sequence (k for (mod i k)), or nil
 ;fixme gen the sawtooth stuff: allow shifts and stretches
 (defun sawtooth-height (sequence)
+  (declare (xargs :guard (and (true-listp sequence)
+                              (all-integerp sequence))
+                  :verify-guards nil ; todo: first change consecutivep to use integer-listp in the guard
+                  ))
   (let ((repeating-sequence (find-repeating-sequence sequence)))
     (if (consecutivep repeating-sequence)
         (len repeating-sequence)
@@ -2361,23 +2401,22 @@
 
 (mutual-recursion
  ;detects whether TARGET occurs in TREE
- (defun subtree (target tree)
+  (defun subtree (target tree)
+    (declare (xargs :guard (pseudo-termp tree)))
    (if (atom tree)
        (equal target tree)
      (if (quotep tree)
          (equal target tree) ;is that what I want to do?
-;function call
+       ;;function call
        (or (equal target tree)
            (subtree-lst target (fargs tree))))))
 
  (defun subtree-lst (target tree-lst)
+   (declare (xargs :guard (pseudo-term-listp tree-lst)))
    (if (endp tree-lst)
        nil
      (or (subtree target (car tree-lst))
          (subtree-lst target (cdr tree-lst))))))
-
-(skip-proofs (verify-guards subtree))
-
 
 ;; ;if term is (len x) we clear the keys (len x) and x
 ;; (defun clearkeys-that-are-subterms (term alist)
@@ -2408,6 +2447,8 @@
 
 ;i hope the inputs will have corresponding lengths
 (defun all-prefixp (lst-of-lsts1 lst-of-lsts2)
+  (declare (xargs :guard (and (true-listp lst-of-lsts1)
+                              (true-listp lst-of-lsts2))))
   (if (endp lst-of-lsts1)
       t
     (and (nil-or-consp (first lst-of-lsts1))
@@ -2417,17 +2458,15 @@
          (all-prefixp (rest lst-of-lsts1)
                       (rest lst-of-lsts2)))))
 
-(skip-proofs (verify-guards all-prefixp))
-
 (defun all-all-prefixp (x y)
+  (declare (xargs :guard (and (true-list-listp x)
+                              (true-list-listp y))))
   (if (endp x)
       t
     (and (all-prefixp (first x)
                       (first y))
          (all-all-prefixp (rest x)
                           (rest y)))))
-
-(skip-proofs (verify-guards all-all-prefixp))
 
 ;note that (all-all-integerp '(1 2)) = t.  not so for (all-integer-listp '(1 2)).
 (defforall-simple integer-listp)
@@ -2602,39 +2641,36 @@
 (skip-proofs (verify-guards find-basic-unchanged-pattern))
 
 (defun strip-nths-and-lens (term)
+  (declare (xargs :guard (pseudo-termp term)))
   (if (call-of 'nth term)
       (strip-nths-and-lens (second (fargs term)))
     (if (call-of 'len term)
         (strip-nths-and-lens (first (fargs term)))
       term)))
 
-(skip-proofs (verify-guards strip-nths-and-lens))
-
 ;determines whether we can get the target by stripping of nths
 ;term should be an nth nest.
 (defun term-or-parent-is (term target-term)
+  (declare (xargs :guard (pseudo-termp term)))
   (or (equal term target-term)
       (and (consp term)
            (call-of 'nth term)
            (term-or-parent-is (farg2 term) target-term))))
 
-(skip-proofs (verify-guards term-or-parent-is))
-
 (defun term-or-a-parent-is-in (component-term terms)
+  (declare (xargs :guard (and (pseudo-termp component-term)
+                              (pseudo-term-listp terms))))
   (if (endp terms)
       nil
     (or (term-or-parent-is component-term (first terms))
         (term-or-a-parent-is-in component-term (rest terms)))))
 
-(skip-proofs (verify-guards term-or-a-parent-is-in))
-
 (defun nth-nest-around-symbolp (term)
+  (declare (xargs :guard (pseudo-termp term)))
   (or (atom term)
       (and (eq 'nth (ffn-symb term))
            (quotep (first (fargs term)))
            (nth-nest-around-symbolp (second (fargs term))))))
-
-(skip-proofs (verify-guards nth-nest-around-symbolp))
 
 ;; ;move to be close to where we add to the ignore alist
 ;; (defun okay-to-use-candidate-to-explain-target (candidate-term target-term terms-to-ignore-alist)
@@ -3014,6 +3050,7 @@
 
 ;tests for target = candidate mod modulus
 (defun mod-pattern-works-on-trace (target-trace candidate-trace modulus-trace)
+  ;; (declare (xargs :guard (true-listp target-trace)))
   (if (endp target-trace)
       t
     (let ((modulus (first modulus-trace)))
@@ -4078,39 +4115,36 @@
 ;BOZO remove lemma collecting code from this version of the file (mostly done?)  or collect lemmas somehow to save time!
 
 
-
-
-
-;deprecate this?
-;ffixme what if x involves printing - shouldn't that stuff be printed before the close paren? maybe not, the way this is used..
-(defmacro cparen (x)
-  `(prog2$ (if (member-eq print '(t :verbose)) (cw ")~%") nil)
-           ,x))
+;; ;deprecate this?
+;; ;ffixme what if x involves printing - shouldn't that stuff be printed before the close paren? maybe not, the way this is used..
+;; (defmacro cparen (x)
+;;   `(prog2$ (if (member-eq print '(t :verbose)) (cw ")~%") nil)
+;;            ,x))
 
 ;this version does not cut the lemmas, but instead calls stp on the whole things - no longer true?!
 
-(defun safe-min (x y)
-  (if (not (rationalp x))
-      (hard-error 'safe-min "Tried to call min on the non-rational ~x0." (acons #\0 x nil))
-    (if (not (rationalp y))
-        (hard-error 'safe-min "Tried to call min on the non-rational ~x0." (acons #\0 y nil))
-      (min x y))))
+;; (defun safe-min (x y)
+;;   (if (not (rationalp x))
+;;       (hard-error 'safe-min "Tried to call min on the non-rational ~x0." (acons #\0 x nil))
+;;     (if (not (rationalp y))
+;;         (hard-error 'safe-min "Tried to call min on the non-rational ~x0." (acons #\0 y nil))
+;;       (min x y))))
 
-(defun safe-max (x y)
-  (if (not (rationalp x))
-      (hard-error 'safe-max "Tried to call max on the non-rational ~x0." (acons #\0 x nil))
-    (if (not (rationalp y))
-        (hard-error 'safe-max "Tried to call max on the non-rational ~x0." (acons #\0 y nil))
-      (max x y))))
+;; (defun safe-max (x y)
+;;   (if (not (rationalp x))
+;;       (hard-error 'safe-max "Tried to call max on the non-rational ~x0." (acons #\0 x nil))
+;;     (if (not (rationalp y))
+;;         (hard-error 'safe-max "Tried to call max on the non-rational ~x0." (acons #\0 y nil))
+;;       (max x y))))
 
-(defun safe-max-debug (tag x y)
-  (if (not (rationalp x))
-      (hard-error 'safe-max-debug "Tried to call max on the non-rational ~x0. Tag: ~x1" (acons #\1 tag (acons #\0 x nil)))
-    (if (not (rationalp y))
-        (hard-error 'safe-max-debug "Tried to call max on the non-rational ~x0. Tag: ~x1" (acons #\1 tag (acons #\0 y nil)))
-      (max x y))))
+;; (defun safe-max-debug (tag x y)
+;;   (if (not (rationalp x))
+;;       (hard-error 'safe-max-debug "Tried to call max on the non-rational ~x0. Tag: ~x1" (acons #\1 tag (acons #\0 x nil)))
+;;     (if (not (rationalp y))
+;;         (hard-error 'safe-max-debug "Tried to call max on the non-rational ~x0. Tag: ~x1" (acons #\1 tag (acons #\0 y nil)))
+;;       (max x y))))
 
-(skip-proofs (verify-guards SAFE-MAX-DEBUG))
+;; (skip- proofs (verify-guards SAFE-MAX-DEBUG))
 
 ;; (defun all-zeros-or-ones (sig)
 ;;   (declare (xargs :guard t))
@@ -4162,7 +4196,7 @@
 ;;                )
 ;;             (find-sets-of-probably-equal-nodes (cdr signature-alist) dag-array nodes-to-skip acc)))))))
 
-;(skip-proofs (verify-guards find-sets-of-probably-equal-nodes))
+;(skip- proofs (verify-guards find-sets-of-probably-equal-nodes))
 
 (defun sig-<-aux (sig1 sig2)
   (declare (xargs :guard t))
@@ -4222,7 +4256,7 @@
 ;;                         nil
 ;;                         ))))
 
-;; (skip-proofs (verify-guards merge-sort-sig-<))
+;; (skip- proofs (verify-guards merge-sort-sig-<))
 
 
 
@@ -4370,28 +4404,28 @@
 ;;                               :use (:instance ,name-with-hides)))
 ;;                            :elide-hintsp nil))))))
 
-(defun fact-is-about-item (fact item)
-  (subtree item fact))
+;; (defun fact-is-about-item (fact item)
+;;   (subtree item fact))
 
-(defun fact-is-about-any-item (fact items)
-  (if (endp items)
-      nil
-    (if (fact-is-about-item fact (car items))
-        t
-      (fact-is-about-any-item fact (cdr items)))))
+;; (defun fact-is-about-any-item (fact items)
+;;   (if (endp items)
+;;       nil
+;;     (if (fact-is-about-item fact (car items))
+;;         t
+;;       (fact-is-about-any-item fact (cdr items)))))
 
-(defun keep-facts-not-about-items (facts items)
-  (if (endp facts)
-      nil
-    (if (not (fact-is-about-any-item (car facts) items))
-        (cons (car facts)
-              (keep-facts-not-about-items (cdr facts) items))
-      (keep-facts-not-about-items (cdr facts) items))))
+;; (defun keep-facts-not-about-items (facts items)
+;;   (if (endp facts)
+;;       nil
+;;     (if (not (fact-is-about-any-item (car facts) items))
+;;         (cons (car facts)
+;;               (keep-facts-not-about-items (cdr facts) items))
+;;       (keep-facts-not-about-items (cdr facts) items))))
 
-(defun conclusion-conjuncts (rv-type-facts possible-rv-equalities)
-  (let* ((equated-items (STRIP-CADRS possible-rv-equalities))
-         (rv-type-facts (keep-facts-not-about-items rv-type-facts equated-items)))
-    (append rv-type-facts possible-rv-equalities)))
+;; (defun conclusion-conjuncts (rv-type-facts possible-rv-equalities)
+;;   (let* ((equated-items (STRIP-CADRS possible-rv-equalities))
+;;          (rv-type-facts (keep-facts-not-about-items rv-type-facts equated-items)))
+;;     (append rv-type-facts possible-rv-equalities)))
 
 ;; ;this can change nodenums
 ;; (defun dag-array-to-dag-lst (dag-array dag-len)
@@ -6620,7 +6654,7 @@
 ;;       (acons formal (len first-value) (make-formal-len-alist (cdr formals) term-traces-alist)))))
 
 ;returns (mv actual-name state)
-;fixme allow no skip-proofs
+;fixme allow no skip- proofs
 
 ;fixme what if the functions differ only on normalize nil? or defun mode?  or some other thing?
 (defun make-defun (desired-name formals body state)
@@ -7075,7 +7109,8 @@
 ;figures out the tuple structure indicated by traces
 ;fixme add more type information?
 ;fixme use the syntax of the update function to distinguish between tuples and arrays of fixed length?  also to get type information?
-  (defun shape-of-traces (traces)
+   (defun shape-of-traces (traces)
+ ;    (declare (xargs :guard t))
     (if (nil-or-consp-list-list traces)
         ;;the values may be tuples:
         (let ((len-of-vals-in-traces-if-all-same-len (len-of-vals-in-traces-if-all-same-len traces)))
@@ -7104,7 +7139,8 @@
 
 ;; TODO: There are now better ways to answer questions like this
 (defun event-type (name state)
-  (declare (xargs :stobjs state :verify-guards nil))
+  (declare (xargs :guard (symbolp name)
+                  :stobjs state))
   (let ((props (getprops name 'current-acl2-world (w state))))
     (if (not props)
         (hard-error 'event-type "No props for: ~x0" (acons #\0 name nil))
@@ -7114,21 +7150,20 @@
             :defun
           (hard-error 'event-type "Unrecognized thing: ~x0. Props: ~x1" (acons #\0 name (acons #\1 props nil))))))))
 
-(skip-proofs (verify-guards event-type))
-
 ;keeps definition rules, equivalence lemmas of two rec fns and anything that includes "obeys" (the theorems about single functions, which include type facts)
 ;does not keep rules that transform one function into another (those can lead to long chains of work-hard hyps in the prover and should be used by the rewriter instead)
 ;fffixme this seems gross
 (defun filter-rules-to-use-in-prover (axe-rules state)
-;;   (declare (xargs :guard (and (true-listp axe-rules)
-;;                               (axe-rule-listp axe-rules))))
-  (declare (xargs :stobjs state :verify-guards nil))
+  (declare (xargs :guard (axe-rule-listp axe-rules)
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (enable axe-rulep axe-rule-listp)))))
   (if (endp axe-rules)
       nil
     (let* ((rule (first axe-rules))
            (rule-symbol (rule-symbol rule))
            (rule-string (symbol-name rule-symbol)))
-      (if (or (equal "EQUIVALENCE" (subseq rule-string 0 11))
+      (if (or (and (<= 11 (length rule-string))
+                   (equal "EQUIVALENCE" (subseq rule-string 0 11)))
               (search "OBEYS" rule-string)
               (search "LIMITED-BASE-CASE" rule-string) ;Mon Mar 14 12:27:51 2011
 ;              (eq :definition (rule-class rule))
@@ -7136,8 +7171,6 @@
               )
           (cons rule (filter-rules-to-use-in-prover (cdr axe-rules) state))
         (filter-rules-to-use-in-prover (cdr axe-rules) state)))))
-
-(skip-proofs (verify-guards filter-rules-to-use-in-prover)) ;fixme
 
 ;; (defun g-safe (a x)
 ;;   (declare (xargs :guard t))
@@ -7204,56 +7237,74 @@
 ;;           (orient-equalities (rest terms)))))
 
 ;for now this just skips a few specific functions - fixme add a check that the found function is recursive
-(skip-proofs
- (defun find-rec-fn (nodenum dag-array-name dag-array)
-  (let* ((expr (aref1 dag-array-name dag-array nodenum)))
-    (if (or (not (consp expr))
-            (quotep expr))
-        (hard-error 'find-rec-fn "expected a function call but found ~x0 at nodenum ~x1."
-                    (acons #\0 expr (acons #\1 nodenum nil)))
-      (let ((fn (ffn-symb expr)))
-        (if (and (member-eq fn '(nth bvchop ;$inline
-                                     ))
-                 (quotep (farg1 expr))) ;the quotep is new Wed Apr 21 16:27:38 2010
-            (find-rec-fn (second (fargs expr))  ;ensure this is an integer?
-                         dag-array-name
-                         dag-array)
-          (if (member-eq fn '(car cdr
-                                  len ;new
-                                  ))
-              (find-rec-fn (first (fargs expr))  ;ensure this is an integer?
+(defun find-rec-fn (nodenum dag-array-name dag-array)
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
+                  :measure (nfix nodenum)))
+  (if (not (mbt (and (natp nodenum)
+                     (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
+      nil ; can't happen
+    (let* ((expr (aref1 dag-array-name dag-array nodenum)))
+      (if (or (not (consp expr))
+              (quotep expr))
+          (hard-error 'find-rec-fn "expected a function call but found ~x0 at nodenum ~x1."
+                      (acons #\0 expr (acons #\1 nodenum nil)))
+        (let ((fn (ffn-symb expr)))
+          (if (and (member-eq fn '(nth bvchop ;$inline
+                                   ))
+                   (<= 2 (len (dargs expr)))
+                   (quotep (darg1 expr)) ;the quotep is new Wed Apr 21 16:27:38 2010
+                   (not (consp (darg2 expr))) ; check for nodenum (not a quoted constant)
+                   )
+              (find-rec-fn (darg2 expr)
                            dag-array-name
                            dag-array)
-            nodenum)))))))
+            (if (and (member-eq fn '(car cdr
+                                     len ;new
+                                     ))
+                     (<= 1 (len (dargs expr)))
+                     (not (consp (darg1 expr))) ; check for nodenum (not a quoted constant))
+                     )
+                (find-rec-fn (darg1 expr)
+                             dag-array-name
+                             dag-array)
+              nodenum)))))))
 
 ;this one takes a list of array indices to check
 ;rename to remove the 2
-(defun max-array-elem2 (nodenums current-max array-name array)
-  (declare (xargs :guard (and (nat-listp nodenums)
+(defun max-array-elem2 (indices current-max array-name array)
+  (declare (xargs :guard (and (nat-listp indices)
                               (array1p array-name array)
-                              (all-< nodenums (alen1 array-name array))
+                              (all-< indices (alen1 array-name array))
                               (rationalp current-max))))
-  (if (endp nodenums)
+  (if (endp indices)
       current-max
-    (let* ((nodenum (first nodenums))
+    (let* ((nodenum (first indices))
            (val (rfix (aref1 array-name array nodenum))) ; the rfix may not be needed in some cases
            )
-      (max-array-elem2 (rest nodenums) (max current-max val) array-name array))))
+      (max-array-elem2 (rest indices) (max current-max val) array-name array))))
+
+(defthm natp-of-max-array-elem2-when-depth-arrayp
+  (implies (and (nat-listp indices)
+                (depth-arrayp array-name array num-valid-indices)
+                (all-< indices num-valid-indices)
+                (natp current-max))
+           (natp (max-array-elem2 indices current-max array-name array))))
 
 ;Tries to prove that smaller-nodenum equals larger-nodenum, but replaces some (all?) shared supporting nodes by variables (and so proves a more general goal).
 ;If this succeeds, the nodes are equal.  If this fails, they may still be equal, because the failure might be due to the cutting.
-;returns (mv provedp
+;returns (mv erp provedp
 ;            nodenums-translated ;;in decreasing order
 ;            state)
 ;; Assumes that smaller-nodenum and larger-nodenum are pure.
 (defund attempt-aggressively-cut-equivalence-proof (smaller-nodenum
-                                                   larger-nodenum
-                                                   dag-array-name
-                                                   dag-array ;this is the miter-array
-                                                   dag-len
-                                                   var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
-                                                   print max-conflicts miter-name
-                                                   state)
+                                                    larger-nodenum
+                                                    dag-array-name
+                                                    dag-array ;this is the miter-array
+                                                    dag-len
+                                                    var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
+                                                    print max-conflicts miter-name
+                                                    state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
                               (<= smaller-nodenum larger-nodenum) ; is equal possible?
@@ -7264,7 +7315,6 @@
                               (print-levelp print) ; tighter?
                               (natp max-conflicts) ; allow nil?
                               (symbolp miter-name))
-                  :verify-guards nil ; todo
                   :stobjs state))
   (b* ((- (and print (cw " (Cutting at shared nodes...")))
        (num-nodes-to-consider (+ 1 larger-nodenum))
@@ -7274,7 +7324,8 @@
        (needed-for-larger-nodenum-tag-array  (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
        (needed-for-larger-nodenum-tag-array (aset1-safe 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
        ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
-       ((mv nodenums-to-translate ;in decreasing order
+       ((mv erp
+            nodenums-to-translate ;in decreasing order
             cut-nodenum-type-alist extra-asserts)
         (gather-nodes-to-translate-for-aggressively-cut-proof ; todo: consider a worklist algorithm for this
           larger-nodenum ;skip everything above larger-nodenum
@@ -7287,6 +7338,18 @@
           nil ;cut-nodenum-type-alist ;fffixme use an array for this?
           nil ;extra asserts
           print var-type-alist))
+       ((when erp)
+        (cw "ERROR (~x0) in gathering nodes.~%" erp)
+        (mv erp
+            nil ; not proved
+            nodenums-to-translate
+            state))
+       ((when (not (consp nodenums-to-translate))) ; can this happen?
+        (cw "ERROR: No nodes to translate.")
+        (mv :no-nodes-to-translate
+            nil ; not proved
+            nodenums-to-translate
+            state))
        (- (and print (cw ")~%")))
        ;; Call STP:
        (- (and print ;(cw "Proving with STP...~%" nil)
@@ -7307,14 +7370,62 @@
                                        nil
                                        state)))
     (if (eq result *error*)
-        (prog2$ (hard-error 'attempt-aggressively-cut-equivalence-proof "Error calling STP." nil)
-                (mv nil ;not proved
+        (prog2$ (er hard? 'attempt-aggressively-cut-equivalence-proof "Error calling STP." nil)
+                (mv :error-calling-stp
+                    nil ;not proved
                     nodenums-to-translate
                     state))
       (prog2$ (and (eq result *timedout*) (cw "STP timed out.~%"))
-              (mv (eq result *valid*) ;ttodo: user the counterexample, if present?
+              (mv (erp-nil)
+                  (eq result *valid*) ;ttodo: user the counterexample, if present?
                   nodenums-to-translate
                   state)))))
+
+(defthm nat-listp-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof
+  (implies (and (natp smaller-nodenum)
+                (natp larger-nodenum)
+                (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (< smaller-nodenum dag-len)
+                (< larger-nodenum dag-len)
+                (symbol-alistp var-type-alist)
+                (print-levelp print) ; tighter?
+                (natp max-conflicts) ; allow nil?
+                (symbolp miter-name))
+           (nat-listp (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
+  :hints (("Goal" :in-theory (enable attempt-aggressively-cut-equivalence-proof))))
+
+(defthm all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof
+  (implies (and (natp smaller-nodenum)
+                (natp larger-nodenum)
+                (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (< smaller-nodenum dag-len)
+                (< larger-nodenum dag-len)
+                (symbol-alistp var-type-alist)
+                (print-levelp print) ; tighter?
+                (natp max-conflicts) ; allow nil?
+                (symbolp miter-name))
+           (all-< (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+                  (+ 1 larger-nodenum)))
+  :hints (("Goal" :in-theory (enable attempt-aggressively-cut-equivalence-proof))))
+
+;; (defthm all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof-gen
+;;   (implies (and (<= dag-len bound)
+;;                 (natp smaller-nodenum)
+;;                 (natp larger-nodenum)
+;;                 (<= smaller-nodenum larger-nodenum) ; is equal possible?
+;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                 (< smaller-nodenum dag-len)
+;;                 (< larger-nodenum dag-len)
+;;                 (symbol-alistp var-type-alist)
+;;                 (print-levelp print) ; tighter?
+;;                 (natp max-conflicts) ; allow nil?
+;;                 (symbolp miter-name))
+;;            (all-< (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+;;                   bound))
+;;   :hints (("Goal" :use all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof
+;;            :in-theory (disable all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof))))
 
 (defund integer-average-round-up (x y)
   (declare (xargs :guard (and (integerp x)
@@ -7341,20 +7452,31 @@
 
 ;binary search to try to find a cut depth at which the goal is valid.
 ;would like to reuse this for pure constants
-;; Returns (mv success-flg state).
+;; Returns (mv provedp state).
 ;; The two nodes must be pure nodes.
 (defund attempt-cut-equivalence-proofs (min-depth
                                         max-depth
                                         depth-array ; depths wrt the set containing smaller-nodenum and larger-nodenum
                                         smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
-  (declare (xargs; :mode :program
-             :measure (nfix (+ 1 (- max-depth min-depth)))
-                  :verify-guards nil ; todo: first do gather-nodes-to-translate-up-to-depth
-                  :stobjs state)
+  (declare (xargs :guard (and (natp min-depth)
+                              (integerp max-depth) ; might go negative
+                              (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (depth-arrayp 'depth-array depth-array (+ 1 larger-nodenum))
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (<= smaller-nodenum larger-nodenum)
+                              (< larger-nodenum dag-len)
+                              (symbol-alistp var-type-alist) ; strengthen?
+                              (print-levelp print) ; tighter?
+                              (natp max-conflicts) ; allow nil?
+;                              (symbolp miter-name)
+                              (stringp base-filename))
+                  :measure (nfix (+ 1 (- max-depth min-depth)))
+             :stobjs state)
            (irrelevant miter-name) ;todo
            )
-  (if (or (not (natp min-depth))
-          (not (natp max-depth))
+  (if (or (not (and (mbt (natp min-depth))
+                    (mbt (integerp max-depth))))
           (< max-depth min-depth))
       (prog2$ (cw "!! We failed to find a cut depth at which STP can prove the goal !!~%")
               (mv nil state))
@@ -7365,11 +7487,20 @@
          (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array smaller-nodenum t))
          (current-depth (integer-average-round-up min-depth max-depth))
          ;; TODO: Consider a worklist algorithm:
-         ((mv nodenums-to-translate cut-nodenum-type-alist extra-asserts)
+         ((mv erp nodenums-to-translate cut-nodenum-type-alist extra-asserts)
           (gather-nodes-to-translate-up-to-depth larger-nodenum current-depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
                                                  nil
                                                  nil ;initial cut-nodenum-type-alist
                                                  nil))
+         ((when erp)
+          (mv nil ; todo: or pass back the error?
+              state))
+         ((when (not (consp nodenums-to-translate))) ; can this happen?
+          (cw "ERROR: No nodes to translate.")
+          (mv ;; :no-nodes-to-translate
+              nil ; not proved
+              ;; nodenums-to-translate
+              state))
          ;; Call STP:
          (- (and print (cw "Attempting STP proof at depth ~x0.~%" current-depth)))
          ((mv result state)
@@ -7385,11 +7516,11 @@
                                          nil
                                          state))
          ((when (eq result *error*))
-          (hard-error 'attempt-cut-equivalence-proofs "Error calling STP." nil)
-          (mv nil ;success flag
+          (er hard? 'attempt-cut-equivalence-proofs "Error calling STP." nil)
+          (mv nil ; did not prove it
               state)))
       (if (eq result *valid*)
-          (mv t state)
+          (mv t state) ; proved it
         (if (eq result *timedout*)
             ;;since the current depth timed out, we go shallower
             (attempt-cut-equivalence-proofs min-depth (+ -1 current-depth)
@@ -7407,8 +7538,32 @@
                                                            miter-array-name miter-array miter-len
                                                            var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
                                                            print max-conflicts miter-name state)
-  (declare (xargs :mode :program
-                  :verify-guards nil
+  (declare (xargs :guard (and (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< smaller-nodenum miter-len)
+                              (< larger-nodenum miter-len)
+                              (<= SMALLER-NODENUM LARGER-NODENUM)
+                              (symbol-alistp var-type-alist) ; strengthen?
+                              (print-levelp print) ; tighten?
+                              (natp max-conflicts) ; allow nil?
+                              (symbolp miter-name))
+                  :guard-hints (("Goal"
+                                 :use (:instance natp-of-max-array-elem2-when-depth-arrayp
+                                                 (indices (MV-NTH 2
+                                                                  (ATTEMPT-AGGRESSIVELY-CUT-EQUIVALENCE-PROOF
+                                                                    SMALLER-NODENUM
+                                                                    LARGER-NODENUM MITER-ARRAY-NAME
+                                                                    MITER-ARRAY MITER-LEN VAR-TYPE-ALIST
+                                                                    PRINT MAX-CONFLICTS MITER-NAME STATE)))
+                                                 (current-max 0)
+                                                 (array-name 'DEPTH-ARRAY)
+                                                 (array (MV-NTH 0
+                                                                (MAKE-DEPTH-ARRAY-FOR-NODES (LIST SMALLER-NODENUM LARGER-NODENUM)
+                                                                                            MITER-ARRAY-NAME
+                                                                                            MITER-ARRAY MITER-LEN)))
+                                                 (NUM-VALID-INDICES (+ 1 LARGER-NODENUM)))
+                                 :in-theory (disable natp natp-of-max-array-elem2-when-depth-arrayp)))
                   :stobjs state))
   (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
        ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
@@ -7427,10 +7582,14 @@
        ;;fixme if we have contexts, how will we cut them (not clear what "shared nodes" means with 3 or more terms)?
        ;;probably best not to use contexts here, since this usually succeeds, and contexts are rarely needed
        ;;aggressive cut that replaces all shared nodes with variables:
-       ((mv provedp
+       ((mv erp
+            provedp
             nodenums-translated ;below we check these to determine the depth of the deepest translated node
             state)
         (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
+       ((when erp)
+        (cw "  ERROR.)~%")
+        (mv nil state)) ; todo: or pass back an error?
        (- (if provedp
               (cw "  Proved.)~%")
             (cw "  Failed.)~%")))
@@ -7475,11 +7634,22 @@
                   nil))
         state)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;a worklist algorithm:
 ;returns the list of all fns on nodes that 1) support nodes in NODENUMS and 2) are not tagged
 (skip-proofs
  (defun non-tagged-supporters-with-rec-fns-to-handle-aux (nodenums miter-array-name miter-array tag-array-name tag-array done-array-name done-array acc state)
-   (declare (xargs :stobjs state :verify-guards nil))
+   (declare (xargs :stobjs state
+                   :guard (and (nat-listp nodenums)
+                               (if (consp nodenums)
+                                   (pseudo-dag-arrayp miter-array-name miter-array (+ 1 (maxelem nodenums)))
+                                 t)
+                               (ARRAY1P TAG-ARRAY-NAME TAG-ARRAY)
+                               (all-< nodenums (ALEN1 TAG-ARRAY-NAME TAG-ARRAY))
+                               (ARRAY1P DONE-ARRAY-NAME DONE-ARRAY)
+                               (all-< nodenums (ALEN1 DONE-ARRAY-NAME DONE-ARRAY)))
+                   :verify-guards nil))
    (if (endp nodenums)
        acc
      (let* ((nodenum (first nodenums))
@@ -7498,7 +7668,7 @@
                    (non-tagged-supporters-with-rec-fns-to-handle-aux (rest nodenums) miter-array-name miter-array tag-array-name tag-array done-array-name done-array acc state)
                  ;;function call (add the function to the accumulator, mark as done, and add children to the worklist):
                  (non-tagged-supporters-with-rec-fns-to-handle-aux
-                  (append (keep-atoms (fargs expr)) ;ffixme could pass in an acc to keep-atoms
+                  (append (keep-atoms (dargs expr)) ;ffixme could pass in an acc to keep-atoms
                           (rest nodenums))
                   miter-array-name miter-array tag-array-name tag-array
                   done-array-name
@@ -8505,14 +8675,14 @@
         (list new-fn)
         state)))
 
-(skip-proofs
- (defun wrap-conjuncts-in-if-nest (fn if-nest)
-   (if (not (and (call-of 'if if-nest)
-                 (equal *nil* (farg3 if-nest))))
-       `(,fn ,if-nest)
-     `(if (,fn ,(farg1 if-nest))
-          ,(wrap-conjuncts-in-if-nest fn (farg2 if-nest))
-        ,*nil*))))
+;; (defun wrap-conjuncts-in-if-nest (fn if-nest)
+;; ;  (declare (xargs :guard t))
+;;   (if (not (and (call-of 'if if-nest)
+;;                 (equal *nil* (farg3 if-nest))))
+;;       `(,fn ,if-nest)
+;;     `(if (,fn ,(farg1 if-nest))
+;;          ,(wrap-conjuncts-in-if-nest fn (farg2 if-nest))
+;;        ,*nil*)))
 
 ;returns the name of the defsequence, or nil
 (defun head-aux-fn-of-defsequence-aux (fn alist)
@@ -8542,21 +8712,29 @@
 
 ;returns nil or (list nodenum fn split-amount)
 (defun find-rec-fn-node-to-split (nodenums miter-array-name miter-array extra-stuff)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (if (consp nodenums)
+                                  (pseudo-dag-arrayp miter-array-name miter-array (+ 1 (maxelem nodenums)))
+                                t))))
   (if (endp nodenums)
       nil
     (let* ((nodenum (first nodenums))
-           (expr (aref1 miter-array-name miter-array nodenum))
-           (fn (ffn-symb expr)) ;expr must be a function call!
-           (info (g fn extra-stuff))
-           (split-amount (g :split info)))
-      (if split-amount
-          (list nodenum fn split-amount)
-        (find-rec-fn-node-to-split (rest nodenums) miter-array-name miter-array extra-stuff)))))
-
-(skip-proofs (verify-guards find-rec-fn-node-to-split))
+           (expr (aref1 miter-array-name miter-array nodenum)))
+      (if (not (consp expr)) ; should not happen, as expr must be a function call!
+          (find-rec-fn-node-to-split (rest nodenums) miter-array-name miter-array extra-stuff)
+        (let* ((fn (ffn-symb expr))
+               (info (g fn extra-stuff))
+               (split-amount (g :split info)))
+          (if split-amount
+              (list nodenum fn split-amount)
+            (find-rec-fn-node-to-split (rest nodenums) miter-array-name miter-array extra-stuff)))))))
 
 ;returns (mv erp alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 (defun add-alist-cdrs-to-dag (alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)
+  (declare (xargs :guard (and (alistp alist)
+                              (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                              (bounded-axe-tree-listp (strip-cdrs alist) dag-len)
+                              (alistp acc))))
   (if (endp alist)
       (mv (erp-nil)
           acc ;order is reversed, but that doesn't matter
@@ -8573,20 +8751,19 @@
           (add-alist-cdrs-to-dag (rest alist) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                  (acons var nodenum-or-quotep acc)))))))
 
-(skip-proofs (verify-guards add-alist-cdrs-to-dag))
-
-(defun fixup-args-special (args max-unrenamed-nodenum renaming-array)
-  (if (endp args)
+(defun fixup-dargs-special (dargs max-unrenamed-nodenum renaming-array)
+  (declare (xargs :guard (and (array1p 'renaming-array renaming-array)
+                              (bounded-darg-listp dargs (alen1 'renaming-array renaming-array))
+                              (rationalp max-unrenamed-nodenum))))
+  (if (endp dargs)
       nil
-    (let* ((arg (first args))
-           (fixed-up-arg (if (or (consp arg)                    ;it's a quotep
-                                 (<= arg max-unrenamed-nodenum) ;it's a nodenum that didn't get renamed
+    (let* ((darg (first dargs))
+           (fixed-up-darg (if (or (consp darg)                    ;it's a quotep
+                                 (<= darg max-unrenamed-nodenum) ;it's a nodenum that didn't get renamed
                                  )
-                             arg
-                           (aref1 'renaming-array renaming-array arg))))
-      (cons fixed-up-arg (fixup-args-special (rest args) max-unrenamed-nodenum renaming-array)))))
-
-(skip-proofs (verify-guards fixup-args-special))
+                             darg
+                           (aref1 'renaming-array renaming-array darg))))
+      (cons fixed-up-darg (fixup-dargs-special (rest dargs) max-unrenamed-nodenum renaming-array)))))
 
 ;returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
 (defun rebuild-node-range (min-nodenum
@@ -8626,7 +8803,7 @@
           ;;function call
           (let* ((fn (ffn-symb expr))
                  (args (fargs expr))
-                 (new-args (fixup-args-special args max-unrenamed-nodenum renaming-array)))
+                 (new-args (fixup-dargs-special args max-unrenamed-nodenum renaming-array)))
             (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
               (add-function-call-expr-to-dag-array-with-name fn new-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
               (if erp
@@ -8944,47 +9121,48 @@
         (report-cdred-formals formals update-expr-list)))))
 
 (defun pure-assumptionp (term)
-  (or (and (call-of 'true-listp term)
-           (variablep (farg1 term)))
-      (and (call-of 'unsigned-byte-p term)
-           (quotep (farg1 term))
-           (variablep (farg2 term)))
-      (and (call-of 'all-unsigned-byte-p term) ;fixme what if we have only some of the 3 things needed for an array type?
-           (quotep (farg1 term))
-           (variablep (farg2 term)))
-      ;fixme what if we have only some but not all of the 3 pieces for a bv-array type?
-      (and (call-of 'equal term)
-           (quotep (farg1 term))
-           (call-of 'len (farg2 term))
-           (variablep (farg1 (farg2 term))))
-      (and (call-of 'equal term)
-           (quotep (farg2 term))
-           (call-of 'len (farg1 term))
-           (variablep (farg1 (farg1 term))))
+  (declare (xargs :guard t))
+  (and (true-listp term)
+       (or (and (call-of 'true-listp term)
+                (variablep (farg1 term)))
+           (and (call-of 'unsigned-byte-p term)
+                (quotep (farg1 term))
+                (variablep (farg2 term)))
+           (and (call-of 'all-unsigned-byte-p term) ;fixme what if we have only some of the 3 things needed for an array type?
+                (quotep (farg1 term))
+                (variablep (farg2 term)))
+;fixme what if we have only some but not all of the 3 pieces for a bv-array type?
+           (and (call-of 'equal term)
+                (quotep (farg1 term))
+                (true-listp (farg2 term))
+                (call-of 'len (farg2 term))
+                (variablep (farg1 (farg2 term))))
+           (and (call-of 'equal term)
+                (quotep (farg2 term))
+                (true-listp (farg1 term))
+                (call-of 'len (farg1 term))
+                (variablep (farg1 (farg1 term))))
 ;hopefully this will get substituted in - could in some cases drop assumptions about vars that no longer exist in the dag??
-      (and (call-of 'equal term)
-           (variablep (farg1 term))
-           (quotep (farg2 term))
-           (or (natp (unquote (farg2 term)))
-               (all-natp (unquote (farg2 term)))))
+           (and (call-of 'equal term)
+                (variablep (farg1 term))
+                (myquotep (farg2 term))
+                (or (natp (unquote (farg2 term)))
+                    (all-natp (unquote (farg2 term)))))
 ;hopefully this will get substituted in - could in some cases drop assumptions about vars that no longer exist in the dag??
-      (and (call-of 'equal term)
-           (variablep (farg2 term))
-           (quotep (farg1 term))
-           (or (natp (unquote (farg1 term)))
-               (all-natp (unquote (farg1 term)))))))
-
-(skip-proofs (verify-guards pure-assumptionp))
+           (and (call-of 'equal term)
+                (variablep (farg2 term))
+                (myquotep (farg1 term))
+                (or (natp (unquote (farg1 term)))
+                    (all-natp (unquote (farg1 term))))))))
 
 ;use a defforall?
 ;fixme be more flexible - allow bv operators?!
 (defun pure-assumptionsp (terms)
-  (if (endp terms)
-      t
+  (declare (xargs :guard t))
+  (if (atom terms)
+      t ; or check null?
     (and (pure-assumptionp (first terms))
          (pure-assumptionsp (rest terms)))))
-
-(skip-proofs (verify-guards pure-assumptionsp))
 
 ;; ;returns the nodenums (in order) of all the rec. fn. nodes to handle
 ;; ;what's the best way to tell if it's a recursive function we should try to simplify?
@@ -9014,14 +9192,14 @@
 ;returns a list of nodenums, in increasing order
 ;what's the best way to tell if it's a recursive function we should try to simplify?
 ;ffixme should this check whether the function is recursive?!
-(defun find-unhandled-rec-fn-nodes-simple (dag-lst acc state)
-  (declare (xargs :verify-guards nil
+(defun find-unhandled-rec-fn-nodes-simple (dag acc state)
+  (declare (xargs :guard (weak-dagp-aux dag)
                   :stobjs state))
-  (if (endp dag-lst)
+  (if (endp dag)
       acc
-    (let* ((entry (car dag-lst))
+    (let* ((entry (car dag))
            (expr (cdr entry)))
-      (find-unhandled-rec-fn-nodes-simple (cdr dag-lst)
+      (find-unhandled-rec-fn-nodes-simple (cdr dag)
                                           (if (not (consp expr))
                                               ;;it's a variable:
                                               acc
@@ -9035,8 +9213,6 @@
                                                 acc)))
                                           state))))
 
-(skip-proofs (verify-guards find-unhandled-rec-fn-nodes-simple))
-
 ;make the test cases but don't find probably-xxx nodes
 ;the alist pairs array names with test-case-arrays
 ;this is for pre-simplifying, esp. so we can know which test cases make a rec. fn. :unused (and thus might cause it to loop)
@@ -9047,6 +9223,14 @@
                              test-case-count
                              test-case-alist-acc
                              debug-nodes)
+  (declare (xargs :guard (and (test-casesp test-cases)
+                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< 0 miter-len)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (alistp test-case-alist-acc)
+                              (natp test-case-count)
+                              (nat-listp debug-nodes)
+                              (all-< debug-nodes miter-len))))
   (if (endp test-cases)
       (reverse test-case-alist-acc)
     (b* ((test-case (first test-cases))
@@ -9067,8 +9251,6 @@
                             (+ 1 test-case-count)
                             (acons test-case-array-name test-case-array test-case-alist-acc)
                             debug-nodes))))
-
-(skip-proofs (verify-guards make-test-case-alist))
 
 ;was for debugging
 ;; (skip -proofs
@@ -9162,13 +9344,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun remove-equalities-with-lhses (equalities lhses-to-drop)
+  (declare (xargs :guard (and (true-list-listp equalities)
+                              (true-listp lhses-to-drop))))
   (if (endp equalities)
       nil
     (if (member-equal (farg1 (first equalities)) lhses-to-drop)
         (remove-equalities-with-lhses (rest equalities) lhses-to-drop)
       (cons (first equalities) (remove-equalities-with-lhses (rest equalities) lhses-to-drop)))))
-
-(skip-proofs (verify-guards remove-equalities-with-lhses))
 
 (defun rename-explanation-graph (alist ;maps symbols to symbols
                                  graph)
