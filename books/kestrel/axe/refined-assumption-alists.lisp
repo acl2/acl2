@@ -49,13 +49,12 @@
   (and (true-listp items)
        (all-dargp items)))
 
-(defforall all-darg-listp (items) (darg-listp items)
-  :declares ((type t items)))
-
 (defun darg-list-listp (items)
   (declare (xargs :guard t))
-  (and (true-listp items)
-       (all-darg-listp items)))
+  (if (atom items)
+      (null items)
+    (and (darg-listp (first items))
+         (darg-list-listp (rest items)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,9 +87,9 @@
            (true-listp (lookup-equal sym alist)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm all-darg-listp-of-lookup-equal-when-refined-assumption-alistp
+(defthm darg-list-listp-of-lookup-equal-when-refined-assumption-alistp
   (implies (refined-assumption-alistp alist)
-           (all-darg-listp (lookup-equal fn alist))))
+           (darg-list-listp (lookup-equal fn alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,9 +100,9 @@
                               (refined-assumption-alistp refined-assumption-alist))))
   (lookup-eq fn refined-assumption-alist))
 
-(defthm all-darg-listp-of-lookup-in-refined-assumption-alist
+(defthm darg-list-listp-of-lookup-in-refined-assumption-alist
   (implies (refined-assumption-alistp refined-assumption-alist)
-           (all-darg-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)))
+           (darg-list-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)))
   :hints (("Goal" :in-theory (enable lookup-in-refined-assumption-alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
