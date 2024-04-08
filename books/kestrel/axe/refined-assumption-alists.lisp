@@ -1,7 +1,7 @@
 ; An alist that stores assumptions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "renaming-array")
 (include-book "axe-trees")
 (include-book "refine-assumptions")
+(include-book "darg-listp")
 ;(include-book "kestrel/utilities/forms" :dir :system)
 ;(include-book "kestrel/utilities/erp" :dir :system)
 ;(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -38,16 +39,23 @@
 (local (in-theory (disable symbol-listp ; prevent inductions
                            wf-dagp wf-dagp-expander)))
 
+(defthm darg-listp-when-all-dargp ; eventually remove this
+  (implies (all-dargp items)
+           (equal (darg-listp items)
+                  (true-listp items)))
+  :hints (("Goal" :in-theory (enable darg-listp))))
 
-;;;
-;;; refined-assumption-alists
-;;;
+(defthmd all-dargp-when-darg-listp ; eventually remove
+  (implies (darg-listp x)
+           (all-dargp x))
+  :hints (("Goal" :in-theory (enable darg-listp))))
 
-;; todo: optimize?  use more?
-(defun darg-listp (items)
-  (declare (xargs :guard t))
-  (and (true-listp items)
-       (all-dargp items)))
+;move
+(defthm darg-listp-of-dargs-when-dag-exprp
+  (implies (and (dag-exprp expr)
+                (not (eq 'quote (car expr))))
+           (darg-listp (dargs expr)))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
 
 (defun darg-list-listp (items)
   (declare (xargs :guard t))
@@ -59,9 +67,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A "refined-assumption-alist" is an efficient way to store a list of
-;; axe-trees, all of which are function calls applied to args that are nodenums
-;; / quoteps.  We use "term indexing": the alist maps each topmost function to
-;; a list of arg-lists (one for each call of fn in the list).
+;; axe-trees, all of which are function calls applied to dargs (args that are nodenums
+;; / quoteps).  We use "term indexing": the alist maps each topmost function to
+;; a list of darg-lists (one for each call of fn in the list).
 ;; TODO: Consider using a propery list world instead of an alist.
 
 ;could add more checks to this
@@ -94,7 +102,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Just lookup-eq (currently) but kept separate to make a nice abstraction for refined-assumption-alists.
-;; Returns a
+;; Returns a list of dargs
 (defund-inline lookup-in-refined-assumption-alist (fn refined-assumption-alist)
   (declare (xargs :guard (and (symbolp fn)
                               (refined-assumption-alistp refined-assumption-alist))))
@@ -267,7 +275,7 @@
       (uniquify-alist-eq refined-assumption-alist)
     (b* ((expr (first exprs))
          (fn (ffn-symb expr))
-         (args (fargs expr)) ; call dargs instead?
+         (args (dargs expr))
          (arg-lists-for-fn (lookup-eq fn refined-assumption-alist))
          (new-arg-lists-for-fn (cons args arg-lists-for-fn)))
         (extend-refined-assumption-alist (rest exprs)
