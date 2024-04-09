@@ -1,6 +1,6 @@
 ; Replaying the events in a book (perhaps with changes).
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,6 +29,7 @@
 ;; TODO: Handle define (prepwork, ///, etc.)
 ;; TODO: Handle defrule
 ;; TODO: Handle with-output
+;; TODO: Perhaps try turning off tau, to see if that saves a lot of time.
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/utilities/submit-events" :dir :system) ; todo: use prove$ instead
@@ -684,7 +685,10 @@
     (read-book-contents bookname dir state)
     (if erp
         (mv erp state)
-      (let ((state (widen-margins state)))
+      (let* ((state (widen-margins state))
+             (fake (TIME-TRACKER-FN 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL 'NIL)) ; from :trans (time-tracker nil)
+             )
+        (declare (ignore fake))
         (prog2$
          (and print (cw "~%~%(IMPROVING ~x0.~%" full-book-path)) ; matches the close paren below
          (let* ((old-cbd (cbd-fn state))
