@@ -1067,6 +1067,19 @@
                     (declare (ignore value)) ;compare this to the value from the array (if any?)
                     trace)))))))
 
+(defund test-case-array-alistp (alist min-len)
+  (declare (xargs :guard (integerp min-len)))
+  (if (atom alist)
+      (null alist)
+    (let* ((entry (first alist)))
+      (and (consp entry)
+           (let ((array-name (car entry))
+                 (array (cdr entry)))
+             (and (array1p array-name array)
+                  (<= min-len (alen1 array-name array))
+                  (test-case-array-alistp (rest alist) min-len)))))))
+
+
 ;;returns (mv traces test-cases count) where test-cases are the ones on which the function is actually used
 ;;ffixme test-case-array-alist may be nil?
 (defun get-traces-for-node-aux (test-cases nodenum dag-array-name dag-array interpreted-function-alist test-case-array-alist traces-acc test-cases-acc count)
@@ -1074,15 +1087,13 @@
                               (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (interpreted-function-alistp interpreted-function-alist)
-                              ;(test-casep test-case)
-                              ;(array1p test-case-array-name test-case-array)
-                              ;(< nodenum (alen1 test-case-array-name test-case-array))
+                              (test-case-array-alistp test-case-array-alist (+ 1 nodenum))
+                              (<= (len test-cases) (len test-case-array-alist))
                               (true-listp traces-acc)
                               (true-listp test-cases-acc)
                               (natp count)
                               )
-                  :verify-guards nil ; todo
-                  ))
+                  :guard-hints (("Goal" :expand (TEST-CASE-ARRAY-ALISTP TEST-CASE-ARRAY-ALIST (+ 1 NODENUM))))))
   (if (endp test-cases)
       (mv (reverse traces-acc) (reverse test-cases-acc) count) ;fixme drop the reverses?
     (let* ((test-case (first test-cases))
@@ -1097,17 +1108,17 @@
                                (if trace (cons test-case test-cases-acc) test-cases-acc)
                                (if trace (+ 1 count) count)))))
 
-(skip-proofs (verify-guards get-traces-for-node-aux))
-
 ;are the traces guaranteed to be non-empty? maybe so..
 ;;returns (mv traces test-cases count) where the test-cases returned are the ones on which the function is actually used
 ;;TEST-CASE-ARRAY-ALIST may be nil? or the test-cases match up with the test-case-array-alist?
 ;drops test-cases for which the node is unused, so TRACES and TEST-CASES should be in sync
 (defun get-traces-for-node (nodenum dag-array-name dag-array interpreted-function-alist test-cases test-case-array-alist)
   (declare (xargs :guard (and (natp nodenum)
-                              (test-casesp test-cases)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (interpreted-function-alistp interpreted-function-alist)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
+                              (test-casesp test-cases)
+                              (test-case-array-alistp test-case-array-alist (+ 1 nodenum))
+                              (<= (len test-cases) (len test-case-array-alist)))))
   (declare (type (integer 1 1073741823) nodenum)
            (xargs :guard (true-listp test-cases)))
   (progn$ (cw "  (Getting traces for node ~x0 from ~x1 test-cases.~%" nodenum (len test-cases)) ;print the fn?
@@ -1127,6 +1138,17 @@
 ;;returns (list traces-for-smallnodenum traces-for-bignodenum)
 ;the nodenums should not be the same
 (defun get-traces-for-two-nodes-aux (test-cases smallnodenum bignodenum dag-array-name dag-array interpreted-function-alist test-case-array-alist traces1-acc traces2-acc)
+  (declare (xargs :guard (and (test-casesp test-cases)
+                              (natp smallnodenum)
+                              (natp bignodenum)
+                              (<= smallnodenum bignodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 bignodenum))
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (test-case-array-alistp test-case-array-alist (+ 1 bignodenum))
+                              (<= (len test-cases) (len test-case-array-alist))
+                              (TRUE-LISTP TRACES1-ACC)
+                              (TRUE-LISTP TRACES2-ACC))
+                  :guard-hints (("Goal" :in-theory (enable test-case-array-alistp)))))
   (if (endp test-cases)
       (list (reverse-list traces1-acc) (reverse-list traces2-acc))
     (let* ((entry (car test-case-array-alist))
@@ -1146,17 +1168,22 @@
                                         (cons trace2 traces2-acc)
                                       traces2-acc)))))
 
-(skip-proofs (verify-guards get-traces-for-two-nodes-aux))
-
 ;;returns (list traces-for-smallnodenum traces-for-bignodenum)
 ;fixme is test-case-array-alist in sync with the test-cases?
 ;returns traces for the test cases for which both nodes are used
 (defun get-traces-for-two-nodes (smallnodenum bignodenum dag-array-name dag-array interpreted-function-alist test-cases test-case-array-alist)
   (declare (type (integer 1 1073741823) smallnodenum)
            (type (integer 1 1073741823) bignodenum)
-           (xargs :guard (true-listp test-cases)))
+           (xargs :guard (and (test-casesp test-cases)
+                              (natp smallnodenum)
+                              (natp bignodenum)
+                              (< smallnodenum bignodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 bignodenum))
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (test-case-array-alistp test-case-array-alist (+ 1 bignodenum))
+                              (<= (len test-cases) (len test-case-array-alist)))))
   (if (equal smallnodenum bignodenum)
-      (hard-error 'get-traces-for-two-nodes "the two nodes should not be the same" nil)
+      (er hard? 'get-traces-for-two-nodes "the two nodes should not be the same" nil)
     (prog2$
      (cw "(Getting traces from ~x0 test cases:~%" (len test-cases))
      (let ((traces-pair (get-traces-for-two-nodes-aux test-cases ;can this be too many? used to use 100 (if we are taking just a few, choose a better sample?)
@@ -1166,8 +1193,6 @@
                                                       nil)))
        (prog2$ (cw "done.)~%")
                traces-pair)))))
-
-(skip-proofs (verify-guards get-traces-for-two-nodes))
 
 (defun flatten-trace (trace)
   (declare (xargs :measure (acl2-count trace)
@@ -1250,6 +1275,9 @@
 ;fixme - gen the 32s!
 ;fixme should the minelem and maxelem be with regard to the field width?  i mean, if the values are usbs, of course the will be <= 0 but not sbvlt than 0 - hmmm. well maybe the logexts mean that minelem and maxelem are right..
 (defun make-bounds-and-type-facts (minelem maxelem value-term size-already-asserted)
+  (declare (xargs :guard (and (integerp minelem)
+                              (integerp maxelem)
+                              (natp size-already-asserted))))
   (if (<= 0 minelem) ;fixme use sbvlt?
       (let ((size (integer-length maxelem)))
         (append (if (eql 0 minelem)
@@ -1271,8 +1299,6 @@
                     (< 32 size-already-asserted))
                 `((unsigned-byte-p '32 ,value-term)) ;fixme check this.
               nil))))
-
-(skip-proofs (verify-guards make-bounds-and-type-facts))
 
 ;; (defun bvplus-list-list (n x y)
 ;;   (if (endp x)
@@ -1309,7 +1335,7 @@
 ;;     (cons (bvminus n (car items1) (car items2))
 ;;           (bvminus-list n (cdr items1) (cdr items2)))))
 
-;; (skip-proofs (verify-guards bvminus-list))
+;; (skip -proofs (verify-guards bvminus-list))
 
 (defun g-list-list (key vals)
   (declare (xargs :guard (and (true-list-listp vals)))) ; strengthen?
@@ -1682,34 +1708,33 @@
 
 (skip-proofs (verify-guards pair-terms-with-constants-list))
 
-(defmap-simple last-elem)
-
-(skip-proofs (verify-guards map-last-elem))
+(DEFUN MAP-LAST-ELEM (X)
+  (declare (xargs :guard (all-consp x)))
+  (IF (ATOM X)
+      NIL
+    (CONS (LAST-ELEM (CAR X))
+          (MAP-LAST-ELEM (CDR X)))))
 
 ;seq1 and seq2 should be the same length and not nil
 (defun corresponding-elements-have-difference (diff seq1 seq2)
+  (declare (xargs :guard (and (integerp diff)
+                              (integer-listp seq1)
+                              (integer-listp seq2)
+                              (equal (len seq1) (len seq2)))
+                  :guard-hints (("Goal" :in-theory (enable integer-listp)))))
   (if (endp seq1)
       t
     (and (eql diff (- (car seq1) (car seq2)))
          (corresponding-elements-have-difference diff (cdr seq1) (cdr seq2)))))
 
-(skip-proofs (verify-guards corresponding-elements-have-difference))
-
-;use a forall?
-(DEFUN acl2-numberp-LIST (X)
-  (DECLARE (XARGS :GUARD T))
-  (IF (CONSP X)
-      (AND (acl2-numberp (CAR X))
-           (acl2-numberp-list (CDR X)))
-      T))
-
 ;;returns (mv term-or-nil difference) where if TERM-OR-NIL is non-nil, we found a match and DIFFERENCE is (nth i seq)-(nth i <seq-for-term>), for all i
 (defun find-term-with-constant-difference (seq term-seq-alist)
+;;  (declare (xargs :guard (alistp term-seq-alist)))
   (if (endp term-seq-alist)
       (mv nil nil)
     (let* ((entry (car term-seq-alist))
            (seq2 (cdr entry)))
-      (if (not (acl2-numberp-list seq2)) ;restrict to integers? ;fixme maybe term-seq-alist only contains integer sequences?
+      (if (not (acl2-number-listp seq2)) ;restrict to integers? ;fixme maybe term-seq-alist only contains integer sequences?
           (find-term-with-constant-difference seq (cdr term-seq-alist))
         (let ((first-diff (- (car seq) (car seq2))))
           ;;do we already have a function that computes something like this?:
@@ -2086,6 +2111,9 @@
 
 ;;returns the sequence n_i such that target_i = (nth n_i value_i), or nil if there is no such sequence
 (defun make-nth-list-for-nthcdr-aux (target-seq value-seq acc)
+  (declare (xargs :guard (and (true-listp target-seq)
+                              (true-list-listp value-seq)
+                              (true-listp acc))))
   (if (endp target-seq)
       (reverse acc)
     (let* ((target (car target-seq))
@@ -2098,15 +2126,16 @@
           (make-nth-list-for-nthcdr-aux (cdr target-seq) (cdr value-seq) (cons len-diff acc))
         nil))))
 
-(skip-proofs (verify-guards make-nth-list-for-nthcdr-aux))
-
 (defun make-nth-list-for-nthcdr (target-seq value-seq)
+  (declare (xargs :guard (and (true-listp target-seq)
+                              (true-list-listp value-seq))))
   (make-nth-list-for-nthcdr-aux target-seq value-seq nil))
-
-(skip-proofs (verify-guards make-nth-list-for-nthcdr))
 
 ;returns nth-seqs, or nil for failure
 (defun make-nth-list-for-nthcdr-list-aux (target-seqs value-seqs nth-seqs-acc)
+  (declare (xargs :guard (and (true-list-list-listp target-seqs)
+                              (true-list-list-listp value-seqs)
+                              (true-listp nth-seqs-acc))))
   (if (endp target-seqs)
       (reverse nth-seqs-acc)
     (let ((res (make-nth-list-for-nthcdr (car target-seqs) (car value-seqs))))
@@ -2114,13 +2143,11 @@
           nil
         (make-nth-list-for-nthcdr-list-aux (cdr target-seqs) (cdr value-seqs) (cons res nth-seqs-acc))))))
 
-(skip-proofs (verify-guards make-nth-list-for-nthcdr-list-aux))
-
 ;returns nth-seqs or nil to indicate failure
 (defun make-nth-list-for-nthcdr-list (target-seqs value-seqs)
+  (declare (xargs :guard (and (true-list-list-listp target-seqs)
+                              (true-list-list-listp value-seqs))))
   (make-nth-list-for-nthcdr-list-aux target-seqs value-seqs nil))
-
-(skip-proofs (verify-guards make-nth-list-for-nthcdr-list))
 
 ;;returns the sequence n_i such that target_i = (firstn n_i value_i), or nil if there is no such sequence
 (defun make-nth-list-for-firstn-aux (target-seq value-seq acc)
@@ -2433,6 +2460,8 @@
 ;returns (mv found-onep seq1 seq2)
 ;what about seqs of exactly 1?
 (defun find-long-enough-seqs (seqs1 seqs2)
+  (declare (xargs :guard (and (true-listp seqs1)
+                              (true-listp seqs2))))
   (if (endp seqs1)
       (mv nil nil nil)
     (let ((seq1 (car seqs1))
@@ -2442,8 +2471,6 @@
                )
           (mv t seq1 seq2)
         (find-long-enough-seqs (cdr seqs1) (cdr seqs2))))))
-
-(skip-proofs (verify-guards find-long-enough-seqs))
 
 ;i hope the inputs will have corresponding lengths
 (defun all-prefixp (lst-of-lsts1 lst-of-lsts2)
@@ -2561,24 +2588,28 @@
                             value-traces
                             value-term)))
 
-(defmap map-nth (n x) (nth n x) :fixed (n))
-
-(skip-proofs (verify-guards map-nth))
+(DEFUN MAP-NTH (N X)
+  (declare (xargs :guard (and (natp n)
+                              (true-list-listp x))))
+  (IF (ATOM X)
+      NIL
+    (CONS (NTH N (CAR X))
+          (MAP-NTH N (CDR X)))))
 
 ;fixme map-nth vs nth-list.
 ;fixme compare to get-nths-from-values
 (defun get-nths-from-value-for-each-trace-rev (count candidate-value-for-each-trace)
+  (declare (xargs :guard (and (natp count)
+                              (true-list-listp candidate-value-for-each-trace))))
   (if (zp count)
       nil
     (cons (map-nth (+ -1 count) candidate-value-for-each-trace)
           (get-nths-from-value-for-each-trace-rev (+ -1 count) candidate-value-for-each-trace))))
 
-(skip-proofs (verify-guards get-nths-from-value-for-each-trace-rev))
-
 (defun get-nths-from-value-for-each-trace (len candidate-value-for-each-trace)
+  (declare (xargs :guard (and (natp len)
+                              (true-list-listp candidate-value-for-each-trace))))
   (reverse (get-nths-from-value-for-each-trace-rev len candidate-value-for-each-trace)))
-
-(skip-proofs (verify-guards get-nths-from-value-for-each-trace))
 
 (defun all-sums-are (sum lst1 lst2)
   (declare (xargs :guard (and (true-listp lst1)
@@ -2597,14 +2628,13 @@
       (all-sums-are first-sum (rest lst1) (rest lst2)))))
 
 (defun reverse-alist (alist)
+  (declare (xargs :guard (alistp alist)))
   (if (endp alist)
       nil
     (let* ((entry (car alist))
            (key (car entry))
            (val (cdr entry)))
       (acons-fast val key (reverse-alist (cdr alist))))))
-
-(skip-proofs (verify-guards reverse-alist))
 
 ;fixme for calls to all-same below this point, what if the sequence has only 1 value?
 
@@ -4234,7 +4264,7 @@
 ;;         (t (merge-sig-< l1 (cdr l2)
 ;;                         (cons (car l2) acc)))))
 
-;; (skip-proofs (verify-guards merge-sig-<))
+;; (skip- proofs (verify-guards merge-sig-<))
 
 
 
@@ -8185,38 +8215,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun enquote-cdrs (alist)
+(defund enquote-cdrs (alist)
   (declare (xargs :guard (alistp alist)))
   (if (endp alist)
       nil
     (acons-fast (car (car alist))
-           (kwote (cdr (car alist)))
-           (enquote-cdrs (cdr alist)))))
+                (kwote (cdr (car alist)))
+                (enquote-cdrs (cdr alist)))))
+
+(local
+  (defthm symbol-alistp-of-enquote-cdrs
+    (implies (symbol-alistp alist)
+             (symbol-alistp (enquote-cdrs alist)))
+    :hints (("Goal" :in-theory (enable symbol-alistp enquote-cdrs)))))
+
+(local
+  (defthm strip-cdrs-of-enquote-cdrs
+    (equal (strip-cdrs (enquote-cdrs alist))
+           (ENQUOTE-LIST (strip-cdrs alist)))
+    :hints (("Goal" :in-theory (enable enquote-cdrs)))))
+
+(local
+  (defthm darg-listp-of-enquote-list
+    (darg-listp (enquote-list x))
+    :hints (("Goal" :in-theory (enable enquote-list)))))
 
 ;returns (mv test-cases-for-term test-cases-for-not-term)
-(defun partition-test-cases (test-cases term
+(defund partition-test-cases (test-cases term
                                         interpreted-function-alist  ;i kind of hope we don't need this
                                         true-acc false-acc)
+  (declare (xargs :guard (and (test-casesp test-cases)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              (pseudo-termp term)
+                              (true-listp true-acc)
+                              (true-listp false-acc))))
   (if (endp test-cases)
       (mv (reverse true-acc)
           (reverse false-acc))
     (let* ((test-case (first test-cases))
            (evaluated-term (sublis-var-and-eval (enquote-cdrs test-case) ;gross?
                                                   term interpreted-function-alist)))
-      (if (not (quotep evaluated-term))
-          (prog2$ (hard-error 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." (acons #\0 test-case (acons #\1 evaluated-term nil)))
+      (if (not (myquotep evaluated-term))
+          (prog2$ (er hard? 'partition-test-cases "Unable to evaluate test case: ~x0.  Got: ~x1." (acons #\0 test-case (acons #\1 evaluated-term nil)))
                   (mv nil nil))
         (if (unquote evaluated-term)
             (partition-test-cases (rest test-cases) term interpreted-function-alist (cons test-case true-acc) false-acc)
           (partition-test-cases (rest test-cases) term interpreted-function-alist true-acc (cons test-case false-acc)))))))
-
-(skip-proofs (verify-guards partition-test-cases))
 
 ;pass in interpreted-function-alist ?
 (defun nodenum-has-both-true-and-false-test-cases (test-cases
                                                    nodenum dag-array-name dag-array interpreted-function-alist
                                                    found-truep found-falsep ;at least one of these will be false
                                                    )
+  (declare (xargs :guard (and (test-casesp test-cases)
+                              (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                              (interpreted-function-alistp interpreted-function-alist))
+                  :verify-guards nil ; todo: need properties of EVAL-DAG-WITH-AXE-EVALUATOR
+                  ))
   (if (endp test-cases)
       (prog2$ (if found-truep
                   (cw "(Rejecting split candidate ~x0: no false test case.)~%" nodenum)
@@ -8292,34 +8348,47 @@
 
 (skip-proofs (verify-guards smallest-node-with-both-true-and-false-test-cases))
 
-(skip-proofs
- (defun get-boolands-and-conjuncts (nodenum-or-quotep miter-array-name miter-array acc)
-   (if (consp nodenum-or-quotep)
-       acc
-     (let ((expr (aref1 miter-array-name miter-array nodenum-or-quotep)))
-       (if (not (call-of 'booland expr))
-           (cons nodenum-or-quotep acc)
-         ;;it is a call of booland:
-         (let* ((acc (cons nodenum-or-quotep acc)) ;we include the booland node itself (fixme why would we ever split on a booland?)
-                (acc (get-boolands-and-conjuncts (farg1 expr) miter-array-name miter-array acc)))
-           (get-boolands-and-conjuncts (farg2 expr) miter-array-name miter-array acc)))))))
+;; Only returns nodenums
+;; Can this blow up?
+(defun get-boolands-and-conjuncts (nodenum-or-quotep miter-array-name miter-array acc)
+  (declare (xargs :guard (and (dargp nodenum-or-quotep)
+                              (if (consp nodenum-or-quotep)
+                                  t
+                                (pseudo-dag-arrayp miter-array-name miter-array (+ 1 nodenum-or-quotep)))
+                              (true-listp acc))
+                  :measure (if (not (natp nodenum-or-quotep))
+                               0
+                             (+ 1 nodenum-or-quotep))))
+  (if (or (not (mbt (and (dargp nodenum-or-quotep)
+                         (if (consp nodenum-or-quotep)
+                             t
+                           (pseudo-dag-arrayp miter-array-name miter-array (+ 1 nodenum-or-quotep)))
+                         (true-listp acc))))
+          (consp nodenum-or-quotep))
+      acc
+    (let ((expr (aref1 miter-array-name miter-array nodenum-or-quotep)))
+      (if (not (and (call-of 'booland expr)
+                    (= 2 (len (dargs expr)))))
+          (cons nodenum-or-quotep acc)
+        ;;it is a call of booland:
+        (let* ((acc (cons nodenum-or-quotep acc)) ;we include the booland node itself (fixme why would we ever split on a booland?)
+               (acc (get-boolands-and-conjuncts (darg1 expr) miter-array-name miter-array acc)))
+          (get-boolands-and-conjuncts (darg2 expr) miter-array-name miter-array acc))))))
 
-(skip-proofs (verify-guards get-boolands-and-conjuncts))
-
-;the also counts leaf nodes if they are equalities (since we should have merged the two equated things already)
-;fixme what is a leaf of the booland nest that is an equality also appears in some other context?
-(skip-proofs
- (defun nodes-in-booland-nest (nodenum-or-quotep miter-array-name miter-array)
-   (if (quotep nodenum-or-quotep)
-       nil
-     (let ((expr (aref1 miter-array-name miter-array nodenum-or-quotep)))
-       (if (call-of 'booland expr)
-           (cons nodenum-or-quotep
-                 (append (nodes-in-booland-nest (farg1 expr) miter-array-name miter-array)
-                         (nodes-in-booland-nest (farg2 expr) miter-array-name miter-array)))
-         (if (call-of 'equal expr) ;new
-             (list nodenum-or-quotep)
-           nil))))))
+;; ;the also counts leaf nodes if they are equalities (since we should have merged the two equated things already)
+;; ;fixme what is a leaf of the booland nest that is an equality also appears in some other context?
+;; (skip-proofs
+;;  (defun nodes-in-booland-nest (nodenum-or-quotep miter-array-name miter-array)
+;;    (if (quotep nodenum-or-quotep)
+;;        nil
+;;      (let ((expr (aref1 miter-array-name miter-array nodenum-or-quotep)))
+;;        (if (call-of 'booland expr)
+;;            (cons nodenum-or-quotep
+;;                  (append (nodes-in-booland-nest (farg1 expr) miter-array-name miter-array)
+;;                          (nodes-in-booland-nest (farg2 expr) miter-array-name miter-array)))
+;;          (if (call-of 'equal expr) ;new
+;;              (list nodenum-or-quotep)
+;;            nil))))))
 
 (defun nodes-that-call (fn nodenum miter-array-name miter-array acc)
   (declare (xargs :measure (nfix (+ 1 nodenum))
