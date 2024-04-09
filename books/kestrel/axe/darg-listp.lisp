@@ -29,12 +29,40 @@
            (true-listp x))
   :hints (("Goal" :in-theory (enable darg-listp))))
 
+(defthm darg-listp-forward-to-true-listp
+  (implies (darg-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-listp))))
+
 (defthm darg-listp-of-append
   (equal (darg-listp (append x y))
          (and (darg-listp (true-list-fix x))
               (darg-listp y)))
   :hints (("Goal" :in-theory (enable darg-listp))))
 
+(defthm darg-listp-of-cons
+  (equal (darg-listp (cons a x))
+         (and (dargp a)
+              (darg-listp x)))
+:hints (("Goal" :in-theory (enable darg-listp))))
+
+(defthm darg-listp-of-cdr
+  (implies (darg-listp x)
+           (darg-listp (cdr x)))
+  :hints (("Goal" :in-theory (enable darg-listp))))
+
+(defthm dargp-of-car-when-darg-listp
+  (implies (darg-listp x)
+           (equal (dargp (car x))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable darg-listp))))
+
+(defthm darg-listp-when-not-consp
+  (implies (not (consp items))
+           (equal (darg-listp items)
+                  (equal items nil)))
+  :hints (("Goal" :in-theory (enable darg-listp))))
 
 ;; Our normal form is to express everything in terms of whether the item is a consp.
 (defthmd integerp-of-car-when-darg-listp
@@ -108,12 +136,12 @@
            (dargp (nth n dargs)))
   :hints (("Goal" :in-theory (enable darg-listp))))
 
-
 ;; too expensive to leave enabled
 (defthmd true-listp-of-cdr-of-nth-when-darg-listp
   (implies (and (darg-listp dargs)
                 (natp n)
-                (< n (len dargs)))
+                ;; (< n (len dargs))
+                )
            (true-listp (cdr (nth n dargs))))
   :hints (("Goal" :in-theory (enable darg-listp nth))))
 
@@ -121,7 +149,8 @@
 (defthmd <-of-len-of-nth-and-3-when-darg-listp
   (implies (and (darg-listp dargs)
                 (natp n)
-                (< n (len dargs)))
+                ;; (< n (len dargs))
+                )
            (< (len (nth n dargs)) 3))
   :hints (("Goal" :in-theory (enable darg-listp nth))))
 

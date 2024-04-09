@@ -76,8 +76,7 @@
 ;; TODO: Should we remove duplicate disjuncts too?
 ;; Also used in prover.lisp
 (defund handle-constant-disjuncts (disjuncts acc)
-  (declare (xargs :guard (and (true-listp disjuncts)
-                              (all-dargp disjuncts)
+  (declare (xargs :guard (and (darg-listp disjuncts)
                               (true-listp acc))))
   (if (endp disjuncts)
       (mv nil (reverse acc)) ;todo: maybe drop the reverse
@@ -99,7 +98,7 @@
   :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))
 
 (defthm nat-listp-of-mv-nth-1-of-handle-constant-disjuncts
-  (implies (and (all-dargp disjuncts)
+  (implies (and (darg-listp disjuncts)
                 (nat-listp acc))
            (nat-listp (mv-nth 1 (handle-constant-disjuncts disjuncts acc))))
   :hints (("Goal" :in-theory (enable handle-constant-disjuncts))))

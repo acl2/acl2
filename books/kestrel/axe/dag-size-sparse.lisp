@@ -19,7 +19,7 @@
 (include-book "numeric-lists")
 (include-book "worklist-array")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
-(include-book "all-dargp")
+(include-book "darg-listp")
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))

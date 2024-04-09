@@ -250,8 +250,7 @@
 ;; TODO: Exclude FN from being 'QUOTE?  todo: but require it to be a symbol?
 ;; TODO: Are there other functions like this to deprecate?
 (defund maybe-get-type-of-function-call (fn args)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args))))
+  (declare (xargs :guard (darg-listp args)))
   (or (maybe-get-type-of-bv-function-call fn args)
       (cond
        ;; Functions that return bv-arrays:
@@ -281,8 +280,7 @@
 
 ;get rid of this?
 (defund get-type-of-function-call-checked (fn args)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args))))
+  (declare (xargs :guard (darg-listp args)))
   (or (maybe-get-type-of-function-call fn args)
       (er hard? 'get-type-of-function-call-checked "couldn't find type for call of ~x0 on args ~x1" fn args)))
 
@@ -290,8 +288,7 @@
 
 ;; Returns an axe-type, possibly (most-general-type).
 (defund get-type-of-function-call-safe (fn args)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args))))
+  (declare (xargs :guard (darg-listp args)))
   (or (maybe-get-type-of-function-call fn args)
       (most-general-type)))
 

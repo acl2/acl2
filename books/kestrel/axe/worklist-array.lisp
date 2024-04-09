@@ -94,19 +94,19 @@
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
 
 (defthm all-natp-of-get-unexamined-nodenum-args
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-natp acc))
            (all-natp (get-unexamined-nodenum-args args worklist-array acc)))
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
 
 (defthm natp-listp-of-get-unexamined-nodenum-args
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (nat-listp acc))
            (nat-listp (get-unexamined-nodenum-args args worklist-array acc)))
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))
 
 (defthm all-rationalp-of-get-unexamined-nodenum-args
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-rationalp acc))
            (all-rationalp (get-unexamined-nodenum-args args worklist-array acc)))
   :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args))))

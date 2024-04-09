@@ -544,8 +544,8 @@
 
 ;todo: always go from car/cadr of dargs to nth?
 
-;; (defthmd not-complex-rationalp-of-nth-when-all-dargp
-;;   (implies (and (all-dargp args)
+;; (defthmd not-complex-rationalp-of-nth-when-darg-listp
+;;   (implies (and (darg-listp args)
 ;;                 ;(natp n)
 ;;                 ;(< n (len args))
 ;;                 )
@@ -559,8 +559,8 @@
 ;;                 (natp n)
 ;;                 (not (equal 'quote (nth 0 expr))))
 ;;            (not (complex-rationalp (nth n (dargs expr)))))
-;;   :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
-;;                                      not-<-of-0-and-nth-when-all-dargp
+;;   :hints (("Goal" :in-theory (enable integerp-of-nth-when-darg-listp
+;;                                      not-<-of-0-and-nth-when-darg-listp
 ;;                                      dag-exprp))))
 
 ;; while true, this seems bad, because a contextp is a conjunction, not a disjunction

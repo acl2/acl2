@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-;(include-book "all-dargp")
 ;(include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "renaming-array")
 (include-book "axe-trees")
@@ -39,16 +38,16 @@
 (local (in-theory (disable symbol-listp ; prevent inductions
                            wf-dagp wf-dagp-expander)))
 
-(defthm darg-listp-when-all-dargp ; eventually remove this
-  (implies (all-dargp items)
-           (equal (darg-listp items)
-                  (true-listp items)))
-  :hints (("Goal" :in-theory (enable darg-listp))))
+;; (defthm darg-listp-when-all-dargp ; eventually remove this
+;;   (implies (all-dargp items)
+;;            (equal (darg-listp items)
+;;                   (true-listp items)))
+;;   :hints (("Goal" :in-theory (enable darg-listp))))
 
-(defthmd all-dargp-when-darg-listp ; eventually remove
-  (implies (darg-listp x)
-           (all-dargp x))
-  :hints (("Goal" :in-theory (enable darg-listp))))
+;; (defthmd all-dargp-when-darg-listp ; eventually remove
+;;   (implies (darg-listp x)
+;;            (all-dargp x))
+;;   :hints (("Goal" :in-theory (enable darg-listp))))
 
 ;move
 (defthm darg-listp-of-dargs-when-dag-exprp
@@ -120,11 +119,6 @@
 ;;; bounded refined-assumption-alists
 ;;;
 
-;move up
-(defthm darg-listp-when-bounded-darg-listp
-  (implies (bounded-darg-listp items dag-len)
-           (darg-listp items)))
-
 ;; Recognizes a true-list of bounded darg lists.
 (defund bounded-darg-list-listp (items dag-len)
   (declare (xargs :guard (natp dag-len)))
@@ -175,10 +169,10 @@
                 (consp assumption-arg-lists))
            (true-listp (car assumption-arg-lists))))
 
-(defthmd all-dargp-of-car-when-bounded-darg-list-listp
+(defthmd darg-listp-of-car-when-bounded-darg-list-listp
   (implies (and (bounded-darg-list-listp assumption-arg-lists dag-len)
                 (consp assumption-arg-lists))
-           (all-dargp (car assumption-arg-lists))))
+           (darg-listp (car assumption-arg-lists))))
 
 ;;;
 ;;; bounded-refined-assumption-alistp

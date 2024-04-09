@@ -15,7 +15,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system) ;for myquotep
 (include-book "kestrel/utilities/polarity" :dir :system)
-;(include-book "all-dargp")
+;(include-book "darg-listp")
 ;(include-book "dargp-less-than")
 (include-book "bounded-darg-listp")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -143,10 +143,9 @@
     (implies (dargp tree)
              (axe-treep tree))
     :flag axe-treep)
-  (defthm axe-tree-listp-when-all-dargp
-    (implies (all-dargp trees)
-             (equal (axe-tree-listp trees)
-                    (true-listp trees)))
+  (defthm axe-tree-listp-when-darg-listp
+    (implies (darg-listp trees)
+             (axe-tree-listp trees))
     :flag axe-tree-listp)
   :hints (("Goal" :in-theory (enable axe-treep axe-tree-listp))))
 
@@ -325,13 +324,13 @@
                                 (len args)))))))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
-(defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp (strip-cdrs alist))
+(defthm axe-treep-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs
+  (implies (and (darg-listp (strip-cdrs alist))
                 ;; (assoc-equal form alist)
                 )
            (axe-treep (cdr (assoc-equal form alist))))
-  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
-           :in-theory (disable dargp-of-cdr-of-assoc-equal))))
+  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs (var form))
+           :in-theory (disable dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs))))
 
 (defthm axe-treep-when-not-consp-and-not-symbolp-cheap
   (implies (and (not (consp tree))
@@ -472,9 +471,8 @@
               (bounded-axe-tree-listp trees bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-tree-listp))))
 
-(defthm bounded-axe-tree-listp-when-all-dargp
-  (implies (and (all-dargp items)
-                )
+(defthm bounded-axe-tree-listp-when-darg-listp
+  (implies (darg-listp items)
            (equal (bounded-axe-tree-listp items bound)
                   (bounded-darg-listp items bound)))
   :hints (("Goal" :expand ((bounded-axe-treep (car items) bound)
@@ -590,7 +588,7 @@
               (bounded-axe-tree-listp y bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-tree-listp append))))
 
-(defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
+(defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-bounded-darg-listp-of-strip-cdrs
   (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                 ;; (assoc-equal form alist)
                 )

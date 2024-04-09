@@ -33,7 +33,7 @@
        (local (include-book "kestrel/lists-light/len" :dir :system))
 
        (local (in-theory (enable assoc-equal-iff-two
-                                 natp-of-lookup-equal-when-all-dargp-of-strip-cdrs-when-member-equal
+                                 natp-of-lookup-equal-when-darg-listp-of-strip-cdrs-when-member-equal
                                  not-<-of-largest-non-quotep-of-strip-cdrs-and-lookup-equal-when-member-equal
                                  natp-of-+-of-1)))
        (local (in-theory (disable myquotep
@@ -48,7 +48,7 @@
          (declare (xargs :guard (and (symbolp fn)
                                      (list-of-variables-and-constantsp args)
                                      (symbol-alistp alist)
-                                     (all-dargp (strip-cdrs alist))
+                                     (darg-listp (strip-cdrs alist))
                                      (subsetp-eq (free-vars-in-terms args) (strip-cars alist))
                                      (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep (strip-cdrs alist)))))
                          :guard-hints (("Goal" :in-theory (e/d (list-of-variables-and-constantsp

@@ -158,7 +158,7 @@
 
 (defthm nat-listp-of-mv-nth-0-of-add-args-not-done
   (implies (and ;(array1p 'done-nodes-array done-nodes-array)
-            (all-dargp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
+            (darg-listp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
             (NAT-LISTP WORKLIST))
            (nat-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
   :hints (("Goal" :in-theory (enable add-args-not-done))))

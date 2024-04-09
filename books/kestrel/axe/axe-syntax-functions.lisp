@@ -341,10 +341,10 @@
 ;;             (dag-exprs-equal-lst (cdr expr1-lst) (cdr expr2-lst) dag-array (+ -1 count)))))))
 
 (local (in-theory (enable car-becomes-nth-of-0
-                          integerp-of-nth-when-all-dargp
-                          not-cddr-of-nth-when-all-dargp
-                          consp-of-cdr-of-nth-when-all-dargp
-                          equal-of-quote-and-nth-0-of-nth-when-all-dargp
+                          integerp-of-nth-when-darg-listp
+                          not-cddr-of-nth-when-darg-listp
+                          consp-of-cdr-of-nth-when-darg-listp
+                          equal-of-quote-and-nth-0-of-nth-when-darg-listp
                           symbolp-of-nth-0-when-dag-exprp
                           )))
 

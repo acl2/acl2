@@ -109,8 +109,7 @@
 ;extends the worklist with any args not done
 ;returns (mv nodenum-worklist worklist-extendedp)
 (defun get-args-not-done-array (args eval-array-name eval-array worklist worklist-extendedp)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args)
+  (declare (xargs :guard (and (darg-listp args)
                               (implies (not (all-consp args))
                                        (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep args))))
                               (all-natp worklist)
@@ -131,14 +130,13 @@
                                  t)))))
 
 (defthm all-natp-of-mv-nth-0-of-get-args-not-done-array
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-natp worklist))
            (all-natp (mv-nth 0 (get-args-not-done-array args eval-array-name eval-array worklist worklist-extendedp)))))
 
 ;assumes all dargs are done (and thus wrapped in a cons)
 (defun get-vals-of-args-array (dargs eval-array-name eval-array)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs)
+  (declare (xargs :guard (and (darg-listp dargs)
                               (implies (not (all-consp dargs))
                                        (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep dargs)))))))
   (if (endp dargs)

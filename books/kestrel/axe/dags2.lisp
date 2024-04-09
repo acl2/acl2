@@ -83,8 +83,7 @@
                                                             )))))
 
 (defun renumber-dag-expr-args (args renumbering)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args)
+  (declare (xargs :guard (and (darg-listp args)
                               (renumberingp renumbering))))
   (if (endp args)
       nil
@@ -349,14 +348,14 @@
   :hints (("Goal" :induct (renumber-dag-expr-args args renumbering)
            :in-theory (enable renumber-dag-expr renumber-dag-expr-arg bounded-dag-exprp dargp-less-than))))
 
-(defthm all-dargp-of-renumber-dag-expr-args
+(defthm darg-listp-of-renumber-dag-expr-args
   (implies (and (bounded-darg-listp args nodenum2)
                 (natp nodenum2)
                 (natp nodenum)
                 (maps-everything-to-quote-or-nodenum-less-than renumbering nodenum)
                 (binds-all-nats-up-to (+ -1 nodenum2) renumbering)
                 (renumberingp renumbering))
-           (all-dargp (renumber-dag-expr-args args renumbering)))
+           (darg-listp (renumber-dag-expr-args args renumbering)))
   :hints (("Goal" :induct (renumber-dag-expr-args args renumbering)
            :in-theory (enable renumber-dag-expr renumber-dag-expr-arg bounded-dag-exprp))))
 

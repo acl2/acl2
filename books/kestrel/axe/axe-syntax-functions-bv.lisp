@@ -25,10 +25,10 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable car-becomes-nth-of-0
-                          integerp-of-nth-when-all-dargp
-                          not-cddr-of-nth-when-all-dargp
-                          consp-of-cdr-of-nth-when-all-dargp
-                          equal-of-quote-and-nth-0-of-nth-when-all-dargp
+                          integerp-of-nth-when-darg-listp
+                          not-cddr-of-nth-when-darg-listp
+                          consp-of-cdr-of-nth-when-darg-listp
+                          equal-of-quote-and-nth-0-of-nth-when-darg-listp
                           symbolp-of-nth-0-when-dag-exprp)))
 
 (defund unquote-if-possible (x)
@@ -43,8 +43,7 @@
 ;what if the number of arguments is wrong?
 ;; NOTE: Soundness depends on this since it is used in the STP translation.
 (defund maybe-get-type-of-bv-function-call (fn dargs)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs))))
+  (declare (xargs :guard (darg-listp dargs)))
   ;; todo: use case here:
   (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
    ((member-eq fn '(getbit bitxor bitand bitor bitnot bool-to-bit))

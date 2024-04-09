@@ -82,7 +82,7 @@
                            nat-listp
                            all-natp-when-not-consp
                            all-<-when-not-consp
-                           all-dargp-when-not-consp
+                           darg-listp-when-not-consp
                            )))
 
 ;(local (in-theory (enable natp-of-+-of-1-alt)))

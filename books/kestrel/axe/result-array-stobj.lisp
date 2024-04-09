@@ -17,7 +17,9 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
-(include-book "dags") ;for all-dargp
+;(include-book "dags")
+(include-book "bounded-darg-listp")
+(include-book "darg-listp")
 (local (include-book "kestrel/lists-light/resize-list" :dir :system))
 
 ;a result-array maps nodenums to alists from rewrite-objectives to nodenums-or-quoteps (the alist is nil if the node is not yet rewritten)
@@ -26,7 +28,7 @@
   (declare (xargs :guard t))
   (and (alistp alist)
        (subsetp-eq (strip-cars alist) '(? t nil))
-       (all-dargp (strip-cdrs alist))))
+       (darg-listp (strip-cdrs alist))))
 
 (defthm result-alistp-of-cons
   (equal (result-alistp (cons entry alist))

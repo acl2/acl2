@@ -206,13 +206,13 @@
            (alistp (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc))))
   :hints (("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap))))
 
-(defthm all-dargp-of-strip-cdrs-of-unify-tree-with-any-dag-node-no-wrap
+(defthm darg-listp-of-strip-cdrs-of-unify-tree-with-any-dag-node-no-wrap
   (implies (and (axe-treep tree)
                 (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-dargp (strip-cdrs alist-acc))
+                (darg-listp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc))
-           (all-dargp (strip-cdrs (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))))
+           (darg-listp (strip-cdrs (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))))
   :hints (("subgoal *1/2" :cases ((consp (CAR NODENUMS-OR-QUOTEPS))))
           ("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap))))
 
@@ -220,7 +220,7 @@
   (implies (and (axe-treep tree)
                 (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-dargp (strip-cdrs alist-acc))
+                (darg-listp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc)
                 (mv-nth 0 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))
            (subsetp-equal (axe-tree-vars tree) (strip-cars (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))))
@@ -231,7 +231,7 @@
                 (axe-treep tree)
                 (bounded-darg-listp nodenums-or-quoteps dag-len)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-dargp (strip-cdrs alist-acc))
+                (darg-listp (strip-cdrs alist-acc))
                 (symbol-alistp alist-acc)
                 (mv-nth 0 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))
            (assoc-equal var (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc))))
@@ -1058,8 +1058,7 @@
 ; If a node whose type we don't know (not obvious, not in the known-type-alist) appears sometimes as a choppable arg (e.g., to XOR) and sometimes as an arg to equal (cannot chop), we'll use the induced type (the largest type of all the choppable uses of the term) and the equal will just have to be made into a boolean variable.
 
 (defund can-translate-bvif-args (dargs)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs))))
+  (declare (xargs :guard (darg-listp dargs)))
   (and (= (len dargs) 4) ;optimize?
        (myquotep (first dargs)) ; drop?
        (darg-quoted-posp (first dargs)) ;used to allow 0 ;fixme print a warning in that case?
@@ -1861,14 +1860,13 @@
                            ;; natp
                            )))
 
-(defthmd all-<-when-all-dargp
-  (implies (and (all-dargp x)
-                (true-listp x))
+(defthmd all-<-when-darg-listp
+  (implies (darg-listp x)
            (equal (all-< (keep-atoms x) bound)
                   (bounded-darg-listp x bound)))
   :hints (("Goal" :in-theory (enable keep-atoms))))
 
-(local (in-theory (enable all-<-when-all-dargp)))
+(local (in-theory (enable all-<-when-darg-listp)))
 
 (defthm not-bv-array-typep-when-bv-typep-cheap
   (implies (bv-typep x)
