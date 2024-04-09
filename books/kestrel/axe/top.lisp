@@ -97,6 +97,7 @@
 (include-book "equivs")
 (include-book "evaluator-basic")
 (include-book "extract-dag-array")
+(include-book "evaluate-test-case")
 (include-book "find-probable-facts")
 (include-book "fixup-context")
 (include-book "get-args-not-done")

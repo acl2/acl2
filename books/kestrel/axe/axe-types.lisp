@@ -110,8 +110,8 @@
 (defund list-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
-       (eql 3 (len type)) ;this might be overkill to check in some cases?
        (eq :list (first type))
+       (eql 3 (len type)) ;this might be overkill to check in some cases?
        ))
 
 (defund make-list-type (element-type len-type)
@@ -153,15 +153,16 @@
 ;;; axe-typep
 
 ;todo: what about a quoted constant? isn't that also a type?  maybe only used for array lengths?
-;todo: what about :range types? only used for list lengths?
+;; See also test-case-typep for support for :range types.
 (defund axe-typep (type)
   (declare (xargs :guard t))
   (or (bv-typep type)
       (list-typep type) ; todo: disallow this here (used only for test case generation?)
       ;(bv-array-typep type) a subtype of the list-type
       (boolean-typep type)
-      (most-general-typep type)
-      (empty-typep type)))
+      (most-general-typep type) ;; represents no information
+      (empty-typep type) ;; represents a type contradiction
+      ))
 
 ;; nil is not an Axe type.  Needed for functions like get-induced-type.
 (defthm not-axe-typep-of-nil
@@ -316,7 +317,8 @@
 ;;                         nil)
 ;;                     nil))))))))))
 
-;fffixme flesh this out! handle ranges? constants? sets?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Callers that care about type mismatches should consider calling most-general-typep on the result.
 (defund union-types (type1 type2)
   (declare (xargs :guard (and (axe-typep type1)
@@ -350,7 +352,8 @@
            (axe-typep (union-types x y)))
   :hints (("Goal" :in-theory (enable axe-typep union-types))))
 
-;fffixme flesh this out! handle ranges? constants? sets?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund intersect-types (type1 type2)
   (declare (xargs :guard (and (axe-typep type1)
                               (axe-typep type2))))
@@ -395,13 +398,14 @@
         ;;ffixme make sure this is sound:
         ((and (bv-array-typep type1)
               (bv-array-typep type2))
-         (if (equal (bv-array-type-len type1)
-                    (bv-array-type-len type2))
-             (make-bv-array-type (min (bv-array-type-element-width type1)
-                                      (bv-array-type-element-width type2))
-                                 (bv-array-type-len type1))
-           (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1" type1 type2)
-                   (empty-type))))
+         (let ((len1 (bv-array-type-len type1))
+               (len2 (bv-array-type-len type2)))
+           (if (equal len1 len2)
+               (make-bv-array-type (min (bv-array-type-element-width type1)
+                                        (bv-array-type-element-width type2))
+                                   len1)
+             (prog2$ (cw "WARNING: Array length mismatch: ~x0 and ~x1" type1 type2)
+                     (empty-type)))))
         (t (prog2$ (cw "WARNING: Type mismatch: ~x0 and ~x1" type1 type2)
                    (empty-type)))))
 

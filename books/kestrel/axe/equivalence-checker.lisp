@@ -7823,19 +7823,6 @@
 (defun make-var-type-alist-from-hyps (hyps)
   (make-var-type-alist-from-hyps-aux hyps hyps nil))
 
-(defund remove-set-of-unused-nodes (probably-equal-node-sets never-used-nodes acc)
-  (declare (xargs :guard (and (nat-list-listp probably-equal-node-sets)
-                              (nat-listp never-used-nodes)
-                              (nat-list-listp acc))))
-  (if (endp probably-equal-node-sets)
-      acc ; todo: error?
-    (let* ((set (first probably-equal-node-sets))
-           (one-nodenum (first set)))
-      (if (member one-nodenum never-used-nodes)
-          ;;drop this set (and stop looking):
-          (append (cdr probably-equal-node-sets) acc)
-        (remove-set-of-unused-nodes (rest probably-equal-node-sets) never-used-nodes (cons set acc))))))
-
 ;returns (mv unrolled-fn rune state) where the lemma has been proved in state
 ;fffixme add simplification of the unrolled function body?
 ;fffffixme handle name clashes
@@ -8069,9 +8056,9 @@
                                     probably-constant-node-alist))))
 
 
-;returns sweep-array
-;is the alist passed in guaranteed to not have any extra pairs?
-(defund tag-probably-constant-nodes2 (probably-constant-node-alist sweep-array)
+;; Tags all the nodes that are probably constants.
+;; Returns sweep-array.
+(defund tag-probably-constant-nodes (probably-constant-node-alist sweep-array)
   (declare (xargs :guard (and (alistp probably-constant-node-alist)
                               (nat-listp (strip-cars probably-constant-node-alist))
                               (sweep-arrayp 'sweep-array sweep-array)
@@ -8083,7 +8070,7 @@
            (value (cdr entry))
            ;;fixme, can we handle this for every type of constant (like lists and other non-bv stuff)?
            (sweep-array (set-node-tag nodenum *probable-constant* (enquote value) sweep-array)))
-      (tag-probably-constant-nodes2 (cdr probably-constant-node-alist) sweep-array))))
+      (tag-probably-constant-nodes (cdr probably-constant-node-alist) sweep-array))))
 
 (defun remove-node-from-smaller-nodes-that-might-be-equal (nodenum nodenum-to-remove sweep-array)
   (declare (xargs :guard (and (natp nodenum)
@@ -12641,6 +12628,50 @@
 
 (skip-proofs (verify-guards apply-rule-at-nodenum))
 
+;; This currently does no cutting.
+;; Returns (mv result state) where result is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defund prove-node-is-constant-with-stp (nodenum constant-value
+                                                 miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< nodenum miter-len)
+                              (symbol-alistp var-type-alist)
+                              (print-levelp print)
+                              (natp max-conflicts)
+                              (symbolp miter-name))
+                  :verify-guards nil ; todo: first prove properties of GATHER-NODES-FOR-TRANSLATION
+                  :stobjs state))
+  (b* ((needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
+       (needed-for-node1-tag-array (aset1-safe 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
+       ;; Choose which nodes to translate (no cutting):
+       ((mv nodenums-to-translate cut-nodenum-type-alist)
+        (gather-nodes-for-translation nodenum miter-array-name miter-array miter-len var-type-alist needed-for-node1-tag-array nil nil))
+       ;; Call STP on the proof obligation without replacement:
+       ((mv result state)
+        (prove-equality-query-with-stp (enquote constant-value)
+                                       nodenum
+                                       miter-array-name miter-array miter-len
+                                       nodenums-to-translate
+                                       (concatenate 'string (symbol-name miter-name) "-CONSTANT-" (nat-to-string nodenum))
+                                       cut-nodenum-type-alist
+                                       nil ;extra-asserts ;fixme
+                                       print
+                                       max-conflicts
+                                       nil ;no counterexample (for now)
+                                       nil ; print-cex-as-signedp (irrelevant?)
+                                       state)))
+    (if (eq *error* result)
+        (prog2$ (er hard? 'prove-node-is-constant-with-stp "Error calling STP.")
+                (mv result state))
+      (if (eq *valid* result)
+          (prog2$ (cw "STP proved that node ~x0 is the constant ~x1.~%" nodenum constant-value)
+                  (mv result state))
+        ;; TODO: Use the counterexample if there is one.
+        (prog2$
+          (cw "STP FAILED to prove that node ~x0 is the constant ~x1.~%" nodenum constant-value)
+          ;;fffixme return "timed out" if it did
+          (mv result state))))))
+
 ;;
 ;; the main mutual-recursion of the Axe Equivalence Checker (fixme should more stuff above use this to prove goals by mitering?):
 ;;
@@ -16271,7 +16302,6 @@
 ;fixme use the fact that the miter is pure!
 ;There are no recursive fns, but there might still be non-bv/array fns: fixme expand any non-rec fns?
 ;fixme check all indices and sizes...
-;ffixme use miter-is-purep here..
              (if (not (or (natp constant-value)
                           (booleanp constant-value))) ;is this checked when we check for pure miters?
                  ;; The constant-value isn't a natural or boolean (fixme support more stuff here??... arrays?):
@@ -16280,51 +16310,17 @@
                                      (acons #\1 nodenum (acons #\0 constant-value nil)))
                          (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))
                ;; The constant is okay, so call STP:
-               ;;FIXME put in some sort of cutting heuristic (put in vars for uninteresting subterms)? binary search to find the cut depth?
+               ;; TODO: Use the cutting heuristics (put in vars for uninteresting subterms)? binary search to find the cut depth?
                ;; TTODO: Need to handle vars not given types in the alist (look how they are used and infer a type?)
-               (mv-let (nodenums-to-translate cut-nodenum-type-alist)
-                 ;; TODO: Consider a worklist algorithm:
-                 (gather-nodes-for-translation ;;this one does no cutting (except for variables, of course)
-                  nodenum                      ;(+ -1 miter-len)
-                  miter-array-name
-                  miter-array
-                  miter-len
-                  var-type-alist
-                  (aset1-safe 'needed-for-node1-tag-array
-                              (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))
-                              nodenum
-                              t)
-                  nil
-                  nil ;cut-nodenum-type-alist
-                  )
-                 ;; Call STP on the proof obligation without replacement:
-                 (mv-let
-                   (result state)
-                   (prove-equality-query-with-stp (enquote constant-value)
-                                                  nodenum
-                                                  miter-array-name
-                                                  miter-array
-                                                  miter-len
-                                                  nodenums-to-translate
-                                                  (concatenate 'string (symbol-name miter-name) "-CONSTANT-" (nat-to-string nodenum))
-                                                  cut-nodenum-type-alist
-                                                  nil ;extra-asserts ;fixme
-                                                  print
-                                                  max-conflicts
-                                                  nil ;no counterexample (for now)
-                                                  nil
-                                                  state)
-                   (if (eq *error* result)
-                       (prog2$ (er hard 'try-to-prove-node-is-constant "Error calling STP.")
-                               (mv (erp-t) nil analyzed-function-table rand state result-array-stobj))
-                     (if (eq *valid* result)
-                         (prog2$ (cw "STP proved that node ~x0 is the constant ~x1.~%" nodenum constant-value)
-                                 (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
-                       ;; TODO: Use the counterexample if there is one.
-                       (prog2$
-                        (cw "STP FAILED to prove that node ~x0 is the constant ~x1.~%" nodenum constant-value)
-                        ;;fffixme return "timed out" if it did
-                        (mv (erp-nil) :failed analyzed-function-table rand state result-array-stobj)))))))))))))
+               (mv-let (result state)
+                 (prove-node-is-constant-with-stp nodenum constant-value miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
+                 (if (eq *error* result)
+                     (mv (erp-t) nil analyzed-function-table rand state result-array-stobj)
+                   (if (eq *valid* result)
+                       (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj)
+                     ;;fffixme return "timed out" if it did
+                     ;; TODO: Use the counterexample if there is one.
+                     (mv (erp-nil) :failed analyzed-function-table rand state result-array-stobj)))))))))))
 
  ;; Returns (mv erp result miter-array analyzed-function-table rand state result-array-stobj),
  ;; where if ERP is nil, then RESULT is either :proved (we proved it and replaced the node), :failed or :timed-out (we didn't replace the node), or (list :new-rules new-runes new-fn-names)
@@ -16562,9 +16558,9 @@
         (miter-is-purep (miter-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
         ((mv shuffled-test-cases rand) ;fixme can we do this less often?  we want the test cases in their original order when analyzing traces of rec fns..
          (shuffle-list test-cases rand))
-        ((mv & ; all-passedp ; actually a hard error will already have been thrown
+        ((mv all-passedp ; actually a hard error will already have been thrown
              probably-equal-node-sets ;includes probably-constant nodes
-             never-used-nodes
+             & ; never-used-nodes ; todo: don't bother returning this?
              probably-constant-node-alist
              test-case-array-alist ;invalid (nil?) if we are not keeping test cases
              )
@@ -16576,15 +16572,15 @@
                               debug-nodes
                               ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
                               ))
-        (probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
+        ((when (not all-passedp))
+         (mv :false-test-case :dit-nothing miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state result-array-stobj))
         (sweep-array-name 'sweep-array) ;ffixme use a different name, according to the miter depth?
         ;; Set up the tags that are used to choose which node or node pair to handle next:
         (sweep-array (make-empty-array sweep-array-name miter-len))
         ;;mark all nodes that are probably constants:
         ;;the tags are the constant values themselves (quoted)
-        ;;ffixme don't bother doing tagging for nodes that are :unused (might be a large set?!)
         (sweep-array (prog2$ (and print (eq :verbose print) (cw "Identifying and tagging probably-constant nodes...~%"))
-                            (tag-probably-constant-nodes2 probably-constant-node-alist sweep-array)))
+                            (tag-probably-constant-nodes probably-constant-node-alist sweep-array)))
         ;; mark nodes that are probably equal to other nodes (including constants, in case we can't prove x=const and y=const but can prove x=y):
         (sweep-array (prog2$ (and print (eq :verbose print) (cw "Tagging probably-equal nodes for replacement...~%"))
                             (tag-probably-equal-node-sets probably-equal-node-sets sweep-array probably-constant-node-alist)))

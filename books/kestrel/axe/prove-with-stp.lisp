@@ -76,6 +76,12 @@
 
 (local (in-theory (disable state-p w)))
 
+
+(local
+  (defthm rationalp-when-natp
+    (implies (natp x)
+             (rationalp x))))
+
 (defthm no-nodes-are-variablesp-of-merge-<
   (implies (and (no-nodes-are-variablesp l1 dag-array-name dag-array dag-len)
                 (no-nodes-are-variablesp l2 dag-array-name dag-array dag-len)
@@ -1610,7 +1616,7 @@
 (defund gather-nodes-for-translation (n ;counts down and stops at -1
                                       dag-array-name dag-array dag-len ; dag-len is only used for the guard
                                       var-type-alist ;; todo: what about types we can't handle?
-                                      needed-for-node1-tag-array
+                                      needed-for-node1-tag-array ; todo: rename this array, since there is only one node
                                       nodenums-to-translate ;gets extended, in increasing order
                                       cut-nodenum-type-alist ; gets extended
                                       )
@@ -1660,11 +1666,6 @@
         (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
-  (defthm rationalp-when-natp
-    (implies (natp x)
-             (rationalp x))))
 
 ;Used in equivalence-checker.lisp
 ;TODO: Consider using a worklist algorithm.
