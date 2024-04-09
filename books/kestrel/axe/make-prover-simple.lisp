@@ -209,11 +209,11 @@
 ;;   :hints (("Goal" :in-theory (enable get-args-not-done
 ;;                                      lookup-arg-in-result-array))))
 
-;; (defthm all-dargp-of-lookup-args-in-result-array
+;; (defthm darg-listp-of-lookup-args-in-result-array
 ;;   (implies (and (not (get-args-not-done args result-array-name result-array acc untagged-foundp)) ;; all args are done
 ;;                 (result-arrayp result-array-name result-array bound)
 ;;                 (bounded-darg-listp args (alen1 result-array-name result-array)))
-;;            (all-dargp (lookup-args-in-result-array args result-array-name result-array)))
+;;            (darg-listp (lookup-args-in-result-array args result-array-name result-array)))
 ;;   :hints (("Goal" :in-theory (e/d (GET-ARGS-NOT-DONE lookup-args-in-result-array) (dargp)))))
 
 ;; (defthm bounded-darg-listp-of-lookup-args-in-result-array
@@ -356,8 +356,8 @@
     (:REWRITE bounded-darg-listp-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false)
     (:REWRITE BOUNDED-DARG-LISTP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
     (:REWRITE BOUNDED-DARG-LISTP-WHEN-ALL-<)
-    (:REWRITE ALL-DARGP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
-    (:REWRITE ALL-DARGP-WHEN-BOUNDED-DARG-LISTP)
+    (:REWRITE DARG-LISTP-OF-STRIP-CDRS-OF-UNIFY-TERMS-AND-DAG-ITEMS-FAST)
+    (:REWRITE DARG-LISTP-WHEN-BOUNDED-DARG-LISTP)
     ;; drop some of these all-natp rules?
     (:REWRITE ALL-NATP-OF-CDR)
     (:REWRITE ALL-NATP-WHEN-NAT-LISTP)
@@ -996,7 +996,7 @@
                           member-equal
                           ;all-natp-when-not-consp
                           all-<-when-not-consp
-                          all-dargp-when-not-consp
+                          darg-listp-when-not-consp
                           acl2-count ;yuck
                           SYMBOL-ALISTP ;move
                           SYMBOL-LISTP ; prevent inductions
@@ -2590,7 +2590,7 @@
                     ,call-of-relieve-rule-hyps
                     (declare (ignore hyps-relievedp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                     (implies (not erp)
-                             (all-dargp (strip-cdrs extended-alist)))))
+                             (darg-listp (strip-cdrs extended-alist)))))
          :hints (("Goal" :use (:instance ,(pack$ relieve-rule-hyps-name '-return-type))
                   :in-theory (disable ,(pack$ relieve-rule-hyps-name '-return-type)))))
 
@@ -2778,13 +2778,13 @@
                       ,call-of-simplify-trees
                       (declare (ignore new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist info tries))
                       (implies (not erp)
-                               (and (all-dargp nodenums-or-quoteps)
+                               (and (darg-listp nodenums-or-quoteps)
                                     ;;(true-listp nodenums-or-quoteps)
                                     (equal (all-myquotep nodenums-or-quoteps)
                                            (all-consp nodenums-or-quoteps))
                                     ))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-trees-name '-return-type))
-                    :in-theory (e/d (all-myquotep-when-all-dargp) (,(pack$ simplify-trees-name '-return-type))))))
+                    :in-theory (e/d (all-myquotep-when-darg-listp) (,(pack$ simplify-trees-name '-return-type))))))
 
        (defthm ,(pack$ simplify-trees-name '-return-type-corollary-linear)
          (implies (and (or (eq :equal equivs) ;means use 'equal for all the equivs
@@ -2817,7 +2817,7 @@
                              (<= dag-len new-dag-len))))
          :rule-classes :linear
          :hints (("Goal" :use (:instance ,(pack$ simplify-trees-name '-return-type))
-                  :in-theory (e/d (all-myquotep-when-all-dargp) (,(pack$ simplify-trees-name '-return-type))))))
+                  :in-theory (e/d (all-myquotep-when-darg-listp) (,(pack$ simplify-trees-name '-return-type))))))
 
        (defthm ,(pack$ simplify-fun-call-name '-return-type-corollary-linear)
          (implies (and (symbolp fn)
@@ -3128,7 +3128,7 @@
                                      (simple-prover-optionsp options))
                          :guard-hints (("Goal" :in-theory (e/d (;dag-function-call-exprp
                                                                 dag-function-call-exprp-redef
-                                                                all-myquotep-when-all-dargp
+                                                                all-myquotep-when-darg-listp
                                                                 consp-of-cdr
                                                                 true-listp-of-cdr)
                                                                (natp dag-function-call-exprp))
@@ -3340,7 +3340,7 @@
        ;;            :do-not '(generalize eliminate-destructors)
        ;;            :in-theory (e/d (,rewrite-nodes-name
        ;;                             dag-function-call-exprp-redef
-       ;;                             all-myquotep-when-all-dargp
+       ;;                             all-myquotep-when-darg-listp
        ;;                             consp-of-cdr)
        ;;                            (natp dag-function-call-exprp)))))
 
@@ -3388,7 +3388,7 @@
                   :do-not '(generalize eliminate-destructors)
                   :in-theory (e/d (,rewrite-nodes-name
                                    dag-function-call-exprp-redef
-                                   all-myquotep-when-all-dargp
+                                   all-myquotep-when-darg-listp
                                    consp-of-cdr)
                                   (natp dag-function-call-exprp)))))
 

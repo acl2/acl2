@@ -52,14 +52,14 @@
 (defthm nat-listp-of-find-shortest-parent-lst
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (nat-listp current-shortest-lst)
-                (all-dargp items))
+                (darg-listp items))
            (nat-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
   :hints (("Goal" :in-theory (enable find-shortest-parent-lst))))
 
 (defthm true-listp-of-find-shortest-parent-lst
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (true-listp current-shortest-lst)
-                (all-dargp items))
+                (darg-listp items))
            (true-listp (find-shortest-parent-lst current-shortest-lst items dag-parent-array)))
   :hints (("Goal" :in-theory (enable find-shortest-parent-lst))))
 
@@ -69,7 +69,7 @@
             (bounded-dag-parent-entriesp n 'dag-parent-array dag-parent-array limit)
             (all-< current-shortest-lst limit)
             (bounded-darg-listp items (+ 1 n))
-            ;;(all-dargp items)
+            ;;(darg-listp items)
             (integerp n))
            (all-< (find-shortest-parent-lst current-shortest-lst items dag-parent-array)
                   limit))
@@ -105,31 +105,31 @@
   :hints (("Goal" :in-theory (enable first-atom))))
 
 (defthm natp-of-mv-nth-0-of-first-atom
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (not (all-consp args)))
            (natp (mv-nth 0 (first-atom args))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable first-atom all-consp))))
 
 (defthm integerp-of-mv-nth-0-of-first-atom
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (not (all-consp args)))
            (integerp (mv-nth 0 (first-atom args))))
   :hints (("Goal" :in-theory (enable first-atom))))
 
 (defthm <=-of-0-and-mv-nth-0-of-first-atom
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (not (all-consp args)))
            (<= 0 (mv-nth 0 (first-atom args)))))
 
-(defthm all-dargp-of-mv-nth1-of-first-atom
-  (implies (all-dargp items)
-           (all-dargp (mv-nth 1 (first-atom items))))
+(defthm darg-listp-of-mv-nth1-of-first-atom
+  (implies (darg-listp items)
+           (darg-listp (mv-nth 1 (first-atom items))))
   :hints (("Goal" :in-theory (enable first-atom))))
 
 (defthm not-<-of-largest-non-quotep-and-mv-nth-0-of-first-atom
   (implies (and (not (all-consp items))
-                (all-dargp items))
+                (darg-listp items))
            (not (< (largest-non-quotep items)
                    (mv-nth '0 (first-atom items)))))
   :rule-classes (:rewrite :linear)
@@ -138,7 +138,7 @@
 (defthm first-atom-bound-lemma
   (implies (and (<= (largest-non-quotep items) x)
                 (not (all-consp items))
-                (all-dargp items))
+                (darg-listp items))
            (not (< x
                    (mv-nth '0 (first-atom items)))))
   :rule-classes (:rewrite :linear)
@@ -146,29 +146,29 @@
 
 (defthm bounded-darg-listp-of-plus1-of-largest-non-quotep
  (implies (and (not (all-consp items))
-               (all-dargp items)
-               (true-listp items))
+               (darg-listp items))
           (bounded-darg-listp items (+ 1 (largest-non-quotep items))))
  :hints (("Goal" :in-theory (enable largest-non-quotep bounded-darg-listp all-consp))))
 
 ;rename
 (defthm bounded-darg-listp-lemma2
   (implies (and (not (all-consp items))
-                (all-dargp items))
+                (darg-listp items))
            (not (< (largest-non-quotep items)
                    (largest-non-quotep (mv-nth 1 (first-atom items))))))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable first-atom all-consp))))
 
 (defthm <-of-largest-non-quotep-and-0
-  (implies (all-dargp items)
+  (implies (darg-listp items)
            (equal (< (largest-non-quotep items) 0)
                   (all-consp items)))
-  :hints (("Goal" :in-theory (enable all-consp))))
+  :hints (("Goal" :in-theory (enable all-consp
+                                     darg-listp))))
 
 (defthm bounded-darg-listp-lemma
   (implies (and (not (all-consp items))
-                (all-dargp items)
+                (darg-listp items)
                 (true-listp items))
            (bounded-darg-listp (mv-nth 1 (first-atom items))
                                (+ 1 (largest-non-quotep items))))
@@ -247,7 +247,7 @@
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 ;(symbolp fn)
                 ;(not (equal 'quote fn))
-                (all-dargp args)
+                (darg-listp args)
                 ;(true-listp args)
                 (not (all-consp args)))
            (iff (integerp (find-expr-using-parents fn args dag-array dag-parent-array dag-len))
@@ -258,7 +258,7 @@
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 ;(symbolp fn)
                 ;(not (equal 'quote fn))
-                (all-dargp args)
+                (darg-listp args)
                 ;(true-listp args)
                 (not (all-consp args)))
            (<= 0 (find-expr-using-parents fn args dag-array dag-parent-array dag-len)))
@@ -355,7 +355,7 @@
 
 (defthm array1p-of-add-to-parents-of-atoms
   (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
-                ;(all-dargp items)
+                ;(darg-listp items)
                 (natp nodenum)
                 ;(<= nodenum top-nodenum-to-check)
                 (array1p 'dag-parent-array dag-parent-array))
@@ -364,7 +364,7 @@
 
 (defthm default-of-add-to-parents-of-atoms
   (implies (and (bounded-darg-listp items (alen1 'dag-parent-array dag-parent-array))
-                ;(all-dargp items)
+                ;(darg-listp items)
                 (natp nodenum)
                 ;(<= nodenum top-nodenum-to-check)
                 (array1p 'dag-parent-array dag-parent-array))
@@ -373,7 +373,7 @@
   :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms integer-listp))))
 
 (defthm alen1-of-add-to-parents-of-atoms
-  (implies (all-dargp items) ;(natp nodenum)
+  (implies (darg-listp items) ;(natp nodenum)
            (equal (alen1 'dag-parent-array (add-to-parents-of-atoms items nodenum dag-parent-array))
                   (alen1 'dag-parent-array dag-parent-array)))
   :hints (("Goal" :in-theory (enable add-to-parents-of-atoms integer-listp))))

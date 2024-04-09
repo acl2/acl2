@@ -321,6 +321,8 @@
 
 (def-constant-opener x86isa::rex-byte-from-vex-prefixes)
 
+(def-constant-opener x86isa::vex-vvvv-reg-index)
+
 (def-constant-opener acl2::bool->bit$inline)
 
 (def-constant-opener canonical-address-p$inline)

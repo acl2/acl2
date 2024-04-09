@@ -209,8 +209,7 @@
                                                    assumption-array
                                                    assumption-array-num-valid-nodes
                                                    print)
-  (declare (xargs :guard (and (all-dargp args)
-                              (true-listp args)
+  (declare (xargs :guard (and (darg-listp args)
                               (equiv-listp equivs)
                               (equal (len args) (len equivs))
                               (assumption-arrayp 'assumption-array assumption-array)
@@ -229,15 +228,15 @@
                                                        assumption-array-num-valid-nodes
                                                        print)))))
 
-(defthm all-dargp-of-maybe-replace-args-using-assumption-array
-  (implies (and (all-dargp args)
+(defthm darg-listp-of-maybe-replace-args-using-assumption-array
+  (implies (and (darg-listp args)
 ;(true-listp args)
 ;(equiv-listp equivs)
 ;(equal (len args) (len equivs))
                 (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
-           (all-dargp (maybe-replace-args-using-assumption-array args
+           (darg-listp (maybe-replace-args-using-assumption-array args
                                                                  equivs
                                                                  assumption-array
                                                                  assumption-array-num-valid-nodes
@@ -261,10 +260,10 @@
 
 ;; use all-consp as the normal form
 (defthm all-myquotep-of-maybe-replace-args-using-assumption-array
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (assumption-arrayp 'assumption-array assumption-array)
                 (natp assumption-array-num-valid-nodes)
                 (<= assumption-array-num-valid-nodes (alen1 'assumption-array assumption-array)))
            (equal (all-myquotep (maybe-replace-args-using-assumption-array args equivs assumption-array assumption-array-num-valid-nodes print))
                   (all-consp (maybe-replace-args-using-assumption-array args equivs assumption-array assumption-array-num-valid-nodes print))))
-  :hints (("Goal" :in-theory (enable all-myquotep-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable all-myquotep-when-darg-listp))))

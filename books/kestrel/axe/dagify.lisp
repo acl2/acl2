@@ -128,12 +128,12 @@
   :hints (("Goal" :in-theory (enable dargp))))
 
 ;dup, needed?
-(defthm dargp-of-lookup-equal-when-all-dargp-of-strip-cdrs
-  (implies (all-dargp (strip-cdrs alist))
+(defthm dargp-of-lookup-equal-when-darg-listp-of-strip-cdrs
+  (implies (darg-listp (strip-cdrs alist))
            (iff (dargp (lookup-equal var alist))
                 (assoc-equal var alist)))
   :hints (("Goal" :induct t
-           :in-theory (e/d (all-dargp lookup-equal strip-cdrs)
+           :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            ()))))
 
 (local (in-theory (enable consp-of-cdr
@@ -1030,7 +1030,7 @@
                 (symbol-alistp var-replacement-alist)
                 (interpreted-function-alistp interpreted-function-alist))
            (and
-            (all-dargp (mv-nth 1 (merge-trees-into-dag-array
+            (darg-listp (mv-nth 1 (merge-trees-into-dag-array
                                              trees
                                              var-replacement-alist
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -1112,7 +1112,7 @@
    :hints (("Goal" :in-theory (e/d (axe-treep
                                     car-becomes-nth-of-0
                                     cadr-becomes-nth-of-1
-                                    consp-of-cdr-of-nth-when-all-dargp
+                                    consp-of-cdr-of-nth-when-darg-listp
                                     <-of-nth-when-bounded-darg-listp
                                     true-listp-of-nth-1-of-nth-0-when-axe-treep
                                     consp-when-true-listp-iff)
@@ -1487,7 +1487,7 @@
 ;;use elsewhere?
 (defund-inline evaluatable-fn-and-argsp (fn arg-nodenums-or-quoteps interpreted-function-alist)
   (declare (xargs :guard (and ;(symbolp fn)
-                          (all-dargp arg-nodenums-or-quoteps)
+                          (darg-listp arg-nodenums-or-quoteps)
                           (symbol-alistp interpreted-function-alist))))
   (and (all-consp arg-nodenums-or-quoteps) ;all args must be quoted constants
        (or (member-eq fn *axe-evaluator-functions*)
@@ -1496,9 +1496,9 @@
 
 (defthm all-myquotep-when-evaluatable-fn-and-argsp
   (implies (and (evaluatable-fn-and-argsp fn arg-nodenums-or-quoteps interpreted-function-alist)
-                (all-dargp arg-nodenums-or-quoteps))
+                (darg-listp arg-nodenums-or-quoteps))
            (all-myquotep arg-nodenums-or-quoteps))
-  :hints (("Goal" :in-theory (enable evaluatable-fn-and-argsp all-myquotep-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable evaluatable-fn-and-argsp all-myquotep-when-darg-listp))))
 
 (defthm alistp-of-set-difference-equal
   (implies (alistp x)
@@ -1508,7 +1508,7 @@
 ;; recoginize a suitable call of the form (dag-val-with-axe-evaluator dag alist interpreted-function-alist array-depth).
 (defund-inline call-of-dag-val-with-axe-evaluator-with-inlineable-dagp (fn arg-nodenums-or-quoteps interpreted-function-alist)
   (declare (xargs :guard (and ;(symbolp fn)
-                          (all-dargp arg-nodenums-or-quoteps)
+                          (darg-listp arg-nodenums-or-quoteps)
                           (symbol-alistp interpreted-function-alist))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
                   ))
@@ -1983,7 +1983,7 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                          interpreted-function-alist)))
                          (len terms))
-                  (all-dargp (mv-nth 1 (merge-terms-into-dag-array
+                  (darg-listp (mv-nth 1 (merge-terms-into-dag-array
                                                    terms
                                                    var-replacement-alist
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name

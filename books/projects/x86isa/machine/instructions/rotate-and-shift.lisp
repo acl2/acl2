@@ -497,7 +497,7 @@
        ;; the count is masked to keep the low 5 or 6 bits,
        ;; as specified in the pseudocode of the Intel manual
        ;; for these instructions.
-       (cnt-reg (loghead 4 (lognot (vex->vvvv vex-prefixes))))
+       (cnt-reg (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
        (cnt-to-shift (rgfi-size operand-size
                                 cnt-reg
                                 rex-byte

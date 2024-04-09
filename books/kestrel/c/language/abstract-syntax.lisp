@@ -136,7 +136,8 @@
      it could be argued that one should always use the uppercase variants,
      as recommended in the Java language specification for Java).")
    (xdoc::p
-    "Since the grammar in [C] refers to these as <i>long-suffix</i>,
+    "Since the grammar in [C] refers to these as
+     <i>long-suffix</i> and <i>long-long-suffix</i>,
      it seems appropriate to call these the `length' of an integer constant,
      which justifies the name of this fixtype."))
   (:none ())

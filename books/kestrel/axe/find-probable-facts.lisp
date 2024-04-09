@@ -158,7 +158,7 @@
 
 (defthm nat-listp-of-mv-nth-0-of-add-args-not-done
   (implies (and ;(array1p 'done-nodes-array done-nodes-array)
-            (all-dargp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
+            (darg-listp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
             (NAT-LISTP WORKLIST))
            (nat-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
   :hints (("Goal" :in-theory (enable add-args-not-done))))
@@ -1839,27 +1839,27 @@
       ;;can we avoid this step? just return the done-nodes-array?
       (tag-not-done-nodes-as-unused max-nodenum done-nodes-array test-case-array test-case-array-name))))
 
-(local
- (defthm array1p-of-evaluate-test-case
-   (implies (and (nat-listp nodes-to-eval)
-                 (consp nodes-to-eval) ; must be at least one node, so we can find the max
-                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
-                 (test-casep test-case)
-                 (interpreted-function-alistp interpreted-function-alist)
-                 (symbolp test-case-array-name))
-            (array1p test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name)))
-   :hints (("Goal" :in-theory (enable evaluate-test-case)))))
+;; non-local, since evaluate-test-case is called in equivalence-checker.lisp
+(defthm array1p-of-evaluate-test-case
+  (implies (and (nat-listp nodes-to-eval)
+                (consp nodes-to-eval) ; must be at least one node, so we can find the max
+                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
+                (test-casep test-case)
+                (interpreted-function-alistp interpreted-function-alist)
+                (symbolp test-case-array-name))
+           (array1p test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name)))
+  :hints (("Goal" :in-theory (enable evaluate-test-case))))
 
-(local
- (defthm alen1-of-evaluate-test-case
-   (implies (and (nat-listp nodes-to-eval)
-                 (consp nodes-to-eval) ; must be at least one node, so we can find the max
-                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
-                 (symbolp test-case-array-name)
-                 )
-            (equal (alen1 test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name))
-                   (+ 1 (maxelem nodes-to-eval))))
-   :hints (("Goal" :in-theory (enable evaluate-test-case)))))
+;; non-local, since evaluate-test-case is called in equivalence-checker.lisp
+(defthm alen1-of-evaluate-test-case
+  (implies (and (nat-listp nodes-to-eval)
+                (consp nodes-to-eval) ; must be at least one node, so we can find the max
+                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
+                (symbolp test-case-array-name)
+                )
+           (equal (alen1 test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name))
+                  (+ 1 (maxelem nodes-to-eval))))
+  :hints (("Goal" :in-theory (enable evaluate-test-case))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -756,6 +756,8 @@
 
     x86isa::rex-byte-from-vex-prefixes-constant-opener
 
+    x86isa::vex-vvvv-reg-index-constant-opener
+
 ;    x86isa::num-prefixes-fix$inline
 
 ;    x86isa::next-byte-fix

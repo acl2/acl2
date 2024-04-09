@@ -62,7 +62,7 @@
                            ;;LIST::LEN-WHEN-AT-MOST-1
                            all-natp-when-not-consp
                            all-<-when-not-consp
-                           all-dargp-when-not-consp
+                           darg-listp-when-not-consp
                            ;; for speed:
                            all-<=-when-not-consp
                            ALL-<-TRANSITIVE-FREE
@@ -76,7 +76,7 @@
 
 (local (in-theory (enable consp-of-cdr
                           nth-of-cdr
-                          myquotep-of-nth-when-all-dargp
+                          myquotep-of-nth-when-darg-listp
                           <=-of-nth-when-all-<= ;todo
                           <-of-+-of-1-when-integers
                           natp-of-+-of-1

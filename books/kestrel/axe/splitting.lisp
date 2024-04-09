@@ -314,7 +314,7 @@
 
 (defthm nat-listp-of-extend-with-not-done-args
   (implies (and (nat-listp acc)
-                (all-dargp args))
+                (darg-listp args))
            (nat-listp (extend-with-not-done-args args result-array-name result-array acc)))
   :hints (("Goal" :in-theory (enable nat-listp extend-with-not-done-args))))
 

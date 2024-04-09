@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
-(include-book "all-dargp")
+(include-book "darg-listp")
 (include-book "largest-non-quotep")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
@@ -33,8 +33,7 @@
 ;; size in the array, for a quotep darg use a size of 1).
 ;; See also add-darg-sizes.
 (defund add-darg-sizes-with-name (dargs size-array-name size-array acc)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs)
+  (declare (xargs :guard (and (darg-listp dargs)
                               (size-arrayp size-array-name size-array (+ 1 (largest-non-quotep dargs)))
                               (natp acc))
                   :split-types t)
@@ -52,7 +51,7 @@
                                    acc)))))
 
 (defthm natp-of-add-darg-sizes-with-name
-  (implies (and (all-dargp dargs)
+  (implies (and (darg-listp dargs)
                 (size-arrayp size-array-name size-array (+ 1 (largest-non-quotep dargs)))
                 (natp acc))
            (natp (add-darg-sizes-with-name dargs size-array-name size-array acc)))
@@ -63,8 +62,7 @@
 ;; Add to ACC the sizes of all of the DARGS (for a nodenum darg, look up its
 ;; size in the array, for a quotep darg use a size of 1).
 (defund add-darg-sizes (dargs size-array acc)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs)
+  (declare (xargs :guard (and (darg-listp dargs)
                               (size-arrayp 'size-array size-array (+ 1 (largest-non-quotep dargs)))
                               (natp acc))
                   :split-types t
@@ -82,7 +80,7 @@
                          acc)))))
 
 (defthm natp-of-add-darg-sizes
-  (implies (and (all-dargp dargs)
+  (implies (and (darg-listp dargs)
                 (size-arrayp 'size-array size-array (+ 1 (largest-non-quotep dargs)))
                 (natp acc))
            (natp (add-darg-sizes dargs size-array acc)))

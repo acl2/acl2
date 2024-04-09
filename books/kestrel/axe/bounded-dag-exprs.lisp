@@ -142,12 +142,12 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
-(defthm bounded-dag-exprp-forward-to-all-dargp-of-dargs
+(defthm bounded-dag-exprp-forward-to-darg-listp-of-dargs
   (implies (and (bounded-dag-exprp nodenum expr)
                 (consp expr)
                 (not (equal 'quote (car expr)))
                 )
-           (all-dargp (dargs expr)))
+           (darg-listp (dargs expr)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
