@@ -39,7 +39,7 @@
         (get-args-not-done (rest args) result-array-name result-array (cons arg acc) t)))))
 
 (defthm natp-of-maxelem-of-get-args-not-done
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-natp acc)
                 (true-listp acc)
                 (get-args-not-done args result-array-name result-array acc untagged-foundp))
@@ -55,7 +55,7 @@
   :hints (("Goal" :in-theory (enable get-args-not-done))))
 
 (defthm all-natp-of-get-args-not-done
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-natp acc)
                 (true-listp acc))
            (all-natp (get-args-not-done args result-array-name result-array acc untagged-foundp)))
@@ -74,7 +74,7 @@
   :hints (("Goal" :in-theory (enable get-args-not-done keep-atoms))))
 
 (defthm maxelem-of-get-args-not-done-bound
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-natp acc)
                 (true-listp acc)
                 (get-args-not-done args result-array-name result-array acc untagged-foundp))

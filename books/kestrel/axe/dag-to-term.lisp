@@ -63,7 +63,7 @@
  (defun dag-to-term-aux-lst (nodenum-or-quoteps dag)
    (declare (xargs :guard (and (weak-dagp dag)
                                (true-listp nodenum-or-quoteps)
-                               ;;(all-dargp nodenum-or-quoteps)
+                               ;;(darg-listp nodenum-or-quoteps)
                                (bounded-darg-listp nodenum-or-quoteps (top-nodenum dag))
                                )
                    :measure (dag-walker-measure-for-items nodenum-or-quoteps)))

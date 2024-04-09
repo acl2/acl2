@@ -66,11 +66,11 @@
   :hints (("Goal" :in-theory (enable all-< strip-cars))))
 
 (local
- (defthm all-myquotep-becomes-all-consp-when-all-dargp
-   (implies (all-dargp items)
+ (defthm all-myquotep-becomes-all-consp-when-darg-listp
+   (implies (darg-listp items)
             (equal (all-myquotep items)
                    (all-consp items)))
-   :hints (("Goal" :in-theory (enable all-myquotep all-consp all-dargp)))))
+   :hints (("Goal" :in-theory (enable all-myquotep all-consp darg-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,7 +114,7 @@
 ;;todo: NO-ATOMS, all-consp, and all-myquotep are the same for lists of dargs
 
 (defthm <-of--1-and-largest-non-quotep
-  (implies (all-dargp x)
+  (implies (darg-listp x)
            (equal (< -1 (largest-non-quotep x))
                   (not (all-consp x)))))
 
@@ -267,9 +267,9 @@
    :hints (("Goal" :in-theory (enable subst-candidate-listp strip-cars)))))
 
 (local
- (defthm all-dargp-of-strip-cadrs-when-subst-candidate-listp
+ (defthm darg-listp-of-strip-cadrs-when-subst-candidate-listp
    (implies (subst-candidate-listp subst-candidates)
-            (all-dargp (strip-cadrs subst-candidates)))
+            (darg-listp (strip-cadrs subst-candidates)))
    :hints (("Goal" :in-theory (enable subst-candidatep subst-candidate-listp strip-cadrs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

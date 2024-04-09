@@ -49,8 +49,7 @@
   :hints (("Goal" :use (:instance <-of-largest-non-quotep-of-dargs (expr (aref1 dag-array-name dag-array nodenum))))))
 
 (defun supporters-of-args (items supporters-array acc)
-  (declare (xargs :guard (and (all-dargp items)
-                              (true-listp items)
+  (declare (xargs :guard (and (darg-listp items)
                               (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items)))
                               (bounded-darg-listp items (alen1 'supporters-array supporters-array)) ; a bit redundant
                               (true-listp acc))
@@ -70,7 +69,7 @@
 
 (defthm nat-listp-of-supporters-of-args
   (implies (and (nat-listp acc)
-                (all-dargp items)
+                (darg-listp items)
                 (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items))))
            (nat-listp (supporters-of-args items supporters-array acc)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
@@ -255,8 +254,7 @@
 
 ;;Return the members of ITEMS that are nodes whose supporters include target-nodenum.
 (defun nodenums-supported-by-target (items target-nodenum supporters-array)
-  (declare (xargs :guard (and (true-listp items)
-                              (all-dargp items)
+  (declare (xargs :guard (and (darg-listp items)
                               (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items)))
                               (bounded-darg-listp items (alen1 'supporters-array supporters-array)) ; a bit redundant
                               (natp target-nodenum))
@@ -272,7 +270,7 @@
           (nodenums-supported-by-target (rest items) target-nodenum supporters-array))))))
 
 (defthm all-natp-of-nodenums-supported-by-target
-  (implies (all-dargp items)
+  (implies (darg-listp items)
            (all-natp (nodenums-supported-by-target items target-nodenum supporters-array))))
 
 (defthm all-<-of-nodenums-supported-by-target

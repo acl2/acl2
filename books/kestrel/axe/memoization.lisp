@@ -22,7 +22,7 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "axe-trees")
 (include-book "count-worlds")
-(include-book "all-dargp")
+(include-book "darg-listp")
 (include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
@@ -151,7 +151,7 @@
 
 (defthm dargp-of-lookup-equal-alt ;name clash
   (implies (and ;(alistp alist)
-                (all-dargp (strip-cdrs alist))
+                (darg-listp (strip-cdrs alist))
                 (lookup-equal tree alist))
            (dargp (lookup-equal tree alist)))
   :hints (("Goal" :in-theory (e/d (lookup-equal assoc-equal) (dargp)))))
@@ -290,7 +290,7 @@
   (declare (xargs :guard t))
   (and (alistp alist)
        (trees-to-memoizep (strip-cars alist))
-       (all-dargp (strip-cdrs alist))))
+       (darg-listp (strip-cdrs alist))))
 
 (defthm memo-alistp-of-cons-of-cons
   (equal (memo-alistp (cons (cons tree result) memo-alist))
@@ -306,9 +306,9 @@
    :hints (("Goal" :in-theory (enable memo-alistp)))))
 
 (local
- (defthm all-dargp-of-strip-cdrs-when-memo-alistp
+ (defthm darg-listp-of-strip-cdrs-when-memo-alistp
    (implies (memo-alistp alist)
-            (all-dargp (strip-cdrs alist)))
+            (darg-listp (strip-cdrs alist)))
    :hints (("Goal" :in-theory (enable memo-alistp)))))
 
 (local

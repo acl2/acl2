@@ -2442,7 +2442,7 @@
                         (bounded-darg-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag)
                                              (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
                         ;; implied by the above
-                        (all-dargp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
+                        (darg-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
                         (<= dag-len
                             (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-trees-and-add-to-dag)
@@ -2996,7 +2996,7 @@
                        (<= x dag-len))
                   (and
                    (<= x (mv-nth 4 ,call-of-relieve-rule-hyps))
-                   (all-dargp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
+                   (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
@@ -3012,7 +3012,7 @@
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
                        (bounded-darg-listp (strip-cdrs alist) dag-len))
-                  (all-dargp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))))
+                  (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
@@ -4230,8 +4230,8 @@
                         (myquotep tree)
                         (quotep tree))
                :in-theory (e/d (true-list-of-car-when-bounded-darg-list-listp
-                                all-dargp-of-car-when-bounded-darg-list-listp
-                                all-myquotep-when-all-dargp
+                                darg-listp-of-car-when-bounded-darg-list-listp
+                                all-myquotep-when-darg-listp
                                 axe-bind-free-result-okayp-rewrite
                                 axe-rule-hypp
                                 integerp-when-dargp
@@ -4306,7 +4306,7 @@
                                                              symbolp-of-car-when-dag-exprp
                                                              axe-treep-when-dag-exprp
                                                              car-of-cadr-when-cars-increasing-by-1
-                                                             all-myquotep-when-all-dargp
+                                                             all-myquotep-when-darg-listp
                                                              consp-of-cdr-when-dargp
                                                              consp-of-cdr-when-dag-exprp-and-quote
                                                              not-cddr-when-dag-exprp-and-quotep
@@ -4549,7 +4549,7 @@
                                        symbolp-of-car-when-dag-exprp
                                        axe-treep-when-dag-exprp
                                        car-of-cadr-when-cars-increasing-by-1
-                                       all-myquotep-when-all-dargp
+                                       all-myquotep-when-darg-listp
                                        consp-of-cdr-when-dargp
                                        consp-of-cdr-when-dag-exprp-and-quote
                                        not-cddr-when-dag-exprp-and-quotep
@@ -4646,7 +4646,7 @@
                                                       ;tree-to-memoizep
                                                       axe-treep-when-dag-exprp
                                                       car-of-cadr-when-cars-increasing-by-1
-                                                      all-myquotep-when-all-dargp
+                                                      all-myquotep-when-darg-listp
                                                       consp-of-cdr-when-dargp
                                                       consp-of-cdr-when-dag-exprp-and-quote
                                                       not-cddr-when-dag-exprp-and-quotep
@@ -4767,7 +4767,7 @@
                                   tree-to-memoizep
                                   axe-treep-when-dag-exprp
                                   car-of-cadr-when-cars-increasing-by-1
-                                  all-myquotep-when-all-dargp
+                                  all-myquotep-when-darg-listp
                                   consp-of-cdr-when-dargp
                                   consp-of-cdr-when-dag-exprp-and-quote
                                   not-cddr-when-dag-exprp-and-quotep

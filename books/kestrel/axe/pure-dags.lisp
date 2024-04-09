@@ -14,6 +14,7 @@
 
 (include-book "dags")
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
 
 ;inline?
 ;check this - is it anything missing?
