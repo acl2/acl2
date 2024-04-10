@@ -334,6 +334,23 @@
                   (cons car-res cdr-res)))))
         ) ;end mutual-recursion
 
+
+       (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- eval-list-function-name)
+         (true-listp (mv-nth 1 (,eval-list-function-name alist forms interpreted-function-alist count)))
+         :hints (("Goal" :induct (true-listp forms) :in-theory (enable true-listp ,eval-list-function-name))))
+
+       ,@(and verify-guards
+              `((verify-guards ,apply-function-name
+                  :hints (("Goal" :in-theory (enable pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
+                                                     symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
+                                                     cddr-of-assoc-equal-when-interpreted-function-alistp
+                                                     true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
+                                                     consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
+                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
+                                                     unsigned-byte-p ;todo
+                                                     ))))))
+
+
        ;; Returns (mv erp result).
        ;; The ARGS passed in to this version must all be quoted.
        ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
@@ -379,23 +396,8 @@
                             )
                        (,eval-function-name alist body interpreted-function-alist *max-fixnum*)))))))))
 
-       (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- eval-list-function-name)
-         (true-listp (mv-nth 1 (,eval-list-function-name alist forms interpreted-function-alist count)))
-         :hints (("Goal" :induct (true-listp forms) :in-theory (enable true-listp ,eval-list-function-name))))
-
        ,@(and verify-guards
-              `((verify-guards ,apply-function-name
-                  :hints (("Goal" :in-theory (enable pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
-                                                     symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-                                                     cddr-of-assoc-equal-when-interpreted-function-alistp
-                                                     true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-                                                     consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
-                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
-                                                     unsigned-byte-p ;todo
-                                                     ))))
-
-
-                (verify-guards ,apply-function-to-quoted-args-name
+              `((verify-guards ,apply-function-to-quoted-args-name
                   :hints (("Goal" :in-theory (enable pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
                                                      symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
                                                      cddr-of-assoc-equal-when-interpreted-function-alistp
