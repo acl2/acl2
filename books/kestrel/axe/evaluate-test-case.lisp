@@ -51,42 +51,48 @@
         (add-args-not-done (rest dargs) done-nodes-array (cons arg worklist) t ;we've extended the worklist
                            )))))
 
-(defthm add-args-not-done-of-nil-arg1
-  (equal (add-args-not-done nil done-nodes-array worklist worklist-extendedp)
-         (mv worklist worklist-extendedp))
-  :hints (("Goal" :in-theory (enable add-args-not-done))))
+(local
+  (defthm add-args-not-done-of-nil-arg1
+    (equal (add-args-not-done nil done-nodes-array worklist worklist-extendedp)
+           (mv worklist worklist-extendedp))
+    :hints (("Goal" :in-theory (enable add-args-not-done)))))
 
-(defthm nat-listp-of-mv-nth-0-of-add-args-not-done
-  (implies (and ;(array1p 'done-nodes-array done-nodes-array)
-            (darg-listp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
-            (NAT-LISTP WORKLIST))
-           (nat-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
-  :hints (("Goal" :in-theory (enable add-args-not-done))))
+(local
+  (defthm nat-listp-of-mv-nth-0-of-add-args-not-done
+    (implies (and ;(array1p 'done-nodes-array done-nodes-array)
+               (darg-listp args) ; (bounded-darg-listp args (alen1 'done-nodes-array done-nodes-array))
+               (NAT-LISTP WORKLIST))
+             (nat-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
+    :hints (("Goal" :in-theory (enable add-args-not-done)))))
 
-(defthm all-<-of-mv-nth-0-of-add-args-not-done
-  (implies (and ;(array1p 'done-nodes-array done-nodes-array)
-            (bounded-darg-listp args bound)
-            (all-< WORKLIST bound))
-           (all-< (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
-                   bound))
-  :hints (("Goal" :in-theory (enable add-args-not-done))))
+(local
+  (defthm all-<-of-mv-nth-0-of-add-args-not-done
+    (implies (and ;(array1p 'done-nodes-array done-nodes-array)
+               (bounded-darg-listp args bound)
+               (all-< WORKLIST bound))
+             (all-< (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
+                    bound))
+    :hints (("Goal" :in-theory (enable add-args-not-done)))))
 
-(defthm true-listp-of-mv-nth-0-of-add-args-not-done
-  (implies (true-listp worklist)
-           (true-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable add-args-not-done))))
+(local
+  (defthm true-listp-of-mv-nth-0-of-add-args-not-done
+    (implies (true-listp worklist)
+             (true-listp (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable add-args-not-done)))))
 
 ;; once it's true, it stays true
-(defthm mv-nth-1-of-add-args-not-done-of-t
-  (mv-nth 1 (add-args-not-done args done-nodes-array worklist t))
-  :hints (("Goal" :in-theory (enable add-args-not-done))))
+(local
+  (defthm mv-nth-1-of-add-args-not-done-of-t
+    (mv-nth 1 (add-args-not-done args done-nodes-array worklist t))
+    :hints (("Goal" :in-theory (enable add-args-not-done)))))
 
-(defthm mv-nth-0-of-add-args-not-done-when-not-mv-nth-1-of-add-args-not-done
-  (implies (not (mv-nth 1 (add-args-not-done args done-nodes-array worklist worklist-extendedp)))
-           (equal (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
-                  worklist))
-  :hints (("Goal" :in-theory (enable add-args-not-done))))
+(local
+  (defthm mv-nth-0-of-add-args-not-done-when-not-mv-nth-1-of-add-args-not-done
+    (implies (not (mv-nth 1 (add-args-not-done args done-nodes-array worklist worklist-extendedp)))
+             (equal (mv-nth 0 (add-args-not-done args done-nodes-array worklist worklist-extendedp))
+                    worklist))
+    :hints (("Goal" :in-theory (enable add-args-not-done)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
