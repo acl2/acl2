@@ -1,7 +1,7 @@
 ; A clause-processor that calls STP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,11 +25,14 @@
 ;otherwise is a singleton set containing the original clause (indicating that
 ;no change was made).  TODO: What is the format of the hint?
 (defun stp-clause-processor (clause hint state)
-  (declare (xargs :stobjs state
-                  :verify-guards nil
-                  :guard (pseudo-term-listp clause)))
+  (declare (xargs :guard (and (pseudo-term-listp clause)
+                              (alistp hint))
+                  :stobjs state))
   (b* ((must-prove (lookup-eq :must-prove hint))
        (counterexample (lookup-eq :counterexample hint))
+       ((when (not (booleanp counterexample)))
+        (er hard? 'stp-clause-processor "Bad :counterexample, ~x0, in hint ~x1." counterexample hint)
+        (mv :bad-hint (list clause) state))
        ((mv result state)
         (prove-clause-with-stp clause
                                counterexample

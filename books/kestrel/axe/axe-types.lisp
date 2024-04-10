@@ -410,3 +410,23 @@
                 (axe-typep y))
            (axe-typep (intersect-types-safe x y)))
   :hints (("Goal" :in-theory (enable intersect-types-safe))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm not-bv-array-typep-when-bv-typep-cheap
+  (implies (bv-typep x)
+           (not (bv-array-typep x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bv-typep bv-array-typep LIST-TYPEP))))
+
+(defthm not-boolean-typep-when-bv-typep-cheap
+  (implies (bv-typep x)
+           (not (boolean-typep x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bv-typep boolean-typep))))
+
+(defthm not-boolean-typep-when-bv-array-typep-cheap
+  (implies (bv-array-typep x)
+           (not (boolean-typep x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bv-array-typep list-typep boolean-typep))))

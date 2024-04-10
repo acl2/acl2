@@ -76,6 +76,19 @@
 
 (local (in-theory (disable state-p w)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd all-<-of-keep-atoms-when-all-dargp
+  (implies (and (all-dargp x)
+                (true-listp x))
+           (equal (all-< (keep-atoms x) bound)
+                  (bounded-darg-listp x bound)))
+  :hints (("Goal" :in-theory (enable keep-atoms))))
+
+(local (in-theory (enable all-<-of-keep-atoms-when-all-dargp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm no-nodes-are-variablesp-of-merge-<
   (implies (and (no-nodes-are-variablesp l1 dag-array-name dag-array dag-len)
                 (no-nodes-are-variablesp l2 dag-array-name dag-array dag-len)
@@ -653,6 +666,8 @@
                   dag-len))
   :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-nodes))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;returns known-nodenum-type-alist
 (defun build-known-nodenum-type-alist-aux (limit
                                            nodenums ;to assume true when inferring types
@@ -704,6 +719,7 @@
                   dag-len))
   :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; For the purposes of extracting type information, we can assume all the
 ;; literals (disjuncts) are false, because if any of them is true, then the
@@ -1202,8 +1218,6 @@
 ;;                                 (booleanp arg2)
 ;;                                 (and (consp arg2) (all-natp arg2))))))))
 
-(in-theory (disable NODENUM-TYPE-ALISTP))
-
 ;; Select a type for NODENUM.  Returns (mv erp type).
 ;;note: this will only be called when its expr doesn't have an obvious type
 ;;nodenum must either have a known type or be used in at least one choppable context
@@ -1677,33 +1691,6 @@
 (local (in-theory (disable darg-quoted-posp
                            ;; natp
                            )))
-
-(defthmd all-<-when-all-dargp
-  (implies (and (all-dargp x)
-                (true-listp x))
-           (equal (all-< (keep-atoms x) bound)
-                  (bounded-darg-listp x bound)))
-  :hints (("Goal" :in-theory (enable keep-atoms))))
-
-(local (in-theory (enable all-<-when-all-dargp)))
-
-(defthm not-bv-array-typep-when-bv-typep-cheap
-  (implies (bv-typep x)
-           (not (bv-array-typep x)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-typep bv-array-typep LIST-TYPEP))))
-
-(defthm not-boolean-typep-when-bv-typep-cheap
-  (implies (bv-typep x)
-           (not (boolean-typep x)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-typep boolean-typep))))
-
-(defthm not-boolean-typep-when-bv-array-typep-cheap
-  (implies (bv-array-typep x)
-           (not (boolean-typep x)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-array-typep list-typep boolean-typep))))
 
 ;; todo: compare to gather-nodes-to-translate-up-to-depth
 ;returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
@@ -2560,9 +2547,9 @@
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp-when-nat-listp)))))
   (b* ( ;; Check for bad input (todo: drop this check?):
-       ((when (not (pseudo-term-listp clause)))
-        (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
-        (mv *error* state))
+       ;; ((when (not (pseudo-term-listp clause)))
+       ;;  (er hard 'prove-clause-with-stp "Some disjunct in the clause is not a pseudo-term: ~x0." clause)
+       ;;  (mv *error* state))
        ((when (not clause)) ;; check for empty clause
         (cw "(Note: Cannot prove the empty clause.)~%")
         (mv *invalid* state))
@@ -2684,68 +2671,3 @@
   `(translate-and-prove-term-with-stp ,term ',counterexample ',print-cex-as-signedp ,max-conflicts ',print
                                       "USER-QUERY"
                                       state))
-
-;;
-;; Testing / Assert Utilities
-;;
-
-;; Ensures that STP can prove the TERM.
-;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
-(defun must-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
-  (declare (xargs :guard (and (symbolp name)
-                              (booleanp counterexamplep)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts)))
-                  :mode :program ;because this ultimately calls translate-term
-                  :stobjs state))
-  (mv-let (result state)
-    (translate-and-prove-term-with-stp term counterexamplep nil max-conflicts print (symbol-name name) state)
-    (if (eq *error* result)
-        (prog2$ (er hard? 'must-prove-with-stp "Error ~x0 running test." name)
-                (mv (erp-t) :error state))
-      (if (not (eq *valid* result))
-          (prog2$ (er hard? 'must-prove-with-stp "Test ~x0 was supposed to prove." name)
-                  (mv (erp-t) :fail state))
-        (prog2$ (cw "TEST ~x0 PASSED.~%" name)
-                (mv (erp-nil) '(progn) state))))))
-
-;; Ensures that STP can prove the TERM.
-;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
-(defmacro must-prove-with-stp (name term
-                                    &key
-                                    (counterexample 't)
-                                    (max-conflicts '*default-stp-max-conflicts*)
-                                    (print 'nil))
-  `(make-event (must-prove-with-stp-fn ',name ,term ',counterexample ,max-conflicts ',print state)))
-
-;fixme test the new depth bound when the prover calls stp? huh?
-
-;; Ensures that STP cannot prove the TERM.
-;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
-(defun must-not-prove-with-stp-fn (name term counterexamplep max-conflicts print state)
-  (declare (xargs :stobjs state
-                  :mode :program ;because this ultimately calls translate-term
-                  :guard (and (symbolp name)
-                              (booleanp counterexamplep)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts)))))
-  (mv-let (result state)
-    (translate-and-prove-term-with-stp term counterexamplep nil max-conflicts print (symbol-name name) state)
-    (if (eq *error* result)
-        (prog2$ (er hard? 'must-not-prove-with-stp "Error running test ~x0." name)
-                (mv (erp-t) :error state))
-      (if (eq *valid* result)
-          (prog2$ (er hard? 'must-not-prove-with-stp "Test ~x0 was supposed to fail" name)
-                  (mv (erp-t) :fail state))
-        (prog2$ (cw "TEST ~x0 PASSED" name)
-                (mv (erp-nil) '(progn) state))))))
-
-;; Ensures that STP cannot prove the TERM.
-;; Returns (mv erp result state) where if things go well, RESULT is an empty progn.
-;; We could perhaps use must-fail, but this more informative messages.
-(defmacro must-not-prove-with-stp (name term
-                                        &key
-                                        (counterexample 't)
-                                        (max-conflicts '*default-stp-max-conflicts*)
-                                        (print 'nil))
-  `(make-event (must-not-prove-with-stp-fn ',name ,term ',counterexample ,max-conflicts ',print state)))
