@@ -49,10 +49,9 @@
 (defthmd bounded-darg-listp-when-<-of-largest-non-quotep
   (implies (and (< (largest-non-quotep items) bound)
 ;                (not (all-consp items))
-                (all-dargp items)
-                (true-listp items))
+                (darg-listp items))
            (bounded-darg-listp items bound))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp
+  :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp
                                      ;;all-consp
                                      largest-non-quotep))))
 

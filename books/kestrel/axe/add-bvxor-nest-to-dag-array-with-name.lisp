@@ -37,7 +37,7 @@
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-all-dargp
+                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-darg-listp
                                                          dargp-when-myquotep
                                                          dargp-less-than-when-myquotep)
                                                         (dargp myquotep natp)))))
@@ -101,7 +101,7 @@
                               (natp size)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-all-dargp
+                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-darg-listp
                                                          dargp-less-than-when-myquotep
                                                          dargp-when-myquotep)
                                                         (dargp

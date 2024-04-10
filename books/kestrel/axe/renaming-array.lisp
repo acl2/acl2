@@ -340,8 +340,7 @@
 
 ;; Renames any of the DARGS that are nodenums according to the RENAMING-ARRAY.
 (defund rename-dargs (dargs renaming-array-name renaming-array)
-  (declare (xargs :guard (and (all-dargp dargs)
-                              (true-listp dargs)
+  (declare (xargs :guard (and (darg-listp dargs)
                               (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs))))
                   :guard-hints (("Goal" :in-theory (enable RENAMING-ARRAYP)))
                   ))
@@ -350,12 +349,12 @@
     (cons (rename-darg (first dargs) renaming-array-name renaming-array)
           (rename-dargs (rest dargs) renaming-array-name renaming-array))))
 
-(defthm all-dargp-of-rename-dargs
+(defthm darg-listp-of-rename-dargs
   (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)))
-                (all-dargp dargs))
-           (all-dargp (rename-dargs dargs renaming-array-name renaming-array)))
-  :hints (("Goal" :in-theory (e/d (rename-dargs all-dargp) (myquotep))
-           :expand (all-dargp dargs)
+                (darg-listp dargs))
+           (darg-listp (rename-dargs dargs renaming-array-name renaming-array)))
+  :hints (("Goal" :in-theory (e/d (rename-dargs darg-listp) (myquotep))
+           :expand (darg-listp dargs)
            :do-not '(generalize eliminate-destructors))))
 
 ;;;
@@ -517,7 +516,7 @@
 (defthm bounded-darg-listp-of-rename-dargs
   (implies (and (renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)))
                 (bounded-renaming-entriesp (largest-non-quotep dargs) renaming-array-name renaming-array limit)
-                (all-dargp dargs))
+                (darg-listp dargs))
            (bounded-darg-listp (rename-dargs dargs renaming-array-name renaming-array) limit))
   :hints (("Goal" :in-theory (e/d (;renaming-arrayp
                                    rename-dargs bound-lemma-for-car-when-bounded-darg-listp) (myquotep)))))
@@ -569,7 +568,7 @@
   (implies (and (bounded-renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)) limit)
                 ;(bounded-darg-listp args (+ 1 n))
 ;(integerp n)
-                (all-dargp dargs)
+                (darg-listp dargs)
                 )
            (bounded-darg-listp (rename-dargs dargs renaming-array-name renaming-array) limit))
   :hints (("Goal" :in-theory (enable bounded-renaming-arrayp

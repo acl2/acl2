@@ -68,7 +68,7 @@
 
  (defund term-skeletons-match-dagp (terms dargs dag-array)
    (declare (xargs :guard (and (pseudo-term-listp terms)
-                               (all-dargp dargs)
+                               (darg-listp dargs)
                                (true-listp dargs)
                                (true-listp terms)
                                (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep dargs)))
@@ -221,25 +221,25 @@
     :flag unify-terms-and-dag-when-skeleton-correct)
   :hints (("Goal" :expand ((UNIFY-TERMS-AND-DAG-WHEN-SKELETON-CORRECT TERMS dargs DAG-ARRAY DAG-LEN ALIST))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable INTEGERP-OF-CAR-WHEN-ALL-DARGP
+           :in-theory (enable INTEGERP-OF-CAR-WHEN-DARG-LISTP
                               term-skeleton-matches-dagp
                               term-skeletons-match-dagp
                               unify-term-and-dag-when-skeleton-correct
                               unify-terms-and-dag-when-skeleton-correct))))
 
 (defthm-flag-unify-term-and-dag-when-skeleton-correct
-  (defthm all-dargp-of-strip-cdrs-of-unify-term-and-dag-when-skeleton-correct
-    (implies (and (all-dargp (strip-cdrs alist))
+  (defthm darg-listp-of-strip-cdrs-of-unify-term-and-dag-when-skeleton-correct
+    (implies (and (darg-listp (strip-cdrs alist))
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                   (alistp alist)
                   ;;(pseudo-termp term)
                   (dargp-less-than darg dag-len)
                   (not (equal :fail (unify-term-and-dag-when-skeleton-correct term darg dag-array dag-len alist)))
                   (term-skeleton-matches-dagp term darg dag-array))
-             (all-dargp (strip-cdrs (unify-term-and-dag-when-skeleton-correct term darg dag-array dag-len alist))))
+             (darg-listp (strip-cdrs (unify-term-and-dag-when-skeleton-correct term darg dag-array dag-len alist))))
     :flag unify-term-and-dag-when-skeleton-correct)
-  (defthm all-dargp-of-strip-cdrs-of-unify-terms-and-dag-when-skeleton-correct
-    (implies (and (all-dargp (strip-cdrs alist))
+  (defthm darg-listp-of-strip-cdrs-of-unify-terms-and-dag-when-skeleton-correct
+    (implies (and (darg-listp (strip-cdrs alist))
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                   (alistp alist)
                   ;;(pseudo-term-listp terms)
@@ -247,11 +247,11 @@
                   ;;(equal (len dargs) (len terms))
                   (not (equal :fail (unify-terms-and-dag-when-skeleton-correct terms dargs dag-array dag-len alist)))
                   (term-skeletons-match-dagp terms dargs dag-array))
-             (all-dargp (strip-cdrs (unify-terms-and-dag-when-skeleton-correct terms dargs dag-array dag-len alist))))
+             (darg-listp (strip-cdrs (unify-terms-and-dag-when-skeleton-correct terms dargs dag-array dag-len alist))))
     :flag unify-terms-and-dag-when-skeleton-correct)
   :hints (("Goal" :expand ((UNIFY-TERMS-AND-DAG-WHEN-SKELETON-CORRECT TERMS dargs DAG-ARRAY DAG-LEN ALIST))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable INTEGERP-OF-CAR-WHEN-ALL-DARGP
+           :in-theory (enable INTEGERP-OF-CAR-WHEN-DARG-LISTP
                               term-skeleton-matches-dagp
                               term-skeletons-match-dagp
                               unify-term-and-dag-when-skeleton-correct
@@ -289,14 +289,14 @@
       (unify-terms-and-dag-when-skeleton-correct terms dargs dag-array dag-len nil)
     :fail))
 
-(defthm all-dargp-of-strip-cdrs-of-unify-terms-and-dag-items-fast
+(defthm darg-listp-of-strip-cdrs-of-unify-terms-and-dag-items-fast
   (implies (and (not (equal :fail (unify-terms-and-dag-items-fast terms dargs dag-array dag-len)))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (bounded-darg-listp dargs dag-len)
                 ;; (equal (len dargs)
                 ;;        (len terms))
                 )
-           (all-dargp (strip-cdrs (unify-terms-and-dag-items-fast terms dargs dag-array dag-len))))
+           (darg-listp (strip-cdrs (unify-terms-and-dag-items-fast terms dargs dag-array dag-len))))
   :hints (("Goal" :in-theory (enable unify-terms-and-dag-items-fast))))
 
 (defthm bounded-darg-listp-of-strip-cdrs-of-unify-terms-and-dag-items-fast

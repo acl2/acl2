@@ -25,8 +25,7 @@
   (declare (xargs :guard (and (equality-pairsp equality-pairs) ;TOOD: Should these be lambda-free?
                               (symbolp fn)
                               (not (eq 'quote fn))
-                              (true-listp args)
-                              (all-dargp args)
+                              (darg-listp args)
                               (implies (not (all-myquotep args))
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep args)))))
                   :guard-hints (("Goal" :in-theory (enable equality-pairsp)))))

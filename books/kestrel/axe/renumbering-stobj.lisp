@@ -15,7 +15,7 @@
 ;; When rewritng a DAG, this stobj tracks the mapping from nodenums in the old
 ;; DAG to the new nodenums or quoteps to which they rewrote.
 
-(include-book "all-dargp")
+(include-book "darg-listp")
 (include-book "dargp-less-than")
 (include-book "largest-non-quotep")
 (include-book "bounded-darg-listp")
@@ -471,8 +471,7 @@
 
 ;; Renames any of the DARGS that are nodenums according to the RENUMBERING-STOBJ.
 (defund renumber-dargs-with-stobj (dargs renumbering-stobj)
-  (declare (xargs :guard (and (all-dargp dargs)
-                              (true-listp dargs)
+  (declare (xargs :guard (and (darg-listp dargs)
                               (good-renumbering-stobj (largest-non-quotep dargs) renumbering-stobj))
                   :stobjs renumbering-stobj))
   (if (endp dargs)
@@ -480,20 +479,20 @@
     (cons (renumber-darg-with-stobj (first dargs) renumbering-stobj)
           (renumber-dargs-with-stobj (rest dargs) renumbering-stobj))))
 
-(defthm all-dargp-of-renumber-dargs-with-stobj
+(defthm darg-listp-of-renumber-dargs-with-stobj
   (implies (and (good-renumbering-stobj (largest-non-quotep dargs) renumbering-stobj)
-                (all-dargp dargs))
-           (all-dargp (renumber-dargs-with-stobj dargs renumbering-stobj)))
-  :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj all-dargp natp-of-renumber-darg-with-stobj)
-           :expand ((all-dargp dargs)
+                (darg-listp dargs))
+           (darg-listp (renumber-dargs-with-stobj dargs renumbering-stobj)))
+  :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj darg-listp natp-of-renumber-darg-with-stobj)
+           :expand ((darg-listp dargs)
                     (dargp (car dargs)))
            :do-not '(generalize eliminate-destructors))))
 
 (defthm bounded-darg-listp-of-renumber-dargs-with-stobj
   (implies (and (bounded-good-renumbering-stobj (largest-non-quotep dargs) bound renumbering-stobj)
-                (all-dargp dargs))
+                (darg-listp dargs))
            (bounded-darg-listp (renumber-dargs-with-stobj dargs renumbering-stobj) bound))
-  :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj all-dargp largest-non-quotep)
-           :expand ((all-dargp dargs)
+  :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj darg-listp largest-non-quotep)
+           :expand ((darg-listp dargs)
                     (dargp (car dargs)))
            :do-not '(generalize eliminate-destructors))))

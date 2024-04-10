@@ -22,7 +22,6 @@
 (include-book "add-bvxor-nest-to-dag-array-with-name")
 (include-book "add-to-dag")
 (include-book "alist-suitable-for-hypsp")
-(include-book "all-dargp")
 (include-book "arrays-of-alists")
 (include-book "assumption-array")
 (include-book "axe-bind-free-evaluator-basic")

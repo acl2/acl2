@@ -72,10 +72,10 @@
            (equal (myquotep (cdr (assoc-equal nodenum pairs)))
                   (consp (cdr (assoc-equal nodenum pairs)))))
   :hints (("Goal"
-           :use (:instance dargp-of-cdr-of-assoc-equal
+           :use (:instance dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs
                            (var nodenum)
                            (alist pairs))
-           :in-theory (e/d (node-replacement-alistp) (dargp-of-cdr-of-assoc-equal)))))
+           :in-theory (e/d (node-replacement-alistp) (dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs)))))
 
 (defthmd natp-of-cdr-of-assoc-equal-when-node-replacement-alistp
   (implies (and (node-replacement-alistp pairs dag-len)
@@ -83,10 +83,10 @@
            (equal (natp (cdr (assoc-equal nodenum pairs)))
                   (not (consp (cdr (assoc-equal nodenum pairs))))))
   :hints (("Goal"
-           :use (:instance dargp-of-cdr-of-assoc-equal
+           :use (:instance dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs
                            (var nodenum)
                            (alist pairs))
-           :in-theory (e/d (node-replacement-alistp) (dargp-of-cdr-of-assoc-equal)))))
+           :in-theory (e/d (node-replacement-alistp) (dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs)))))
 
 ;; Kept disabled most of the time, for speed
 (defthmd consp-of-assoc-equal-when-node-replacement-alistp

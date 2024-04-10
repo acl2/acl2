@@ -46,14 +46,14 @@
 (defthm true-listp-of-find-shortest-parent-lst-with-name
   (implies (and (dag-parent-arrayp dag-parent-array-name dag-parent-array)
                 (true-listp current-shortest-lst)
-                (all-dargp items))
+                (darg-listp items))
            (true-listp (find-shortest-parent-lst-with-name current-shortest-lst items dag-parent-array dag-parent-array-name)))
   :hints (("Goal" :in-theory (enable find-shortest-parent-lst-with-name))))
 
 (defthm nat-listp-of-find-shortest-parent-lst-with-name
   (implies (and (dag-parent-arrayp dag-parent-array-name dag-parent-array)
                 (nat-listp current-shortest-lst)
-                (all-dargp items))
+                (darg-listp items))
            (nat-listp (find-shortest-parent-lst-with-name current-shortest-lst items dag-parent-array dag-parent-array-name)))
   :hints (("Goal" :in-theory (enable find-shortest-parent-lst-with-name))))
 
@@ -119,7 +119,7 @@
 
 (defund find-expr-using-parents-with-name (fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len)
   (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args)
+                              (darg-listp args)
                               (not (all-consp args))
                               (symbolp fn)
                               (not (equal 'quote fn))
@@ -154,7 +154,7 @@
 
 (defthm integerp-of-find-expr-using-parents-with-name
   (implies (and (dag-parent-arrayp dag-parent-array-name dag-parent-array)
-                (all-dargp args)
+                (darg-listp args)
                 (not (all-consp args)))
            (iff (integerp (find-expr-using-parents-with-name fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len))
                 (find-expr-using-parents-with-name fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len)))
@@ -164,7 +164,7 @@
   (implies (and (dag-parent-arrayp dag-parent-array-name dag-parent-array)
                 (symbolp fn)
                 (not (equal 'quote fn))
-                (all-dargp args)
+                (darg-listp args)
                 ;; (true-listp args)
                 (not (all-consp args)))
            (<= 0 (find-expr-using-parents-with-name fn args dag-array dag-parent-array dag-array-name dag-parent-array-name dag-len)))
@@ -245,7 +245,7 @@
 
 (defthm array1p-of-add-to-parents-of-atoms-with-name
   (implies (and (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
-                ;;(all-dargp items)
+                ;;(darg-listp items)
                 (natp nodenum)
                 ;;(<= nodenum top-nodenum-to-check)
                 (array1p dag-parent-array-name dag-parent-array))
@@ -254,7 +254,7 @@
 
 (defthm default-of-add-to-parents-of-atoms-with-name
   (implies (and (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
-                ;(all-dargp items)
+                ;(darg-listp items)
                 (natp nodenum)
                 ;(<= nodenum top-nodenum-to-check)
                 (array1p dag-parent-array-name dag-parent-array))
@@ -263,7 +263,7 @@
   :hints (("Goal" :in-theory (enable dag-parent-arrayp add-to-parents-of-atoms-with-name integer-listp))))
 
 (defthm alen1-of-add-to-parents-of-atoms-with-name
-  (implies (all-dargp items) ;(natp nodenum)
+  (implies (darg-listp items) ;(natp nodenum)
            (equal (alen1 dag-parent-array-name (add-to-parents-of-atoms-with-name items nodenum dag-parent-array-name dag-parent-array))
                   (alen1 dag-parent-array-name dag-parent-array)))
   :hints (("Goal" :in-theory (enable add-to-parents-of-atoms-with-name integer-listp))))
@@ -286,7 +286,7 @@
 (defthm dag-parent-arrayp-of-add-to-parents-of-atoms-with-name
   (implies (and (bounded-darg-listp items nodenum)
                 (bounded-darg-listp items (alen1 dag-parent-array-name dag-parent-array))
-                ;(all-dargp items)
+                ;(darg-listp items)
                 (natp nodenum)
                 ;;(<= nodenum top-nodenum-to-check)
                 ;(< nodenum (alen1 dag-parent-array-name dag-parent-array))

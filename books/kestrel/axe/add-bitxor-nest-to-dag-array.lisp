@@ -43,7 +43,7 @@
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-ALL-DARGP)
+                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-DARG-LISTP)
                                                         (DARGP
                                                          DARGP-LESS-THAN
                                                          natp
@@ -99,7 +99,7 @@
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-ALL-DARGP)
+                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-DARG-LISTP)
                                                         (DARGP
                                                          DARGP-LESS-THAN
                                                          natp

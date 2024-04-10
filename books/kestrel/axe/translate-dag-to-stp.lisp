@@ -1,7 +1,7 @@
 ; Creating STP queries from DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,8 @@
 
 ;; Ensures this book and all STP examples get rebuilt when the script changes:
 ;; (depends-on "callstp.bash")
+
+;; This book has a trust tag due to the use of tshell (via call-axe-script).
 
 ;; TODO: Use an array instead of nodenum-type-alist everywhere?
 
@@ -54,7 +56,7 @@
 (include-book "depth-array")
 (include-book "known-predicates")
 (include-book "stp-counterexamples")
-(include-book "call-axe-script")
+(include-book "call-axe-script") ; has ttags
 (include-book "pure-dags")
 (include-book "axe-syntax-functions-bv") ;for maybe-get-type-of-bv-function-call, todo reduce
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
@@ -208,8 +210,7 @@
 ;; TODO: Exclude FN from being 'QUOTE?  todo: but require it to be a symbol?
 ;; TODO: Are there other functions like this to deprecate?
 (defund maybe-get-type-of-function-call (fn args)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args))))
+  (declare (xargs :guard (darg-listp args)))
   (or (maybe-get-type-of-bv-function-call fn args)
       (cond
        ;; Functions that return bv-arrays:
@@ -239,8 +240,7 @@
 
 ;get rid of this?
 (defund get-type-of-function-call-checked (fn args)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args))))
+  (declare (xargs :guard (darg-listp args)))
   (or (maybe-get-type-of-function-call fn args)
       (er hard? 'get-type-of-function-call-checked "couldn't find type for call of ~x0 on args ~x1" fn args)))
 
@@ -248,8 +248,7 @@
 
 ;; Returns an axe-type, possibly (most-general-type).
 (defund get-type-of-function-call-safe (fn args)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args))))
+  (declare (xargs :guard (darg-listp args)))
   (or (maybe-get-type-of-function-call fn args)
       (most-general-type)))
 
@@ -1879,19 +1878,25 @@
            (no-nodes-are-variablesp (rest nodenums) dag-array-name dag-array dag-len)))))
 
 (defthm no-nodes-are-variablesp-of-append
-  (equal (no-nodes-are-variablesp (append list1 list2) dag-array-nae dag-array dag-len)
-         (and (no-nodes-are-variablesp list1 dag-array-nae dag-array dag-len)
-              (no-nodes-are-variablesp list2 dag-array-nae dag-array dag-len)))
+  (equal (no-nodes-are-variablesp (append list1 list2) dag-array-name dag-array dag-len)
+         (and (no-nodes-are-variablesp list1 dag-array-name dag-array dag-len)
+              (no-nodes-are-variablesp list2 dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
+
+(defthm no-nodes-are-variablesp-of-cons
+  (equal (no-nodes-are-variablesp (cons node nodes) dag-array-name dag-array dag-len)
+         (and (consp (aref1 dag-array-name dag-array node))
+              (no-nodes-are-variablesp nodes dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable no-nodes-are-variablesp))))
 
 (defthm no-nodes-are-variablesp-of-when-not-consp
   (implies (not (consp list))
-           (no-nodes-are-variablesp list dag-array-nae dag-array dag-len))
+           (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
 
 (defthm no-nodes-are-variablesp-of-reverse-list
-  (equal (no-nodes-are-variablesp (reverse-list list) dag-array-nae dag-array dag-len)
-         (no-nodes-are-variablesp list dag-array-nae dag-array dag-len))
+  (equal (no-nodes-are-variablesp (reverse-list list) dag-array-name dag-array dag-len)
+         (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
 
 ;; Returns (mv translation constant-array-info opened-paren-count) where TRANSLATION is a string-tree.
@@ -2253,7 +2258,7 @@
 
 ;INPUT-FILENAME is the STP input (.cvc) file name
 ;OUTPUT-FILENAME is the STP output (.out) file name
-;Runs an external script to call STP, using sys-call.
+;Runs an external script to call STP, using tshell-call.
 ;FFIXME think about which STP options to use. pass them in via this function?
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, or (:counterexample <raw-counterexample>)
 ;; We don't fix up the counterexample here because we don't have access to the cut-nodenum-type-alist, etc.
@@ -2635,7 +2640,7 @@
 ;; ;pass in a dag-array-name?
 ;; ;; returns (mv validp timedoutp state) where validp indicates whether STP said "Valid."
 ;; (defun prove-with-stp-quick (dag-lst var-type-alist max-conflicts state)
-;;   (declare (xargs :mode :program
+;;   (declare (xargs
 ;;                   :stobjs state))
 ;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
 ;;          (dag-len (len dag-lst)))
@@ -2659,7 +2664,7 @@
 ;; (defun prove-array-node-with-stp (dag-array
 ;;                                   nodenum ;; the node to be proved true
 ;;                                   var-type-alist max-conflicts state)
-;;   (declare (xargs :mode :program
+;;   (declare (xargs
 ;;                   :stobjs state))
 ;;   (prove-equality-query-with-stp nodenum
 ;;                            *t*

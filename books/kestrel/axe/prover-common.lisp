@@ -1036,8 +1036,8 @@
 
 ;; ;; Keep the args that are nodenums and that correspond to nil in merge-dag-array.
 ;; (defun get-args-to-merge (args array)
-;;   (declare (xargs :guard (and (true-listp args)
-;;                               (all-dargp args)
+;;   (declare (xargs :guard (and
+;;                               (darg-listp args)
 ;;                               (array1p 'merge-dag-array array)
 ;;                               (< (largest-non-quotep args) (alen1 'merge-dag-array array)))))
 ;;   (if (endp args)
@@ -1050,8 +1050,8 @@
 ;;           (cons arg (get-args-to-merge (cdr args) array)))))))
 
 ;; (defun lookup-args-in-merge-dag-array (args array)
-;;   (declare (xargs :guard (and (true-listp args)
-;;                               (all-dargp args)
+;;   (declare (xargs :guard (and
+;;                               (darg-listp args)
 ;;                               (array1p 'merge-dag-array array)
 ;;                               (< (largest-non-quotep args) (alen1 'merge-dag-array array)))))
 ;;   (if (endp args)
