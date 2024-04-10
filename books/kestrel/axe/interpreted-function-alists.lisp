@@ -1,7 +1,7 @@
 ; Operations on interpreted-function-alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -102,13 +102,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Checks that there are no missing functions in the interpreted-function-alist
-;; (functions called by other functions in the alist, which will cause
-;; evaluation of functions in the alist to fail).
-(defund interpreted-function-alist-completep-aux (alist all-fns)
+(defund interpreted-function-alist-completep-aux (alist
+                                                  ok-fns ; includss all functions built-in to the evaluator and all functions in the original alist
+                                                  )
   (declare (xargs :guard (and (interpreted-function-alistp alist)
-                              (symbol-listp all-fns))
-                  :guard-hints (("Goal" :in-theory (enable INTERPRETED-FUNCTION-ALISTP)))))
+                              (symbol-listp ok-fns))
+                  :guard-hints (("Goal" :in-theory (enable interpreted-function-alistp)))))
   (if (endp alist)
       t
     (let* ((pair (first alist))
@@ -117,11 +116,15 @@
            ;; (formals (car info))
            (body (cadr info))
            (mentioned-fns (get-fns-in-term body)))
-      (if (not (subsetp-equal mentioned-fns all-fns))
-          (prog2$ (cw "WARNING: Intepreted-function-alist is missing defs for: ~x0 (called by ~x1)." (set-difference-eq mentioned-fns all-fns) fn)
+      (if (not (subsetp-equal mentioned-fns ok-fns))
+          (prog2$ (cw "WARNING: Intepreted-function-alist is missing defs for: ~x0 (called by ~x1)." (set-difference-eq mentioned-fns ok-fns) fn)
                   nil)
-        (interpreted-function-alist-completep-aux (rest alist) all-fns)))))
+        (interpreted-function-alist-completep-aux (rest alist) ok-fns)))))
 
+;; Checks that there are no missing functions in the interpreted-function-alist
+;; (functions called by other functions in the alist and that are not among the
+;; built-in-fns).  Such missing functions would cause evaluation of functions
+;; in the alist to fail).
 (defund interpreted-function-alist-completep (alist built-in-fns)
   (declare (xargs :guard (and (interpreted-function-alistp alist)
                               (symbol-listp built-in-fns))))
