@@ -80,9 +80,10 @@
                     (= 2 (len entry))))
            (fns-and-aliasesp (rest x))))))
 
-(defthm fns-and-aliasesp-of-reverse-list
-  (implies (fns-and-aliasesp x)
-           (fns-and-aliasesp (reverse-list x))))
+(local
+  (defthm fns-and-aliasesp-of-reverse-list
+    (implies (fns-and-aliasesp x)
+             (fns-and-aliasesp (reverse-list x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,12 +184,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns an event.
-;;this generates a mutually recursive set of defuns that evaluates functions and dags
-;fixme make a simple version that doesn't use arrays or have any built-in functions other than the primitives?
-;;we use that expression when we call the corresponding function
-;i guess if we pass an interpreted fn we must also pass in any supporting fns - perhaps always include all the primitives - since we can't interpret them!
-;ffixme since this no longer takes state we could use a macro instead of make-event
+;; Returns an encapsulate event.
+;; TODO: Add a function to eval a dag.  See evaluate-test-case-aux.
+;; TODO: Strengthen guards to require the interpreted-function-alist to always be complete wrt the built-in functions of the evaluator.
+;; perhaps always include all the primitives - since we can't interpret them!
 (defun make-evaluator-simple-fn (suffix
                                  fns-and-aliases
                                  extra-guards-apply

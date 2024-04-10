@@ -170,7 +170,7 @@
 (defund evaluate-test-case-aux (count ; forces termination (todo: try having two kinds of :examined status for IF nodes (whether the test has been pushed, whether the relevant branch has been pushed), and base a measure on that
                                 nodenum-worklist
                                 dag-array-name dag-array dag-len
-                                test-case ;the test case (gives values for variables)
+                                test-case ; gives values for variables
                                 test-case-array
                                 done-nodes-array
                                 interpreted-function-alist test-case-array-name)
@@ -188,8 +188,9 @@
                         (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
                         (symbol-alistp test-case)
                         (interpreted-function-alistp interpreted-function-alist))
-            :verify-guards nil ; done below
-            ))
+            :guard-hints (("Goal" :in-theory (e/d (cadr-becomes-nth-of-1
+                                                   consp-of-cdr)
+                                                  (natp))))))
   (if (zp count)
       (prog2$ (er hard? 'evaluate-test-case-aux "Limit reached.")
               (mv test-case-array done-nodes-array))
@@ -382,41 +383,19 @@
                                                         interpreted-function-alist
                                                         test-case-array-name)))))))))))))))))
 
-(verify-guards evaluate-test-case-aux
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (e/d (cadr-becomes-nth-of-1
-                             consp-of-cdr)
-                            (natp)))))
-
 (local
  (defthm array1p-of-mv-nth-0-of-evaluate-test-case-aux
    (implies (and (nat-listp nodenum-worklist)
                  (all-< nodenum-worklist dag-len)
                  (array1p test-case-array-name test-case-array)
                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                 (equal (alen1 test-case-array-name test-case-array) dag-len)
-                 ;;(array1p 'done-nodes-array done-nodes-array)
-                 ;;(symbol-alistp test-case)
-                 ;;(interpreted-function-alistp interpreted-function-alist)
-                 )
+                 (equal (alen1 test-case-array-name test-case-array) dag-len))
             (array1p test-case-array-name
                      (mv-nth 0 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name))))
    :hints (("Goal"
-            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME))
-                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME)))
-            :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
+            :induct t
+            :expand ((:free (dag-len nodenum-worklist) (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
+            :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once, for speed
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
                             (natp USE-ALL-RATIONALP-FOR-CAR
@@ -429,32 +408,16 @@
                  (all-< nodenum-worklist dag-len)
                  (array1p test-case-array-name test-case-array)
                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                 (equal (alen1 test-case-array-name test-case-array) dag-len)
-                 ;;(array1p 'done-nodes-array done-nodes-array)
-                 ;;(symbol-alistp test-case)
-                 ;;(interpreted-function-alistp interpreted-function-alist)
-                 )
+                 (equal (alen1 test-case-array-name test-case-array) dag-len))
             (equal (alen1 test-case-array-name (mv-nth 0 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
                    (alen1 test-case-array-name test-case-array)))
    :hints (("Goal"
-            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME))
-                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME)))
+            :induct t
+            :expand ((:free (dag-len nodenum-worklist) (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
             :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
-                            (natp USE-ALL-RATIONALP-FOR-CAR
+                            (natp use-all-rationalp-for-car
                                   nfix ifix ;; these greatly reduce case splits
                                   ))))))
 
@@ -462,34 +425,18 @@
  (defthm array1p-of-mv-nth-1-of-evaluate-test-case-aux
    (implies (and (nat-listp nodenum-worklist)
                  (all-< nodenum-worklist dag-len)
-          ;(array1p test-case-array-name test-case-array)
                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                  (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
-                 (array1p 'done-nodes-array done-nodes-array)
-                 ;;(symbol-alistp test-case)
-                 ;;(interpreted-function-alistp interpreted-function-alist)
-                 )
+                 (array1p 'done-nodes-array done-nodes-array))
             (array1p 'done-nodes-array
                      (mv-nth 1 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name))))
    :hints (("Goal"
-            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME))
-                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME)))
+            :induct t
+            :expand ((:free (dag-len nodenum-worklist) (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
             :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
-                            (natp USE-ALL-RATIONALP-FOR-CAR
+                            (natp use-all-rationalp-for-car
                                   nfix ifix ;; these greatly reduce case splits
                                   ))))))
 
@@ -497,31 +444,14 @@
  (defthm alen1-of-mv-nth-1-of-evaluate-test-case-aux
    (implies (and (nat-listp nodenum-worklist)
                  (all-< nodenum-worklist dag-len)
-          ;(array1p test-case-array-name test-case-array)
                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                  (equal (alen1 'done-nodes-array done-nodes-array) dag-len)
-                 (array1p 'done-nodes-array done-nodes-array)
-                 ;;(symbol-alistp test-case)
-                 ;;(interpreted-function-alistp interpreted-function-alist)
-                 )
+                 (array1p 'done-nodes-array done-nodes-array))
             (equal (alen1 'done-nodes-array (mv-nth 1 (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
                    (alen1 'done-nodes-array done-nodes-array)))
    :hints (("Goal"
             :induct t
-            :expand ((:free (dag-len) (EVALUATE-TEST-CASE-AUX count NODENUM-WORKLIST
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME))
-                     (:free (dag-len) (EVALUATE-TEST-CASE-AUX count nil
-                                                              DAG-ARRAY-NAME DAG-ARRAY
-                                                              dag-len
-                                                              TEST-CASE
-                                                              TEST-CASE-ARRAY DONE-NODES-ARRAY
-                                                              INTERPRETED-FUNCTION-ALIST
-                                                              TEST-CASE-ARRAY-NAME)))
+            :expand ((:free (dag-len nodenum-worklist) (evaluate-test-case-aux count nodenum-worklist dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)))
             :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
@@ -555,7 +485,7 @@
       (evaluate-test-case-aux 1000000000 ; todo
                               nodes-to-eval ;initial worklist
                               dag-array-name dag-array dag-len test-case test-case-array done-nodes-array interpreted-function-alist test-case-array-name)
-      ;;can we avoid this step? just return the done-nodes-array?
+      ;; todo: can we avoid this step? just return the done-nodes-array?  or use :unused as the default value of the array?
       (tag-not-done-nodes-as-unused max-nodenum done-nodes-array test-case-array test-case-array-name))))
 
 ;; non-local, since evaluate-test-case is called in equivalence-checker.lisp
@@ -563,8 +493,6 @@
   (implies (and (nat-listp nodes-to-eval)
                 (consp nodes-to-eval) ; must be at least one node, so we can find the max
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
-                ;; (test-casep test-case)
-                ;; (interpreted-function-alistp interpreted-function-alist)
                 (symbolp test-case-array-name))
            (array1p test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name)))
   :hints (("Goal" :in-theory (enable evaluate-test-case))))
@@ -574,18 +502,17 @@
   (implies (and (nat-listp nodes-to-eval)
                 (consp nodes-to-eval) ; must be at least one node, so we can find the max
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodes-to-eval)))
-                (symbolp test-case-array-name)
-                )
+                (symbolp test-case-array-name))
            (equal (alen1 test-case-array-name (evaluate-test-case nodes-to-eval dag-array-name dag-array test-case interpreted-function-alist test-case-array-name))
                   (+ 1 (maxelem nodes-to-eval))))
   :hints (("Goal" :in-theory (enable evaluate-test-case))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; If the test passed (top node evaluated to T), returns TEST-CASE-ARRAY, which
+;; If the test passes (top node evaluated to T), this returns TEST-CASE-ARRAY, which
 ;; has a value for each node that supports the top node for this test (and
 ;; :unused for other nodes) and which has name TEST-CASE-ARRAY-NAME.  If the
-;; test failed, returns nil.
+;; test fails, this returns nil.
 (defund evaluate-and-check-test-case (test-case
                                       dag-array-name dag-array dag-len
                                       interpreted-function-alist
@@ -606,35 +533,26 @@
     (if (eq t top-node-value) ; TODO: Consider relaxing this to allow any non-nil value.
         (prog2$ (print-vals-of-nodes debug-nodes test-case-array-name test-case-array)
                 test-case-array)
-      ;;fixme return an error flag and catch it later?
+      ;; todo: return an error flag and catch it later?
       (progn$ (cw "!!!! We found a test case that does not evaluate to true:~%")
               (cw "Test case: ~x0~%" test-case)
               (print-array2 test-case-array-name test-case-array dag-len) ;this can be big!
-              (er hard? 'evaluate-and-check-test-case "Untrue test case (see above)")))))
+              (er hard? 'evaluate-and-check-test-case "Untrue test case (see above)")
+              nil))))
 
 (defthm array1p-of-evaluate-and-check-test-case
   (implies (and (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes) ; no error
-                (test-casep test-case)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (< 0 dag-len)
-                (interpreted-function-alistp interpreted-function-alist)
-                (symbolp test-case-array-name)
-                ;;(nat-listp debug-nodes)
-                ;;(all-< debug-nodes dag-len)
-                )
+                (symbolp test-case-array-name))
            (array1p test-case-array-name (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes)))
   :hints (("Goal" :in-theory (enable evaluate-and-check-test-case))))
 
 (defthm alen1-of-evaluate-and-check-test-case
   (implies (and (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes) ; no error
-                ;; (test-casep test-case)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (< 0 dag-len)
-                ;; (interpreted-function-alistp interpreted-function-alist)
-                (symbolp test-case-array-name)
-                ;;(nat-listp debug-nodes)
-                ;;(all-< debug-nodes dag-len)
-                )
+                (symbolp test-case-array-name))
            (equal (alen1 test-case-array-name (evaluate-and-check-test-case test-case dag-array-name dag-array dag-len interpreted-function-alist test-case-array-name debug-nodes))
                   dag-len))
   :hints (("Goal" :in-theory (enable evaluate-and-check-test-case))))
