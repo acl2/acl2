@@ -14,8 +14,8 @@
 
 ;; This tool generates custom Axe Provers.  Each can be seen as a variant of
 ;; prover.lisp that does not use STP, does not support work-hard, doesn't
-;; handle embedded dags, uses the basic evaluator instead of the main one, and
-;; does not depend on any skip-proofs.
+;; handle embedded dags, uses the a given evaluator and/or the basic evaluator
+;; instead of the legacy evaluator, and does not depend on any skip-proofs.
 
 ;todo: implement backchain limits, polarities, improve handling of equivs
 ;fixme axe prover requires some rules (like boolor of t, etc.) to be always enabled (without that one, we can get an error in get-disjuncts).  Improve get-disjuncts?
@@ -697,6 +697,7 @@
          ;; Now negate the theorem-body because we assume literal nodenums false:
          (negated-instantiated-body (sublis-var-simple (doublets-to-alist subst-doublets) `(not ,theorem-body)))
          ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+          ;; todo: allow using another evaluator?
           (merge-term-into-dag-array-basic negated-instantiated-body
                                            nil ; could optimize using the fact that we know this is nil and all vars are already present
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
