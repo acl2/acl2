@@ -224,7 +224,7 @@
 ;   (include-book C) ; where C includes A
 
 ; When we enumerate paths, we'll see the path from B through C to A; our
-; contention is taht seeing the path from B directly to A isn't particularly
+; contention is that seeing the path from B directly to A isn't particularly
 ; helpful, and is perhaps misleading (given the equivalence above).
 
 ; Let's call the initial alist hereditarily-includes-alist, and the second
