@@ -78,14 +78,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd all-<-of-keep-atoms-when-all-dargp
-  (implies (and (all-dargp x)
-                (true-listp x))
+(defthmd all-<-of-keep-atoms-when-darg-listp
+  (implies (darg-listp x)
            (equal (all-< (keep-atoms x) bound)
                   (bounded-darg-listp x bound)))
   :hints (("Goal" :in-theory (enable keep-atoms))))
 
-(local (in-theory (enable all-<-of-keep-atoms-when-all-dargp)))
+(local (in-theory (enable all-<-of-keep-atoms-when-darg-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
