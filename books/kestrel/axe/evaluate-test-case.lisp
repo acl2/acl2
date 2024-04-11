@@ -115,7 +115,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns test-case-array, which has the name test-case-array-name.
-;;ffixme use a separate array?
+;; TODO: Instead of using the special value :unused, consider tracking that information in a separate array.
 ;;todo: this seems inefficient for very sparse tests.
 (defund tag-not-done-nodes-as-unused (current-nodenum done-nodes-array test-case-array test-case-array-name)
   (declare (xargs :guard (and (integerp current-nodenum)
@@ -169,10 +169,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv test-case-array done-nodes-array), where TEST-CASE-ARRAY will have values for each node that is relevant (supports the nodes in the initial work-list) on this test case (note that because of ifs, the set of relevant nodes can differ between test cases).  nodes that have had their values set in TEST-CASE-ARRAY will be associated with t in DONE-NODES-ARRAY
-;ffixme could speed this up using stobj arrays?
-;fixme if there are no ifs in the dag, it would probably be faster to just evaluate every node in order?
-;ffffixme add short-circuit evaluation for booland and boolor?
+;; Returns (mv test-case-array done-nodes-array), where TEST-CASE-ARRAY will have values for each node that is relevant (supports the nodes in the initial work-list) on this test case (note that because of ifs, the set of relevant nodes can differ between test cases).  nodes that have had their values set in TEST-CASE-ARRAY will be associated with t in DONE-NODES-ARRAY
+;; We could speed this up using stobj arrays, but note that in some cases we return all the test-case-arrays.
+;; TODO: If there are no ifs (of any kind) in the dag, it would probably be faster (and safe) to just evaluate every node in order.
+;; TODO: Consider adding short-circuit evaluation for booland and boolor (I guess always evaluate the first argument and sometimes evaluate the second argument).
 (defund evaluate-test-case-aux (count ; forces termination (todo: try having two kinds of :examined status for IF nodes (whether the test has been pushed, whether the relevant branch has been pushed), and base a measure on that
                                 nodenum-worklist
                                 dag-array-name dag-array dag-len
@@ -404,7 +404,7 @@
             :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once, for speed
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
-                            (natp USE-ALL-RATIONALP-FOR-CAR
+                            (natp use-all-rationalp-for-car
                                   nfix ifix ;; these greatly reduce case splits
                                   ))))))
 
@@ -461,7 +461,7 @@
             :in-theory (e/d ((:i evaluate-test-case-aux) ; avoids opening more than once
                              cadr-becomes-nth-of-1
                              consp-of-cdr)
-                            (natp USE-ALL-RATIONALP-FOR-CAR
+                            (natp use-all-rationalp-for-car
                                   nfix ifix ;; these greatly reduce case splits
                                   ))))))
 
