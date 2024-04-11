@@ -67,6 +67,12 @@
                   (alignment-checking-enabled-p x86_2)))
   :hints (("Goal" :in-theory (enable !rflags alignment-checking-enabled-p get-flag))))
 
+(defthm alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
+  (implies (equal (get-flag :ac x86_1) (get-flag :ac x86_2))
+           (equal (alignment-checking-enabled-p (xw :rflags nil (xr :rflags nil x86_1) x86_2))
+                  (alignment-checking-enabled-p x86_2)))
+  :hints (("Goal" :in-theory (enable !rflags alignment-checking-enabled-p get-flag))))
+
 (defthm 64-bit-modep-of-set-undef (equal (64-bit-modep (set-undef undef x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm 64-bit-modep-of-set-mxcsr (equal (64-bit-modep (set-mxcsr mxcsr x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 (defthm 64-bit-modep-of-set-ms (equal (64-bit-modep (set-ms ms x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-ms))))

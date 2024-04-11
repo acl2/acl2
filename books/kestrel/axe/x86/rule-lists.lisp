@@ -525,6 +525,13 @@
     x86isa::rflagsbits->sf$inline-of-if
     x86isa::rflagsbits->zf$inline-of-if
 
+    x86isa::rflagsbits->af-of-bvif
+    x86isa::rflagsbits->cf-of-bvif
+    x86isa::rflagsbits->of-of-bvif
+    x86isa::rflagsbits->pf-of-bvif
+    x86isa::rflagsbits->sf-of-bvif
+    x86isa::rflagsbits->zf-of-bvif
+
     ;; These introduce set-flag:
     !rflags-of-!rflagsbits->af
     !rflags-of-!rflagsbits->cf
@@ -1530,7 +1537,20 @@
           (bitops-rules)
           (logops-rules)
           (acl2::if-becomes-bvif-rules)
-          '(myif ; trying this, so that we only have to deal with if
+          '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
+            ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
+            ;; rflags-becomes-xr
+            ;; xw-of-rflags-and-set-flag
+            ;; x86isa::xw-of-xr
+            ;; xw-of-rflags-does-nothing ; use a more general rule?
+            ;; alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
+            alignment-checking-enabled-p-of-!rflags-of-xr
+            ;; get-flag-of-xw-rflags-of-xr-rflags
+            get-flag-of-!rflags-of-xr
+            ;; xw-of-rflags-of-xw
+            ;; xw-rflags-of-set-flag
+
+            myif ; trying this, so that we only have to deal with if
 
             ;; Reading/writing registers (or parts of registers).  we leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
@@ -1714,8 +1734,8 @@
             x86isa::trunc$inline        ;shilpi leaves this enabled
 
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
-            x86isa::alignment-checking-enabled-p-and-xw
-            x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets mv-nth-1-of-wb
+            x86isa::alignment-checking-enabled-p-and-xw ; targets alignment-checking-enabled-p-of-xw
+            x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             ;acl2::fix-when-acl2-numberp
@@ -3242,8 +3262,6 @@
     get-flag-of-set-rsp
     get-flag-of-set-rbp
 
-    get-flag-of-!rflags-of-xr ; move?
-
     rax-of-set-rbx
     rax-of-set-rcx
     rax-of-set-rdx
@@ -3557,7 +3575,6 @@
     alignment-checking-enabled-p-of-set-r15
     alignment-checking-enabled-p-of-set-rsp
     alignment-checking-enabled-p-of-set-rbp
-    alignment-checking-enabled-p-of-!rflags-of-xr
 
     undef-of-set-rax
     undef-of-set-rbx
