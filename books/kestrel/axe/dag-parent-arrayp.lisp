@@ -1,7 +1,7 @@
 ; Tracking parents of nodes in a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -41,6 +41,18 @@
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "bounded-dag-exprs")
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/make-empty-array" :dir :system)
+(include-book "kestrel/acl2-arrays/alen1" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; todo: reduce, but we need read of write rules
+;; (local (include-book "kestrel/acl2-arrays/maximum-length" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/header" :dir :system))
+;; ;(local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/array1p" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/default" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/aset1" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/aref1" :dir :system))
+
 ;(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable symbolp-of-car-when-dag-exprp)))
@@ -188,13 +200,13 @@
                                                    (make-empty-array dag-parent-array-name size))
            :in-theory (enable all-dag-parent-entriesp))))
 
-(defthm all-dag-parent-entriesp-of-compress1
-  (implies (and (force (array1p dag-parent-array-name dag-parent-array))
-                (< n (alen1 dag-parent-array-name dag-parent-array)))
-           (equal (all-dag-parent-entriesp n dag-parent-array-name (compress1 dag-parent-array-name dag-parent-array))
-                  (all-dag-parent-entriesp n dag-parent-array-name dag-parent-array)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable all-dag-parent-entriesp ))))
+;; (defthm all-dag-parent-entriesp-of-compress1
+;;   (implies (and (force (array1p dag-parent-array-name dag-parent-array))
+;;                 (< n (alen1 dag-parent-array-name dag-parent-array)))
+;;            (equal (all-dag-parent-entriesp n dag-parent-array-name (compress1 dag-parent-array-name dag-parent-array))
+;;                   (all-dag-parent-entriesp n dag-parent-array-name dag-parent-array)))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :in-theory (enable all-dag-parent-entriesp ))))
 
 (defthm all-dag-parent-entriesp-of-cons-of-cons-of-header
   (implies (and (force (array1p dag-parent-array-name dag-parent-array))

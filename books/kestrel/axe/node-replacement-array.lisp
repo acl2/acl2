@@ -1,7 +1,7 @@
 ; An array to track replacements of nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,6 +22,9 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/min" :dir :system))
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+;(local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; We can build the node-replacement-array by calling make-into-array on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
@@ -276,6 +279,7 @@
                                      aref1 ;todo
                                      make-into-array-with-len ;todo
                                      dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                                     acons
                                      )
                                   ;; for speed:
                                   (bounded-node-replacement-arrayp-aux-beyond-length)))))

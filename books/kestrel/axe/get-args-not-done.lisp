@@ -1,7 +1,7 @@
 ; Get nodenums with no result in the result-array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,6 @@
 (in-package "ACL2")
 
 (include-book "bounded-darg-listp")
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)

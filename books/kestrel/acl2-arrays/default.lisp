@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function default
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -44,3 +44,14 @@
              (cadr (assoc-keyword :default (cdr a)))
            (default name x)))
   :hints (("Goal" :in-theory (e/d (default header) (default-intro)))))
+
+(defthm default-of-acons-of-header
+  (equal (default name (acons :header header x))
+         (cadr (assoc-keyword :default header)))
+  :hints (("Goal" :in-theory (e/d (default header) (default-intro)))))
+
+(defthmd normalize-default-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (default name l)
+                  (default :fake-name l)))
+  :hints (("Goal" :in-theory (e/d (default) (default-intro)))))

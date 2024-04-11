@@ -1,7 +1,7 @@
 ; Bounded variant of dag-parent-arrayp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,10 +13,10 @@
 (in-package "ACL2")
 
 (include-book "dag-parent-arrayp")
-
-;;;
-;;; bounded-dag-parent-entriesp
-;;;
+(local (include-book "kestrel/acl2-arrays/array1p" :dir :system))
+(local (include-book "kestrel/acl2-arrays/default" :dir :system))
+(local (include-book "kestrel/acl2-arrays/aref1" :dir :system))
+(local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
 
 ;; Check that all entries from n down to 0 are lists (of numbers) less than limit.
 (defund bounded-dag-parent-entriesp (n dag-parent-array-name dag-parent-array limit)
@@ -65,8 +65,6 @@
                   (bounded-dag-parent-entriesp n dag-parent-array-name dag-parent-array limit)))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-entriesp))))
 
-
-
 ;; it's sufficient for all legal entries to be okay, since aref1 returns the default if the index is too large
 (defthmd bounded-dag-parent-entriesp-suff
   (implies (and (bounded-dag-parent-entriesp (+ -1 (alen1 dag-parent-array-name dag-parent-array)) dag-parent-array-name dag-parent-array limit)
@@ -90,9 +88,7 @@
                             limit))
            :in-theory (enable bounded-dag-parent-entriesp))))
 
-;;;
-;;; bounded-dag-parent-arrayp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a dag-parent-array such that the entries in the dag-parent-array only contain nodenums less than the dag-len
 (defund bounded-dag-parent-arrayp (dag-parent-array-name dag-parent-array dag-len)

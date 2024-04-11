@@ -3029,7 +3029,7 @@
                                axe-bind-free-function-applicationp
                                natp-of-+-of-1-and-largest-non-quotep
                                <-of-largest-non-quotep
-                               consp-when-true-listp-and-non-nil
+                               ;; consp-when-true-listp-and-non-nil
                                ;; rationalp-+
                                ;; rationalp-unary--
                                rationalp-when-integerp-for-axe

@@ -21,7 +21,16 @@
 ;; See size-array-for-nodes-aux in dag-size-sparse.lisp for an example of how to use the worklist-array.
 
 (include-book "merge-sort-less-than")
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/alen1" :dir :system)
+;; (local (include-book "kestrel/acl2-arrays/array1p" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/header" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/default" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/maximum-length" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/aref1" :dir :system))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
+;(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
 (include-book "dags") ;for bounded-darg-listp
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)
 
