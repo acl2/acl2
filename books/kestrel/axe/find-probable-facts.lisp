@@ -467,27 +467,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes).
-(defund initial-probable-facts-aux (node-to-value-alist ; grouped so that each group of nodes with the same val forms a contiguous block
-                                   ;; accumulators:
-                                   probably-equal-node-sets
-                                   singleton-count
-                                   probably-constant-node-alist
-                                   never-used-nodes)
+;; Returns (mv probably-equal-node-sets singleton-count probably-constant-node-alist).
+(defund initial-probable-facts-aux (node-to-value-alist ; grouped so that each group of nodes with the same val forms a contiguous block, should have no :unused nodes
+                                    ;; accumulators:
+                                    probably-equal-node-sets
+                                    singleton-count
+                                    probably-constant-node-alist)
   (declare (xargs :guard (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
                               (nat-listp (strip-cars node-to-value-alist))
                               (nat-list-listp probably-equal-node-sets)
                               (natp singleton-count)
-                              (alistp probably-constant-node-alist)
-                              (nat-listp never-used-nodes))
+                              (alistp probably-constant-node-alist))
                   :guard-hints (("Goal" :in-theory (enable (:d strip-cars))))
                   :measure (len node-to-value-alist)))
   (if (atom node-to-value-alist)
-      (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)
+      (mv probably-equal-node-sets singleton-count probably-constant-node-alist)
     (b* ((entry (first node-to-value-alist))
          (nodenum (car entry))
          (value (cdr entry))
-         ;; Skip this node and gather all immediately subsequent nodes with the same value.
+         ;; Gather all immediately following nodes with the same value:
          ((mv equiv-set node-to-value-alist)
           (leading-entries-with-value (rest node-to-value-alist) value nil))
          ((mv probably-equal-node-sets singleton-count)
@@ -495,18 +493,13 @@
               (mv (cons (cons nodenum equiv-set) probably-equal-node-sets) singleton-count)
             ;; only NODENUM has the value VALUE, so it is a singleton:
             (mv probably-equal-node-sets (+ 1 singleton-count))))
-         ((mv probably-constant-node-alist never-used-nodes)
-          (if (eq :unused value)
-              ;; NODENUM is unused, as are all nodes in EQUIV-SET:
-              (mv probably-constant-node-alist (cons nodenum (append equiv-set never-used-nodes)))
-            ;; NODENUM and all nodes in EQUIV-SET candidates for always being equal to VALUE:
-            (mv (acons-fast nodenum value (acons-all-to-val equiv-set value probably-constant-node-alist))
-                never-used-nodes))))
+         ;; NODENUM and all nodes in EQUIV-SET are candidates for always being equal to the constant VALUE:
+         (probably-constant-node-alist
+           (acons-fast nodenum value (acons-all-to-val equiv-set value probably-constant-node-alist))))
       (initial-probable-facts-aux node-to-value-alist ; we've already moved past at least one entry
                                   probably-equal-node-sets
                                   singleton-count
-                                  probably-constant-node-alist
-                                  never-used-nodes))))
+                                  probably-constant-node-alist))))
 
 
 (local
@@ -517,14 +510,13 @@
                  (all-consp probably-equal-node-sets) ; no empty sets (in fact, there can't be singletons either)
                  (natp singleton-count)
                  (alistp probably-constant-node-alist)
-                 (nat-listp (strip-cars probably-constant-node-alist))
-                 (nat-listp never-used-nodes))
-            (and (nat-list-listp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
-                 (all-consp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
-                 (natp (mv-nth 1 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
-                 (alistp (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
-                 (nat-listp (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))))
-                 (nat-listp (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))))
+                 (nat-listp (strip-cars probably-constant-node-alist)))
+            (and (nat-list-listp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
+                 (all-consp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
+                 (natp (mv-nth 1 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
+                 (alistp (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
+                 (nat-listp (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist))))
+                 (nat-listp (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))))
    :hints (("Goal" :in-theory (enable initial-probable-facts-aux)))))
 
 (local
@@ -536,19 +528,88 @@
                   (nat-list-listp probably-equal-node-sets)
                   (natp singleton-count)
                   (alistp probably-constant-node-alist)
-                  (nat-listp never-used-nodes)
                   (all-< (strip-cars probably-constant-node-alist)
-                         bound)
-                  (all-< never-used-nodes bound))
-             (and (all-all-< (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
+                         bound))
+             (and (all-all-< (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist))
                              bound)
-                  (all-< (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
+                  (all-< (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
                          bound)
-                  (all-< (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
+                  (all-< (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist))
                          bound)))
     :hints (("Goal" :in-theory (enable initial-probable-facts-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv alist unused-nodes).
+;; Only for nodes that are not :unused.
+(defund initial-node-to-value-alist (n len array-name array alist-acc unused-nodes-acc)
+  (declare (xargs :guard (and (array1p array-name array)
+                              (natp n)
+                              (natp len)
+                              (<= n (+ 1 len))
+                              ;; (alistp alist-acc)
+                              ;; (nat-listp unused-nodes-acc)
+                              (<= len (alen1 array-name array)))
+                  :measure (nfix (+ 1 (- len n)))
+                  :split-types t
+                  :hints (("Goal" :in-theory (enable natp))))
+           (type (integer 0 *) n len))
+  (if (or (<= len n)
+          ;; for termination:
+          (not (mbt (and (natp n)
+                         (natp len)))))
+      (mv alist-acc unused-nodes-acc)
+    (let ((val (aref1 array-name array n)))
+      (mv-let (alist-acc unused-nodes-acc)
+        (if (eq val :unused)
+            (mv alist-acc (cons n unused-nodes-acc))
+          (mv (acons-fast n val alist-acc) unused-nodes-acc))
+        (initial-node-to-value-alist (+ 1 n) len array-name array alist-acc unused-nodes-acc)))))
+
+(local
+  (defthm initial-node-to-value-alist-return-type
+    (implies (and (natp n)
+                  (alistp alist-acc)
+                  (all-< (strip-cars alist-acc) len)
+                  (nat-listp (strip-cars alist-acc))
+                  (nat-listp unused-nodes-acc)
+                  (all-< unused-nodes-acc len))
+             (mv-let (alist unused-nodes)
+               (initial-node-to-value-alist n len array-name array alist-acc unused-nodes-acc)
+               (and (alistp alist)
+                    (nat-listp (strip-cars alist))
+                    (all-< (strip-cars alist) len)
+                    (nat-listp unused-nodes)
+                    (all-< unused-nodes len))))
+    :hints (("Goal" :in-theory (enable initial-node-to-value-alist)))))
+
+(local
+  (defthm initial-node-to-value-alist-return-type-corollary
+    (implies (and (<= len bound)
+                  (natp n)
+                  (alistp alist-acc)
+                  (all-< (strip-cars alist-acc) len)
+                  (nat-listp (strip-cars alist-acc))
+                  (nat-listp unused-nodes-acc)
+                  (all-< unused-nodes-acc len))
+             (mv-let (alist unused-nodes)
+               (initial-node-to-value-alist n len array-name array alist-acc unused-nodes-acc)
+               (and (all-< (strip-cars alist) bound)
+                    (all-< unused-nodes bound))))
+    :hints (("Goal" :use initial-node-to-value-alist-return-type
+             :in-theory (disable initial-node-to-value-alist-return-type)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm all-consp-when-alistp
+    (implies (alistp x) (all-consp x))
+    :hints (("Goal" :in-theory (enable all-consp alistp)))))
+
+(local
+  (defthm true-listp-when-alistp
+    (implies (alistp x) (true-listp x))
+    :hints (("Goal" :in-theory (enable all-consp alistp)))))
 
 ;; Assumes the TEST-CASE-ARRAY gives values for the current test case to all nodes below DAG-LEN.
 ;; Returns (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes).
@@ -556,10 +617,18 @@
   (declare (xargs :guard (and (array1p test-case-array-name test-case-array)
                               (natp dag-len)
                               (<= dag-len (alen1 test-case-array-name test-case-array)))))
-  (let* ((node-to-value-alist (array-to-alist test-case-array-name test-case-array dag-len))
-         ;; We sort here just to group entries with the same value together:
-         (sorted-node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist)))
-    (initial-probable-facts-aux sorted-node-to-value-alist nil 0 nil nil)))
+  (mv-let (node-to-value-alist never-used-nodes)
+    (initial-node-to-value-alist 0 dag-len test-case-array-name test-case-array nil nil)
+    (let (;; We sort here just to group entries with the same value together:
+          (sorted-node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist)))
+      (mv-let (probably-equal-node-sets singleton-count probably-constant-node-alist)
+        (initial-probable-facts-aux sorted-node-to-value-alist nil 0 nil)
+        (mv (if (consp never-used-nodes)
+                (cons never-used-nodes probably-equal-node-sets)
+              probably-equal-node-sets)
+            singleton-count
+            probably-constant-node-alist
+            never-used-nodes)))))
 
 (local
  (defthm all-all-<-of-mv-nth-0-of-initial-probable-facts
@@ -729,7 +798,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun find-val-other-than (val nodenums test-case-array test-case-array-name)
+(defun find-val-other-than (val nodenums test-case-array-name test-case-array)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (array1p test-case-array-name test-case-array)
                               (all-< nodenums (alen1 test-case-array-name test-case-array)))))
@@ -739,211 +808,312 @@
            (val2 (aref1 test-case-array-name test-case-array nodenum)))
       (if (equal val val2)
           ;;keep looking:
-          (find-val-other-than val (cdr nodenums) test-case-array test-case-array-name)
+          (find-val-other-than val (cdr nodenums) test-case-array-name test-case-array)
         ;;we found a difference:
         t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns an alist pairing values with nodenum lists
-;the alist may include shadowed pairs
-;fixme think about :unused nodes
-(defund test-case-alist-for-set (set test-case-array-name test-case-array acc)
-  (declare (xargs :guard (and (nat-listp set)
-                              (array1p test-case-array-name test-case-array)
-                              (all-< set (alen1 test-case-array-name test-case-array))
-                              (alistp acc))))
-  (if (endp set)
-      acc
-    (let* ((nodenum (first set))
-           (value (aref1 test-case-array-name test-case-array nodenum))
-           (nodes-for-value (lookup-equal value acc)))
-      (test-case-alist-for-set (cdr set) test-case-array-name test-case-array
-                               (acons-fast value (cons nodenum nodes-for-value) acc)))))
+;; ;returns an alist pairing values with nodenum lists
+;; ;the alist may include shadowed pairs
+;; ;fixme think about :unused nodes
+;; (defund test-case-alist-for-set (set test-case-array-name test-case-array acc)
+;;   (declare (xargs :guard (and (nat-listp set)
+;;                               (array1p test-case-array-name test-case-array)
+;;                               (all-< set (alen1 test-case-array-name test-case-array))
+;;                               (alistp acc))))
+;;   (if (endp set)
+;;       acc
+;;     (let* ((nodenum (first set))
+;;            (value (aref1 test-case-array-name test-case-array nodenum))
+;;            (nodes-for-value (lookup-equal value acc)))
+;;       (test-case-alist-for-set (cdr set) test-case-array-name test-case-array
+;;                                (acons-fast value (cons nodenum nodes-for-value) acc)))))
 
-(local
- (defthm alistp-of-test-case-alist-for-set
-   (implies (alistp acc)
-            (alistp (test-case-alist-for-set set test-case-array-name test-case-array acc)))
-   :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
+;; (local
+;;  (defthm alistp-of-test-case-alist-for-set
+;;    (implies (alistp acc)
+;;             (alistp (test-case-alist-for-set set test-case-array-name test-case-array acc)))
+;;    :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
 
-(local
- (defthm all-consp-of-strip-cdrs-of-test-case-alist-for-set
-   (implies (all-consp (strip-cdrs acc))
-            (all-consp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
-   :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
+;; (local
+;;  (defthm all-consp-of-strip-cdrs-of-test-case-alist-for-set
+;;    (implies (all-consp (strip-cdrs acc))
+;;             (all-consp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
+;;    :hints (("Goal" :in-theory (enable test-case-alist-for-set)))))
 
-(local
- (defthm all-all-<-of-strip-cdrs-of-test-case-alist-for-set
-   (implies (and (nat-listp set)
-                 (array1p test-case-array-name test-case-array)
-                 (all-< set (alen1 test-case-array-name test-case-array))
-                 (alistp acc)
-                 (all-all-< (strip-cdrs acc) bound)
-                 (<= (alen1 test-case-array-name test-case-array) bound))
-            (all-all-< (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc)) bound))
-   :hints (("Goal" :in-theory (enable test-case-alist-for-set all-all-<)))))
+;; (local
+;;  (defthm all-all-<-of-strip-cdrs-of-test-case-alist-for-set
+;;    (implies (and (nat-listp set)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (all-< set (alen1 test-case-array-name test-case-array))
+;;                  (alistp acc)
+;;                  (all-all-< (strip-cdrs acc) bound)
+;;                  (<= (alen1 test-case-array-name test-case-array) bound))
+;;             (all-all-< (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc)) bound))
+;;    :hints (("Goal" :in-theory (enable test-case-alist-for-set all-all-<)))))
 
-(local
- (defthm nat-list-listp-of-strip-cdrs-of-test-case-alist-for-set
-   (implies (and (nat-listp set)
-                 (array1p test-case-array-name test-case-array)
-                 (all-< set (alen1 test-case-array-name test-case-array))
-                 (alistp acc)
-                 (NAT-LIST-LISTP (STRIP-CDRS ACC)))
-            (nat-list-listp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
-   :hints (("Goal" :in-theory (enable test-case-alist-for-set nat-list-listp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv non-singletons singleton-count).
-(defund drop-and-count-singletons (lst non-singletons-acc count-acc)
-  (declare (xargs :guard (and (integerp count-acc)
-                              (true-listp lst))))
-  (if (endp lst)
-      (mv non-singletons-acc count-acc)
-    (let* ((item (car lst)))
-      (if (and (consp item) ; drop if all are known to be non empty lists?
-               (not (consp (cdr item))))
-          ;; it's a singleton, so drop it and count it:
-          (drop-and-count-singletons (cdr lst) non-singletons-acc (+ 1 count-acc))
-        ;; it's not a singleton, so keep it:
-        (drop-and-count-singletons (cdr lst) (cons item non-singletons-acc) count-acc)))))
-
-(local
- (defthm true-listp-of-mv-nth-0-of-drop-and-count-singletons
-   (implies (true-listp acc)
-            (true-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
-
-(local
- (defthm nat-list-listp-of-mv-nth-0-of-drop-and-count-singletons
-   (implies (and (nat-list-listp acc)
-                 (nat-list-listp lst))
-            (nat-list-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons
-                                      nat-list-listp)))))
-
-(local
- (defthm all-consp-of-mv-nth-0-of-drop-and-count-singletons
-   (implies (and (all-consp acc)
-                 (all-consp lst)
-                 )
-            (all-consp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons
-                                      nat-list-listp)))))
-
-(local
- (defthm all-all-<-of-mv-nth-0-of-drop-and-count-singletons
-   (implies (and (all-all-< acc bound)
-                 (all-all-< lst bound)
-                 )
-            (all-all-< (mv-nth 0 (drop-and-count-singletons lst acc count-acc))
-                       bound))
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons
-                                      nat-list-listp
-                                      all-all-<)))))
-
-(local
- (defthm natp-mv-nth-1-of-drop-and-count-singletons
-   (implies (natp count-acc)
-            (natp (mv-nth 1 (drop-and-count-singletons lst acc count-acc))))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
+;; (local
+;;  (defthm nat-list-listp-of-strip-cdrs-of-test-case-alist-for-set
+;;    (implies (and (nat-listp set)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (all-< set (alen1 test-case-array-name test-case-array))
+;;                  (alistp acc)
+;;                  (NAT-LIST-LISTP (STRIP-CDRS ACC)))
+;;             (nat-list-listp (strip-cdrs (test-case-alist-for-set set test-case-array-name test-case-array acc))))
+;;    :hints (("Goal" :in-theory (enable test-case-alist-for-set nat-list-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;ignores later pairs that bind already-bound keys
-(defund strip-cdrs-unique (lst keys-seen acc)
-  (declare (xargs :guard (and (alistp lst)
-                              (true-listp keys-seen))))
-  (if (endp lst)
-      acc ;we don't bother to reverse this
-    (let* ((entry (car lst))
-           (key (car entry)))
-      (if (member-equal key keys-seen)
-          (strip-cdrs-unique (cdr lst) keys-seen acc)
-        (strip-cdrs-unique (cdr lst) (cons key keys-seen) (cons (cdr entry) acc))))))
+;; ;; Returns (mv non-singletons singleton-count).
+;; (defund drop-and-count-singletons (lst non-singletons-acc count-acc)
+;;   (declare (xargs :guard (and (integerp count-acc)
+;;                               (true-listp lst))))
+;;   (if (endp lst)
+;;       (mv non-singletons-acc count-acc)
+;;     (let* ((item (car lst)))
+;;       (if (and (consp item) ; drop if all are known to be non empty lists?
+;;                (not (consp (cdr item))))
+;;           ;; it's a singleton, so drop it and count it:
+;;           (drop-and-count-singletons (cdr lst) non-singletons-acc (+ 1 count-acc))
+;;         ;; it's not a singleton, so keep it:
+;;         (drop-and-count-singletons (cdr lst) (cons item non-singletons-acc) count-acc)))))
 
-(local
- (defthm true-listp-of-strip-cdrs-unique
-   (implies (true-listp acc)
-            (true-listp (strip-cdrs-unique lst keys-seen acc)))
-   :hints (("Goal" :in-theory (enable strip-cdrs-unique)))))
+;; (local
+;;  (defthm true-listp-of-mv-nth-0-of-drop-and-count-singletons
+;;    (implies (true-listp acc)
+;;             (true-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+;;    :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
 
-(local
- (defthm nat-list-listp-of-strip-cdrs-unique
-   (implies (and (nat-list-listp acc)
-                 (nat-list-listp (strip-cdrs lst)))
-            (nat-list-listp (strip-cdrs-unique lst keys-seen acc)))
-   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
+;; (local
+;;  (defthm nat-list-listp-of-mv-nth-0-of-drop-and-count-singletons
+;;    (implies (and (nat-list-listp acc)
+;;                  (nat-list-listp lst))
+;;             (nat-list-listp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+;;    :hints (("Goal" :in-theory (enable drop-and-count-singletons
+;;                                       nat-list-listp)))))
 
-(local
- (defthm all-consp-of-strip-cdrs-unique
-   (implies (and (all-consp acc)
-                 (all-consp (strip-cdrs lst)))
-            (all-consp (strip-cdrs-unique lst keys-seen acc)))
-   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
+;; (local
+;;  (defthm all-consp-of-mv-nth-0-of-drop-and-count-singletons
+;;    (implies (and (all-consp acc)
+;;                  (all-consp lst)
+;;                  )
+;;             (all-consp (mv-nth 0 (drop-and-count-singletons lst acc count-acc))))
+;;    :hints (("Goal" :in-theory (enable drop-and-count-singletons
+;;                                       nat-list-listp)))))
 
-(local
- (defthm all-all-<-of-strip-cdrs-unique
-   (implies (and (all-all-< acc bound)
-                 (all-all-< (strip-cdrs lst) bound))
-            (all-all-< (strip-cdrs-unique lst keys-seen acc) bound))
-   :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp all-all-<)))))
+;; (local
+;;  (defthm all-all-<-of-mv-nth-0-of-drop-and-count-singletons
+;;    (implies (and (all-all-< acc bound)
+;;                  (all-all-< lst bound)
+;;                  )
+;;             (all-all-< (mv-nth 0 (drop-and-count-singletons lst acc count-acc))
+;;                        bound))
+;;    :hints (("Goal" :in-theory (enable drop-and-count-singletons
+;;                                       nat-list-listp
+;;                                       all-all-<)))))
+
+;; (local
+;;  (defthm natp-mv-nth-1-of-drop-and-count-singletons
+;;    (implies (natp count-acc)
+;;             (natp (mv-nth 1 (drop-and-count-singletons lst acc count-acc))))
+;;    :rule-classes :type-prescription
+;;    :hints (("Goal" :in-theory (enable drop-and-count-singletons)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;ignores later pairs that bind already-bound keys
+;; (defund strip-cdrs-unique (lst keys-seen acc)
+;;   (declare (xargs :guard (and (alistp lst)
+;;                               (true-listp keys-seen))))
+;;   (if (endp lst)
+;;       acc ;we don't bother to reverse this
+;;     (let* ((entry (car lst))
+;;            (key (car entry)))
+;;       (if (member-equal key keys-seen)
+;;           (strip-cdrs-unique (cdr lst) keys-seen acc)
+;;         (strip-cdrs-unique (cdr lst) (cons key keys-seen) (cons (cdr entry) acc))))))
+
+;; (local
+;;  (defthm true-listp-of-strip-cdrs-unique
+;;    (implies (true-listp acc)
+;;             (true-listp (strip-cdrs-unique lst keys-seen acc)))
+;;    :hints (("Goal" :in-theory (enable strip-cdrs-unique)))))
+
+;; (local
+;;  (defthm nat-list-listp-of-strip-cdrs-unique
+;;    (implies (and (nat-list-listp acc)
+;;                  (nat-list-listp (strip-cdrs lst)))
+;;             (nat-list-listp (strip-cdrs-unique lst keys-seen acc)))
+;;    :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
+
+;; (local
+;;  (defthm all-consp-of-strip-cdrs-unique
+;;    (implies (and (all-consp acc)
+;;                  (all-consp (strip-cdrs lst)))
+;;             (all-consp (strip-cdrs-unique lst keys-seen acc)))
+;;    :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp)))))
+
+;; (local
+;;  (defthm all-all-<-of-strip-cdrs-unique
+;;    (implies (and (all-all-< acc bound)
+;;                  (all-all-< (strip-cdrs lst) bound))
+;;             (all-all-< (strip-cdrs-unique lst keys-seen acc) bound))
+;;    :hints (("Goal" :in-theory (enable strip-cdrs-unique nat-list-listp all-all-<)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;we first make an alist whose keys are data values (often 0 or 1?) and whose vals are sets of nodenums
-;returns (mv new-sets new-singleton-count)
-(defund split-set (set test-case-array test-case-array-name)
-  (declare (xargs :guard (and (nat-listp set)
-                              (array1p test-case-array-name test-case-array)
-                              (all-< set (alen1 test-case-array-name test-case-array)))))
-  (let* ((alist (test-case-alist-for-set set test-case-array-name test-case-array nil)) ;this could be slow?  better to pair nodenums with vals and merge-sort the pairs by value?
-         (new-node-sets (strip-cdrs-unique alist nil nil)) ;don't cons this up?
-         )
-    ;;fixme combine this with the work above:
-    (drop-and-count-singletons new-node-sets nil 0)))
+;; ;;we first make an alist whose keys are data values (often 0 or 1?) and whose vals are sets of nodenums
+;; ;returns (mv new-sets new-singleton-count)
+;; (defund split-set (set test-case-array-name test-case-array)
+;;   (declare (xargs :guard (and (nat-listp set)
+;;                               (array1p test-case-array-name test-case-array)
+;;                               (all-< set (alen1 test-case-array-name test-case-array)))))
+;;   (let* ((alist (test-case-alist-for-set set test-case-array-name test-case-array nil)) ;this could be slow?  better to pair nodenums with vals and merge-sort the pairs by value?
+;;          (new-node-sets (strip-cdrs-unique alist nil nil)) ;don't cons this up?
+;;          )
+;;     ;;fixme combine this with the work above:
+;;     (drop-and-count-singletons new-node-sets nil 0)))
 
-(local
- (defthm true-listp-of-mv-nth-0-of-split-set
-   (true-listp (mv-nth 0 (split-set set test-case-array test-case-array-name)))
-   :hints (("Goal" :in-theory (enable split-set)))))
+;; (local
+;;  (defthm true-listp-of-mv-nth-0-of-split-set
+;;    (true-listp (mv-nth 0 (split-set set test-case-array-name test-case-array)))
+;;    :hints (("Goal" :in-theory (enable split-set)))))
 
-(local
- (defthm nat-list-listp-of-mv-nth-0-of-split-set
-   (implies (and (nat-listp set)
-                 (array1p test-case-array-name test-case-array)
-                 (all-< set (alen1 test-case-array-name test-case-array)))
-            (nat-list-listp (mv-nth 0 (split-set set test-case-array test-case-array-name))))
-   :hints (("Goal" :in-theory (enable split-set)))))
+;; (local
+;;  (defthm nat-list-listp-of-mv-nth-0-of-split-set
+;;    (implies (and (nat-listp set)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (all-< set (alen1 test-case-array-name test-case-array)))
+;;             (nat-list-listp (mv-nth 0 (split-set set test-case-array-name test-case-array))))
+;;    :hints (("Goal" :in-theory (enable split-set)))))
 
-(local
- (defthm all-consp-of-mv-nth-0-of-split-set
-   (implies (and (nat-listp set)
-                 (array1p test-case-array-name test-case-array)
-                 (all-< set (alen1 test-case-array-name test-case-array)))
-            (all-consp (mv-nth 0 (split-set set test-case-array test-case-array-name))))
-   :hints (("Goal" :in-theory (enable split-set)))))
+;; (local
+;;  (defthm all-consp-of-mv-nth-0-of-split-set
+;;    (implies (and (nat-listp set)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (all-< set (alen1 test-case-array-name test-case-array)))
+;;             (all-consp (mv-nth 0 (split-set set test-case-array-name test-case-array))))
+;;    :hints (("Goal" :in-theory (enable split-set)))))
 
-(local
- (defthm all-all-<-of-mv-nth-0-of-split-set
-   (implies (and (nat-listp set)
-                 (array1p test-case-array-name test-case-array)
-                 (all-< set (alen1 test-case-array-name test-case-array))
-                 (<= (alen1 test-case-array-name test-case-array) bound))
-            (all-all-< (mv-nth 0 (split-set set test-case-array test-case-array-name))
-                       bound))
-   :hints (("Goal" :in-theory (enable split-set)))))
+;; (local
+;;  (defthm all-all-<-of-mv-nth-0-of-split-set
+;;    (implies (and (nat-listp set)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (all-< set (alen1 test-case-array-name test-case-array))
+;;                  (<= (alen1 test-case-array-name test-case-array) bound))
+;;             (all-all-< (mv-nth 0 (split-set set test-case-array-name test-case-array))
+;;                        bound))
+;;    :hints (("Goal" :in-theory (enable split-set)))))
 
-(local
- (defthm natp-of-mv-nth-1-of-split-set
-   (natp (mv-nth 1 (split-set set test-case-array test-case-array-name)))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable split-set)))))
+;; (local
+;;  (defthm natp-of-mv-nth-1-of-split-set
+;;    (natp (mv-nth 1 (split-set set test-case-array-name test-case-array)))
+;;    :rule-classes :type-prescription
+;;    :hints (("Goal" :in-theory (enable split-set)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv alist unused-nodes) where alist is the node-to-value-alist for the nodes in the set.
+;; Also returns, separately, the list of nodes that are not :unused.
+(defund node-to-value-alist-for-set (nodenums array-name array alist-acc unused-nodes-acc)
+  (declare (xargs :guard (and (nat-listp nodenums)
+                              (array1p array-name array)
+                              (all-< nodenums (alen1 array-name array))
+                              ;; (alistp alist-acc)
+                              ;; (nat-listp unused-nodes-acc)
+                              )))
+  (if (endp nodenums)
+      (mv alist-acc unused-nodes-acc) ; probably no need to reverse these
+    (let* ((nodenum (first nodenums))
+           (val (aref1 array-name array nodenum)))
+      (mv-let (alist-acc unused-nodes-acc)
+        (if (eq val :unused)
+            (mv alist-acc (cons nodenum unused-nodes-acc))
+          (mv (acons-fast nodenum val alist-acc) unused-nodes-acc))
+        (node-to-value-alist-for-set (rest nodenums) array-name array alist-acc unused-nodes-acc)))))
+
+(local
+  (defthm node-to-value-alist-for-set-return-type
+    (implies (and (nat-listp nodenums)
+                  (all-< nodenums len)
+                  (alistp alist-acc)
+                  (all-< (strip-cars alist-acc) len)
+                  (nat-listp (strip-cars alist-acc))
+                  (nat-listp unused-nodes-acc)
+                  (all-< unused-nodes-acc len))
+             (mv-let (alist unused-nodes)
+               (node-to-value-alist-for-set nodenums array-name array alist-acc unused-nodes-acc)
+               (and (alistp alist)
+                    (nat-listp (strip-cars alist))
+                    (all-< (strip-cars alist) len)
+                    (nat-listp unused-nodes)
+                    (all-< unused-nodes len))))
+    :hints (("Goal" :in-theory (enable node-to-value-alist-for-set)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Splits the grouped-alist.
+;; Returns (mv extended-acc singleton-count).
+(defund group-nodes-by-value (node-to-value-alist ; grouped so that each group of nodes with the same val forms a contiguous block, should have no :unused nodes
+                              ;; accumulators:
+                              acc ; the probably-equal-node-sets
+                              singleton-count)
+  (declare (xargs :guard (and (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                              (nat-listp (strip-cars node-to-value-alist))
+                              (nat-list-listp acc)
+                              (natp singleton-count))
+                  :measure (len node-to-value-alist)))
+  (if (endp node-to-value-alist)
+      (mv acc singleton-count)
+    (b* ((entry (first node-to-value-alist))
+         (nodenum (car entry))
+         (value (cdr entry))
+         ;; Gather all immediately following nodes with the same value:
+         ((mv equiv-set node-to-value-alist)
+          (leading-entries-with-value (rest node-to-value-alist) value nil))
+         ((mv acc singleton-count)
+          (if equiv-set ; there's at least one other node with the same value
+              (mv (cons (cons nodenum equiv-set) acc) singleton-count)
+            ;; only NODENUM has the value VALUE, so it is a singleton:
+            (mv acc (+ 1 singleton-count)))))
+      (group-nodes-by-value node-to-value-alist ; we've already moved past at least one entry
+                            acc
+                            singleton-count))))
+
+(local
+  (defthm nat-list-listp-of-mv-nth-0-of-group-nodes-by-value
+    (implies (and (alistp node-to-value-alist)
+                  (nat-listp (strip-cars node-to-value-alist))
+                  (nat-list-listp acc)
+                  (natp singleton-count))
+             (nat-list-listp (mv-nth 0 (group-nodes-by-value node-to-value-alist acc singleton-count))))
+    :hints (("Goal" :in-theory (enable group-nodes-by-value)))))
+
+(local
+  (defthm all-consp-of-mv-nth-0-of-group-nodes-by-value
+    (implies (and (alistp node-to-value-alist)
+                  (nat-listp (strip-cars node-to-value-alist))
+                  (all-consp acc)
+                  (natp singleton-count))
+             (all-consp (mv-nth 0 (group-nodes-by-value node-to-value-alist acc singleton-count))))
+    :hints (("Goal" :in-theory (enable group-nodes-by-value)))))
+
+(local
+  (defthm all-all-<-of-mv-nth-0-of-group-nodes-by-value
+    (implies (and (alistp node-to-value-alist)
+                  (nat-listp (strip-cars node-to-value-alist))
+                  (all-< (strip-cars node-to-value-alist) bound)
+                  (all-all-< acc bound)
+                  (natp singleton-count))
+             (all-all-< (mv-nth 0 (group-nodes-by-value node-to-value-alist acc singleton-count)) bound))
+    :hints (("Goal" :in-theory (enable group-nodes-by-value)))))
+
+(local
+  (defthm natp-of-mv-nth-1-of-group-nodes-by-value
+    (implies (natp singleton-count)
+             (natp (mv-nth 1 (group-nodes-by-value node-to-value-alist acc singleton-count))))
+    :hints (("Goal" :in-theory (enable group-nodes-by-value)))))
 
 ;takes a set and adds zero or more sets to acc (also returns a new singleton count)
 ;returns (mv acc new-singleton-count change-flg)
@@ -957,25 +1127,33 @@
                               (array1p test-case-array-name test-case-array)
                               ;; print
                               (all-< set (alen1 test-case-array-name test-case-array))
-                              (true-listp acc))))
+                              (nat-list-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable true-listp-when-nat-list-listp)))))
   (let* ((first-nodenum (first set))
          (first-val (aref1 test-case-array-name test-case-array first-nodenum))
-         (need-to-splitp (find-val-other-than first-val (rest set) test-case-array test-case-array-name)))
+         (need-to-splitp (find-val-other-than first-val (rest set) test-case-array-name test-case-array)))
     (if (not need-to-splitp)
         ;;in this case we don't recons the whole set
         (mv (cons set acc) 0 nil)
-      (prog2$ (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set)))
-              (mv-let (new-sets new-singleton-count)
-                      (split-set set test-case-array test-case-array-name) ;todo: pass acc into this?
-                      (mv (append new-sets acc)
-                          new-singleton-count t))))))
+      (b* ((- (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set))))
+           ((mv node-to-value-alist unused-nodes)
+            (node-to-value-alist-for-set set test-case-array-name test-case-array nil nil))
+           ;; to group nodes with similar values:
+           (node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist))
+           ((mv acc singleton-count)
+            (group-nodes-by-value node-to-value-alist acc 0)))
+        (mv (if (consp unused-nodes)
+                (cons unused-nodes acc)
+              acc)
+            singleton-count
+            t)))))
 
-(local
- (defthm true-listp-of-mv-nth-0-of-try-to-split-set
-   (implies (true-listp acc)
-            (true-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
-   :rule-classes :type-prescription
-   :hints (("Goal" :in-theory (enable try-to-split-set)))))
+;; (local
+;;  (defthm true-listp-of-mv-nth-0-of-try-to-split-set
+;;    (implies (true-listp acc)
+;;             (true-listp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+;;    :rule-classes :type-prescription
+;;    :hints (("Goal" :in-theory (enable try-to-split-set)))))
 
 (local
  (defthm nat-list-listp-of-mv-nth-0-of-try-to-split-set
@@ -1040,7 +1218,7 @@
   (declare (xargs :guard (and (nat-list-listp sets)
                               (all-consp sets)
                               (array1p test-case-array-name test-case-array)
-                              (true-listp acc)
+                              (nat-list-listp acc)
                               (natp singleton-count-acc)
                               ;; print
                               (all-all-< sets (alen1 test-case-array-name test-case-array))
@@ -1050,15 +1228,15 @@
       (mv acc singleton-count-acc changep)
     (let* ((set (first sets)))
       (mv-let (acc ;has the new sets appended onto it
-               new-singleton-count change-flg-for-this-set)
-              (try-to-split-set set test-case-array-name test-case-array print acc)
-              (update-probably-equal-node-sets (rest sets)
-                                            test-case-array
-                                            acc
-                                            (+ singleton-count-acc new-singleton-count)
-                                            print
-                                            test-case-array-name
-                                            (or changep change-flg-for-this-set))))))
+                new-singleton-count change-flg-for-this-set)
+        (try-to-split-set set test-case-array-name test-case-array print acc)
+        (update-probably-equal-node-sets (rest sets)
+                                         test-case-array
+                                         acc
+                                         (+ singleton-count-acc new-singleton-count)
+                                         print
+                                         test-case-array-name
+                                         (or changep change-flg-for-this-set))))))
 
 (local
  (defthm nat-list-listp-of-mv-nth-0-of-update-probably-equal-node-sets
@@ -1247,9 +1425,9 @@
 ;fixme might be faster to process more than 1 test case at a time
 ;every node in probably-constant-node-alist has been used on at least one test case
 (defund update-probably-constant-alist (probably-constant-node-alist ;;pairs nodenums with probable constants
-                                     test-case-array-name test-case-array
-                                     acc ;pairs are moved from probably-constant-node-alist to this
-                                     changep)
+                                        test-case-array-name test-case-array
+                                        acc ;pairs are moved from probably-constant-node-alist to this
+                                        changep)
   (declare (xargs :guard (and (alistp probably-constant-node-alist)
                               (nat-listp (strip-cars probably-constant-node-alist))
                               (array1p test-case-array-name test-case-array)
@@ -1267,10 +1445,10 @@
               (equal probable-value value-for-this-test-case))
           ;; this test case doesn't invalidate the pair:
           (update-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
-                                       (cons pair acc) changep)
+                                          (cons pair acc) changep)
         ;; the node is used and the value is different from the value in the alist, so drop the pair:
         (update-probably-constant-alist (rest probably-constant-node-alist) test-case-array-name test-case-array
-                                     acc t)))))
+                                        acc t)))))
 
 (local
  (defthm alistp-of-mv-nth-0-of-update-probably-constant-alist
