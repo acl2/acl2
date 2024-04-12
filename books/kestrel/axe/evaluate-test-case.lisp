@@ -15,19 +15,14 @@
 (include-book "dag-arrays")
 (include-book "test-cases")
 (include-book "evaluator") ; for apply-axe-evaluator ; todo: use basic eval but need to evaluate dag-val-with-axe-evaluator in examples like rc4-loop, make this file a generator that takes an evaluator?
-;(include-book "kestrel/utilities/defmergesort" :dir :system)
-(include-book "kestrel/booleans/bool-fix" :dir :system)
+(include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove
 (include-book "kestrel/booleans/boolif" :dir :system) ; do not remove
 (include-book "kestrel/bv/bvif" :dir :system) ; do not remove
-(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
-(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "numeric-lists"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
-(local (include-book "kestrel/alists-light/alistp" :dir :system))
-(local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
 
 (local (in-theory (e/d (true-listp-of-cdr-strong)
                        (true-listp-of-cdr
@@ -51,11 +46,11 @@
         (add-args-not-done (rest dargs) done-nodes-array (cons arg worklist) t ;we've extended the worklist
                            )))))
 
-(local
-  (defthm add-args-not-done-of-nil-arg1
-    (equal (add-args-not-done nil done-nodes-array worklist worklist-extendedp)
-           (mv worklist worklist-extendedp))
-    :hints (("Goal" :in-theory (enable add-args-not-done)))))
+;; (local
+;;   (defthm add-args-not-done-of-nil-arg1
+;;     (equal (add-args-not-done nil done-nodes-array worklist worklist-extendedp)
+;;            (mv worklist worklist-extendedp))
+;;     :hints (("Goal" :in-theory (enable add-args-not-done)))))
 
 (local
   (defthm nat-listp-of-mv-nth-0-of-add-args-not-done
