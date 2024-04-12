@@ -468,7 +468,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes).
-(defun initial-probable-facts-aux (node-to-value-alist ; grouped so that each group of nodes with the same val forms a contiguous block
+(defund initial-probable-facts-aux (node-to-value-alist ; grouped so that each group of nodes with the same val forms a contiguous block
                                    ;; accumulators:
                                    probably-equal-node-sets
                                    singleton-count
@@ -525,32 +525,28 @@
                  (alistp (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
                  (nat-listp (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))))
                  (nat-listp (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))))
-   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (enable ;(:d strip-cars)
-                        )))))
+   :hints (("Goal" :in-theory (enable initial-probable-facts-aux)))))
 
 (local
- (defthm initial-probable-facts-aux-return-type-with-bound
-   (implies (and (all-all-< probably-equal-node-sets bound)
-                 (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
-                 (nat-listp (strip-cars node-to-value-alist))
-                 (all-< (strip-cars node-to-value-alist) bound)
-                 (nat-list-listp probably-equal-node-sets)
-                 (natp singleton-count)
-                 (alistp probably-constant-node-alist)
-                 (nat-listp never-used-nodes)
-                 (all-< (strip-cars probably-constant-node-alist)
-                        bound)
-                 (all-< never-used-nodes bound))
-            (and (all-all-< (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
-                            bound)
-                 (all-< (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
-                        bound)
-                 (all-< (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
-                        bound)))
-   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-            :in-theory (enable ;(:d strip-cars)
-                        )))))
+  (defthm initial-probable-facts-aux-return-type-with-bound
+    (implies (and (all-all-< probably-equal-node-sets bound)
+                  (alistp node-to-value-alist) ; should be sorted, or at least grouped, by the values of its key/value pairs
+                  (nat-listp (strip-cars node-to-value-alist))
+                  (all-< (strip-cars node-to-value-alist) bound)
+                  (nat-list-listp probably-equal-node-sets)
+                  (natp singleton-count)
+                  (alistp probably-constant-node-alist)
+                  (nat-listp never-used-nodes)
+                  (all-< (strip-cars probably-constant-node-alist)
+                         bound)
+                  (all-< never-used-nodes bound))
+             (and (all-all-< (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
+                             bound)
+                  (all-< (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes)))
+                         bound)
+                  (all-< (mv-nth 3 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes))
+                         bound)))
+    :hints (("Goal" :in-theory (enable initial-probable-facts-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
