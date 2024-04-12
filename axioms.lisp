@@ -4086,7 +4086,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (= (length qdfs) 2)
            (eq (car qdfs) 'quote)
            (boolean-listp (cadr qdfs)))))
-                    
+
 #-acl2-loop-only
 (defmacro ec-call1-raw (qdfs-in/qdfs-out x)
 
@@ -20904,10 +20904,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (setf (sys::getenv str) val)
         #+clisp
         (setf (ext::getenv str) val)
-        #+(or gcl lispworks ccl sbcl)
+        #+lispworks
+; Martin Simmons mentioned the following example in a 4/9/2024 email:
+;   (setf (environment-variable "LANG") "en_US.UTF-8")
+; An alternative is probably to use (hcl::setenv str val).
+        (setf (lispworks::environment-variable str) val)
+        #+(or gcl sbcl ccl)
         (let ((fn
                #+gcl       'si::setenv
-               #+lispworks 'hcl::setenv
                #+sbcl      'our-sbcl-putenv
                #+ccl       'ccl::setenv))
           (and (fboundp fn)
@@ -29804,7 +29808,7 @@ Lisp definition."
 (defun-inline round-to-small (flg x)
 
 ; (round-to-small nil x) coerces x to be a (possibly negative) small fixnum.
-; (round-to-small t x) coerces x to be a non-negative small fixnum.  To keep it 
+; (round-to-small t x) coerces x to be a non-negative small fixnum.  To keep it
 ; straight in your head, think of nil meaning negative and t meaning positive.
 
   (declare (type (signed-byte 30) x)) ; fixnum
