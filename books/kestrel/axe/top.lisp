@@ -98,6 +98,7 @@
 (include-book "evaluator-basic")
 (include-book "extract-dag-array")
 (include-book "evaluate-test-case")
+(include-book "evaluate-test-case-simple")
 (include-book "find-probable-facts")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
