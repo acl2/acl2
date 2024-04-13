@@ -750,7 +750,7 @@ directed by @(see accumulated-persistence).</p>"
 ; Suppose that we have two sets which are subsets of one another, i.e. (subset
 ; X Y) and (subset Y X) are true.  First, we will show that (head X) = (head
 ; Y).  Next we will show that (in a (tail X)) implies that (in a (tail Y)).
-; This fact is then used for a sub- set by membership argument to show that
+; This fact is then used for a subset by membership argument to show that
 ; (tail X) = (tail Y).  Now, (head X) = (head Y) and (tail X) = (tail Y) can be
 ; used together to show that X = Y (see primitives.lisp, head-tail-same) so we
 ; are done.
