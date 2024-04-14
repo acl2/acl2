@@ -21340,8 +21340,11 @@
                            (remove-assoc-eq new-stobjs-out
                                             bindings)))))))))))))))))))))
 
-(defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
-                                    flet-alist ctx wrld state-vars)
+(defun translate11-flet-alist-rec (form fives stobjs-out bindings known-stobjs
+                                        flet-alist ctx wrld state-vars)
+
+; Warning: Keep this in sync with translate11-macrolet-alist.
+
   (cond ((endp fives)
          (trans-value flet-alist))
         (t
@@ -21351,10 +21354,60 @@
                                      known-stobjs flet-alist ctx wrld
                                      state-vars))
            (flet-entries
-            (translate11-flet-alist  form (cdr fives) stobjs-out bindings
-                                     known-stobjs flet-alist ctx wrld
-                                     state-vars)))
+            (translate11-flet-alist-rec form (cdr fives) stobjs-out bindings
+                                        known-stobjs flet-alist ctx wrld
+                                        state-vars)))
           (trans-value (cons flet-entry flet-entries))))))
+
+(defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
+                                    flet-alist ctx wrld state-vars)
+  (mv-let (altp state-vars1)
+    (if (access state-vars state-vars :do-expressionp)
+        (mv t
+            (change state-vars state-vars
+                    :do-expressionp nil))
+      (mv nil state-vars))
+    (let ((bindings0 bindings))
+      (mv-let (erp1 flet-alist bindings)
+        (translate11-flet-alist-rec form fives stobjs-out bindings known-stobjs
+                                    flet-alist ctx wrld state-vars1)
+        (cond
+         ((and erp1 altp)
+          (mv-let (erp2 flet-alist2 bindings2)
+            (translate11-flet-alist-rec form fives
+
+; We will be causing an error.  Since do-expressionp is true in state-vars,
+; stobjs-out must be t or (nil).  But if stobjs-out is (nil), translate11 may
+; eventually be called with a value of stobjs-out that is neither t nor (nil).
+; So we stick to stobjs-out = t here.
+
+                                        t
+                                        bindings0
+                                        known-stobjs flet-alist ctx wrld
+                                        state-vars)
+            (declare (ignore bindings2 flet-alist2))
+            (cond
+             ((null erp2)
+
+; Translation failed in an ordinary context but succeeded in a do-expression
+; context.  Presumably that's because the body of a local definition used a DO
+; loop$ construct such as progn, setq, or return.
+
+              (trans-er ctx
+                        "ACL2 has encountered the body of a definition bound ~
+                         by ~x0 that is illegal, even though it would be ~
+                         legal in a DO loop$ body rather than in a local ~
+                         definition.  Here is the resulting error message:~|  ~
+                         ~@1"
+                        'flet
+                        flet-alist))
+             (t
+
+; It seems safest just to use the original error, rather than to trust that the
+; new error is meaninful.
+
+              (mv erp1 flet-alist bindings)))))
+         (t (mv erp1 flet-alist bindings)))))))
 
 (defun translate11-flet-alist1 (form five stobjs-out bindings known-stobjs
                                      flet-alist ctx wrld state-vars)
@@ -21432,8 +21485,8 @@
                             nil ; known-dfs
                             flet-alist x ctx wrld state-vars)))))))))))
 
-(defun translate11-macrolet-alist (defs stobjs-out bindings known-stobjs
-                                    flet-alist form ctx wrld state-vars)
+(defun translate11-macrolet-alist-rec (defs stobjs-out bindings known-stobjs
+                                        flet-alist form ctx wrld state-vars)
   (cond
    ((endp defs) (trans-value flet-alist))
    (t (trans-er-let*
@@ -21442,10 +21495,63 @@
           (car defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars))
         (entries
-         (translate11-macrolet-alist
+         (translate11-macrolet-alist-rec
           (cdr defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars)))
        (trans-value (cons entry entries))))))
+
+(defun translate11-macrolet-alist (defs stobjs-out bindings known-stobjs
+                                    flet-alist form ctx wrld state-vars)
+
+; Warning: Keep this in sync with translate11-flet-alist.
+
+  (mv-let (altp state-vars1)
+    (if (access state-vars state-vars :do-expressionp)
+        (mv t
+            (change state-vars state-vars
+                    :do-expressionp nil))
+      (mv nil state-vars))
+    (let ((bindings0 bindings))
+      (mv-let (erp1 flet-alist bindings)
+        (translate11-macrolet-alist-rec defs stobjs-out bindings known-stobjs
+                                        flet-alist form ctx wrld state-vars1)
+        (cond
+         ((and erp1 altp)
+          (mv-let (erp2 flet-alist2 bindings2)
+            (translate11-macrolet-alist-rec defs
+
+; We will be causing an error.  Since do-expressionp is true in state-vars,
+; stobjs-out must be t or (nil).  But if stobjs-out is (nil), translate11 may
+; eventually be called with a value of stobjs-out that is neither t nor (nil).
+; So we stick to stobjs-out = t here.
+
+                                            t
+                                            bindings0
+                                            known-stobjs flet-alist form ctx
+                                            wrld state-vars)
+            (declare (ignore bindings2 flet-alist2))
+            (cond
+             ((null erp2)
+
+; Translation failed in an ordinary context but succeeded in a do-expression
+; context.  Presumably that's because the body of a local definition used a DO
+; loop$ construct such as progn, setq, or return.
+
+              (trans-er ctx
+                        "ACL2 has encountered the body of a definition bound ~
+                         by ~x0 that is illegal, even though it would be ~
+                         legal in a DO loop$ body rather than in a local ~
+                         definition.  Here is the resulting error message:~|  ~
+                         ~@1"
+                        'macrolet
+                        flet-alist))
+             (t
+
+; It seems safest just to use the original error, rather than to trust that the
+; new error is meaninful.
+
+              (mv erp1 flet-alist bindings)))))
+         (t (mv erp1 flet-alist bindings)))))))
 
 (defun translate11-macrolet-alist1 (def stobjs-out bindings known-stobjs
                                         flet-alist form ctx wrld state-vars)
