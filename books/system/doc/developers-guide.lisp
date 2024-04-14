@@ -3607,7 +3607,8 @@
 
  <p>I had to add to @('state-vars'), but I didn't want to worry about impacting
  efficiency.  So my modification had minimal effect on only one existing field,
- namely, @('do-expressionp').  From the source code (comments omitted here):</p>
+ namely, @('do-expressionp').  From the source code at the time (comments
+ omitted here):</p>
 
  @({
  (defrec state-vars
