@@ -274,6 +274,12 @@
               (test-casep test-case)))
   :hints (("Goal" :in-theory (enable test-casep))))
 
+(defthm test-casesp-forward-to-symbol-alistp
+  (implies (test-casep case)
+           (symbol-alistp case))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable test-casep))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a true-list of test cases.
