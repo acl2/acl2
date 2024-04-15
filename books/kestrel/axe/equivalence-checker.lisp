@@ -7743,7 +7743,9 @@
 ;;         (get-split-infos (cdr fns) extra-stuff)))))
 
 ;term must include at least one variable, so that returning nil can only mean failure
-(defun unify-term-with-any (term patterns)
+(defund unify-term-with-any (term patterns)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (pseudo-term-listp patterns))))
   (if (endp patterns)
       nil
     (let ((pattern (car patterns)))
@@ -7753,8 +7755,17 @@
                   alist
                 (unify-term-with-any term (cdr patterns)))))))
 
-;returns the len
-(defun find-len-from-hyp (hyps item)
+(defthm symbol-term-alistp-of-unify-term-with-any
+  (implies (and (pseudo-termp term)
+                (pseudo-term-listp patterns))
+           (symbol-term-alistp (unify-term-with-any term patterns)))
+  :hints (("Goal" :in-theory (enable unify-term-with-any))))
+
+;returns the len (a natp) or nil.
+(defund find-len-from-hyp (hyps item)
+  (declare (xargs :guard (pseudo-term-listp hyps)
+                  :guard-hints (("Goal" :in-theory (enable unify-term-with-any))) ; todo
+                  ))
   (if (endp hyps)
       nil
     (let* ((hyp (car hyps))
@@ -7767,7 +7778,7 @@
           (unquote (lookup-eq 'y alist))
         (find-len-from-hyp (cdr hyps) item)))))
 
-(defun strip-equal-t (term)
+(defund strip-equal-t (term)
   (declare (xargs :guard t))
   (if (call-of 'equal term)
       (if (and (consp (cdr term))
@@ -7781,9 +7792,21 @@
           term))
     term))
 
-(defun extend-var-type-alist-with-hyp (hyp all-hyps var-type-alist)
+(local
+  (defthm pseudo-termp-of-strip-equal-t
+    (implies (pseudo-termp term)
+             (pseudo-termp (strip-equal-t term)))
+    :rule-classes (:rewrite :type-prescription)
+    :hints (("Goal" :in-theory (enable strip-equal-t)))))
+
+(defund extend-var-type-alist-with-hyp (hyp all-hyps var-type-alist)
+  (declare (xargs :guard (and (pseudo-termp hyp)
+                              (pseudo-term-listp all-hyps)
+                              (test-case-type-alistp var-type-alist) ;strengthen?  not all constructs can appear
+                              )))
   (let ((hyp (strip-equal-t hyp)))
     (if (and (call-of 'unsigned-byte-p hyp)
+             (= 2 (len (fargs hyp)))
              (quotep (second hyp))
              (natp (unquote (second hyp))) ;should we require > 0 ?
              (symbolp (third hyp)))
@@ -7808,8 +7831,17 @@
                 var-type-alist))
           var-type-alist)))))
 
+(defthm test-case-type-alistp-of-extend-var-type-alist-with-hyp
+  (implies (test-case-type-alistp var-type-alist)
+           (test-case-type-alistp (extend-var-type-alist-with-hyp hyp all-hyps var-type-alist)))
+  :hints (("Goal" :in-theory (enable extend-var-type-alist-with-hyp))))
+
 ;ffixme should we do this for nodes that are not variables?
-(defun make-var-type-alist-from-hyps-aux (hyps all-hyps var-type-alist)
+(defund make-var-type-alist-from-hyps-aux (hyps all-hyps var-type-alist)
+  (declare (xargs :guard (and (pseudo-term-listp hyps)
+                              (pseudo-term-listp all-hyps)
+                              (test-case-type-alistp var-type-alist) ; strengthen further, since some things don't occur?
+                              )))
   (if (endp hyps)
       var-type-alist
     (make-var-type-alist-from-hyps-aux (rest hyps)
@@ -7818,10 +7850,21 @@
                                                                        all-hyps
                                                                        var-type-alist))))
 
+(defthm test-case-type-alistp-of-make-var-type-alist-from-hyps-aux
+  (implies (test-case-type-alistp var-type-alist)
+           (test-case-type-alistp (make-var-type-alist-from-hyps-aux hyps all-hyps var-type-alist)))
+  :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps-aux))))
+
 ;; use this more?!
 ;ffixme what about more complicated things, like bounds on (or low bits of) the length of an array?
 (defun make-var-type-alist-from-hyps (hyps)
+  (declare (xargs :guard (pseudo-term-listp hyps)))
   (make-var-type-alist-from-hyps-aux hyps hyps nil))
+
+(defthm test-case-type-alistp-of-make-var-type-alist-from-hyps
+  (implies (test-case-type-alistp var-type-alist)
+           (test-case-type-alistp (make-var-type-alist-from-hyps hyps)))
+  :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps))))
 
 ;returns (mv unrolled-fn rune state) where the lemma has been proved in state
 ;fffixme add simplification of the unrolled function body?
