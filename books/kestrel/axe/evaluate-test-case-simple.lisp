@@ -55,6 +55,10 @@
            (equal (done-node-array-length (set-done-vals-to-nil i test-case-stobj))
                   (done-node-array-length test-case-stobj))))
 
+;; (defthm test-case-stobjp-of-set-done-vals-to-nil
+;;   (implies (test-case-stobjp test-case-stobj)
+;;            (test-case-stobjp (set-done-vals-to-nil i test-case-stobj))))
+
 ;args are nodenums with values in the array, or quoteps
 ;looks up the nodenums and unquotes the constants
 ;does similar functionality exist elsewhere (array names might differ)?
@@ -137,11 +141,11 @@
 ;; TODO: If there are no ifs (of any kind) in the dag, it would probably be faster (and safe) to just evaluate every node in order.
 ;; TODO: Consider adding short-circuit evaluation for booland and boolor (I guess always evaluate the first argument and sometimes evaluate the second argument).
 (defund evaluate-test-case-simple-aux (count ; forces termination (todo: try having two kinds of :examined status for IF nodes (whether the test has been pushed, whether the relevant branch has been pushed), and base a measure on that
-                                nodenum-worklist
-                                dag-array-name dag-array dag-len
-                                test-case ; gives values for variables
-                                interpreted-function-alist
-                                test-case-stobj)
+                                       nodenum-worklist
+                                       dag-array-name dag-array dag-len
+                                       test-case ; gives values for variables
+                                       interpreted-function-alist
+                                       test-case-stobj)
   (declare (xargs ;; :measure (make-ord 1 (+ 1 (- (nfix (alen1 'done-nodes-array done-nodes-array))
              ;;                              (num-true-nodes (+ -1 (alen1 'done-nodes-array done-nodes-array))
              ;;                                              'done-nodes-array done-nodes-array)))
@@ -152,10 +156,10 @@
                          (all-< nodenum-worklist dag-len)
                          (equal (node-val-array-length test-case-stobj) dag-len)
                          (equal (done-node-array-length test-case-stobj) dag-len)
-                         (symbol-alistp test-case)
+                         (test-casep test-case)
                          (interpreted-function-alistp interpreted-function-alist))
              :guard-hints (("Goal" :in-theory (e/d (cadr-becomes-nth-of-1
-                                                    consp-of-cdr)
+                                                    consp-of-cdr test-casep)
                                                    (natp))))
              :stobjs test-case-stobj))
   (if (zp count)
@@ -351,7 +355,7 @@
                   (all-< nodenum-worklist dag-len)
                   (equal (node-val-array-length test-case-stobj) dag-len)
                   (equal (done-node-array-length test-case-stobj) dag-len)
-                  (symbol-alistp test-case)
+                  (test-casep test-case)
                   (interpreted-function-alistp interpreted-function-alist)
                   (test-case-stobjp test-case-stobj))
              (test-case-stobjp (mv-nth 1 (evaluate-test-case-simple-aux count nodenum-worklist dag-array-name dag-array dag-len test-case interpreted-function-alist test-case-stobj))))
@@ -374,9 +378,10 @@
                   (all-< nodenum-worklist dag-len)
                   (equal (node-val-array-length test-case-stobj) dag-len)
                   (equal (done-node-array-length test-case-stobj) dag-len)
-                  (symbol-alistp test-case)
+                  (test-casep test-case)
                   (interpreted-function-alistp interpreted-function-alist)
-                  (test-case-stobjp test-case-stobj))
+                  ;(test-case-stobjp test-case-stobj)
+                  )
              (equal (node-val-array-length (mv-nth 1 (evaluate-test-case-simple-aux count nodenum-worklist dag-array-name dag-array dag-len test-case interpreted-function-alist test-case-stobj)))
                     (node-val-array-length test-case-stobj)))
     :hints (("Goal"
@@ -400,7 +405,8 @@
                   (equal (done-node-array-length test-case-stobj) dag-len)
                   (symbol-alistp test-case)
                   (interpreted-function-alistp interpreted-function-alist)
-                  (test-case-stobjp test-case-stobj))
+                  ;(test-case-stobjp test-case-stobj)
+                  )
              (equal (done-node-array-length (mv-nth 1 (evaluate-test-case-simple-aux count nodenum-worklist dag-array-name dag-array dag-len test-case interpreted-function-alist test-case-stobj)))
                     (done-node-array-length test-case-stobj)))
     :hints (("Goal"
@@ -414,7 +420,7 @@
                                    nfix ifix ;; these greatly reduce case splits
                                    ))))))
 
-;; Returns the test-case-stobj, which has an array (node-val-array) assigning
+;; Returns (mv erp test-case-stobj) where the test-case-stobj, which has an array (node-val-array) assigning
 ;; vals to relevant nodes for the test-case and an array (done-node-array)
 ;; indicating which notes were used on the test case.  TEST-CASE gives values
 ;; to the vars in the dag.
@@ -436,3 +442,21 @@
                                        worklist dag-array-name dag-array dag-len test-case interpreted-function-alist test-case-stobj))
        ((when erp) (mv erp test-case-stobj)))
     (mv (erp-nil) test-case-stobj)))
+
+(defthm done-node-array-length-of-mv-nth-1-of-evaluate-test-case-simple
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (< 0 dag-len)
+                (test-casep test-case)
+                (interpreted-function-alistp interpreted-function-alist))
+           (equal (done-node-array-length (mv-nth 1 (evaluate-test-case-simple dag-array-name dag-array dag-len test-case interpreted-function-alist test-case-stobj)))
+                  dag-len))
+  :hints (("Goal" :in-theory (enable evaluate-test-case-simple))))
+
+(defthm node-val-array-length-of-mv-nth-1-of-evaluate-test-case-simple
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (< 0 dag-len)
+                (test-casep test-case)
+                (interpreted-function-alistp interpreted-function-alist))
+           (equal (node-val-array-length (mv-nth 1 (evaluate-test-case-simple dag-array-name dag-array dag-len test-case interpreted-function-alist test-case-stobj)))
+                  dag-len))
+  :hints (("Goal" :in-theory (enable evaluate-test-case-simple))))
