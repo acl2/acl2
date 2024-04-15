@@ -445,13 +445,13 @@ following loop:</p>
   (encapsulate
     ()
     (local (defthm l0
-             (IMPLIES (AND (NOT (<< ACL2::Y ACL2::X))
-                           (NOT (EQUAL ACL2::X ACL2::Y)))
-                      (<< ACL2::X ACL2::Y))
+             (implies (and (not (<< acl2::y acl2::x))
+                           (not (equal acl2::x acl2::y)))
+                      (<< acl2::x acl2::y))
              :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
     (local (defthm l1
-             (IMPLIES (<< x y)
+             (implies (<< x y)
                       (not (<< y x)))
              :rule-classes ((:rewrite :backchain-limit-lst 0))))
 

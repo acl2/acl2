@@ -521,6 +521,11 @@
      functions and macros, respectively, that were introduced after a given
      name.")
 
+   (xdoc::p
+    "@(tsee Make-flag) now causes a user-friendly error when the formal
+     parameters list is changed by an alternative definition specified by the
+     @(':BODY') argument.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))

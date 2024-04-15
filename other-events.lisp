@@ -35264,7 +35264,7 @@
 ; An event-data-fal, as stored in the state global of that name, is an alist
 ; whose entries are of two types.  If the key is an event name, then the value
 ; is a list of event-data values (see :DOC get-event-data), often a singleton
-; list -- one for each event whose name is the key -- except taht for a THM
+; list -- one for each event whose name is the key -- except that for a THM
 ; event, the key is nil.  Otherwise the key is a full-book-string (a string
 ; that is the canonical pathname for a book) and the value is the
 ; event-data-fal based on the events in that book.
