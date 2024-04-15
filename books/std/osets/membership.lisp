@@ -750,7 +750,7 @@ directed by @(see accumulated-persistence).</p>"
 ; Suppose that we have two sets which are subsets of one another, i.e. (subset
 ; X Y) and (subset Y X) are true.  First, we will show that (head X) = (head
 ; Y).  Next we will show that (in a (tail X)) implies that (in a (tail Y)).
-; This fact is then used for a sub- set by membership argument to show that
+; This fact is then used for a subset by membership argument to show that
 ; (tail X) = (tail Y).  Now, (head X) = (head Y) and (tail X) = (tail Y) can be
 ; used together to show that X = Y (see primitives.lisp, head-tail-same) so we
 ; are done.
@@ -800,23 +800,23 @@ directed by @(see accumulated-persistence).</p>"
 	     (double-tail-induction (tail X) (tail Y)))))
 
   (local (defthm double-containment-is-equality-lemma
-	   (IMPLIES (AND (NOT (OR (EMPTYP X) (EMPTYP Y)))
-			 (IMPLIES (AND (SUBSET (TAIL X) (TAIL Y))
-				       (SUBSET (TAIL Y) (TAIL X)))
-				  (EQUAL (EQUAL (TAIL X) (TAIL Y)) T))
-			 (SETP X)
-			 (SETP Y)
-			 (SUBSET X Y)
-			 (SUBSET Y X))
-		    (EQUAL (EQUAL X Y) T))
+	   (implies (and (not (or (emptyp x) (emptyp y)))
+			 (implies (and (subset (tail x) (tail y))
+				       (subset (tail y) (tail x)))
+				  (equal (equal (tail x) (tail y)) t))
+			 (setp x)
+			 (setp y)
+			 (subset x y)
+			 (subset y x))
+		    (equal (equal x y) t))
 	   :hints(("Goal"
                    :in-theory (enable head-tail-same)
 		   :use ((:instance double-containment-lemma-tail
-				    (X X) (Y Y))
+				    (x x) (y y))
 			 (:instance double-containment-lemma-tail
-				    (X Y) (Y X))
+				    (x y) (y x))
 			 (:instance double-containment-lemma-head
-				    (X X) (Y Y)))))))
+				    (x x) (y y)))))))
 
   (local (defthmd double-containment-is-equality
 	   (implies (and (setp X)

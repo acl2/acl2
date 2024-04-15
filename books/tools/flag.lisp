@@ -168,10 +168,11 @@ is used when extracting the body of each function.  The most recent definition
 rule is used if @(':body') is @(':last').  Otherwise @(':body') should be a
 list with members of the form @('(fn1 fn2)'), indicating that the definition
 associated with a rule named @('fn2'), if there is one, should be used as the
-definition for the function symbol, @('fn1').  See the community book
-@('books/tools/flag-tests.lisp') for an example of using such a alist for
-@(':body'), in particular for the purpose of using definitions installed with
-@(tsee acl2::install-not-normalized).</li>
+definition for the function symbol, @('fn1') &mdash; and in that case, the
+formal parameters list specified by @('fn2') must equal the formal parameters
+list for @('fn1').  See the community book @('books/tools/flag-tests.lisp') for
+an example of using such a alist for @(':body'), in particular for the purpose
+of using definitions installed with @(tsee acl2::install-not-normalized).</li>
 
 </ul>
 
@@ -459,9 +460,9 @@ one such form may affect what you might think of as the proof of another.</p>
   (getprop fn 'formals :none 'current-acl2-world world))
 
 (defun get-body (fn last-body world)
-  ;; If latest-def is nil (the default for make-flag), this gets the original,
+  ;; If last-body is nil (the default for make-flag), this gets the original,
   ;; normalized or non-normalized body based on what the user typed for the
-  ;; :normalize xarg.  The use of "last" skips past any other :definition rules
+  ;; :normalize xarg.  The use of :last skips past any other :definition rules
   ;; that have been added since then.
   (let* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
          (body (cond ((eq last-body :last)
@@ -489,7 +490,19 @@ one such form may affect what you might think of as the proof of another.</p>
               "Attempt to call get-body for an equivalence relation other ~
                than equal, ~x0"
               (access def-body body :equiv))
-        (access def-body body :concl)))))
+        (if (not (equal (formals fn world)
+                        (access def-body body :formals)))
+            (er hard 'get-body
+                "The formal parameters list for ~x0 is ~x1, which differs ~
+                 from the formal parameters list of ~x2 derived from the ~
+                 alternative definition given by event ~x3 (as specified by ~
+                 the :BODY argument of a call of ~x4)."
+                fn
+                (formals fn world)
+                (access def-body body :formals)
+                (acl2::base-symbol (access def-body body :rune))
+                'make-flag)
+          (access def-body body :concl))))))
 
 (defun get-measure (fn world)
   (access justification
