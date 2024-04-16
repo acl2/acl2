@@ -4293,48 +4293,56 @@
 
 ;this allows the exprs (and the nodes the refer to) to differ on whether constants are inlined (because when we replace a probably-constant node, we don't inline it)
 ;i think this allows for non-unique representation of expressions..
-;;;BOZO what about deeper structural equivalence - all leaf nodes the same and all operator nodes corresponding? - better to merge up the dag aggressively at merge time?
+;;; TODO: what about deeper structural equivalence - all leaf nodes the same and all operator nodes corresponding? - better to merge up the dag aggressively at merge time?
 (skip-proofs
- (mutual-recursion
-  (defun identical-items-up-to-constant-inlining (items1 items2 dag-array-name dag-array-with-array-names ;are there still array-names put in?
-                                                         )
-    (if (endp items1)
-        (if (endp items2)
-            t
-          (hard-error 'identical-items-up-to-constant-inlining "args lists not the same length" nil))
-      (and
-       (let* ((item1 (car items1))
-              (item2 (car items2)))
-         (if (or (symbolp item1) (symbolp item2)) ;array names.. is this gross?
-             (equal item1 item2)
-           (if (quotep item1)
-               (if (quotep item2)
-                   (equal item1 item2)
-                 ;;item2 must be a nodenum
-                 (equal item1 (aref1 dag-array-name dag-array-with-array-names item2)))
-             (if (quotep item2)
-                 (equal item2 (aref1 dag-array-name dag-array-with-array-names item1))
-               ;;two nodenums:
-               (or (equal item1 item2) ;this opimization should catch a lot of the cases where things actually are the same
-                   (identical-exprs-up-to-constant-inlining (aref1 dag-array-name dag-array-with-array-names item1) (aref1 dag-array-name dag-array-with-array-names item2) dag-array-name dag-array-with-array-names))))))
-       (identical-items-up-to-constant-inlining (cdr items1) (cdr items2) dag-array-name dag-array-with-array-names))))
+  (mutual-recursion
+    (defun identical-dargs-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
+      (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                                  (bounded-darg-listp dag-len dargs1)
+                                  (bounded-darg-listp dag-len dargs2))))
+      (if (endp dargs1)
+          (if (endp dargs2)
+              t
+            (er hard? 'identical-dargs-up-to-constant-inlining "args lists not the same length" nil))
+        (if (endp dargs2)
+            (er hard? 'identical-dargs-up-to-constant-inlining "args lists not the same length" nil)
+          (and
+            (let* ((darg1 (first dargs1))
+                   (darg2 (first dargs2)))
+              (if (quotep darg1)
+                  (if (quotep darg2)
+                      (equal darg1 darg2)
+                    ;; darg2 may be a nodenum of a constant:
+                    (equal darg1 (aref1 dag-array-name dag-array darg2)))
+                (if (quotep darg2)
+                    ;; darg1 may be a nodenum of a constant:
+                    (equal darg2 (aref1 dag-array-name dag-array darg1))
+                  ;;two nodenums:
+                  (or (equal darg1 darg2) ;this optimization should catch a lot of the cases where things actually are the same
+                      (identical-dag-exprs-up-to-constant-inlining (aref1 dag-array-name dag-array darg1)
+                                                                   (aref1 dag-array-name dag-array darg2)
+                                                                   dag-array-name dag-array dag-len)))))
+            (identical-dargs-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
 
-;we could relax this even more and not require nodenums to be unique either... what if we have (foo (bar '2)) both with and without the inlined 2?
-  (defun identical-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array-with-array-names)
-    (if (or (symbolp expr1)
-            (symbolp expr2)
-            (quotep expr1)
-            (quotep expr2))
-        (equal expr1 expr2)
-      ;;function call:
-      (and (eq (ffn-symb expr1) (ffn-symb expr2))
-           (identical-items-up-to-constant-inlining (fargs expr1) (fargs expr2) dag-array-name dag-array-with-array-names))))))
+    ;;we could relax this even more and not require nodenums to be unique either... what if we have (foo (bar '2)) both with and without the inlined 2?
+    (defun identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
+      (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                                  (bounded-dag-exprp dag-len expr1)
+                                  (bounded-dag-exprp dag-len expr2))))
+      (if (or (symbolp expr1)
+              (symbolp expr2)
+              (quotep expr1)
+              (quotep expr2))
+          (equal expr1 expr2)
+        ;;function call:
+        (and (eq (ffn-symb expr1) (ffn-symb expr2))
+             (identical-dargs-up-to-constant-inlining (dargs expr1) (dargs expr2) dag-array-name dag-array dag-len))))))
 
-(defun clean-up-hyps (hyps)
-  (declare (xargs :guard (pseudo-term-listp hyps)))
-  (let* ((hyps (standardize-equalities hyps))
-         (hyps (remove-duplicates-equal hyps)))
-    hyps))
+;; (defun clean-up-hyps (hyps)
+;;   (declare (xargs :guard (pseudo-term-listp hyps)))
+;;   (let* ((hyps (standardize-equalities hyps))
+;;          (hyps (remove-duplicates-equal hyps)))
+;;     hyps))
 
 ;; ;;returns (mv failedp state) where failedp means the proof failed or there was some sort of other error (e.g., an unknown function)
 ;; (defun my-defthm-fn2 (name hyps concs hints elide-hintsp rule-classes print state)
@@ -7482,7 +7490,9 @@
 (defund attempt-cut-equivalence-proofs (min-depth
                                         max-depth
                                         depth-array ; depths wrt the set containing smaller-nodenum and larger-nodenum
-                                        smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
+                                        smaller-nodenum larger-nodenum
+                                        dag-array-name dag-array dag-len
+                                        var-type-alist print max-conflicts base-filename state)
   (declare (xargs :guard (and (natp min-depth)
                               (integerp max-depth) ; might go negative
                               (natp smaller-nodenum)
@@ -7494,12 +7504,9 @@
                               (symbol-alistp var-type-alist) ; strengthen?
                               (print-levelp print) ; tighter?
                               (natp max-conflicts) ; allow nil?
-;                              (symbolp miter-name)
                               (stringp base-filename))
                   :measure (nfix (+ 1 (- max-depth min-depth)))
-             :stobjs state)
-           (irrelevant miter-name) ;todo
-           )
+             :stobjs state))
   (if (or (not (and (mbt (natp min-depth))
                     (mbt (integerp max-depth))))
           (< max-depth min-depth))
@@ -7549,26 +7556,27 @@
         (if (eq result *timedout*)
             ;;since the current depth timed out, we go shallower
             (attempt-cut-equivalence-proofs min-depth (+ -1 current-depth)
-                                            depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state)
+                                            depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts base-filename state)
           ;;the goal was invalid, so we go deeper:
           ;;todo: use the counterexample?
           (attempt-cut-equivalence-proofs (+ 1 current-depth) max-depth
-                                          depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name base-filename state))))))
+                                          depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts base-filename state))))))
 
 ;fixme: other strategies to consider here: rewriting, using the prover, using contexts (should we cut the context too?  what if the context is huge an unrelated to the goal nodes?)
 ;not currently doing any of these things because we want this to be fast
 ;returns (mv provedp state)
 ;fixme pass in assumptions (e.g., bvlt claims) - should we cut the assumptions too?
-(defun try-to-prove-pure-nodes-equivalent (smaller-nodenum larger-nodenum ;could one of these have been replaced by a constant?
-                                                           miter-array-name miter-array miter-len
-                                                           var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
-                                                           print max-conflicts miter-name state)
+(defun try-to-prove-pure-nodes-equivalent (smaller-nodenum
+                                           larger-nodenum ;could one of these have been replaced by a constant?
+                                           miter-array-name miter-array miter-len
+                                           var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
+                                           print max-conflicts miter-name state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
+                              (<= smaller-nodenum larger-nodenum)
                               (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                               (< smaller-nodenum miter-len)
                               (< larger-nodenum miter-len)
-                              (<= SMALLER-NODENUM LARGER-NODENUM)
                               (symbol-alistp var-type-alist) ; strengthen?
                               (print-levelp print) ; tighten?
                               (natp max-conflicts) ; allow nil?
@@ -7593,12 +7601,14 @@
   (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
        ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
        ;;(- (and print (cw ")~%")))
+       ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
+       ;; TODO: Option to suppress this for speed?
        ;;todo: move this printing to the caller?
-       (smaller-node-supporting-vars (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
-       (larger-node-supporting-vars (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
-       (vars-that-support-only-larger-node (set-difference-eq larger-node-supporting-vars smaller-node-supporting-vars))
-       (vars-that-support-only-smaller-node (set-difference-eq smaller-node-supporting-vars larger-node-supporting-vars))
-       ;; (vars-that-support-both-nodes (intersection-eq smaller-node-supporting-vars larger-node-supporting-vars))
+       (vars-for-smaller-nodenum (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
+       (vars-for-larger-nodenum (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
+       (vars-that-support-only-larger-node (set-difference-eq vars-for-larger-nodenum vars-for-smaller-nodenum))
+       (vars-that-support-only-smaller-node (set-difference-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
+       ;; (vars-that-support-both-nodes (intersection-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
        ;; (- (cw "(Vars that support both nodes: ~x0.)~%" vars-that-support-both-nodes))
        (- (and vars-that-support-only-smaller-node (cw "(Vars that support node ~x0 only: ~x1.)~%" smaller-nodenum vars-that-support-only-smaller-node)))
        (- (and vars-that-support-only-larger-node (cw "(Vars that support node ~x0 only: ~x1.)~%" larger-nodenum vars-that-support-only-larger-node)))
@@ -7627,7 +7637,7 @@
        (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
                                                           0 ;fixme think about the 0..
                                                           'depth-array depth-array))
-       ;;fixme we should start this at a depth at least deep enough for every path from the root to end on a shared var?
+       ;;fixme we should start this at a depth at least deep enough for every path from the root to end on a shared node?
        ;;fixme maybe the depth should be measured from the shared-var frontier?
        (- (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth))
        ((mv success-flg state)
@@ -7644,7 +7654,7 @@
                                         miter-array
                                         miter-len
                                         var-type-alist
-                                        print max-conflicts miter-name
+                                        print max-conflicts
                                         (n-string-append (symbol-name miter-name)
                                                          "-"
                                                          (nat-to-string smaller-nodenum)
@@ -8138,8 +8148,9 @@
                     (+ 1 (num-true-nodes n array-name array)))))
   :hints (("Goal" :expand ((num-true-nodes 0 array-name (aset1 array-name array 0 val))))))
 
-;(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
-(defun nodes-are-purep (worklist dag-array-name dag-array dag-len done-array)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund nodes-are-purep (worklist dag-array-name dag-array dag-len done-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (nat-listp worklist)
                               (all-< worklist dag-len)
@@ -8175,20 +8186,22 @@
                    (nodes-are-purep (append-atoms (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
                                     (aset1 'done-array-temp done-array nodenum t))))))))))
 
-(defun node-is-purep (nodenum dag-array-name dag-array)
+(defund node-is-purep (nodenum dag-array-name dag-array)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               )))
   (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (make-empty-array 'done-array-temp (+ 1 nodenum))))
 
 ;shares the work of computing whether the individual nodes are pure
-(defun both-nodes-are-purep (smaller-nodenum larger-nodenum dag-array-name dag-array)
+(defund both-nodes-are-purep (smaller-nodenum larger-nodenum dag-array-name dag-array)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
                               (< smaller-nodenum larger-nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
                               )))
   (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (make-empty-array 'done-array-temp (+ 1 larger-nodenum))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv core-term fns-called) where fns-called includes all the functions called in the lambda args (which correspond to the values bound to variables in the let)
 (defun strip-lambdas-and-gather-called-fns-aux (term acc)
@@ -14654,7 +14667,7 @@
                                                 test-cases
                                                 test-case-array-alist step-num
                                                 analyzed-function-table unroll
-;sweep-array
+                                                ;;sweep-array
                                                 some-goal-timed-outp nodenums-not-to-unroll
                                                 options
                                                 rand state result-array-stobj)
@@ -15462,64 +15475,59 @@
  ;; Tries to prove the equivalence of SMALLER-NODENUM and LARGER-NODENUM in MITER-ARRAY.
  ;; fixme could the two nodenums ever be the same? maybe not...
  ;; Returns (mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) where, if ERP is nil, then RESULT is :proved, :timed-out, :error, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
- (defun try-to-prove-nodes-equivalent (smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
-                                                       miter-depth ;fixme track the actual names of the theorems we are trying to prove?
-                                                       var-type-alist
-                                                       print interpreted-function-alist
-                                                       rewriter-rule-alist prover-rule-alist extra-stuff
-                                                       monitored-symbols
-                                                       assumptions ;terms to assume non-nil?
-                                                       test-cases test-case-array-alist
-                                                       step-num ;use this even in the pure case?
-                                                       analyzed-function-table unroll miter-is-purep
-                                                       ;;sweep-array
-                                                       some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
-                                                       options
-                                                       rand state result-array-stobj)
+ (defun try-to-prove-nodes-equivalent (smaller-nodenum
+                                       larger-nodenum
+                                       miter-array-name miter-array miter-len
+                                       miter-depth ;fixme track the actual names of the theorems we are trying to prove?
+                                       var-type-alist
+                                       print interpreted-function-alist
+                                       rewriter-rule-alist prover-rule-alist extra-stuff
+                                       monitored-symbols
+                                       assumptions ;terms to assume non-nil?
+                                       test-cases test-case-array-alist
+                                       step-num ;use this even in the pure case?
+                                       analyzed-function-table unroll miter-is-purep
+                                       ;;sweep-array
+                                       some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
+                                       options
+                                       rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (let* ((expr1 (aref1 miter-array-name miter-array smaller-nodenum))
           (expr2 (aref1 miter-array-name miter-array larger-nodenum)))
      ;;first check whether the nodes are calls of the same functions on the same arguments (may be quite common):
      ;;fixme is identical-exprs-up-to-constant-inlining overkill (shouldn't things below the node already have been merged?)
-     (if (identical-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array)
+     (if (identical-dag-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array miter-len)
          (prog2$ (and print (cw "  Structural equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
                  (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
        ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
        ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
        (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
-            (pure-assumptionsp assumptions) ;fffixme don't recompute this each time
+            (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop of cut non-pure ones.
             (or miter-is-purep
                 (if nil ;(g :treat-as-purep options)
                     (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
+                ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
                 (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
-                ;;                 ;;fixme what if we could cut and then get a pure miter?  maybe we should always cut out the non-pure stuff and try it! but then try the non-pure approach too...
-                ;; ;fixme pre-compute which nodes are pure (update that info when merging nodes?)
-                ;;                 (let* ((supporting-fns1 (fns-that-support-node smaller-nodenum miter-array-name miter-array)) ;could avoid consing up this list (and checking it for dups)
-                ;;                        (supporting-fns2 (fns-that-support-node larger-nodenum miter-array-name miter-array)) ;could avoid consing up this list (and checking it for dups)
-                ;;                        )
-                ;; ;fffixme what if the args make things non-pure (e.g., leftrotate32 with a variable shift amount):
-                ;;                   (and (subsetp-eq supporting-fns1 *bv-and-array-fns-we-can-translate*) ;Sun Jan 30 09:17:46 2011 added "we-can-translate" ;fixme use property lists?
-                ;;                        (subsetp-eq supporting-fns2 *bv-and-array-fns-we-can-translate*)))
                 ))
            ;; The relevant part of the miter is pure:
            ;;should we first make a miter and rewrite it?   pull that code up out of try-to-prove-non-pure-nodes-equivalent? no?  might be expensive?
            ;; or just rewrite the top node?
            (mv-let (success-flg state) ;ffixme handle errors?
              ;;fffixme pass in and translate assumptions?  they may be tighter than the sizes that are apparent from how the variables are used?
-;fffixme use (pure) contexts!
+             ;; TTODO: use (pure) contexts!
              (try-to-prove-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
              (if success-flg
                  (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                ;; fixme would like to get a counterexample back and use it try to invalidate more "probable facts":
                (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
-         ;; fixme instead of this, we could always cut out the non pure stuff and attempt that proof?
+         ;; TODO: What if we could cut and then get a pure miter?  maybe we should always cut out the non-pure stuff and try it! but then try the non-pure approach too...
          ;; fixme should we check for and expand any remining user non-recursive functions?
          (try-to-prove-non-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
                                                  miter-depth max-conflicts
                                                  print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                  extra-stuff monitored-symbols
                                                  assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
-;sweep-array
+                                                 ;;sweep-array
                                                  some-goal-timed-outp nodenums-not-to-unroll options rand state result-array-stobj))))) ;fixme pass in miter-name?
 
  ;;       (if cut-proofs

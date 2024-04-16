@@ -1413,9 +1413,9 @@
               (if (and (eq 'bvif (ffn-symb expr))
                        (= 4 (len (dargs expr)))
                        (not (can-translate-bvif-args (dargs expr))))
-                  ;; cut out a bad call to BVIF: todo: can this happen?  isn't the miter pure?
+                  ;; cut out a bad call to BVIF: todo: can this happen?  isn't the miter pure?  Maybe for :irrelevant
                   (b* ((type (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
-                       ((when (not (axe-typep type)))
+                       ((when (not (axe-typep type))) ; strengthen?
                         (cw "ERROR: Bad type for ~x0.~%" expr)
                         (mv :type-error nil nil extra-asserts)))
                     (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
@@ -1483,26 +1483,26 @@
                                     dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
-;drop?
-(defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (< n dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n
-                                                                                   dag-array-name
-                                                                                   dag-array
-                                                                                   dag-len
-                                                                                   needed-for-node1-tag-array
-                                                                                   needed-for-node2-tag-array
-                                                                                   nodenums-to-translate
-                                                                                   cut-nodenum-type-alist
-                                                                                   extra-asserts
-                                                                                   print var-type-alist))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
+;; ;drop?
+;; (defthmd all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
+;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                 (integerp n)
+;;                 (<= -1 n)
+;;                 (< n dag-len)
+;;                 (nat-listp nodenums-to-translate)
+;;                 (all-< nodenums-to-translate dag-len))
+;;            (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n
+;;                                                                                    dag-array-name
+;;                                                                                    dag-array
+;;                                                                                    dag-len
+;;                                                                                    needed-for-node1-tag-array
+;;                                                                                    needed-for-node2-tag-array
+;;                                                                                    nodenums-to-translate
+;;                                                                                    cut-nodenum-type-alist
+;;                                                                                    extra-asserts
+;;                                                                                    print var-type-alist))
+;;                   dag-len))
+;;   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
 (defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
