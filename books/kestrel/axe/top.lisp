@@ -243,6 +243,7 @@
 (include-book "stp-counterexamples")
 (include-book "translate-dag-to-stp")
 (include-book "prove-with-stp")
+(include-book "prove-with-stp-tester")
 (include-book "stp-clause-processor")
 (include-book "defthm-stp")
 
