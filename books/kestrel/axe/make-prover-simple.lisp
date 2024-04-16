@@ -3974,6 +3974,7 @@
                                      info tries prover-depth known-booleans options top-node-onlyp)
          (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                      (nat-listp literal-nodenums)
+                                     (consp literal-nodenums)
                                      (all-< literal-nodenums dag-len)
                                      (rule-alistp rule-alist)
                                      (interpreted-function-alistp interpreted-function-alist)
@@ -3995,23 +3996,19 @@
                                          nil print))
               ((when erp) (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               ((when provedp) (mv (erp-nil) t t nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-              ((when (not literal-nodenums))
-               (and print (cw "NOTE: No literals left.~%"))
-               (mv (erp-nil)
-                   nil ; did not prove the clause
-                   nil ; changep
-                   literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ((when (not (consp literal-nodenums)))
+               (and print (cw "NOTE: No literals after getting disjuncts.~%"))
+               ;; No error but did not prove (did make a change because there at least one literal was passed in):
+               (mv (erp-nil) nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               ;; Make the assumption-array:
               ((mv provedp literal-nodenums assumption-array)
                (make-assumption-array literal-nodenums dag-array dag-len known-booleans print))
               ((when provedp)
                (and print (cw "NOTE: Proved due to contradiction in assumptions.~%"))
-               (mv (erp-nil)
-                   t ; proved the clause
-                   t
-                   literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+               (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, ~x2 DAG nodes):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
-              (hit-count-alist-before (make-hit-count-alist (uniquify-alist-eq info) nil))
+              (print-hit-countsp (member-eq print '(t :verbose :verbose!)))
+              (hit-count-alist-before (and print-hit-countsp (make-hit-count-alist (uniquify-alist-eq info) nil)))
               ;; (result-array-name (pack$ 'result-array- prover-depth))
               ;; Ensure there is a maximal size raw Lisp array under the hood, for use when rewriting each literal.  I hope the compiler
               ;; doesn't optimize this away:
@@ -4027,31 +4024,33 @@
                                        interpreted-function-alist monitored-symbols print case-designator
                                        info tries prover-depth known-booleans options top-node-onlyp))
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-              (hit-count-alist-after (make-hit-count-alist (uniquify-alist-eq info) nil))
-              (hit-count-alist (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before)))
-              (- (and (member-eq print '(t :verbose :verbose!)) (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
+              (hit-count-alist-after (and print-hit-countsp (make-hit-count-alist (uniquify-alist-eq info) nil)))
+              (hit-count-alist (and print-hit-countsp (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before))))
+              (- (and print-hit-countsp (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
+              ((when provedp)
+               (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
+               (mv (erp-nil)
+                   t ;proved the clause
+                   t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
+              ((when (not (consp literal-nodenums)))
+               (and print (cw "No literals left after rewriting.)~%"))
+               ;; No error, did not prove, did make a change:
+               (mv (erp-nil) nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (- (and (member-eq print '(t :verbose :verbose!))
-                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
-           (if provedp
-               (prog2$ (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
-                       (mv (erp-nil)
-                           t ;proved the clause
-                           t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-             (b* ((- (and print (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums))))
+                      (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "rewritten" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
+              (- (and print (cw "  Done rewriting (~x0 literals).)~%" (len literal-nodenums)))) ; todo: move down after crunching?
                   ;; Maybe crunch (one advantage in doing this is to make the printed result of this step comprehensible if we are tracing):
                   ;; TODO: Do we want to do this if changep is nil (perhaps yes, since nodes may have been created when relieving hyps even if no dag node was changed by a successful rule)?
                   ;; TODO: Move this to happen before we rewrite?  Or always crunch between phases?
-                  (crunchp (and (= prover-depth 0) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
-                                (consp literal-nodenums) ;;can't crunch if no nodenums (can this happen?)
-                                ))
-                  ((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                   (maybe-crunch-dag-array2 crunchp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                  ((when erp)
-                   (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
-               (mv (erp-nil)
-                   nil ; didn't prove the clause
-                   changep
-                   literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))))
+              (crunchp (= prover-depth 0)) ;; can't crunch if prover-depth > 0 since that would change existing nodes:
+              ((mv erp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+               (maybe-crunch-dag-array2 crunchp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+              ((when erp)
+               (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
+           (mv (erp-nil)
+               nil ; didn't prove the clause
+               changep
+               literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)))
 
        (defthm ,(pack$ rewrite-clause-name '-return-type)
          (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -4164,7 +4163,7 @@
         ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
         ;; where if provedp is non-nil we proved the clause and the other return values are irrelevant.
         ;; otherwise, we return the simplified clause (as the list of literal nodenums and the dag-array, etc.)
-        ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned?
+        ;; There should be no harvestable disjuncts in the LITERAL-NODENUMS returned?  The LITERAL-NODENUMS returned may be empty.
         ;; In general, this can loop (e.g., due to looping rules), so we use a count to ensure termination.
         (defund ,apply-tactic-name (tactic
                                     literal-nodenums
@@ -4194,80 +4193,79 @@
                    (type (unsigned-byte 59) count))
           (if (zp-fast count)
               (mv :count-exceeded nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
-            (cond ((member-eq tactic '(:rewrite :rewrite-top))
+            (if (not (consp literal-nodenums))
+                ;; No error but didn't prove:
+                (prog2$ (cw "NOTE: No literals.~%")
+                        (mv (erp-nil) nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+              ;; Each tactic here can assume (consp literal-nodenums) if need:
+              (cond ((member-eq tactic '(:rewrite :rewrite-top))
                    ;; TODO: After rewriting, we could drop any literal of the form (equal <constant> <var>) - if the var appears in any other literal, rewriting should have put in the constant for it, so the var will no longer appear.
-                   (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
-                         (,rewrite-clause-name literal-nodenums
-                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                               rule-alist rule-set-number
-                                               interpreted-function-alist monitored-symbols
-                                               case-designator print
-                                               info tries prover-depth known-booleans options
-                                               (eq tactic :rewrite-top))))
-                     (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
-                  ((eq :subst tactic)
-                   (b* ((- (and print (cw "(Substituting:~%")))
+                     (b* (((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries)
+                           (,rewrite-clause-name literal-nodenums
+                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                 rule-alist rule-set-number
+                                                 interpreted-function-alist monitored-symbols
+                                                 case-designator print
+                                                 info tries prover-depth known-booleans options
+                                                 (eq tactic :rewrite-top))))
+                       (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
+                    ((eq :subst tactic)
+                     (b* ((- (and print (cw "(Substituting:~%")))
                         ;; (subst-candidates (subst-candidates literal-nodenums dag-array dag-len nil)) ;only used for printing the count, for now
                         ;; (- (cw "~x0 subst candidates.~%" (len subst-candidates)))
-                        ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                         (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
-                                          (if (posp dag-len) ;todo: should always be true
-                                              dag-len
-                                            1)
-                                          var-ordering
-                                          nil))
-                        ((when erp)
-                         (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-                        ((when provedp)
-                         (mv (erp-nil) t nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-                        ;;todo: think about this:
-                        ;; ((when (not (consp literal-nodenums)))
-                        ;;  (and print (cw "NOTE: No literals left after substitution!~%")) ;can happen if the only lit when we subst is a (negated) var equality
-                        ;;  (mv (erp-nil)
-                        ;;      nil ;; did not prove
-                        ;;      literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-                        (- (and print (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
-                        (- (and (member-eq print '(t :verbose :verbose!))
-                                (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "after subst" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
-                     (mv (erp-nil)
-                         nil ;provedp
-                         changep
-                         literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
-                  ((eq :elim tactic)
-                   (b* (((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                          ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                           (substitute-vars2 literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print prover-depth
+                                             (if (posp dag-len) ;todo: should always be true
+                                                 dag-len
+                                               1)
+                                             var-ordering
+                                             nil))
+                          ((when erp)
+                           (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+                          ((when provedp)
+                           (mv (erp-nil) t nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+                          (- (and print (cw "  Done substituting. ~x0 literals left.)~%" (len literal-nodenums))))
+                          (- (and (member-eq print '(t :verbose :verbose!))
+                                  (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "after subst" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options)))))
+                       (mv (erp-nil)
+                           nil ;provedp
+                           changep
+                           literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
+                    ((eq :elim tactic)
+                     (b* (((mv erp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                          ;; TODO: Consider eliminating more than one tuple here, if possible
-                         (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
-                        ((when erp) (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
-                     (mv (erp-nil)
-                         nil ;provedp
-                         changep
-                         literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
-                  ((call-of :seq tactic)
-                   (,apply-tactics-name (fargs tactic)
-                                        literal-nodenums
-                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                        rule-alist rule-set-number
-                                        interpreted-function-alist monitored-symbols
-                                        case-designator print
-                                        info tries prover-depth known-booleans var-ordering options
-                                        nil ; no change yet
-                                        (+ -1 count) state))
-                  ((call-of :rep tactic)
-                   (,apply-rep-tactic-name (fargs tactic)
-                                           literal-nodenums
-                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           rule-alist rule-set-number
-                                           interpreted-function-alist monitored-symbols
-                                           case-designator print
-                                           info tries prover-depth known-booleans var-ordering options
-                                           0 ; interation count
-                                           (+ -1 count) state))
-                  (t ;this case is impossible
-                   (prog2$ (er hard ',apply-tactic-name "Unknown tactic: ~x0." tactic)
-                           (mv :unknown-tactic
-                               nil ;provedp
-                               nil ;changep
-                               literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))))))
+                           (eliminate-a-tuple literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print))
+                          ((when erp) (mv erp nil nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
+                       (mv (erp-nil)
+                           nil ;provedp
+                           changep
+                           literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
+                    ((call-of :seq tactic)
+                     (,apply-tactics-name (fargs tactic)
+                                          literal-nodenums
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                          rule-alist rule-set-number
+                                          interpreted-function-alist monitored-symbols
+                                          case-designator print
+                                          info tries prover-depth known-booleans var-ordering options
+                                          nil ; no change yet
+                                          (+ -1 count) state))
+                    ((call-of :rep tactic)
+                     (,apply-rep-tactic-name (fargs tactic)
+                                             literal-nodenums
+                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             rule-alist rule-set-number
+                                             interpreted-function-alist monitored-symbols
+                                             case-designator print
+                                             info tries prover-depth known-booleans var-ordering options
+                                             0 ; interation count
+                                             (+ -1 count) state))
+                    (t ;this case is impossible
+                      (prog2$ (er hard ',apply-tactic-name "Unknown tactic: ~x0." tactic)
+                              (mv :unknown-tactic
+                                  nil ;provedp
+                                  nil ;changep
+                                  literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))))))
 
         ;; Repeatedly apply the tactic-sequence until nothing changes.
         ;; Returns (mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
@@ -4374,7 +4372,7 @@
                     nil ; did not prove the goal
                     changep-acc literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
               (b* ((tactic (first tactics))
-                   (- (and print "(Applying tactic ~x0:~%" tactic))
+                   (- (and print (cw "(Applying tactic ~x0:~%" tactic)))
                    ((mv start-time state) (get-cpu-time state))
                    ((mv erp provedp changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
                     (,apply-tactic-name tactic
@@ -4393,7 +4391,10 @@
                                          (cw "s.)~%") ; s for "seconds"
                                          )))
                    ((when provedp)
-                    (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
+                    (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+                   ((when (not (consp literal-nodenums)))
+                    (cw "NOTE: No literals.~%")
+                    (mv (erp-nil) nil changep literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
                 (,apply-tactics-name (rest tactics)
                                      literal-nodenums
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -4658,7 +4659,7 @@
                    (prog2$ (cw "Case ~s0 didn't simplify to true.~%" case-designator)
                            (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len case-designator (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
               (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-           (b* ((- (and print "(Applying rule set #~x0:~%" rule-set-number))
+           (b* ((- (and print (cw "(Applying rule set #~x0:~%" rule-set-number)))
                 ((mv start-time state) (get-cpu-time state))
                 ((mv erp provedp
                      & ;;changep
@@ -4677,7 +4678,10 @@
                                       (print-to-hundredths elapsed-time)
                                       (cw "s.)~%") ; s for "seconds"
                                       )))
-                ((when provedp) (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
+                ((when provedp) (mv (erp-nil) t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
+                ((when (not (consp literal-nodenums)))
+                 (cw "NOTE: No literals.~%")
+                 (mv (erp-nil) nil literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
              ;; Continue with the rest of the rule-alists:
              (,apply-tactic-for-rule-alists-name tactic
                                                  literal-nodenums
@@ -5202,7 +5206,7 @@
                  ((when provedp)
                   ;; (cw "Proved case ~s0 by rewriting, etc.~%" case-designator)
                   (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state))
-                 ((when (not literal-nodenums)) ;can this happen? i think so, e.g., by substitition
+                 ((when (not (consp literal-nodenums))) ;can this happen? i think so, e.g., by substitition
                   (and print (cw "No literals left!~%"))
                   (mv (erp-nil) :failed dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))
               ;; Proving it as a single case didn't finish the job (but may have done some work).
