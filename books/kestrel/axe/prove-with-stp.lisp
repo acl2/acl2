@@ -78,15 +78,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd all-<-of-keep-atoms-when-darg-listp
-  (implies (darg-listp x)
-           (equal (all-< (keep-atoms x) bound)
-                  (bounded-darg-listp x bound)))
-  :hints (("Goal" :in-theory (enable keep-atoms))))
+;; (defthmd all-<-of-keep-atoms-when-darg-listp
+;;   (implies (darg-listp x)
+;;            (equal (all-< (keep-atoms x) bound)
+;;                   (bounded-darg-listp x bound)))
+;;   :hints (("Goal" :in-theory (enable keep-atoms))))
 
-(local (in-theory (enable all-<-of-keep-atoms-when-darg-listp)))
+;; (local (in-theory (enable all-<-of-keep-atoms-when-darg-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm rationalp-when-natp
+    (implies (natp x)
+             (rationalp x))))
 
 (defthm no-nodes-are-variablesp-of-merge-<
   (implies (and (no-nodes-are-variablesp l1 dag-array-name dag-array dag-len)
@@ -1420,9 +1425,9 @@
               (if (and (eq 'bvif (ffn-symb expr))
                        (= 4 (len (dargs expr)))
                        (not (can-translate-bvif-args (dargs expr))))
-                  ;; cut out a bad call to BVIF: todo: can this happen?  isn't the miter pure?
+                  ;; cut out a bad call to BVIF: todo: can this happen?  isn't the miter pure?  Maybe for :irrelevant
                   (b* ((type (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
-                       ((when (not (axe-typep type)))
+                       ((when (not (axe-typep type))) ; strengthen?
                         (cw "ERROR: Bad type for ~x0.~%" expr)
                         (mv :type-error nil nil extra-asserts)))
                     (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
@@ -1490,26 +1495,26 @@
                                     dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
-;drop?
-(defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (< n dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n
-                                                                                   dag-array-name
-                                                                                   dag-array
-                                                                                   dag-len
-                                                                                   needed-for-node1-tag-array
-                                                                                   needed-for-node2-tag-array
-                                                                                   nodenums-to-translate
-                                                                                   cut-nodenum-type-alist
-                                                                                   extra-asserts
-                                                                                   print var-type-alist))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
+;; ;drop?
+;; (defthmd all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
+;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                 (integerp n)
+;;                 (<= -1 n)
+;;                 (< n dag-len)
+;;                 (nat-listp nodenums-to-translate)
+;;                 (all-< nodenums-to-translate dag-len))
+;;            (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n
+;;                                                                                    dag-array-name
+;;                                                                                    dag-array
+;;                                                                                    dag-len
+;;                                                                                    needed-for-node1-tag-array
+;;                                                                                    needed-for-node2-tag-array
+;;                                                                                    nodenums-to-translate
+;;                                                                                    cut-nodenum-type-alist
+;;                                                                                    extra-asserts
+;;                                                                                    print var-type-alist))
+;;                   dag-len))
+;;   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
 (defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -1623,7 +1628,7 @@
 (defund gather-nodes-for-translation (n ;counts down and stops at -1
                                       dag-array-name dag-array dag-len ; dag-len is only used for the guard
                                       var-type-alist ;; todo: what about types we can't handle?
-                                      needed-for-node1-tag-array
+                                      needed-for-node1-tag-array ; todo: rename this array, since there is only one node
                                       nodenums-to-translate ;gets extended, in increasing order
                                       cut-nodenum-type-alist ; gets extended
                                       )
@@ -1673,11 +1678,6 @@
         (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local
-  (defthm rationalp-when-natp
-    (implies (natp x)
-             (rationalp x))))
 
 ;Used in equivalence-checker.lisp
 ;TODO: Consider using a worklist algorithm.

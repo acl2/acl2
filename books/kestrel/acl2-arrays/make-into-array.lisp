@@ -1,7 +1,7 @@
 ; A function to turn an alist into an array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "make-into-array-with-len") ; todo: reduce
+(include-book "make-into-array-with-len")
+(include-book "make-empty-array")
+(local (include-book "array1p"))
+(local (include-book "acl2-arrays")) ; todo: reducen
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;Consider adding an option to reuse an existing array if large enough (well, compress1 now does that internally)?

@@ -16,7 +16,7 @@
 ;; as is done internally by Axe.
 
 (include-book "dags") ;for pseudo-dagp
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for *maximum-1-d-array-length*
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/make-into-array" :dir :system)
 (include-book "kestrel/acl2-arrays/array-to-alist" :dir :system)

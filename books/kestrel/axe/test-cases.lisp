@@ -124,7 +124,7 @@
                                                      list-type-element-type
                                                      list-typep)))))
   (or (myquotep type)
-      (symbolp type) ; look up a previous val
+      (symbolp type) ; look up a previous val -- todo: tag this?
       (bv-typep type)
       (and (list-typep type)
            (test-case-typep (list-type-element-type type))
@@ -148,6 +148,16 @@
            (consp (cdr type)) ; must be at least one element
            )))
 
+(defthm test-case-typep-of-make-bv-type
+  (implies (natp width)
+           (test-case-typep (make-bv-type width)))
+  :hints (("Goal" :in-theory (enable test-case-typep make-bv-type))))
+
+(defthm test-case-typep-of-make-bv-array-type
+  (implies (natp element-width)
+           (test-case-typep (make-bv-array-type element-width len)))
+  :hints (("Goal" :in-theory (enable test-case-typep make-bv-array-type))))
+
 ;; Recognize an alist from vars to their "test types"
 (defund test-case-type-alistp (alist)
   (declare (xargs :guard t))
@@ -160,6 +170,13 @@
              (and (symbolp var)
                   (test-case-typep type)
                   (test-case-type-alistp (rest alist))))))))
+
+(defthm test-case-type-alistp-of-cons-of-cons
+  (equal (test-case-type-alistp (cons (cons var type) alist))
+         (and (symbolp var)
+              (test-case-typep type)
+              (test-case-type-alistp alist)))
+  :hints (("Goal" :in-theory (enable test-case-type-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,6 +289,12 @@
   (equal (test-casep (cons (cons var val) test-case))
          (and (symbolp var)
               (test-casep test-case)))
+  :hints (("Goal" :in-theory (enable test-casep))))
+
+(defthm test-casesp-forward-to-symbol-alistp
+  (implies (test-casep case)
+           (symbol-alistp case))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable test-casep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

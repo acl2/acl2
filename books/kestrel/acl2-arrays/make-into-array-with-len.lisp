@@ -1,7 +1,7 @@
 ; A function to turn an alist into an array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,8 +12,17 @@
 
 (in-package "ACL2")
 
-(include-book "acl2-arrays") ; todo: reduce
+(include-book "bounded-nat-alists")
+(include-book "alen1")
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "maximum-length"))
+(local (include-book "array1p"))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "header"))
+(local (include-book "default"))
+(local (include-book "dimensions"))
+(local (include-book "compress1"))
+(local (include-book "acl2-arrays")) ; todo: reduce, for aref1-of-compress1
 
 ;; Makes the ALIST, whose keys must be naturals, into an array named
 ;; ARRAY-NAME, which will have length LEN.  LEN must exceed the largest key in
@@ -31,15 +40,15 @@
                               )
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))))
   (compress1 array-name
-             (acons-fast :header
-                         (list :dimensions (list len)
-                               ;; TODO: Can we do something better here?:
-                               :maximum-length (min (* 2 len)
-                                                    *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
-                                                    )
-                               :default nil ; ;fixme?
-                               :name array-name)
-                         alist)))
+             (acons :header
+                    (list :dimensions (list len)
+                          ;; TODO: Can we do something better here?:
+                          :maximum-length (min (* 2 len)
+                                               *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
+                                               )
+                          :default nil ; ;fixme?
+                          :name array-name)
+                    alist)))
 
 (in-theory (disable (:e make-into-array-with-len))) ;blew up
 
@@ -85,4 +94,5 @@
                             ARRAY-ORDER
                             make-into-array-with-len
                             ;;aref1
-                            ) (array1p NORMALIZE-AREF1-NAME)))))
+                            ) (aref1 array1p
+                               )))))

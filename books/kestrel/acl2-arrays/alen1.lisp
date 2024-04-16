@@ -1,7 +1,7 @@
 ; A more abstract idiom for getting the length of an array1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -50,7 +50,7 @@
 (theory-invariant (incompatible (:rewrite alen1-intro2) (:definition alen1)))
 
 (defthm alen1-of-compress1
-  (equal (alen1 array-name (compress1 array-name array))
+  (equal (alen1 array-name (compress1 array-name2 array))
          (alen1 array-name array))
   :hints (("Goal" :in-theory (e/d (alen1) (alen1-intro alen1-intro2)))))
 
@@ -88,6 +88,11 @@
            (alen1 array-name alist)))
   :hints (("Goal" :in-theory (e/d (alen1)
                                   (alen1-intro alen1-intro2)))))
+
+(defthm alen1-of-acons-of-header
+  (equal (alen1 array-name (acons :header header alist))
+         (car (cadr (assoc-keyword :dimensions header))))
+  :hints (("Goal" :in-theory (enable acons))))
 
 (defthm rationalp-of-alen1-when-array1p
   (implies (array1p array-name array)

@@ -1,7 +1,7 @@
 ; ACL2 arrays that grow as needed
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,8 +12,14 @@
 
 (in-package "ACL2")
 
-(include-book "acl2-arrays")
+(include-book "alen1")
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "maximum-length"))
+(local (include-book "header"))
+(local (include-book "dimensions"))
+(local (include-book "compress1"))
+(local (include-book "array1p"))
+(local (include-book "acl2-arrays")) ; for AREF1-WHEN-TOO-LARGE, etc.
 
 ;fixme could we relax the guard on the index (and the array length claim in array1p?) for aset1-expandable?  maybe save pairs with huge indices in an alist in the array header?  would be slow but correct for huge indices?
 

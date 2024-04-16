@@ -27,7 +27,7 @@
           (not (natp n))
           (not (natp len)))
       acc
-    (let* ((val (aref1 array-name array n)))
+    (let ((val (aref1 array-name array n)))
       (array-to-alist-aux (+ 1 n) len array-name array (acons-fast n val acc)))))
 
 (defthm alistp-of-array-to-alist-aux

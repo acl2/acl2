@@ -29,6 +29,7 @@
 (include-book "dag-arrays")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
