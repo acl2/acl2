@@ -1449,9 +1449,10 @@
 
 ;recall that the case is the negation of all the literals
 ;fixme similar name to print-negated-literal-list
-(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective print-as-clausesp
-                                                no-print-fns ; we don't print literals that are calls of these (after stripping nots)
-                                                )
+(defund print-axe-prover-case (literal-nodenums
+                               dag-array-name dag-array dag-len case-adjective print-as-clausesp
+                               no-print-fns ; we don't print literals that are calls of these (after stripping nots)
+                               )
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
@@ -1460,7 +1461,7 @@
                               (booleanp print-as-clausesp)
                               (symbol-listp no-print-fns))))
   (if (not (consp literal-nodenums))
-      (er hard? 'print-axe-prover-case "ERROR: No literals.") ; todo: For guards. Prove that this cannot happen.
+      (cw "(NOTE: No literals in clause.")
     (prog2$ (print-dag-array-info dag-array-name dag-array dag-len case-adjective t)
             (if print-as-clausesp
                 (progn$ (cw "~s0 clause:~%(OR " case-adjective)
