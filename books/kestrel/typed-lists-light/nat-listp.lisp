@@ -150,3 +150,8 @@
   (implies (nat-listp l)
            (integer-listp l))
   :hints (("Goal" :in-theory (enable integer-listp nat-listp))))
+
+(defthm nat-listp-of-remove1-equal
+  (implies (nat-listp nats)
+           (nat-listp (remove1-equal a nats)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
