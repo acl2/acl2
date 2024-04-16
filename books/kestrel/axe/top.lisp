@@ -213,6 +213,7 @@
 (include-book "substitute-vars")
 (include-book "supporting-nodes")
 (include-book "supporting-vars")
+(include-book "sweep-and-merge-support")
 (include-book "tailtohead")
 (include-book "term-equal-dag")
 (include-book "test-cases")
