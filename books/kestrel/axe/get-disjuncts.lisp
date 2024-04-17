@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,66 +22,6 @@
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 ;(local (include-book "merge-sort-less-than-rules"))
-
-;move
-(local
- (defthm nat-listp-of-reverse-list
-   (equal (nat-listp (reverse-list x))
-          (nat-listp (true-list-fix x)))
-   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
-
-(local
-  (progn
-    (defthm all-<-of-mv-nth-0-of-split-list-fast-aux
-      (implies (and (all-< acc bound)
-                    (all-< lst bound)
-                    (all-< tail bound)
-                    (<= (len tail) (len lst)) ; needed in general for such proofs?
-                    )
-               (all-< (mv-nth 0 (split-list-fast-aux lst tail acc)) bound))
-      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
-
-    (defthm all-<-of-mv-nth-1-of-split-list-fast-aux
-      (implies (and (all-< acc bound)
-                    (all-< lst bound)
-                    (all-< tail bound)
-                    (<= (len tail) (len lst)) ; needed in general for such proofs?
-                    )
-               (all-< (mv-nth 1 (split-list-fast-aux lst tail acc)) bound))
-      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
-
-    (defthm all-<-of-mv-nth-0-of-split-list-fast
-      (implies (all-< lst bound)
-               (all-< (mv-nth 0 (split-list-fast lst)) bound))
-      :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable split-list-fast))))
-
-    (defthm all-<-of-mv-nth-1-of-split-list-fast
-      (implies (all-< lst bound)
-               (all-< (mv-nth 1 (split-list-fast lst)) bound))
-      :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal" :in-theory (enable split-list-fast))))))
-
-(local
- (defthm all-<-of-merge-<-and-remove-dups-aux
-   (implies (and (all-< l1 bound)
-                 (all-< l2 bound)
-                 (all-< acc bound))
-            (all-< (merge-<-and-remove-dups-aux l1 l2 acc) bound))
-   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
-
-(local
- (defthm all-<-of-merge-<-and-remove-dups
-   (implies (and (all-< l1 bound)
-                 (all-< l2 bound))
-            (all-< (merge-<-and-remove-dups l1 l2) bound))
-   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups)))))
-
-(local
- (defthm all-<-of-merge-sort-<-and-remove-dups
-   (implies (all-< l bound)
-            (all-< (merge-sort-<-and-remove-dups l) bound))
-   :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups)))))
 
 ;;; End of library material
 

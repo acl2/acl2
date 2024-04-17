@@ -233,71 +233,76 @@
                                                                  (dargp
                                                                   dargp-less-than)))))
 
-(def-dag-builder-theorems
-  (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array)
-  (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-  :hyps ((nat-listp worklist)
-         (all-< worklist dag-len)
-         (array1p 'translation-array translation-array)
-         ;;(all-< (strip-cdrs dag-constant-alist) dag-len)
-         (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-         (all-< worklist (alen1 'translation-array translation-array))
-         (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
-         ))
+(local
+  (def-dag-builder-theorems
+    (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array)
+    (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+    :hyps ((nat-listp worklist)
+           (all-< worklist dag-len)
+           (array1p 'translation-array translation-array)
+           ;;(all-< (strip-cdrs dag-constant-alist) dag-len)
+           (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+           (all-< worklist (alen1 'translation-array translation-array))
+           (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
+           )))
 
-(defthm array1p-of-mv-nth-1-of-rebuild-nodes-aux
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (nat-listp worklist)
-                (all-< worklist dag-len)
-                (array1p 'translation-array translation-array)
-                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                (all-< worklist (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len))
-           (array1p 'translation-array (mv-nth 1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
-  :hints (("Goal" :in-theory (enable rebuild-nodes-aux))))
+(local
+  (defthm array1p-of-mv-nth-1-of-rebuild-nodes-aux
+    (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                  (nat-listp worklist)
+                  (all-< worklist dag-len)
+                  (array1p 'translation-array translation-array)
+                  (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                  (all-< worklist (alen1 'translation-array translation-array))
+                  (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len))
+             (array1p 'translation-array (mv-nth 1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
+    :hints (("Goal" :in-theory (enable rebuild-nodes-aux)))))
 
-(defthm alen1-of-mv-nth-1-of-rebuild-nodes-aux
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (nat-listp worklist)
-                (all-< worklist dag-len)
-                (array1p 'translation-array translation-array)
-                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                (all-< worklist (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len))
-           (equal (alen1 'translation-array (mv-nth 1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array)))
-                  (alen1 'translation-array translation-array)))
-  :hints (("Goal" :in-theory (enable rebuild-nodes-aux))))
+(local
+  (defthm alen1-of-mv-nth-1-of-rebuild-nodes-aux
+    (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                  (nat-listp worklist)
+                  (all-< worklist dag-len)
+                  (array1p 'translation-array translation-array)
+                  (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                  (all-< worklist (alen1 'translation-array translation-array))
+                  (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len))
+             (equal (alen1 'translation-array (mv-nth 1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array)))
+                    (alen1 'translation-array translation-array)))
+    :hints (("Goal" :in-theory (enable rebuild-nodes-aux)))))
 
-(defthm translation-arrayp-aux-of-mv-nth-1-of-rebuild-nodes-aux
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (nat-listp worklist)
-                (all-< worklist dag-len)
-                (array1p 'translation-array translation-array)
-                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                (all-< worklist (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
-                (array1p 'worklist-array worklist-array) ;maps nodes to :examined or nil
-                (= (alen1 'worklist-array worklist-array)
-                   (alen1 'translation-array translation-array)))
-           (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array))
-                                   (mv-nth '1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
-  :hints (("Goal" :in-theory (e/d (rebuild-nodes-aux) (dargp)))))
+(local
+  (defthm translation-arrayp-aux-of-mv-nth-1-of-rebuild-nodes-aux
+    (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                  (nat-listp worklist)
+                  (all-< worklist dag-len)
+                  (array1p 'translation-array translation-array)
+                  (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                  (all-< worklist (alen1 'translation-array translation-array))
+                  (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
+                  (array1p 'worklist-array worklist-array) ;maps nodes to :examined or nil
+                  (= (alen1 'worklist-array worklist-array)
+                     (alen1 'translation-array translation-array)))
+             (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array))
+                                     (mv-nth '1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
+    :hints (("Goal" :in-theory (e/d (rebuild-nodes-aux) (dargp))))))
 
-(defthm bounded-translation-arrayp-aux-of-mv-nth-1-of-rebuild-nodes-aux
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                (nat-listp worklist)
-                (all-< worklist dag-len)
-                (array1p 'translation-array translation-array)
-                (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
-                (all-< worklist (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
-                (array1p 'worklist-array worklist-array) ;maps nodes to :examined or nil
-                (= (alen1 'worklist-array worklist-array)
-                   (alen1 'translation-array translation-array)))
-           (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array))
-                                           (mv-nth 1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))
-                                           (mv-nth 3 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
-  :hints (("Goal" :in-theory (e/d (rebuild-nodes-aux) (dargp)))))
+(local
+  (defthm bounded-translation-arrayp-aux-of-mv-nth-1-of-rebuild-nodes-aux
+    (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                  (nat-listp worklist)
+                  (all-< worklist dag-len)
+                  (array1p 'translation-array translation-array)
+                  (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
+                  (all-< worklist (alen1 'translation-array translation-array))
+                  (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array dag-len)
+                  (array1p 'worklist-array worklist-array) ;maps nodes to :examined or nil
+                  (= (alen1 'worklist-array worklist-array)
+                     (alen1 'translation-array translation-array)))
+             (bounded-translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array))
+                                             (mv-nth 1 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))
+                                             (mv-nth 3 (rebuild-nodes-aux worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist worklist-array))))
+    :hints (("Goal" :in-theory (e/d (rebuild-nodes-aux) (dargp))))))
 
 ;;;
 ;;; rebuild-nodes
