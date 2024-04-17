@@ -2677,6 +2677,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown
+;; Never used!
 (defund try-to-resolve-test-with-stp (test       ; a nodenum
                                       assumptions ; possibly-negated-nodenums
                                       dag-array ;must be named 'dag-array (todo: generalize?)
@@ -2813,7 +2814,7 @@
 ;;        (hyps (translate-terms hyps 'prove-with-stp w)))
 ;;     (prove-translated-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
 
- ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defun prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (booleanp counterexamplep)

@@ -419,7 +419,7 @@
           '(leftrotate bvshl bvshr)))
 
 ;hope this is okay
-(defun recursive-functionp (name state)
+(defund recursive-functionp (name state)
   (declare (xargs :stobjs (state)
                   :guard (symbolp name)))
   (let* ((props (getprops name 'current-acl2-world (w state))))
@@ -15950,21 +15950,21 @@
  ;; if the top node is reached and nothing was merged, result is :did-nothing
  ;; if the top node is reached and something was merged, but the top node wasn't proved true, result is :did-something, meaning simplify (to use the merged stuff and sweep again)
  ;; Result can also be a cons whose car is :new-rules or :apply-rule.
- (defun perform-miter-sweep-aux (changep miter-array-name miter-array miter-len miter-depth
-                                         sweep-array ;helps us choose the next node to attack
-;parent-array-name parent-array
-                                         var-type-alist top-node print debug-nodes interpreted-function-alist
-                                         rewriter-rule-alist prover-rule-alist
-                                         extra-stuff monitored-symbols assumptions
-                                         test-cases test-case-array-alist sweep-num
-                                         step-num total-steps
-                                         next-nodenum-to-consider ;think about this
-                                         analyzed-function-table
-                                         unroll miter-is-purep
-                                         nodes-to-not-use-prover-for ;the booland nodes at the top of the miter; don't waste time on them by calling the prover
-                                         some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
-                                         options
-                                         rand state result-array-stobj)
+ (defun perform-miter-sweep-aux (next-nodenum-to-consider ;think about this
+                                 changep miter-array-name miter-array miter-len miter-depth
+                                 sweep-array ;helps us choose the next node to attack
+                                 ;;parent-array-name parent-array
+                                 var-type-alist top-node print debug-nodes interpreted-function-alist
+                                 rewriter-rule-alist prover-rule-alist
+                                 extra-stuff monitored-symbols assumptions
+                                 test-cases test-case-array-alist sweep-num
+                                 step-num total-steps
+                                 analyzed-function-table
+                                 unroll miter-is-purep
+                                 nodes-to-not-use-prover-for ;the booland nodes at the top of the miter; don't waste time on them by calling the prover
+                                 some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
+                                 options
+                                 rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (equal *t* (aref1 miter-array-name miter-array top-node)) ; stop when the top node has been replaced with 't
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
@@ -16005,7 +16005,7 @@
                                                                   miter-array-name miter-array miter-len miter-depth
                                                                   var-type-alist print interpreted-function-alist
                                                                   extra-stuff rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist
-;parent-array-name parent-array
+                                                                  ;;parent-array-name parent-array
                                                                   assumptions monitored-symbols
                                                                   step-num analyzed-function-table unroll miter-is-purep
                                                                   ;;sweep-array
@@ -16016,22 +16016,23 @@
                  (if (or (eq :proved result)
                          (eq :failed result)
                          (eq :timed-out result))
+                     ;; Usual case:
                      (let* ((sweep-array (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
-                                            (update-tags-for-proved-constant-node nodenum-to-replace sweep-array)
+                                            (update-tags-for-proved-constant-node nodenum-to-replace sweep-array) ; skip?  but what if it's also in a probably-equal set?  TTODO: can we have a probably-equal node pair that's never used on the same test?
                                           (update-tags-for-failed-constant-node nodenum-to-replace sweep-array)))
                             ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
                             )
                        ;;continue sweeping:
-                       (perform-miter-sweep-aux (or changep (eq :proved result))
+                       (perform-miter-sweep-aux nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                                (or changep (eq :proved result))
                                                 miter-array-name
                                                 miter-array miter-len miter-depth
                                                 sweep-array
-;parent-array-name parent-array
+                                                ;;parent-array-name parent-array
                                                 var-type-alist top-node print
                                                 debug-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                 extra-stuff monitored-symbols assumptions test-cases
                                                 test-case-array-alist sweep-num (+ 1 step-num) total-steps
-                                                nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
                                                 analyzed-function-table
                                                 unroll miter-is-purep nodes-to-not-use-prover-for
                                                 (or some-goal-timed-outp
@@ -16075,13 +16076,14 @@
                    (let* ((sweep-array (if (eq :proved result)
                                           (update-tags-for-proved-equal-node nodenum-to-replace sweep-array)
                                         (update-tags-for-failed-equal-node nodenum-to-replace other-val sweep-array))))
-                     (perform-miter-sweep-aux (or changep (eq :proved result))
+                     (perform-miter-sweep-aux nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                              (or changep (eq :proved result))
                                               miter-array-name
                                               miter-array miter-len miter-depth ;depth-array
                                               sweep-array ;parent-array-name parent-array
                                               var-type-alist
                                               top-node print debug-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
-                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) total-steps nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) total-steps
                                               analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
                                               (or some-goal-timed-outp
                                                   (eq :timed-out result))
@@ -16161,7 +16163,8 @@
 ;                    (parent-array (prog2$ (and print (eq :verbose print) (cw "Making parent array...~%" nil)) (make-dag-parent-array-with-name (+ -1 miter-len) miter-array-name miter-array parent-array-name)))
         ((mv erp result miter-array analyzed-function-table rand state result-array-stobj) ;i guess this doesn't change miter-len
          ;; Merge nodes until done or a theorem is generated:
-         (perform-miter-sweep-aux nil ;initial changep
+         (perform-miter-sweep-aux 0
+                                  nil ;initial changep
                                   miter-array-name
                                   miter-array miter-len miter-depth ;depth-array
                                   sweep-array
@@ -16174,7 +16177,7 @@
                                   sweep-num
                                   1 ; step-num (todo: but depth and sweep numbers start at 0)
                                   (+ num-probably-equal-node-sets num-probable-constants)
-                                  0 analyzed-function-table unroll
+                                  analyzed-function-table unroll
                                   miter-is-purep
                                   (nodes-to-not-use-prover-for (+ -1 miter-len) miter-array-name miter-array)
                                   nil ;some-goal-timed-outp ;no nodes have timed out yet
