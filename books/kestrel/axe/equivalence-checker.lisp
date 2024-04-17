@@ -16017,14 +16017,15 @@
                          (eq :failed result)
                          (eq :timed-out result))
                      ;; Usual case:
-                     (let* ((sweep-array (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
+                     (let* ((provedp (eq :proved result)) ; :timed-out is treated the same as :failed
+                            (sweep-array (if provedp ;ffffixme think about what happens with :unused nodes here..
                                             (update-tags-for-proved-constant-node nodenum-to-replace sweep-array) ; skip?  but what if it's also in a probably-equal set?  TTODO: can we have a probably-equal node pair that's never used on the same test?
                                           (update-tags-for-failed-constant-node nodenum-to-replace sweep-array)))
                             ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
                             )
                        ;;continue sweeping:
-                       (perform-miter-sweep-aux nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
-                                                (or changep (eq :proved result))
+                       (perform-miter-sweep-aux (if provedp (+ 1 nodenum-to-replace) nodenum-to-replace) ; next nodenum to consider
+                                                (or changep provedp)
                                                 miter-array-name
                                                 miter-array miter-len miter-depth
                                                 sweep-array
@@ -16073,11 +16074,12 @@
                    ;;                                     (and (not new-runes)
                    ;;                                      (not new-fn-names))
                    ;; no rules or fns were generated, so continue the sweep:
-                   (let* ((sweep-array (if (eq :proved result)
-                                          (update-tags-for-proved-equal-node nodenum-to-replace sweep-array)
-                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val sweep-array))))
-                     (perform-miter-sweep-aux nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
-                                              (or changep (eq :proved result))
+                   (let* ((provedp (eq :proved result)) ; :timed-out is treated the same as :failed
+                          (sweep-array (if provedp
+                                           (update-tags-for-proved-equal-node nodenum-to-replace sweep-array)
+                                         (update-tags-for-failed-equal-node nodenum-to-replace other-val sweep-array))))
+                     (perform-miter-sweep-aux (if provedp (+ 1 nodenum-to-replace) nodenum-to-replace) ; next nodenum to consider
+                                              (or changep provedp)
                                               miter-array-name
                                               miter-array miter-len miter-depth ;depth-array
                                               sweep-array ;parent-array-name parent-array

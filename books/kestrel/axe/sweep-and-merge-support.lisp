@@ -423,8 +423,8 @@
   ;;                             (sweep-arrayp 'sweep-array sweep-array)
   ;;                             (< nodenum (alen1 'sweep-array sweep-array)))))
   (let* (;; TODO: Once we change the sweep to increment past the node, delete these 2:
-         (sweep-array (set-node-tag nodenum *probable-constant* nil sweep-array)) ;don't try to prove the node is constant (we just proved that)
-         (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
+         ;; (sweep-array (set-node-tag nodenum *probable-constant* nil sweep-array)) ;don't try to prove the node is constant (we just proved that)
+         ;; (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
          ;;don't try to prove some larger node is equal to this one:
          (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-array))
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
@@ -448,7 +448,7 @@
   ;;                 ))
   (let* (;; We know *probable-constant* wasn't set or we would have tried to prove the node constant instead of proving it each to another node.
          ;; TODO: Once we change the sweep to increment past the node, delete this:
-         (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
+         ;; (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
          ;;don't try to prove some other node is equal to this one (we've essentially removed this one from the dag):
          (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-array))
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
