@@ -152,46 +152,6 @@
            (equal x y))
   :rule-classes nil)
 
-;; TODO: Also chop arrays whose lengths are not powers of 2?
-(defund print-counterexample (cex cut-nodenum-type-alist print-signedp dag-array-name dag-array)
-  (declare (xargs :guard (and (counterexamplep cex)
-                              (nodenum-type-alistp cut-nodenum-type-alist)
-                              (booleanp print-signedp) ; whether to print BVs as signed integers
-                              (if (consp cex)
-                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
-                                t))))
-  (if (endp cex)
-      nil
-    (b* ((entry (first cex))
-         (nodenum (car entry))
-         (value (cdr entry))
-         (type (lookup-safe nodenum cut-nodenum-type-alist))
-         ;;(expr (aref1 dag-array-name dag-array nodenum))
-         (expr (dag-to-term-aux-array dag-array-name dag-array nodenum))
-         (value (if (and print-signedp (symbolp expr)) ; for now, only do it for vars
-                    (if (bv-typep type)
-                        (let ((width (bv-type-width type)))
-                          (if (not (unsigned-byte-p width value))
-                              (er hard? 'print-counterexample "Wrong type value, ~x0, for node ~x1 (should be a BV of size ~x2)." value nodenum width)
-                            (if (posp width)
-                                (logext width value)
-                              (er hard? 'print-counterexample "Can't treat a BV as signed when it has width 0."))))
-                      (if (bv-array-typep type)
-                          (let ((array-len (bv-array-type-len type))
-                                (element-width (bv-array-type-element-width type)))
-                            (if (posp element-width)
-                                 ; todo: drop the bvchop-list and the true-list-fix?
-                                (logext-list element-width (bvchop-list element-width
-                                                                        (take array-len (true-list-fix value)) ; todo: ensure there are at least enough (there may be extra elements if we rounded the array size up to a power of 2
-                                                                        ))
-                              (er hard? 'print-counterexample "Can't treat an array as signed when its elements are of width 0.")))
-                        value))
-                  value))
-         (- (cw "  Node ~x0: ~x1 is ~x2." nodenum expr value))
-         ;; Print newline unless this is the last line:
-         (- (and (consp (rest cex)) (cw "~%"))))
-      (print-counterexample (rest cex) cut-nodenum-type-alist print-signedp dag-array-name dag-array))))
-
 (defund maybe-shorten-filename (base-filename)
   (declare (xargs :guard (stringp base-filename)))
   (if (< 200 (length base-filename)) ;; todo: could increase the 200

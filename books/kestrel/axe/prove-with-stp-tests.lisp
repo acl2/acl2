@@ -14,13 +14,17 @@
 
 ; cert_param: (uses-stp)
 
-(include-book "prove-with-stp" :ttags :all)
-(include-book "kestrel/bv/tests" :dir :system)
+(include-book "prove-with-stp-tester" :ttags :all)
+(include-book "kestrel/bv/tests" :dir :system) ; for *min-sint-32*
 (include-book "std/testing/must-fail" :dir :system)
 
 ;If Axe ever tries to call STP and you don't have it, you may get an inscrutable error.
 
 ;TODO: Distinguish between STP failure to prove and a translation error
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-prove-with-stp test1 '(equal (bvxor 32 x y) (bvxor 32 y x)))
 (must-not-prove-with-stp test2 '(equal (bvxor 32 x y) (bvxor 32 x x)))
