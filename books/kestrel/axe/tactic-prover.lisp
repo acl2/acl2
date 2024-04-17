@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -165,7 +165,7 @@
 (defconst *problems* :problems)
 
 ;; The result of applying a tactic (a separate piece of "info" may also be returned)
-(defun tactic-resultp (x)
+(defund tactic-resultp (x)
   (or (eq x *valid*)
       (eq x *invalid*)
       (eq x *no-change*)
@@ -207,7 +207,7 @@
                 (< (+ (len new-dag) (len old-dag))
                    2147483646))
            (tactic-resultp (mv-nth 0 (make-tactic-result new-dag old-dag assumptions state))))
-  :hints (("Goal" :in-theory (enable make-tactic-result))))
+  :hints (("Goal" :in-theory (enable tactic-resultp make-tactic-result))))
 
 ;;
 ;; The :rewrite tactic
