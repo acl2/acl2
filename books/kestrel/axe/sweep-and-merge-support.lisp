@@ -174,7 +174,8 @@
 (defun sweep-info-tag-and-valuep (tag val)
   (declare (xargs :guard t))
   (if (eq *probable-constant* tag)
-      (or (null val)
+      (or (null val) ; no probable constant (or we tried and failed to prove it)
+          ;; must be quoted to distinguish from nil:
           (myquotep val))
     (and (or (eq *smaller-nodes-that-might-be-equal* tag)
              (eq *larger-nodes-that-might-be-equal* tag))
@@ -421,8 +422,10 @@
   ;; (declare (xargs :guard (and (natp nodenum)
   ;;                             (sweep-arrayp 'sweep-array sweep-array)
   ;;                             (< nodenum (alen1 'sweep-array sweep-array)))))
-  (let* ((sweep-array (set-node-tag nodenum *probable-constant* nil sweep-array)) ;don't try to prove the node is constant (we just proved it)
-         ;;don't try to prove some other node is equal to this one:
+  (let* (;; TODO: Once we change the sweep to increment past the node, delete these 2:
+         (sweep-array (set-node-tag nodenum *probable-constant* nil sweep-array)) ;don't try to prove the node is constant (we just proved that)
+         (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
+         ;;don't try to prove some larger node is equal to this one:
          (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-array))
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
     sweep-array))
@@ -437,14 +440,15 @@
     sweep-array))
 
 ;we proved that nodenum equals some smaller node (and we changed refs to it to point to that smaller node)
-;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
 (defun update-tags-for-proved-equal-node (nodenum sweep-array)
   ;; (declare (xargs :guard (and (natp nodenum)
   ;;                             (sweep-arrayp 'sweep-array sweep-array)
   ;;                             (< nodenum (alen1 'sweep-array sweep-array)))
   ;;                 :verify-guards nil ; todo (but need the notion of a bounded-sweep-array)
   ;;                 ))
-  (let* ((sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
+  (let* (;; We know *probable-constant* wasn't set or we would have tried to prove the node constant instead of proving it each to another node.
+         ;; TODO: Once we change the sweep to increment past the node, delete this:
+         (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* nil sweep-array)) ;don't try to prove it equal to anything else
          ;;don't try to prove some other node is equal to this one (we've essentially removed this one from the dag):
          (larger-nodes-that-might-be-equal (get-node-tag nodenum *larger-nodes-that-might-be-equal* sweep-array))
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
