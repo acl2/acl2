@@ -223,6 +223,16 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
 
+(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums-aux
+  (implies (and (possibly-negated-nodenumsp items)
+                (integerp acc)
+                )
+           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums-aux items acc))))
+  :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+                                     strip-not-from-possibly-negated-nodenum
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
+
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
 ;;;
@@ -258,20 +268,10 @@
            (< (max-nodenum-in-possibly-negated-nodenums context) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
 
-(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums-aux
-  (implies (and (possibly-negated-nodenumsp items)
-                (integerp acc)
-                )
-           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums-aux items acc))))
-  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
-                                     strip-not-from-possibly-negated-nodenum
-                                     possibly-negated-nodenumsp
-                                     possibly-negated-nodenump))))
-
 (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums
   (implies (possibly-negated-nodenumsp items)
            (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums items))))
-  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums
                                      strip-not-from-possibly-negated-nodenum))))
 
 ;;;
