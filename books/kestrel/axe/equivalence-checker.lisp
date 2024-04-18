@@ -2101,9 +2101,6 @@
 
 (skip-proofs (verify-guards try-to-find-type-facts-about-old-vals))
 
-(defun make-arg-list (arity base-symbol)
-  (make-var-names-aux base-symbol 0 (+ -1 arity)))
-
 ;;returns the sequence n_i such that target_i = (nth n_i value_i), or nil if there is no such sequence
 (defun make-nth-list-for-nthcdr-aux (target-seq value-seq acc)
   (declare (xargs :guard (and (true-listp target-seq)
@@ -4706,8 +4703,8 @@
 (defun make-induction-function-helper (fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)
   (let* ((arity1 (len formals1))
          (arity2 (len formals2))
-         (new-formals1 (make-arg-list arity1 'farg))
-         (new-formals2 (make-arg-list arity2 'garg))
+         (new-formals1 (make-var-names 'farg arity1))
+         (new-formals2 (make-var-names 'garg arity2))
          (body1 (sublis-var (pairlis$ formals1 new-formals1) body1))
          (body2 (sublis-var (pairlis$ formals2 new-formals2) body2))
          ;;ffixme this stuff broke when upgrading to acl2 3.5 - use fn-measure!
