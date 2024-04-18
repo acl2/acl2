@@ -68,18 +68,19 @@
                                        bound))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
-;make local?
-(defthm acl2-numberp-of-lookup-equal
-  (implies (and (nat-listp (strip-cdrs alist))
-                (lookup-equal key alist))
-           (acl2-numberp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable strip-cdrs))))
+;rename
+(local
+  (defthm acl2-numberp-of-lookup-equal
+    (implies (and (nat-listp (strip-cdrs alist))
+                  (lookup-equal key alist))
+             (acl2-numberp (lookup-equal key alist)))
+    :hints (("Goal" :in-theory (enable strip-cdrs)))))
 
 ;make local?
-(defthm natp-of-lookup-equal
-  (implies (and (nat-listp (strip-cdrs alist))
-                (lookup-equal key alist))
-           (natp (lookup-equal key alist)))
+(defthm natp-of-lookup-equal-when-nat-listp-of-strip-cdrs
+  (implies (nat-listp (strip-cdrs alist))
+           (iff (natp (lookup-equal key alist))
+                (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
