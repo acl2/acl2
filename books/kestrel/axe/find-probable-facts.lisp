@@ -14,6 +14,11 @@
 (include-book "find-probable-facts-common")
 (include-book "evaluate-test-case") ; has skip-proofs
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+
+(local (in-theory (e/d (acl2-numberp-when-natp) (natp))))
 
 ;; Returns (mv alist unused-nodes).
 ;; Only for nodes that are not :unused.
@@ -84,7 +89,7 @@
 (local
   (defthm true-listp-when-alistp
     (implies (alistp x) (true-listp x))
-    :hints (("Goal" :in-theory (enable all-consp alistp)))))
+    :hints (("Goal" :in-theory (enable alistp)))))
 
 ;; Assumes the TEST-CASE-ARRAY gives values for the current test case to all nodes below DAG-LEN.
 ;; Returns (mv probably-equal-node-sets singleton-count probably-constant-node-alist never-used-nodes).
@@ -94,14 +99,17 @@
                               (<= dag-len (alen1 test-case-array-name test-case-array)))))
   (mv-let (node-to-value-alist never-used-nodes)
     (initial-node-to-value-alist 0 dag-len test-case-array-name test-case-array nil nil)
-    (let (;; We sort here just to group entries with the same value together:
-          (sorted-node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist)))
+    (let* (;; We sort here just to group entries with the same value together:
+           (sorted-node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist))
+           (num-never-used-nodes (len never-used-nodes)))
       (mv-let (probably-equal-node-sets singleton-count probably-constant-node-alist)
         (initial-probable-facts-aux sorted-node-to-value-alist nil 0 nil)
-        (mv (if (consp never-used-nodes)
+        (mv (if (<= 2 num-never-used-nodes)
                 (cons never-used-nodes probably-equal-node-sets)
               probably-equal-node-sets)
-            singleton-count
+            (if (equal 1 num-never-used-nodes)
+                (+ 1 singleton-count)
+              singleton-count)
             probably-constant-node-alist
             never-used-nodes)))))
 
@@ -114,14 +122,19 @@
             (all-all-< (mv-nth 0 (initial-probable-facts dag-len test-case-array-name test-case-array)) bound))
    :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
+;; (local
+;;  (defthm all-consp-of-mv-nth-0-of-initial-probable-facts
+;;   (implies (and (array1p test-case-array-name test-case-array)
+;;                 (natp dag-len)
+;;                 (<= dag-len (alen1 test-case-array-name test-case-array))
+;;                 )
+;;            (all-consp (mv-nth 0 (initial-probable-facts dag-len test-case-array-name test-case-array))))
+;;   :hints (("Goal" :in-theory (enable initial-probable-facts)))))
+
 (local
- (defthm all-consp-of-mv-nth-0-of-initial-probable-facts
-  (implies (and (array1p test-case-array-name test-case-array)
-                (natp dag-len)
-                (<= dag-len (alen1 test-case-array-name test-case-array))
-                )
-           (all-consp (mv-nth 0 (initial-probable-facts dag-len test-case-array-name test-case-array))))
-  :hints (("Goal" :in-theory (enable initial-probable-facts)))))
+  (defthm all->=-len-of-mv-nth-0-of-initial-probable-facts
+    (all->=-len (mv-nth 0 (initial-probable-facts dag-len test-case-array-name test-case-array)) 2)
+    :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
  (defthm nat-list-listp-of-mv-nth-0-of-initial-probable-facts
@@ -324,11 +337,14 @@
            ;; to group nodes with similar values:
            (node-to-value-alist (merge-sort-lexorder-of-cdrs node-to-value-alist))
            ((mv acc singleton-count)
-            (group-nodes-by-value node-to-value-alist acc 0)))
-        (mv (if (consp unused-nodes)
+            (group-nodes-by-value node-to-value-alist acc 0))
+           (num-unused-nodes (len unused-nodes)))
+        (mv (if (<= 2 num-unused-nodes)
                 (cons unused-nodes acc)
               acc)
-            singleton-count
+            (if (equal 1 num-unused-nodes)
+                (+ 1 singleton-count)
+              singleton-count)
             t)))))
 
 ;; (local
@@ -341,7 +357,7 @@
 (local
  (defthm nat-list-listp-of-mv-nth-0-of-try-to-split-set
    (implies (and (nat-listp set)
-                 (consp set)
+                 ;(consp set)
                  (array1p test-case-array-name test-case-array)
                  ;; print
                  (all-< set (alen1 test-case-array-name test-case-array))
@@ -351,17 +367,24 @@
    :hints (("Goal" :in-theory (enable try-to-split-set)))))
 
 (local
- (defthm all-consp-of-mv-nth-0-of-try-to-split-set
-   (implies (and (nat-listp set)
-                 (consp set)
-                 (array1p test-case-array-name test-case-array)
-                 ;; print
-                 (all-< set (alen1 test-case-array-name test-case-array))
-                 (true-listp acc)
-                 (nat-list-listp acc)
-                 (all-consp acc))
-            (all-consp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+ (defthm all->=-len-of-mv-nth-0-of-try-to-split-set
+   (implies (and (<= 2 (len set))
+                 (all->=-len acc 2))
+            (all->=-len (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc)) 2))
    :hints (("Goal" :in-theory (enable try-to-split-set)))))
+
+;; (local
+;;  (defthm all-consp-of-mv-nth-0-of-try-to-split-set
+;;    (implies (and (nat-listp set)
+;;                  (consp set)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  ;; print
+;;                  (all-< set (alen1 test-case-array-name test-case-array))
+;;                  (true-listp acc)
+;;                  (nat-list-listp acc)
+;;                  (all-consp acc))
+;;             (all-consp (mv-nth 0 (try-to-split-set set test-case-array-name test-case-array print acc))))
+;;    :hints (("Goal" :in-theory (enable try-to-split-set)))))
 
 (local
  (defthm all-all-<-of-mv-nth-0-of-try-to-split-set
@@ -399,7 +422,7 @@
 ;sets are lists of nodenums.  each set has length at least 2 (singleton sets are dropped).
 (defund update-probably-equal-node-sets (sets test-case-array acc singleton-count-acc print test-case-array-name changep)
   (declare (xargs :guard (and (nat-list-listp sets)
-                              (all-consp sets)
+                              (all->=-len sets 2)
                               (array1p test-case-array-name test-case-array)
                               (nat-list-listp acc)
                               (natp singleton-count-acc)
@@ -426,7 +449,7 @@
    (implies (and (nat-list-listp sets)
                  (nat-list-listp acc)
           ;                (all-consp acc)
-                 (all-consp sets)
+               ;;  (all-consp sets)
                  (array1p test-case-array-name test-case-array)
                  (natp singleton-count-acc)
                  ;; print
@@ -436,26 +459,33 @@
    :hints (("Goal" :in-theory (enable update-probably-equal-node-sets all-all-<)))))
 
 (local
- (defthm all-consp-of-mv-nth-0-of-update-probably-equal-node-sets
-   (implies (and (nat-list-listp sets)
-                 (nat-list-listp acc)
-                 (all-consp acc)
-                 (all-consp sets)
-                 (array1p test-case-array-name test-case-array)
-                 (natp singleton-count-acc)
-                 ;; print
-                 (all-all-< sets (alen1 test-case-array-name test-case-array))
-                 (booleanp changep))
-            (all-consp (mv-nth 0 (update-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+ (defthm all->=-len-of-mv-nth-0-of-update-probably-equal-node-sets
+   (implies (and (all->=-len sets 2)
+                 (all->=-len acc 2))
+            (all->=-len (mv-nth 0 (update-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep)) 2))
    :hints (("Goal" :in-theory (enable update-probably-equal-node-sets all-all-<)))))
+
+;; (local
+;;  (defthm all-consp-of-mv-nth-0-of-update-probably-equal-node-sets
+;;    (implies (and (nat-list-listp sets)
+;;                  (nat-list-listp acc)
+;;                  (all-consp acc)
+;;                  (all-consp sets)
+;;                  (array1p test-case-array-name test-case-array)
+;;                  (natp singleton-count-acc)
+;;                  ;; print
+;;                  (all-all-< sets (alen1 test-case-array-name test-case-array))
+;;                  (booleanp changep))
+;;             (all-consp (mv-nth 0 (update-probably-equal-node-sets sets test-case-array acc singleton-count-acc print test-case-array-name changep))))
+;;    :hints (("Goal" :in-theory (enable update-probably-equal-node-sets all-all-<)))))
 
 (local
  (defthm all-all-<-of-mv-nth-0-of-update-probably-equal-node-sets
    (implies (and (<= (alen1 test-case-array-name test-case-array) dag-len)
                  (nat-list-listp sets)
                  (nat-list-listp acc)
-                 (all-consp acc)
-                 (all-consp sets)
+                 ;;(all-consp acc)
+                 ;;(all-consp sets)
                  (array1p test-case-array-name test-case-array)
                  (natp singleton-count-acc)
                  (ALL-ALL-< ACC DAG-LEN)
@@ -673,7 +703,8 @@
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< 0 dag-len)
                               (nat-list-listp probably-equal-node-sets)
-                              (all-consp probably-equal-node-sets)
+                              (all->=-len probably-equal-node-sets 2)
+                              ;(all-consp probably-equal-node-sets)
                               (all-all-< probably-equal-node-sets dag-len)
                               (nat-listp never-used-nodes)
                               (all-< never-used-nodes dag-len)
@@ -780,7 +811,7 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (< 0 dag-len)
                 (nat-list-listp probably-equal-node-sets)
-                (all-consp probably-equal-node-sets)
+                ;; (all-consp probably-equal-node-sets)
                 (all-all-< probably-equal-node-sets dag-len)
                 (nat-listp never-used-nodes)
                 (all-< never-used-nodes dag-len)
@@ -810,6 +841,46 @@
                                                                             test-case-number
                                                                             debug-nodes
                                                                             num-of-last-interesting-test-case))))
+  :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
+
+(defthm all->=-len-of-mv-nth-1-of-update-probable-facts-with-test-cases
+  (implies (and (test-casesp test-cases)
+                (natp singleton-count)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (< 0 dag-len)
+                (nat-list-listp probably-equal-node-sets)
+                ;; (all-consp probably-equal-node-sets)
+                (ALL->=-LEN PROBABLY-EQUAL-NODE-SETS 2)
+                (all-all-< probably-equal-node-sets dag-len)
+                (nat-listp never-used-nodes)
+                (all-< never-used-nodes dag-len)
+                (alistp probably-constant-node-alist)
+                (nat-listp (strip-cars probably-constant-node-alist))
+                (all-< (strip-cars probably-constant-node-alist) dag-len)
+                (interpreted-function-alistp interpreted-function-alist)
+                              ;; print
+                (symbolp test-case-array-name-base)
+                (booleanp keep-test-casesp)
+                (alistp test-case-array-alist)
+                (natp test-case-number)
+                (nat-listp debug-nodes)
+                (all-< debug-nodes dag-len)
+                (or (null num-of-last-interesting-test-case)
+                    (natp num-of-last-interesting-test-case)))
+           (all->=-len (mv-nth 1 (update-probable-facts-with-test-cases test-cases
+                                                                            singleton-count
+                                                                            dag-array-name dag-array dag-len
+                                                                            probably-equal-node-sets
+                                                                            never-used-nodes
+                                                                            probably-constant-node-alist
+                                                                            interpreted-function-alist print
+                                                                            test-case-array-name-base
+                                                                            keep-test-casesp
+                                                                            test-case-array-alist
+                                                                            test-case-number
+                                                                            debug-nodes
+                                                                            num-of-last-interesting-test-case))
+                       2))
   :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
 
 (defthm nat-listp-of-mv-nth-2-of-update-probable-facts-with-test-cases
@@ -962,6 +1033,24 @@
                                                           debug-nodes))))
   :hints (("Goal" :in-theory (enable find-probable-facts))))
 
+(defthm all->=-len-of-mv-nth-1-of-find-probable-facts
+  (implies (and (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                (< 0 miter-len)
+                (natp miter-depth)
+                (test-casesp test-cases)
+                (interpreted-function-alistp interpreted-function-alist)
+                ;; print
+                (booleanp keep-test-casesp)
+                (nat-listp debug-nodes)
+                (all-< debug-nodes miter-len))
+           (all->=-len (mv-nth 1 (find-probable-facts miter-array-name miter-array miter-len
+                                                      miter-depth
+                                                      test-cases
+                                                      interpreted-function-alist print keep-test-casesp
+                                                      debug-nodes))
+                       2))
+  :hints (("Goal" :in-theory (enable find-probable-facts))))
+
 (defthm nat-listp-of-mv-nth-2-of-find-probable-facts
   (implies (and (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                 (< 0 miter-len)
@@ -1034,6 +1123,15 @@
                 (interpreted-function-alistp interpreted-function-alist)
                 (booleanp keep-test-casesp))
            (nat-list-listp (mv-nth 1 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
+  :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
+
+(defthm all->=-len-of-mv-nth-1-of-find-probable-facts-for-dag
+  (implies (and (pseudo-dagp dag)
+                (<= (len dag) 2147483646)
+                (test-casesp test-cases)
+                (interpreted-function-alistp interpreted-function-alist)
+                (booleanp keep-test-casesp))
+           (all->=-len (mv-nth 1 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp)) 2))
   :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
 
 (defthm nat-listp-of-mv-nth-2-of-find-probable-facts-for-dag

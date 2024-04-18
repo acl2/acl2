@@ -55,42 +55,49 @@
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
 (defthm consp-of-make-var-names-aux
-  (implies (and (natp startnum)
-                (integerp endnum)
-                (<= startnum (+ 1 endnum)))
-           (equal (consp (make-var-names-aux base-symbol startnum endnum))
-                  (<= startnum endnum)))
+  (equal (consp (make-var-names-aux base-symbol startnum endnum))
+         (and (natp startnum)
+              (natp endnum)
+              (<= startnum endnum)))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
+
+;; (defthm consp-of-make-var-names-aux
+;;   (implies (and (natp startnum)
+;;                 (integerp endnum)
+;;                 (<= startnum (+ 1 endnum)))
+;;            (equal (consp (make-var-names-aux base-symbol startnum endnum))
+;;                   (<= startnum endnum)))
+;;   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
-;; added.  The first numeric suffix is START, and subsequent ones are
-;; consecutve, with a total of COUNT symbols generated.
-;rename?
-(defund make-var-name-range (base-symbol start count)
-  (declare (xargs :guard (and (symbolp base-symbol)
-                              (natp start)
-                              (natp count))))
-    (make-var-names-aux base-symbol start (+ -1 start count)))
+;; ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
+;; ;; added.  The first numeric suffix is START, and subsequent ones are
+;; ;; consecutive, with a total of COUNT symbols generated.
+;; ;rename?
+;; (defund make-var-name-range (base-symbol start count)
+;;   (declare (xargs :guard (and (symbolp base-symbol)
+;;                               (natp start)
+;;                               (natp count))))
+;;     (make-var-names-aux base-symbol start (+ -1 start count)))
 
-(defthm symbol-listp-of-make-var-name-range
-  (symbol-listp (make-var-name-range base-symbol start count))
-  :hints (("Goal" :in-theory (enable make-var-name-range))))
+;; (defthm symbol-listp-of-make-var-name-range
+;;   (symbol-listp (make-var-name-range base-symbol start count))
+;;   :hints (("Goal" :in-theory (enable make-var-name-range))))
 
-(defthm len-of-make-var-name-range
-  (implies (and (natp start)
-                (natp count))
-           (equal (len (make-var-name-range base-symbol start count))
-                  count))
-  :hints (("Goal" :in-theory (enable make-var-name-range))))
+;; (defthm len-of-make-var-name-range
+;;   (implies (and (natp start)
+;;                 (natp count))
+;;            (equal (len (make-var-name-range base-symbol start count))
+;;                   count))
+;;   :hints (("Goal" :in-theory (enable make-var-name-range))))
 
-(defthm consp-of-make-var-name-range
-  (implies (and (natp start)
-                (natp count))
-           (equal (consp (make-var-name-range base-symbol start count))
-                  (posp count)))
-  :hints (("Goal" :in-theory (enable make-var-name-range))))
+;; (defthm consp-of-make-var-name-range
+;;   (implies (and (natp start)
+;;                 (natp count))
+;;            (equal (consp (make-var-name-range base-symbol start count))
+;;                   (posp count)))
+;;   :hints (("Goal" :in-theory (enable make-var-name-range))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +109,7 @@
 (defund make-var-names (base-symbol count)
   (declare (xargs :guard (and (natp count)
                               (symbolp base-symbol))))
-  (make-var-name-range base-symbol 0 count))
+  (make-var-names-aux base-symbol 0 (+ -1 count)))
 
 (defthm symbol-listp-of-make-var-names
   (symbol-listp (make-var-names base-symbol count))

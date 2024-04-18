@@ -419,7 +419,7 @@
           '(leftrotate bvshl bvshr)))
 
 ;hope this is okay
-(defun recursive-functionp (name state)
+(defund recursive-functionp (name state)
   (declare (xargs :stobjs (state)
                   :guard (symbolp name)))
   (let* ((props (getprops name 'current-acl2-world (w state))))
@@ -2100,9 +2100,6 @@
               (try-to-find-type-facts-about-old-vals-lst (cdr values-lst) (cdr term-lst) size-asserted))))))
 
 (skip-proofs (verify-guards try-to-find-type-facts-about-old-vals))
-
-(defun make-arg-list (arity base-symbol)
-  (make-var-names-aux base-symbol 0 (+ -1 arity)))
 
 ;;returns the sequence n_i such that target_i = (nth n_i value_i), or nil if there is no such sequence
 (defun make-nth-list-for-nthcdr-aux (target-seq value-seq acc)
@@ -4296,16 +4293,16 @@
 ;;; TODO: what about deeper structural equivalence - all leaf nodes the same and all operator nodes corresponding? - better to merge up the dag aggressively at merge time?
 (skip-proofs
   (mutual-recursion
-    (defun identical-dargs-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
+    (defun identical-darg-lists-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
       (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                                   (bounded-darg-listp dag-len dargs1)
                                   (bounded-darg-listp dag-len dargs2))))
       (if (endp dargs1)
           (if (endp dargs2)
               t
-            (er hard? 'identical-dargs-up-to-constant-inlining "args lists not the same length" nil))
+            (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil))
         (if (endp dargs2)
-            (er hard? 'identical-dargs-up-to-constant-inlining "args lists not the same length" nil)
+            (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil)
           (and
             (let* ((darg1 (first dargs1))
                    (darg2 (first dargs2)))
@@ -4322,7 +4319,7 @@
                       (identical-dag-exprs-up-to-constant-inlining (aref1 dag-array-name dag-array darg1)
                                                                    (aref1 dag-array-name dag-array darg2)
                                                                    dag-array-name dag-array dag-len)))))
-            (identical-dargs-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
+            (identical-darg-lists-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
 
     ;;we could relax this even more and not require nodenums to be unique either... what if we have (foo (bar '2)) both with and without the inlined 2?
     (defun identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
@@ -4336,7 +4333,7 @@
           (equal expr1 expr2)
         ;;function call:
         (and (eq (ffn-symb expr1) (ffn-symb expr2))
-             (identical-dargs-up-to-constant-inlining (dargs expr1) (dargs expr2) dag-array-name dag-array dag-len))))))
+             (identical-darg-lists-up-to-constant-inlining (dargs expr1) (dargs expr2) dag-array-name dag-array dag-len))))))
 
 ;; (defun clean-up-hyps (hyps)
 ;;   (declare (xargs :guard (pseudo-term-listp hyps)))
@@ -4706,8 +4703,8 @@
 (defun make-induction-function-helper (fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)
   (let* ((arity1 (len formals1))
          (arity2 (len formals2))
-         (new-formals1 (make-arg-list arity1 'farg))
-         (new-formals2 (make-arg-list arity2 'garg))
+         (new-formals1 (make-var-names 'farg arity1))
+         (new-formals2 (make-var-names 'garg arity2))
          (body1 (sublis-var (pairlis$ formals1 new-formals1) body1))
          (body2 (sublis-var (pairlis$ formals2 new-formals2) body2))
          ;;ffixme this stuff broke when upgrading to acl2 3.5 - use fn-measure!
@@ -7898,32 +7895,45 @@
 
 (skip-proofs (verify-guards smallest-node-with-both-true-and-false-test-cases))
 
-;; Only returns nodenums
-;; Can this blow up?
-(defun get-boolands-and-conjuncts (nodenum-or-quotep miter-array-name miter-array acc)
-  (declare (xargs :guard (and (dargp nodenum-or-quotep)
-                              (if (consp nodenum-or-quotep)
-                                  t
-                                (pseudo-dag-arrayp miter-array-name miter-array (+ 1 nodenum-or-quotep)))
-                              (true-listp acc))
+;; Only returns nodenums.  These get excluded from the split candidates.
+;; TODO: Can this blow up?
+(defund get-boolands-and-conjuncts (nodenum-or-quotep dag-array-name dag-array dag-len acc)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (dargp-less-than nodenum-or-quotep dag-len)
+                              ;(true-listp acc)
+                              )
                   :measure (if (not (natp nodenum-or-quotep))
                                0
                              (+ 1 nodenum-or-quotep))))
-  (if (or (not (mbt (and (dargp nodenum-or-quotep)
-                         (if (consp nodenum-or-quotep)
-                             t
-                           (pseudo-dag-arrayp miter-array-name miter-array (+ 1 nodenum-or-quotep)))
-                         (true-listp acc))))
+  (if (or (not (mbt (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                         (dargp-less-than nodenum-or-quotep dag-len))))
           (consp nodenum-or-quotep))
       acc
-    (let ((expr (aref1 miter-array-name miter-array nodenum-or-quotep)))
+    (let ((expr (aref1 dag-array-name dag-array nodenum-or-quotep)))
       (if (not (and (call-of 'booland expr)
                     (= 2 (len (dargs expr)))))
           (cons nodenum-or-quotep acc)
         ;;it is a call of booland:
-        (let* ((acc (cons nodenum-or-quotep acc)) ;we include the booland node itself (fixme why would we ever split on a booland?)
-               (acc (get-boolands-and-conjuncts (darg1 expr) miter-array-name miter-array acc)))
-          (get-boolands-and-conjuncts (darg2 expr) miter-array-name miter-array acc))))))
+        (let* ((acc (cons nodenum-or-quotep acc)) ;we include the booland node itself
+               (acc (get-boolands-and-conjuncts (darg1 expr) dag-array-name dag-array dag-len acc)))
+          (get-boolands-and-conjuncts (darg2 expr) dag-array-name dag-array dag-len acc))))))
+
+(defthm nat-listp-of-get-boolands-and-conjuncts
+  (implies (nat-listp acc)
+           (nat-listp (get-boolands-and-conjuncts nodenum-or-quotep dag-array-name dag-array dag-len acc)))
+  :hints (("Goal" :in-theory (enable get-boolands-and-conjuncts))))
+
+(defthm all-<-of-get-boolands-and-conjuncts
+  (implies (and (dargp-less-than nodenum-or-quotep bound)
+                (natp bound)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (dargp-less-than nodenum-or-quotep dag-len)
+                (all-< acc bound))
+           (all-< (get-boolands-and-conjuncts nodenum-or-quotep dag-array-name dag-array dag-len acc) bound))
+  :hints (("subgoal *1/11" :cases ((consp (NTH 0 (DARGS (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM-OR-QUOTEP))))))
+          ("subgoal *1/6" :cases ((consp (NTH 1 (DARGS (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM-OR-QUOTEP))))))
+          ("subgoal *1/3" :cases ((consp (NTH 1 (DARGS (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM-OR-QUOTEP))))))
+          ("Goal" :in-theory (enable get-boolands-and-conjuncts))))
 
 ;; ;the also counts leaf nodes if they are equalities (since we should have merged the two equated things already)
 ;; ;fixme what is a leaf of the booland nest that is an equality also appears in some other context?
@@ -7940,14 +7950,15 @@
 ;;              (list nodenum-or-quotep)
 ;;            nil))))))
 
-(defun nodes-that-call (fn nodenum miter-array-name miter-array acc)
+(defun nodes-that-call (fn nodenum dag-array-name dag-array acc)
   (declare (xargs :measure (nfix (+ 1 nodenum))
                   :hints (("Goal" :in-theory (enable natp)))
-                  ))
+                  :guard (and (integerp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
   (if (not (natp nodenum))
       acc
-    (nodes-that-call fn (+ -1 nodenum) miter-array-name miter-array
-                     (let ((expr (aref1 miter-array-name miter-array nodenum)))
+    (nodes-that-call fn (+ -1 nodenum) dag-array-name dag-array
+                     (let ((expr (aref1 dag-array-name dag-array nodenum)))
                        (if (and (consp expr)
                                 (eq fn (ffn-symb expr)))
                            (cons nodenum acc)
@@ -7955,9 +7966,11 @@
 
 ;nodenum is the top nodenum of the miter
 ;returns a list of nodenums
-(defun nodes-to-not-use-prover-for (nodenum miter-array-name miter-array)
-  (nodes-that-call 'booland nodenum miter-array-name miter-array nil)
-;;   (let* ((nodes-in-booland-nest (nodes-in-booland-nest nodenum miter-array-name miter-array)))
+(defun nodes-to-not-use-prover-for (nodenum dag-array-name dag-array)
+  (declare (xargs :guard (and (integerp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
+  (nodes-that-call 'booland nodenum dag-array-name dag-array nil)
+;;   (let* ((nodes-in-booland-nest (nodes-in-booland-nest nodenum dag-array-name dag-array)))
 ;;     (prog2$ (cw "(Nodenums not to use prover for: ~x0.)~%" nodes-in-booland-nest)
 ;;             nodes-in-booland-nest;includes the booland nodes and the leaf nodes
 ;;             ))
@@ -7975,7 +7988,9 @@
 ;checks every node in the dag
 ;fixme if we switch to leaving irrelevant nodes in the dag, this will need to use a worklist algorithm
 ;fixme crashes if we have a not applied to a constant
-(defun find-node-to-split-candidates (n dag-len dag-array-name dag-array acc)
+(defund find-node-to-split-candidates (n dag-len dag-array-name dag-array acc)
+  (declare (xargs :guard (and (natp n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
   (declare (xargs :measure (+ 1 (nfix (- dag-len n)))))
   (if (or (not (natp n))
           (not (natp dag-len))
@@ -7984,20 +7999,38 @@
     (let ((acc (maybe-add-split-candidates (aref1 dag-array-name dag-array n) dag-array-name dag-array dag-len acc)))
       (find-node-to-split-candidates (+ 1 n) dag-len dag-array-name dag-array acc))))
 
-(skip-proofs (verify-guards find-node-to-split-candidates))
+(local
+  (defthm true-listp-of-find-node-to-split-candidates
+    (implies (true-listp acc)
+             (true-listp (find-node-to-split-candidates n dag-len dag-array-name dag-array acc)))
+    :hints (("Goal" :in-theory (enable find-node-to-split-candidates)))))
+
+(local
+  (defthm nat-listp-of-find-node-to-split-candidates
+    (implies (and (nat-listp acc)
+                  (natp n)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len))
+             (nat-listp (find-node-to-split-candidates n dag-len dag-array-name dag-array acc)))
+    :hints (("Goal" :in-theory (enable find-node-to-split-candidates)))))
 
 ;returns nil or a nodenum to split on
 ;fixme use this for the axe-prover too?  is it too slow?
 ;destroys 'size-array
 (defun find-a-node-to-split-miter-on (dag-array-name dag-len dag-array test-cases interpreted-function-alist)
+  (declare (xargs :guard (and ;(natp n)
+                           (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                           (< 0 dag-len)
+                           (test-casesp test-cases)
+                           (interpreted-function-alistp interpreted-function-alist)
+                           )))
   (b* ( ;fixme don't bother to compute sizes if there are no candidates (or for nodes above the largest candidate?)
          (size-array (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array 'size-array)) ;; TODO: Consider using a worklist?
          ;;fixme don't bother to cons this up (track the smallest node found so far):
          (candidates (find-node-to-split-candidates 0 dag-len dag-array-name dag-array nil)) ;fixme use the worklist version?
          (candidates (merge-sort-< candidates)) ;fixme remove dups from candidates
          (candidates (remove-duplicates-from-grouped-list candidates))
-;since we are requiring that split nodes have both true and false test cases, there is no point in considering top-level conjuncts (we must never have seen a test case where any of them was false)
-         (top-level-conjuncts (get-boolands-and-conjuncts (+ -1 dag-len) dag-array-name dag-array nil))
+         ;;since we are requiring that split nodes have both true and false test cases, there is no point in considering top-level conjuncts (we must never have seen a test case where any of them was false)
+         (top-level-conjuncts (get-boolands-and-conjuncts (+ -1 dag-len) dag-array-name dag-array dag-len nil))
          ;; likewise, if something is a negated top-level conjunct (or the negation of such, etc.) don't consider it
          ;; this removes conjuncts that are calls of not, but we never split on a call of not anyway:
          (nodes-not-to-consider-splitting-on (strip-all-nots-lst top-level-conjuncts dag-array-name dag-array dag-len))
@@ -8011,8 +8044,6 @@
          (smallest-node-with-both-true-and-false-test-cases candidates dag-array-name dag-array
                                                             test-cases interpreted-function-alist
                                                             size-array))))
-
-(skip-proofs (verify-guards find-a-node-to-split-miter-on))
 
 (defun test-case-satisfies-all-hypsp (hyps test-case interpreted-function-alist failing-test-count hyps-that-can-fail)
   (if (endp hyps)
@@ -14667,7 +14698,6 @@
                                                 test-cases
                                                 test-case-array-alist step-num
                                                 analyzed-function-table unroll
-                                                ;;sweep-array
                                                 some-goal-timed-outp nodenums-not-to-unroll
                                                 options
                                                 rand state result-array-stobj)
@@ -14679,7 +14709,7 @@
         ;; FIXME first try rewriting without this external context? fixme could just rewrite the equality node?
 ;ffixme i wonder if the rewrites here are so expensive that we should just rewrite the dag after every merge?
         ;;fffixme delay generating the context until after the first rewrite below (which will handle ifs with constant tests - seems common)
-        (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len ;sweep-array
+        (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len
                                           )) ; todo: compute before the sweep?  how would tranforming the dag affect things?
         (- (cw " (Context for node ~x0: ~x1)~%" original-nodenum2 context))
         ((when (false-contextp context))
@@ -15487,7 +15517,6 @@
                                        test-cases test-case-array-alist
                                        step-num ;use this even in the pure case?
                                        analyzed-function-table unroll miter-is-purep
-                                       ;;sweep-array
                                        some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                        options
                                        rand state result-array-stobj)
@@ -15527,7 +15556,6 @@
                                                  print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                  extra-stuff monitored-symbols
                                                  assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
-                                                 ;;sweep-array
                                                  some-goal-timed-outp nodenums-not-to-unroll options rand state result-array-stobj))))) ;fixme pass in miter-name?
 
  ;;       (if cut-proofs
@@ -15592,7 +15620,6 @@
                                                             print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                             extra-stuff monitored-symbols
                                                             assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-                                                            ;;sweep-array
                                                             some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
@@ -15610,7 +15637,6 @@
                                         print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                         extra-stuff monitored-symbols
                                         assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-;sweep-array
                                         some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
         ((when erp) (mv erp nil nil nil nil rand state result-array-stobj))
         ((when (eq result :error)) (mv (erp-t) nil nil nil nil rand state result-array-stobj)) ; todo: drop once impossible
@@ -15659,7 +15685,6 @@
                                        rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist
                                        assumptions ;terms we can assume non-nil (we can't actually assume them to be 't right?)
                                        monitored-symbols step-num analyzed-function-table miter-depth unroll miter-is-purep
-                                       ;;sweep-array
                                        use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (cw "  Trying to prove node ~x0 is the constant ~x1.~%" nodenum constant-value)) ;add parens?
@@ -15686,7 +15711,7 @@
          (b* ( ;; First simplify the equality of the node and the constant:  FFIXME first rewrite (and maybe call the prover) without using external contexts..
               (- (cw "(Making the equality and rewriting:~%"))
 ;ffixme if rewriting or proving ends in a goal that is clearly not valid then stop right there?
-              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len ;sweep-array
+              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len
                                                 )) ;fixme check if any of the context nodes are quoteps?
               (- (cw " (Context for node ~x0: ~x1)~%" nodenum context))
               ((when (false-contextp context))
@@ -15895,7 +15920,6 @@
                                                    test-case-array-alist ;parent-array-name parent-array
                                                    assumptions monitored-symbols step-num
                                                    analyzed-function-table unroll miter-is-purep
-                                                   ;;sweep-array
                                                    use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (eq :unused constant-value)
@@ -15917,7 +15941,7 @@
                    (try-to-prove-node-is-constant constant-value nodenum expr miter-array-name miter-array miter-len var-type-alist
                                                   print interpreted-function-alist extra-stuff
                                                   rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist assumptions monitored-symbols step-num
-                                                  analyzed-function-table miter-depth unroll miter-is-purep ;sweep-array
+                                                  analyzed-function-table miter-depth unroll miter-is-purep
                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)
                    (if erp
                        (mv erp nil miter-array analyzed-function-table rand state result-array-stobj)
@@ -15950,21 +15974,21 @@
  ;; if the top node is reached and nothing was merged, result is :did-nothing
  ;; if the top node is reached and something was merged, but the top node wasn't proved true, result is :did-something, meaning simplify (to use the merged stuff and sweep again)
  ;; Result can also be a cons whose car is :new-rules or :apply-rule.
- (defun perform-miter-sweep-aux (changep miter-array-name miter-array miter-len miter-depth
-                                         sweep-array ;helps us choose the next node to attack
-;parent-array-name parent-array
-                                         var-type-alist top-node print debug-nodes interpreted-function-alist
-                                         rewriter-rule-alist prover-rule-alist
-                                         extra-stuff monitored-symbols assumptions
-                                         test-cases test-case-array-alist sweep-num
-                                         step-num total-steps
-                                         next-nodenum-to-consider ;think about this
-                                         analyzed-function-table
-                                         unroll miter-is-purep
-                                         nodes-to-not-use-prover-for ;the booland nodes at the top of the miter; don't waste time on them by calling the prover
-                                         some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
-                                         options
-                                         rand state result-array-stobj)
+ (defun perform-miter-sweep-aux (next-nodenum-to-consider ;think about this
+                                 changep miter-array-name miter-array miter-len miter-depth
+                                 sweep-array ; for choosing the next node to attack
+                                 ;;parent-array-name parent-array
+                                 var-type-alist top-node print debug-nodes interpreted-function-alist
+                                 rewriter-rule-alist prover-rule-alist
+                                 extra-stuff monitored-symbols assumptions
+                                 test-cases test-case-array-alist sweep-num
+                                 step-num total-steps
+                                 analyzed-function-table
+                                 unroll miter-is-purep
+                                 nodes-to-not-use-prover-for ;the booland nodes at the top of the miter; don't waste time on them by calling the prover
+                                 some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
+                                 options
+                                 rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (if (equal *t* (aref1 miter-array-name miter-array top-node)) ; stop when the top node has been replaced with 't
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
@@ -16005,33 +16029,31 @@
                                                                   miter-array-name miter-array miter-len miter-depth
                                                                   var-type-alist print interpreted-function-alist
                                                                   extra-stuff rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist
-;parent-array-name parent-array
+                                                                  ;;parent-array-name parent-array
                                                                   assumptions monitored-symbols
                                                                   step-num analyzed-function-table unroll miter-is-purep
-                                                                  ;;sweep-array
                                                                   use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state result-array-stobj)))
                     ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
                     (- (cw ")~%")))
-                 ;; If we proved that the node is equal to the constant (fixme huh??): ffixme could some lemmas be generated?
-                 (if (or (eq :proved result)
-                         (eq :failed result)
-                         (eq :timed-out result))
-                     (let* ((sweep-array (if (eq :proved result) ;ffffixme think about what happens with :unused nodes here..
+                 (if (or (eq :proved result) (eq :failed result) (eq :timed-out result))
+                     ;; Usual case:
+                     (let* ((provedp (eq :proved result)) ; :timed-out is treated the same as :failed
+                            (sweep-array (if provedp
                                             (update-tags-for-proved-constant-node nodenum-to-replace sweep-array)
                                           (update-tags-for-failed-constant-node nodenum-to-replace sweep-array)))
                             ;; could abort the sweep and simplify the dag right here, but that would change the node numbering...
                             )
                        ;;continue sweeping:
-                       (perform-miter-sweep-aux (or changep (eq :proved result))
+                       (perform-miter-sweep-aux (if provedp (+ 1 nodenum-to-replace) nodenum-to-replace) ; next nodenum to consider
+                                                (or changep provedp)
                                                 miter-array-name
                                                 miter-array miter-len miter-depth
                                                 sweep-array
-;parent-array-name parent-array
+                                                ;;parent-array-name parent-array
                                                 var-type-alist top-node print
                                                 debug-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                                 extra-stuff monitored-symbols assumptions test-cases
                                                 test-case-array-alist sweep-num (+ 1 step-num) total-steps
-                                                nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
                                                 analyzed-function-table
                                                 unroll miter-is-purep nodes-to-not-use-prover-for
                                                 (or some-goal-timed-outp
@@ -16057,7 +16079,7 @@
                     print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                     extra-stuff monitored-symbols assumptions
                     test-cases test-case-array-alist step-num analyzed-function-table unroll
-                    miter-is-purep ;sweep-array
+                    miter-is-purep
                     some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
                   ((when erp) (mv erp nil miter-array analyzed-function-table rand state result-array-stobj))
                   (- (cw ")~%"))
@@ -16072,16 +16094,18 @@
                    ;;                                     (and (not new-runes)
                    ;;                                      (not new-fn-names))
                    ;; no rules or fns were generated, so continue the sweep:
-                   (let* ((sweep-array (if (eq :proved result)
-                                          (update-tags-for-proved-equal-node nodenum-to-replace sweep-array)
-                                        (update-tags-for-failed-equal-node nodenum-to-replace other-val sweep-array))))
-                     (perform-miter-sweep-aux (or changep (eq :proved result))
+                   (let* ((provedp (eq :proved result)) ; :timed-out is treated the same as :failed
+                          (sweep-array (if provedp
+                                           (update-tags-for-proved-equal-node nodenum-to-replace sweep-array)
+                                         (update-tags-for-failed-equal-node nodenum-to-replace other-val sweep-array))))
+                     (perform-miter-sweep-aux (if provedp (+ 1 nodenum-to-replace) nodenum-to-replace) ; next nodenum to consider
+                                              (or changep provedp)
                                               miter-array-name
                                               miter-array miter-len miter-depth ;depth-array
                                               sweep-array ;parent-array-name parent-array
                                               var-type-alist
                                               top-node print debug-nodes interpreted-function-alist rewriter-rule-alist prover-rule-alist extra-stuff monitored-symbols
-                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) total-steps nodenum-to-replace ;;next nodenum to consider (could add 1 if we proved it?)
+                                              assumptions test-cases test-case-array-alist sweep-num (+ 1 step-num) total-steps
                                               analyzed-function-table unroll miter-is-purep nodes-to-not-use-prover-for
                                               (or some-goal-timed-outp
                                                   (eq :timed-out result))
@@ -16161,7 +16185,8 @@
 ;                    (parent-array (prog2$ (and print (eq :verbose print) (cw "Making parent array...~%" nil)) (make-dag-parent-array-with-name (+ -1 miter-len) miter-array-name miter-array parent-array-name)))
         ((mv erp result miter-array analyzed-function-table rand state result-array-stobj) ;i guess this doesn't change miter-len
          ;; Merge nodes until done or a theorem is generated:
-         (perform-miter-sweep-aux nil ;initial changep
+         (perform-miter-sweep-aux 0
+                                  nil ;initial changep
                                   miter-array-name
                                   miter-array miter-len miter-depth ;depth-array
                                   sweep-array
@@ -16174,7 +16199,7 @@
                                   sweep-num
                                   1 ; step-num (todo: but depth and sweep numbers start at 0)
                                   (+ num-probably-equal-node-sets num-probable-constants)
-                                  0 analyzed-function-table unroll
+                                  analyzed-function-table unroll
                                   miter-is-purep
                                   (nodes-to-not-use-prover-for (+ -1 miter-len) miter-array-name miter-array)
                                   nil ;some-goal-timed-outp ;no nodes have timed out yet
@@ -17223,42 +17248,6 @@
 ;; ;                          (:REWRITE MYIF-BECOMES-BOOLIF-NIL-ARG2)
 ;;             )))
 
-;; ;BOZO use some kind of subset function
-;; (defun contains-only-elements-in-set-eql (set1 set2)
-;;   (if (endp set1)
-;;       t
-;;     (and (member (car set1) set2)
-;;          (contains-only-elements-in-set-eql (cdr set1) set2))))
-
-;; (skip -proofs (verify-guards contains-only-elements-in-set-eql))
-
-;; ;walk through all the nodes
-;; (defun tag-probably-constant-nodes (signature-alist sweep-array)
-;;   (declare (xargs :guard (ALIST-with-integer-keysp signature-alist)
-;;                   :verify-guards nil
-;;                   ))
-;;   (if (not (consp signature-alist))
-;;       sweep-array
-;;     (let* ((entry (car signature-alist))
-;;            (sig (cdr entry)))
-;;       (if (and (all-the-same-constant sig)
-;;                (or (equal t (car sig))
-;;                    t ;;(natp (car sig))
-;;                    ) ;don't do it for, for example, the constant nil... BBOZO change things to use 1/0 instead of t/nil
-;;                )
-;;           (let ((nodenum (car entry)))
-;;             (tag-probably-constant-nodes (cdr signature-alist)
-;;                                          (set-node-tag nodenum
-;;                                                   *probable-constant-that-needs-to-be-replaced*
-;;                                                   ;always quoting distinguishes between a node that is the constant nil and a node that's just not constant
-;;                                                   (list 'quote (car sig))
-;;                                                   sweep-array)))
-;;         (tag-probably-constant-nodes (cdr signature-alist)
-;;                                      ;;not explicitly setting *probable-constant-that-needs-to-be-replaced* to t amounts to setting it to nil
-;;                                      sweep-array)))))
-
-;; (skip -proofs (verify-guards tag-probably-constant-nodes))
-
 ;; (mv-let (alist rand)
 ;;          (signature-alist *aes-128-encrypt-light-proof-dag* 40 rand)
 ;;          (mv (tag-probably-constant-nodes alist nil)
@@ -17918,19 +17907,6 @@
 ;;     (let ((item (car sig)))
 ;;       (all-equal-item item (cdr sig)))))
 
-;; ;have to pass in whole-set, since set itself gets smaller as we walk down it
-;; (defun tag-nodes-as-probably-equal (set sweep-array whole-set)
-;;   (declare (xargs :guard t
-;;                   :verify-guards nil))
-;;   (if (not (consp set))
-;;       sweep-array
-;;     (let* ((nodenum (car set)))
-;;       (set-node-tag nodenum
-;;                *probably-equal-node-that-needs-to-be-replaced*
-;;                whole-set
-;;                (tag-nodes-as-probably-equal (cdr set) sweep-array whole-set)))))
-
-;; (skip -proofs (verify-guards tag-nodes-as-probably-equal))
 
 ;BOZO i suppose we could pick a representative for each set and store the wait-set only there???...
 
@@ -18625,7 +18601,7 @@
 ;; (defun dag-to-term-with-lambdas (dag-lst)
 ;;   (dag-to-term-with-lets-aux (reverse dag-lst)))
 
-(defun executable-counterparts ()
+(defconst *axe-evaluator-executable-counterparts*
   (list-onto-all ':executable-counterpart *axe-evaluator-functions*))
 
 ;;function-name must be the name of a defined function
@@ -18715,7 +18691,7 @@
                                             :in-theory (union-theories (theory 'minimal-theory)
                                                                        (union-theories
 ;without this, we had (not (natp 4)) in a proof
-                                                                        (executable-counterparts)
+                                                                        *axe-evaluator-executable-counterparts*
                                                                         '(,function-name ,new-function-name))))))))
                    (prog2$ (cw "Specializing.  New defun: ~x0~%. Rule: ~x1.~%" defun-event defthm) ;move printing down?
                            (let ((state (submit-events-brief (list defun-event defthm) state)))

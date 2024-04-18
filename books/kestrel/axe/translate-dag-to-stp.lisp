@@ -126,7 +126,10 @@
 
 (local (in-theory (e/d (<-of-+-of-1-when-integers)
                        ;; Avoid printing during proofs
-                       ((:e fmt-to-comment-window)))))
+                       ((:e fmt-to-comment-window)
+                        string-append
+                        alistp nat-listp ;don't induct on these
+                        consp-from-len-cheap))))
 
 (defthm myquote-forward-to-equal-of-nth-0-and-quote
   (implies (myquotep expr)
@@ -139,28 +142,8 @@
            (equal (natp (+ x (- y)))
                   (<= y x))))
 
-;; (defthm equal-of-len-forward-to-cons
-;;   (implies (and (equal k (len x))
-;;                 (posp k))
-;;            (consp x))
-;;   :rule-classes :forward-chaining)
-
-(in-theory (disable (:e nat-to-string))) ;to avoid errors being printed in proofs
-
-;; ;dup
-;; (defund unquote-if-possible (x)
-;;   (declare (xargs :guard t))
-;;   (if (and (quotep x)
-;;            (consp (cdr x)))
-;;       (unquote x)
-;;     nil))
-
-;(in-theory (disable string-append-lst)) ;move
-;(in-theory (disable bounded-dag-exprp)) ;move?
-
-(local (in-theory (disable string-append
-                           alistp nat-listp ;don't induct on these
-                           consp-from-len-cheap)))
+;move
+(in-theory (disable (:e nat-to-string))) ;to avoid errors being printed in proofs -- huh?
 
 ;; Helps justify the correctness of the translation
 (defthm equality-of-zero-length-arrays
@@ -656,9 +639,9 @@
 ;makes an assertion for each possible index
 ;returns string-tree
 (defund translate-array-equality-assertion (n ;the element number
-                                       lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width
-                                       acc ;a list of strings
-                                       )
+                                            lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width
+                                            acc ;a list of strings
+                                            )
   (declare (type (integer 0 *) n lhs-pad-bits rhs-pad-bits)
            (xargs :guard (and (posp index-width)
                               (string-treep lhs-string-tree)
@@ -670,10 +653,10 @@
              (translate-array-element-equality lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width n)
              acc)
     (translate-array-equality-assertion (+ -1 n) lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width
-                                   (list* (newline-string)
-                                          "AND "
-                                          (translate-array-element-equality lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width n)
-                                          acc))))
+                                        (list* (newline-string)
+                                               "AND "
+                                               (translate-array-element-equality lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width n)
+                                               acc))))
 
 (defthm string-treep-of-translate-array-equality-assertion
   (implies (and (string-treep acc)
@@ -1899,7 +1882,7 @@
          (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
 
-;; Returns (mv translation constant-array-info opened-paren-count) where TRANSLATION is a string-tree.
+;; Returns (mv translation constant-array-info) where TRANSLATION is a string-tree.
 ;; Handles all of the NODENUMS-TO-TRANSLATE.
 ;could use a worklist?
 (defund translate-nodes-to-stp (nodenums-to-translate ;sorted in decreasing order, all translatable (no vars)
@@ -1924,7 +1907,10 @@
                                                            not-cddr-when-dag-exprp-and-quotep
                                                            no-nodes-are-variablesp)))))
   (if (endp nodenums-to-translate)
-      (mv acc constant-array-info opened-paren-count)
+      (mv (cons acc
+                (n-close-parens opened-paren-count nil) ;avoid consing this up?
+                )
+          constant-array-info)
     (let* ((nodenum (first nodenums-to-translate))
            (expr (aref1 dag-array-name dag-array nodenum)))
       (mv-let (translated-expr constant-array-info)
@@ -1969,15 +1955,6 @@
                                             opened-paren-count cut-nodenum-type-alist))))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
-
-(defthm natp-of-mv-nth-2-of-translate-nodes-to-stp
-  (implies (natp opened-paren-count)
-           (natp (mv-nth 2 (translate-nodes-to-stp nodenums-to-translate dag-array-name
-                                                   dag-array dag-len acc
-                                                   constant-array-info
-                                                   opened-paren-count cut-nodenum-type-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp))))
 
 ;fffixme think about arrays whose lengths are not powers of 2...
 ;; Returns a string-tree.
@@ -2175,9 +2152,9 @@
                                      make-value-assertions-for-array-constant
                                      constant-array-infop))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;returns (mv erp state)
+;; Returns (mv erp state).
 ;translates the DAG to STP and writes the result to FILENAME
 ;also handle vars with dashes in their names!
 ;Also prints the filename
@@ -2206,7 +2183,7 @@
                               (print-levelp print))))
   (prog2$
    (and (print-level-at-least-tp print) (cw "  ~s0~%" filename))
-   (mv-let (translation constant-array-info opened-paren-count)
+   (mv-let (translation constant-array-info)
      (translate-nodes-to-stp nodenums-to-translate
                              dag-array-name
                              dag-array
@@ -2224,7 +2201,6 @@
              extra-asserts
              "QUERY (" (newline-string)
              translation                             ;includes the query..
-             (n-close-parens opened-paren-count nil) ;don't bother to cons this up?
              ");" (newline-string))
       filename
       'write-stp-query-to-file

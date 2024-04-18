@@ -1,6 +1,6 @@
 ; Extracting variable from an R1CS
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -83,6 +83,38 @@
       :rule-classes (:rewrite :type-prescription)
       :hints (("Goal" :in-theory (enable split-list-fast))))))
 
+(local
+  (progn
+    (defthm all-<-of-mv-nth-0-of-split-list-fast-aux
+      (implies (and (all-< acc bound)
+                    (all-< lst bound)
+                    (all-< tail bound)
+                    (<= (len tail) (len lst)) ; needed in general for such proofs?
+                    )
+               (all-< (mv-nth 0 (split-list-fast-aux lst tail acc)) bound))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+    (defthm all-<-of-mv-nth-1-of-split-list-fast-aux
+      (implies (and (all-< acc bound)
+                    (all-< lst bound)
+                    (all-< tail bound)
+                    (<= (len tail) (len lst)) ; needed in general for such proofs?
+                    )
+               (all-< (mv-nth 1 (split-list-fast-aux lst tail acc)) bound))
+      :hints (("Goal" :in-theory (enable split-list-fast-aux))))
+
+    (defthm all-<-of-mv-nth-0-of-split-list-fast
+      (implies (all-< lst bound)
+               (all-< (mv-nth 0 (split-list-fast lst)) bound))
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal" :in-theory (enable split-list-fast))))
+
+    (defthm all-<-of-mv-nth-1-of-split-list-fast
+      (implies (all-< lst bound)
+               (all-< (mv-nth 1 (split-list-fast lst)) bound))
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal" :in-theory (enable split-list-fast))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund merge-sort-<-and-remove-dups (l)
@@ -123,4 +155,9 @@
 (defthm no-duplicatesp-equal-of-merge-sort-<-and-remove-dups
   (implies (rational-listp l)
            (no-duplicatesp-equal (merge-sort-<-and-remove-dups l)))
+  :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups))))
+
+(defthm all-<-of-merge-sort-<-and-remove-dups
+  (implies (all-< l bound)
+           (all-< (merge-sort-<-and-remove-dups l) bound))
   :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups))))

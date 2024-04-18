@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,6 +26,8 @@
 (include-book "dag-size")
 (include-book "make-term-into-dag-basic")
 (include-book "equivalent-dags")
+(include-book "sweep-and-merge-support")
+(include-book "find-probable-facts-simple")
 (include-book "tools/prove-dollar" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system) ; for INTEGERP-OF--
 (include-book "kestrel/arithmetic-light/plus" :dir :system) ; for INTEGERP-OF-+
@@ -92,7 +94,8 @@
                        :prune
                        :prune-with-rules
                        :acl2
-                       :stp))
+                       :stp
+                       :sweep-and-merge))
       (and (consp tac)
            (eq :cases (car tac)))))
 
@@ -165,7 +168,7 @@
 (defconst *problems* :problems)
 
 ;; The result of applying a tactic (a separate piece of "info" may also be returned)
-(defun tactic-resultp (x)
+(defund tactic-resultp (x)
   (or (eq x *valid*)
       (eq x *invalid*)
       (eq x *no-change*)
@@ -207,7 +210,7 @@
                 (< (+ (len new-dag) (len old-dag))
                    2147483646))
            (tactic-resultp (mv-nth 0 (make-tactic-result new-dag old-dag assumptions state))))
-  :hints (("Goal" :in-theory (enable make-tactic-result))))
+  :hints (("Goal" :in-theory (enable tactic-resultp make-tactic-result))))
 
 ;;
 ;; The :rewrite tactic
@@ -709,6 +712,52 @@
         nil
         state)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The :sweep-and-merge-tactic
+
+;; Returns (mv result info state) where RESULT is a tactic-resultp.
+;; FIXME: Do more than just print them!
+(defun apply-tactic-sweep-and-merge (problem
+                                     ;;  rule-alist
+                                     interpreted-function-alist
+                                     ;; monitor
+                                     ; ;normalize-xors
+                                     print state)
+  (declare (xargs :guard (and (proof-problemp problem)
+                              ;; (rule-alistp rule-alist)
+                              (interpreted-function-alistp interpreted-function-alist)
+                              ;; (booleanp normalize-xors)
+                              )
+                  :stobjs state))
+  (b* ((dag (first problem))
+       ;; todo: have the caller check this?:
+       ((when (quotep dag)) (mv *no-change* nil state))
+       ((when (< 2147483646 (len (car problem)))) (er hard? 'apply-tactic-sweep-and-merge "DAG too big.") (mv *no-change* nil state))
+       (assumptions (second problem))
+       (- (and print (cw "(Applying sweeping and merging~%")))
+       ;; types for the vars in the dag:
+       (test-case-type-alist (make-var-type-alist-from-hyps assumptions))
+       (- (print-probable-facts-for-dag-simple dag :auto test-case-type-alist interpreted-function-alist print))
+       ;; ;; Find the probable facts
+       ;; ((mv erp & ;; all-passedp ; todo:
+       ;;      probably-equal-node-sets
+       ;;      & ;; never-used-nodes ; todo: use somehow?
+       ;;      probably-constant-node-alist)
+       ;;  (find-probable-facts-for-dag-simple dag :auto test-case-type-alist interpreted-function-alist print))
+       ;;       ((when erp) (mv *error* nil state))
+       ;; (- (and print (cw "Done sweeping and merging (term size: ~x0, DAG size: ~x1))~%"
+       ;;                   (dag-or-quotep-size new-dag)
+       ;;                   (if (quotep new-dag)
+       ;;                       1
+       ;;                     (len new-dag)))))
+       (- (cw "Done.)")))
+    (mv *no-change* nil state) ;(make-tactic-result new-dag dag assumptions state)
+    ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 ;; Apply a single tactic, possibly returning a list of remaining problems
 ;; which, if proved, guarantee that the given problem can be proved.  Returns
 ;; (mv result info state) where RESULT is a tactic-resultp.
@@ -742,8 +791,10 @@
               (if (and (consp tactic)
                        (eq :cases (car tactic)))
                   (apply-tactic-cases problem (fargs tactic) print state)
-                (prog2$ (er hard 'apply-proof-tactic "Unknown tactic: ~x0." tactic)
-                        (mv :error nil state))))))))))
+                (if (eq :sweep-and-merge tactic)
+                    (apply-tactic-sweep-and-merge problem interpreted-function-alist print state)
+                  (prog2$ (er hard 'apply-proof-tactic "Unknown tactic: ~x0." tactic)
+                        (mv :error nil state)))))))))))
 
 (defconst *unknown* :unknown)
 
