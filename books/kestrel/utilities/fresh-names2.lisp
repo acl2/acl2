@@ -1,7 +1,7 @@
 ; Utilities for making fresh symbols not defined in the given world
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,9 +16,12 @@
 ; Utilities for making fresh symbols with no properties in the given world
 ; (e.g., names of new functions or theorems)
 
+;; See also fresh-names.lisp.
+
 (include-book "fresh-names")
 (include-book "symbol-has-propsp")
 
+;; TODO: Restict to just take wrld?
 (defun make-new-name-aux (num max base-name state)
   (declare (xargs :stobjs state
                   :measure (nfix (+ 1 max))
