@@ -187,40 +187,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun unsigned-byte-p-hyps (var-size-alist)
-  (declare (xargs :guard (and (symbol-alistp var-size-alist)
-                              (nat-listp (strip-cdrs var-size-alist)))))
-  (if (endp var-size-alist)
+(defun unsigned-byte-p-hyps (size-term ; often a quoted constant
+                             items)
+  (declare (xargs :guard (true-listp items)))
+  (if (endp items)
       nil
-    (let* ((entry (car var-size-alist))
-           (var-name (car entry))
-           (size (cdr entry)))
-      (cons `(unsigned-byte-p ',size ,var-name)
-            (unsigned-byte-p-hyps (cdr var-size-alist))))))
+    (cons `(unsigned-byte-p ,size-term ,(first items))
+          (unsigned-byte-p-hyps size-term (rest items)))))
 
-(defmacro bit-hyps (names)
-  `(unsigned-byte-p-hyps (pairlis$ ,names
-                                   (repeat (len ,names) 1))))
+;; This makes calls of unsigned-byte-p.  Instead, it could make calls of bitp.
+(defun bit-hyps (items)
+  (declare (xargs :guard (true-listp items)))
+  (unsigned-byte-p-hyps ''1 items))
 
-(defmacro byte-hyps (names)
-  `(unsigned-byte-p-hyps (pairlis$ ,names
-                                   (repeat (len ,names) 8))))
+(defun byte-hyps (items)
+  (declare (xargs :guard (true-listp items)))
+  (unsigned-byte-p-hyps ''8 items))
 
-(defmacro int-hyps (names)
-  `(unsigned-byte-p-hyps (pairlis$ ,names
-                                   (repeat (len ,names) 32))))
+;; todo: improve name
+(defun int-hyps (items)
+  (declare (xargs :guard (true-listp items)))
+  (unsigned-byte-p-hyps ''32 items))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Makes a list of assumptions that together assert that the variables
+;; base-name0 through base-name(count-1) are bytes.
 (defund symbolic-byte-assumptions (base-name count)
   (declare (xargs :guard (and (symbolp base-name)
                               (natp count))))
   (byte-hyps (make-var-names base-name count)))
 
-(defund symbolic-int-assumptions (base-name count)
-  (declare (xargs :guard (and (symbolp base-name)
-                              (natp count))))
-  (int-hyps (make-var-names base-name count)))
+;; ;; Makes a list of assumptions that together assert that the variables
+;; ;; base-name0 through base-name(count-1) are unsigned-byte 32s.
+;; (defund symbolic-int-assumptions (base-name count)
+;;   (declare (xargs :guard (and (symbolp base-name)
+;;                               (natp count))))
+;;   (int-hyps (make-var-names base-name count)))
 
 ;dups?
 (defun make-bit-blasted-expression (bit-index name)
@@ -278,8 +281,6 @@
 ;; ;;                               (natp length))))
 ;;   (make-bit-blasted-array-expression-aux 0 length name))b
 
-
-
 ;BBOZO this largely duplicates the above?
 (defun make-bit-var-list-for-byte (bit-index name)
   (if (zp bit-index)
@@ -301,7 +302,6 @@
 ;;                               (natp length))))
   (make-bit-var-list-for-bytes-aux 0 length name))
 
-;move
 ;; Make a term representing a symbolic array of bit vectors variables NAME0,
 ;; ...,  NAME(length-1), each of ELEMENT-WIDTH bits.
 (defun symbolic-array (name length element-width)
