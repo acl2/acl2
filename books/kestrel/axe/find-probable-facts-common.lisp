@@ -26,6 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "numeric-lists"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -37,7 +38,6 @@
 
 (local (in-theory (e/d (true-listp-of-cdr-strong)
                        (true-listp-of-cdr))))
-
 
 (local (in-theory (disable append mv-nth strip-cars natp)))
 
@@ -71,6 +71,22 @@
    (equal (strip-cars (cdr x))
           (cdr (strip-cars x)))
    :hints (("Goal" :in-theory (enable strip-cars)))))
+
+(local
+  (defthm all->=-len-of-append
+    (equal (all->=-len (append x y) n)
+           (and (all->=-len (true-list-fix x) n)
+                (all->=-len y n)))
+    :hints (("Goal"
+             :in-theory (enable all->=-len append)))))
+
+(local
+  (defthm all->=-len-forward-to-true-listp
+    (implies (all->=-len x n)
+             (true-listp x))
+    :rule-classes :forward-chaining
+    :hints (("Goal"
+             :in-theory (enable all->=-len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -416,6 +432,13 @@
    :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
 
 (local
+ (defthm true-listp-of-mv-nth-0-of-leading-entries-with-value
+   (implies (true-listp acc)
+            (true-listp (mv-nth 0 (leading-entries-with-value node-to-value-alist value acc))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable leading-entries-with-value)))))
+
+(local
  (defthm all-<-of-mv-nth-0-of-leading-entries-with-value
    (implies (and (all-< (strip-cars node-to-value-alist) bound)
                  (all-< acc bound)
@@ -504,11 +527,13 @@
                 (nat-listp (strip-cars node-to-value-alist))
                 (nat-list-listp probably-equal-node-sets)
                 (all-consp probably-equal-node-sets) ; no empty sets (in fact, there can't be singletons either)
+                (all->=-len probably-equal-node-sets 2)
                 (natp singleton-count)
                 (alistp probably-constant-node-alist)
                 (nat-listp (strip-cars probably-constant-node-alist)))
            (and (nat-list-listp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
                 (all-consp (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
+                (all->=-len (mv-nth 0 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)) 2)
                 (natp (mv-nth 1 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
                 (alistp (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist)))
                 (nat-listp (strip-cars (mv-nth 2 (initial-probable-facts-aux node-to-value-alist probably-equal-node-sets singleton-count probably-constant-node-alist))))
@@ -814,6 +839,15 @@
            (all-consp (mv-nth 0 (group-nodes-by-value node-to-value-alist acc singleton-count))))
   :hints (("Goal" :in-theory (enable group-nodes-by-value))))
 
+(defthm all->=-len-of-mv-nth-0-of-group-nodes-by-value
+  (implies (and ;(alistp node-to-value-alist)
+                ;(nat-listp (strip-cars node-to-value-alist))
+                (all->=-len acc 2)
+                ;(natp singleton-count)
+                )
+           (all->=-len (mv-nth 0 (group-nodes-by-value node-to-value-alist acc singleton-count)) 2))
+  :hints (("Goal" :in-theory (enable group-nodes-by-value))))
+
 (defthm all-all-<-of-mv-nth-0-of-group-nodes-by-value
   (implies (and (alistp node-to-value-alist)
                 (nat-listp (strip-cars node-to-value-alist))
@@ -889,6 +923,12 @@
   (implies (and (nat-list-listp acc)
                 (nat-list-listp probably-equal-node-sets))
            (nat-list-listp (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes acc)))
+  :hints (("Goal" :in-theory (enable REMOVE-SET-OF-UNUSED-NODES))))
+
+(defthm all-=>-len-of-remove-set-of-unused-nodes
+  (implies (and (all->=-len acc 2)
+                (all->=-len probably-equal-node-sets 2))
+           (all->=-len (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes acc) 2))
   :hints (("Goal" :in-theory (enable REMOVE-SET-OF-UNUSED-NODES))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
