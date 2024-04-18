@@ -66,7 +66,7 @@
 
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added.  The first numeric suffix is START, and subsequent ones are
-;; consecutve, with a total of COUNT symbols generated.
+;; consecutive, with a total of COUNT symbols generated.
 ;rename?
 (defund make-var-name-range (base-symbol start count)
   (declare (xargs :guard (and (symbolp base-symbol)
