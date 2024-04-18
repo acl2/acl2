@@ -1,7 +1,7 @@
 ; Utilities to make variable names
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -48,10 +48,9 @@
 
 (defthm len-of-make-var-names-aux
   (implies (and (natp startnum)
-                (integerp endnum)
-                (<= startnum (+ 1 endnum)))
+                (integerp endnum))
            (equal (len (make-var-names-aux base-symbol startnum endnum))
-                  (+ 1 (- endnum startnum))))
+                  (nfix (+ 1 (- endnum startnum)))))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
 (defthm consp-of-make-var-names-aux
@@ -113,6 +112,11 @@
 
 (defthm symbol-listp-of-make-var-names
   (symbol-listp (make-var-names base-symbol count))
+  :hints (("Goal" :in-theory (enable make-var-names))))
+
+;; because they are symbols
+(defthm pseudo-term-listp-of-make-var-names
+  (pseudo-term-listp (make-var-names base-symbol count))
   :hints (("Goal" :in-theory (enable make-var-names))))
 
 (defthm true-listp-of-make-var-names
