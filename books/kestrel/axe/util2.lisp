@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/make-var-names" :dir :system)
-(include-book "kestrel/lists-light/repeat" :dir :system) ;(local (include-book "kestrel/lists-light/repeat" :dir :system))
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -204,7 +204,7 @@
 
 (defun bit-blasted-symbolic-byte-list (base-name num-vars)
   ;; todo: omit the _, making names like in0_0 ?
-  (let* ((byte-var-names (make-var-names-aux (pack$ base-name '_) 0 (+ -1 num-vars)))
+  (let* ((byte-var-names (make-var-names (pack$ base-name '_) num-vars))
          ;; this is a list of bvcat terms:
          (bit-blasted-byte-var-names (bit-blast-byte-names byte-var-names)))
     (make-cons-nest bit-blasted-byte-var-names)))

@@ -88,6 +88,12 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable get-var-length-alist-for-tuple-elimination))))
 
+(defthm nat-listp-of-strip-cdrs-of-get-var-length-alist-for-tuple-elimination
+  (implies (nat-listp (strip-cdrs acc))
+           (nat-listp (strip-cdrs (get-var-length-alist-for-tuple-elimination nodenums-to-assume-false dag-array dag-len acc))))
+  :hints (("Goal" :in-theory (enable get-var-length-alist-for-tuple-elimination))))
+
+;rename
 (defthm acl2-number-of-lookup-equal-when-all-natp-of-strip-cdrs
   (implies (all-natp (strip-cdrs acc))
            (iff (acl2-numberp (lookup-equal var acc))
@@ -283,10 +289,14 @@
   (axe-tree-listp (make-var-names-aux base-symbol startnum endnum))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
+(defthm axe-tree-listp-of-make-var-names
+  (axe-tree-listp (make-var-names base-symbol count))
+  :hints (("Goal" :in-theory (enable make-var-names))))
+
 ;because the var names are symbols
-(defthm bounded-axe-tree-listp-of-make-var-names-aux
-  (bounded-axe-tree-listp (make-var-names-aux base-symbol startnum endnum) bound)
-  :hints (("Goal" :in-theory (enable bounded-axe-tree-listp make-var-names-aux))))
+(defthm bounded-axe-tree-listp-of-make-var-names
+  (bounded-axe-tree-listp (make-var-names base-symbol count) bound)
+  :hints (("Goal" :in-theory (enable make-var-names))))
 
 ;move
 (defthm subsetp-equal-of-intersection-equal
@@ -332,10 +342,13 @@
         (progn$ (cw "(Eliminating destructors for variable ~x0." var)
                 (and (eq :verbose print) (cw "literals: ~x0~%" literal-nodenums))
                 (and (eq :verbose print) (print-dag-array-node-and-supporters-lst literal-nodenums 'dag-array dag-array))
-                (let* ((len-of-var (lookup-eq var var-length-alist))
-                       (dag-vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len))
-                       (new-vars (make-var-names-aux (pack$ var '-) 0 (+ -1 len-of-var))) ;ffixme call a no-clash version?
-                       )
+                (b* ((len-of-var (lookup-eq var var-length-alist))
+                     ((when (not len-of-var))
+                      (er hard? 'eliminate-a-tuple "No length for var ~x0." var)
+                      (mv (erp-t) nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
+                     (dag-vars (vars-that-support-dag-nodes literal-nodenums 'dag-array dag-array dag-len))
+                     (new-vars (make-var-names (pack$ var '-) len-of-var)) ;ffixme call a no-clash version?
+                     )
                   (if (intersection-eq new-vars dag-vars)
                       (progn$ (cw "new vars: ~x0dag vars: ~x1.~%" new-vars dag-vars)
                               (er hard? 'eliminate-a-tuple "variable clash") ;fffixme handle this better

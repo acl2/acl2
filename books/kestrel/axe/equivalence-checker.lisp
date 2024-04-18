@@ -10859,7 +10859,7 @@
        (simplified-expanded-new-exit-test-expr (dag-to-term simplified-expanded-new-exit-test-expr-dag)) ;do the equivalence proof of this sooner? make a simplify-and-prove function?
        ;;new-formals is a slightly deceptive name, since it doesn't include the old vars
 ;fffffffixme check for name clashes
-       (new-update-fns ;(make-var-names-aux (pack$ new-fn '-update-) 0 (+ -1 (len new-formals)))  ;may not all be used?? ;also, no update fns for orig vars
+       (new-update-fns ;(make-var-names (pack$ new-fn '-update-) (len new-formals))  ;may not all be used?? ;also, no update fns for orig vars
         (packnew-list (pack$ new-fn '-update-) (ints-in-range  0 (+ -1 (len new-formals))) state))
        ;;Make the new update expressions (the shapes of need to change, and they need to be fixed up to refer to the new params):
        ;;fixme for any of these that is just trivial (returns a param or a constant), or doesn't have any shared nodes??, don't make and call the defun?
