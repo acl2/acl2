@@ -1,7 +1,7 @@
 ; DAGs represented in arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2361,7 +2361,7 @@
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (largest-non-quotep items)))
                 (darg-listp items))
            (bounded-darg-listp items (alen1 dag-array-name dag-array)))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp))))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp dargp))))
 
 (defthmd bounded-darg-listp-of-alen1-when-pseudo-dag-arrayp-forward
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (largest-non-quotep items)))

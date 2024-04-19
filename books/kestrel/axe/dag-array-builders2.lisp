@@ -1,7 +1,7 @@
 ; More general functions to create and extend dag-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -418,7 +418,7 @@
                 ;; (true-listp args)
                 (dag-parent-arrayp dag-parent-array-name dag-parent-array))
            (dargp (mv-nth 1 (add-function-call-expr-to-dag-array-with-name fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-name))))
+  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-name dargp-when-natp))))
 
 (defthm not-consp-of-mv-nth-1-of-add-function-call-expr-to-dag-array-with-name
   (implies (and (dag-constant-alistp dag-constant-alist)

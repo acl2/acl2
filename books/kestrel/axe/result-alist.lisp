@@ -230,7 +230,7 @@
                 (dargp darg)
                 (node-result-alistp alist))
            (lookup-darg-in-node-result-alist darg alist))
-  :hints (("Goal" :in-theory (enable lookup-darg-in-node-result-alist))))
+  :hints (("Goal" :in-theory (enable lookup-darg-in-node-result-alist dargp))))
 
 ;maybe disable?
 (defthm true-listp-of-lookup-darg-in-node-result-alist

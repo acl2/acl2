@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -29,7 +29,8 @@
                           not-cddr-of-nth-when-darg-listp
                           consp-of-cdr-of-nth-when-darg-listp
                           equal-of-quote-and-nth-0-of-nth-when-darg-listp
-                          symbolp-of-nth-0-when-dag-exprp)))
+                          symbolp-of-nth-0-when-dag-exprp
+                          dargp-of-nth-when-darg-listp)))
 
 (defund unquote-if-possible (x)
   (declare (xargs :guard t))

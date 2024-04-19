@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1156,9 +1156,9 @@
                 (darg-listp (strip-cdrs alist)))
            (myquotep (cdr (assoc-equal form alist))))
   :hints (("Goal" :use (:instance DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS (var form))
-           :in-theory (disable ;dargp-of-cdr-of-assoc-equal
-                               DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS
-                               dargp-when-equal-of-quote-and-car-cheap))))
+           :in-theory (e/d (dargp) ( ;dargp-of-cdr-of-assoc-equal
+                                    DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS
+                                    dargp-when-equal-of-quote-and-car-cheap)))))
 
 (defthm <=-of-largest-non-quotep-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items (+ 1 bound))

@@ -1,7 +1,7 @@
 ; Functions to create and extend dag-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -338,7 +338,7 @@
                                      (alen1 'dag-parent-array dag-parent-array)))
                   :split-types t
                   :guard-hints (("Goal" :do-not-induct t
-                                 :in-theory (enable <-of-+-of-minus1-arith-hack)))))
+                                 :in-theory (enable <-of-+-of-minus1-arith-hack dargp-when-natp)))))
   (if (all-consp args) ;; A function call all of whose children are quoteps is the "constant" case.  includes calls of 0-ary functions
       (let* ((expr (cons fn args)) ;todo: avoid this cons?
              (possible-index (lookup-equal expr dag-constant-alist))) ; todo: consider using a fast alist (but this case is rare)
@@ -422,7 +422,7 @@
                 ;; (true-listp args)
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array))
            (dargp (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
-  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
+  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array dargp-when-natp))))
 
 (defthm array1p-of-mv-nth-2-of-add-function-call-expr-to-dag-array
   (implies (and (array1p 'dag-array dag-array)

@@ -37,13 +37,15 @@
 
 ;; See also node-replacement-array3.lisp.
 
-(local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
-                   assoc-equal
-                   ;default-car
-                   ;;default-cdr
-                   myquotep
-                   natp
-                   )))
+(local (in-theory (e/d (consp-of-cdr-when-dargp
+                        not-cddr-when-dargp)
+                       ( ;symbolp-of-car-of-car-when-symbol-term-alistp
+                        assoc-equal
+                        ;;default-car
+                        ;;default-cdr
+                        myquotep
+                        natp
+                        ))))
 
 ;dup
 (defthmd bounded-natp-alistp-redef
