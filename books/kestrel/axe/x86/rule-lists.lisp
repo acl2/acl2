@@ -1685,7 +1685,7 @@
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::<-of-+-cancel-2-1
-            ash-negative-becomes-slice-axe
+            acl2::ash-negative-becomes-slice-axe ; move?
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
             x86isa::one-byte-opcode-execute-base
