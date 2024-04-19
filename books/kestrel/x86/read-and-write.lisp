@@ -3253,3 +3253,22 @@
 ;;                             memi
 ;;                            ; (:e expt) ; memory exhaustion
 ;;                             )))))
+
+;; where should this go?
+(local (include-book "kestrel/bv/bitops" :dir :system))
+(defthmd part-install-width-low-of-read-becomes-bvcat-of-read
+  (implies (and (natp n)
+                (natp low)
+                (natp width))
+           (equal (bitops::part-install-width-low val (read n addr x86) width low)
+                  (bvcat (- (* 8 n) (+ width low))
+                         (slice (+ -1 (* 8 n)) (+ low width) (read n addr x86))
+                         (+ width low)
+                         (bvcat width val low (read n addr x86)))))
+  :hints (("Goal" :use (:instance acl2::part-install-width-low-becomes-bvcat
+                                  (x (read n addr x86))
+                                  (xsize (* 8 n))
+                                  (acl2::low low)
+                                  (acl2::width width)
+                                  (acl2::val val))
+           :in-theory (disable acl2::part-install-width-low-becomes-bvcat))))
