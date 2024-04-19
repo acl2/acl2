@@ -1284,7 +1284,7 @@
          (read n base-addr (write n1 addr1 val1 (write n2 addr2 val2 x86))))
   :hints (("Goal" :in-theory (e/d (write-of-set-flag) (set-flag-of-write)))))
 
-(defthm read-of-write-of-write-write-of-of-set-flag
+(defthm read-of-write-of-write-of-write-of-set-flag
   (equal (read n base-addr (write n1 addr1 val1 (write n2 addr2 val2 (write n3 addr3 val3 (set-flag flag val x86)))))
          (read n base-addr (write n1 addr1 val1 (write n2 addr2 val2 (write n3 addr3 val3 x86)))))
   :hints (("Goal" :in-theory (e/d (write-of-set-flag) (set-flag-of-write)))))
@@ -2065,6 +2065,18 @@
                               bvuminus
                               bvplus
                               acl2::bvchop-of-sum-cases))))
+
+(defthm read-byte-of-write-both
+  (implies (and (<= n (expt 2 48))
+                (integerp n)
+                (integerp ad1)
+                (integerp ad2))
+           (equal (read-byte ad1 (write n ad2 val x86))
+                  (if (< (bvminus 48 ad1 ad2) n)
+                      (slice (+ 7 (* 8 (bvminus 48 ad1 ad2)))
+                             (* 8 (bvminus 48 ad1 ad2))
+                             val)
+                    (read-byte ad1 x86)))))
 
 (defthm read-of-write-byte-disjoint
   (implies (and (<= 1 (bvminus 48 addr1 addr2))
@@ -3253,3 +3265,49 @@
 ;;                             memi
 ;;                            ; (:e expt) ; memory exhaustion
 ;;                             )))))
+
+;; Here we drop the inner write, because it is irrelevant, even though we don't
+;; know anything about the outer write.
+(defthm read-of-write-of-write-byte-disjoint-inner
+  (implies (and (<= 1 (bvminus 48 addr1 addr2))
+                (<= n1 (bvminus 48 addr2 addr1))
+                (integerp addr2)
+                (integerp addr1)
+                (integerp outer-addr))
+           (equal (read n1 addr1 (write outer-n outer-addr outer-val (write-byte addr2 val x86)))
+                  (read n1 addr1 (write outer-n outer-addr outer-val x86))))
+  :hints (("Goal" :induct t :in-theory (enable write))))
+
+;; Here we drop the inner write, because it is irrelevant, even though we don't
+;; know anything about the outer write.
+(defthm read-of-write-of-write-disjoint-inner
+  (implies (and (<= n2 (bvminus 48 addr1 addr2))
+                (<= n1 (bvminus 48 addr2 addr1))
+                (<= outer-n (expt 2 48)) ; todo: if hude, the inner write is also irrel
+                (integerp outer-n)
+                ;(< n2 (expt 2 48))
+                ;(< n1 (expt 2 48))
+;        (natp n1)
+;       (natp n2)
+                (integerp addr2)
+                (integerp addr1)
+                (integerp outer-addr))
+           (equal (read n1 addr1 (write outer-n outer-addr outer-val (write n2 addr2 val x86)))
+                  (read n1 addr1 (write outer-n outer-addr outer-val x86))))
+  :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
+          ("Goal" :do-not '(generalize eliminate-destructors)
+;           :induct (write n2 addr2 val x86)
+           :induct t
+           :in-theory (e/d (read
+                            ;write
+                            ;bvplus
+                            bvuminus bvminus acl2::bvchop-of-sum-cases
+                            ;app-view
+                            ;read-byte
+                            )
+                           (acl2::bvminus-becomes-bvplus-of-bvuminus
+                             ACL2::BVCAT-OF-+-HIGH
+                             ;; for speed:
+                             X86ISA::MEMI
+                             acl2::BVCHOP-IDENTITY
+                             )))))

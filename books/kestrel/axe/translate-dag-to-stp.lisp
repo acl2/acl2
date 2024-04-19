@@ -2267,7 +2267,7 @@
               (progn$ (er hard? 'call-stp-on-file "!! ERROR: Unable to find STP (define an STP environment var or add its location to your path) !!")
                       (mv *error* state))
             ;; TODO: What is exit status 134?
-            (progn$ (er hard? 'call-stp-on-file "!! ERROR: STP experienced an unknown error (exit status ~x0, input: ~s1, output: ~s2) !!"
+            (progn$ (er hard? 'call-stp-on-file "!! ERROR: STP experienced an unknown error.  Exit status ~x0.  Input:~%~s1~%Output:~%~s2~% !!"
                         status input-filename output-filename)
                     (mv *error* state))))
       (let ((chars (read-file-into-character-list output-filename state)))

@@ -278,7 +278,7 @@
     ;; todo: uncomment:
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
-    ;;read-of-write-of-write-write-of-of-set-flag
+    ;;read-of-write-of-write-of-write-of-set-flag
 
     ;; todo: uncomment these but first organize rules:
     ;;write-of-write-same
