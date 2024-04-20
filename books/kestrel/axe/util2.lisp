@@ -152,20 +152,19 @@
   :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars-aux
                                      pseudo-term-listp-when-symbol-listp))))
 
-;is var-count really element-count?
-(defund bit-blasted-bv-array-write-nest-for-vars (var-name var-count element-size)
+(defund bit-blasted-bv-array-write-nest-for-vars (var-name len element-size)
   (declare (xargs :guard (and (symbolp var-name)
-                              (natp var-count)
+                              (natp len)
                               (integerp element-size)
                               (<= 2 element-size) ; or else we don't need a bvcat for each element
                               )))
-  (bit-blasted-bv-array-write-nest-for-vars-aux 0 var-count element-size var-name))
+  (bit-blasted-bv-array-write-nest-for-vars-aux 0 len element-size var-name))
 
 (defthm pseudo-termp-of-bit-blasted-bv-array-write-nest-for-vars
   (implies (and (symbolp var-name)
-                (natp var-count)
+                (natp len)
                 (posp element-size))
-           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars var-name var-count element-size)))
+           (pseudo-termp (bit-blasted-bv-array-write-nest-for-vars var-name len element-size)))
   :hints (("Goal" :in-theory (enable bit-blasted-bv-array-write-nest-for-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
