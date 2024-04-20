@@ -546,7 +546,7 @@
     (FLSZ-INTEGER IF
                   (NOT (IF (INTEGERP X)
                            (IF (NATP ACC)
-                               (IF (< ACC '536870911)
+                               (IF (< ACC '1152921504606846975)
                                    (PRINT-BASE-P PRINT-BASE)
                                    'NIL)
                                'NIL)

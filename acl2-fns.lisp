@@ -1646,6 +1646,12 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 ; Warning: Look at how this constant is used before increasing it.
 
+; This limit could certainly be increased for 64-bit Lisps, all the way to
+; most-positive-fixnum, provided uses of (unsigned-byte 29) in the definition
+; of update-sharp-reader-max-index are changed accordingly.  However, this
+; bound seems sufficient, and it is nice for it to be the same for all Lisp
+; implementations.
+
   (1- (expt 2 29)))
 
 (defvar *sharp-reader-max-index*

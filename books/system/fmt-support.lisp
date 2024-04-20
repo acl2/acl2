@@ -981,7 +981,7 @@
 ; Signed- and Unsigned-byte-p Rules
 
 ; Note that the :forward-chaining version of the rule below only applies to
-; bits = 30.
+; bits = #.*fixnum-bits*.
 
 (defthm unsigned-byte-p-implies-signed-byte-p
   (implies (and (natp bits)
@@ -993,7 +993,7 @@
    (:forward-chaining
     :corollary
     (implies (unsigned-byte-p #.*fixnat-bits* x)
-             (signed-byte-p 30 x)))))
+             (signed-byte-p #.*fixnum-bits* x)))))
 
 ; The tau system can prove
 ; (implies (and (integerp x)
@@ -1006,21 +1006,21 @@
 ; UNSIGNED-BYTE-P-FORWARD-TO-NONNEGATIVE-INTEGERP, that unsigned-byte-p implies
 ; natp.  So we just need:
 
-(defthm signed-byte-p-30-t
+(defthm signed-byte-p-#.*fixnum-bits*-t
   (implies (and (integerp x)
                 (<= (- (+ 1 (fixnum-bound))) x)
                 (<= x (fixnum-bound)))
-           (signed-byte-p 30 x)))
+           (signed-byte-p #.*fixnum-bits* x)))
 
 ; The built-in rule SIGNED-BYTE-P-FORWARD-TO-INTEGERP tells us
 ; the obvious.  But we need:
 (defthm signed-byte-p-lower-bound
-  (implies (signed-byte-p 30 x)
+  (implies (signed-byte-p #.*fixnum-bits* x)
            (<= (- (+ 1 (fixnum-bound))) x))
   :rule-classes :forward-chaining)
 
 (defthm signed-byte-p-upper-bound
-  (implies (signed-byte-p 30 x)
+  (implies (signed-byte-p #.*fixnum-bits* x)
            (<= x (fixnum-bound)))
   :rule-classes :forward-chaining)
 
@@ -1045,25 +1045,25 @@
 
 (defthm sums-of-smalls
   (and (implies (signed-byte-p *small-bits* x)
-                (signed-byte-p 30 x))
+                (signed-byte-p #.*fixnum-bits* x))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y))
-                (signed-byte-p 30 (+ x y)))
+                (signed-byte-p #.*fixnum-bits* (+ x y)))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y)
                      (signed-byte-p *small-bits* z))
-                (signed-byte-p 30 (+ x y z)))
+                (signed-byte-p #.*fixnum-bits* (+ x y z)))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y)
                      (signed-byte-p *small-bits* z)
                      (signed-byte-p *small-bits* u))
-                (signed-byte-p 30 (+ x y z u)))
+                (signed-byte-p #.*fixnum-bits* (+ x y z u)))
        (implies (and (signed-byte-p *small-bits* x)
                      (signed-byte-p *small-bits* y)
                      (signed-byte-p *small-bits* z)
                      (signed-byte-p *small-bits* u)
                      (signed-byte-p *small-bits* v))
-                (signed-byte-p 30 (+ x y z u v)))))
+                (signed-byte-p #.*fixnum-bits* (+ x y z u v)))))
 
 (defthm small-nat-implies-fixnum
   (implies (unsigned-byte-p *small-nat-bits* x)
@@ -1533,7 +1533,7 @@
 (defthm difference-of-smalls
   (implies (and (signed-byte-p *small-bits* x)
                 (signed-byte-p *small-bits* y))
-           (signed-byte-p 30 (+ x (- y))))
+           (signed-byte-p #.*fixnum-bits* (+ x (- y))))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 (defun make-use-lst (calls lemma-name lemma-vars)
@@ -2421,7 +2421,7 @@
          (assoc-equal sym (nth 2 state)))
   :hints (("Goal"
            :in-theory (enable fmt-tilde-s1)
-           :expand ((fmt-tilde-s1 s i (+ 1 i) 536870911 channel state)))))
+           :expand ((fmt-tilde-s1 s i (+ 1 i) (fixnum-bound) channel state)))))
 
 (defthm open-output-channel-fmt-tilde-s1
   (implies (open-output-channel-p1 channel :character state)
@@ -3821,8 +3821,8 @@
            :in-theory (defthm-flag-fmt0-theory)))
   )
 
-(defthm unsigned-byte-p-29-forward
-  (implies (unsigned-byte-p 29 x)
+(defthm unsigned-byte-p-*fixnat-bits*-forward
+  (implies (unsigned-byte-p *fixnat-bits* x)
            (and (natp x)
                 (<= x (fixnum-bound))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p)))
