@@ -85,7 +85,6 @@
 ;;
 
 ;; TODO: Add a tactic for the Axe prover
-;; TODO: Add a :sweep-and-merge tactic.
 ;; TODO: Add a bit-blasting tactic?
 (defun tacticp (tac)
   (declare (xargs :guard t))
@@ -732,7 +731,7 @@
                               )
                   :stobjs state))
   (b* ((dag (first problem))
-       ;; todo: have the caller check this?:
+       ;; Nothing can be done for a constant (TODO: Where should we check for a proof goal of T ?):
        ((when (quotep dag)) (mv *no-change* nil state))
        ((when (< 2147483646 (len (car problem)))) (er hard? 'apply-tactic-sweep-and-merge "DAG too big.") (mv *no-change* nil state))
        (assumptions (second problem))
