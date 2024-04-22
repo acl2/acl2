@@ -1,6 +1,6 @@
 ; A tool to call Axe-related scripts
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/include-book-dir-dollar" :dir :system)
-(include-book "centaur/misc/tshell" :dir :system)
+(include-book "centaur/misc/tshell" :dir :system) ; has ttags
 
 (local (in-theory (disable state-p get-global)))
 
