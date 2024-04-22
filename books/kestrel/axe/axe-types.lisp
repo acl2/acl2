@@ -60,6 +60,7 @@
   (natp type))
 
 ;may change
+;could require posp?
 (defund-inline make-bv-type (width)
   (declare (xargs :guard (natp width)))
   width)
