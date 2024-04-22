@@ -722,7 +722,7 @@
                                      ;;  rule-alist
                                      interpreted-function-alist
                                      ;; monitor
-                                     ; ;normalize-xors
+                                     ;; normalize-xors
                                      print state)
   (declare (xargs :guard (and (proof-problemp problem)
                               ;; (rule-alistp rule-alist)
@@ -733,7 +733,7 @@
   (b* ((dag (first problem))
        ;; Nothing can be done for a constant (TODO: Where should we check for a proof goal of T ?):
        ((when (quotep dag)) (mv *no-change* nil state))
-       ((when (< 2147483646 (len (car problem)))) (er hard? 'apply-tactic-sweep-and-merge "DAG too big.") (mv *no-change* nil state))
+       ((when (< 2147483646 (len dag))) (er hard? 'apply-tactic-sweep-and-merge "DAG too big.") (mv *no-change* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Applying sweeping and merging~%")))
        ;; Types for the vars in the dag come from the assumptions:
