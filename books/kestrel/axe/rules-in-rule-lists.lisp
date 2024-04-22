@@ -1,7 +1,7 @@
 ; Rules mentioned in rule-lists.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -42,6 +42,7 @@
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/bv/rules6" :dir :system)
+(include-book "kestrel/bv/leftrotate-rules" :dir :system)
 (include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
