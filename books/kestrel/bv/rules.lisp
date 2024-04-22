@@ -36,9 +36,6 @@
 (include-book "bvuminus")
 (include-book "kestrel/arithmetic-light/lg" :dir :system)
 (include-book "bv-syntax")
-(include-book "leftrotate")
-(include-book "leftrotate32")
-(include-book "rightrotate32")
 ;;(include-book "sbvrem")
 (include-book "bvdiv")
 ;;(include-book "sbvdiv")
@@ -4318,19 +4315,6 @@
   :hints (("Goal" :use slice-too-high-is-0-new
            :in-theory (enable bvlt unsigned-byte-p))))
 
-(defthm leftrotate-of-bvxor
-  (equal (leftrotate size amt (bvxor size x y))
-         (bvxor size (leftrotate size amt x)
-                (leftrotate size amt y)))
-  :hints (("Goal" :cases ((natp size))
-           :in-theory (enable leftrotate natp))))
-
-(defthm leftrotate32-of-bvxor-32
-  (equal (leftrotate32 amt (bvxor 32 x y))
-         (bvxor 32 (leftrotate32 amt x)
-                (leftrotate32 amt y)))
-  :hints (("Goal" :in-theory (enable leftrotate32))))
-
 ;do we still need this?
 (defthm bvmod-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
@@ -6229,49 +6213,6 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases)
                                   (;
                                    )))))
-
-;; do we need these?
-(defthm bitand-of-leftrotate-arg1-trim
-  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
-                         (quotep width)))
-           (equal (bitand (leftrotate width amt x) y)
-                  (bitand (trim 1 (leftrotate width amt x)) y)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm bitand-of-leftrotate-arg2-trim
-  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
-                         (quotep width)))
-           (equal (bitand x (leftrotate width amt y))
-                  (bitand x (trim 1 (leftrotate width amt y)))))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm bitor-of-leftrotate-arg1-trim
-  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
-                         (quotep width)))
-           (equal (bitor (leftrotate width amt x) y)
-                  (bitor (trim 1 (leftrotate width amt x)) y)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm bitor-of-leftrotate-arg2-trim
-  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
-                         (quotep width)))
-           (equal (bitor x (leftrotate width amt y))
-                  (bitor x (trim 1 (leftrotate width amt y)))))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm bitxor-of-leftrotate-arg1-trim
-  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
-                         (quotep width)))
-           (equal (bitxor (leftrotate width amt x) y)
-                  (bitxor (trim 1 (leftrotate width amt x)) y)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-(defthm bitxor-of-leftrotate-arg2-trim
-  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
-                         (quotep width)))
-           (equal (bitxor x (leftrotate width amt y))
-                  (bitxor x (trim 1 (leftrotate width amt y)))))
-  :hints (("Goal" :in-theory (enable trim))))
 
 ;move
 ;; This idiom can arise from the JVM LCMP instruction
