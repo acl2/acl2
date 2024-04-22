@@ -192,15 +192,15 @@
 ;; TODO: Consider adding support for constant arrays
 ;; TODO: Exclude FN from being 'QUOTE?  todo: but require it to be a symbol?
 ;; TODO: Are there other functions like this to deprecate?
-(defund maybe-get-type-of-function-call (fn args)
-  (declare (xargs :guard (darg-listp args)))
-  (or (maybe-get-type-of-bv-function-call fn args)
+(defund maybe-get-type-of-function-call (fn dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  (or (maybe-get-type-of-bv-function-call fn dargs)
       (cond
        ;; Functions that return bv-arrays:
        ((or (eq fn 'bv-array-write) ; (bv-array-write element-size len index val data)
             (eq fn 'bv-array-if)) ; (bv-array-if element-size len test array1 array2)
-        (let ((element-size (unquote-if-possible (first args)))
-              (len (unquote-if-possible (second args))))
+        (let ((element-size (unquote-if-possible (first dargs)))
+              (len (unquote-if-possible (second dargs))))
           (if (and (natp element-size)
                    (natp len))
               (make-bv-array-type element-size len) ;fixme what if the width is 0?
@@ -215,28 +215,28 @@
 
 ;; If it's non-nil, it's an Axe type.
 (defthm axe-typep-of-maybe-get-type-of-function-call
-  (implies (maybe-get-type-of-function-call fn args)
-           (axe-typep (maybe-get-type-of-function-call fn args)))
+  (implies (maybe-get-type-of-function-call fn dargs)
+           (axe-typep (maybe-get-type-of-function-call fn dargs)))
   :hints (("Goal" :in-theory (enable maybe-get-type-of-function-call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;get rid of this?
-(defund get-type-of-function-call-checked (fn args)
-  (declare (xargs :guard (darg-listp args)))
-  (or (maybe-get-type-of-function-call fn args)
-      (er hard? 'get-type-of-function-call-checked "couldn't find type for call of ~x0 on args ~x1" fn args)))
+(defund get-type-of-function-call-checked (fn dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  (or (maybe-get-type-of-function-call fn dargs)
+      (er hard? 'get-type-of-function-call-checked "couldn't find type for call of ~x0 on args ~x1" fn dargs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an axe-type, possibly (most-general-type).
-(defund get-type-of-function-call-safe (fn args)
-  (declare (xargs :guard (darg-listp args)))
-  (or (maybe-get-type-of-function-call fn args)
+(defund get-type-of-function-call-safe (fn dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  (or (maybe-get-type-of-function-call fn dargs)
       (most-general-type)))
 
 (defthm axe-typep-of-get-type-of-function-call-safe
-  (axe-typep (get-type-of-function-call-safe fn args))
+  (axe-typep (get-type-of-function-call-safe fn dargs))
   :hints (("Goal" :in-theory (enable get-type-of-function-call-safe))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
