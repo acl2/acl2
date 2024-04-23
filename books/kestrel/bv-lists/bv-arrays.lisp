@@ -146,12 +146,10 @@
   :hints (("Goal" :in-theory (enable bv-array-read bv-array-write BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
 (defthm bv-array-read-of-bvchop-list
-  (implies (and (equal (len data) len)
-                (< 0 len)
-                (natp esize))
-           (equal (bv-array-read esize len index (bvchop-list esize data))
-                  (bv-array-read esize len index data)))
-  :hints (("Goal" :in-theory (enable bv-array-read bvchop-when-i-is-not-an-integer))))
+  (equal (bv-array-read elemement-width len index (bvchop-list elemement-width array))
+         (bv-array-read elemement-width len index array))
+  :hints (("Goal" :cases ((posp len))
+           :in-theory (enable bv-array-read))))
 
 ;bozo combine these?
 ;drop some hyps?

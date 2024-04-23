@@ -206,10 +206,7 @@
 (defthm bvchop-of-bv-array-read-same
   (equal (bvchop element-size (bv-array-read element-size len index data))
          (bv-array-read element-size len index data))
-  :hints (("Goal"
-;           :cases ((natp n))
-           :in-theory (e/d (bv-array-read natp)
-                           ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read natp))))
 
 ;gross because it mixes theories?
 ;fixme could make an append operator with length params for two arrays..
