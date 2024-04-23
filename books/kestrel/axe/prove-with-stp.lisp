@@ -931,10 +931,7 @@
 ;this now will apply to all choppable mentions of x.  non-choppable mentions of x as an argument to foo (like equal) should be handled by cutting out the call to foo
 ;if x appears nowhere else, we can transform a proof about all x to a proof about x's that are bit-vectors of length 32 (then imagine instantiating that proof with (bvchop 32 x), where the bvchop goes away inside the bvplus).  if x appears several places, we take the longest bv that it could be..
 
-;what if nodenum doesn't appear in parent-expr - not possible?
-
 ;fixme this was missing handling of the test position of bvif - check that everything translatable is handled correctly here?
-;fixme what about bool ops?
 ;; TODO: Consider having this return an indication of a type error (e.g., node used both as an array and a BV).
 ;; TODO: If we are going to cut away the parent, we might want to disregard any types it induces on its children.
 ;; TODO: Throw a hard error if NODENUM is not one of the args of PARENT-EXPR?
@@ -1136,6 +1133,8 @@
            (axe-typep (get-induced-type nodenum parent-expr)))
   :hints (("Goal" :in-theory (enable get-induced-type darg-quoted-posp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;union together all the choppable types that come from the parents
 ;if some parent doesn't induce a type, that parent is ignored (ffixme is that sound? presumably parents that don't induce a type won't be translated?  what about equal? unsigned-byte-p, etc.?)
 (defund most-general-induced-type-aux (parent-nodenums nodenum dag-array dag-len type-acc)
@@ -1155,6 +1154,10 @@
                           (not (eq 'quote (car parent-expr))))))
           (er hard? 'most-general-induced-type-aux "Bad parent expr: ~x0." parent-expr))
          (type-from-this-parent (get-induced-type nodenum parent-expr))
+         ;; FFIXME: Consider what to do in this case:
+         ;; ((when (not type-from-this-parent))
+         ;;  (print-dag-array-node-and-supporters 'dag-array dag-array parent-nodenum)
+         ;;  (er hard? 'most-general-induced-type-aux "No type for node ~x0 via parent ~x1 (see dag above)." nodenum parent-nodenum))
          (new-type-acc (if type-from-this-parent
                            (union-types type-from-this-parent type-acc)
                          type-acc)))
@@ -1236,6 +1239,7 @@
 ;   i saw a problem with bvif where one arg was :irrelevant
 ;; TODO: Can we assume that the arity of the call (fn applied to args) is correct?
 ;fffixme think this through! check the types of the operands (for whether they can be translated and are compatible?)?! maybe just check constants?
+;; Note that this does not handle EQUAL, as it is treated separately.
 (defund can-always-translate-expr-to-stp (fn args dag-array-name dag-array dag-len known-nodenum-type-alist print)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
@@ -2062,7 +2066,7 @@
             (let ((fn (ffn-symb expr)))
               (if (eq 'quote fn)
                   ;; a quoted constant; we always translate (could cutting out a constant ever be good?  maybe a constant array?)
-                  ;; TODO: DO we know that the constant is of the right type?
+                  ;; TODO: Do we know that the constant is of the right type?
                   (process-nodenums-for-translation (rest worklist) depth-limit depth-array
                                                     (aset1 'handled-node-array handled-node-array nodenum t)
                                                     dag-array dag-len dag-parent-array known-nodenum-type-alist
@@ -2089,7 +2093,7 @@
                     (cond ((not type)
                            (b* (((mv erp type-for-cut-nodenum) (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
                                 ((when erp) (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
-                             ;;we don'at know the type, so we can't translate (fixme make sure we know the type of everything we can translate).  just like a variable, we must cut:
+                             ;;we don't know the type, so we can't translate (fixme make sure we know the type of everything we can translate).  just like a variable, we must cut:
                              (process-nodenums-for-translation (rest worklist) depth-limit depth-array
                                                                (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                nodenums-to-translate
