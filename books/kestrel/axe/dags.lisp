@@ -1045,11 +1045,23 @@
   (and (consp darg)
        (natp (unquote darg))))
 
+(defthm darg-quoted-natp-forward-to-consp
+  (implies (darg-quoted-natp darg)
+           (consp darg))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-quoted-natp))))
+
 ;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a posp.
 (defun darg-quoted-posp (darg)
   (declare (xargs :guard (dargp darg)))
   (and (consp darg)
        (posp (unquote darg))))
+
+(defthm darg-quoted-posp-forward-to-consp
+  (implies (darg-quoted-posp darg)
+           (consp darg))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-quoted-posp))))
 
 (defthm not-<-of-+-1-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items dag-len)
