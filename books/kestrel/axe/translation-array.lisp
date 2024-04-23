@@ -21,6 +21,9 @@
 
 (local (in-theory (enable true-listp-when-dargp)))
 
+;; TODO: Can we define this with def-typed-acl2-array ?
+;(def-typed-acl2-array translation-arrayp (or (null val) (dargp val)))
+
 ;; A translation-array maps each node, up to a given node, to a nodenum,
 ;; myquotep, or nil (meaning no translation applies for that node).  See also
 ;; renaming-array.lisp, which disallows nodes being mapped to nil.  The

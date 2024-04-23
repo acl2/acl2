@@ -192,7 +192,6 @@
              (and (sweep-info-tag-and-valuep tag val)
                   (sweep-infop (rest info))))))))
 
-;(def-typed-acl2-array2 sweep-arrayp sweep-infop) ; todo: this should work
 (def-typed-acl2-array2 sweep-arrayp (sweep-infop val)) ; todo: reduce output
 
 (local

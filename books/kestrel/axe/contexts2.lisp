@@ -61,7 +61,8 @@
                               (equal (alen1 'dag-parent-array-for-context dag-parent-array)
                                      (alen1 dag-array-name dag-array))
                               (bounded-dag-parent-entriesp top-nodenum 'dag-parent-array-for-context dag-parent-array (+ 1 top-nodenum))
-                              (context-arrayp 'context-array context-array dag-len))
+                              (context-arrayp 'context-array context-array dag-len) ; needed for set-context-of-nodenum but not true if we use :default
+                              )
                   :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp <-of-+-of-1-strengthen-2)))))
   (if (not (natp count))
       (prog2$ (er hard? 'make-context-array-for-ancestors "Limit reached.")
@@ -99,7 +100,7 @@
                               (natp nodenum)
                               ;(< nodenum dag-len)
                               )
-                  :verify-guards nil ;perhaps not true, due to the use of default
+                  :verify-guards nil ;perhaps not true, due to the use of :default
                   ))
   (let* ((dag-parent-array (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array 'dag-parent-array-for-context)) ;ffixme only compute parents for nodes above nodenum?
          (context-array (make-empty-array-with-default 'context-array dag-len :default)) ;todo: using :default here makes it not a valid context-array!

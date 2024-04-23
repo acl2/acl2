@@ -465,14 +465,15 @@
 ;; ARG must be a nodenum or 't or 'nil.
 (defund translate-boolean-arg (arg)
   (declare (xargs :guard (and (dargp arg)
-                              (boolean-arg-okp arg))))
+                              (boolean-arg-okp arg) ; todo: this excludes the ER call below -- drop one?
+                              )))
   (if (consp arg) ;checks for quotep
       (if (equal arg *nil*)
           "FALSE"
         (if (equal arg *t*)
             "TRUE"
           ;;i suppose any constant other than nil could be translated as t (but print a warning?!):
-          (er hard? 'translate-boolean-arg "unrecognized boolean constant: ~x0.~%" arg)))
+          (er hard? 'translate-boolean-arg "Bad constant (should be boolean): ~x0.~%" arg)))
     ;;arg is a node number:
     (make-node-var arg)))
 

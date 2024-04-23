@@ -12,6 +12,9 @@
 
 (in-package "ACL2")
 
+;; This is only used in prover.lisp
+;; See also result-array-stobj.lisp
+
 (include-book "dargp-less-than")
 (include-book "darg-listp")
 (include-book "bounded-dag-exprs")

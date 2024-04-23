@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "axe-clause-utilities") ; for handle-constant-disjuncts
+(include-book "axe-clause-utilities") ; for handle-constant-disjuncts and expressions-for-this-case
 (include-book "translate-dag-to-stp") ; has ttags
 ;(include-book "conjunctions-and-disjunctions") ; for get-axe-disjunction-from-dag-items
 (include-book "make-term-into-dag-array-basic") ;for make-terms-into-dag-array-basic
