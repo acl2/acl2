@@ -342,17 +342,17 @@
 |#
 
 
-(defun symbol-unsigned-29bits-alistp (v)
+(defun symbol-unsigned-60bits-alistp (v)
   (declare (xargs :guard T))
   (if (atom v)
       (null v)
     (and (consp (car v))
          (symbolp (caar v))
-         (unsigned-29bits-p (cdar v))
-         (symbol-unsigned-29bits-alistp (cdr v)))))
+         (unsigned-60bits-p (cdar v))
+         (symbol-unsigned-60bits-alistp (cdr v)))))
 
-(defthm symbol-unsigned-29bits-alistp-forwards-to-symbol-alistp
-  (implies (symbol-unsigned-29bits-alistp x)
+(defthm symbol-unsigned-60bits-alistp-forwards-to-symbol-alistp
+  (implies (symbol-unsigned-60bits-alistp x)
            (symbol-alistp x))
   :rule-classes :forward-chaining)
 
@@ -376,8 +376,8 @@ Alternative algo: Traverse the enumeration tree in BFS order.  Hvent
 thought about how to implement it.
 ||#
 
-;;; (symbol-unsigned-29bits-alistp) -> symbol-unsigned-29bits-alistp)
-;; update 29th April '12
+;;; (symbol-unsigned-60bits-alistp) -> symbol-unsigned-60bits-alistp)
+;; update 60th April '12
 ;; let cut the optimization to get guards to verify
 (defun |next BE args| (BE.)
   "naive bounded exhaustive enumeration."
@@ -385,9 +385,9 @@ thought about how to implement it.
                               (consp BE.)
                               (symbol-alistp BE.))))
                           
-  (b* (((cons v ;; (the (unsigned-byte 29)
+  (b* (((cons v ;; (the (unsigned-byte 60)
                   m) (car BE.))
-       (;; (the (unsigned-byte 29) 
+       (;; (the (unsigned-byte 60) 
         m~ (;; acl2::|1+F|
             1+  (nfix m))))
    (append (cdr BE.) (list (cons v m~)))))
