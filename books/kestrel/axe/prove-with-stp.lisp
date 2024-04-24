@@ -948,6 +948,7 @@
                     )
                (make-bv-type (unquote (first dargs)))
              nil))
+          ;; todo: add bvequal (once we can translate it):
           ((member-eq fn '(bvplus bvminus bvmult bvand bvor bvxor bvdiv bvmod sbvdiv sbvrem bvlt bvle sbvlt sbvle)) ; (<fn> <size> <arg1> <arg2>)
            (if (and (eql 3 (len dargs))
                     (darg-quoted-posp (first dargs)) ; posp may be needed for sbvlt/sbvle
@@ -1315,13 +1316,15 @@
                 (<= (unquote (second args))
                     (unquote (first args)))))
     ((bvif) (can-translate-bvif-args args))
+    ;; todo: add bvequal, once we can translate it
+    ;; todo: check more (arity, etc.):
     ((bvplus bvuminus bvminus bvmult
              bvand bvor bvxor bvnot
              bvchop ;$inline
-             bvlt sbvlt sbvle
+             bvlt bvle
+             sbvlt sbvle
              bvdiv bvmod
-             sbvdiv sbvrem
-             )
+             sbvdiv sbvrem)
      (and (consp args)                   ;improve?
           (darg-quoted-posp (first args)) ;used to allow 0 ;fixme print a warning in that case?
           ))

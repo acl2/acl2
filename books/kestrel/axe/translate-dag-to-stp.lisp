@@ -207,7 +207,7 @@
             nil                                     ;error?
             )))
        ;; Functions that return booleans:
-       ((member-eq fn *known-predicates-basic* ;;'(equal boolif booland boolor sbvlt bvlt bvle not unsigned-byte-p) ;TODO: Use the known-boolean stuff, in case we want to stub out a user-defined boolean function?
+       ((member-eq fn *known-predicates-basic* ; TODO: Use the known-boolean stuff, in case we want to stub out a user-defined boolean function?
                    )
         (boolean-type)) ; TTODO: make sure these are handled right downstream
        (t nil ; could redo things to return most-general-type here
@@ -312,7 +312,7 @@
                 (get-type-of-val-checked (unquote expr))
               ;; it's a function call:
               (or (maybe-get-type-of-function-call fn (dargs expr))
-                  (er hard? 'get-type-of-nodenum-checked "couldn't find size for expr ~x0 at nodenum ~x1" expr nodenum))))))))
+                  (er hard? 'get-type-of-nodenum-checked "couldn't find type for expr ~x0 at nodenum ~x1" expr nodenum))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
