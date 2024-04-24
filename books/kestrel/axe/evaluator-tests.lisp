@@ -1300,7 +1300,7 @@
       (AND
        (OR (QUOTEP DAG)
            (AND (PSEUDO-DAGP DAG)
-                (< (LEN DAG) 2147483646)))
+                (< (LEN DAG) *max-1d-array-length*)))
        (SYMBOL-ALISTP ALIST)
        (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
        (NATP ARRAY-DEPTH))))

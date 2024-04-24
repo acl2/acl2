@@ -368,7 +368,7 @@ constants and functions; it also proves some associated lemmas.</p>")
                               (true-listp x)
                               x
                               (< (length x)
-                                 acl2::*maximum-positive-32-bit-integer*))))
+                                 (acl2::array-maximum-length-bound)))))
   (let ((alist (list-to-alist x 0 nil))
         (len (length x)))
     (compress1 name

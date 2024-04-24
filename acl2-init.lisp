@@ -256,6 +256,55 @@ implementations.")
 
 (load "acl2.lisp")
 
+; Now that acl2-fns.lisp has been loaded (by loading acl2.lisp) so that
+; getenv$-raw has been defined, we can evaluate the code that may set feature
+; :acl2-small-fixnums.
+(let* ((smallp (acl2::getenv$-raw "ACL2_SMALL_FIXNUMS"))
+       (smallp (and smallp
+                    (not (equal smallp "")))))
+  (cond
+   ((and (>= most-positive-fixnum (1- (expt 2 60)))
+         (<= most-negative-fixnum (- (expt 2 60)))
+         (not smallp))
+
+; ACL2 will assume that every fixnum is of type (signed-byte 61),
+; hence also of type (unsigned-byte 60) if it is non-negative.
+
+    nil)
+   ((and (>= most-positive-fixnum (1- (expt 2 29)))
+         (<= most-negative-fixnum (- (expt 2 29))))
+    (cond (smallp
+
+; ACL2 will assume that every fixnum is of type (signed-byte 30),
+; hence also of type (unsigned-byte 29) if it is non-negative.
+
+           (pushnew :acl2-small-fixnums *features*))
+          (t 
+           (error "ACL2 generally assumes that all integers that are
+at least -2^60 but less than 2^60 are Lisp fixnums,
+but that is not the case for this Lisp implementation.
+You can defeat this check by setting environment variable
+ACL2_SMALL_FIXNUMS to a non-empty value when building the
+ACL2 executable.  However, such ACL2 builds are not as
+fully tested as the usual builds and thus may be less
+reliable, and they are not guaranteed to work compatibly
+with ordinary ACL2 builds on the same set of books."))))
+   (t
+
+; The absolute value of most-positive-fixnum or of most-negative-fixnum is too
+; sall for ACL2.
+
+    (error "This Lisp implementation is not a suitable host for ACL2:
+the values of most-negative-fixnum and most-positive-fixnum are
+~s and ~s (respectively),
+but ACL2 assumes that this these have absolute values that are
+respectively at least (1- (expt 2 29)) and (expt 2 29), which are
+~s and ~s, respectively."
+           most-positive-fixnum
+           most-negative-fixnum
+           (1- (expt 2 29))
+           (expt 2 29)))))
+
 (acl2::proclaim-optimize)
 
 ; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to

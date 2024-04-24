@@ -327,7 +327,7 @@
                               (true-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= (alen1 dag-array-name dag-array)
-                                  2147483646)
+                                  *max-1d-array-length*)
                               (all-< nodenums dag-len)
                               (consp nodenums) ;since we call maxelem
                               (symbolp size-array-name-to-use))))
@@ -372,7 +372,7 @@
                               (true-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= (alen1 dag-array-name dag-array)
-                                  2147483646)
+                                  *max-1d-array-length*)
                               (all-< nodenums dag-len)
                               (consp nodenums) ;since we call maxelem
                               (symbolp size-array-name-to-use))))
@@ -384,7 +384,7 @@
 ;;                               (true-listp nodenums)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                               (<= (alen1 dag-array-name dag-array)
-;;                                   2147483646)
+;;                                   *max-1d-array-length*)
 ;;                               (all-< nodenums dag-len)
 ;;                               (consp nodenums) ;since we call maxelem
 ;;                               (symbolp size-array-name-to-use))))
@@ -428,7 +428,7 @@
 (defund size-of-node (nodenum dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (array1p dag-array-name dag-array)
                               (<= (alen1 dag-array-name dag-array)
-                                  2147483646)
+                                  *max-1d-array-length*)
                               (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len))

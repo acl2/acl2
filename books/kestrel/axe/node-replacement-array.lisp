@@ -158,19 +158,20 @@
 
 (defthm <-of-max-key-bound
   (implies (and
-            (< (max-key alist val2) 2147483646)
-            (< val 2147483646)
-            (< val2 2147483646)
+            (< (max-key alist val2) max-so-far)
+            (< val max-so-far)
+            (< val2 max-so-far)
             )
            (< (max-key alist val)
-              2147483646))
+              max-so-far))
   :hints (("Goal" :in-theory (enable max-key))))
 
 (defthm <-of-max-key-when-all-<-of-STRIP-CARS
-  (implies (and (ALL-< (STRIP-CARS alist) '2147483646)
+  (implies (and (ALL-< (STRIP-CARS alist) bound)
                 (all-natp (STRIP-CARS alist)) ;drop?
+                (posp bound)
                 )
-           (< (MAX-KEY alist '0) '2147483646))
+           (< (MAX-KEY alist '0) bound))
   :hints (("Goal" :in-theory (e/d (MAX-KEY max-when-<=-1) (max)))))
 
 ;;;
@@ -271,7 +272,7 @@
 (defthm bounded-node-replacement-arrayp-aux-of-make-into-array
   (implies (and (node-replacement-alistp alist bound)
                 (natp index)
-                (< (max-key alist 0) 2147483646) ;or say bounded-natp-alistp
+                (< (max-key alist 0) *max-1d-array-length*) ;or say bounded-natp-alistp
                 (<= index (max-key alist 0))
                 (symbolp array-name))
            (bounded-node-replacement-arrayp-aux array-name (make-into-array array-name alist) index bound))
@@ -289,7 +290,7 @@
 (defthm bounded-node-replacement-arrayp-of-make-into-array
   (implies (and (node-replacement-alistp node-replacement-alist bound)
                 (natp bound)
-                (<= bound 2147483646)
+                (<= bound *max-1d-array-length*)
                 ;(equal (alen1 ..) (+ 1 (max-key node-replacement-alist 0)))
                 )
            (bounded-node-replacement-arrayp 'node-replacement-array
@@ -553,7 +554,7 @@
 ;; Returns (mv node-replacement-array node-replacement-count).
 (defund add-node-replacement-entry-and-maybe-expand (nodenum replacement node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (natp nodenum)
-                              (< nodenum 2147483646)
+                              (< nodenum *max-1d-array-length*)
                               (node-replacement-valp replacement)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                               (natp node-replacement-count)
@@ -569,7 +570,7 @@
 (defthm node-replacement-arrayp-aux-when-node-replacement-arrayp-aux-of-len-minus-1
   (implies (and (array1p name array)
                 (node-replacement-arrayp-aux name array (+ -1 (alen1 name array)))
-                ;; (<= index 2147483645)
+                ;; (<= index *max-1d-array-index*)
                 (natp index)
                 (equal nil (default name array)))
            (node-replacement-arrayp-aux name array index))
@@ -578,7 +579,7 @@
 ;todo: have the tool generate a theorem about maybe-exapand-array and don't enable that here
 (defthm node-replacement-arrayp-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 (node-replacement-valp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -593,7 +594,7 @@
 
 (defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 (bounded-node-replacement-valp replacement bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array array bound)
                 ;;(natp node-replacement-count)
@@ -618,7 +619,7 @@
 ;; The array doesn't get shorter.
 (defthm bound-on-alen1-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -636,7 +637,7 @@
   (implies (and (<= x (alen1 'node-replacement-array array))
                 (integerp x)
                 (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -648,7 +649,7 @@
 
 (defthm bound-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 (natp node-replacement-count)
@@ -666,7 +667,7 @@
 (defthm bound-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand-gen
   (implies (and (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))
                 (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 (natp node-replacement-count)
@@ -682,7 +683,7 @@
 ;; The node-replacement-count does not decrease
 (defthm bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -698,7 +699,7 @@
 (defthm bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand-gen
   (implies (and (<= x node-replacement-count)
                 (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)

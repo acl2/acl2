@@ -56,7 +56,7 @@
                                                  info ;;just passed through
                                                  )
   (declare (type symbol var)
-           (type (integer 0 2147483646) dag-len)
+           (type (integer 0 1152921504606846974) dag-len)
            (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (true-listp trees-equal-to-tree)
                               (trees-to-memoizep trees-equal-to-tree)
@@ -81,7 +81,7 @@
             dag-variable-alist
             memoization
             info)
-      (if (= dag-len 2147483646) ;error case
+      (if (= dag-len *max-1d-array-length*) ;error case
           (mv :dag-too-large     ;error
               dag-len            ;; meaningless but might help with proofs
               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info)
@@ -107,14 +107,14 @@
 
 (defthm array1p-of-mv-nth-2-of-add-variable-to-dag-array-with-memo
   (implies (and (array1p 'dag-array dag-array)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (natp dag-len))
            (array1p 'dag-array (mv-nth 2 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-variable-to-dag-array-with-memo
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (natp dag-len)
                 (symbolp var))
            (pseudo-dag-arrayp 'dag-array (mv-nth 2 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
@@ -149,11 +149,11 @@
            :in-theory (disable bound-on-mv-nth-3-of-add-variable-to-dag-array-with-memo-3))))
 
 (defthm <=-of-mv-nth-3-of-add-variable-to-dag-array-with-memo
-  (implies (and (<= dag-len 2147483646)
+  (implies (and (<= dag-len *max-1d-array-length*)
                 (integerp dag-len)
                 (not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
            (<= (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
-               2147483646))
+               *max-1d-array-length*))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
@@ -185,13 +185,13 @@
 (defthm dag-parent-arrayp-of-mv-nth-4-of-add-variable-to-dag-array-with-memo
   (implies (and (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (natp dag-len)
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (dag-parent-arrayp 'dag-parent-array (mv-nth 4 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array-with-memo))))
 
 (defthm alen1-of-mv-nth-4-of-add-variable-to-dag-array-with-memo
   (implies (and (array1p 'dag-array dag-array)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (natp dag-len)
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array)))
@@ -235,7 +235,7 @@
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (array1p 'dag-array dag-array)
                 (natp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array)))
@@ -273,7 +273,7 @@
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array))
                 ;(not (mv-nth 0 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info)))
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (bounded-dag-parent-arrayp 'dag-parent-array
                                (mv-nth 4 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))
                                (mv-nth 3 (add-variable-to-dag-array-with-memo var dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist trees-equal-to-tree memoization info))))
@@ -399,7 +399,7 @@
                                                           print-interval print ;can we avoid passing in both?
                                                           trees-equal-to-tree
                                                           memoization)
-  (declare (type (integer 0 2147483646) dag-len)
+  (declare (type (integer 0 1152921504606846974) dag-len)
            (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbolp fn)
                               (not (equal 'quote fn))
@@ -417,7 +417,7 @@
             ;; if it's already present... ;update the memoization?!
             (mv (erp-nil) possible-index dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization)
           ;; otherwise, we add it...
-          (if (= dag-len 2147483646) ;error case
+          (if (= dag-len *max-1d-array-length*) ;error case
               (mv :dag-too-large     ;error
                   dag-len            ;; meaningless but might help with proofs
                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization)
@@ -445,7 +445,7 @@
                                             memoization)
                 memoization))
         ;; Since the node isn't already present, add it at the top
-        (if (= dag-len 2147483646) ;error case
+        (if (= dag-len *max-1d-array-length*) ;error case
             (mv :dag-too-large     ;error
                 dag-len            ;; meaningless but might help with proofs
                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization)
@@ -510,7 +510,7 @@
 (defthm array1p-of-mv-nth-2-of-add-function-call-expr-to-dag-array-with-memo
   (implies (and (array1p 'dag-array dag-array)
                 (natp dag-len)
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (array1p 'dag-array (mv-nth 2 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
 
@@ -520,13 +520,13 @@
                 (symbolp fn)
                 (not (equal 'quote fn))
                 (integerp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
 ;                (not (mv-nth 0 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))
                 )
            (pseudo-dag-arrayp 'dag-array
                               (mv-nth 2 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
                               (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))
-  :hints (("Goal" :cases ((< dag-len 2147483646))
+  :hints (("Goal" :cases ((< dag-len *max-1d-array-length*))
            :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
 
 (defthm natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-with-memo
@@ -537,9 +537,9 @@
 
 (defthm bound-on-mv-nth-3-of-add-function-call-expr-to-dag-array-with-memo
   (implies (and (natp dag-len)
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (<= (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
-               2147483646))
+               *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
 
 (defthm bound-on-mv-nth-3-of-add-function-call-expr-to-dag-array-with-memo-2
@@ -550,11 +550,11 @@
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
 
 (defthm <=-of-mv-nth-3-of-add-function-call-expr-to-dag-array-with-memo
-  (implies (and (<= dag-len 2147483646)
+  (implies (and (<= dag-len *max-1d-array-length*)
                 (integerp dag-len)
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))
            (<= (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
-               2147483646))
+               *max-1d-array-length*))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-with-memo))))
 
@@ -608,7 +608,7 @@
 
 (defthm alen1-of-mv-nth-4-of-add-function-call-expr-to-dag-array-with-memo
   (implies (and (array1p 'dag-array dag-array)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (natp dag-len)
                 (equal (alen1 'dag-parent-array dag-parent-array)
                        (alen1 'dag-array dag-array))
@@ -623,7 +623,7 @@
                 (bounded-darg-listp args (alen1 'dag-parent-array dag-parent-array))
                 (bounded-darg-listp args dag-len)
                 (natp dag-len)
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (dag-parent-arrayp 'dag-parent-array
                               (mv-nth 4 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))
   :hints (("Goal" :expand (all-dag-parent-entriesp dag-len 'dag-parent-array
@@ -671,7 +671,7 @@
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                 (array1p 'dag-array dag-array)
                 (natp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                 (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (equal (alen1 'dag-parent-array dag-parent-array)
@@ -712,7 +712,7 @@
                        (alen1 'dag-array dag-array))
                 (bounded-darg-listp args dag-len)
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization)))
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (bounded-dag-parent-arrayp 'dag-parent-array
                                (mv-nth 4 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))
                                (mv-nth 3 (add-function-call-expr-to-dag-array-with-memo fn args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist print-interval print trees-equal-to-tree memoization))))

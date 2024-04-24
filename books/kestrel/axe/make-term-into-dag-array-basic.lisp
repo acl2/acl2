@@ -84,8 +84,8 @@
                 (symbolp dag-parent-array-name)
                 (interpreted-function-alistp interpreted-function-alist)
                 (not (mv-nth 0 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))))
-           (< (mv-nth 3 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))
-              2147483647))
+           (<= (mv-nth 3 (make-term-into-dag-array-basic term dag-array-name dag-parent-array-name interpreted-function-alist))
+               *max-1d-array-length*))
   :hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-basic)
            :in-theory (disable wf-dagp-of-make-term-into-dag-array-basic))))
 

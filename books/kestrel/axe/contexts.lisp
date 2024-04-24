@@ -875,7 +875,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 DAG-PARENT-ARRAYP) (PSEUDO-DAG-ARRAYP))))
                   :measure (nfix (+ 1 nodenum))
                   :split-types t)
-           (type (integer -1 2147483645) nodenum))
+           (type (integer -1 1152921504606846973) nodenum))
   (if (mbe :logic (not (natp nodenum))
            :exec (equal -1 nodenum))
       context-array
@@ -935,7 +935,7 @@
 (defun make-full-context-array-with-parents (dag-array-name dag-array dag-len dag-parent-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (posp dag-len)
-                              (<= dag-len 2147483646)
+                              (<= dag-len *max-1d-array-length*)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                               ;; not necesarly equal:
                               (<= dag-len (alen1 'dag-parent-array dag-parent-array))
@@ -993,7 +993,7 @@
 ;; help with debugging.
 (defund make-full-context-array-for-dag (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646))
+                              (<= (len dag) *max-1d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))))
   (let* ((dag-array-name 'temp-dag-array)
          (dag-array (make-into-array 'temp-dag-array dag)))
@@ -1002,13 +1002,13 @@
 ;; TODO: Improve to match better
 (defthm context-arrayp-of-make-full-context-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646))
+                (<= (len dag) *max-1d-array-length*))
            (context-arrayp 'context-array (make-full-context-array-for-dag dag) (+ 1 (top-nodenum-of-dag dag))))
   :hints (("Goal" :in-theory (enable make-full-context-array-for-dag))))
 
 (defthm bounded-context-arrayp-of-make-full-context-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (<= (len dag) bound)
                 (natp bound))
            (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) (len dag) bound))
@@ -1016,7 +1016,7 @@
 
 (defthm bounded-context-arrayp-of-make-full-context-array-for-dag-gen
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (<= (len dag) bound)
                 (natp bound)
                 (<= len (len dag))
@@ -1115,7 +1115,7 @@
 ;; ;; Returns nil but prints.
 ;; (defun print-contexts (dag-lst)
 ;;   (declare (xargs :guard (and (pseudo-dagp dag-lst)
-;;                               (< (len dag-lst) 2147483645))
+;;                               (< (len dag-lst) 1152921504606846973))
 ;;                   :guard-hints (("Goal" :in-theory (e/d (pseudo-dagp) (pseudo-dag-arrayp))))))
 ;;   (prog2$ (cw "(Computing contexts:~%")
 ;;           (let* ((dag-len (len dag-lst))

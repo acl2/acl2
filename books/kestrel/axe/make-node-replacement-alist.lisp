@@ -171,11 +171,11 @@
                                                                wrld)
              (declare (ignore dag-array dag-parent-array dag-constant-alist dag-variable-alist))
              (implies (not erp)
-                      (and (NOT (< '2147483646 new-dag-len))
+                      (and (NOT (< *max-1d-array-length* new-dag-len))
                            (all-natp (strip-cars node-replacement-alist))
                            (natp-alistp node-replacement-alist)
                            (true-listp node-replacement-alist)
-                           (BOUNDED-NATP-ALISTP node-replacement-alist 2147483646)))))
+                           (BOUNDED-NATP-ALISTP node-replacement-alist *max-1d-array-length*)))))
   :hints (("Goal" :use (:instance make-node-replacement-alist-and-add-to-dag-array-return-type)
            :in-theory (e/d (NODE-REPLACEMENT-ALISTP
                             BOUNDED-NATP-ALISTP-REDEF

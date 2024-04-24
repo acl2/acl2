@@ -227,9 +227,9 @@
                                 from-dag-array-name from-dag-array from-dag-array-len
                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                 renaming-array)
-  (declare ;(type (integer 0 2147483646) dag-len)
-;(type (integer 0 2147483645) nodenum)
-;(type (integer -1 2147483645) max-nodenum)
+  (declare ;(type (integer 0 1152921504606846974) dag-len)
+;(type (integer 0 1152921504606846973) nodenum)
+;(type (integer -1 1152921504606846973) max-nodenum)
    (xargs :measure (nfix (+ 1 (- max-nodenum nodenum)))
           :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                       (integerp max-nodenum)
@@ -1498,7 +1498,7 @@
 ;;   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                               (symbolp equiv)
 ;;                               (symbolp var)
-;;                               ;(<= dag-len 2147483645)
+;;                               ;(<= dag-len 1152921504606846973) ; why not one more?
 ;;                               (all-natp nodenums-to-assume-false)
 ;;                               (true-listp nodenums-to-assume-false)
 ;;                               (all-< nodenums-to-assume-false dag-len)))

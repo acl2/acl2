@@ -191,7 +191,7 @@
             (< n size)
             (natp size)
             (symbolp dag-parent-array-name)
-            (< size 2147483647))
+            (<= size *max-1d-array-length*))
            (all-dag-parent-entriesp n
                                     dag-parent-array-name
                                     (make-empty-array dag-parent-array-name
@@ -229,7 +229,7 @@
                 (all-dag-parent-entriesp (+ -1 (alen1 dag-parent-array-name dag-parent-array))
                                          dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (equal (default dag-parent-array-name dag-parent-array) nil)
 ;                (<= (+ -1 (alen1 dag-parent-array-name dag-parent-array)) index)
                 ;; (integerp n)
@@ -253,7 +253,7 @@
 (defthm all-dag-parent-entriesp-of-maybe-expand-array-gen
   (implies (and (array1p dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (equal (all-dag-parent-entriesp n dag-parent-array-name (maybe-expand-array dag-parent-array-name dag-parent-array index))
                   (all-dag-parent-entriesp n dag-parent-array-name dag-parent-array)))
   :hints (("Goal" ;:cases ((natp n))
@@ -318,7 +318,7 @@
 
 (defthm dag-parent-arrayp-of-make-empty-array
   (implies (and (posp size)
-                (<= size 2147483646)
+                (<= size *max-1d-array-length*)
                 (symbolp dag-parent-array-name))
            (dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name size)))
   :hints (("Goal" :in-theory (enable dag-parent-arrayp))))
@@ -376,7 +376,7 @@
   (implies (and; (<= (+ -1 (alen1 dag-parent-array-name dag-parent-array)) index)
                 (dag-parent-arrayp dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (dag-parent-arrayp dag-parent-array-name (maybe-expand-array dag-parent-array-name dag-parent-array index)))
   :hints (("Goal" :in-theory (e/d (dag-parent-arrayp) (all-dag-parent-entriesp-of-maybe-expand-array-gen)))))
 

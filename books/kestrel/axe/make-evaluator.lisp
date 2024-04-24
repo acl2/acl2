@@ -436,7 +436,8 @@
            (declare (xargs :measure 0 ;ffixme
                            :guard (and (or (quotep dag)
                                            (and (pseudo-dagp dag)
-                                                (< (len dag) 2147483646)) ;can't guarantee this, so perhaps we should check it (same for all args?)
+                                                ;; todo: why not <= ?
+                                                (< (len dag) *max-1d-array-length*)) ;can't guarantee this, so perhaps we should check it (same for all args?)
                                            )
                                        (symbol-alistp alist)
                                        (interpreted-function-alistp interpreted-function-alist)

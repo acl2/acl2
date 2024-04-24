@@ -71,11 +71,11 @@
       ;;neither is a quotep:
       (b* ((dag1-len (len dag1))
            (dag2-len (len dag2))
-           ((when (or (< 2147483646 dag1-len)
-                      (< 2147483646 dag2-len)))
+           ((when (or (< *max-1d-array-length* dag1-len)
+                      (< *max-1d-array-length* dag2-len)))
             (mv :dag-too-big nil nil))
            (max-nodes-needed (+ dag1-len dag2-len)) ;fixme allow some slack space?
-           (new-size (min 2147483646 max-nodes-needed))
+           (new-size (min *max-1d-array-length* max-nodes-needed))
            ;; make dag2 into an array:
            (dag-array (make-into-array-with-len 'dag-array dag2 new-size))
            ;; make aux structures for dag2:

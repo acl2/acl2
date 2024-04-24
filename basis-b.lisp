@@ -4102,7 +4102,7 @@
   (declare (xargs :guard (and (integerp fixnum-lo)
                               (integerp fixnum-hi)
                               (>= fixnum-hi fixnum-lo)))
-           (type (signed-byte 30) fixnum-lo fixnum-hi))
+           (type (signed-byte #.*fixnum-bits*) fixnum-lo fixnum-hi))
 
 ; This function is simply NIL in the logic but allocates a range of fixnums
 ; (from fixnum-lo to fixnum-hi) in GCL as a side effect (a side effect which

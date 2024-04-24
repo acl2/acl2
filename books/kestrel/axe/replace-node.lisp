@@ -62,8 +62,8 @@
                               (natp new-nodenum)
                               (natp n)
                               (<= n dag-len)
-                              (<= n 2147483645)
-                              (<= dag-len 2147483645)
+                              ;(NOT (< *max-1d-array-index* N))
+                              ;(<= dag-len 1152921504606846973)
                               (<= new-nodenum old-nodenum))
                   :guard-hints (("Goal" :in-theory (enable pseudo-dag-arrayp ;todo
                                                            )
@@ -131,7 +131,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (natp old-nodenum)
                               (natp new-nodenum)
-                              (<= dag-len 2147483645)
+                              ; (<= dag-len 1152921504606846973)
                               (<= new-nodenum old-nodenum) ; equal would be unusual
                               (< old-nodenum dag-len))
                   :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp-when-myquotep)))))

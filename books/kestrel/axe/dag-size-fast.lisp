@@ -129,13 +129,13 @@
 ;; Smashes the array named 'size-array.
 (defund make-size-array-for-dag (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (top-nodenum-of-dag dag) 2147483646))))
+                              (< (top-nodenum-of-dag dag) *max-1d-array-length*))))
   (make-size-array-for-rev-dag-aux (reverse-list dag)
                                    (make-empty-array 'size-array (+ 1 (top-nodenum-of-dag dag)))))
 
 (defthm size-arrayp-of-make-size-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (< (top-nodenum-of-dag dag) 2147483646)
+                (< (top-nodenum-of-dag dag) *max-1d-array-length*)
                 (<= bound (len dag))
                 (natp bound))
            (size-arrayp 'size-array
@@ -147,7 +147,7 @@
 
 (defthm alen1-of-make-size-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (< (top-nodenum-of-dag dag) 2147483646))
+                (< (top-nodenum-of-dag dag) *max-1d-array-length*))
            (equal (alen1 'size-array (make-size-array-for-dag dag))
                   (len dag)))
   :hints (("Goal" :in-theory (enable make-size-array-for-dag
@@ -162,7 +162,7 @@
 ;; Smashes the array named 'size-array.
 (defund dag-size-fast (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (top-nodenum-of-dag dag) 2147483646))
+                              (< (top-nodenum-of-dag dag) *max-1d-array-length*))
                   :guard-hints (("Goal"
                                  :use (:instance size-arrayp-of-make-size-array-for-dag
                                                  (bound (len dag)))
@@ -174,7 +174,7 @@
 
 (defthm natp-of-dag-size-fast
   (implies (and (pseudo-dagp dag)
-                (< (len dag) 2147483647) ;weaken?
+                (<= (len dag) *max-1d-array-length*) ;weaken?
                 )
            (natp (dag-size-fast dag)))
   :hints (("Goal" :in-theory (e/d (dag-size-fast
@@ -188,7 +188,7 @@
 ;; Smashes the array named 'size-array.
 (defund dag-or-quotep-size-fast (x)
   (declare (xargs :guard (or (and (pseudo-dagp x)
-                                  (< (len x) 2147483647))
+                                  (<= (len x) *max-1d-array-length*))
                              (myquotep x))))
   (if (quotep x)
       1
@@ -196,7 +196,7 @@
 
 (defthm natp-of-dag-or-quotep-size-fast
   (implies (or (and (pseudo-dagp x)
-                    (< (len x) 2147483647))
+                    (<= (len x) *max-1d-array-length*))
                (myquotep x))
            (natp (dag-or-quotep-size-fast x)))
   :hints (("Goal" :in-theory (enable dag-or-quotep-size-fast))))
@@ -209,7 +209,7 @@
 ;; We could just compare to the result of dag-size-fast, but not if we optimize this to use the limit
 (defund dag-size-less-thanp (dag limit)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647)
+                              (<= (len dag) *max-1d-array-length*)
                               (natp limit))))
   (if (<= limit (len dag)) ;todo: avoid doing the whole len once limit items are found
       ;; Avoid any size computation for huge dags (assumes the dag is reduced
@@ -228,7 +228,7 @@
 ;; We could just compare to dag-or-quotep-size-fast, but not if we optimize this to use the limit
 (defund dag-or-quotep-size-less-thanp (dag-or-quotep limit)
   (declare (xargs :guard (and (or (and (pseudo-dagp dag-or-quotep)
-                                       (< (len dag-or-quotep) 2147483647))
+                                       (<= (len dag-or-quotep) *max-1d-array-length*))
                                   (myquotep dag-or-quotep))
                               (natp limit))))
   (if (quotep dag-or-quotep) ;size of a quotep is 1

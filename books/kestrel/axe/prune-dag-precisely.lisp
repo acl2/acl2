@@ -135,7 +135,7 @@
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
-                              (< (len dag) 2147483647) ;todo?
+                              (<= (len dag) *max-1d-array-length*) ;todo?
                               (pseudo-term-listp assumptions)
                               (or (symbol-listp rules)
                                   (eq :none rules))
@@ -189,7 +189,7 @@
         (mv (erp-nil) result-dag-or-quotep state))
        ;; It's a dag:
        (result-dag-len (len result-dag-or-quotep))
-       (result-dag-size (if (<= 2147483647 result-dag-len)
+       (result-dag-size (if (not (<= result-dag-len *max-1d-array-length*))
                             "many" ; too big to call dag-or-quotep-size-fast (todo: impossible?)
                           (dag-or-quotep-size-fast result-dag-or-quotep)))
        (- (cw "Done pruning DAG (~x0 nodes, ~x1 unique))~%" result-dag-size result-dag-len)))

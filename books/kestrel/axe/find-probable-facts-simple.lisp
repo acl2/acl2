@@ -1058,7 +1058,7 @@
                                             ;; debug-nodes
                                             )
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646)
+                              (<= (len dag) *max-1d-array-length*)
                               (or (natp test-case-count)
                                   (eq :auto test-case-count))
                               (test-case-type-alistp test-case-type-alist)
@@ -1087,7 +1087,7 @@
 
 (defthm find-probable-facts-for-dag-simple-return-type
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (or (natp test-case-count)
                     (eq :auto test-case-count))
                 (test-case-type-alistp test-case-type-alist)
@@ -1106,7 +1106,7 @@
 ;; Returns nil but prints the facts.
 (defund print-probable-facts-for-dag-simple (dag test-case-count test-case-type-alist interpreted-function-alist print)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646)
+                              (<= (len dag) *max-1d-array-length*)
                               (or (natp test-case-count)
                                   (eq :auto test-case-count))
                               (test-case-type-alistp test-case-type-alist)
