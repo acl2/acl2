@@ -627,7 +627,7 @@ where
                                          (unsigned-byte-p 31 N)
                                          (unsigned-byte-p 31 i)
                                          (unsigned-byte-p 31 seed.)
-                                         (symbol-unsigned-29bits-alistp BE.)
+                                         (symbol-unsigned-60bits-alistp BE.)
                                          (consp BE.) ;precondition TODOcheck
                                          (and ,@(make-guard-var-assoc-eq
                                                  (strip-cars v-cs%-alst)
