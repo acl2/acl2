@@ -39,17 +39,17 @@
 
 (defun random-natural-basemax1 (base maxdigits seed.)
   (declare (type (integer 1 16) base)
-           (type (integer 0 9) maxdigits)
-           (type (unsigned-byte 31) seed.)
-           (xargs :guard (and (unsigned-byte-p 31 seed.)
+           (type (integer 0 19) maxdigits)
+           (type (unsigned-byte 63) seed.)
+           (xargs :guard (and (unsigned-byte-p 63 seed.)
                               (posp base)
                               (<= base 16) (> base 0) 
                               (natp maxdigits)
-                              (< maxdigits 10) (>= maxdigits 0))))
+                              (< maxdigits 20) (>= maxdigits 0))))
   (if (zp maxdigits)
     (mv 0 seed.)
-    (b* (((mv (the (integer 0 32) v) 
-              (the (unsigned-byte 31) seed.))
+    (b* (((mv (the (integer 0 64) v) 
+              (the (unsigned-byte 63) seed.))
           (genrandom-seed (acl2::*f 2 base) seed.)))
      (if (>= v base)
          (b* (((mv v2 seed.); can do better type information here TODO
@@ -62,9 +62,9 @@
        (mv v seed.)))))
 
 (defun random-natural-seed/0.5 (seed.)
-  (declare (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (unsigned-byte-p 31 seed.)))
-  (mbe :logic (if (unsigned-byte-p 31 seed.)
+  (declare (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (unsigned-byte-p 63 seed.)))
+  (mbe :logic (if (unsigned-byte-p 63 seed.)
                     (random-natural-basemax1 10 6 seed.)
                   (random-natural-basemax1 10 6 1382728371)) ;random seed in random-state-basis1
        :exec  (random-natural-basemax1 10 6 seed.)))
@@ -73,20 +73,20 @@
 (defun random-natural-basemax2 (base maxdigits seed.)
 ; less biased than random-natural-basemax1. rather than 0.5, use 0.25
   (declare (type (integer 1 16) base)
-           (type (integer 0 10) maxdigits)
-           (type (unsigned-byte 31) seed.)
-           (xargs :guard (and (unsigned-byte-p 31 seed.)
+           (type (integer 0 20) maxdigits)
+           (type (unsigned-byte 63) seed.)
+           (xargs :guard (and (unsigned-byte-p 63 seed.)
                               (posp base)
                               (<= base 16) (> base 0) 
                               (natp maxdigits)
-                              (< maxdigits 11) (>= maxdigits 0))))
+                              (< maxdigits 20) (>= maxdigits 0))))
   (if (zp maxdigits)
       (b* (((mv (the (integer 0 16) v) 
-                (the (unsigned-byte 31) seed.))
+                (the (unsigned-byte 63) seed.))
             (genrandom-seed base seed.)))
         (mv v seed.))
     (b* (((mv (the (integer 0 64) v) 
-              (the (unsigned-byte 31) seed.))
+              (the (unsigned-byte 63) seed.))
           (genrandom-seed (acl2::*f 4 base) seed.)))
      (if (>= v base)
          (b* (((mv v2 seed.); can do better type information here TODO
@@ -97,19 +97,19 @@
        (mv v seed.)))))
 
 (defun random-natural-seed/0.25 (seed.)
-  (declare (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (unsigned-byte-p 31 seed.)))
-  (mbe :logic (if (unsigned-byte-p 31 seed.)
+  (declare (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (unsigned-byte-p 63 seed.)))
+  (mbe :logic (if (unsigned-byte-p 63 seed.)
                     (random-natural-basemax2 10 6 seed.)
                   (random-natural-basemax2 10 6 1382728371)) ;random seed in random-state-basis1
        :exec  (random-natural-basemax2 10 6 seed.)))
       
-;(defstub (random-natural-seed *) => (mv * *) :formals (seed.) :guard (unsigned-byte-p 31 seed.))
+;(defstub (random-natural-seed *) => (mv * *) :formals (seed.) :guard (unsigned-byte-p 63 seed.))
 (encapsulate
- (((random-natural-seed *) => (mv * *) :formals (seed.) :guard (unsigned-byte-p 31 seed.)))
+ (((random-natural-seed *) => (mv * *) :formals (seed.) :guard (unsigned-byte-p 63 seed.)))
  (local (defun random-natural-seed (seed.)
-          (declare (xargs :guard (unsigned-byte-p 31 seed.)))
-          (mbe :logic (if (unsigned-byte-p 31 seed.)
+          (declare (xargs :guard (unsigned-byte-p 63 seed.)))
+          (mbe :logic (if (unsigned-byte-p 63 seed.)
                           (mv 0 seed.)
                         (mv 0 1382728371))
                :exec (mv 0 seed.))))
@@ -119,7 +119,7 @@
   :rule-classes (:type-prescription))
 
  (defthm random-natural-seed-type-car
-  (implies (unsigned-byte-p 31 r)
+  (implies (unsigned-byte-p 63 r)
            (natp (car (random-natural-seed r))))
   :rule-classes (:type-prescription))
 
@@ -130,13 +130,13 @@
   :rule-classes :type-prescription)
 
 (defthm random-natural-seed-type-cadr
-  (implies (unsigned-byte-p 31 r)
-           (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed r))))
+  (implies (unsigned-byte-p 63 r)
+           (unsigned-byte-p 63 (mv-nth 1 (random-natural-seed r))))
   :rule-classes (:type-prescription))
 
 (defthm random-natural-seed-type-cadr-linear
   (and (<= 0 (mv-nth 1 (random-natural-seed r)))
-       (< (mv-nth 1 (random-natural-seed r)) 2147483648))
+       (< (mv-nth 1 (random-natural-seed r)) 9223372036854775808))
   :rule-classes (:linear :tau-system))
 
 (defthm random-natural-seed-type-cadr-type
@@ -148,9 +148,9 @@
 
 
 (defun random-small-natural-seed (seed.)
-  (declare (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (unsigned-byte-p 31 seed.)))
-  (mbe :logic (if (unsigned-byte-p 31 seed.)
+  (declare (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (unsigned-byte-p 63 seed.)))
+  (mbe :logic (if (unsigned-byte-p 63 seed.)
                   (random-natural-basemax1 10 3 seed.)
                 (random-natural-basemax1 10 3 1382728371)) ;random seed in random-state-basis1
        :exec  (random-natural-basemax1 10 3 seed.)))
@@ -167,14 +167,14 @@
 
 
 (defthm random-natural-basemax1-type-cadr
-  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
-           (unsigned-byte-p 31 (mv-nth 1 (random-natural-basemax1 b d r))))
+  (implies (and (posp b) (natp d) (unsigned-byte-p 63 r))
+           (unsigned-byte-p 63 (mv-nth 1 (random-natural-basemax1 b d r))))
   :rule-classes  :type-prescription)
 
 (defthm random-natural-basemax1-type-cadr-0
-  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
+  (implies (and (posp b) (natp d) (unsigned-byte-p 63 r))
            (and (<= 0 (mv-nth 1 (random-natural-basemax1 b d r)))
-                (< (mv-nth 1 (random-natural-basemax1 b d r)) 2147483648)))
+                (< (mv-nth 1 (random-natural-basemax1 b d r)) 9223372036854775808)))
   :rule-classes (:linear :type-prescription))
 
 (defthm random-natural-basemax1-type-cadr-type
@@ -193,14 +193,14 @@
 
 
 (defthm random-natural-basemax2-type-cadr
-  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
-           (unsigned-byte-p 31 (mv-nth 1 (random-natural-basemax2 b d r))))
+  (implies (and (posp b) (natp d) (unsigned-byte-p 63 r))
+           (unsigned-byte-p 63 (mv-nth 1 (random-natural-basemax2 b d r))))
   :rule-classes  :type-prescription)
 
 (defthm random-natural-basemax2-type-cadr-0
-  (implies (and (posp b) (natp d) (unsigned-byte-p 31 r))
+  (implies (and (posp b) (natp d) (unsigned-byte-p 63 r))
            (and (<= 0 (mv-nth 1 (random-natural-basemax2 b d r)))
-                (< (mv-nth 1 (random-natural-basemax2 b d r)) 2147483648)))
+                (< (mv-nth 1 (random-natural-basemax2 b d r)) 9223372036854775808)))
   :rule-classes (:linear :type-prescription))
 
 (defthm random-natural-basemax2-type-cadr-type
@@ -216,7 +216,7 @@
 
 
 (defthm random-natural-seed-type/0.5-car
-  (implies (unsigned-byte-p 31 r)
+  (implies (unsigned-byte-p 63 r)
            (natp (car (random-natural-seed/0.5 r))))
   :rule-classes (:type-prescription))
 
@@ -227,14 +227,14 @@
   :rule-classes :type-prescription)
 
 (defthm random-natural-seed-type/0.5-cadr
-  (implies (unsigned-byte-p 31 r)
-           (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed/0.5 r))))
+  (implies (unsigned-byte-p 63 r)
+           (unsigned-byte-p 63 (mv-nth 1 (random-natural-seed/0.5 r))))
   :rule-classes (:type-prescription))
 
 (defthm random-natural-seed-type/0.5-cadr-linear
-;  (implies (unsigned-byte-p 31 r)
+;  (implies (unsigned-byte-p 63 r)
   (and (<= 0 (mv-nth 1 (random-natural-seed/0.5 r)))
-       (< (mv-nth 1 (random-natural-seed/0.5 r)) 2147483648))
+       (< (mv-nth 1 (random-natural-seed/0.5 r)) 9223372036854775808))
 ;)
   :rule-classes (:linear :tau-system))
 
@@ -252,7 +252,7 @@
 
 
 (defthm random-natural-seed-type/0.25-car
-  (implies (unsigned-byte-p 31 r)
+  (implies (unsigned-byte-p 63 r)
            (natp (car (random-natural-seed/0.25 r))))
   :rule-classes (:type-prescription))
 
@@ -263,14 +263,14 @@
   :rule-classes :type-prescription)
 
 (defthm random-natural-seed-type/0.25-cadr
-  (implies (unsigned-byte-p 31 r)
-           (unsigned-byte-p 31 (mv-nth 1 (random-natural-seed/0.25 r))))
+  (implies (unsigned-byte-p 63 r)
+           (unsigned-byte-p 63 (mv-nth 1 (random-natural-seed/0.25 r))))
   :rule-classes (:type-prescription))
 
 (defthm random-natural-seed-type/0.25-cadr-linear
-;  (implies (unsigned-byte-p 31 r)
+;  (implies (unsigned-byte-p 63 r)
   (and (<= 0 (mv-nth 1 (random-natural-seed/0.25 r)))
-       (< (mv-nth 1 (random-natural-seed/0.25 r)) 2147483648))
+       (< (mv-nth 1 (random-natural-seed/0.25 r)) 9223372036854775808))
 ;)
   :rule-classes (:linear :tau-system))
 
@@ -289,9 +289,9 @@
                     ))
 
 (defun random-index-list-seed (k max seed.)
-  (declare (type (unsigned-byte 31) seed.))
+  (declare (type (unsigned-byte 63) seed.))
   (declare (xargs :verify-guards nil
-                  :guard (unsigned-byte-p 31 seed.)))
+                  :guard (unsigned-byte-p 63 seed.)))
   (if (zp k)
       (mv '() seed.)
     (b* (((mv rest seed.) (random-index-list-seed (1- k) max seed.))
@@ -304,9 +304,9 @@ There are lots of guard problems here. See below.
 On todo list for fixing.
 
 (defun random-index-list-seed (k max seed.)
-  (declare (type (unsigned-byte 31) seed.))
+  (declare (type (unsigned-byte 63) seed.))
   (declare (xargs :verify-guards nil
-                  :guard (and (natp k) (unsigned-byte-p 31 max) (unsigned-byte-p 31 seed.))))
+                  :guard (and (natp k) (unsigned-byte-p 63 max) (unsigned-byte-p 63 seed.))))
   (if (zp k)
       (mv '() seed.)
     (b* (((mv rest seed.) (random-index-list-seed (1- k) max seed.))
@@ -316,11 +316,11 @@ On todo list for fixing.
 (in-theory (enable mv-nth))
 
 (defthm random-index-seed-thm1
-  (implies (and (posp k) (natp max) (unsigned-byte-p 31 seed.))
+  (implies (and (posp k) (natp max) (unsigned-byte-p 63 seed.))
            (natp (caar (random-index-list-seed k max seed.)))))
 
 (defthm random-index-seed-thm1
-  (implies (and (posp k) (< k 1) (natp max) (unsigned-byte-p 31 seed.))
+  (implies (and (posp k) (< k 1) (natp max) (unsigned-byte-p 63 seed.))
            (natp (cadar (random-index-list-seed k max seed.)))))
 
 (verify-guards random-index-list-seed :guard-debug t )
@@ -328,9 +328,9 @@ On todo list for fixing.
 |#
 
 (defun random-natural-list-seed (k seed.)
-  (declare (type (unsigned-byte 31) seed.))
+  (declare (type (unsigned-byte 63) seed.))
   (declare (xargs :verify-guards nil
-                  :guard (unsigned-byte-p 31 seed.)))
+                  :guard (unsigned-byte-p 63 seed.)))
   (if (zp k)
       (mv '() seed.)
     (b* (((mv rest seed.) (random-natural-list-seed (1- k) seed.))
@@ -340,10 +340,10 @@ On todo list for fixing.
 ; pseudo-uniform rational between 0 and 1 (inclusive)
 ;optimize later (copied from below but simplified)
 (defun random-probability-seed (seed.)
-  (declare (type (unsigned-byte 31) seed.))
+  (declare (type (unsigned-byte 63) seed.))
   (declare (xargs :verify-guards nil ;TODO
-                  :guard (unsigned-byte-p 31 seed.)))
-  (mbe :logic (if (unsigned-byte-p 31 seed.)
+                  :guard (unsigned-byte-p 63 seed.)))
+  (mbe :logic (if (unsigned-byte-p 63 seed.)
                   (mv-let (a seed.)
                           (random-natural-seed seed.)
                           ;; try to bias this to get more of small probabilities (close to 1)
@@ -366,17 +366,17 @@ On todo list for fixing.
 
 ;optimize later (copied from below)
 (defun random-rational-between-seed (lo hi seed.)
-  (declare (type (unsigned-byte 31) seed.))
+  (declare (type (unsigned-byte 63) seed.))
   (declare (xargs :verify-guards nil
-                  :guard (unsigned-byte-p 31 seed.)))
+                  :guard (unsigned-byte-p 63 seed.)))
   (mv-let (p seed.)
           (random-probability-seed seed.)
           (mv (rfix (+ lo (* p (- hi lo)))) seed.)))
 
 
 (defun random-integer-seed (seed.)
-  (declare (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (unsigned-byte-p 31 seed.)))
+  (declare (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (unsigned-byte-p 63 seed.)))
   (mv-let (num seed.)
           (genrandom-seed 2 seed.)
           (mv-let (nat seed.)
@@ -385,14 +385,14 @@ On todo list for fixing.
                       seed.))))
 
 (defun random-integer-between-seed (lo hi seed.)
-  (declare (type (unsigned-byte 31) seed.)
-           (type (signed-byte 30) lo)
-           (type (signed-byte 30) hi))
-  (declare (xargs :guard (and (unsigned-byte-p 31 seed.)
+  (declare (type (unsigned-byte 63) seed.)
+           (type (signed-byte 62) lo)
+           (type (signed-byte 62) hi))
+  (declare (xargs :guard (and (unsigned-byte-p 63 seed.)
                               (integerp lo)
                               (integerp hi)
-                              (signed-byte-p 30 lo)
-                              (signed-byte-p 30 hi)
+                              (signed-byte-p 62 lo)
+                              (signed-byte-p 62 hi)
                               (natp (- hi lo)))))
   (mv-let (num seed.)
           (genrandom-seed (1+ (- hi lo)) seed.)
@@ -400,15 +400,15 @@ On todo list for fixing.
 
 (defun random-complex-rational-between-seed (lo hi seed.)
   (declare (xargs :verify-guards nil
-                  :guard (unsigned-byte-p 31 seed.)))
-  (declare (type (unsigned-byte 31) seed.))
+                  :guard (unsigned-byte-p 63 seed.)))
+  (declare (type (unsigned-byte 63) seed.))
   (b* (((mv rp seed.) (random-rational-between-seed (realpart lo) (realpart hi) seed.))
        ((mv ip seed.) (random-rational-between-seed (imagpart lo) (imagpart hi) seed.)))
     (mv (complex rp ip) seed.)))
 
 (defun random-acl2-number-between-seed (lo hi seed.)
   (declare (xargs :verify-guards nil
-                  :guard (unsigned-byte-p 31 seed.)))
+                  :guard (unsigned-byte-p 63 seed.)))
   (b* (((mv choice seed.)
         (random-index-seed 6 seed.)))
     (case choice
@@ -419,7 +419,7 @@ On todo list for fixing.
 
 (defun random-number-between-seed-fn (lo hi seed. type)
   (declare (xargs :verify-guards nil
-                  :guard (unsigned-byte-p 31 seed.)))
+                  :guard (unsigned-byte-p 63 seed.)))
   (case type
     (acl2s::integer (random-integer-between-seed lo hi seed.))
     (acl2s::rational (random-rational-between-seed lo hi seed.))
@@ -493,27 +493,27 @@ On todo list for fixing.
 (include-book "switchnat")
 
 (defun choose-size (min max seed.)
-  (declare (type (unsigned-byte 31) seed.)
-           (type (signed-byte 30) min)
-           (type (signed-byte 30) max))
+  (declare (type (unsigned-byte 63) seed.)
+           (type (signed-byte 62) min)
+           (type (signed-byte 62) max))
   (declare (xargs :verify-guards nil
-                  :guard (and (unsigned-byte-p 31 seed.)
+                  :guard (and (unsigned-byte-p 63 seed.)
                               (natp min)
                               (natp max)
-                              (signed-byte-p 30 min)
-                              (signed-byte-p 30 max)
+                              (signed-byte-p 62 min)
+                              (signed-byte-p 62 max)
                               )))
   (b* ((ctx 'choose-size)
-       ((mv idx (the (unsigned-byte 31) seed.))
+       ((mv idx (the (unsigned-byte 63) seed.))
         (defdata::random-index-seed 100 seed.))
        (sampling-dist (sampling-dist-rec min max))
        (weights (strip-cars sampling-dist))
        ((mv choice &) (defdata::weighted-switch-nat weights idx))
        (chosen (nth choice sampling-dist))
        (sp (cdr chosen))
-       ((mv n (the (unsigned-byte 31) seed.))
+       ((mv n (the (unsigned-byte 63) seed.))
         (random-small-natural-seed seed.))
-       ((mv uniform-n (the (unsigned-byte 31) seed.))
+       ((mv uniform-n (the (unsigned-byte 63) seed.))
         (defdata::random-integer-between-seed min max seed.))
        (size (case-match sp ;sampling type dispatch
                ((':eq x)                  x)
@@ -528,4 +528,4 @@ On todo list for fixing.
                (& (er hard ctx "~| Unsupported case ~x0.~%" sp))))
        ;(- (cw  "~| Chosen size is ~x0~%" size))
        )
-    (mv size (the (unsigned-byte 31) seed.))))
+    (mv size (the (unsigned-byte 63) seed.))))

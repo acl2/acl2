@@ -618,15 +618,15 @@ where
          `((defun next-sigma-current (sampling-method N i seed. BE.)
              "returns (mv A seed. BE.)"
              (declare (ignorable sampling-method N i)) ;in case ord-vs is nil
-             (declare (type (unsigned-byte 31) seed.))
+             (declare (type (unsigned-byte 63) seed.))
              (declare (xargs :verify-guards nil
                              ;; :mode :logic ;New defdata has program-mode enumerators -- Sep 1 2014
                              :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014
                              :guard (and (member-eq sampling-method
                                                     '(:random :uniform-random :be))
-                                         (unsigned-byte-p 31 N)
-                                         (unsigned-byte-p 31 i)
-                                         (unsigned-byte-p 31 seed.)
+                                         (unsigned-byte-p 63 N)
+                                         (unsigned-byte-p 63 i)
+                                         (unsigned-byte-p 63 seed.)
                                          (symbol-unsigned-60bits-alistp BE.)
                                          (consp BE.) ;precondition TODOcheck
                                          (and ,@(make-guard-var-assoc-eq
@@ -650,7 +650,7 @@ where
              (declare (xargs :mode :program ;New defdata has program-mode enumerators -- Sep 1 2014
                              ;;:mode :logic ;New defdata has program-mode enumerators -- Sep 1 2014
                              :guard T :verify-guards ,(not programp)))
-;(declare (type (unsigned-byte 31) seed.))
+;(declare (type (unsigned-byte 63) seed.))
              (ec-call (next-sigma-current sampling-method N i seed. BE.))))))
 
 ; Invariant: v-cs%-alst. should obey a dependency order such that the
@@ -709,7 +709,7 @@ where
 (defun run-tests-with-timeout (vars test-outcomes% gcs% vl cgen-state state)
   (acl2::with-timeout1 
    (cget cgen-local-timeout)
-   (b* ( ;((mv rseed. state) ) (acl2::random$ defdata::*M31* state)
+   (b* ( ;((mv rseed. state) ) (acl2::random$ defdata::*M63* state)
         ;;Lets try CL's builtin random number generator
         (rseed. (defdata::getseed state))
         (- (cw? (system-debug-flag vl)
@@ -727,7 +727,7 @@ where
 ~|Use (acl2s-defaults :set cgen-local-timeout 0) to disable timeout. ~
 ~|For more information see :doc cgen-local-timeout.~%") 
     (er-progn
-     (b* (((mv & (the (unsigned-byte 31) rseed.))
+     (b* (((mv & (the (unsigned-byte 63) rseed.))
            (defdata::genrandom-seed 2 (defdata::getseed state)))
           (state (defdata::putseed rseed. state))) ;make some progress -- dont get stuck on the same sequence of seeds
        (value nil))
