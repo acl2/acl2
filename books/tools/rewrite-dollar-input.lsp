@@ -739,11 +739,19 @@
 ; Tests of simplifying contexts.
 
 (defmacro must-eval-to-context (form result)
-  `(must-eval-to (er-let* ((x ,form))
-                   (value (list* (car x)
-                                 (access rewrite$-record (cadr x) :type-alist)
-                                 (cddr x))))
-                 ,result))
+
+; We return a Boolean to avoid an output mismatch for the form that uses
+; (fixnum-bound) below, when running with ACL2 built with environment variable
+; ACL2_SMALL_FIXNUMS set to a non-empty value.
+
+  `(er-let* ((val (must-eval-to (er-let* ((x ,form))
+                                  (value (list* (car x)
+                                                (access rewrite$-record
+                                                        (cadr x)
+                                                        :type-alist)
+                                                (cddr x))))
+                                ,result)))
+     (value t)))
 
 (make-event
  (b* (((er ; from rewrite$-hyps-return
@@ -840,14 +848,14 @@
  (rewrite$-context '((p5 x) (and (p6 x) (p6 x))) *rrec-4*
                    :translate t
                    :repeat 2)
- '(((P5 X) (P6 X))
+ `(((P5 X) (P6 X))
    (((P6 X)
      256 (LEMMA (:TYPE-PRESCRIPTION P6)))
     ((P5 X)
      256 (LEMMA (:TYPE-PRESCRIPTION P5))))
    ((LEMMA (:TYPE-PRESCRIPTION P6))
     (RW-CACHE-ANY-TAG T
-                      (P6-IMPLIES-P5 ((536870909 1 REWROTE-TO P6 X)
+                      (P6-IMPLIES-P5 ((,(- (fixnum-bound) 2) 1 REWROTE-TO P6 X)
                                       ((X . X))
                                       P6 X))))))
 

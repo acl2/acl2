@@ -23,6 +23,7 @@
 
 ; Summer and Fall 2002.
 ;  Last modified 17 June 2003.
+; Matt K. mod, April 2024: Updated to use (array-maximum-length-bound).
 
 ; ACL2 Version 2.8 alpha (as of May 11 03)
 #|
@@ -65,7 +66,7 @@ At UW:
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
 	(<= (maximum-length name l)
-	    *maximum-positive-32-bit-integer*)
+	    (array-maximum-length-bound))
 	(bounded-integer-alistp2 l
 				 (car (dimensions name l))
 				 (cadr (dimensions name l)))))
@@ -80,7 +81,7 @@ At UW:
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
 	(<= (maximum-length name l)
-	    *maximum-positive-32-bit-integer*)))
+	    (array-maximum-length-bound))))
   :rule-classes :linear)
 
 (defthm
@@ -275,8 +276,7 @@ At UW:
   "Return an alist representing the m by n matrix whose
    elements are all equal to 0.
    To use the ACL2 efficient array mechanism to store (m-0 m n),
-   (* m n)) must be stictly less than 2147483647 which is
-   the *MAXIMUM-POSITIVE-32-BIT-INTEGER*."
+   (* m n)) must be stictly less than (ARRAY-MAXIMUM-LENGTH-BOUND)."
   (declare (xargs :guard (and (integerp m)
 			      (integerp n)
 			      (> m 0)
@@ -303,7 +303,7 @@ At UW:
 		(integerp n)
 		(> m 0)
 		(> n 0)
-		(< (* m n) *MAXIMUM-POSITIVE-32-BIT-INTEGER*))
+		(< (* m n) (ARRAY-MAXIMUM-LENGTH-BOUND)))
 	   (array2p name (m-0 m n)))
   :hints (("Goal" :in-theory (enable array2p))))
 
@@ -376,8 +376,7 @@ At UW:
   m-1 (n)
   "Return an alist representing the n by n identity matrix.
    To use the ACL2 efficient array mechanism to store (m-1 n),
-   (* n n)) must be stictly less than 2147483647 which is
-   the *MAXIMUM-POSITIVE-32-BIT-INTEGER*."
+   (* n n)) must be stictly less than (ARRAY-MAXIMUM-LENGTH-BOUND)."
   (declare (xargs :guard (and (integerp n)
 			      (>= n 0))))
   (cons (list :HEADER
@@ -400,7 +399,7 @@ At UW:
   (implies (and (symbolp name)
 		(integerp n)
 		(> n 0)
-		(< (* n n) *MAXIMUM-POSITIVE-32-BIT-INTEGER*))
+		(< (* n n) (ARRAY-MAXIMUM-LENGTH-BOUND)))
 	   (array2p name (m-1 n)))
   :hints (("Goal"
 	   :in-theory (enable array2p))))
@@ -1432,7 +1431,7 @@ At UW:
 		       (first  (dimensions name M2)))
 		(< (* (first (dimensions name M1))
 		      (second (dimensions name M2)))
-		   *MAXIMUM-POSITIVE-32-BIT-INTEGER*))
+		   (ARRAY-MAXIMUM-LENGTH-BOUND)))
 	   (array2p name (m-* M1 M2)))
   :rule-classes ((:rewrite)
 		 (:forward-chaining

@@ -114,7 +114,7 @@ type.</p>")
      (<= (car (cadr (assoc-keyword :dimensions (cdr (assoc-eq :header l)))))
 	 (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l)))))
      (<= (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l))))
-	 *maximum-positive-32-bit-integer*)
+	 (array-maximum-length-bound))
      (bounded-integer-alistp
       l
       (car (cadr (assoc-keyword :dimensions (cdr (assoc-eq :header l))))))))
@@ -469,7 +469,7 @@ need to @(see DISABLE) the theory @(see ARRAY1-FUNCTIONS).</p>"
                   (integerp (maximum-length name l))
                   (< 0 (car (dimensions name l)))
                   (<= (car (dimensions name l)) (maximum-length name l))
-                  (<= (maximum-length name l) *maximum-positive-32-bit-integer*)
+                  (<= (maximum-length name l) (array-maximum-length-bound))
                   (bounded-integer-alistp l (car (dimensions name l)))))
     :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (disable length)))))

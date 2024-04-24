@@ -8714,28 +8714,6 @@
           (state *the-live-state*)
           pass-2-alist)
      (enter-boot-strap-mode system-books-dir (get-os))
-     (setq pass-2-alist
-           (let ((ans nil))
-             (dolist
-               (fl acl2-pass-2-files)
-               (mv-let (erp val state)
-
-; Warning.  Because of the read-file here, we have to be careful not to define
-; any packages in the pass-2 files that contain symbols mentioned in those
-; files.  The read-file will break in any such case; the DEFPKG in such a file
-; must be processed first.
-
-                 (read-file (coerce
-                             (append (coerce fl 'list)
-                                     (cons #\. (coerce *lisp-extension*
-                                                       'list)))
-                             'string)
-                            *the-live-state*)
-                 (declare (ignore state))
-                 (cond (erp (interface-er "Unable to read file ~x0!"
-                                          fl))
-                       (t (push (cons fl val) ans)))))
-             ans))
      (dolist
        (fl *acl2-files*)
        (when (not (or (equal fl "boot-strap-pass-2-a")
@@ -8766,6 +8744,28 @@
 ; else so we are in the same state.
 
                         (return-from initialize-acl2 nil))))))
+     (setq pass-2-alist
+           (let ((ans nil))
+             (dolist
+               (fl acl2-pass-2-files)
+               (mv-let (erp val state)
+
+; Warning.  Because of the read-file here, we have to be careful not to define
+; any packages in the pass-2 files that contain symbols mentioned in those
+; files.  The read-file will break in any such case; the DEFPKG in such a file
+; must be processed first.
+
+                 (read-file (coerce
+                             (append (coerce fl 'list)
+                                     (cons #\. (coerce *lisp-extension*
+                                                       'list)))
+                             'string)
+                            *the-live-state*)
+                 (declare (ignore state))
+                 (cond (erp (interface-er "Unable to read file ~x0!"
+                                          fl))
+                       (t (push (cons fl val) ans)))))
+             ans))
      (enter-boot-strap-pass-2)
      (dolist
        (fl acl2-pass-2-files)

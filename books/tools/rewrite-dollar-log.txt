@@ -1204,14 +1204,25 @@ ACL2 !>>(MUST-EVAL-TO-RH (REWRITE$-HYPS '((NOT (IF (NOT X) T Y)))
   ((LEMMA (:DEFINITION NOT))))
 ACL2 !>>(DEFMACRO MUST-EVAL-TO-CONTEXT (FORM RESULT)
          (CONS
-           'MUST-EVAL-TO
-           (CONS (CONS 'ER-LET*
+          'ER-LET*
+          (CONS
+           (CONS
+            (CONS
+             'VAL
+             (CONS
+              (CONS
+               'MUST-EVAL-TO
+               (CONS
+                 (CONS 'ER-LET*
                        (CONS (CONS (CONS 'X (CONS FORM 'NIL)) 'NIL)
                              '((VALUE (LIST* (CAR X)
                                              (ACCESS REWRITE$-RECORD (CADR X)
                                                      :TYPE-ALIST)
                                              (CDDR X))))))
-                 (CONS RESULT 'NIL))))
+                 (CONS RESULT 'NIL)))
+              'NIL))
+            'NIL)
+           '((VALUE T)))))
 
 Summary
 Form:  ( DEFMACRO MUST-EVAL-TO-CONTEXT ...)
@@ -1237,9 +1248,7 @@ ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((CONSP (CAR (CONS X X))))
                               '(((CONSP X))
                                 ((X 3072))
                                 ((LEMMA (:REWRITE CAR-CONS)))))
- (((CONSP X))
-  ((X 3072))
-  ((LEMMA (:REWRITE CAR-CONS))))
+ T
 ACL2 !>>(DEFUN P5 (X) (CONSP X))
 
 Summary
@@ -1317,29 +1326,7 @@ ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((P6 X) (P6 Y) (P6 Z))
                                                     (:DEFINITION NATP))
                                  (LEMMA (:DEFINITION P6)
                                         (:DEFINITION NATP)))))
- (((INTEGERP (CAR X))
-   (NOT (< (CAR X) '0))
-   (INTEGERP (CAR Y))
-   (NOT (< (CAR Y) '0))
-   (CONSP Z)
-   (INTEGERP (CAR Z))
-   (NOT (< (CAR Z) '0)))
-  (((< (CAR Z) '0) 128)
-   ((CAR Z) 7)
-   ((CAR Z) 23)
-   (Z 3072)
-   ((< (CAR Y) '0) 128)
-   ((CAR Y) 7)
-   ((CAR Y) 23)
-   ((< (CAR X) '0) 128)
-   ((CAR X) 7)
-   ((CAR X) 23)
-   (Y 3072)
-   (X 3072))
-  ((SPLITTER-IF-INTRO (:DEFINITION P6)
-                      (:DEFINITION NATP))
-   (LEMMA (:DEFINITION P6)
-          (:DEFINITION NATP))))
+ T
 ACL2 !>>(DEFTHM P6-IMPLIES-P5
           (IMPLIES (P6 X) (P5 X)))
 
@@ -1395,11 +1382,7 @@ ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((AND (P6 X) (P6 X)) (P5 X))
                                   256 (LEMMA (:TYPE-PRESCRIPTION P6))))
                                 ((LEMMA (:REWRITE P6-IMPLIES-P5)
                                         (:TYPE-PRESCRIPTION P6)))))
- (((P6 X))
-  (((P6 X)
-    256 (LEMMA (:TYPE-PRESCRIPTION P6))))
-  ((LEMMA (:REWRITE P6-IMPLIES-P5)
-          (:TYPE-PRESCRIPTION P6))))
+ T
 ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((AND (P6 X) (P6 X)) (P5 X))
                                                 *RREC-4*
                                                 :TRANSLATE T
@@ -1409,36 +1392,34 @@ ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((AND (P6 X) (P6 X)) (P5 X))
                                   256 (LEMMA (:TYPE-PRESCRIPTION P6))))
                                 ((LEMMA (:REWRITE P6-IMPLIES-P5)
                                         (:TYPE-PRESCRIPTION P6)))))
- (((P6 X))
-  (((P6 X)
-    256 (LEMMA (:TYPE-PRESCRIPTION P6))))
-  ((LEMMA (:REWRITE P6-IMPLIES-P5)
-          (:TYPE-PRESCRIPTION P6))))
+ T
 ACL2 !>>(MUST-EVAL-TO-CONTEXT
-           (REWRITE$-CONTEXT '((P5 X) (AND (P6 X) (P6 X)))
-                             *RREC-4*
-                             :TRANSLATE T
-                             :REPEAT 2)
-           '(((P5 X) (P6 X))
-             (((P6 X)
-               256 (LEMMA (:TYPE-PRESCRIPTION P6)))
-              ((P5 X)
-               256 (LEMMA (:TYPE-PRESCRIPTION P5))))
-             ((LEMMA (:TYPE-PRESCRIPTION P6))
-              (RW-CACHE-ANY-TAG T
-                                (P6-IMPLIES-P5 ((536870909 1 REWROTE-TO P6 X)
-                                                ((X . X))
-                                                P6 X))))))
- (((P5 X) (P6 X))
-  (((P6 X)
-    256 (LEMMA (:TYPE-PRESCRIPTION P6)))
-   ((P5 X)
-    256 (LEMMA (:TYPE-PRESCRIPTION P5))))
-  ((LEMMA (:TYPE-PRESCRIPTION P6))
-   (RW-CACHE-ANY-TAG T
-                     (P6-IMPLIES-P5 ((536870909 1 REWROTE-TO P6 X)
-                                     ((X . X))
-                                     P6 X)))))
+         (REWRITE$-CONTEXT '((P5 X) (AND (P6 X) (P6 X)))
+                           *RREC-4*
+                           :TRANSLATE T
+                           :REPEAT 2)
+         (CONS
+          '((P5 X) (P6 X))
+          (CONS
+           '(((P6 X)
+              256 (LEMMA (:TYPE-PRESCRIPTION P6)))
+             ((P5 X)
+              256 (LEMMA (:TYPE-PRESCRIPTION P5))))
+           (CONS
+            (CONS
+             '(LEMMA (:TYPE-PRESCRIPTION P6))
+             (CONS
+              (CONS 'RW-CACHE-ANY-TAG
+                    (CONS 'T
+                          (CONS (CONS 'P6-IMPLIES-P5
+                                      (CONS (CONS (CONS (- (FIXNUM-BOUND) 2)
+                                                        '(1 REWROTE-TO P6 X))
+                                                  '(((X . X)) P6 X))
+                                            'NIL))
+                                'NIL)))
+              'NIL))
+            'NIL))))
+ T
 ACL2 !>>(DEFTHM P6-IMPLIES-P5-FORWARD
           (IMPLIES (P6 X) (P5 X))
           :RULE-CLASSES :FORWARD-CHAINING)
@@ -1499,21 +1480,7 @@ ACL2 !>>(MUST-EVAL-TO-CONTEXT
                        (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
                        (:TYPE-PRESCRIPTION P6))
                 (PT 0))))
- (((INTEGERP (CAR X)))
-  (((CAR X) 23)
-   ((P5 X)
-    256
-    (LEMMA (:TYPE-PRESCRIPTION P5)
-           (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
-           (:TYPE-PRESCRIPTION P6))
-    (PT 0))
-   ((P6 X)
-    256 (LEMMA (:TYPE-PRESCRIPTION P6))))
-  ((LEMMA (:DEFINITION P7)
-          (:TYPE-PRESCRIPTION P5)
-          (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
-          (:TYPE-PRESCRIPTION P6))
-   (PT 0)))
+ T
 ACL2 !>>(MUST-EVAL-TO (B* (((ER (LIST* ?LST RREC ?TTREE ?PAIRS))
                             (REWRITE$-CONTEXT '((P7 X)) *RREC-5*)))
                         (REWRITE$ '(LIST (NATP (CAR A)))
@@ -1561,22 +1528,7 @@ ACL2 !>>(MUST-EVAL-TO-CONTEXT
                            (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
                            (:TYPE-PRESCRIPTION P6))
                     (PT 0))))
- (NIL (((P5 X)
-        256
-        (LEMMA (:TYPE-PRESCRIPTION P5)
-               (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
-               (:TYPE-PRESCRIPTION P6))
-        (PT 0))
-       ((< (CAR X) '0) 128)
-       ((CAR X) 7)
-       ((CAR X) 23)
-       ((P6 X)
-        256 (LEMMA (:TYPE-PRESCRIPTION P6))))
-      ((LEMMA (:DEFINITION P7)
-              (:TYPE-PRESCRIPTION P5)
-              (:FORWARD-CHAINING P6-IMPLIES-P5-FORWARD)
-              (:TYPE-PRESCRIPTION P6))
-       (PT 0)))
+ T
 ACL2 !>>(MAKE-EVENT (B* (((ER (LIST* ?HYPS RREC ?TTREE ?PAIRS))
                           (REWRITE$-HYPS NIL)))
                       (VALUE (CONS 'DEFCONST
@@ -1624,8 +1576,5 @@ ACL2 !>>(MUST-EVAL-TO-CONTEXT (REWRITE$-CONTEXT '((NATP X)
                                 NIL
                                 ((SPLITTER-IF-INTRO (:DEFINITION NATP))
                                  (LEMMA (:DEFINITION NATP)))))
- (('NIL)
-  NIL
-  ((SPLITTER-IF-INTRO (:DEFINITION NATP))
-   (LEMMA (:DEFINITION NATP))))
+ T
 ACL2 !>>Bye.

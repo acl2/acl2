@@ -1733,7 +1733,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*))))
+                           (array-maximum-length-bound)))))
   (let* ((old-iprint-ar (f-get-global 'iprint-ar state))
          (new-dim
 
@@ -1774,13 +1774,13 @@
 
           (* 4 new-dim)))
     (cond
-     ((< *maximum-positive-32-bit-integer* new-max-len)
+     ((< (array-maximum-length-bound) new-max-len)
       (prog2$
        (er hard? 'rollover-iprint-ar
            "Attempted to expand iprint-ar to a maximum-length of ~x0, ~
-            exceeding *maximum-positive-32-bit-integer*, which is ~x1."
+            exceeding (array-maximum-length-bound), which is ~x1."
            new-max-len
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        state))
      (t
       (let* ((new-header
@@ -1849,7 +1849,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*)
+                           (array-maximum-length-bound))
                        (iprint-falp iprint-fal-new))))
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
@@ -1922,7 +1922,7 @@
        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        (< (f-get-global 'iprint-hard-bound state)
 
 ; Quoting the Essay on Iprinting:
@@ -5690,7 +5690,7 @@
            (i+1 (1+f i))
            (clk-1 (1-f clk)))
        (declare (type character c0)
-                (type (unsigned-byte 29) i+1 clk-1))
+                (type (unsigned-byte #.*fixnat-bits*) i+1 clk-1))
        (cond
         ((eql c0 #\~)
          (cond
@@ -5707,7 +5707,7 @@
                 nil)
                (otherwise
                 (let ((i+2 (+f i 2)))
-                  (declare (type (unsigned-byte 29) i+2))
+                  (declare (type (unsigned-byte #.*fixnat-bits*) i+2))
                   (cond
                    ((not (< i+2 maximum))
                     (illegal-fmt-msg
@@ -5719,7 +5719,7 @@
                            (val2 (cdr pair2))
                            (i+3 (+f i 3)))
                       (declare (type character c2)
-                               (type (unsigned-byte 29) i+3))
+                               (type (unsigned-byte #.*fixnat-bits*) i+3))
                       (cond
                        ((not pair2)
                         (illegal-fmt-msg
@@ -5785,7 +5785,7 @@
                               i 3 maximum s))
                             (t
                              (let ((i+4 (+f i 4)))
-                               (declare (type (unsigned-byte 29) i+4))
+                               (declare (type (unsigned-byte #.*fixnat-bits*) i+4))
                                (cond
                                 ((not (< i+4 maximum))
                                  (illegal-fmt-msg
@@ -5795,7 +5795,7 @@
                                  (let ((n (find-alternative-start
                                            c2 s i maximum t))
                                        (max+1 (1+f maximum)))
-                                   (declare (type (signed-byte 30) n max+1))
+                                   (declare (type (signed-byte #.*fixnum-bits*) n max+1))
                                    (cond
                                     ((= n max+1)
                                      (illegal-fmt-msg
@@ -5817,7 +5817,7 @@
                                     (t
                                      (let ((m (find-alternative-stop
                                                s n maximum t)))
-                                       (declare (type (unsigned-byte 29)
+                                       (declare (type (unsigned-byte #.*fixnat-bits*)
                                                       m))
                                        (cond
                                         ((eql m max+1)
@@ -5828,7 +5828,7 @@
                                          (let ((o (find-alternative-skip
                                                    s m maximum t)))
                                            (declare
-                                            (type (unsigned-byte 29) o))
+                                            (type (unsigned-byte #.*fixnat-bits*) o))
                                            (cond
                                             ((= o 0)
                                              (illegal-fmt-msg
@@ -5944,7 +5944,7 @@
         (t (fmx-cw-msg-1 s alist i+1 maximum clk-1)))))))
 
 (defun fmx-cw-msg-1 (s alist i maximum clk)
-  (declare (type (unsigned-byte 29) i maximum clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) i maximum clk)
            (type string s)
            (xargs :guard (and (character-alistp alist)
                               (< (length s) (fixnum-bound))
@@ -10152,14 +10152,14 @@
 
 ; We assume that i points to the start of a line of s.
 
-  (declare (type (unsigned-byte 29) end)
+  (declare (type (unsigned-byte #.*fixnat-bits*) end)
            (xargs :measure (nfix (- end i))
                   :guard (and (natp i)
                               (stringp s)
                               (= end (length s))
                               (<= i end))))
   (cond
-   ((not (mbt (and (unsigned-byte-p 29 end)
+   ((not (mbt (and (unsigned-byte-p *fixnat-bits* end)
                    (natp i)
                    (stringp s)
                    (= end (length s))
@@ -10179,7 +10179,7 @@
   (declare (xargs :guard t))
   (and (stringp s)
        (let ((len (length s)))
-         (and (unsigned-byte-p 29 len)
+         (and (unsigned-byte-p *fixnat-bits* len)
               (comment-string-p1 s 0 len)))))
 
 (defrec print-control
@@ -10584,12 +10584,12 @@
 
 (defun string-prefixp-1 (str1 i str2)
   (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
+           (type (unsigned-byte #.*fixnat-bits*) i)
            (xargs :guard (and (<= i (length str1))
                               (<= i (length str2)))))
   (cond ((zpf i) t)
         (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
+             (declare (type (unsigned-byte #.*fixnat-bits*) i))
              (cond ((eql (the character (char str1 i))
                          (the character (char str2 i)))
                     (string-prefixp-1 str1 i str2))

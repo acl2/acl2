@@ -2221,7 +2221,7 @@
 
 (defun wormhole-prompt (channel state)
   (the2s
-   (signed-byte 30)
+   (signed-byte #.*fixnum-bits*)
    (fmt1 "Wormhole ~s0~sr ~@1~*2"
          (list (cons #\0 (f-get-global 'current-package state))
                (cons #\1 (defun-mode-prompt-string state))
@@ -5278,7 +5278,7 @@
                 (keyword-value-string-listp (cddr l))))))
 
 (defun project-dir-string-p (s pos bound)
-  (declare (type (unsigned-byte 29) bound)
+  (declare (type (unsigned-byte #.*fixnat-bits*) bound)
            (xargs :measure (nfix (- bound pos))
                   :guard (and (stringp s)
                               (natp pos)
@@ -5317,7 +5317,7 @@
   (let* ((s (read-file-into-string filename))
          (len (length s)))
       (and (stringp s)
-           (unsigned-byte-p 29 len)
+           (unsigned-byte-p *fixnat-bits* len)
            (project-dir-string-p s 0 len))))
 
 (defun merge-length>=-cdr (l1 l2)

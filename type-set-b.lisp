@@ -887,10 +887,10 @@
                         :theory-array))
        (symbolp (access enabled-structure ens
                         :array-name))
-       (signed-byte-p 30 (access enabled-structure ens
-                                 :array-length))
-       (signed-byte-p 30 (access enabled-structure ens
-                                 :index-of-last-enabling))
+       (signed-byte-p *fixnum-bits* (access enabled-structure ens
+                                            :array-length))
+       (signed-byte-p *fixnum-bits* (access enabled-structure ens
+                                            :index-of-last-enabling))
 
 ; The following must be true in order for the array access in enabled-numep to
 ; be in bounds.
@@ -1235,7 +1235,7 @@
 ; order to return function symbols in the order in which they were defined (a
 ; minor aesthetic preference).
 
-  (declare (type (signed-byte 30) nume))
+  (declare (type (signed-byte #.*fixnum-bits*) nume))
   (cond
    ((eql nume max-nume)
     (reverse acc))
@@ -4469,7 +4469,7 @@
 (defmacro with-decrement-worse-than-clk (clk form)
   (declare (xargs :guard (symbolp clk)))
   `(let ((,clk (decrement-worse-than-clk ,clk)))
-     (declare (type (unsigned-byte 29) ,clk))
+     (declare (type (unsigned-byte #.*fixnat-bits*) ,clk))
      ,form))
 
 (defmacro worse-than-builtin-clocked-body (clk)
@@ -4534,7 +4534,7 @@
 ; more predictable implementation.  Comments below explore these options.
 
   (declare
-   (type (unsigned-byte 29) clk)
+   (type (unsigned-byte #.*fixnat-bits*) clk)
    (xargs :guard (and (pseudo-termp term1)
                       (pseudo-termp term2))
           :measure (make-ord 1
@@ -4663,7 +4663,7 @@
 ;             ans)))
 
    (t (let ((clk (1-f clk)))
-        (declare (type (unsigned-byte 29) clk))
+        (declare (type (unsigned-byte #.*fixnat-bits*) clk))
         (worse-than-builtin-clocked-body clk)))))
 
 (defun worse-than-or-equal-builtin-clocked (term1 term2 clk)
@@ -4686,7 +4686,7 @@
 ; if pseudo-variantp is nil, then the equal returns nil.  So we can simplify
 ; the if above to:
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) clk)
            (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4705,7 +4705,7 @@
 ; Technically, a2 is uglier than a1 if a1 is atomic (a variable or constant)
 ; and a2 is not or a2 is worse-than-builtin a1.
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) clk)
            (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
                   :measure
@@ -4728,7 +4728,7 @@
 
 ; Is some element of arg1 worse-than-builtin the corresponding element of args2?
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) clk)
            (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
                   :measure (make-ord 1
@@ -4764,7 +4764,7 @@
 ; Yes, because even though one argument (the second) got worse (it went from 17
 ; to B) another argument (the first) got better (it went from A to 17).
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) clk)
            (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4803,7 +4803,7 @@
 
 ; Returns t if some subterm of term1 is worse-than-builtin or equal to term2.
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) clk)
            (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4827,7 +4827,7 @@
                                                  clk)))))))
 
 (defun some-subterm-worse-than-or-equal-lst (args term2 clk)
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) clk)
            (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4846,7 +4846,7 @@
 ; element of args itself.  That is, we use ``subterm'' in the ``not necessarily
 ; proper subterm'' sense.
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type (unsigned-byte #.*fixnat-bits*) clk)
            (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp term2))
                   :measure (make-ord 1

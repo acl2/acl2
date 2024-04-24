@@ -1815,7 +1815,8 @@ manual.</p>")
 
 ; Warning: Keep this in sync with *entity-strings* and
 ; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
-; fancy/xslt.js, and *xml-entity-stuff*in prepare-topic.lisp.
+; fancy/xslt.js, *xml-entity-stuff*in prepare-topic.lisp, and
+; wrap_xdoc_fragment in fancy/xdata2html.pl
 
   :parents (xdoc xdoc-tests)
   :short "HTML entity support in XDOC."
