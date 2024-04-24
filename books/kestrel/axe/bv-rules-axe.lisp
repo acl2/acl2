@@ -26,6 +26,7 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/defs" :dir :system)
+(include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
@@ -53,6 +54,11 @@
 (add-known-boolean sbvlt)
 (add-known-boolean bvle)
 (add-known-boolean sbvle)
+(add-known-boolean bvgt)
+(add-known-boolean sbvgt)
+(add-known-boolean bvge)
+(add-known-boolean sbvge)
+(add-known-boolean bvequal)
 (add-known-boolean unsigned-byte-p-forced)
 
 ;justifies adding unsigned-byte-p-forced to the list of known predicates
