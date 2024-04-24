@@ -875,7 +875,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 DAG-PARENT-ARRAYP) (PSEUDO-DAG-ARRAYP))))
                   :measure (nfix (+ 1 nodenum))
                   :split-types t)
-           (type (integer -1 2147483645) nodenum))
+           (type (integer -1 1152921504606846973) nodenum))
   (if (mbe :logic (not (natp nodenum))
            :exec (equal -1 nodenum))
       context-array
@@ -1114,7 +1114,7 @@
 ;; ;; Returns nil but prints.
 ;; (defun print-contexts (dag-lst)
 ;;   (declare (xargs :guard (and (pseudo-dagp dag-lst)
-;;                               (< (len dag-lst) 2147483645))
+;;                               (< (len dag-lst) 1152921504606846973))
 ;;                   :guard-hints (("Goal" :in-theory (e/d (pseudo-dagp) (pseudo-dag-arrayp))))))
 ;;   (prog2$ (cw "(Computing contexts:~%")
 ;;           (let* ((dag-len (len dag-lst))

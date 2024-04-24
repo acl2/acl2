@@ -36,7 +36,7 @@
                                                        dag-variable-alist
                                                        dag-array-name dag-parent-array-name)
   (declare (type symbol var)
-           (type (integer 0 2147483646) dag-len)
+           (type (integer 0 1152921504606846974) dag-len)
            (xargs :guard (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbolp var))
                   :split-types t))
@@ -330,7 +330,7 @@
 (defund add-function-call-expr-to-dag-array-with-name (fn args dag-array dag-len dag-parent-array dag-constant-alist
                                                                 dag-variable-alist ;fixme just passed through
                                                                 dag-array-name dag-parent-array-name)
-  (declare (type (integer 0 2147483646) dag-len)
+  (declare (type (integer 0 1152921504606846974) dag-len)
            (xargs :guard (and (symbolp fn)
                               (not (equal 'quote fn))
                               (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)

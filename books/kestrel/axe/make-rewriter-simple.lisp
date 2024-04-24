@@ -4660,7 +4660,7 @@
           ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
           (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
         (b* ((entry (first rev-dag))
-             (nodenum (the (integer 0 2147483646) (car entry))) ; or, since they are consecutive, we could track this numerically.
+             (nodenum (the (integer 0 1152921504606846974) (car entry))) ; or, since they are consecutive, we could track this numerically.
              (print (get-print rewrite-stobj))
              (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
              (context-for-this-node (if maybe-internal-context-array (aref1 'context-array maybe-internal-context-array nodenum) (true-context)))

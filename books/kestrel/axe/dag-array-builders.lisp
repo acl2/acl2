@@ -54,7 +54,7 @@
                   :split-types t
                   :guard-hints (("Goal" :in-theory (enable rational-listp-when-all-natp dag-variable-alistp))))
            (type symbol var)
-           (type (integer 0 2147483646) dag-len))
+           (type (integer 0 1152921504606846974) dag-len))
   (let* ((nodenum-if-present (lookup-in-dag-variable-alist var dag-variable-alist)))
     (if nodenum-if-present
         (mv (erp-nil)
@@ -327,7 +327,7 @@
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist).
 ; Expands the array if needed.
 (defund add-function-call-expr-to-dag-array (fn args dag-array dag-len dag-parent-array dag-constant-alist)
-  (declare (type (integer 0 2147483646) dag-len)
+  (declare (type (integer 0 1152921504606846974) dag-len)
            (xargs :guard (and (symbolp fn)
                               (not (eq 'quote fn))
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)

@@ -1142,7 +1142,7 @@
                   :measure (+ 1 (nfix (- old-dag-len n)))
                   :split-types t
                   :guard-hints (("Goal" :in-theory (disable dargp dargp-less-than natp))))
-            (type (integer 0 2147483646) old-dag-len))
+            (type (integer 0 1152921504606846974) old-dag-len))
   (if (or (not (mbt (natp n)))
           (not (mbt (natp old-dag-len)))
           (>= n old-dag-len))

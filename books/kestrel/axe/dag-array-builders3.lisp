@@ -56,7 +56,7 @@
                                                  info ;;just passed through
                                                  )
   (declare (type symbol var)
-           (type (integer 0 2147483646) dag-len)
+           (type (integer 0 1152921504606846974) dag-len)
            (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (true-listp trees-equal-to-tree)
                               (trees-to-memoizep trees-equal-to-tree)
@@ -399,7 +399,7 @@
                                                           print-interval print ;can we avoid passing in both?
                                                           trees-equal-to-tree
                                                           memoization)
-  (declare (type (integer 0 2147483646) dag-len)
+  (declare (type (integer 0 1152921504606846974) dag-len)
            (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbolp fn)
                               (not (equal 'quote fn))

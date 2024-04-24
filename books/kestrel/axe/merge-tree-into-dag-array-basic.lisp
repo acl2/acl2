@@ -38,7 +38,7 @@
                                (bounded-axe-treep tree dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                               ;;(<= (+ (len vars) dag-len) 2147483645)
+                               ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                                (interpreted-function-alistp interpreted-function-alist))
                    :verify-guards nil ;; done below
                    ))
@@ -91,7 +91,7 @@
                                (bounded-axe-tree-listp trees dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                               ;;(<= (+ (len vars) dag-len) 2147483645)
+                               ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (endp trees)
        (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -114,7 +114,7 @@
                   (bounded-axe-treep tree dag-len)
                   (symbol-alistp var-replacement-alist)
                   (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                  ;;(<= (+ (len vars) dag-len) 2147483645)
+                  ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                   (interpreted-function-alistp interpreted-function-alist))
              (mv-let (erp nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                (merge-tree-into-dag-array-basic tree var-replacement-alist
@@ -132,7 +132,7 @@
                   (bounded-axe-tree-listp trees dag-len)
                   (symbol-alistp var-replacement-alist)
                   (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                  ;;(<= (+ (len vars) dag-len) 2147483645)
+                  ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                   (interpreted-function-alistp interpreted-function-alist))
              (mv-let (erp nodenums-or-quoteps new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                (merge-trees-into-dag-array-basic trees var-replacement-alist

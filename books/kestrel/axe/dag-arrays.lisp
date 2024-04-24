@@ -2269,7 +2269,7 @@
                                                   array-len-with-slack)
                                                  (bounded-natp-alistp-when-pseudo-dagp))))
                   :split-types t)
-           (type (integer 0 2147483646) slack-amount)
+           (type (integer 0 1152921504606846974) slack-amount)
            (type symbol dag-array-name))
   (let* ((dag-len (+ 1 (top-nodenum-of-dag dag))) ;no need to search for the max key, since we know it's the top node
          (length-with-slack (array-len-with-slack dag-len slack-amount)))

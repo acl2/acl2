@@ -20,17 +20,17 @@
 
 ;; Make an array where every element is the default.
 ;; TODO: Rename this, since "empty" here doesn't mean an array of length 0 but rather that the alist is empty.
-;according to array1p, the maximum-length field of an array can be at most *maximum-positive-32-bit-integer* = 2147483647
-;and the length (first dimension) of the array is at most 2147483646 since it must be strictly smaller than the :maximum-length (why strictly?)
+;according to array1p, the maximum-length field of an array can be at most (array-maximum-length-bound)
+;and the length (first dimension) must be strictly smaller than the :maximum-length (why strictly?)
 ;; Note that array1p disallows arrays of size 0 (why?), so this function does also.
 (defund make-empty-array-with-default (name size default)
   (declare (type symbol name)
-           (type (integer 1 2147483646) size)
+           (type (integer 1 1152921504606846974) size)
            (xargs :guard-hints (("Goal" :in-theory (enable array1p)))))
   (compress1 name
              (acons :header (list :dimensions (list size)
                                   ;;array1p require the :maximum-length to be at most *MAXIMUM-POSITIVE-32-BIT-INTEGER*
-                                  :maximum-length (min (* 2 size) *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
+                                  :maximum-length (min (* 2 size) *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                        )
                                   :default default
                                   ;; no :order given here means the order is effectively <
@@ -83,7 +83,7 @@
 ;; Make an array with SIZE elements (and name NAME), where every index has the value nil.
 (defund make-empty-array (name size)
   (declare (type symbol name)
-           (type (integer 1 2147483646) size)
+           (type (integer 1 1152921504606846974) size)
            (xargs :guard-hints (("Goal" :in-theory (enable array1p len)))))
   (make-empty-array-with-default name size nil))
 

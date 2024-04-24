@@ -51,7 +51,7 @@
 (defund tree-to-memoizep (tree)
   (declare (xargs :guard t))
   (and (axe-treep tree)
-       (bounded-axe-treep tree 2147483646) ; because of the type decl in sum-of-nodenums-aux (todo: widen?)
+       (bounded-axe-treep tree 1152921504606846974) ; because of the type decl in sum-of-nodenums-aux (todo: widen?)
        (consp tree)
        (not (eq 'quote (ffn-symb tree)))))
 
@@ -85,7 +85,7 @@
                        (equal (len (cadr fn))
                               (len args))))
               (not (equal 'quote fn))
-              (bounded-axe-tree-listp args 2147483646)))
+              (bounded-axe-tree-listp args 1152921504606846974)))
   :hints (("Goal" :in-theory (enable tree-to-memoizep))))
 
 (defthmd axe-treep-when-tree-to-memoizep
@@ -96,7 +96,7 @@
 (defthmd tree-to-memoizep-when-axe-treep-and-bounded-axe-treep-cheap
   (implies (and (axe-treep tree)
                 (bounded-axe-treep tree bound)
-                (<= bound 2147483646)
+                (<= bound 1152921504606846974)
                 ;; (natp bound)
                 )
            (equal (tree-to-memoizep tree)
@@ -108,7 +108,7 @@
 (defthm tree-to-memoizep-when-axe-treep-and-bounded-axe-treep-cheap-2
   (implies (and (axe-treep tree)
                 (bounded-axe-treep tree bound)
-                (<= bound 2147483646)
+                (<= bound 1152921504606846974)
                 ;; (natp bound)
                 (consp tree)
                 (not (equal 'quote (ffn-symb tree)))
@@ -177,7 +177,7 @@
  ;; TODO: Can variables actually occur in this?
  (defun sum-of-nodenums-aux (tree acc)
    (declare (xargs :guard (and (axe-treep tree)
-                               (bounded-axe-treep tree 2147483646)
+                               (bounded-axe-treep tree 1152921504606846974)
                                (natp acc)
                                (< acc *memoization-size*))
                    :split-types t)
@@ -187,7 +187,7 @@
            acc ;it's a variable
          ;;it's a nodenum
          (logand 1048575 ; 20 ones
-                 (+ (the (integer 0 2147483645) tree)
+                 (+ (the (integer 0 1152921504606846973) tree)
                     acc)))
      (if (eq 'quote (ffn-symb tree))
          acc ;it's a quoted constant
@@ -195,7 +195,7 @@
        (sum-of-nodenums-aux-lst (fargs tree) acc))))
 
  (defun sum-of-nodenums-aux-lst (trees acc)
-   (declare (xargs :guard (and (bounded-axe-tree-listp trees 2147483646)
+   (declare (xargs :guard (and (bounded-axe-tree-listp trees 1152921504606846974)
                                (natp acc)
                                (< acc *memoization-size*))
                    :verify-guards nil ;done below
@@ -530,7 +530,7 @@
   (implies (and (symbolp array-name)
                 (natp index)
                 (posp size)
-                (<= size 2147483646))
+                (<= size 1152921504606846974))
            (array-of-bounded-memo-alistsp-aux array-name
                                          (make-empty-array array-name size)
                                          index

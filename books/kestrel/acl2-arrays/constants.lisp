@@ -16,7 +16,8 @@
 
 ;; The maximum value of an array's "maximum length".
 ;; See array1p and array2p.
-(defconst *max-array-maximum-length* *maximum-positive-32-bit-integer*)
+;; TODO: Just use the built-in macro (but it is unclear from its name whether the bound is strict)?
+(defconst *max-array-maximum-length* (array-maximum-length-bound))
 
 ;; The length of the longest possible 1-dimensional array.
 ;; The -1 is here because array1p requries the length to be strictly less than

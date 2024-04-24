@@ -379,7 +379,7 @@
 
 (defthm dag-parent-arrayp-of-mv-nth-4-of-merge-embedded-dag-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-;                (<= dag-len 2147483645)
+;                (<= dag-len 1152921504606846973)
                 (not (mv-nth 0 (merge-embedded-dag-into-dag-array rev-dag-lst
                                                                   variable-replacement-alist
                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -387,7 +387,7 @@
                                                                   interpreted-function-alist)))
                 ;; (<= (+ (len rev-dag-lst)
                 ;;        dag-len)
-                ;;     2147483645)
+                ;;     1152921504606846973)
                 (if (consp rev-dag-lst)
                     (and (renaming-arrayp 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (car (car rev-dag-lst)))
                          (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array dag-len))
@@ -644,7 +644,7 @@
                                (bounded-axe-treep tree dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                               ;;(<= (+ (len vars) dag-len) 2147483645)
+                               ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                                (interpreted-function-alistp interpreted-function-alist))
                    :verify-guards nil ; done below
                    ))
@@ -744,7 +744,7 @@
                                (bounded-axe-tree-listp trees dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                               ;;(<= (+ (len vars) dag-len) 2147483645)
+                               ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (endp trees)
        (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1132,7 +1132,7 @@
          (bounded-axe-treep tree dag-len)
          (symbol-alistp var-replacement-alist)
          (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-         ;;(<= (+ (len vars) dag-len) 2147483645)
+         ;;(<= (+ (len vars) dag-len) 1152921504606846973)
          ;(interpreted-function-alistp interpreted-function-alist)
          )
   :recursivep nil

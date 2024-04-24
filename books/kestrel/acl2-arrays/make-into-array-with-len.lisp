@@ -34,7 +34,7 @@
 ;todo: adapt this to use max-key like the one above?
 ;todo: take the default value as an option
 (defund make-into-array-with-len (array-name alist len)
-  (declare (type (integer 1 2147483646) len)
+  (declare (type (integer 1 1152921504606846974) len)
            (type symbol array-name)
            (xargs :guard (and (true-listp alist)
                               (bounded-natp-alistp alist len) ;todo: change this to imply true-listp

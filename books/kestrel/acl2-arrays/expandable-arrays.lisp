@@ -68,7 +68,7 @@
                     (car (cadr (assoc-keyword :dimensions (cdr header)))))
                 (array1p array-name array)
                 (keyword-value-listp (cdr header))
-                (<= (cadr (assoc-keyword :maximum-length (cdr header))) 2147483647)
+                (<= (cadr (assoc-keyword :maximum-length (cdr header))) *max-array-maximum-length*)
                 (integerp (car (cadr (assoc-keyword :dimensions (cdr header)))))
                 (true-listp (cadr (assoc-keyword :dimensions (cdr header))))
                 (equal 1 (len (cadr (assoc-keyword :dimensions (cdr header)))))
@@ -102,8 +102,8 @@
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index)
-           (type (integer 1 2147483646) current-length))
+           (type (integer 0 1152921504606846973) index)
+           (type (integer 1 1152921504606846974) current-length))
   (let* ( ;; Make sure that INDEX will be a valid index and also that we at least double the length.
          (desired-new-length (max (+ 1 index) (* 2 current-length)))
          ;; Ensure that the new length is not larger than is allowed:
@@ -111,7 +111,7 @@
     (prog2$ (and *print-when-expanding* (cw "Expanding size of array ~x0 from ~x1 to ~x2.~%" name current-length new-length)) ;drop?
             (let* ((default (cadr (assoc-keyword :default header-args)))
                    (l (compress1 name (cons `(:header :dimensions (,new-length)
-                                                      :maximum-length ,(min 2147483647 (* 2 new-length))
+                                                      :maximum-length ,(min *max-array-maximum-length* (* 2 new-length))
                                                       :default ,default
                                                       :name ,name)
                                             l))))
@@ -229,10 +229,10 @@
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite expand-array)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index))
+           (type (integer 0 1152921504606846973) index))
   (let* ((header-args (cdr (header name l)))
          (dimensions (cadr (assoc-keyword :dimensions header-args))) ;call dimensions here?  would that be slower?
-         (length (the (integer 1 2147483646) (car dimensions))))
+         (length (the (integer 1 1152921504606846974) (car dimensions))))
     (if (< index length)
         (aset1 name l index val)
       ;;otherwise, we need to expand the array first:
@@ -268,10 +268,10 @@
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index))
+           (type (integer 0 1152921504606846973) index))
   (let* ((header-args (cdr (header name l)))
          (dimensions (cadr (assoc-keyword :dimensions header-args))) ;call the function dimensions?
-         (length (the (integer 1 2147483646) (car dimensions))))
+         (length (the (integer 1 1152921504606846974) (car dimensions))))
     (if (< index length)
         l
       (expand-array name l header-args index length))))
@@ -297,7 +297,7 @@
 
 (defthm integerp-of-alen1-of-maybe-expand-array
   (implies (and (natp index)
-;                (<= index 2147483646)
+;                (<= index 1152921504606846974)
 ;                (array1p array-name array)
                 (integerp (alen1 array-name array))
  ;               (<= (alen1 array-name array) *max-1d-array-length*)
@@ -390,7 +390,7 @@
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite expand-array)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index))
+           (type (integer 0 1152921504606846973) index))
   (let* ((header-args (cdr (header name l)))
          (dimensions (cadr (assoc-keyword :dimensions header-args)))
          (length (car dimensions)))
