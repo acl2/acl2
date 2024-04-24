@@ -2494,7 +2494,7 @@
                  (<= (* 4
                         (1+ (cdr (assoc-equal 'iprint-hard-bound
                                               (nth 2 state)))))
-                     *maximum-positive-32-bit-integer*)
+                     (array-maximum-length-bound))
                  (< (cdr (assoc-equal 'iprint-hard-bound
                                       (nth 2 state)))
                     (car (dimensions 'iprint-ar
@@ -2617,13 +2617,13 @@
                    (* 4
                       (cdr (assoc-equal 'iprint-hard-bound
                                         (nth 2 state)))))
-                *maximum-positive-32-bit-integer*)
+                (array-maximum-length-bound))
             (<= (+ 4
                    (* 4
                       (cdr (assoc-equal 'iprint-hard-bound
                                         (nth 2 (composed-oracle-updates
                                                 state))))))
-                *maximum-positive-32-bit-integer*))
+                (array-maximum-length-bound)))
    :hints (("Goal"
             :use iprint-hard-bound-inequality-preserved-by-iprint-oracle-updates?
             :in-theory (enable get-global)))))
@@ -2805,7 +2805,7 @@
                                         iprint-alist last-index state)))))
           (let ((new-max-len (* 4 (1+ (max (iprint-hard-bound state)
                                            last-index)))))
-            (if (< *maximum-positive-32-bit-integer*
+            (if (< (array-maximum-length-bound)
                    new-max-len)
                 (maximum-length 'iprint-ar
                                 (cdr (assoc-equal 'iprint-ar (nth 2 state))))
@@ -2882,7 +2882,7 @@
    (equal (iprint-last-index (rollover-iprint-ar
                               iprint-alist (caar iprint-alist) state))
           (if (<= (* 4 (1+ (max (iprint-hard-bound state) (caar iprint-alist))))
-                  *maximum-positive-32-bit-integer*)
+                  (array-maximum-length-bound))
               0
             (iprint-last-index state)))
    :hints (("Goal" :in-theory (enable aref1 assoc-equal acons
@@ -2937,7 +2937,7 @@
           (let* ((new-dim (1+ (max (iprint-hard-bound state)
                                    (car (car iprint-alist)))))
                  (new-max-len (* 4 new-dim)))
-            (if (< *maximum-positive-32-bit-integer* new-max-len)
+            (if (< (array-maximum-length-bound) new-max-len)
                 (dimensions 'iprint-ar
                             (cdr (assoc-equal 'iprint-ar (nth 2 state))))
               (list new-dim))))
@@ -2969,7 +2969,7 @@
  (defthm rollover-iprint-ar-iprint-array-p-max-1
    (implies
     (and (<= (+ 4 (* 4 (car (car iprint-alist))))
-             2147483647)
+             (array-maximum-length-bound))
          (< (cdr (assoc-equal 'iprint-hard-bound
                               (nth 2 state)))
             (car (car iprint-alist))))

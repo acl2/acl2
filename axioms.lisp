@@ -12435,6 +12435,71 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; conveniently disable.  See the extended discussion of theories
 ; in "other-events.lisp" where deftheory is defined.
 
+; Essay on Fixnum Declarations
+
+; Below are values of the largest fixnums in 64-bit Lisps as of April, 2024.
+
+; Values of most-positive-fixnum in 64-bit Lisps:
+; GCL:       9223372036854775807 ; (1- (expt 2 63))
+; Allegro:   1152921504606846975 ; (1- (expt 2 60))
+; CMUCL:     [apparently available only in 32-bit Lisp]
+; SBCL:      4611686018427387903 ; (1- (expt 2 62))
+; CCL:       1152921504606846975 ; (1- (expt 2 60))
+; Lispworks: 1152921504606846975 ; (1- (expt 2 60))
+
+; The remainder of this Essay gives historical perspective in ACL2's use of
+; fixnum arithmetic.  It was written when 32-bit Lisps were still common.  The
+; discussion carries over to 64-bit Lisps, where now we make type declarations
+; using (signed-byte #.*fixnum-bits*) rather than, as discussed below,
+; (signed-byte 30).  To get the previous behavior, use a 32-bit Lisp like CMUCL
+; or set environment variable ACL2_SMALL_FIXNUMS to a non-empty value.
+
+; To the best of our knowledge, the values of most-positive-fixnum in various
+; 32-bit lisps are as follows, so we feel safe in using (signed-byte 30) and
+; hence (unsigned-byte 29) to represent fixnums.  At worst, if a lisp is used
+; for which (signed-byte 30) is not a subtype of fixnum, a compiler may simply
+; fail to create efficient code.  Note:
+
+; (the (signed-byte 30) 536870911) ; succeeds
+; (the (signed-byte 30) 536870912) ; fails
+; (the (unsigned-byte 29) 536870911) ; succeeds
+; (the (unsigned-byte 29) 536870912) ; fails
+
+; Values of most-positive-fixnum in 32-bit Lisps:
+; GCL:        2147483647
+; Allegro:    536870911
+; Lucid:      536870911
+; CMUCL:      536870911
+; SBCL:       536870911
+; CCL:        536870911
+; MCL:        268435455 ; not supported after ACL2 Version_3.1
+; CLISP:       16777215
+; Lispworks:  536870911 [version 6.0.1; but observed 8388607 in versions 4.2.0
+;                        and 4.4.6]
+
+; We have made many type declarations in the sources of (signed-byte 30).
+; Performance could be seriously degraded if these were not fixnum
+; declarations.  If the following check fails, then we should consider lowering
+; 30.  However, clisp has 24-bit fixnums.  Clisp maintainer Sam Steingold has
+; assured us that "CLISP has a very efficient bignum implementation."  Lispworks
+; Version 4.2.0 on Linux, 32-bit, had most-positive-fixnum = 8388607 and
+; most-negative-fixnum = -8388608; and we have been informed (email 10/22/02)
+; that "this is an architectural limit on this platform and the LispWorks fixnum
+; size cannot be reconfigured."  But Lispworks 6 is back to supporting larger
+; fixnums.
+
+(defconst *fixnum-bits*
+  #+acl2-small-fixnums 30
+  #-acl2-small-fixnums 61)
+(defconst *fixnat-bits* (1- *fixnum-bits*))
+(defmacro the-fixnum (n)
+  (list 'the
+        `(signed-byte ,*fixnum-bits*)
+        n))
+(defmacro fixnum-bound ()
+; This has been the value of most-positive-fixnum in some 32-bit Lisps.
+  (1- (expt 2 *fixnat-bits*)))
+
 ; ARRAYS - efficient applicative arrays.
 
 ; We provide functions for accessing and updating both one and two
@@ -12507,8 +12572,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Common Lisp implementation, as enforced by make-array$, whose
 ; definition follows shortly after this.
 
-(defconst *maximum-positive-32-bit-integer*
-  (1- (expt 2 31)))
+(defmacro array-maximum-length-bound ()
+  (fixnum-bound))
 
 #-acl2-loop-only
 (defconst *our-array-total-size-limit*
@@ -12566,21 +12631,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; provide a useful error message.  So we provide this function for creation of
 ; arrays.
 
-; In case we find the following information useful later, here is a summary of
-; the above constants in various 32-bit lisps, observed many years ago as of
-; the time you are reading this comment.
+; Here is a summary of the above constants in various lisps.
 
-; Lisp              array-dimension-limit            array-total-size-limit
-; ---------------   ---------------------            ----------------------
-; CLISP 2.30          16777216 [2^24]                  16777216 [2^24]
-; CMUCL 18e          536870911 [2^29-1]               536870911 [2^29-1]
-; SBCL 0.0           536870911 [2^29-1]               536870911 [2^29-1]
-; GCL 2.5.0         2147483647 [2^31-1]              2147483647 [2^31-1]
-; LISPWORKS 4.2.7      8388607 [2^23-1]                 2096896 [2^21-256]
-; Allegro CL 6.2      16777216 [2^24]                  16777216 [2^24]
-; MCL 4.2             16777216 [2^24]                  16777216 [2^24]
-; OpenMCL Version (Beta: Darwin) 0.13.6 (CCL):
-;                     16777216 [2^24]                  16777216 [2^24]
+; Lisp              array-dimension-limit          array-total-size-limit
+; ---------------   ---------------------          ----------------------
+; CMUCL 21e                   536870911 [2^29-1]             536870911 [2^29-1]
+; SBCL 2.4.3             17592186044416 [2^44]          17592186044416 [2^44]
+; GCL 2.5.0         9223372036854775807 [2^63-1]   9223372036854775807 [2^63-1]
+; LISPWORKS 8.0.1             536870911 [2^29-1]             536870911 [2^29-1]
+; Allegro CL 10.0   1152921504606846975 [2^60-1]   1152921504606846975 [2^60-1]
+; CCL 1.12.1-22       72057594037927936 [2^56]       72057594037927936 [2^56]
 
 ; We go through some effort to find violations at compile time, partly for
 ; efficiency but mostly in order to provide compile-time feedback when there is
@@ -13050,7 +13110,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (integerp maximum-length)
                      (< 0 (car dimensions))
                      (< (car dimensions) maximum-length)
-                     (<= maximum-length *maximum-positive-32-bit-integer*)
+                     (<= maximum-length (array-maximum-length-bound))
                      (bounded-integer-alistp l (car dimensions))))))))
 
 (defthm array1p-forward
@@ -13067,7 +13127,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (< (car (cadr (assoc-keyword :dimensions (cdr (assoc-eq :header l)))))
                    (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l)))))
                 (<= (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l))))
-                    *maximum-positive-32-bit-integer*)
+                    (array-maximum-length-bound))
                 (bounded-integer-alistp
                  l
                  (car (cadr (assoc-keyword :dimensions (cdr (assoc-eq :header l))))))))
@@ -13079,7 +13139,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (< (car (cadr (assoc-keyword :dimensions (cdr (assoc-eq :header l)))))
                    (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l)))))
                 (<= (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l))))
-                    *maximum-positive-32-bit-integer*)))
+                    (array-maximum-length-bound))))
   :rule-classes ((:linear :match-free :all)))
 
 (defun bounded-integer-alistp2 (l i j)
@@ -13137,7 +13197,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             (< 0 d2)
                             (< (* d1 d2) maximum-length)
                             (<= maximum-length
-                                *maximum-positive-32-bit-integer*)
+                                (array-maximum-length-bound))
                             (bounded-integer-alistp2 l d1 d2)))))))))
 
 (defthm array2p-forward
@@ -13156,7 +13216,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (cadr (cadr (assoc-keyword :dimensions (cdr (assoc-eq :header l))))))
                    (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l)))))
                 (<= (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l))))
-                    *maximum-positive-32-bit-integer*)
+                    (array-maximum-length-bound))
                 (bounded-integer-alistp2
                  l
                  (car (cadr (assoc-keyword
@@ -13173,7 +13233,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (cadr (cadr (assoc-keyword :dimensions (cdr (assoc-eq :header l))))))
                    (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l)))))
                 (<= (cadr (assoc-keyword :maximum-length (cdr (assoc-eq :header l))))
-                    *maximum-positive-32-bit-integer*)))
+                    (array-maximum-length-bound))))
   :rule-classes ((:linear :match-free :all)))
 
 ; (in-theory (disable array1p array2p))
@@ -13300,7 +13360,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; The uses of (the (unsigned-byte 31) ...) below rely on the array1p guard,
 ; which for example guarantees that the dimension is bounded by
-; *maximum-positive-32-bit-integer* and that each array index (i.e., each car)
+; (array-maximum-length-bound) and that each array index (i.e., each car)
 ; is less than the dimension.  These declarations probably only assist
 ; efficiency in GCL, but that may be the Lisp that benefits most from such
 ; fixnum declarations, anyhow.
@@ -13737,8 +13797,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; The uses of (the (unsigned-byte 31) ...) below rely on the array2p
 ; guard, which for example guarantees that each dimension is bounded
-; by *maximum-positive-32-bit-integer* and that array indices are
-; therefore less than *maximum-positive-32-bit-integer*.  These
+; by (array-maximum-length-bound) and that array indices are
+; therefore less than (array-maximum-length-bound).  These
 ; declarations probably only assist efficiency in GCL, but that may be
 ; the Lisp that benefits most from such fixnum declarations, anyhow.
 
@@ -14074,12 +14134,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (true-listp l)
                               (true-listp (nth j l)))))
   (update-nth j (update-nth key val (nth j l)) l))
-
-(defmacro maximum-positive-32-bit-integer ()
-  *maximum-positive-32-bit-integer*)
-
-(defmacro minimum-negative-32-bit-integer ()
-  (+ (- *maximum-positive-32-bit-integer*) -1))
 
 (defun acl2-number-listp (l)
   (declare (xargs :guard t))
@@ -16708,71 +16762,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (and (integerp x)
                 (<= 0 x)))
   :rule-classes :forward-chaining)
-
-; Essay on Fixnum Declarations
-
-; Below are values of the largest fixnums in 64-bit Lisps as of April, 2024.
-
-; Values of most-positive-fixnum in 64-bit Lisps:
-; GCL:       9223372036854775807 ; (1- (expt 2 63))
-; Allegro:   1152921504606846975 ; (1- (expt 2 60))
-; CMUCL:     [apparently available only in 32-bit Lisp]
-; SBCL:      4611686018427387903 ; (1- (expt 2 62))
-; CCL:       1152921504606846975 ; (1- (expt 2 60))
-; Lispworks: 1152921504606846975 ; (1- (expt 2 60))
-
-; The remainder of this Essay gives historical perspective in ACL2's use of
-; fixnum arithmetic.  It was written when 32-bit Lisps were still common.  The
-; discussion carries over to 64-bit Lisps, where now we make type declarations
-; using (signed-byte #.*fixnum-bits*) rather than, as discussed below,
-; (signed-byte 30).  To get the previous behavior, use a 32-bit Lisp like CMUCL
-; or set environment variable ACL2_SMALL_FIXNUMS to a non-empty value.
-
-; To the best of our knowledge, the values of most-positive-fixnum in various
-; 32-bit lisps are as follows, so we feel safe in using (signed-byte 30) and
-; hence (unsigned-byte 29) to represent fixnums.  At worst, if a lisp is used
-; for which (signed-byte 30) is not a subtype of fixnum, a compiler may simply
-; fail to create efficient code.  Note:
-
-; (the (signed-byte 30) 536870911) ; succeeds
-; (the (signed-byte 30) 536870912) ; fails
-; (the (unsigned-byte 29) 536870911) ; succeeds
-; (the (unsigned-byte 29) 536870912) ; fails
-
-; Values of most-positive-fixnum in 32-bit Lisps:
-; GCL:        2147483647
-; Allegro:    536870911
-; Lucid:      536870911
-; CMUCL:      536870911
-; SBCL:       536870911
-; CCL:        536870911
-; MCL:        268435455 ; not supported after ACL2 Version_3.1
-; CLISP:       16777215
-; Lispworks:  536870911 [version 6.0.1; but observed 8388607 in versions 4.2.0
-;                        and 4.4.6]
-
-; We have made many type declarations in the sources of (signed-byte 30).
-; Performance could be seriously degraded if these were not fixnum
-; declarations.  If the following check fails, then we should consider lowering
-; 30.  However, clisp has 24-bit fixnums.  Clisp maintainer Sam Steingold has
-; assured us that "CLISP has a very efficient bignum implementation."  Lispworks
-; Version 4.2.0 on Linux, 32-bit, had most-positive-fixnum = 8388607 and
-; most-negative-fixnum = -8388608; and we have been informed (email 10/22/02)
-; that "this is an architectural limit on this platform and the LispWorks fixnum
-; size cannot be reconfigured."  But Lispworks 6 is back to supporting larger
-; fixnums.
-
-(defconst *fixnum-bits*
-  #+acl2-small-fixnums 30
-  #-acl2-small-fixnums 61)
-(defconst *fixnat-bits* (1- *fixnum-bits*))
-(defmacro the-fixnum (n)
-  (list 'the
-        `(signed-byte ,*fixnum-bits*)
-        n))
-(defmacro fixnum-bound ()
-; This has been the value of most-positive-fixnum in some 32-bit Lisps.
-  (1- (expt 2 *fixnat-bits*)))
 
 #-acl2-loop-only
 (defun-one-output zpf (x)
@@ -19815,7 +19804,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 (* 4 (car (dimensions 'iprint-ar iprint-ar))))
              (<= (* 4 (1+ iprint-hard-bound))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                 *maximum-positive-32-bit-integer*)
+                 (array-maximum-length-bound))
              (iprint-falp iprint-fal)
 
 ; The following condition is probably not logically necessary.  However, it

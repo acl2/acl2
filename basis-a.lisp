@@ -1733,7 +1733,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*))))
+                           (array-maximum-length-bound)))))
   (let* ((old-iprint-ar (f-get-global 'iprint-ar state))
          (new-dim
 
@@ -1774,13 +1774,13 @@
 
           (* 4 new-dim)))
     (cond
-     ((< *maximum-positive-32-bit-integer* new-max-len)
+     ((< (array-maximum-length-bound) new-max-len)
       (prog2$
        (er hard? 'rollover-iprint-ar
            "Attempted to expand iprint-ar to a maximum-length of ~x0, ~
-            exceeding *maximum-positive-32-bit-integer*, which is ~x1."
+            exceeding (array-maximum-length-bound), which is ~x1."
            new-max-len
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        state))
      (t
       (let* ((new-header
@@ -1849,7 +1849,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*)
+                           (array-maximum-length-bound))
                        (iprint-falp iprint-fal-new))))
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
@@ -1922,7 +1922,7 @@
        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        (< (f-get-global 'iprint-hard-bound state)
 
 ; Quoting the Essay on Iprinting:
