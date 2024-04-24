@@ -39,7 +39,7 @@
 (local
   (defthm depth-arrayp-of-make-empty-array-gen
     (implies (and (<= len2 len)
-                  (<= len 2147483646)
+                  (<= len *max-1d-array-length*)
                   (natp len2)
                   (posp len)
                   (symbolp array-name))
@@ -277,7 +277,7 @@
                               (true-listp starting-nodes)
                               (consp starting-nodes) ;or else the maxelem below is a problem
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              ;(all-< starting-nodes 2147483646)
+                              ;(all-< starting-nodes *max-1d-array-length*)
                               (all-< starting-nodes dag-len))))
   (let* ((max-nodenum (maxelem starting-nodes))
          (depth-array (make-empty-array 'depth-array (+ 1 max-nodenum)))

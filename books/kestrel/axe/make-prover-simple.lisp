@@ -5706,7 +5706,7 @@
 ;;                                 options)
 ;;          (declare (xargs :guard (and (or (myquotep dag)
 ;;                                          (and (pseudo-dagp dag) ;todo: allow a quotep?
-;;                                               (< (len dag) 2147483647)))
+;;                                               (<= (len dag) *max-1d-array-length*)))
 ;;                                      (pseudo-term-listp assumptions)
 ;;                                      (pseudo-dag-arrayp context-array-name context-array context-array-len)
 ;;                                      (bounded-contextp context context-array-len)
@@ -5813,12 +5813,12 @@
          (b* ( ;; Check inputs:
               ((when (not (or (myquotep dag1)
                               (and (pseudo-dagp dag1)
-                                   (<= (len dag1) 2147483646)))))
+                                   (<= (len dag1) *max-1d-array-length*)))))
                (er hard? ',prove-dag-implication-name "Bad first argument: ~x0" dag1)
                (mv :bad-input nil state))
               ((when (not (or (myquotep dag2)
                               (and (pseudo-dagp dag2)
-                                   (<= (len dag2) 2147483646)))))
+                                   (<= (len dag2) *max-1d-array-length*)))))
                (er hard? ',prove-dag-implication-name "Bad second argument: ~x0" dag2)
                (mv :bad-input nil state))
               ((when (not (rule-item-list-listp rule-lists)))
@@ -5885,7 +5885,7 @@
                          (mv :failed nil state))))
               (top-nodenum (top-nodenum-of-dag implication-dag-or-quotep))
               (dag-len (+ 1 top-nodenum))
-              ((when (>= dag-len 2147483647))
+              ((when (not (<= dag-len *max-1d-array-length*)))
                (prog2$ (cw "ERROR: DAG too big.")
                        (mv :failed nil state)))
               (slack-amount 0) ;todo: increase slack amount to dag-len?

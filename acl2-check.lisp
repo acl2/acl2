@@ -62,67 +62,6 @@ is using two characters to indicate a new line?"))
             purposes of~%character manipulation.  ACL2 will not work in this ~
             Common Lisp."))
 
-; Essay on Fixnum Declarations
-
-; To the best of our knowledge, the values of most-positive-fixnum in various
-; 32-bit lisps are as follows, so we feel safe in using (signed-byte 30) and
-; hence (unsigned-byte 29) to represent fixnums.  At worst, if a lisp is used
-; for which (signed-byte 30) is not a subtype of fixnum, a compiler may simply
-; fail to create efficient code.  Note:
-
-; (the (signed-byte 30) 536870911) ; succeeds
-; (the (signed-byte 30) 536870912) ; fails
-; (the (unsigned-byte 29) 536870911) ; succeeds
-; (the (unsigned-byte 29) 536870912) ; fails
-
-; Values of most-positive-fixnum in 32-bit Lisps:
-; GCL:        2147483647
-; Allegro:    536870911
-; Lucid:      536870911
-; CMUCL:      536870911
-; SBCL:       536870911
-; CCL:        536870911
-; MCL:        268435455 ; not supported after ACL2 Version_3.1
-; CLISP:       16777215
-; Lispworks:  536870911 [version 6.0.1; but observed 8388607 in versions 4.2.0
-;                        and 4.4.6]
-
-; We have made many type declarations in the sources of (signed-byte 30).
-; Performance could be seriously degraded if these were not fixnum
-; declarations.  If the following check fails, then we should consider lowering
-; 30.  However, clisp has 24-bit fixnums.  Clisp maintainer Sam Steingold has
-; assured us that "CLISP has a very efficient bignum implementation."  Lispworks
-; Version 4.2.0 on Linux, 32-bit, had most-positive-fixnum = 8388607 and
-; most-negative-fixnum = -8388608; and we have been informed (email 10/22/02)
-; that "this is an architectural limit on this platform and the LispWorks fixnum
-; size cannot be reconfigured."  But Lispworks 6 is back to supporting larger
-; fixnums.
-
-; As of July 2018, 64-bit computers have been available for many years, and it
-; may be appropriate soon to make changes based on that fact since ACL2 is only
-; rarely run on 32-bit Lisps these days.  Below are values of the largest
-; fixnums in 64-bit Lisps.
-
-; Values of most-positive-fixnum in 64-bit Lisps:
-; GCL:       9223372036854775807 ; (1- (expt 2 63))
-; Allegro:   1152921504606846975 ; (1- (expt 2 60))
-; CMUCL:     [apparently available only in 32-bit Lisp]
-; SBCL:      4611686018427387903 ; (1- (expt 2 62))
-; CCL:       1152921504606846975 ; (1- (expt 2 60))
-; Lispworks: 1152921504606846975 ; (1- (expt 2 60))
-
-#-(or clisp (and lispworks (not lispworks-64bit)))
-(or (and (<= (1- (ash 1 29)) most-positive-fixnum)
-         (<= most-negative-fixnum (- (ash 1 29))))
-    (error "We assume for performance reasons that numbers from
-(- (ash 1 29)) to (1- (ash 1 29)) are fixnums in Common Lisp
-implementations.  If you see this error, then please contact the ACL2
-implementors and tell them which Common Lisp implementation you are
-using, and that in that Lisp, most-positive-fixnum = ~s and
-most-negative-fixnum = ~s."
-           most-positive-fixnum
-           most-negative-fixnum))
-
 ; Now we deal with the existence of case-sensitive images in Allegro.
 
 #+(and allegro allegro-version>= (version>= 6 0))

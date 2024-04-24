@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "bounded-nat-alists")
+(include-book "constants")
 (include-book "alen1")
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "maximum-length"))
@@ -33,7 +34,7 @@
 ;todo: adapt this to use max-key like the one above?
 ;todo: take the default value as an option
 (defund make-into-array-with-len (array-name alist len)
-  (declare (type (integer 1 2147483646) len)
+  (declare (type (integer 1 1152921504606846974) len)
            (type symbol array-name)
            (xargs :guard (and (true-listp alist)
                               (bounded-natp-alistp alist len) ;todo: change this to imply true-listp
@@ -44,7 +45,7 @@
                     (list :dimensions (list len)
                           ;; TODO: Can we do something better here?:
                           :maximum-length (min (* 2 len)
-                                               *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
+                                               *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                )
                           :default nil ; ;fixme?
                           :name array-name)
@@ -66,7 +67,7 @@
   (implies (and (symbolp array-name)
                 (bounded-integer-alistp alist len)
                 (posp len)
-                (< len 2147483647))
+                (<= len *max-1d-array-length*))
            (array1p array-name (make-into-array-with-len array-name alist len)))
   :hints (("Goal" :in-theory (enable make-into-array-with-len array1p-rewrite))))
 
@@ -83,7 +84,7 @@
                 (natp index)
                 (< index len)
                 (integerp len)
-                (< len 2147483647) ; todo: drop?
+                (<= len *max-1d-array-length*) ; todo: drop?
                 )
            (equal (aref1 array-name (make-into-array-with-len array-name alist len) index)
                   (cdr (assoc-equal index alist))))

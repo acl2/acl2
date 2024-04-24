@@ -1473,7 +1473,7 @@
 
 (defmacro fn-count-evg-max-calls ()
 
-; Warning: The following plus 2 must be a (signed-byte 30); see
+; Warning: The following plus 2 must be a (signed-byte #.*fixnum-bits*); see
 ; fn-count-evg-rec.
 
 ; Modulo that requirement, the choice of 1000 below is rather arbitrary.  We
@@ -1487,8 +1487,8 @@
 ; This is a fast version of min, for fixnums.  We avoid the name minf because
 ; it's already used in the regression suite.
 
-  (declare (type (signed-byte 30) x y))
-  (the (signed-byte 30) (if (< x y) x y)))
+  (declare (type (signed-byte #.*fixnum-bits*) x y))
+  (the (signed-byte #.*fixnum-bits*) (if (< x y) x y)))
 
 (defun fn-count-evg-rec (evg acc calls)
 
@@ -1497,9 +1497,9 @@
 
   (declare (xargs :measure (acl2-count evg)
                   :ruler-extenders :all)
-           (type (unsigned-byte 29) acc calls))
+           (type (unsigned-byte #.*fixnat-bits*) acc calls))
   (the
-   (unsigned-byte 29)
+   (unsigned-byte #.*fixnat-bits*)
    (cond
     ((or (>= calls (fn-count-evg-max-calls))
          (>= acc (fn-count-evg-max-val)))

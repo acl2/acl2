@@ -1393,7 +1393,7 @@
 ;;   (implies (and (mv-nth 2 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))
 ;;                 (subsetp-equal literal-nodenums))
 ;;            (<= (mv-nth 5 (substitute-var-set literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist var-ordering print))
-;;                2147483646))
+;;                *max-1d-array-length*))
 ;;   :hints (("Goal" :in-theory (enable SUBSTITUTE-VAR-SET))))
 
 (local

@@ -23,8 +23,7 @@
 ; TODO: Add an option for slack space
 (defund make-into-array (array-name alist)
   (declare (xargs :guard (and (true-listp alist)
-                              (bounded-natp-alistp alist (+ -1 *maximum-positive-32-bit-integer*)) ; might be able to drop the -1 if array1p is weakened a bit
-                              )
+                              (bounded-natp-alistp alist *max-1d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite))))
            (type symbol array-name))
   (let* ((len (if (consp alist)
@@ -42,7 +41,7 @@
   :hints (("Goal" :in-theory (enable make-into-array))))
 
 (defthm array1p-of-make-into-array
-  (implies (and (bounded-natp-alistp alist 2147483646)
+  (implies (and (bounded-natp-alistp alist *max-1d-array-length*)
                 (true-listp alist)
                 ;alist
                 (symbolp array-name)
@@ -52,7 +51,7 @@
   :hints (("Goal" :in-theory (e/d (array1p compress1 make-into-array) (normalize-array1p-name)))))
 
 (defthm aref1-of-make-into-array
-  (implies (and (bounded-natp-alistp alist 2147483646)
+  (implies (and (bounded-natp-alistp alist *max-1d-array-length*)
                 (true-listp alist)
                 alist
                 (symbolp array-name)

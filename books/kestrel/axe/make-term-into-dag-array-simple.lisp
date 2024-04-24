@@ -77,8 +77,8 @@
                 (symbolp dag-array-name)
                 (symbolp dag-parent-array-name)
                 (not (mv-nth 0 (make-term-into-dag-array-simple term dag-array-name dag-parent-array-name ))))
-           (< (mv-nth 3 (make-term-into-dag-array-simple term dag-array-name dag-parent-array-name ))
-              2147483647))
+           (<= (mv-nth 3 (make-term-into-dag-array-simple term dag-array-name dag-parent-array-name ))
+               *max-1d-array-length*))
   :hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-simple)
            :in-theory (disable wf-dagp-of-make-term-into-dag-array-simple))))
 

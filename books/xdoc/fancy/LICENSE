@@ -58,20 +58,10 @@ Copyrights for Supporting Libraries: (within the "lib" directory)
      Released under the MIT license.
      http://jquery.com/
 
-   jquery.base64.js:
-     Copyright 2012 Yannick Albert
-     Released under MIT license.
-     https://github.com/yckart/jquery.base64.js
-
    PowerTip:
      Copyright 2013 Steven Benner
      Released under MIT license.
      http://stevenbenner.github.com/jquery-powertip/
-
-   LazyLoad:
-     Copyright 2011 Ryan Grove
-     Released under MIT license.
-     https://github.com/rgrove/lazyload
 
    Typeahead:
      Copyright 2013 Twitter, Inc. and other contributors

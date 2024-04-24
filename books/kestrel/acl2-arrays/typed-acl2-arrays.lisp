@@ -189,7 +189,7 @@
                   (implies (and (< index len)
                                 (natp index)
                                 (posp len)
-                                (< len 2147483647)
+                                (<= len *max-1d-array-length*)
                                 (symbolp array-name))
                            (,aux-fn array-name (make-empty-array-with-default array-name len ,default) index ,@extra-vars))
                   :hints (("Goal" :in-theory (enable ,aux-fn))))))
@@ -303,7 +303,7 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array-with-default array-name len ,default) len ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable ,fn))))))
 
        ,@(and default-satisfies-predp
@@ -312,7 +312,7 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array array-name len) len ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable make-empty-array))))))
 
        ,@(and (equal default nil) ;since make-empty-array puts in nil
@@ -321,7 +321,7 @@
               `((defthm ,(pack$ fn '-of-make-empty-array-and-0)
                   (implies (and (posp len)
                                 (symbolp array-name)
-                                (<= len 2147483646))
+                                (<= len *max-1d-array-length*))
                            (,fn array-name
                                 (make-empty-array array-name len)
                                 0
@@ -373,7 +373,7 @@
                   (implies (and (< index len)
                                 (natp index)
                                 (posp len)
-                                (< len 2147483647)
+                                (<= len *max-1d-array-length*)
                                 (symbolp array-name))
                            (,aux-fn array-name (make-empty-array-with-default array-name len ,default) index ,@extra-vars))
                   :hints (("Goal" :in-theory (enable ,aux-fn))))
@@ -398,9 +398,9 @@
                                 (,aux-fn array-name array index ,@extra-vars)
                                 (array1p array-name array)
                                 (natp index)
-                                (< index 2147483646)
+                                (< index *max-1d-array-length*)
                                 (natp index2)
-                                (< index2 2147483646)
+                                (< index2 *max-1d-array-length*)
                                 (equal header-args (cdr (header array-name array)))
                                 (equal current-length (alen1 array-name array))
                                 (equal ,default (default array-name array)))
@@ -423,7 +423,7 @@
                                 (,aux-fn array-name array (+ -1 (alen1 array-name array)) ,@extra-vars)
                                 (array1p array-name array)
                                 (natp index2)
-                                (< index2 2147483646)
+                                (< index2 *max-1d-array-length*)
                                 (equal header-args (cdr (header array-name array)))
                                 (equal current-length (alen1 array-name array))
                                 (equal ,default (default array-name array)))
@@ -511,14 +511,14 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array-with-default array-name len ,default) ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable ,fn))))
 
                 (defthm ,(pack$ fn '-of-expand-array)
                   (implies (and (<= (alen1 array-name array) index) ;or we wouldn't be calling expand-array
                                 (,fn array-name array ,@extra-vars)
                                 (natp index)
-                                (< index 2147483646)
+                                (< index *max-1d-array-length*)
                                 (equal header-args (cdr (header array-name array)))
                                 (equal current-length (alen1 array-name array)))
                            (,fn array-name (expand-array array-name array header-args index current-length) ,@extra-vars))
@@ -527,7 +527,7 @@
                 (defthm ,(pack$ fn '-of-maybe-expand-array)
                   (implies (and (,fn array-name array ,@extra-vars)
                                 (natp index)
-                                (< index 2147483646))
+                                (< index *max-1d-array-length*))
                            (,fn array-name (maybe-expand-array array-name array index) ,@extra-vars))
                   :hints (("Goal" :in-theory (enable maybe-expand-array))))))
 
@@ -537,7 +537,7 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array array-name len) ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable make-empty-array))))))
 
        ;; ;; true even if the default does not satisfy the pred, because the 0
@@ -545,7 +545,7 @@
        ;; (defthm ,(pack$ fn '-of-make-empty-array-and-0)
        ;;   (implies (and (posp len)
        ;;                 (symbolp array-name)
-       ;;                 (<= len 2147483646))
+       ;;                 (<= len *max-1d-array-length*))
        ;;            (,fn array-name
        ;;                 (make-empty-array array-name len)
        ;;                 0

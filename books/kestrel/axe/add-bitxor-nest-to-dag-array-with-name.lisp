@@ -48,7 +48,7 @@
                                                          natp
                                                          CAR-BECOMES-NTH-OF-0
                                                          PSEUDO-DAG-ARRAYP)))))
-           (type (integer 0 2147483646) dag-len))
+           (type (integer 0 1152921504606846974) dag-len))
   (if (endp rev-leaves)
       (mv (erp-nil) nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (mv-let (erp nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -107,7 +107,7 @@
                                                          natp
                                                          CAR-BECOMES-NTH-OF-0
                                                          PSEUDO-DAG-ARRAYP)))))
-           (type (integer 0 2147483646) dag-len))
+           (type (integer 0 1152921504606846974) dag-len))
   (if (endp rev-leaves)
       ;; no leaves:
       (mv (erp-nil)

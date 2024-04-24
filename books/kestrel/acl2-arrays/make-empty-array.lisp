@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "constants")
 (include-book "alen1")
 (local (include-book "array1p"))
 (local (include-book "compress1"))
@@ -19,17 +20,17 @@
 
 ;; Make an array where every element is the default.
 ;; TODO: Rename this, since "empty" here doesn't mean an array of length 0 but rather that the alist is empty.
-;according to array1p, the maximum-length field of an array can be at most *maximum-positive-32-bit-integer* = 2147483647
-;and the length (first dimension) of the array is at most 2147483646 since it must be strictly smaller than the :maximum-length (why strictly?)
+;according to array1p, the maximum-length field of an array can be at most (array-maximum-length-bound)
+;and the length (first dimension) must be strictly smaller than the :maximum-length (why strictly?)
 ;; Note that array1p disallows arrays of size 0 (why?), so this function does also.
 (defund make-empty-array-with-default (name size default)
   (declare (type symbol name)
-           (type (integer 1 2147483646) size)
+           (type (integer 1 1152921504606846974) size)
            (xargs :guard-hints (("Goal" :in-theory (enable array1p)))))
   (compress1 name
              (acons :header (list :dimensions (list size)
                                   ;;array1p require the :maximum-length to be at most *MAXIMUM-POSITIVE-32-BIT-INTEGER*
-                                  :maximum-length (min (* 2 size) *maximum-positive-32-bit-integer* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
+                                  :maximum-length (min (* 2 size) *max-array-maximum-length* ;the disassembled code was shorter with 2147483647 here than with *maximum-positive-32-bit-integer*
                                                        )
                                   :default default
                                   ;; no :order given here means the order is effectively <
@@ -42,7 +43,7 @@
 (defthm array1p-of-make-empty-array-with-default
   (equal (array1p array-name (make-empty-array-with-default array-name len default))
          (and (posp len)
-              (<= len 2147483646)
+              (<= len *max-1d-array-length*)
               (symbolp array-name)))
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
@@ -66,7 +67,7 @@
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
-                (< len 2147483647)
+                (<= len *max-1d-array-length*)
                 )
            (equal (aref1 array-name (make-empty-array-with-default array-name2 len default) index)
                   default))
@@ -82,7 +83,7 @@
 ;; Make an array with SIZE elements (and name NAME), where every index has the value nil.
 (defund make-empty-array (name size)
   (declare (type symbol name)
-           (type (integer 1 2147483646) size)
+           (type (integer 1 1152921504606846974) size)
            (xargs :guard-hints (("Goal" :in-theory (enable array1p len)))))
   (make-empty-array-with-default name size nil))
 
@@ -91,7 +92,7 @@
 (defthm array1p-of-make-empty-array
   (equal (array1p array-name (make-empty-array array-name len))
          (and (posp len)
-              (<= len 2147483646)
+              (<= len *max-1d-array-length*)
               (symbolp array-name)))
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
@@ -115,7 +116,7 @@
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
-                (< len 2147483647)
+                (<= len *max-1d-array-length*)
                 )
            (equal (aref1 array-name (make-empty-array array-name2 len) index)
                   nil))

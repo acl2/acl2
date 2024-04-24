@@ -139,7 +139,7 @@
 (defthm renaming-arrayp-aux-of-make-empty-array
   (implies (and (posp size)
                 (symbolp array-name)
-                (< size 2147483647))
+                (<= size *max-1d-array-length*))
            (renaming-arrayp-aux array-name (make-empty-array array-name size) -1))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 

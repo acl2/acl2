@@ -1032,14 +1032,14 @@ Mainly to be used for evaluating enum lists "
 |#
 
 
-;; chose 29 bits, because ACL2 uses signed 29 bits in its code!
-(defun unsigned-29bits-p (x)
+;; chose 60 bits, because ACL2 uses signed 60 bits in its code!
+(defun unsigned-60bits-p (x)
   (declare (xargs :guard T))
-  (acl2::unsigned-byte-p 29 x))
+  (acl2::unsigned-byte-p 60 x))
 
 (defun fixnump (x)
   (declare (xargs :guard T))
-  (unsigned-29bits-p x))
+  (unsigned-60bits-p x))
 
 ;;; Style of accessing/changing defrec objects. The name of the object is
 ;;; always same as the name of the defrec, just like in stobjs. THis way we

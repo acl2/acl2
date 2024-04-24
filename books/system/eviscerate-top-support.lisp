@@ -415,12 +415,12 @@
   (implies (<= (* 4
                   (+ 1
                      (get-global 'iprint-hard-bound state)))
-               *maximum-positive-32-bit-integer*)
+               (array-maximum-length-bound))
            (<= (* 4
                   (+ 1
                      (get-global 'iprint-hard-bound
                                  (composed-oracle-updates state))))
-               *maximum-positive-32-bit-integer*))
+               (array-maximum-length-bound)))
   :hints (("Goal" :in-theory (enable put-global)))
   :rule-classes :linear)
 

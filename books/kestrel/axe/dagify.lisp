@@ -379,7 +379,7 @@
 
 (defthm dag-parent-arrayp-of-mv-nth-4-of-merge-embedded-dag-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-;                (<= dag-len 2147483645)
+;                (<= dag-len 1152921504606846973)
                 (not (mv-nth 0 (merge-embedded-dag-into-dag-array rev-dag-lst
                                                                   variable-replacement-alist
                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -387,7 +387,7 @@
                                                                   interpreted-function-alist)))
                 ;; (<= (+ (len rev-dag-lst)
                 ;;        dag-len)
-                ;;     2147483645)
+                ;;     1152921504606846973)
                 (if (consp rev-dag-lst)
                     (and (renaming-arrayp 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (car (car rev-dag-lst)))
                          (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array dag-len))
@@ -644,7 +644,7 @@
                                (bounded-axe-treep tree dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                               ;;(<= (+ (len vars) dag-len) 2147483645)
+                               ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                                (interpreted-function-alistp interpreted-function-alist))
                    :verify-guards nil ; done below
                    ))
@@ -684,7 +684,7 @@
                                      nil))
                            (not (consp (second arg-nodenums-or-quoteps)))  ;todo: handle the case of a constant alist?
                            (pseudo-dagp (unquote (first arg-nodenums-or-quoteps)))
-                           (<= (len (unquote (first arg-nodenums-or-quoteps))) 2147483646)
+                           (<= (len (unquote (first arg-nodenums-or-quoteps))) *max-1d-array-length*)
                            ;;the interpreted-function-alist for the embedded dag must be consistent with the one passed in: - or maybe the dag only includes built in fns?  what if its the nodenum of a quotep?
                            (consp (third arg-nodenums-or-quoteps)) ;must be quoted
                            (interpreted-function-alistp (unquote (third arg-nodenums-or-quoteps)))
@@ -744,7 +744,7 @@
                                (bounded-axe-tree-listp trees dag-len)
                                (symbol-alistp var-replacement-alist)
                                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-                               ;;(<= (+ (len vars) dag-len) 2147483645)
+                               ;;(<= (+ (len vars) dag-len) 1152921504606846973)
                                (interpreted-function-alistp interpreted-function-alist))))
    (if (endp trees)
        (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1016,7 +1016,7 @@
                                var-replacement-alist
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                interpreted-function-alist))
-                    2147483646)))
+                    *max-1d-array-length*)))
   :hints (("Goal" :use (:instance merge-tree-into-dag-array-return-type)
            :in-theory (disable merge-tree-into-dag-array-return-type
                                pseudo-dag-arrayp-monotone
@@ -1040,7 +1040,7 @@
                            var-replacement-alist
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                            interpreted-function-alist))
-                2147483646)))
+                *max-1d-array-length*)))
   :hints (("Goal" :use (:instance merge-trees-into-dag-array-return-type)
            :in-theory (disable merge-trees-into-dag-array-return-type))))
 
@@ -1057,7 +1057,7 @@
                                                   var-replacement-alist
                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                                   interpreted-function-alist))
-                                       2147483646))
+                                       *max-1d-array-length*))
   :hints (("Goal" :use (:instance merge-tree-into-dag-array-return-type)
            :in-theory (disable merge-tree-into-dag-array-return-type
                                axe-treep))))
@@ -1100,7 +1100,7 @@
                 (symbol-alistp var-replacement-alist)
                 (interpreted-function-alistp interpreted-function-alist))
            (<= (mv-nth 1 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))
-               2147483645))
+               *max-1d-array-index*))
   :hints (("Goal" :use (integerp-of-mv-nth-1-of-merge-tree-into-dag-array
                         dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array)
            :in-theory (disable dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array
@@ -1132,7 +1132,7 @@
          (bounded-axe-treep tree dag-len)
          (symbol-alistp var-replacement-alist)
          (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
-         ;;(<= (+ (len vars) dag-len) 2147483645)
+         ;;(<= (+ (len vars) dag-len) 1152921504606846973)
          ;(interpreted-function-alistp interpreted-function-alist)
          )
   :recursivep nil
@@ -1215,7 +1215,7 @@
                      (MAKE-TERM-INTO-DAG-ARRAY TERM
                                                DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
                                                INTERPRETED-FUNCTION-ALIST))
-             2147483646)))
+             *max-1d-array-length*)))
   :OTF-FLG T
   :HINTS (("Goal" :IN-THEORY (ENABLE MAKE-TERM-INTO-DAG-ARRAY))))
 
@@ -1309,7 +1309,7 @@
   (declare (xargs :guard (and ;(axe-treep tree)
                               (or (myquotep dag-or-quotep)
                                   (and (pseudo-dagp dag-or-quotep)
-                                       (<= (len dag-or-quotep) 2147483646)))
+                                       (<= (len dag-or-quotep) *max-1d-array-length*)))
                               (if (quotep dag-or-quotep)
                                   (bounded-axe-treep tree 0) ; no nodenums to refer to
                                 (bounded-axe-treep tree (+ 1 (top-nodenum dag-or-quotep))))
@@ -1428,7 +1428,7 @@
                                      (if (myquotep SUBDAG-FOR-VAR)
                                          0
                                        (LEN SUBDAG-FOR-VAR)))
-                                  2147483645))
+                                  *max-1d-array-length*))
                   :verify-guards nil
                   :guard-hints (("Goal" :in-theory (disable DARGP PSEUDO-DAG-ARRAYP)))
                   ))
@@ -1524,7 +1524,7 @@
            t
          (prog2$ (cw "(WARNING Found a call to dag-val-with-axe-evaluator, but the dag is ill-formed.)~%") ;print more?
                  nil))
-       (<= (len (unquote (first arg-nodenums-or-quoteps))) 2147483646)
+       (<= (len (unquote (first arg-nodenums-or-quoteps))) *max-1d-array-length*)
        ;;the interpreted-function-alist for the embedded dag must be consistent with the one passed in: - or maybe the dag only includes built in fns?  what if its the nodenum of a quotep?
        (consp (third arg-nodenums-or-quoteps))
        (interpreted-function-alistp (unquote (third arg-nodenums-or-quoteps)))
@@ -1596,7 +1596,7 @@
 ;; top nodenum is bounded
 (defthm call-of-dag-val-with-axe-evaluator-with-inlineable-dag-forward-7
   (implies (call-of-dag-val-with-axe-evaluator-with-inlineable-dagp fn arg-nodenums-or-quoteps interpreted-function-alist)
-           (not (< 2147483645
+           (not (< *max-1d-array-index*
                    (nth 0 (nth 0 (nth 1 (nth 0 arg-nodenums-or-quoteps)))))))
   :rule-classes (:forward-chaining :linear)
   :hints (("Goal" :in-theory (enable call-of-dag-val-with-axe-evaluator-with-inlineable-dagp

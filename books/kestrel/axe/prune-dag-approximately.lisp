@@ -500,7 +500,7 @@
                                  print
                                  state)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646)
+                              (<= (len dag) *max-1d-array-length*)
                               ;; (pseudo-term-listp assumptions)
                               ;; (symbol-listp rules)
                               ;; (symbol-listp interpreted-fns)
@@ -530,7 +530,7 @@
                                      state))
        ((when erp) (mv erp nil state))
        ;; Ensure we can continue with the processing below:
-       ((when (> (top-nodenum-of-dag dag) 2147483645)) (mv :dag-too-big nil state))
+       ((when (> (top-nodenum-of-dag dag) *max-1d-array-index*)) (mv :dag-too-big nil state))
        ;; There may be orphan nodes if some pruning was done:
        (dag-or-quotep (drop-non-supporters dag))
        ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
@@ -565,7 +565,7 @@
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
-                              (<= (len dag) 2147483646)
+                              (<= (len dag) *max-1d-array-length*)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))

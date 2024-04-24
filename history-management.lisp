@@ -343,9 +343,9 @@
                                 (cdr proof-tree))))))
 
 (defun print-string-repeat (increment level col channel state)
-  (declare (type (signed-byte 30) col level))
+  (declare (type (signed-byte #.*fixnum-bits*) col level))
   (the2s
-   (signed-byte 30)
+   (signed-byte #.*fixnum-bits*)
    (if (= level 0)
        (mv col state)
      (mv-letc (col state)
@@ -4849,18 +4849,18 @@
 ; result and traffics in fixnums -- more efficient if you want the reversed
 ; result.
 
-  (declare (type (unsigned-byte 29) i)
+  (declare (type (unsigned-byte #.*fixnat-bits*) i)
            (xargs :guard (and (true-listp l)
                               (true-listp ac))))
   (cond ((zpf i)
          ac)
-        (t (first-n-ac-rev (the (unsigned-byte 29)
-                                (1- (the (unsigned-byte 29) i)))
+        (t (first-n-ac-rev (the (unsigned-byte #.*fixnat-bits*)
+                                (1- (the (unsigned-byte #.*fixnat-bits*) i)))
                            (cdr l)
                            (cons (car l) ac)))))
 
 (defun longest-common-tail-length-rec (old new len-old acc)
-  (declare (type (signed-byte 30) acc len-old))
+  (declare (type (signed-byte #.*fixnum-bits*) acc len-old))
   #-acl2-loop-only
   (when (eq old new)
     (return-from longest-common-tail-length-rec (+ len-old acc)))
@@ -6480,7 +6480,7 @@
              (+ (print-ldd-formula-column skip-ldd-n)
                 (access-ldd-n ldd))))
           (status (access-ldd-status ldd)))
-     (declare (type (signed-byte 30) formula-col))
+     (declare (type (signed-byte #.*fixnum-bits*) formula-col))
      (pprogn
       (princ$ (if (access-ldd-markp ldd)
                   (access-ldd-markp ldd)

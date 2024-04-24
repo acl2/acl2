@@ -2196,7 +2196,7 @@
                                   ASSOC2 BOUNDED-INTEGER-ALISTP2 ARRAY1P
                                   ASSOC-KEYWORD KEYWORD-VALUE-LISTP
                                   BOUNDED-INTEGER-ALISTP
-                                  *MAXIMUM-POSITIVE-32-BIT-INTEGER*
+                                  ARRAY-MAXIMUM-LENGTH-BOUND
                                   SET-DIFFERENCE-EQUAL
                                   FUNCTION-SYMBOLP GLOBAL-VAL
                                   RETRACT-WORLD EXTEND-WORLD HAS-PROPSP

@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "alen1")
+(include-book "constants")
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "maximum-length"))
 (local (include-book "header"))
@@ -67,7 +68,7 @@
                     (car (cadr (assoc-keyword :dimensions (cdr header)))))
                 (array1p array-name array)
                 (keyword-value-listp (cdr header))
-                (<= (cadr (assoc-keyword :maximum-length (cdr header))) 2147483647)
+                (<= (cadr (assoc-keyword :maximum-length (cdr header))) *max-array-maximum-length*)
                 (integerp (car (cadr (assoc-keyword :dimensions (cdr header)))))
                 (true-listp (cadr (assoc-keyword :dimensions (cdr header))))
                 (equal 1 (len (cadr (assoc-keyword :dimensions (cdr header)))))
@@ -83,11 +84,6 @@
                            (ASSOC-EQUAL
                            )))))
 
-;the :maximum-length field of an array1p is at most 2147483647=(expt 2 31)-1
-;the length an array1p is at most 2147483646, since it must be < :maximum-length
-;a valid index into an array1p is at most 2147483645, since it must be < the length
-(defconst *max-1d-array-length* 2147483646)
-
 ;;;
 ;;; expand-array
 ;;;
@@ -102,20 +98,20 @@
                               ;; passed in for efficiency since the caller already has this:
                               (equal current-length (alen1 name l))
                               (natp index)
-                              (<= index 2147483645))
+                              (<= index *max-1d-array-index*))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index)
-           (type (integer 1 2147483646) current-length))
+           (type (integer 0 1152921504606846973) index)
+           (type (integer 1 1152921504606846974) current-length))
   (let* ( ;; Make sure that INDEX will be a valid index and also that we at least double the length.
          (desired-new-length (max (+ 1 index) (* 2 current-length)))
          ;; Ensure that the new length is not larger than is allowed:
-         (new-length (min 2147483646 desired-new-length)))
+         (new-length (min *max-1d-array-length* desired-new-length)))
     (prog2$ (and *print-when-expanding* (cw "Expanding size of array ~x0 from ~x1 to ~x2.~%" name current-length new-length)) ;drop?
             (let* ((default (cadr (assoc-keyword :default header-args)))
                    (l (compress1 name (cons `(:header :dimensions (,new-length)
-                                                      :maximum-length ,(min 2147483647 (* 2 new-length))
+                                                      :maximum-length ,(min *max-array-maximum-length* (* 2 new-length))
                                                       :default ,default
                                                       :name ,name)
                                             l))))
@@ -127,11 +123,11 @@
                 ;(array1p array-name array)
                 ;(keyword-value-listp header-args)
                 (natp index)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 ;(posp current-length)
-                (<= current-length 2147483646))
+                (<= current-length *max-1d-array-length*))
            (equal (alen1 array-name (expand-array array-name array header-args index current-length))
-                  (min 2147483646
+                  (min *max-1d-array-length*
                        (max (+ 1 index) (* 2 current-length)))))
   :hints (("Goal" :in-theory (enable expand-array))))
 
@@ -140,12 +136,12 @@
 (defthm <-of-alen1-of-expand-array
   (implies (natp index)
            (equal (< index (alen1 name (expand-array name l header-args index length)))
-                  (<= index 2147483645)))
+                  (<= index *max-1d-array-index*)))
   :hints (("Goal" :in-theory (enable expand-array))))
 
 (defthm <-of-alen1-of-expand-array-linear
   (implies (and (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (< index (alen1 name (expand-array name l header-args index length))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable expand-array))))
@@ -153,7 +149,7 @@
 (defthm array1p-of-expand-array
   (implies (and (<= (alen1 array-name array) index) ;else we shouldn't be calling expand-array
                 (natp index)
-                ;(<= index 2147483645)
+                ;(<= index *max-1d-array-index*)
                 (array1p array-name array)
                 (integerp length) ;should be (alen1 array-name array) in fact
                 (equal header-args (cdr (header array-name array))))
@@ -172,7 +168,7 @@
   (implies (and (< index index2) ;this case
                 (natp index)
                 (natp index2)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (array1p array-name array)
                 (= (alen1 array-name array) current-length)
                 (<= (alen1 array-name array) index) ;else we shouldn't be calling expand-array
@@ -189,7 +185,7 @@
   (implies (and (<= index2 index) ;this case
                 (natp index)
                 (natp index2)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (array1p array-name array)
                 (= (alen1 array-name array) current-length)
                 (<= (alen1 array-name array) index) ;else we shouldn't be calling expand-array
@@ -206,7 +202,7 @@
 (defthm aref1-of-expand-array
   (implies (and (natp index)
                 (natp index2)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (array1p array-name array)
                 (= (alen1 array-name array) current-length)
                 (<= (alen1 array-name array) index) ;else we shouldn't be calling expand-array
@@ -225,18 +221,18 @@
 ;is this fast?
 ;use fixnums?
 ;watch for arrays that would be too big!
-;only works when index <= 2147483645
+;only works when index <= *max-1d-array-index*
 (defund aset1-expandable (name l index val)
   (declare (xargs :guard (and (array1p name l)
                               (natp index)
-                              (<= index 2147483645))
+                              (<= index *max-1d-array-index*))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite expand-array)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index))
+           (type (integer 0 1152921504606846973) index))
   (let* ((header-args (cdr (header name l)))
          (dimensions (cadr (assoc-keyword :dimensions header-args))) ;call dimensions here?  would that be slower?
-         (length (the (integer 1 2147483646) (car dimensions))))
+         (length (the (integer 1 1152921504606846974) (car dimensions))))
     (if (< index length)
         (aset1 name l index val)
       ;;otherwise, we need to expand the array first:
@@ -245,16 +241,16 @@
 
 (defthm index-in-bounds-after-aset1-expandable
   (implies (and (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (< index (alen1 name (aset1-expandable name l index val))))
   :hints (("Goal" :in-theory (enable aset1-expandable)
            :expand (dimensions name l))))
 
 (defthm array1p-of-aset1-expandable
   (implies (and (array1p array-name array)
-                (natp len)
-                (<= len 2147483645))
-           (array1p array-name (aset1-expandable array-name array len val)))
+                (natp index)
+                (<= index *max-1d-array-index*))
+           (array1p array-name (aset1-expandable array-name array index val)))
   :hints (("Goal" :in-theory (e/d (aset1-expandable)
                                   (alen1-of-expand-array ;why?
                                    )))))
@@ -268,14 +264,14 @@
 (defund maybe-expand-array (name l index)
   (declare (xargs :guard (and (array1p name l)
                               (natp index)
-                              (<= index 2147483645))
+                              (<= index *max-1d-array-index*))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index))
+           (type (integer 0 1152921504606846973) index))
   (let* ((header-args (cdr (header name l)))
          (dimensions (cadr (assoc-keyword :dimensions header-args))) ;call the function dimensions?
-         (length (the (integer 1 2147483646) (car dimensions))))
+         (length (the (integer 1 1152921504606846974) (car dimensions))))
     (if (< index length)
         l
       (expand-array name l header-args index length))))
@@ -293,7 +289,7 @@
 
 (defthm array1p-of-maybe-expand-array
   (implies (and (natp index)
-;                (<= index 21474836456)
+;                (<= index *max-1d-array-index*)
                 (array1p array-name array)
                 )
            (array1p array-name (maybe-expand-array array-name array index)))
@@ -301,10 +297,10 @@
 
 (defthm integerp-of-alen1-of-maybe-expand-array
   (implies (and (natp index)
-;                (<= index 2147483646)
+;                (<= index 1152921504606846974)
 ;                (array1p array-name array)
                 (integerp (alen1 array-name array))
- ;               (<= (alen1 array-name array) 2147483646)
+ ;               (<= (alen1 array-name array) *max-1d-array-length*)
                 )
            (integerp (alen1 array-name (maybe-expand-array array-name array index))))
   :rule-classes (:rewrite :type-prescription)
@@ -317,7 +313,7 @@
 
 (defthm index-in-bounds-after-maybe-expand-array
   (implies (and (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (< index (alen1 name (maybe-expand-array name l index))))
   :rule-classes (:rewrite (:linear :trigger-terms ((alen1 name (maybe-expand-array name l index)))))
   :hints (("Goal" ;:expand (dimensions name l)
@@ -325,7 +321,7 @@
 
 (defthm alen1-of-maybe-expand-array-bound
   (implies (and (natp index)
-                (<= (alen1 array-name array) 2147483646) ; implied by array1p
+                (<= (alen1 array-name array) *max-1d-array-length*) ; implied by array1p
                 )
            (<= (alen1 array-name array)
                (alen1 array-name (maybe-expand-array array-name array index))))
@@ -336,7 +332,7 @@
   (implies (and (<= index2 (alen1 array-name array))
                 (natp index)
                 (natp index2)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (array1p array-name array))
            (equal (aref1 array-name (maybe-expand-array array-name array index) index2)
                   (aref1 array-name array index2)))
@@ -348,7 +344,7 @@
                 (<= (alen1 array-name array) index2)
                 (natp index)
                 (natp index2)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (array1p array-name array))
            (equal (aref1 array-name (maybe-expand-array array-name array index) index2)
                   (default array-name array)))
@@ -357,7 +353,7 @@
 (defthm aref1-of-maybe-expand-array
   (implies (and (natp index)
                 (natp index2)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (array1p array-name array))
            (equal (aref1 array-name (maybe-expand-array array-name array index) index2)
                   (aref1 array-name array index2)))
@@ -371,8 +367,8 @@
   :hints (("Goal" :in-theory (enable maybe-expand-array aset1-expandable aset1))))
 
 (defthm <=-of-alen1-of-maybe-expand-array-and-max
-  (implies (<= (alen1 array-name array) 2147483646)
-           (<= (alen1 array-name (maybe-expand-array array-name array index)) 2147483646))
+  (implies (<= (alen1 array-name array) *max-1d-array-length*)
+           (<= (alen1 array-name (maybe-expand-array array-name array index)) *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable maybe-expand-array expand-array))))
 
 (defthm dimensions-of-aset1-expandable
@@ -390,11 +386,11 @@
 (defun aref1-expandable (name l index)
   (declare (xargs :guard (and (array1p name l)
                               (natp index)
-                              (<= index 2147483645))
+                              (<= index *max-1d-array-index*))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite expand-array)))
                   :split-types t)
            (type symbol name)
-           (type (integer 0 2147483645) index))
+           (type (integer 0 1152921504606846973) index))
   (let* ((header-args (cdr (header name l)))
          (dimensions (cadr (assoc-keyword :dimensions header-args)))
          (length (car dimensions)))
@@ -413,8 +409,8 @@
   (implies (and (<= index2 index) ;drop?
                 (natp index)
                 (natp index2)
-                (<= index 2147483645)
-                (<= index2 2147483645)
+                (<= index *max-1d-array-index*)
+                (<= index2 *max-1d-array-index*)
                 ;; (not (array-order (header array-name array)))
                 ;; (< index (alen1 array-name array))
                 ;; (< index2 (alen1 array-name array))
@@ -442,12 +438,12 @@
   (if (< index current-length)
       current-length
     (let* ((desired-new-length (max (+ 1 index) (* 2 current-length)))
-           (new-length (min 2147483646 desired-new-length)))
+           (new-length (min *max-1d-array-length* desired-new-length)))
       new-length)))
 
 (defthm bound-on-size-of-expanded-array
   (implies (and (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (<= current-length (size-of-expanded-array index current-length)))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable size-of-expanded-array))))
@@ -459,19 +455,19 @@
   :hints (("Goal" :in-theory (enable size-of-expanded-array maybe-expand-array expand-array))))
 
 (defthm <-of-alen1-of-maybe-expand-array
-  (implies (< index 2147483646)
+  (implies (< index *max-1d-array-length*)
            (< index (alen1 array-name (maybe-expand-array array-name array index))))
   :hints (("Goal" :in-theory (enable maybe-expand-array expand-array))))
 
 (defthm <-of-alen1-of-maybe-expand-array-linear
-  (implies (and (< index 2147483646))
+  (implies (and (< index *max-1d-array-length*))
            (< index (alen1 array-name (maybe-expand-array array-name array index))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable maybe-expand-array expand-array))))
 
 (defthm not-equal-of-alen1-of-maybe-expand-array
   (implies (and ;(array1p array-name array)
-                (< index 2147483646))
+                (< index *max-1d-array-length*))
            (not (equal index
                        (alen1 array-name (maybe-expand-array array-name array index)))))
   :hints (("Goal" :in-theory (enable maybe-expand-array expand-array))))

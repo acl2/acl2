@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "constants")
 (include-book "alen1")
 (local (include-book "dimensions"))
 (local (include-book "bounded-integer-alistp"))
@@ -42,7 +43,7 @@
                     (integerp maximum-length)
                     (< 0 len)
                     (< len maximum-length)
-                    (<= maximum-length *maximum-positive-32-bit-integer*)
+                    (<= maximum-length *max-array-maximum-length*)
                     (bounded-integer-alistp l len)))))))
   :hints (("Goal" :in-theory (e/d (array1p header dimensions maximum-length)
                                   (dimensions-intro
@@ -67,7 +68,7 @@
                     (integerp maximum-length)
                     (< 0 len)
                     (< len maximum-length)
-                    (<= maximum-length *maximum-positive-32-bit-integer*)
+                    (<= maximum-length *max-array-maximum-length*)
                     (bounded-integer-alistp l len)))))))
   :hints (("Goal" :in-theory (enable array1p-rewrite))))
 
@@ -89,7 +90,7 @@
               (posp dim)
               (< dim max)
               (symbolp name2)
-              (<= MAX 2147483647)
+              (<= MAX *max-array-maximum-length*)
               (integerp max)))
   :hints (("Goal" :in-theory (enable ARRAY1P-rewrite))))
 
@@ -104,14 +105,14 @@
               (posp dim)
               (< dim max)
               (symbolp name2)
-              (<= MAX 2147483647)
+              (<= MAX *max-array-maximum-length*)
               (integerp max)))
   :hints (("Goal" :in-theory (enable ARRAY1P-rewrite))))
 
 (defthm array1p-forward-to-<=-of-alen1
   (implies (array1p array-name array)
            (<= (alen1 array-name array)
-               2147483646))
+               *max-1d-array-length*))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable array1p-rewrite))))
 
@@ -134,7 +135,7 @@
               (posp (car dims))
               (natp maximum-length)
               (< (car dims) maximum-length)
-              (<= maximum-length 2147483647)))
+              (<= maximum-length *max-array-maximum-length*)))
   :hints (("Goal" :in-theory (enable array1p-rewrite))))
 
 (defthm assoc-equal-when-array1p-and-out-of-bounds

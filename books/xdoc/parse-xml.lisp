@@ -311,7 +311,8 @@
 
 ; Warning: Keep this in sync with *entitytok-as-plaintext-fal* below,
 ; *xml-entity-stuff* in prepare-topic.lisp, wrapXdocFragment in
-; fancy/xslt.js, and (defxdoc entities ...) in topics.lisp.
+; fancy/xslt.js, (defxdoc entities ...) in topics.lisp, and
+; wrap_xdoc_fragment in fancy/xdata2html.pl
 
   '("amp"
     "lt"

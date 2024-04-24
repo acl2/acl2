@@ -64,8 +64,8 @@
                 ;; no error:
                 (not (mv-nth 0 (make-term-into-dag-simple term)))
                 (not (myquotep (mv-nth 1 (make-term-into-dag-simple term)))))
-           (< (len (mv-nth 1 (make-term-into-dag-simple term)))
-              2147483647))
+           (<= (len (mv-nth 1 (make-term-into-dag-simple term)))
+               *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable make-term-into-dag-simple))))
 
 ;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
