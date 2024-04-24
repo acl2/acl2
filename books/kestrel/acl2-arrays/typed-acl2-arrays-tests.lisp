@@ -177,7 +177,7 @@
     (DEFTHM NAT-ARRAYP-OF-MAKE-EMPTY-ARRAY-AND-0
       (IMPLIES (AND (POSP LEN)
                     (SYMBOLP ARRAY-NAME)
-                    (<= LEN 2147483646))
+                    (<= LEN *MAX-1D-ARRAY-LENGTH*))
                (NAT-ARRAYP ARRAY-NAME
                            (MAKE-EMPTY-ARRAY ARRAY-NAME LEN)
                            0)))))
