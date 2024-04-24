@@ -1,7 +1,7 @@
 ; Lists of known-boolean-returning functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
  ;since the functions are mentioned below (todo: make sure all functions mentioned below are included):
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/bv-lists/all-all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
@@ -48,8 +49,10 @@
     iff        ;newer
     equal
     <
-    bvlt sbvlt bvle sbvle
-    unsigned-byte-p-forced
+    bvlt bvle
+    sbvlt sbvle
+    bvequal
+    unsigned-byte-p-forced ; can this actually arise?
     booland boolor boolxor
     all-unsigned-byte-p items-have-len all-true-listp all-all-unsigned-byte-p
     prefixp         ;new
