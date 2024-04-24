@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "constants")
 (include-book "alen1")
 (local (include-book "array1p"))
 (local (include-book "compress1"))
@@ -42,7 +43,7 @@
 (defthm array1p-of-make-empty-array-with-default
   (equal (array1p array-name (make-empty-array-with-default array-name len default))
          (and (posp len)
-              (<= len 2147483646)
+              (<= len *max-1d-array-length*)
               (symbolp array-name)))
   :hints (("Goal" :in-theory (enable make-empty-array-with-default array1p-rewrite))))
 
@@ -66,7 +67,7 @@
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
-                (< len 2147483647)
+                (<= len *max-1d-array-length*)
                 )
            (equal (aref1 array-name (make-empty-array-with-default array-name2 len default) index)
                   default))
@@ -91,7 +92,7 @@
 (defthm array1p-of-make-empty-array
   (equal (array1p array-name (make-empty-array array-name len))
          (and (posp len)
-              (<= len 2147483646)
+              (<= len *max-1d-array-length*)
               (symbolp array-name)))
   :hints (("Goal" :in-theory (enable make-empty-array))))
 
@@ -115,7 +116,7 @@
                 (natp index) ;gen?
 ;                (< index len) ;we get nil if the index is out of bounds
                 (posp len)
-                (< len 2147483647)
+                (<= len *max-1d-array-length*)
                 )
            (equal (aref1 array-name (make-empty-array array-name2 len) index)
                   nil))

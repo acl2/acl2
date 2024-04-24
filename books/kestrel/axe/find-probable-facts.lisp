@@ -1089,7 +1089,7 @@
                                      ;debug-nodes
                                      )
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646)
+                              (<= (len dag) *max-1d-array-length*)
                               (test-casesp test-cases)
                               (interpreted-function-alistp interpreted-function-alist)
                               (booleanp keep-test-casesp))))
@@ -1109,7 +1109,7 @@
 
 (defthm booleanp-of-mv-nth-0-of-find-probable-facts-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (test-casesp test-cases)
                 (interpreted-function-alistp interpreted-function-alist)
                 (booleanp keep-test-casesp))
@@ -1118,7 +1118,7 @@
 
 (defthm nat-list-listp-of-mv-nth-1-of-find-probable-facts-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (test-casesp test-cases)
                 (interpreted-function-alistp interpreted-function-alist)
                 (booleanp keep-test-casesp))
@@ -1127,7 +1127,7 @@
 
 (defthm all->=-len-of-mv-nth-1-of-find-probable-facts-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (test-casesp test-cases)
                 (interpreted-function-alistp interpreted-function-alist)
                 (booleanp keep-test-casesp))
@@ -1136,7 +1136,7 @@
 
 (defthm nat-listp-of-mv-nth-2-of-find-probable-facts-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (test-casesp test-cases)
                 (interpreted-function-alistp interpreted-function-alist)
                 (booleanp keep-test-casesp))
@@ -1145,7 +1145,7 @@
 
 (defthm alistp-of-mv-nth-3-of-find-probable-facts-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (test-casesp test-cases)
                 (interpreted-function-alistp interpreted-function-alist)
                 (booleanp keep-test-casesp))
@@ -1160,7 +1160,7 @@
                                              interpreted-function-alist
                                              keep-test-casesp)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646)
+                              (<= (len dag) *max-1d-array-length*)
                               (test-casesp test-cases)
                               (interpreted-function-alistp interpreted-function-alist)
                               (booleanp keep-test-casesp))
@@ -1177,7 +1177,7 @@
 ;; Returns rand.
 (defund print-probable-facts-for-dag (dag test-case-count test-case-type-alist interpreted-fns keep-test-casesp wrld rand)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646)
+                              (<= (len dag) *max-1d-array-length*)
                               (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
                               (symbol-listp interpreted-fns)

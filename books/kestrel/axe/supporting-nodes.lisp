@@ -230,7 +230,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                               (integerp tag-array-length)
                               (all-< nodenums tag-array-length) ;implies that tag-array-length is positive
-                              (<= tag-array-length 2147483646)
+                              (<= tag-array-length *max-1d-array-length*)
                               (symbolp tag-array-name))))
   (let* ((tag-array (make-empty-array tag-array-name tag-array-length))
          ;; Tag all the NODENUMS...
@@ -244,7 +244,7 @@
                 (consp nodenums)
                 (equal max-nodenum (maxelem nodenums))
                 (posp tag-array-length)
-                (<= tag-array-length 2147483646)
+                (<= tag-array-length *max-1d-array-length*)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
@@ -257,7 +257,7 @@
                 (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                 (posp tag-array-length)
-                (<= tag-array-length 2147483646)
+                (<= tag-array-length *max-1d-array-length*)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length))
            (equal (alen1 tag-array-name (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array tag-array-name tag-array-length))
@@ -271,7 +271,7 @@
                 (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                 (posp tag-array-length)
-                (<= tag-array-length 2147483646)
+                (<= tag-array-length *max-1d-array-length*)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length))
            (aref1 tag-array-name
@@ -286,7 +286,7 @@
                 (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                 (posp tag-array-length)
-                (<= tag-array-length 2147483646)
+                (<= tag-array-length *max-1d-array-length*)
                 (symbolp tag-array-name)
                 (all-< nodenums tag-array-length))
            (all-taggedp-with-name nodenums tag-array-name (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array tag-array-name tag-array-length)))
@@ -307,7 +307,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (integerp tag-array-length)
                               (< nodenum tag-array-length) ;implies that tag-array-length is positive
-                              (<= tag-array-length 2147483646)
+                              (<= tag-array-length *max-1d-array-length*)
                               (symbolp tag-array-name))))
   (tag-supporters-of-nodes-with-name (list nodenum) nodenum dag-array-name dag-array tag-array-name tag-array-length))
 
@@ -315,7 +315,7 @@
   (implies (and (natp nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                 (posp tag-array-length)
-                (<= tag-array-length 2147483646)
+                (<= tag-array-length *max-1d-array-length*)
                 (symbolp tag-array-name)
                 (< nodenum tag-array-length))
            (array1p tag-array-name (tag-supporters-of-node-with-name nodenum dag-array-name dag-array tag-array-name tag-array-length)))
@@ -325,7 +325,7 @@
   (implies (and (natp nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                 (posp tag-array-length)
-                (<= tag-array-length 2147483646)
+                (<= tag-array-length *max-1d-array-length*)
                 (symbolp tag-array-name)
                 (< nodenum tag-array-length))
            (equal (alen1 tag-array-name (tag-supporters-of-node-with-name nodenum dag-array-name dag-array tag-array-name tag-array-length))
@@ -336,7 +336,7 @@
   (implies (and (natp nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                 (posp tag-array-length)
-                (<= tag-array-length 2147483646)
+                (<= tag-array-length *max-1d-array-length*)
                 (symbolp tag-array-name)
                 (< nodenum tag-array-length))
            (aref1 tag-array-name
@@ -813,7 +813,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
                               (natp smaller-nodenum)
                               (< smaller-nodenum larger-nodenum)
-                              (<= larger-nodenum 2147483645))
+                              (<= larger-nodenum *max-1d-array-index*))
                   :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                  :in-theory (enable pseudo-dag-arrayp  ;fixme?
                                                     )))))
@@ -830,7 +830,7 @@
 ;; Smashes the arrays 'tag-array and 'translation-array and 'dag-array-for-drop-non-supporters.
 (defund drop-non-supporters (dag-or-quotep)
   (declare (xargs :guard (or (and (pseudo-dagp dag-or-quotep)
-                                  (<= (top-nodenum-of-dag dag-or-quotep) 2147483645))
+                                  (<= (top-nodenum-of-dag dag-or-quotep) *max-1d-array-index*))
                              (myquotep dag-or-quotep))
                   :guard-hints (("Goal" :in-theory (enable
                                                     pseudo-dagp ;todo
@@ -856,7 +856,7 @@
 (defthm pseudo-dagp-of-drop-non-supporters
   (implies (and (pseudo-dagp dag-or-quotep)
                 (<= (car (car dag-or-quotep))
-                    2147483645))
+                    *max-1d-array-index*))
            (pseudo-dagp (drop-non-supporters dag-or-quotep)))
   :hints (("Goal" :cases ((< 0 (car (car dag-or-quotep))))
            :in-theory (enable drop-non-supporters
@@ -872,13 +872,13 @@
 
 (defthm consp-of-drop-non-supporters
   (implies (and (pseudo-dagp dag-or-quotep)
-                (<= (car (car dag-or-quotep)) 2147483645))
+                (<= (car (car dag-or-quotep)) *max-1d-array-index*))
            (consp (drop-non-supporters dag-or-quotep)))
   :hints (("Goal" :in-theory (enable drop-non-supporters))))
 
 (defthm <-of-0-and-len-of-drop-non-supporters
   (implies (and (pseudo-dagp dag-or-quotep)
-                (<= (car (car dag-or-quotep)) 2147483645))
+                (<= (car (car dag-or-quotep)) *max-1d-array-index*))
            (< 0 (len (drop-non-supporters dag-or-quotep))))
   :hints (("Goal" :use (:instance consp-of-drop-non-supporters)
            :in-theory (disable consp-of-drop-non-supporters))))
@@ -893,7 +893,7 @@
                              (and (pseudo-dagp dag)
                                   (natp nodenum-or-quotep)
                                   (< nodenum-or-quotep (len dag))
-                                  (<= nodenum-or-quotep 2147483645)
+                                  (<= nodenum-or-quotep *max-1d-array-index*)
                                   ))
                   :guard-hints (("Goal" :in-theory (enable car-of-nth-when-pseudo-dagp)))
                   ))

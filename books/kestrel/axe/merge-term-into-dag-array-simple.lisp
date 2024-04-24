@@ -285,7 +285,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                ))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
 
                   ))
     :flag merge-term-into-dag-array-simple)
@@ -360,7 +360,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                ))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
                   ))
     :flag merge-terms-into-dag-array-simple)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)

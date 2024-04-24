@@ -779,7 +779,7 @@
 ;; ;; Returns (mv leaf-nodenums accumulated-constant)
 ;; (defund bitxor-nest-leaves-for-node (nodenum dag-array-name dag-array)
 ;;   (declare (xargs :guard (and (natp nodenum)
-;;                               (<= nodenum 2147483645)
+;;                               (<= nodenum *max-1d-array-index*)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
 ;;   (let* ((tag-array-name 'bitxor-nest-leaves-for-node-tag-array)
 ;;          (tag-array (make-empty-array tag-array-name (+ 1 nodenum))) ;all tags are initially nil
@@ -1390,7 +1390,7 @@
 ;Returns (mv erp dag-or-quotep changep) where the result is either a new dag whose top node is equal to the top node of DAG, or a quotep equal to the top node of DAG
 (defund normalize-xors (dag print)
   (declare (xargs :guard (and (pseudo-dagp dag) ; not empty, not a quotep
-                              (<= (* 2 (len dag)) 2147483646) ;todo
+                              (<= (* 2 (len dag)) *max-1d-array-length*) ;todo
                               )
                   :guard-hints (("Goal" :in-theory (e/d (top-nodenum-of-dag) (pseudo-dag-arrayp natp quotep))))))
   (if (not (intersection-eq '(bitxor bvxor) (dag-fns dag))) ;; TODO: Optimize this check
@@ -1433,7 +1433,7 @@
                                        (cw ")~%"))
                                   (mv (erp-nil) result t))
                         (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print))
-                             ((when (<= 2147483646 (+ (len dag) ;;todo: this is for equivalent-dagsp below but that should be made more flexible (returning an erp)
+                             ((when (<= *max-1d-array-length* (+ (len dag) ;;todo: this is for equivalent-dagsp below but that should be made more flexible (returning an erp)
                                                       (len new-dag))))
                               (er hard? 'normalize-xors "DAGs too large.")
                               (mv :dag-too-large nil nil))

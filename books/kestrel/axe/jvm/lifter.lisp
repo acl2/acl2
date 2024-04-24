@@ -139,7 +139,7 @@
                             interpreted-function-alist ;todo, check that this includes definitions for all non-built-in functions (and all functions they call, etc.)
                             )
   (declare (xargs :guard (and (or (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647))
+                                       (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (or (null max-term-size)
                                   (natp max-term-size))

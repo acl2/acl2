@@ -223,13 +223,13 @@
 ;returns an array named 'supporters-array
 (defund make-supporters-array (dag-len dag-array-name dag-array)
   (declare (xargs :guard (and (posp dag-len)
-                              (<= dag-len 2147483646)
+                              (<= dag-len *max-1d-array-length*)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
   (make-supporters-array-aux 0 (+ -1 dag-len) dag-array-name dag-array (make-empty-array 'supporters-array dag-len)))
 
 (defthm alen1-of-make-supporters-array
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (equal (alen1 'supporters-array (make-supporters-array dag-len dag-array-name dag-array))
                   dag-len))
   :hints (("Goal" :in-theory (enable make-supporters-array))))
@@ -239,7 +239,7 @@
                 (<= n dag-len)
                 (natp dag-len)
                 (posp dag-len)
-                (< dag-len 2147483647))
+                (<= dag-len *max-1d-array-length*))
            (supporters-arrayp-aux 'supporters-array
                                   (make-empty-array 'supporters-array dag-len)
                                   n))
@@ -247,7 +247,7 @@
 
 (defthm supporters-arrayp-of-make-supporters-array
   (implies (and (posp dag-len)
-                (<= DAG-LEN 2147483646)
+                (<= DAG-LEN *max-1d-array-length*)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (supporters-arrayp 'supporters-array (make-supporters-array dag-len dag-array-name dag-array) dag-len))
   :hints (("Goal" :in-theory (enable SUPPORTERS-ARRAYP make-supporters-array pseudo-dag-arrayp))))
@@ -514,7 +514,7 @@
 (defun dag-to-term-with-lets (dag)
   (declare (xargs :guard (or (myquotep dag)
                              (and (pseudo-dagp dag)
-                                  (<= (car (car dag)) 2147483645)))
+                                  (<= (car (car dag)) *max-1d-array-index*)))
                   :guard-hints (("Goal" :in-theory (enable pseudo-dagp)))))
   (if (quotep dag)
       dag

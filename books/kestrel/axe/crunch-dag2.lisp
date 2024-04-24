@@ -56,7 +56,7 @@
                 (natp slack-amount)
                 (natp len))
            (equal (< (array-len-with-slack len slack-amount) len)
-                  (< 2147483646 len)))
+                  (< *max-1d-array-length* len)))
   :hints (("Goal" :in-theory (enable array-len-with-slack))))
 
 (defthm not-<-of-maxelem-and-maxelem-of-cdr
@@ -283,7 +283,7 @@
                 (all-< nodenums dag-len)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (<= (mv-nth 1 (crunch-dag-array2 dag-array-name dag-array dag-len nodenums))
-               2147483646))
+               *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable crunch-dag-array2))))
 
 (defthm len-of-mv-nth-2-of-crunch-dag-array2

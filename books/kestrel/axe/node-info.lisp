@@ -122,7 +122,7 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dagp dag)
                               (<= nodenum (top-nodenum dag))
-                              (< (top-nodenum dag) 2147483646)
+                              (< (top-nodenum dag) *max-1d-array-length*)
                               (posp depth))
                   :guard-hints (("Goal" :in-theory (enable CAR-OF-CAR-WHEN-PSEUDO-DAGP)))))
   (let* ((dag-array-name 'dag-array-for-node-info)
@@ -137,7 +137,7 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dagp dag)
                               (<= nodenum (top-nodenum dag))
-                              (< (top-nodenum dag) 2147483646)
+                              (< (top-nodenum dag) *max-1d-array-length*)
                               (posp depth))))
   (print-node-tree-limited nodenum dag depth))
 

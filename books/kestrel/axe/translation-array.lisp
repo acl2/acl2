@@ -80,7 +80,7 @@
   (implies (and (natp len)
                 (< n len)
                 (natp n)
-                (< len 2147483647))
+                (<= len *max-1d-array-length*))
            (translation-arrayp-aux n (make-empty-array 'translation-array len)))
   :hints (("Goal" :expand ((translation-arrayp-aux 0
                                                    (make-empty-array 'translation-array
@@ -244,7 +244,7 @@
   (implies (and (natp len)
                 (< n len)
                 (natp n)
-                (< len 2147483647))
+                (<= len *max-1d-array-length*))
            (bounded-translation-arrayp-aux n
                                            (make-empty-array 'translation-array
                                                              len)

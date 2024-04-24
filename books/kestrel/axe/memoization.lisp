@@ -51,7 +51,7 @@
 (defund tree-to-memoizep (tree)
   (declare (xargs :guard t))
   (and (axe-treep tree)
-       (bounded-axe-treep tree 2147483646)
+       (bounded-axe-treep tree 2147483646) ; because of the type decl in sum-of-nodenums-aux (todo: widen?)
        (consp tree)
        (not (eq 'quote (ffn-symb tree)))))
 
@@ -530,7 +530,7 @@
   (implies (and (symbolp array-name)
                 (natp index)
                 (posp size)
-                (< size 2147483647))
+                (<= size 2147483646))
            (array-of-bounded-memo-alistsp-aux array-name
                                          (make-empty-array array-name size)
                                          index

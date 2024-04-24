@@ -88,7 +88,7 @@
   (implies (and (natp dag-len)
                 (natp n)
                 (<= n dag-len)
-                (<= dag-len 2147483645)
+                (< dag-len *max-1d-array-length*)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (equal (make-dag-variable-alist-aux n dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len) dag-variable-alist)
                   (if (consp expr)
@@ -146,7 +146,7 @@
 ;covers extending the dag by one node
 (defthm make-dag-variable-alist-of-aset1-expandable
   (implies (and (natp dag-len)
-                (<= dag-len 2147483645)
+                (< dag-len *max-1d-array-length*)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (equal (make-dag-variable-alist dag-array-name (aset1-expandable dag-array-name dag-array dag-len expr) (+ 1 dag-len))
                   (if (consp expr)

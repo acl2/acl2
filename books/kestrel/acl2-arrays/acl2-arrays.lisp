@@ -117,11 +117,6 @@
 
 ;; (local (in-theory (enable normalize-array2p-name)))
 
-;; The -1 is here because array1p requries the length to be strictly less than
-;; the :MAXIMUM-LENGTH (why?), and the :MAXIMUM-LENGTH is at most
-;; *maximum-positive-32-bit-integer* .
-(defconst *maximum-1-d-array-length* (+ -1 *maximum-positive-32-bit-integer*))
-
 (local
   (defthm alistp-of-reverse-list
     (equal (alistp (reverse-list x))

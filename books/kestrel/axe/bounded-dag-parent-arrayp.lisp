@@ -60,7 +60,7 @@
 (defthm bounded-dag-parent-entriesp-of-maybe-expand-array
   (implies (and (array1p dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (equal (bounded-dag-parent-entriesp n dag-parent-array-name (maybe-expand-array dag-parent-array-name dag-parent-array index) limit)
                   (bounded-dag-parent-entriesp n dag-parent-array-name dag-parent-array limit)))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-entriesp))))
@@ -80,7 +80,7 @@
                 (integerp n)
                 (<= n parent-array-len)
                 (posp parent-array-len)
-                (< parent-array-len 2147483647))
+                (<= parent-array-len *max-1d-array-length*))
            (bounded-dag-parent-entriesp n dag-parent-array-name (make-empty-array dag-parent-array-name parent-array-len) limit))
   :hints (("Goal" :expand ((bounded-dag-parent-entriesp
                             0 dag-parent-array-name
@@ -108,14 +108,14 @@
 
 (defthm bounded-dag-parent-arrayp-of-make-empty-array
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (symbolp dag-parent-array-name))
            (bounded-dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name dag-len) dag-len))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
 
 (defthm bounded-dag-parent-arrayp-of-make-empty-array-gen
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (symbolp dag-parent-array-name)
                 (<= lim dag-len))
            (bounded-dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name dag-len) lim))

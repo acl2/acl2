@@ -355,7 +355,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                interpreted-function-alist))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
 
                   ))
     :flag merge-term-into-dag-array-basic)
@@ -430,7 +430,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                interpreted-function-alist))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
                   ))
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -483,7 +483,7 @@
                           var-replacement-alist
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                           interpreted-function-alist))
-               2147483646))
+               *max-1d-array-length*))
   :rule-classes (:linear :rewrite)
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (e/d (wf-dagp) (merge-term-into-dag-array-basic-return-type)))))
@@ -591,9 +591,9 @@
                          var-replacement-alist
                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                          interpreted-function-alist))
-              2147483646))
+              *max-1d-array-length*))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type-corollary3-gen
-                                  (bound 2147483646)
+                                  (bound *max-1d-array-length*)
                                   )
            :in-theory (disable merge-term-into-dag-array-basic-return-type
                                dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic

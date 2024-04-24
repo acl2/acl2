@@ -1498,7 +1498,7 @@
 ;;   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                               (symbolp equiv)
 ;;                               (symbolp var)
-;;                               ;(<= dag-len 2147483645)
+;;                               ;(<= dag-len 2147483645) ; why not one more?
 ;;                               (all-natp nodenums-to-assume-false)
 ;;                               (true-listp nodenums-to-assume-false)
 ;;                               (all-< nodenums-to-assume-false dag-len)))

@@ -1911,7 +1911,7 @@
                   :verify-guards nil ;todo
                   :mode :program ;todo
                   :guard (and (or (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647))
+                                       (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (pseudo-term-listp assumptions)
                               (non-false-contextp context)

@@ -112,7 +112,7 @@
 
 ;; A "proof problem" is a DAG to be shown true (non-nil) and a list of assumptions
 ;; (terms) that can be assumed true (non-nil).
-;; TODO: Consider requiring (< (LEN (CAR PROBLEM)) 2147483647).
+;; TODO: Consider requiring (<= (LEN (CAR PROBLEM)) *max-1d-array-length*).
 (defun proof-problemp (prob)
   (declare (xargs :guard t))
   (and (true-listp prob)
@@ -186,7 +186,7 @@
                               (pseudo-term-listp assumptions)
                               ;; So we can call equivalent-dags-or-quoteps (todo: relax this?):
                               (< (+ (len new-dag) (len old-dag))
-                                 2147483646))))
+                                 *max-1d-array-length*))))
   (if (quotep new-dag)
       (if (unquote new-dag)
           ;; Rewrote/pruned to a non-nil constant:
@@ -208,7 +208,7 @@
                 (pseudo-term-listp assumptions)
                 ;; So we can call equivalent-dags-or-quoteps (todo: relax this?):
                 (< (+ (len new-dag) (len old-dag))
-                   2147483646))
+                   *max-1d-array-length*))
            (tactic-resultp (mv-nth 0 (make-tactic-result new-dag old-dag assumptions state))))
   :hints (("Goal" :in-theory (enable tactic-resultp make-tactic-result))))
 
@@ -273,7 +273,7 @@
           (prog2$
            (cw "Note: The DAG is the constant NIL.~%")
            (mv *invalid* nil state))))
-       ((when (not (< (len dag) 2147483647)))
+       ((when (not (<= (len dag) *max-1d-array-length*)))
         (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Applying the Axe rewriter with precise contexts~%")))
@@ -302,7 +302,7 @@
            (cw "Note: The DAG is the constant NIL.~%")
            (mv *invalid* nil state))))
        ((when (not (< (+ (len new-dag) (len dag))
-                      2147483646)))
+                      *max-1d-array-length*)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
        (- (and print (cw "Done applying the Axe rewriter wiith contexts (term size: ~x0, DAG size: ~x1))~%"
@@ -335,7 +335,7 @@
           (prog2$
            (cw "Note: The DAG is the constant NIL.~%")
            (mv *invalid* nil state))))
-       ((when (not (< (LEN dag) 2147483647)))
+       ((when (not (<= (LEN dag) *max-1d-array-length*)))
         (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches without rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
@@ -356,7 +356,7 @@
           (make-term-into-dag-basic term nil)))
        ((when erp) (mv *error* nil state))
        ((when (not (< (+ (len new-dag) (len dag)) ; todo: think about this in the no changep case
-                      2147483646)))
+                      *max-1d-array-length*)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
        (- (and print (cw "Done pruning branches)~%"))))
@@ -384,7 +384,7 @@
           ;; The dag is the constant nil:
           (prog2$ (cw "Note: The DAG is the constant NIL.~%")
                   (mv *invalid* nil state))))
-       ((when (not (< (len dag) 2147483647)))
+       ((when (not (<= (len dag) *max-1d-array-length*)))
         (mv *error* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Pruning branches with rules (DAG size: ~x0)~%" (dag-or-quotep-size dag))))
@@ -402,7 +402,7 @@
           (make-term-into-dag-basic term nil)))
        ((when erp) (mv *error* nil state))
        ((when (not (< (+ (len new-dag) (len dag))
-                      2147483646)))
+                      *max-1d-array-length*)))
         (cw "ERROR: Dags too large.")
         (mv *error* nil state))
        (- (and print (cw "Done pruning branches)~%"))))
@@ -554,7 +554,7 @@
           (prog2$
            (cw "Note: The DAG is the constant NIL.~%")
            (mv *invalid* nil state))))
-       ((when (not (< (car (car (first problem))) 2147483646)))
+       ((when (not (< (car (car (first problem))) *max-1d-array-length*)))
         (er hard? 'apply-tactic-stp "DAG too big.")
         (mv *error* nil state))
        ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
@@ -733,7 +733,7 @@
   (b* ((dag (first problem))
        ;; todo: have the caller check this?:
        ((when (quotep dag)) (mv *no-change* nil state))
-       ((when (< 2147483646 (len (car problem)))) (er hard? 'apply-tactic-sweep-and-merge "DAG too big.") (mv *no-change* nil state))
+       ((when (< *max-1d-array-length* (len (car problem)))) (er hard? 'apply-tactic-sweep-and-merge "DAG too big.") (mv *no-change* nil state))
        (assumptions (second problem))
        (- (and print (cw "(Applying sweeping and merging~%")))
        ;; types for the vars in the dag:

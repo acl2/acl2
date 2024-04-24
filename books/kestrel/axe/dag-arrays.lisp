@@ -16,7 +16,7 @@
 ;; as is done internally by Axe.
 
 (include-book "dags") ;for pseudo-dagp
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for *maximum-1-d-array-length*
+(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system) ; for *max-1d-array-length*
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
 (include-book "kestrel/acl2-arrays/make-into-array" :dir :system)
 (include-book "kestrel/acl2-arrays/array-to-alist" :dir :system)
@@ -141,7 +141,7 @@
   (declare (xargs :guard (and (posp len)
                               (natp slack-amount))))
   ;; don't exceed the max array length:
-  (min *maximum-1-d-array-length*
+  (min *max-1d-array-length*
        (+ len slack-amount)))
 
 (defthm integerp-of-array-len-with-slack
@@ -152,14 +152,14 @@
   :hints (("Goal" :in-theory (enable array-len-with-slack))))
 
 (defthm array-len-with-slack-linear
-  (< (array-len-with-slack len slack-amount)
-     2147483647)
+  (<= (array-len-with-slack len slack-amount)
+      *max-1d-array-length*)
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable array-len-with-slack))))
 
 (defthm array-len-with-slack-linear-2
   (implies (and (<= 0 SLACK-AMOUNT)
-                (<= LEN 2147483646))
+                (<= LEN *max-1d-array-length*))
            (<= len (array-len-with-slack len slack-amount)))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable array-len-with-slack))))
@@ -516,7 +516,7 @@
 
 (defthm pseudo-dag-arrayp-forward-to-<=-of-alen1
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-           (<= (alen1 dag-array-name dag-array) 2147483646))
+           (<= (alen1 dag-array-name dag-array) *max-1d-array-length*))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
@@ -542,7 +542,7 @@
 
 (defthm pseudo-dag-arrayp-forward-4
   (implies (pseudo-dag-arrayp array-name array dag-len)
-           (<= dag-len 2147483646))
+           (<= dag-len *max-1d-array-length*))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
@@ -1681,7 +1681,7 @@
                 (array1p array-name array)
                 (natp index)
                 (integerp top-nodenum-to-check)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (bounded-dag-exprp index val))
            (pseudo-dag-arrayp-aux array-name (aset1 array-name array index val) top-nodenum-to-check))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-aux))))
@@ -1692,7 +1692,7 @@
                 (array1p array-name array)
                 (integerp index)
                 (integerp top-nodenum-to-check)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (bounded-dag-exprp index val))
            (pseudo-dag-arrayp-aux array-name (aset1-expandable array-name array index val) top-nodenum-to-check))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-aux))))
@@ -1703,7 +1703,7 @@
                 (array1p array-name array)
                 (natp index)
                 (integerp top-nodenum-to-check)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (bounded-dag-exprp index val))
            (pseudo-dag-arrayp array-name (aset1-expandable array-name array index val) n))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
@@ -1713,7 +1713,7 @@
                 (pseudo-dag-arrayp-aux array-name array (+ -1 index)) ;the item at position index is being overwritten
                 (array1p array-name array)
                 (integerp index)
-                (<= INDEX 2147483645)
+                (<= INDEX *max-1d-array-index*)
                 (bounded-dag-exprp index val))
            (pseudo-dag-arrayp-aux array-name (aset1-expandable array-name array index2 val) index))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-aux))))
@@ -1723,7 +1723,7 @@
                 (pseudo-dag-arrayp array-name array (+ -1 index)) ;the item at position index is being overwritten
                 (array1p array-name array)
                 (integerp index)
-                (<= index 2147483646)
+                (<= index *max-1d-array-length*)
                 (bounded-dag-exprp (+ -1 index) val))
            (pseudo-dag-arrayp array-name (aset1-expandable array-name array index2 val) index))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
@@ -1922,7 +1922,7 @@
 (defthm pseudo-dag-arrayp-of-make-empty-array
   (implies (and (symbolp dag-array-name)
                 (posp size)
-                (<= size 2147483646))
+                (<= size *max-1d-array-length*))
            (pseudo-dag-arrayp dag-array-name
                               (make-empty-array dag-array-name size)
                               0))
@@ -1990,7 +1990,7 @@
 
 (defthm pseudo-dag-arrayp-aux-of-make-into-array
   (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
-                (< top-nodenum 2147483646)
+                (< top-nodenum *max-1d-array-length*)
                 (natp top-nodenum)
                 (symbolp array-name))
            (pseudo-dag-arrayp-aux array-name
@@ -2007,11 +2007,11 @@
 
 (defthm pseudo-dag-arrayp-aux-of-make-into-array-with-len
   (implies (and (pseudo-dagp-aux dag-lst top-nodenum)
-;                (< top-nodenum 2147483646)
+;                (< top-nodenum *max-1d-array-length*)
                 (natp top-nodenum)
                 (< top-nodenum len)
                 (natp len)
-                (< len 2147483647)
+                (<= len *max-1d-array-length*)
                 (symbolp array-name))
            (pseudo-dag-arrayp-aux array-name (make-into-array-with-len array-name dag-lst len) top-nodenum))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -2031,7 +2031,7 @@
 
 (defthm pseudo-dag-arrayp-of-make-into-array-with-len
   (implies (and (pseudo-dagp dag-lst)
-                (< len 2147483647)
+                (<= len *max-1d-array-length*)
                 (integerp len)
                 (<= (len dag-lst) len)
                 (symbolp array-name))
@@ -2042,7 +2042,7 @@
   (implies (and (pseudo-dagp dag-lst)
                 (<= dag-len (len dag-lst))
                 (natp dag-len)
-                (< len 2147483647)
+                (<= len *max-1d-array-length*)
                 (integerp len)
                 (<= (len dag-lst) len)
                 (symbolp array-name))
@@ -2053,7 +2053,7 @@
 ;drop?
 (defthm pseudo-dag-arrayp-of-make-into-array
   (implies (and (pseudo-dagp dag-lst)
-                (< (len dag-lst) 2147483647)
+                (<= (len dag-lst) *max-1d-array-length*)
                 (symbolp array-name))
            (pseudo-dag-arrayp array-name (make-into-array array-name dag-lst) (len dag-lst)))
   :hints (("Goal" :in-theory (e/d (pseudo-dag-arrayp pseudo-dagp)
@@ -2065,7 +2065,7 @@
   (implies (and (pseudo-dagp dag-lst)
                 (<= dag-len (len dag-lst))
                 (natp dag-len)
-                (< (len dag-lst) 2147483647)
+                (<= (len dag-lst) *max-1d-array-length*)
                 (symbolp array-name))
            (pseudo-dag-arrayp array-name (make-into-array array-name dag-lst) dag-len))
   :hints (("Goal" :use (:instance pseudo-dag-arrayp-of-make-into-array)
@@ -2261,9 +2261,9 @@
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (symbolp dag-array-name)
                               (< (top-nodenum-of-dag dag)
-                                 *maximum-1-d-array-length*)
+                                 *max-1d-array-length*)
                               (natp slack-amount)
-                              (<= slack-amount 2147483646))
+                              (<= slack-amount *max-1d-array-length*))
                   :guard-hints (("Goal" :use (:instance bounded-natp-alistp-when-pseudo-dagp)
                                  :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap
                                                   array-len-with-slack)
@@ -2284,7 +2284,7 @@
 
 (defthm pseudo-dag-arrayp-of-make-dag-into-array
   (implies (and (pseudo-dagp dag)
-                (< (len dag) 2147483647) ;or express using top-nodenum?
+                (<= (len dag) *max-1d-array-length*) ;or express using top-nodenum?
                 (<= dag-len (len dag))
                 (natp dag-len)
                 (symbolp dag-array-name)
@@ -2294,7 +2294,7 @@
                                   (pseudo-dag-arrayp-of-make-into-array-with-len-gen))
            :use (:instance pseudo-dag-arrayp-of-make-into-array-with-len-gen
                            (dag-len dag-len)
-                           (len (min *maximum-1-d-array-length*
+                           (len (min *max-1d-array-length*
                                      (+ (len dag) slack-amount)))
                            (dag-lst dag)
                            (array-name dag-array-name)))))
@@ -2319,7 +2319,7 @@
                   :split-types t)
            (type symbol dag-array-name))
   (let ((dag-len (+ 1 (top-nodenum-of-dag dag)))) ;no need to search for the max key, since we know it's a dag
-    (if (< *maximum-1-d-array-length* dag-len)
+    (if (< *max-1d-array-length* dag-len)
         (mv :dag-too-big nil)
       (let* ((length-with-slack (array-len-with-slack dag-len slack-amount)))
         (mv (erp-nil)

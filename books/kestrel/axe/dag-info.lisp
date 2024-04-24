@@ -165,7 +165,7 @@
 (defun print-dag-info (dag name print-size)
   (declare (xargs :guard (and (or (myquotep dag)
                                   (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647)))
+                                       (<= (len dag) *max-1d-array-length*)))
                               (or (symbolp name)
                                   (null name))
                               (booleanp print-size))))
@@ -203,7 +203,7 @@
 ;; Returns the error triple (mv nil :invisible state).
 (defun dag-info-fn (dag dag-form print-size state)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647)
+                              (<= (len dag) *max-1d-array-length*)
                               (booleanp print-size))
                   :stobjs state))
   (prog2$ (print-dag-info dag
