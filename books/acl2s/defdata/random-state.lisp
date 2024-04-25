@@ -28,7 +28,7 @@
           (mv (= 1 num) state)))
 
 (defthm random-boolean-type
-  (booleanp (car (random-boolean r)))
+  (booleanp (mv-nth 0 (random-boolean r)))
   :rule-classes :type-prescription)
 
 (in-theory (disable random-boolean))
@@ -120,13 +120,13 @@
 
  (defthm random-natural-seed-type-car
   (implies (unsigned-byte-p 63 r)
-           (natp (car (random-natural-seed r))))
+           (natp (mv-nth 0 (random-natural-seed r))))
   :rule-classes (:type-prescription))
 
 (defthm random-natural-seed-type-car-type
   (implies (natp r)
-           (and (integerp (car (random-natural-seed r)))
-                (>= (car (random-natural-seed r)) 0)))
+           (and (integerp (mv-nth 0 (random-natural-seed r)))
+                (>= (mv-nth 0 (random-natural-seed r)) 0)))
   :rule-classes :type-prescription)
 
 (defthm random-natural-seed-type-cadr
@@ -161,8 +161,8 @@
 
 (defthm random-natural-basemax1-type-car
   (implies (and (posp b) (natp d) (natp r))
-           (and (integerp (car (random-natural-basemax1 b d r)))
-                (>= (car (random-natural-basemax1 b d r)) 0)))
+           (and (integerp (mv-nth 0 (random-natural-basemax1 b d r)))
+                (>= (mv-nth 0 (random-natural-basemax1 b d r)) 0)))
   :rule-classes (:type-prescription))
 
 
@@ -187,8 +187,8 @@
 
 (defthm random-natural-basemax2-type-car
   (implies (and (posp b) (natp d) (natp r))
-           (and (integerp (car (random-natural-basemax2 b d r)))
-                (>= (car (random-natural-basemax2 b d r)) 0)))
+           (and (integerp (mv-nth 0 (random-natural-basemax2 b d r)))
+                (>= (mv-nth 0 (random-natural-basemax2 b d r)) 0)))
   :rule-classes (:type-prescription))
 
 
@@ -217,13 +217,13 @@
 
 (defthm random-natural-seed-type/0.5-car
   (implies (unsigned-byte-p 63 r)
-           (natp (car (random-natural-seed/0.5 r))))
+           (natp (mv-nth 0 (random-natural-seed/0.5 r))))
   :rule-classes (:type-prescription))
 
 (defthm random-natural-seed-type/0.5-car-type
   (implies (natp r)
-           (and (integerp (car (random-natural-seed/0.5 r)))
-                (>= (car (random-natural-seed/0.5 r)) 0)))
+           (and (integerp (mv-nth 0 (random-natural-seed/0.5 r)))
+                (>= (mv-nth 0 (random-natural-seed/0.5 r)) 0)))
   :rule-classes :type-prescription)
 
 (defthm random-natural-seed-type/0.5-cadr
@@ -253,13 +253,13 @@
 
 (defthm random-natural-seed-type/0.25-car
   (implies (unsigned-byte-p 63 r)
-           (natp (car (random-natural-seed/0.25 r))))
+           (natp (mv-nth 0 (random-natural-seed/0.25 r))))
   :rule-classes (:type-prescription))
 
 (defthm random-natural-seed-type/0.25-car-type
   (implies (natp r)
-           (and (integerp (car (random-natural-seed/0.25 r)))
-                (>= (car (random-natural-seed/0.25 r)) 0)))
+           (and (integerp (mv-nth 0 (random-natural-seed/0.25 r)))
+                (>= (mv-nth 0 (random-natural-seed/0.25 r)) 0)))
   :rule-classes :type-prescription)
 
 (defthm random-natural-seed-type/0.25-cadr
