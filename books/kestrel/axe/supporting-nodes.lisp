@@ -805,6 +805,15 @@
                            (pseudo-dagp-of-drop-non-supporters-array-with-name
                             top-nodenum)))))
 
+;; use phrase this using top-nodenum
+(defthm <=-of-car-of-car-of-drop-non-supporters-array-with-name
+  (implies (and (natp top-nodenum)
+                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum)))
+           (<= (car (car (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print)))
+               *max-1d-array-index*))
+  :hints (("Goal" :use (:instance <=-of-len-of-drop-non-supporters-array-with-name)
+           :in-theory (e/d (CAR-OF-CAR-WHEN-PSEUDO-DAGP) (<=-of-len-of-drop-non-supporters-array-with-name)))))
+
 ; Returns (mv renamed-smaller-nodenum renamed-larger-nodenum dag).
 ;; Only used by the equivalence checker.
 ;; The "-with-name" suffix indicates that this function takes the dag-array-name as an argument.
