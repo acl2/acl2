@@ -751,8 +751,56 @@
            (string-treep (mv-nth 0 (translate-constant-array-mention data element-width element-count constant-array-info))))
   :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop))))
 
+;; Should work for EQUAL (once we choose a size) and BVEQUAL.
+;; Returns a string-tree.
+(defund translate-equality-of-bvs-to-stp-aux (width lhs rhs lhs-width rhs-width)
+  (declare (xargs :guard (and (posp width)
+                              (dargp lhs)
+                              (bv-arg-okp lhs)
+                              (dargp rhs)
+                              (bv-arg-okp rhs)
+                              (posp lhs-width)
+                              (posp rhs-width))))
+
+  (list* "("
+         (translate-bv-arg-and-pad lhs width lhs-width)
+         " = "
+         (translate-bv-arg-and-pad rhs width rhs-width)
+         ")"))
+
+(local
+  (defthm string-treep-of-translate-equality-of-bvs-to-stp-aux
+    (string-treep (translate-equality-of-bvs-to-stp-aux width lhs rhs lhs-width rhs-width))
+    :hints (("Goal" :in-theory (enable translate-equality-of-bvs-to-stp-aux)))))
+
+;; Returns (mv erp translated-equality) where TRANSLATED-EQUALITY is a
+;; string-tree but is meaningless if ERP is non-nil.
+(defund translate-equality-of-bvs-to-stp (lhs rhs lhs-type rhs-type)
+  (declare (xargs :guard (and (dargp lhs)
+                              (dargp rhs)
+                              (bv-typep lhs-type)
+                              (bv-typep rhs-type))))
+  (let* ((lhs-width (bv-type-width lhs-type))
+         (rhs-width (bv-type-width rhs-type)))
+    (if (or (zp lhs-width)
+            (zp rhs-width))
+        (prog2$ (er hard? 'translate-equality-to-stp "Bit vectors of width 0 are not supported.")
+                (mv :bv-of-width-0 nil))
+      (let ((max-width (max lhs-width rhs-width)))
+        (if (and (bv-arg-okp lhs) ;; can these tests fail?
+                 (bv-arg-okp rhs))
+            (mv (erp-nil)
+                (translate-equality-of-bvs-to-stp-aux max-width lhs rhs lhs-width rhs-width))
+          (prog2$ (er hard? 'translate-equality-to-stp "A bad BV arg was found.")
+                  (mv :bad-bv-arg nil)))))))
+
+(defthm string-treep-of-mv-nth-1-of-translate-equality-of-bvs-to-stp
+  (string-treep (mv-nth 1 (translate-equality-of-bvs-to-stp lhs rhs lhs-type rhs-type)))
+  :hints (("Goal" :in-theory (enable translate-equality-of-bvs-to-stp))))
+
 ;returns (mv translated-expr constant-array-info) where translated-expr is a string-tree.
 ;fixme what if we can't translate the equality (maybe it mentions ':byte)?
+;; TODO: Add ability to return errors.
 (defund translate-equality-to-stp (lhs ;a nodenum or quoted constant
                                    rhs ;a nodenum or quoted constant
                                    dag-array-name dag-array dag-len
@@ -854,24 +902,13 @@
         (if (and (bv-typep lhs-type)
                  (bv-typep rhs-type))
             ;; Equality of two bit-vectors:
-            (if (and (bv-arg-okp lhs)
-                     (bv-arg-okp rhs))
-                (let* ((lhs-width (bv-type-width lhs-type))
-                       (rhs-width (bv-type-width rhs-type))
-                       (max-width (max lhs-width rhs-width)))
-                  (if (or (zp lhs-width)
-                          (zp rhs-width))
-                      (mv (er hard? 'translate-equality-to-stp "Bit vectors of width 0 are not supported.")
-                          constant-array-info)
-                    (mv (list* "("
-                               (translate-bv-arg-and-pad lhs max-width lhs-width)
-                               " = "
-                               (translate-bv-arg-and-pad rhs max-width rhs-width)
-                               ")")
-                        constant-array-info)))
-              ;;todo: pass back errors?
-              (mv (er hard? 'translate-equality-to-stp "A bad BV arg was found.")
-                  constant-array-info))
+            (b* (((mv erp translated-equality)
+                  (translate-equality-of-bvs-to-stp lhs rhs lhs-type rhs-type))
+                 ((when erp)
+                  (er hard? 'translate-equality-to-stp "Error translating equality of BVs.")
+                  ;; meaningless:
+                  (mv nil constant-array-info)))
+              (mv translated-equality constant-array-info))
           (prog2$ (print-array2 dag-array-name dag-array (max (if (natp lhs) (+ 1 lhs) 0) (if (natp rhs) (+ 1 rhs) 0)))
                   ;;fixme print the assumptions? or the literals? or nodenum-type-alist ?
                   ;;fixme be more flexible.  btw, nil is considered to be of type boolean, but what if it's being compared to a list of 0 size?
