@@ -24,8 +24,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (must-prove-with-stp test1 '(equal (bvxor 32 x y) (bvxor 32 y x)))
 (must-not-prove-with-stp test2 '(equal (bvxor 32 x y) (bvxor 32 x x)))
 (defstub foo (x) t)
@@ -56,6 +54,8 @@
 (must-not-prove-with-stp test18b '(implies (and (unsigned-byte-p 2 x) (not (equal 1 x))) (equal (getbit 0 x) 0)))
 ;; This one is valid:
 (must-prove-with-stp test18c '(implies (and (unsigned-byte-p 1 x) (not (equal 1 x))) (equal (getbit 0 x) 0)))
+;; Test that we don't incorrectly chose an induced type of bv8 for x, or at least that we then don't translate the equality:
+(must-not-prove-with-stp test18d '(boolif (equal x (bvchop 8 x)) (equal (bvxor 8 x x) 0) nil))
 
 (must-prove-with-stp test19 '(equal (bvmod 32 x 0) (bvchop 32 x)))
 (must-prove-with-stp test20 '(equal (bvmod 32 x 1) 0))
