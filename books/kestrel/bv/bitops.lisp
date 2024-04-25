@@ -104,27 +104,6 @@
   :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low slice)
                                   (bvchop-of-logtail-becomes-slice)))))
 
-(defthmd getbit-of-part-install-width-low-helper
-  (implies (and (natp m)
-                (natp low)
-                (natp width)
-;                (integerp x)   ;drop
-                )
-           (equal (getbit m (bitops::part-install-width-low val x width low))
-                  ;; not simplified; i just want to get rid of the part-install:
-                  (getbit m (bvcat (- (+ m 1) (+ low width))
-                                   (slice m
-                                          (+ low width)
-                                          x)
-                                   (+ width low)
-                                   (bvcat width
-                                          val
-                                          low
-                                          x)))))
-  :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
-           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
-                           (ash logmask)))))
-
 (defthm getbit-of-part-install-width-low
   (implies (and (natp m)
                 (natp low)
@@ -140,8 +119,9 @@
                                           val
                                           low
                                           x)))))
-  :hints (("Goal" :use (:instance getbit-of-part-install-width-low-helper (x (ifix x)))
-           :in-theory (disable BITOPS::PART-INSTALL-WIDTH-LOW$INLINE))))
+  :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
+           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
+                           (ash logmask)))))
 
 ;move
 (local

@@ -19,6 +19,7 @@
 ;; second approach here for now.
 
 (include-book "support-axe")
+(include-book "../bitops-rules")
 (include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)

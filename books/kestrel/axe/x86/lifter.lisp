@@ -46,6 +46,7 @@
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "support-axe")
+(include-book "../bitops-rules")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)

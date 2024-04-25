@@ -18,17 +18,15 @@
 
 ;; TODO: Make sure there are non-axe versions of all of these.
 
-(include-book "kestrel/bv/bitops" :dir :system) ; needed for part-install-width-low-becomes-bvcat-axe
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/known-booleans" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
+(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for term-should-be-trimmed-axe
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
-(local (include-book "kestrel/bv/intro" :dir :system))
 
 ;; Register a bunch of x86-related functions as known booleans:
 
@@ -67,31 +65,6 @@
 (add-known-boolean x86isa::cr8bits-p$inline)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;todo: we could use unsigned-byte-p-forced in these rules!
-
-(defthmd acl2::part-install-width-low-becomes-bvcat-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)
-                (unsigned-byte-p xsize x)
-                (natp xsize) ;drop?
-;                (< (+ width low) xsize)   ;allow = ?
-                (natp low)
-                (natp width))
-           (equal (bitops::part-install-width-low val x width low)
-                  (bvcat (- xsize (+ width low))
-                         (slice (+ -1 xsize) (+ low width) x)
-                         (+ width low)
-                         (bvcat width val low x)))))
-
-(defthmd ash-negative-becomes-slice-axe
-  (implies (and (< n 0)
-                (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
-         ;       (<= (- n) xsize)
-                (integerp n))
-           (equal (ash x n)
-                  (slice (+ -1 xsize) (- n) x)))
-  :hints (("Goal" :use (:instance acl2::ash-negative-becomes-slice (acl2::x x) (acl2::n n) (acl2::xsize xsize)))))
 
 ;todo: move
 ;; (defthm not-member-p-canonical-address-listp-when-disjoint-p-alt
