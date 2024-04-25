@@ -2081,15 +2081,13 @@
                     (b* ((obvious-type (maybe-get-type-of-function-call fn (dargs expr)))
                          ((mv erp type-for-cut-nodenum)
                           (if obvious-type
-                              (mv (erp-nil) nil)
+                              (mv (erp-nil) obvious-type)
                             (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len)))
                          ((when erp) (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
                       (process-nodenums-for-translation (rest worklist) depth-limit depth-array
                                                         (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                         nodenums-to-translate
-                                                        (if obvious-type
-                                                            (acons nodenum obvious-type cut-nodenum-type-alist)
-                                                          (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist))))
+                                                        (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist)))
                   ;;a function call:
                   (b* ((args (dargs expr))
                        (type (maybe-get-type-of-function-call fn args)))
@@ -2097,6 +2095,7 @@
                            (b* (((mv erp type-for-cut-nodenum) (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
                                 ((when erp) (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
                              ;;we don't know the type, so we can't translate (fixme make sure we know the type of everything we can translate).  just like a variable, we must cut:
+                             ;; or skip this, as we call can-always-translate-expr-to-stp below!
                              (process-nodenums-for-translation (rest worklist) depth-limit depth-array
                                                                (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                nodenums-to-translate
