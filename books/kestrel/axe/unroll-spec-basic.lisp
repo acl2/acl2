@@ -59,23 +59,6 @@
 
 (ensure-rules-known (unroll-spec-basic-rules))
 
-;dup
-;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
-(defconst *bv-and-array-fns-we-can-translate*
-  '(equal getbit bvchop ;$inline
-          slice
-          bvcat
-          bvplus bvuminus bvminus bvmult
-          bitor bitand bitxor bitnot
-          bvor bvand bvxor bvnot
-          bvsx bv-array-read bv-array-write bvif
-          leftrotate32
-          boolor booland ;boolxor
-          not
-          bvlt                       ;new
-          sbvlt                      ;new
-          ))
-
 (defund filter-function-names (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (plist-worldp wrld))))

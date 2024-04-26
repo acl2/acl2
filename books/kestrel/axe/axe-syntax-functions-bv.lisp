@@ -588,3 +588,26 @@
                            (and (true-listp exclude-fns) ; for guards
                                 (not (member-eq fn exclude-fns)))
                          t))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This can be used to decide which functions to open.
+;; But to decide whether we can translate an expression, more checking is needed.
+;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
+;instead of using this, check the args, etc.?
+;fffixme add bvdiv and bvmod and sbvdiv and sbvrem !!
+;; todo: add bve and sbvle?
+(defconst *bv-and-array-fns-we-can-translate*
+  '(equal getbit bvchop ;$inline
+          slice
+          bvcat
+          bvplus bvuminus bvminus bvmult
+          bitor bitand bitxor bitnot
+          bvor bvand bvxor bvnot
+          bvsx bv-array-read bv-array-write bvif
+          leftrotate32
+          boolor booland ;boolxor
+          not
+          bvlt                       ;new
+          sbvlt                      ;new
+          ))

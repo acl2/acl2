@@ -1099,15 +1099,15 @@
                (boolean-type)
              nil))
           ;; Can we do anything for an equal, given that we don't know whether
-          ;; it is true or false, or if it even compares value of the same
-          ;; type?
+          ;; it is true or false, or if it even compares values of the same
+          ;; types?
           ;; ((eq 'equal fn) ;; (equal <constant> nodenum)
           ;;  (if (and (darg-quoted-posp (first dargs)) ;ffixme what about 0???
           ;;           (eql nodenum (second dargs))
           ;;           )
           ;;      (make-bv-type (integer-length (unquote (first dargs))))
           ;;    (most-general-type)))
-          ;; TTODO: handle leftrotate?, bvshl, bvshr, the booleans (for arguments of not!)..
+          ;; TTODO: handle leftrotate?, bvshl, bvshr, ...
           (t nil))))
 
 (defthm axe-typep-of-get-induced-type
@@ -1330,8 +1330,6 @@
                ;; todo: disallow = ?
                (<= (unquote (second args))
                    (unquote (first args)))))
-    (otherwise nil)))
-
 ;; (equal (let ((arg1 (first args))
 ;;                      (arg2 (second args)))
 ;;                  (and (or (not (consp arg1))
@@ -1346,6 +1344,8 @@
 ;;                             (or (natp arg2)
 ;;                                 (booleanp arg2)
 ;;                                 (and (consp arg2) (all-natp arg2))))))))
+    (otherwise nil)))
+
 
 (local
   (defthmd member-equal-of-constant-when-not-equal-of-nth-0
@@ -1386,8 +1386,7 @@
                                      consp-of-cdr
                                      can-translate-bvif-args
                                      member-equal-of-cons ; applies to constant lists
-                                     member-equal-when-consp-iff
-                                     ))))
+                                     member-equal-when-consp-iff))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1438,6 +1437,7 @@
                    ))
             (mv (erp-nil) type)))))))
 
+
 ;; should be a bv, array, or boolean type
 (defthm axe-typep-of-mv-nth-1-of-type-for-cut-nodenum
   (implies (and (not (mv-nth 0 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))) ;drop?
@@ -1446,7 +1446,9 @@
            (axe-typep (mv-nth 1 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))))
   :hints (("Goal" :in-theory (enable type-for-cut-nodenum))))
 
-(defun any-node-is-given-empty-typep (known-nodenum-type-alist)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund any-node-is-given-empty-typep (known-nodenum-type-alist)
   (declare (xargs :guard (nodenum-type-alistp known-nodenum-type-alist)))
   (if (endp known-nodenum-type-alist)
       nil
@@ -1455,6 +1457,8 @@
       (if (empty-typep type)
           t
         (any-node-is-given-empty-typep (cdr known-nodenum-type-alist))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;this one takes the var-type-alist
 ;returns a type (bv type, array type, etc.)
@@ -1478,6 +1482,8 @@
               (hard-error 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1"
                           (acons #\0 expr (acons #\1 n nil)))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund get-type-of-arg-during-cutting (arg dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (symbol-alistp var-type-alist)
                               (or (myquotep arg)
@@ -1487,6 +1493,8 @@
   (if (consp arg) ;tests for quotep
       (get-type-of-val-checked (unquote arg))
     (get-type-of-nodenum-during-cutting arg dag-array-name dag-array var-type-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a string-tree that extends extra-asserts.
 ;fixme rectify this printing with the other use of this function
@@ -2046,7 +2054,7 @@
 ;fixme look for type mismatches..
 ;;fixme combine some recursive calls in this function?
 ;; When we decide to cut at a node (either because we can't translate it or we've hit the depth limit), we have to select a type for it.
-;; TODO: Consider returning an error if a bad arity is found
+;; TODO: Consider returning an error if a bad arity is found.
 (defund process-nodenums-for-translation (worklist ;a list of nodenums to handle (each of these must either have an obvious type, a known-type, or be used in at least one choppable context)
                                           depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
                                           depth-array
@@ -2082,9 +2090,9 @@
             :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (MYQUOTEP DARGP))
                            :do-not '(generalize eliminate-destructors)))))
   (if (or (endp worklist)
-          (not (mbt (array1p 'handled-node-array handled-node-array)))
-          (not (mbt (nat-listp worklist)))
-          (not (mbt (all-< worklist (alen1 'handled-node-array handled-node-array)))))
+          (not (mbt (and (array1p 'handled-node-array handled-node-array)
+                         (nat-listp worklist)
+                         (all-< worklist (alen1 'handled-node-array handled-node-array))))))
       (mv (erp-nil) nodenums-to-translate cut-nodenum-type-alist handled-node-array)
     (let* ((nodenum (first worklist)))
       (if (aref1 'handled-node-array handled-node-array nodenum)
@@ -2111,6 +2119,7 @@
                                                     (cons nodenum nodenums-to-translate)
                                                     ;;todo: add a type here?:
                                                     cut-nodenum-type-alist)
+                ;;a function call:
                 (if (and depth-limit (< depth-limit (rfix (aref1 'depth-array depth-array nodenum)))) ;todo: drop the rfix (need to know that the depth-array contains numbers)
                     ;;node is too deep, so cut (if node is in the worklist, we must know its type):
                     (b* ((obvious-type (maybe-get-type-of-function-call fn (dargs expr)))
@@ -2123,13 +2132,12 @@
                                                         (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                         nodenums-to-translate
                                                         (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist)))
-                  ;;a function call:
                   (b* ((args (dargs expr))
                        (type (maybe-get-type-of-function-call fn args)))
                     (cond ((not type)
                            (b* (((mv erp type-for-cut-nodenum) (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
                                 ((when erp) (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
-                             ;;we don't know the type, so we can't translate (fixme make sure we know the type of everything we can translate).  just like a variable, we must cut:
+                             ;;we don't know the type, so we can't translate (fixme make everything we can translate has an obvious type).  just like a variable, we must cut:
                              ;; or skip this, as we call can-always-translate-expr-to-stp below!
                              (process-nodenums-for-translation (rest worklist) depth-limit depth-array
                                                                (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
@@ -2138,8 +2146,7 @@
                           ((equal type (make-bv-type 0))
                            (progn$ (cw "ERROR: Encountered a BV node of width 0: ~x0." expr)
                                    (mv :bv-of-width-0 nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
-                          ((can-always-translate-expr-to-stp fn args 'dag-array ;fixme
-                                                             dag-array dag-len known-nodenum-type-alist t)
+                          ((can-always-translate-expr-to-stp fn args 'dag-array dag-array dag-len known-nodenum-type-alist t)
                            ;; we can always translate it:
                            (process-nodenums-for-translation (append-atoms args (rest worklist))
                                                              depth-limit depth-array
@@ -2147,6 +2154,7 @@
                                                              dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                              (cons nodenum nodenums-to-translate)
                                                              cut-nodenum-type-alist))
+                          ;; Special case for equal (fixme: add typed versions of equal and get rid of this):
                           ((and (eq 'equal fn)
                                 (= 2 (len args)))
                            (let* ((lhs (first args))   ; a nodenum or quotep
@@ -2178,6 +2186,7 @@
                                                                  dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                  nodenums-to-translate
                                                                  (acons nodenum (boolean-type) cut-nodenum-type-alist)))))
+                          ;; todo: can we get rid of this?
                           ((and (eq 'unsigned-byte-p fn)
                                 (= 2 (len args)))
                            (if (not (darg-quoted-posp (first args))) ;allow 0?
@@ -2205,7 +2214,7 @@
                                                                    dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                    nodenums-to-translate
                                                                    (acons nodenum (boolean-type) cut-nodenum-type-alist))))))
-;fixme could just say that not induces a boolean type for its arg?
+                          ;;fixme could just say that not induces a boolean type for its arg?
                           ((and (eq 'not fn)
                                 (= 1 (len args)))
                            (let* ((arg (first args)) ;could this be a quotep?
@@ -2235,30 +2244,17 @@
                                                              (acons nodenum type cut-nodenum-type-alist))))))))))))))
 
 (local
-  (defthm nodenum-type-alistp-of-mv-nth-2-of-process-nodenums-for-translation
-    (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
-                  (nodenum-type-alistp known-nodenum-type-alist))
-             (nodenum-type-alistp (mv-nth 2 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
-                                                                              cut-nodenum-type-alist))))
-    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
-
-(local
-  (defthm all-<-of-strip-cars-of-mv-nth-2-of-process-nodenums-for-translation
-    (implies (and (all-< worklist dag-len)
-                  (all-< (strip-cars cut-nodenum-type-alist) dag-len)
-                  (all-< (strip-cars known-nodenum-type-alist) dag-len)
-;                (nat-listp worklist)
-                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-             (all-< (strip-cars (mv-nth 2 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
-                                                                            cut-nodenum-type-alist)))
-                    dag-len))
-    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
-
-(local
   (defthm all-natp-of-mv-nth-1-of-process-nodenums-for-translation
     (implies (all-natp nodenums-to-translate)
              (all-natp (mv-nth 1 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
                                                                    cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
+
+(local
+  (defthm true-listp-of-mv-nth-1-of-process-nodenums-for-translation
+    (implies (true-listp nodenums-to-translate)
+             (true-listp (mv-nth 1 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                     cut-nodenum-type-alist))))
     :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
 (local
@@ -2280,10 +2276,23 @@
     :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
 (local
-  (defthm true-listp-of-mv-nth-1-of-process-nodenums-for-translation
-    (implies (true-listp nodenums-to-translate)
-             (true-listp (mv-nth 1 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
-                                                                     cut-nodenum-type-alist))))
+  (defthm nodenum-type-alistp-of-mv-nth-2-of-process-nodenums-for-translation
+    (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
+                  (nodenum-type-alistp known-nodenum-type-alist))
+             (nodenum-type-alistp (mv-nth 2 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                              cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
+
+(local
+  (defthm all-<-of-strip-cars-of-mv-nth-2-of-process-nodenums-for-translation
+    (implies (and (all-< worklist dag-len)
+                  (all-< (strip-cars cut-nodenum-type-alist) dag-len)
+                  (all-< (strip-cars known-nodenum-type-alist) dag-len)
+;                (nat-listp worklist)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (all-< (strip-cars (mv-nth 2 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                            cut-nodenum-type-alist)))
+                    dag-len))
     :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
 (local
@@ -2364,27 +2373,20 @@
                         (prog2$ (cw "Dropping a disjunct (node ~x0, possibly after stripping a not) that is a call to ~x1 (not a known boolean).~%" disjunct-core (ffn-symb expr))
                                 nil)))))))))
       (if process-this-disjunctp
-          (mv-let (erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)
-            (process-nodenums-for-translation (list disjunct-core)
-                                              depth-limit
-                                              depth-array
-                                              handled-node-array
-                                              dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                              nodenums-to-translate cut-nodenum-type-alist)
-            (if erp
-                (mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
-              (process-disjuncts-for-translation (rest disjuncts)
-                                                 depth-limit
-                                                 depth-array
-                                                 handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                 (cons disjunct disjuncts-to-include-in-query) ;we can include this disjunct
-                                                 nodenums-to-translate cut-nodenum-type-alist)))
+          (b* (;; nodenums-to-translate and cut-nodenum-type-alist get extended, and more nodes are marked in the handled-node-array:
+               ((mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)
+                (process-nodenums-for-translation (list disjunct-core)
+                                                  depth-limit
+                                                  depth-array
+                                                  handled-node-array
+                                                  dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                  nodenums-to-translate cut-nodenum-type-alist))
+               ((when erp) (mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)))
+            (process-disjuncts-for-translation (rest disjuncts) depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                               (cons disjunct disjuncts-to-include-in-query) ;we can include this disjunct
+                                               nodenums-to-translate cut-nodenum-type-alist))
         ;;drop this disjunct (TODO: Introduce a boolean var?)
-        (process-disjuncts-for-translation (rest disjuncts)
-                                           depth-limit
-                                           depth-array
-                                           handled-node-array
-                                           dag-array dag-len dag-parent-array known-nodenum-type-alist
+        (process-disjuncts-for-translation (rest disjuncts) depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                            disjuncts-to-include-in-query ;don't add the disjunct
                                            nodenums-to-translate cut-nodenum-type-alist)))))
 
@@ -2485,16 +2487,12 @@
                               (booleanp print-cex-as-signedp))
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))))
-  (b* ((handled-node-array (make-empty-array 'handled-node-array
-                                             (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts)
-                                                ;; (maxelem (strip-nots-from-possibly-negated-nodenums ;todo: inefficient
-                                                ;;           disjuncts))
-                                                )))
+  (b* (;; Array to track which nodes we've considered as we go through the disjuncts (disjuncts may have nodes in common):
+       (handled-node-array (make-empty-array 'handled-node-array (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts))))
+       ;; Decide which disjuncts to include in the query and which nodes under them to translate / cut:
+       ;; TODO: What if a node is shallow in one disjunct and deep in another?  How should we treat it?
        ((mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
-        (process-disjuncts-for-translation disjuncts
-                                           depth-limit
-                                           depth-array
-                                           handled-node-array
+        (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array
                                            dag-array dag-len dag-parent-array
                                            known-nodenum-type-alist
                                            nil ;initial disjunct-nodenums-to-include-in-query
@@ -2512,7 +2510,7 @@
                           (if depth-limit (concatenate 'string "at depth " (nat-to-string depth-limit)) "on uncut goal")
                           'dag-array dag-array dag-len
                           (reverse (merge-sort-< nodenums-to-translate)) ;make a merge-sort-> ??
-                          nil                                            ;fixme
+                          nil ; extra-asserts ; todo: do need any?
                           (concatenate 'string base-filename (if depth-limit (concatenate 'string  "-depth-" (nat-to-string depth-limit)) "-uncut"))
                           cut-nodenum-type-alist
                           print
@@ -2533,7 +2531,7 @@
 ;binary search the range [min-depth, max-depth] to try to find a cut depth at which STP says valid
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, or :timedout.
 ;terminates because the difference in depths decreases
-(defund prove-node-disjunction-with-stp-aux (min-depth
+(defund prove-node-disjunction-with-stp-at-depths (min-depth
                                              max-depth
                                              depth-array
                                              known-nodenum-type-alist
@@ -2589,21 +2587,21 @@
             (mv *valid* state)
           (if (eq result *timedout*)
               ;; STP timed out, so don't try any deeper depths (they will probably time-out too). recur on the range of shallower depths
-              (prove-node-disjunction-with-stp-aux min-depth (+ -1 depth) depth-array known-nodenum-type-alist disjuncts
+              (prove-node-disjunction-with-stp-at-depths min-depth (+ -1 depth) depth-array known-nodenum-type-alist disjuncts
                                                    dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)
             (progn$
              ;; STP said invalid or gave a counterexample, so don't try any shallower depths (they will also be invalid). recur on the range of deeper depths
              ;; TODO: Use the counterexample here (check whether possible or certain?)?
-             (prove-node-disjunction-with-stp-aux (+ 1 depth) max-depth depth-array known-nodenum-type-alist disjuncts
+             (prove-node-disjunction-with-stp-at-depths (+ 1 depth) max-depth depth-array known-nodenum-type-alist disjuncts
                                                   dag-array dag-len dag-parent-array
                                                   base-filename print max-conflicts
                                                   counterexamplep print-cex-as-signedp state))))))))
 
-(defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-aux
-  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-aux min-depth max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len
+(defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-at-depths
+  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-at-depths min-depth max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len
                                                            dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
          (w state))
-  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-aux))))
+  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-at-depths))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2704,7 +2702,7 @@
                         (make-depth-array-for-nodes (strip-nots-from-possibly-negated-nodenums disjuncts) ;todo: avoid consing this up?
                                                     'dag-array dag-array dag-len))
                        ((mv result state)
-                        (prove-node-disjunction-with-stp-aux 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
+                        (prove-node-disjunction-with-stp-at-depths 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
                     ;;todo: move printing to sub-function?
                     (if (eq result *error*)
                         (mv *error* state)
