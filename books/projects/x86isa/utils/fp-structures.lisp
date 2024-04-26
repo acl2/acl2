@@ -41,6 +41,8 @@
 (include-book "utilities")
 (include-book "basic-structs")
 
+;; ----------------------------------------------------------------------
+
 (defsection fp-bitstructs
   :parents (structures)
   :short "<b>Bitstructs related to floating-point operations</b>"
