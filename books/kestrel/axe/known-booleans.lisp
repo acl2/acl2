@@ -1,6 +1,6 @@
 ; A tool to track functions that are known to return only t or nil
 ;
-; Copyright (C) 2016-2023 Kestrel Institute
+; Copyright (C) 2016-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -108,6 +108,7 @@
 
 (add-known-boolean not)
 (add-known-boolean equal)
+(add-known-boolean eq) ; but we should usually replace eq with equal
 (add-known-boolean =) ; but we should usually replace = with equal
 (add-known-boolean unsigned-byte-p)
 (add-known-boolean signed-byte-p)
@@ -120,6 +121,7 @@
 (add-known-boolean consp)
 (add-known-boolean atom) ; but we should usually open to expose consp
 (add-known-boolean endp) ; but we should usually open to expose consp
+(add-known-boolean null) ; but we should usually open to expose equal
 (add-known-boolean booleanp)
 (add-known-boolean true-listp)
 (add-known-boolean iff)
