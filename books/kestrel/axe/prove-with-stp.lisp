@@ -785,6 +785,8 @@
                                      bounded-possibly-negated-nodenumsp
                                      bounded-possibly-negated-nodenump))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns known-nodenum-type-alist, where the types in known-nodenum-type-alist are implied by the conjunction of the negations of disjuncts.
 ;; known-nodenum-type-alist assigns types only to nodes in the DAG without obvious types ("obvious types" are types you can tell just from looking at the nodes). fixme what if it can improve on an obvious type?!
 ;;All of the types computed here are known for sure; they are different from types "induced" by how a node is used (e.g., only 32-bits of x are used in (bvxor 32 x y)).
@@ -1387,6 +1389,8 @@
                                      member-equal-when-consp-iff
                                      ))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Select a type for NODENUM.  Returns (mv erp type).
 ;;note: this will only be called when its expr doesn't have an obvious type
 ;;nodenum must either have a known type or be used in at least one choppable context
@@ -1523,6 +1527,8 @@
   (implies (string-treep extra-asserts)
            (string-treep (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts)))
   :hints (("Goal" :in-theory (enable add-assert-if-a-mult))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: this assumes the miter is pure, but what about :irrelevant?
 ;fixme could use a worklist instead of walking the whole dag? perhaps merge the supporters lists for the two dags?
@@ -1779,6 +1785,8 @@
                                                                                           print var-type-alist))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;only used for probably-constant nodes
 ;;only cuts at variables (and BVIFs we can't translate)
 ;FIXME can we clean this up?
@@ -2031,7 +2039,6 @@
            (string-treep (mv-nth 3 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: compare to gather-nodes-to-translate-up-to-depth
@@ -2046,7 +2053,8 @@
                                           handled-node-array
                                           dag-array dag-len dag-parent-array known-nodenum-type-alist
                                           ;;these are accumulators:
-                                          nodenums-to-translate cut-nodenum-type-alist)
+                                          nodenums-to-translate ; every node already in this list should have its flags set in handled-node-array (so we avoid duplicates)
+                                          cut-nodenum-type-alist)
   (declare (xargs ;; The measure is, first the number of unhandled nodes, then, if unchanged, check the length of the worklist.
             :measure (make-ord 1
                                (+ 1 ;coeff must be positive
@@ -2226,103 +2234,73 @@
                                                              nodenums-to-translate
                                                              (acons nodenum type cut-nodenum-type-alist))))))))))))))
 
-(defthm nodenum-type-alistp-of-mv-nth-2-of-process-nodenums-for-translation
-  (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
-                (nodenum-type-alistp known-nodenum-type-alist))
-           (nodenum-type-alistp (mv-nth 2 (process-nodenums-for-translation worklist
-                                                                            depth-limit
-                                                                            depth-array handled-node-array
-                                                                            dag-array dag-len dag-parent-array
-                                                                            known-nodenum-type-alist
-                                                                            nodenums-to-translate
-                                                                            cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+(local
+  (defthm nodenum-type-alistp-of-mv-nth-2-of-process-nodenums-for-translation
+    (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
+                  (nodenum-type-alistp known-nodenum-type-alist))
+             (nodenum-type-alistp (mv-nth 2 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                              cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
-(defthm all-<-of-strip-cars-of-mv-nth-2-of-process-nodenums-for-translation
-  (implies (and (all-< worklist dag-len)
-                (all-< (strip-cars cut-nodenum-type-alist) dag-len)
-                (all-< (strip-cars known-nodenum-type-alist) dag-len)
+(local
+  (defthm all-<-of-strip-cars-of-mv-nth-2-of-process-nodenums-for-translation
+    (implies (and (all-< worklist dag-len)
+                  (all-< (strip-cars cut-nodenum-type-alist) dag-len)
+                  (all-< (strip-cars known-nodenum-type-alist) dag-len)
 ;                (nat-listp worklist)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (all-< (strip-cars (mv-nth 2 (process-nodenums-for-translation worklist
-                                                                          depth-limit
-                                                                          depth-array handled-node-array
-                                                                          dag-array dag-len dag-parent-array
-                                                                          known-nodenum-type-alist
-                                                                          nodenums-to-translate
-                                                                          cut-nodenum-type-alist)))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (all-< (strip-cars (mv-nth 2 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                            cut-nodenum-type-alist)))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
-(defthm all-natp-of-mv-nth-1-of-process-nodenums-for-translation
-  (implies (all-natp nodenums-to-translate)
-           (all-natp (mv-nth 1 (process-nodenums-for-translation worklist
-                                                                 depth-limit
-                                                                 depth-array handled-node-array
-                                                                 dag-array dag-len dag-parent-array
-                                                                 known-nodenum-type-alist
-                                                                 nodenums-to-translate
-                                                                 cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+(local
+  (defthm all-natp-of-mv-nth-1-of-process-nodenums-for-translation
+    (implies (all-natp nodenums-to-translate)
+             (all-natp (mv-nth 1 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                   cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
-(defthm no-nodes-are-variablesp-of-mv-nth-1-of-process-nodenums-for-translation
-  (implies (no-nodes-are-variablesp nodenums-to-translate 'dag-array dag-array dag-len)
-           (no-nodes-are-variablesp (mv-nth 1 (process-nodenums-for-translation worklist
-                                                                 depth-limit
-                                                                 depth-array handled-node-array
-                                                                 dag-array dag-len dag-parent-array
-                                                                 known-nodenum-type-alist
-                                                                 nodenums-to-translate
-                                                                 cut-nodenum-type-alist))
-                                     'dag-array dag-array dag-len))
-  :hints (("Goal" :in-theory (enable process-nodenums-for-translation no-nodes-are-variablesp))))
+(local
+  (defthm no-nodes-are-variablesp-of-mv-nth-1-of-process-nodenums-for-translation
+    (implies (no-nodes-are-variablesp nodenums-to-translate 'dag-array dag-array dag-len)
+             (no-nodes-are-variablesp (mv-nth 1 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                                  nodenums-to-translate cut-nodenum-type-alist))
+                                      'dag-array dag-array dag-len))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation no-nodes-are-variablesp)))))
 
-(defthm all-<-of-mv-nth-1-of-process-nodenums-for-translation
-  (implies (and (all-< nodenums-to-translate dag-len)
-                (all-< worklist dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (all-< (mv-nth 1 (process-nodenums-for-translation worklist
-                                                              depth-limit
-                                                              depth-array handled-node-array
-                                                              dag-array dag-len dag-parent-array
-                                                              known-nodenum-type-alist
-                                                              nodenums-to-translate
-                                                              cut-nodenum-type-alist))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+(local
+  (defthm all-<-of-mv-nth-1-of-process-nodenums-for-translation
+    (implies (and (all-< nodenums-to-translate dag-len)
+                  (all-< worklist dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (all-< (mv-nth 1 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                cut-nodenum-type-alist))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
-(defthm true-listp-of-mv-nth-1-of-process-nodenums-for-translation
-  (implies (true-listp nodenums-to-translate)
-           (true-listp (mv-nth 1 (process-nodenums-for-translation worklist
-                                                                 depth-limit
-                                                                 depth-array handled-node-array
-                                                                 dag-array dag-len dag-parent-array
-                                                                 known-nodenum-type-alist
-                                                                 nodenums-to-translate
-                                                                 cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+(local
+  (defthm true-listp-of-mv-nth-1-of-process-nodenums-for-translation
+    (implies (true-listp nodenums-to-translate)
+             (true-listp (mv-nth 1 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                     cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
-(defthm alen1-of-mv-nth-3-of-process-nodenums-for-translation
-  (equal (alen1 'handled-node-array (mv-nth 3 (process-nodenums-for-translation worklist
-                                                            depth-limit
-                                                            depth-array handled-node-array
-                                                            dag-array dag-len dag-parent-array
-                                                            known-nodenum-type-alist
-                                                            nodenums-to-translate
-                                                            cut-nodenum-type-alist)))
-         (alen1 'handled-node-array handled-node-array))
-  :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+(local
+  (defthm alen1-of-mv-nth-3-of-process-nodenums-for-translation
+    (equal (alen1 'handled-node-array (mv-nth 3 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                                                  cut-nodenum-type-alist)))
+           (alen1 'handled-node-array handled-node-array))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
 
-(defthm array1p-of-mv-nth-3-of-process-nodenums-for-translation
-  (implies (array1p 'handled-node-array handled-node-array)
-           (array1p 'handled-node-array (mv-nth 3 (process-nodenums-for-translation worklist
-                                                                                    depth-limit
-                                                                                    depth-array handled-node-array
-                                                                                    dag-array dag-len dag-parent-array
-                                                                                    known-nodenum-type-alist
-                                                                                    nodenums-to-translate
-                                                                                    cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable  process-nodenums-for-translation))))
+(local
+  (defthm array1p-of-mv-nth-3-of-process-nodenums-for-translation
+    (implies (array1p 'handled-node-array handled-node-array)
+             (array1p 'handled-node-array (mv-nth 3 (process-nodenums-for-translation worklist depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                                      nodenums-to-translate cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-nodenums-for-translation)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Walk through the disjuncts, processing each one.  First, strip the negation, if present.  If the disjunct isn't a call of a known-boolean, we drop it.
 ;;otherwise, we process it top down.  for each node processed we can tell by looking at it what its type is (really?), and we have to decide whether to make a variable of that type, or translate the node (if the argument types are okay).
@@ -2410,110 +2388,76 @@
                                            disjuncts-to-include-in-query ;don't add the disjunct
                                            nodenums-to-translate cut-nodenum-type-alist)))))
 
-(defthm possibly-negated-nodenumsp-of-mv-nth-1-of-process-disjuncts-for-translation
-  (implies (and (possibly-negated-nodenumsp disjuncts-to-include-in-query)
-                (possibly-negated-nodenumsp disjuncts))
-           (possibly-negated-nodenumsp (mv-nth 1 (process-disjuncts-for-translation disjuncts depth-limit
-                                                                    depth-array handled-node-array
-                                                                    dag-array dag-len dag-parent-array
-                                                                    known-nodenum-type-alist
-                                                                    disjuncts-to-include-in-query
-                                                                    nodenums-to-translate
-                                                                    cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation))))
+(local
+  (defthm possibly-negated-nodenumsp-of-mv-nth-1-of-process-disjuncts-for-translation
+    (implies (and (possibly-negated-nodenumsp disjuncts-to-include-in-query)
+                  (possibly-negated-nodenumsp disjuncts))
+             (possibly-negated-nodenumsp (mv-nth 1 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                                      disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation)))))
 
-(defthm true-listp-of-mv-nth-2-of-process-disjuncts-for-translation
-  (implies (true-listp nodenums-to-translate)
-           (true-listp (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit
-                                                                    depth-array handled-node-array
-                                                                    dag-array dag-len dag-parent-array
-                                                                    known-nodenum-type-alist
-                                                                    disjuncts-to-include-in-query
-                                                                    nodenums-to-translate
-                                                                    cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation))))
+(local
+  (defthm true-listp-of-mv-nth-2-of-process-disjuncts-for-translation
+    (implies (true-listp nodenums-to-translate)
+             (true-listp (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                      disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation)))))
 
-(defthm all-natp-of-mv-nth-2-of-process-disjuncts-for-translation
-  (implies (all-natp nodenums-to-translate)
-           (all-natp (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit
-                                                                    depth-array handled-node-array
-                                                                    dag-array dag-len dag-parent-array
-                                                                    known-nodenum-type-alist
-                                                                    disjuncts-to-include-in-query
-                                                                    nodenums-to-translate
-                                                                    cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation))))
+(local
+  (defthm all-natp-of-mv-nth-2-of-process-disjuncts-for-translation
+    (implies (all-natp nodenums-to-translate)
+             (all-natp (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                    disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation)))))
 
-(defthm no-nodes-are-variablesp-of-mv-nth-2-of-process-disjuncts-for-translation
-  (implies (no-nodes-are-variablesp nodenums-to-translate 'dag-array dag-array dag-len)
-           (no-nodes-are-variablesp (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit
-                                                                                 depth-array handled-node-array
-                                                                                 dag-array dag-len dag-parent-array
-                                                                                 known-nodenum-type-alist
-                                                                                 disjuncts-to-include-in-query
-                                                                                 nodenums-to-translate
-                                                                                 cut-nodenum-type-alist))
-                                    'dag-array dag-array dag-len))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation))))
+(local
+  (defthm no-nodes-are-variablesp-of-mv-nth-2-of-process-disjuncts-for-translation
+    (implies (no-nodes-are-variablesp nodenums-to-translate 'dag-array dag-array dag-len)
+             (no-nodes-are-variablesp (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                                   disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))
+                                      'dag-array dag-array dag-len))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation)))))
 
-(defthm all-<-of-mv-nth-2-of-process-disjuncts-for-translation
-  (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len) ;(all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
-                (all-< nodenums-to-translate dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (all-< (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit
-                                                               depth-array handled-node-array
-                                                               dag-array dag-len dag-parent-array
-                                                               known-nodenum-type-alist
-                                                               disjuncts-to-include-in-query
-                                                               nodenums-to-translate
-                                                               cut-nodenum-type-alist))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation
-                                     strip-nots-from-possibly-negated-nodenums))))
+(local
+  (defthm all-<-of-mv-nth-2-of-process-disjuncts-for-translation
+    (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len) ;(all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
+                  (all-< nodenums-to-translate dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (all-< (mv-nth 2 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                 disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums)))))
 
-(defthm bounded-possibly-negated-nodenumsp-of-mv-nth-1-of-process-disjuncts-for-translation
-  (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len)
-                (bounded-possibly-negated-nodenumsp disjuncts-to-include-in-query dag-len)
-                (all-< nodenums-to-translate dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (bounded-possibly-negated-nodenumsp (mv-nth 1 (process-disjuncts-for-translation disjuncts depth-limit
-                                                                                            depth-array handled-node-array
-                                                                                            dag-array dag-len dag-parent-array
-                                                                                            known-nodenum-type-alist
-                                                                                            disjuncts-to-include-in-query
-                                                                                            nodenums-to-translate
-                                                                                            cut-nodenum-type-alist))
-                                               dag-len))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation
-                                     strip-nots-from-possibly-negated-nodenums))))
+(local
+  (defthm bounded-possibly-negated-nodenumsp-of-mv-nth-1-of-process-disjuncts-for-translation
+    (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len)
+                  (bounded-possibly-negated-nodenumsp disjuncts-to-include-in-query dag-len)
+                  (all-< nodenums-to-translate dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (bounded-possibly-negated-nodenumsp (mv-nth 1 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                                              disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))
+                                                 dag-len))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums)))))
 
-(defthm nodenum-type-alistp-of-mv-nth-3-of-process-disjuncts-for-translation
-  (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
-                (nodenum-type-alistp known-nodenum-type-alist))
-           (nodenum-type-alistp (mv-nth 3 (process-disjuncts-for-translation disjuncts depth-limit
-                                                                    depth-array handled-node-array
-                                                                    dag-array dag-len dag-parent-array
-                                                                    known-nodenum-type-alist
-                                                                    disjuncts-to-include-in-query
-                                                                    nodenums-to-translate
-                                                                    cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation))))
+(local
+  (defthm nodenum-type-alistp-of-mv-nth-3-of-process-disjuncts-for-translation
+    (implies (and (nodenum-type-alistp cut-nodenum-type-alist)
+                  (nodenum-type-alistp known-nodenum-type-alist))
+             (nodenum-type-alistp (mv-nth 3 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                               disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation)))))
 
-(defthm all-<-of-strip-cars-of-mv-nth-3-of-process-disjuncts-for-translation
-  (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len) ;(all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
-                (all-< (strip-cars cut-nodenum-type-alist) dag-len)
-                (all-< (strip-cars known-nodenum-type-alist) dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                )
-           (all-< (strip-cars (mv-nth 3 (process-disjuncts-for-translation disjuncts depth-limit
-                                                                    depth-array handled-node-array
-                                                                    dag-array dag-len dag-parent-array
-                                                                    known-nodenum-type-alist
-                                                                    disjuncts-to-include-in-query
-                                                                    nodenums-to-translate
-                                                                    cut-nodenum-type-alist)))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable process-disjuncts-for-translation STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS))))
+(local
+  (defthm all-<-of-strip-cars-of-mv-nth-3-of-process-disjuncts-for-translation
+    (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len) ;(all-< (strip-nots-from-possibly-negated-nodenums disjuncts) dag-len)
+                  (all-< (strip-cars cut-nodenum-type-alist) dag-len)
+                  (all-< (strip-cars known-nodenum-type-alist) dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  )
+             (all-< (strip-cars (mv-nth 3 (process-disjuncts-for-translation disjuncts depth-limit depth-array handled-node-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                             disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable process-disjuncts-for-translation strip-nots-from-possibly-negated-nodenums)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2584,6 +2528,8 @@
                                                                 print max-conflicts counterexamplep print-cex-as-signedp state)))
          (w state))
   :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-at-depth))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;binary search the range [min-depth, max-depth] to try to find a cut depth at which STP says valid
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, or :timedout.
@@ -2658,10 +2604,9 @@
   (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-aux min-depth max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len
                                                            dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
          (w state))
-  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-aux
-                                     ;; todo:
-                                     prove-node-disjunction-with-stp-at-depth
-                                     ))))
+  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-aux))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: move this to the translate-dag-to-stp book?
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
@@ -2918,6 +2863,8 @@
                                          print-cex-as-signedp
                                          state)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Attempt to use STP to prove CONC assuming HYPS.  This version requires CONC
 ;; and HYPS to be already translated.  ;Returns (mv result state) where RESULT
 ;; is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>)..
@@ -2960,6 +2907,8 @@
 ;;        (hyps (translate-terms hyps 'prove-with-stp w)))
 ;;     (prove-translated-implication-with-stp conc hyps counterexamplep max-conflicts print base-filename state)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defun prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (pseudo-termp term)
@@ -2972,6 +2921,8 @@
                   :stobjs state))
   (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
     (prove-implication-with-stp conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version avoids imposing invariant-risk on callers, because it has a guard that is just a stobj recognizer.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
@@ -2988,6 +2939,8 @@
     (prog2$ (er hard? 'prove-term-with-stp-unguarded "Bad input.")
             (mv :error state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defun translate-and-prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (booleanp counterexamplep)
@@ -2999,6 +2952,8 @@
                   :stobjs state))
   (prove-term-with-stp-unguarded (translate-term term 'translate-and-prove-term-with-stp (w state))
                                  counterexamplep print-cex-as-signedp max-conflicts print base-filename state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;TODO: Deprecate in favor of defthm-stp?
