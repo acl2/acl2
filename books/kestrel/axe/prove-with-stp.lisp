@@ -2524,8 +2524,7 @@
 
 (defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-at-depth
   (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                base-filename
-                                                                print max-conflicts counterexamplep print-cex-as-signedp state)))
+                                                                base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
          (w state))
   :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-at-depth))))
 
@@ -2722,14 +2721,7 @@
                     state)))))))))
 
 (defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp
-  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp disjuncts
-                                                       dag-array dag-len dag-parent-array
-                                                       base-filename
-                                                       print
-                                                       max-conflicts
-                                                       counterexamplep
-                                                       print-cex-as-signedp
-                                                       state)))
+  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
          (w state))
   :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp))))
 
