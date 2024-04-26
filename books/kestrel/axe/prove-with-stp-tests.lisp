@@ -340,10 +340,17 @@
 
 ;; Type mismatch (x is used as a boolean in the BVIF and as a bv in the BVXOR):
 (must-fail
- (must-prove-with-stp test1 '(equal (bvif 32 x y z) (bvxor 32 x w))))
+ (must-prove-with-stp type-mismatch1 '(equal (bvif 32 x y z) (bvxor 32 x w))))
+
+;; X is used as a boolean in the BVIF !
+;; TODO: Arrange for a nice type error, rather than an STP error
+(must-fail
+ (must-prove-with-stp type-mismatch2 '(implies (unsigned-byte-p 32 x) (equal (bvif 32 x y z) (bvxor 32 x w)))))
 
 ;; ;; TODO: Why didn't this work?
 ;; (must-fail-with-hard-error
 ;;  (must-prove-with-stp test1 '(equal (bvif 32 x y z) (bvxor 32 x w))))
 
 (must-not-prove-with-stp type-issue1 '(equal (bvxor size y z) (bvxor size z y)))
+
+(must-prove-with-stp overlap '(if (equal (bitxor x y) 0) t (if (equal (bitxor x y) 1) t nil)))
