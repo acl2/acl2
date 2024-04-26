@@ -898,7 +898,7 @@
 
 (thm (equal (bv-array-write element-width len (bvchop (ceiling-of-lg len) index) val data) (bv-array-write element-width len index val data)))
 (thm (implies (integerp element-width) (equal (bv-array-write element-width len index (bvchop element-width val) data) (bv-array-write element-width len index val data))))
-;; These 2 together justify assumung the array is a value of the right type:
+;; These 2 together justify assuming the array is a value of the right type:
 (thm (implies (posp len) (equal (bv-array-write element-width len index val (take len data)) (bv-array-write element-width len index val data))))
 (thm (equal (bv-array-write element-width len index val (bvchop-list element-width data)) (bv-array-write element-width len index val data)))
 
@@ -926,10 +926,16 @@
 ;; node 200.
 ;; Returns an axe-type, or nil to indicate that no type could be determined.
 ;; If a type is returned, the NODENUM can be safely assumed to be of that type,
-;; without loss of generality, with respect to its appearance in PARENT-EXPR.
+;; without loss of generality, with respect to its appearance in this
+;; PARENT-EXPR (if it appeals in multiple parent-exprs, the types should be
+;; unioned together).  That is, if X only appears in argument positions of
+;; exprs that are chopped to 32 bits (see the THMs above that justify this), then
+;; we can transform a proof about all Xs to a proof about Xs that are
+;; bit-vectors of length 32 (imagine adding an unnecessary (bvchop
+;; 32 x) around all mentions of X and then cutting out the BVCHOP term).  If x appears in
+;; more than one choppable context, the call of this will have to the longest BV that it could be.
 
-;this now will apply to all choppable mentions of x.  non-choppable mentions of x as an argument to foo (like equal) should be handled by cutting out the call to foo
-;if x appears nowhere else, we can transform a proof about all x to a proof about x's that are bit-vectors of length 32 (then imagine instantiating that proof with (bvchop 32 x), where the bvchop goes away inside the bvplus).  if x appears several places, we take the longest bv that it could be..
+;; TODO: Ensure that parents that do not induce types via this function (like equal) cannot be translated and thus will always be chopped.
 
 ;fixme this was missing handling of the test position of bvif - check that everything translatable is handled correctly here?
 ;; TODO: Consider having this return an indication of a type error (e.g., node used both as an array and a BV).
@@ -966,19 +972,15 @@
                (make-bv-type (unquote (second dargs)))
              nil))
           ((eq 'bvif fn) ; (bvif <size> <test> <then> <else>)
-           (if (eql 4 (len dargs))
-               (if (and (darg-quoted-posp (first dargs))
-                        (not (eql nodenum (second dargs)))
-                        ;; can be both (rare but ok):
-                        (or (eql nodenum (third dargs))
-                            (eql nodenum (fourth dargs))))
-                   (make-bv-type (unquote (first dargs)))
-                 (if (and (not (eql nodenum (first dargs))) ; (darg-quoted-posp (first dargs))
-                          (eql nodenum (second dargs))
-                          (not (or (eql nodenum (third dargs))
-                                   (eql nodenum (fourth dargs)))))
-                     (boolean-type) ;new Fri Aug 13 01:16:01 2010
-                   nil))
+           (if (and (eql 4 (len dargs))
+                    (darg-quoted-posp (first dargs)))
+               (union-types (if (eql nodenum (second dargs))
+                                (boolean-type)
+                              (empty-type))
+                            (if (or (eql nodenum (third dargs)) ;; can be both (rare but ok)
+                                    (eql nodenum (fourth dargs)))
+                                (make-bv-type (unquote (first dargs)))
+                              (empty-type)))
              nil))
           ((eq fn 'getbit) ; (getbit <n> x)
            (if (and (eql 2 (len dargs))
@@ -1007,37 +1009,21 @@
                (make-bv-type 1)
              nil))
           ((eq fn 'bvcat) ; (bvcat <highsize> <highval> <lowsize> <lowval>)
-           (if (eql 4 (len dargs))
-               (if (or (eql nodenum (first dargs))
-                       (eql nodenum (third dargs)))
-                   ;;if nodenum is either of the size dargs, we know nothing:
-                   nil
-                 ;;nodenum may be one or both of the bv dargs:
-                 (if (eql nodenum (second dargs))
-                     (if (not (darg-quoted-posp (first dargs)))
-                         nil
-                       (if (eql nodenum (fourth dargs))
-                           ;;it's both bv dargs!
-                           (if (not (darg-quoted-posp (third dargs)))
-                               nil
-                             (union-types (make-bv-type (unquote (first dargs)))
-                                          (make-bv-type (unquote (third dargs)))))
-                         ;;it's the first bv arg only:
-                         (make-bv-type (unquote (first dargs)))))
-                   ;;it's not the first bv arg:
-                   (if (eql nodenum (fourth dargs))
-                       ;;it's the second bv arg only:
-                       (if (not (darg-quoted-posp (third dargs)))
-                           nil
-                         (make-bv-type (unquote (third dargs))))
-                     ;;it's neither bv arg: (perhaps this should be an error):
-                     nil)))
+           (if (and (eql 4 (len dargs))
+                    (darg-quoted-posp (first dargs))
+                    (darg-quoted-posp (third dargs)))
+               ;;nodenum may be one or both of the bv dargs:
+               (union-types (if (eql nodenum (second dargs))
+                                (make-bv-type (unquote (first dargs)))
+                              (empty-type))
+                            (if (eql nodenum (fourth dargs))
+                                (make-bv-type (unquote (third dargs)))
+                              (empty-type)))
              nil))
           ((eq fn 'leftrotate32) ; (leftrotate32 <amt> <val>)
            (if (and (eql 2 (len dargs))
-                    (eql nodenum (second dargs))
-                    (not (eql nodenum (first dargs))) ; todo: relax? but arg1 doesn't have a clean chop theorem (though it almost does)
-                    )
+                    (darg-quoted-natp (first dargs))
+                    (eql nodenum (second dargs)))
                (make-bv-type 32)
              nil))
           ((eq fn 'bv-array-read) ; (bv-array-read <element-size> <len> <index> <data>)
@@ -1046,16 +1032,15 @@
                     (darg-quoted-posp (second dargs))
                     (< 1 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
-               (if (and (eql nodenum (third dargs))
-                        (not (eql nodenum (fourth dargs))))
-                   ;; nodenum is the index:
-                   (make-bv-type (ceiling-of-lg (unquote (second dargs))))
-                 (if (and (eql nodenum (fourth dargs))
-                          (not (eql nodenum (third dargs))))
-                     ;; nodenum is the array data:
-                     ;; Since arrays with different lengths are not compatible, this type won't union well with a longer or shorter array type:
-                     (make-bv-array-type (unquote (first dargs)) (unquote (second dargs)))
-                   nil))
+               (union-types (if (eql nodenum (third dargs))
+                                ;; nodenum is the index:
+                                (make-bv-type (ceiling-of-lg (unquote (second dargs))))
+                              (empty-type))
+                            (if (eql nodenum (fourth dargs))
+                                ;; nodenum is the array data:
+                                ;; Since arrays with different lengths are not compatible, this type won't union well with a longer or shorter array type:
+                                (make-bv-array-type (unquote (first dargs)) (unquote (second dargs)))
+                              (empty-type)))
              nil))
           ((eq fn 'bv-array-write) ; (bv-array-write <element-size> <len> <index> <val> <data>)
            (if (and (eql 5 (len dargs))
@@ -1063,40 +1048,34 @@
                     (darg-quoted-posp (second dargs))
                     (< 1 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
-               (if (and (eql nodenum (third dargs))
-                        (not (eql nodenum (fourth dargs)))
-                        (not (eql nodenum (fifth dargs))))
-                   ;; nodenum is the index:
-                   (make-bv-type (ceiling-of-lg (unquote (second dargs))))
-                 (if (and (eql nodenum (fourth dargs))
-                          (not (eql nodenum (third dargs)))
-                          (not (eql nodenum (fifth dargs))))
-                     ;; nodenum is the value:
-                     (make-bv-type (unquote (first dargs)))
-                   (if (and (eql nodenum (fifth dargs))
-                            (not (eql nodenum (third dargs)))
-                            (not (eql nodenum (fourth dargs))))
-                       ;; nodenum is the array data:
-                       (make-bv-array-type (unquote (first dargs)) (unquote (second dargs)))
-                     nil)))
+               ;; if nodenum appears as an array and a BV, we'll get
+               ;; most-general-type here, which will cause an error later:
+               (union-types (if (eql nodenum (third dargs))
+                                ;; nodenum is the index:
+                                (make-bv-type (ceiling-of-lg (unquote (second dargs))))
+                              (empty-type))
+                            (union-types (if (eql nodenum (fourth dargs))
+                                             ;; nodenum is the value:
+                                             (make-bv-type (unquote (first dargs)))
+                                           (empty-type))
+                                         (if (eql nodenum (fifth dargs))
+                                             ;; nodenum is the array data:
+                                             (make-bv-array-type (unquote (first dargs)) (unquote (second dargs)))
+                                           (empty-type))))
              nil))
           ((eq 'bv-array-if fn) ; (bv-array-if <element-width> <len> <test> <then> <else>)
-           (if (eql 5 (len dargs))
-               (if (and (darg-quoted-posp (first dargs))
-                        (darg-quoted-posp (second dargs))
-                        (or (eql nodenum (fourth dargs))
-                            (eql nodenum (fifth dargs)))
-                        (not (eql nodenum (third dargs))))
-                   ;; nodenum is one of the then/else branches (or both):
-                   (make-bv-array-type (unquote (first dargs)) (unquote (second dargs)))
-                 (if (and (not (eql nodenum (first dargs)))
-                          (not (eql nodenum (second dargs)))
-                          (eql nodenum (third dargs))
-                          (not (eql nodenum (fourth dargs)))
-                          (not (eql nodenum (fifth dargs))))
-                     ;; nodenum is the test:
-                     (boolean-type) ;new Fri Aug 13 01:16:01 2010
-                   nil))
+           (if (and (eql 5 (len dargs))
+                    (darg-quoted-posp (first dargs))
+                    (darg-quoted-posp (second dargs)))
+               (union-types (if (eql nodenum (third dargs))
+                                ;; nodenum is the test:
+                                (boolean-type)
+                              (empty-type))
+                            (if (or (eql nodenum (fourth dargs))
+                                    (eql nodenum (fifth dargs)))
+                                ;; nodenum is one of the then/else branches (or both):
+                                (make-bv-array-type (unquote (first dargs)) (unquote (second dargs)))
+                              (empty-type)))
              nil))
           ((member-eq fn '(boolor booland boolxor)) ; (<fn> <arg1> <arg2>)
            (if (and (eql 2 (len dargs))
@@ -1161,7 +1140,9 @@
          ;;  (er hard? 'most-general-induced-type-aux "No type for node ~x0 via parent ~x1 (see dag above)." nodenum parent-nodenum))
          (new-type-acc (if type-from-this-parent
                            (union-types type-from-this-parent type-acc)
-                         type-acc)))
+                         (progn$ ; (cw "WARNING: No induced type for ~x0 in ~x1.~%" nodenum parent-expr)
+                                 ;; would like to say (most-general-type) here, but that caused many failures (e.g., nodenum may have parents like jvm::update-nth-local):
+                                 type-acc))))
       (most-general-induced-type-aux (rest parent-nodenums) nodenum dag-array dag-len new-type-acc))))
 
 (defthm axe-typep-of-most-general-induced-type-aux
@@ -1280,7 +1261,7 @@
                     (cw "(WARNING: Not translating array expr ~x0 since the length and width are not known.)~%" (cons fn args)))
                nil)))
 ;fixme add a case here that checks the argument type like we do just above for read:
-    ((bv-array-write) ;new (ffixme make sure these get translated right - consider constant array issues):
+    ((bv-array-write) ; (bv-array-write element-size len index val data) ;new (ffixme make sure these get translated right - consider constant array issues):
      (if (and (= 5 (len args))
               (darg-quoted-posp (first args))
               (darg-quoted-natp (second args))
@@ -1315,17 +1296,21 @@
                 (darg-quoted-natp (second args))
                 (<= (unquote (second args))
                     (unquote (first args)))))
-    ((bvif) (can-translate-bvif-args args))
+    ((bvif) (and (= 4 (len args)) ; (bvif <size> <test> <then> <else>)
+                 (can-translate-bvif-args args)))
     ;; todo: add bvequal, once we can translate it
     ;; todo: check more (arity, etc.):
-    ((bvplus bvuminus bvminus bvmult
-             bvand bvor bvxor bvnot
-             bvchop ;$inline
+    ((bvuminus bvnot bvchop) ; (<fn> <size> <x>)
+     (and (= 2 (len args))
+          (darg-quoted-posp (first args)) ;used to allow 0 ;fixme print a warning in that case?
+          ))
+    ((bvplus bvminus bvmult
+             bvand bvor bvxor
              bvlt bvle
              sbvlt sbvle
              bvdiv bvmod
              sbvdiv sbvrem)
-     (and (consp args)                   ;improve?
+     (and (= 3 (len args))
           (darg-quoted-posp (first args)) ;used to allow 0 ;fixme print a warning in that case?
           ))
     ;; todo: what if some args are constants?
@@ -1359,6 +1344,48 @@
 ;;                             (or (natp arg2)
 ;;                                 (booleanp arg2)
 ;;                                 (and (consp arg2) (all-natp arg2))))))))
+
+(local
+  (defthmd member-equal-of-constant-when-not-equal-of-nth-0
+    (implies (and (consp x) ; avoid loops
+                  (not (equal a (nth 0 x))))
+             (equal (member-equal a x)
+                    (member-equal a (cdr x))))
+;  :rule-classes ((:rewrite :backchain-limit-lst (nil 0)))
+    :hints (("Goal" :in-theory (enable member-equal)))))
+
+;todo: move and rename the non-cheap one to start with not-
+(local
+  (defthm not-member-equal-when-not-consp
+    (implies (not (consp x))
+             (not (member-equal a x)))
+    :hints (("Goal" :in-theory (enable member-equal)))))
+
+(local
+  (defthmd member-equal-when-consp-iff
+    (implies (consp lst) ; avoids loops
+             (iff (member-equal x lst)
+                  (or (equal x (car lst))
+                      (member-equal x (cdr lst)))))))
+
+;; Safety check: If no type is induced by a parent, we must not translate that parent.
+;; todo: also need to handle EQUAL, UNSIGNED-BYTE-P and NOT.
+(thm
+  (implies (and (dag-function-call-exprp parent-expr)
+                (not (get-induced-type nodenum parent-expr))
+                (member-equal nodenum (dargs parent-expr))
+                (natp nodenum))
+           (not (can-always-translate-expr-to-stp (ffn-symb parent-expr)
+                                                  (dargs parent-expr)
+                                                  'dag-array dag-array dag-len known-nodenum-type-alist print)))
+  :hints (("Goal" :in-theory (enable get-induced-type can-always-translate-expr-to-stp
+                                     darg-quoted-posp
+                                     member-equal-of-constant-when-not-equal-of-nth-0
+                                     consp-of-cdr
+                                     can-translate-bvif-args
+                                     member-equal-of-cons ; applies to constant lists
+                                     member-equal-when-consp-iff
+                                     ))))
 
 ;; Select a type for NODENUM.  Returns (mv erp type).
 ;;note: this will only be called when its expr doesn't have an obvious type
@@ -1396,7 +1423,7 @@
            ((when (not type)) ;print a message?
             (mv :bad-type nil)))
         (if (most-general-typep type)
-            (prog2$ (er hard? 'type-for-cut-nodenum "incompatible types for use of node ~x0" nodenum)
+            (prog2$ (er hard? 'type-for-cut-nodenum "No good induced type for node ~x0" nodenum)
                     (mv (erp-t) type))
           (if (empty-typep type)
               (progn$ ;; (print-array2 'dag-array dag-array (+ 1 (maxelem parent-nodenums))) ;; todo: put back but consider guards
