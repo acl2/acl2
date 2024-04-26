@@ -75,6 +75,10 @@
            (natp (make-bv-type width)))
   :rule-classes :type-prescription)
 
+(defthm make-bv-type-type-iff
+  (iff (make-bv-type width)
+       width))
+
 (defthmd <-of-0-and-make-bv-type
   (equal (< (make-bv-type width) 0)
          (< width 0))
