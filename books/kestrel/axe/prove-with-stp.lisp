@@ -1119,6 +1119,7 @@
 
 ;union together all the choppable types that come from the parents
 ;if some parent doesn't induce a type, that parent is ignored (ffixme is that sound? presumably parents that don't induce a type won't be translated?  what about equal? unsigned-byte-p, etc.?)
+;; TODO: Consider the case where we get a bad type due to a parent that will be cut out because its parents are not translatable.
 (defund most-general-induced-type-aux (parent-nodenums nodenum dag-array dag-len type-acc)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (true-listp parent-nodenums)
@@ -1457,84 +1458,6 @@
       (if (empty-typep type)
           t
         (any-node-is-given-empty-typep (cdr known-nodenum-type-alist))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;this one takes the var-type-alist
-;returns a type (bv type, array type, etc.)
-;similar to get-type-of-nodenum-checked
-(defun get-type-of-nodenum-during-cutting (n dag-array-name dag-array var-type-alist)
-  (declare (xargs :guard (and (symbol-alistp var-type-alist)
-                              (natp n)
-                              ;;(< n (alen1 dag-array-name dag-array))
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n)))))
-  ;;otherwise, look up the expression at that nodenum:
-  (let ((expr (aref1 dag-array-name dag-array n)))
-    (if (variablep expr)
-        (if (assoc-eq expr var-type-alist) ;clear this up if nil is not a type...
-            (lookup-eq expr var-type-alist)
-          (hard-error 'get-type-of-nodenum-during-cutting "can't find type of var: ~x0" (acons #\0 expr nil)))
-      (let ((fn (ffn-symb expr)))
-        (if (eq 'quote fn)
-            (get-type-of-val-checked (unquote expr))
-          ;;it's a regular function call:
-          (or (maybe-get-type-of-function-call fn (dargs expr))
-              (hard-error 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1"
-                          (acons #\0 expr (acons #\1 n nil)))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund get-type-of-arg-during-cutting (arg dag-array-name dag-array var-type-alist)
-  (declare (xargs :guard (and (symbol-alistp var-type-alist)
-                              (or (myquotep arg)
-                                  (and (natp arg)
-                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
-                                       (< arg (alen1 dag-array-name dag-array)))))))
-  (if (consp arg) ;tests for quotep
-      (get-type-of-val-checked (unquote arg))
-    (get-type-of-nodenum-during-cutting arg dag-array-name dag-array var-type-alist)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns a string-tree that extends extra-asserts.
-;fixme rectify this printing with the other use of this function
-(defund add-assert-if-a-mult (n expr dag-array-name dag-array var-type-alist print extra-asserts)
-  (declare (xargs :guard (and (natp n)
-                              (bounded-dag-exprp n expr)
-                              (dag-function-call-exprp expr)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
-                              (symbol-alistp var-type-alist)
-                              (string-treep extra-asserts))
-                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp car-becomes-nth-of-0
-                                                           not-<-of-nth-when-bounded-darg-listp-gen
-                                                           darg-quoted-posp)))))
-  (make-string-tree (and (eq 'bvmult (ffn-symb expr))
-                         (= 3 (len (dargs expr)))
-                         (darg-quoted-posp (darg1 expr))
-                         (let ((arg2-type (get-type-of-arg-during-cutting (darg2 expr) dag-array-name dag-array var-type-alist))
-                               (arg3-type (get-type-of-arg-during-cutting (darg3 expr) dag-array-name dag-array var-type-alist)))
-                           (and (bv-typep arg2-type)
-                                (bv-typep arg3-type)
-                                ;; The sum of the widths of the arguments must be <= the width of the product for the extra assert to be helpful:
-                                (let ((arg2-width (bv-type-width arg2-type))
-                                      (arg3-width (bv-type-width arg3-type)))
-                                  (and (<= (+ arg2-width arg3-width)
-                                           (unquote (darg1 expr)))
-                                       (let ((max-product-value (* (+ -1 (expt 2 arg2-width))
-                                                                   (+ -1 (expt 2 arg3-width)))))
-                                         (prog2$ (and print (cw ", which is a BVMULT: ~x0" expr))
-                                                 (list* "ASSERT(BVLE("
-                                                        (make-node-var n)
-                                                        ","
-                                                        (translate-bv-constant max-product-value (unquote (darg1 expr)))
-                                                        "));"
-                                                        (newline-string)))))))))
-                    extra-asserts))
-
-(defthm string-treep-of-add-assert-if-a-mult
-  (implies (string-treep extra-asserts)
-           (string-treep (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts)))
-  :hints (("Goal" :in-theory (enable add-assert-if-a-mult))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

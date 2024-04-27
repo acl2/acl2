@@ -98,7 +98,9 @@
                                             (equal x y)))
 
 ;; fails because it doesn't say that y is a true-list
+;; TODO: Should this pass, without even any type hyps, due to induced types?
 (must-not-prove-with-stp array-test-2 '(implies (and (true-listp x)
+                                                     ;; (true-listp y)
                                                      (equal 2 (len x))
                                                      (equal 2 (len y))
                                                      (all-unsigned-byte-p 32 x)
@@ -345,7 +347,10 @@
 ;; X is used as a boolean in the BVIF !
 ;; TODO: Arrange for a nice type error, rather than an STP error
 (must-fail
- (must-prove-with-stp type-mismatch2 '(implies (unsigned-byte-p 32 x) (equal (bvif 32 x y z) (bvxor 32 x w)))))
+  (must-prove-with-stp type-mismatch2 '(implies (unsigned-byte-p 32 x) (equal (bvif 32 x y z) (bvxor 32 x w)))))
+
+(must-fail
+ (must-prove-with-stp type-mismatch3 '(equal 0 (bvxor 32 x (boolor y z)))))
 
 ;; ;; TODO: Why didn't this work?
 ;; (must-fail-with-hard-error

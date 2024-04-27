@@ -69,6 +69,7 @@
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/logext-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/utilities/file-io-string-trees" :dir :system)
 ;(include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/utilities/strings" :dir :system) ; for newline-string
@@ -84,10 +85,12 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (in-theory (disable open-output-channels open-output-channel-p1)) ; drop?
@@ -240,8 +243,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an axe-type, or nil if no type can be determined.
-;; todo: make a variant that returns most-general-type instead of nil.
-;; use this more!?
 ;; todo: ensure all callers can handle nil being returned.
 (defund maybe-get-type-of-val (val)
   (declare (xargs :guard t))
@@ -257,10 +258,18 @@
         ;; Could not determine the type of the constant:
         nil))))
 
-(defthm axe-typep-of-maybe-get-type-of-val
-  (implies (maybe-get-type-of-val val)
-           (axe-typep (maybe-get-type-of-val val)))
-  :hints (("Goal" :in-theory (enable maybe-get-type-of-val))))
+(local
+  (defthm axe-typep-of-maybe-get-type-of-val
+    (implies (maybe-get-type-of-val val)
+             (axe-typep (maybe-get-type-of-val val)))
+    :hints (("Goal" :in-theory (enable maybe-get-type-of-val)))))
+
+(local
+  (defthm bv-array-type-len-of-maybe-get-type-of-val-when-bv-array-typep
+    (implies (bv-array-typep (maybe-get-type-of-val val))
+             (equal (bv-array-type-len (maybe-get-type-of-val val))
+                    (len val)))
+    :hints (("Goal" :in-theory (enable maybe-get-type-of-val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,8 +279,7 @@
   (declare (xargs :guard t))
   (let ((maybe-type (maybe-get-type-of-val val)))
     (or maybe-type
-        (progn$ nil ;(break$)
-                (er hard? 'get-type-of-val-checked "Trying to get type of unrecognized constant: ~x0" val)))))
+        (er hard? 'get-type-of-val-checked "Trying to get type of unrecognized constant: ~x0" val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +324,7 @@
 
 ;; Returns an axe-type, possibly (most-general-type).
 ;instead of throwing an error when given a nodenum that has no type yet, this one may return (most-general-type)
-;fixme combine with the non-safe version
+;fixme combine with the non-safe version -- pull out a "maybe-get-type-of-nodenum"
 (defund get-type-of-nodenum-safe (nodenum
                                   dag-array-name
                                   dag-array
@@ -340,7 +348,7 @@
 (defthm axe-typep-of-get-type-of-nodenum-safe
   (implies (nodenum-type-alistp nodenum-type-alist)
            (axe-typep (get-type-of-nodenum-safe nodenum dag-array-name dag-array nodenum-type-alist)))
-  :hints (("Goal" :in-theory (enable get-type-of-nodenum-safe lookup-equal maybe-get-type-of-val))))
+  :hints (("Goal" :in-theory (enable get-type-of-nodenum-safe lookup-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,11 +399,12 @@
                 (bv-array-typep (get-type-of-arg-checked x dag-array-name dag-array cut-nodenum-type-alist)))
            (equal (bv-array-type-len (get-type-of-arg-checked x dag-array-name dag-array cut-nodenum-type-alist))
                   (len (unquote x))))
-  :hints (("Goal" :in-theory (enable get-type-of-arg-checked maybe-get-type-of-val get-type-of-val-checked))))
+  :hints (("Goal" :in-theory (enable get-type-of-arg-checked get-type-of-val-checked))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an axe-type, possibly (most-general-type).
+;; deprecate?
 (defund get-type-of-arg-safe (arg ;a nodenum or quotep
                               dag-array-name
                               dag-array
@@ -411,7 +420,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;deprecate? ;make the guard require natp?
+;TODO: deprecate? ;make the guard require natp?
 ;make a version that returns a string-tree?
 (defund nat-to-string-debug (n)
   (declare (xargs :guard t))
@@ -423,15 +432,17 @@
 
 (in-theory (disable (:e nat-to-string-debug)))
 
-(defthm stringp-of-nat-to-string-debug
-  (implies (natp n)
-           (stringp (nat-to-string-debug n)))
-  :hints (("Goal" :in-theory (enable nat-to-string-debug))))
+(local
+  (defthm stringp-of-nat-to-string-debug
+    (implies (natp n)
+             (stringp (nat-to-string-debug n)))
+    :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
 
-(defthm string-treep-of-nat-to-string-debug
-  (implies t;(natp n) ;todo: put back
-           (string-treep (nat-to-string-debug n)))
-  :hints (("Goal" :in-theory (enable nat-to-string-debug))))
+(local
+  (defthm string-treep-of-nat-to-string-debug
+    (implies t ;(natp n) ;todo: put back
+             (string-treep (nat-to-string-debug n)))
+    :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -440,9 +451,10 @@
   (declare (type (integer 0 *) n))
   (cons "NODE" (nat-to-string n)))
 
-(defthm string-treep-of-make-node-var
-  (string-treep (make-node-var n))
-  :hints (("Goal" :in-theory (enable make-node-var))))
+(local
+  (defthm string-treep-of-make-node-var
+    (string-treep (make-node-var n))
+    :hints (("Goal" :in-theory (enable make-node-var)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -479,9 +491,10 @@
     ;;arg is a node number:
     (make-node-var arg)))
 
-(defthm string-treep-of-translate-boolean-arg
-  (string-treep (translate-boolean-arg arg))
-  :hints (("Goal" :in-theory (enable translate-boolean-arg))))
+(local
+  (defthm string-treep-of-translate-boolean-arg
+    (string-treep (translate-boolean-arg arg))
+    :hints (("Goal" :in-theory (enable translate-boolean-arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -820,9 +833,10 @@
           (prog2$ (er hard? 'translate-equality-to-stp "A bad BV arg was found.")
                   (mv :bad-bv-arg nil)))))))
 
-(defthm string-treep-of-mv-nth-1-of-translate-equality-of-bvs-to-stp
-  (string-treep (mv-nth 1 (translate-equality-of-bvs-to-stp lhs rhs lhs-type rhs-type)))
-  :hints (("Goal" :in-theory (enable translate-equality-of-bvs-to-stp))))
+(local
+  (defthm string-treep-of-mv-nth-1-of-translate-equality-of-bvs-to-stp
+    (string-treep (mv-nth 1 (translate-equality-of-bvs-to-stp lhs rhs lhs-type rhs-type)))
+    :hints (("Goal" :in-theory (enable translate-equality-of-bvs-to-stp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -945,15 +959,17 @@
                           lhs lhs-type rhs rhs-type)
                       constant-array-info)))))))
 
-(defthm string-treep-of-mv-nth-0-of-translate-equality-to-stp
-  (implies (constant-array-infop constant-array-info)
-           (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
-  :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH)))))
+(local
+  (defthm string-treep-of-mv-nth-0-of-translate-equality-to-stp
+    (implies (constant-array-infop constant-array-info)
+             (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
+    :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH))))))
 
-(defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
-  (implies (constant-array-infop constant-array-info)
-           (constant-array-infop (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len nodenum-type-alist constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-equality-to-stp))))
+(local
+  (defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
+    (implies (constant-array-infop constant-array-info)
+             (constant-array-infop (mv-nth 1 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len nodenum-type-alist constant-array-info))))
+    :hints (("Goal" :in-theory (enable translate-equality-to-stp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1012,22 +1028,25 @@
               constant-array-info
               arg-element-width))))))
 
-(defthm string-treep-of-mv-nth-0-of-translate-array-arg
-  (implies (constant-array-infop constant-array-info)
-           (string-treep (mv-nth 0 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-array-arg constant-array-infop))))
+(local
+  (defthm string-treep-of-mv-nth-0-of-translate-array-arg
+    (implies (constant-array-infop constant-array-info)
+             (string-treep (mv-nth 0 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
+    :hints (("Goal" :in-theory (enable translate-array-arg constant-array-infop)))))
 
-(defthm constant-array-infop-of-mv-nth-1-of-translate-array-arg
-  (implies (and ;(nat-listp (cadr arg))
-                (posp desired-element-width)
-                (constant-array-infop constant-array-info)
-                )
-           (constant-array-infop (mv-nth 1 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-array-arg))))
+(local
+  (defthm constant-array-infop-of-mv-nth-1-of-translate-array-arg
+    (implies (and ;(nat-listp (cadr arg))
+               (posp desired-element-width)
+               (constant-array-infop constant-array-info)
+               )
+             (constant-array-infop (mv-nth 1 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
+    :hints (("Goal" :in-theory (enable translate-array-arg)))))
 
-(defthm integerp-of-mv-nth-2-of-translate-array-arg
-  (integerp (mv-nth 2 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array nodenum-type-alist calling-fn widths-must-matchp constant-array-info)))
-  :hints (("Goal" :in-theory (enable translate-array-arg))))
+(local
+  (defthm integerp-of-mv-nth-2-of-translate-array-arg
+    (integerp (mv-nth 2 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array nodenum-type-alist calling-fn widths-must-matchp constant-array-info)))
+    :hints (("Goal" :in-theory (enable translate-array-arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1070,17 +1089,11 @@
                             dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (bounded-dag-exprp dag-len expr)
-                              (consp expr)
+                              (consp expr) ; we never translate variables
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (constant-array-infop constant-array-info))
-                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
-                                                         BOUNDED-DAG-EXPRP
-                                                         dag-exprp
-                                                         NATP-OF-+-OF-1)
-                                                        (DARGP
-                                                         MYQUOTEP
-                                                         NATP
-                                                         QUOTEP))))))
+                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0 dag-exprp natp-of-+-of-1)
+                                                        (myquotep natp quotep))))))
   (let ((fn (ffn-symb expr)))
     (mv-let (erp translated-expr constant-array-info)
       (case fn
@@ -1860,24 +1873,26 @@
                   (mv nil constant-array-info))
         (mv translated-expr constant-array-info)))))
 
-(defthm string-treep-of-mv-nth-0-of-translate-dag-expr
-  (implies (and (bounded-dag-exprp dag-len expr)
-                (constant-array-infop constant-array-info))
-           (string-treep (mv-nth 0 (translate-dag-expr expr dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (e/d (translate-dag-expr bounded-dag-exprp car-becomes-nth-of-0)
-                                  ((:e nat-to-string-debug) ;problem!
-                                   ;;for speed:
-                                   nat-to-string-debug
-                                   translate-array-arg
-                                   translate-bv-arg
-                                   pad-with-zeros
-                                   max)))))
+(local
+  (defthm string-treep-of-mv-nth-0-of-translate-dag-expr
+    (implies (and (bounded-dag-exprp dag-len expr)
+                  (constant-array-infop constant-array-info))
+             (string-treep (mv-nth 0 (translate-dag-expr expr dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (e/d (translate-dag-expr bounded-dag-exprp car-becomes-nth-of-0)
+                                    ((:e nat-to-string-debug) ;problem!
+                                     ;;for speed:
+                                     nat-to-string-debug
+                                     translate-array-arg
+                                     translate-bv-arg
+                                     pad-with-zeros
+                                     max))))))
 
-(defthm constant-array-infop-of-mv-nth-1-of-translate-dag-expr
-  (implies (and (bounded-dag-exprp dag-len expr)
-                (constant-array-infop constant-array-info))
-           (constant-array-infop (mv-nth 1 (translate-dag-expr expr dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable translate-dag-expr bounded-dag-exprp car-becomes-nth-of-0))))
+(local
+  (defthm constant-array-infop-of-mv-nth-1-of-translate-dag-expr
+    (implies (and (bounded-dag-exprp dag-len expr)
+                  (constant-array-infop constant-array-info))
+             (constant-array-infop (mv-nth 1 (translate-dag-expr expr dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable translate-dag-expr bounded-dag-exprp car-becomes-nth-of-0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1962,22 +1977,24 @@
                                 (+ 1 opened-paren-count)
                                 cut-nodenum-type-alist)))))
 
-(defthm string-treep-of-mv-nth-0-of-translate-nodes-to-stp
-  (implies (and (string-treep acc)
-                (constant-array-infop constant-array-info)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (string-treep (mv-nth 0 (translate-nodes-to-stp nodenums-to-translate dag-array-name dag-array dag-len acc constant-array-info opened-paren-count cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
+(local
+  (defthm string-treep-of-mv-nth-0-of-translate-nodes-to-stp
+    (implies (and (string-treep acc)
+                  (constant-array-infop constant-array-info)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (nat-listp nodenums-to-translate)
+                  (all-< nodenums-to-translate dag-len))
+             (string-treep (mv-nth 0 (translate-nodes-to-stp nodenums-to-translate dag-array-name dag-array dag-len acc constant-array-info opened-paren-count cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp)))))
 
-(defthm constant-array-infop-of-mv-nth-1-of-translate-nodes-to-stp
-  (implies (and (constant-array-infop constant-array-info)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (constant-array-infop (mv-nth 1 (translate-nodes-to-stp nodenums-to-translate dag-array-name dag-array dag-len acc constant-array-info opened-paren-count cut-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp))))
+(local
+  (defthm constant-array-infop-of-mv-nth-1-of-translate-nodes-to-stp
+    (implies (and (constant-array-infop constant-array-info)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (nat-listp nodenums-to-translate)
+                  (all-< nodenums-to-translate dag-len))
+             (constant-array-infop (mv-nth 1 (translate-nodes-to-stp nodenums-to-translate dag-array-name dag-array dag-len acc constant-array-info opened-paren-count cut-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable translate-nodes-to-stp nat-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2039,9 +2056,10 @@
                     ;;          (make-stp-type-declarations (rest nodenum-type-alist))))
                     (er hard 'make-stp-type-declarations "Unknown form for type: ~x0." type)))))))))))
 
-(defthm string-treep-of-make-stp-type-declarations
-  (string-treep (make-stp-type-declarations nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable make-stp-type-declarations))))
+(local
+  (defthm string-treep-of-make-stp-type-declarations
+    (string-treep (make-stp-type-declarations nodenum-type-alist))
+    :hints (("Goal" :in-theory (enable make-stp-type-declarations)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2082,9 +2100,88 @@
                 (er hard? 'make-stp-range-assertions "Unknown form for size: ~x0." type))))
         (make-stp-range-assertions (rest nodenum-type-alist))))))
 
-(defthm string-treep-of-make-stp-range-assertions
-  (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable make-stp-range-assertions))))
+(local
+  (defthm string-treep-of-make-stp-range-assertions
+    (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
+    :hints (("Goal" :in-theory (enable make-stp-range-assertions)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;this one takes the var-type-alist
+;returns a type (bv type, array type, etc.)
+;similar to get-type-of-nodenum-checked
+(defun get-type-of-nodenum-during-cutting (n dag-array-name dag-array var-type-alist)
+  (declare (xargs :guard (and (symbol-alistp var-type-alist)
+                              (natp n)
+                              ;;(< n (alen1 dag-array-name dag-array))
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n)))))
+  ;;otherwise, look up the expression at that nodenum:
+  (let ((expr (aref1 dag-array-name dag-array n)))
+    (if (variablep expr)
+        (if (assoc-eq expr var-type-alist) ;clear this up if nil is not a type...
+            (lookup-eq expr var-type-alist)
+          (hard-error 'get-type-of-nodenum-during-cutting "can't find type of var: ~x0" (acons #\0 expr nil)))
+      (let ((fn (ffn-symb expr)))
+        (if (eq 'quote fn)
+            (get-type-of-val-checked (unquote expr))
+          ;;it's a regular function call:
+          (or (maybe-get-type-of-function-call fn (dargs expr))
+              (hard-error 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1"
+                          (acons #\0 expr (acons #\1 n nil)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund get-type-of-arg-during-cutting (arg dag-array-name dag-array var-type-alist)
+  (declare (xargs :guard (and (symbol-alistp var-type-alist)
+                              (or (myquotep arg)
+                                  (and (natp arg)
+                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
+                                       (< arg (alen1 dag-array-name dag-array)))))))
+  (if (consp arg) ;tests for quotep
+      (get-type-of-val-checked (unquote arg))
+    (get-type-of-nodenum-during-cutting arg dag-array-name dag-array var-type-alist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a string-tree that extends extra-asserts.
+;fixme rectify this printing with the other use of this function
+(defund add-assert-if-a-mult (n expr dag-array-name dag-array var-type-alist print extra-asserts)
+  (declare (xargs :guard (and (natp n)
+                              (bounded-dag-exprp n expr)
+                              (dag-function-call-exprp expr)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
+                              (symbol-alistp var-type-alist)
+                              (string-treep extra-asserts))
+                  :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp car-becomes-nth-of-0
+                                                           not-<-of-nth-when-bounded-darg-listp-gen
+                                                           darg-quoted-posp)))))
+  (make-string-tree (and (eq 'bvmult (ffn-symb expr))
+                         (= 3 (len (dargs expr)))
+                         (darg-quoted-posp (darg1 expr))
+                         (let ((arg2-type (get-type-of-arg-during-cutting (darg2 expr) dag-array-name dag-array var-type-alist))
+                               (arg3-type (get-type-of-arg-during-cutting (darg3 expr) dag-array-name dag-array var-type-alist)))
+                           (and (bv-typep arg2-type)
+                                (bv-typep arg3-type)
+                                ;; The sum of the widths of the arguments must be <= the width of the product for the extra assert to be helpful:
+                                (let ((arg2-width (bv-type-width arg2-type))
+                                      (arg3-width (bv-type-width arg3-type)))
+                                  (and (<= (+ arg2-width arg3-width)
+                                           (unquote (darg1 expr)))
+                                       (let ((max-product-value (* (+ -1 (expt 2 arg2-width))
+                                                                   (+ -1 (expt 2 arg3-width)))))
+                                         (prog2$ (and print (cw ", which is a BVMULT: ~x0" expr))
+                                                 (list* "ASSERT(BVLE("
+                                                        (make-node-var n)
+                                                        ","
+                                                        (translate-bv-constant max-product-value (unquote (darg1 expr)))
+                                                        "));"
+                                                        (newline-string)))))))))
+                    extra-asserts))
+
+(defthm string-treep-of-add-assert-if-a-mult
+  (implies (string-treep extra-asserts)
+           (string-treep (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts)))
+  :hints (("Goal" :in-theory (enable add-assert-if-a-mult))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
