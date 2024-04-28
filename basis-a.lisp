@@ -176,16 +176,17 @@
            (list 'equal x guts))
           (t (list 'equal x const)))))
 
-(defun match-tests-and-bindings (x pat tests bindings)
+(defun match-tests-and-bindings (x pat tests bindings dups)
 
-; We return two results.  The first is a list of tests, in reverse
-; order, that determine whether x matches the structure pat.  We
-; describe the language of pat below.  The tests are accumulated onto
-; tests, which should be nil initially.  The second result is an alist
-; containing entries of the form (sym expr), suitable for use as the
-; bindings in the let we generate if the tests are satisfied.  The
-; bindings required by pat are accumulated onto bindings and thus are
-; reverse order, although their order is actually irrelevant.
+; We return three results.  The first is a list of tests, in reverse order,
+; that determine whether x matches the structure pat.  We describe the language
+; of pat below.  The tests are accumulated onto tests, which should be nil
+; initially.  The second result is an alist, accumulated into bindings in
+; reverse order (though the order is irrelevant), containing entries of the
+; form (sym expr), suitable for use as the bindings in the let we generate if
+; the tests are satisfied.  The third is a list of variables, accumulated into
+; dups, that are bound more than once in the constructed alist; these will be
+; used for generating ignore declarations.
 
 ; For example, the pattern
 ;   ('equal ('car ('cons u v)) u)
@@ -196,11 +197,11 @@
 ; matches only second order instances of (EQUAL (ev (simp x) a) (ev x a)),
 ; i.e., ev, simp, x, and a are all bound in the match.
 
-; In general, the match requires that the cons structure of x be isomorphic
-; to that of pat, down to the atoms in pat.  Symbols in the pat denote
-; variables that match anything and get bound to the structure matched.
-; Occurrences of a symbol after the first match only structures equal to
-; the binding.  Non-symbolp atoms match themselves.
+; In general, the match requires that the cons structure of x be isomorphic to
+; that of pat, down to the atoms in pat.  Symbols in the pat denote variables
+; that match anything and get bound to the structure matched.  Occurrences of a
+; symbol after the first match only structures equal to the binding.
+; Non-symbolp atoms match themselves.
 
 ; There are some exceptions to the general scheme described above.  A cons
 ; structure starting with QUOTE matches only itself.  A cons structure of the
@@ -210,22 +211,24 @@
 ; to their values.  (These symbols cannot be legally bound in ACL2 anyway, so
 ; this exceptional treatment does not restrict us further.)  Any symbol
 ; starting with #\! matches only the value of the symbol whose name is obtained
-; by dropping the #\!.  This is a way of referring to already bound variables
-; in the pattern. Finally, the symbol & matches anything and causes no binding.
+; by dropping the #\!.  This is a way of referring in the pattern to already
+; bound variables.  Finally, the symbol & matches anything and causes no
+; binding.
 
-  (declare (xargs :guard (symbol-doublet-listp bindings)))
+  (declare (xargs :guard (and (symbol-doublet-listp bindings)
+                              (true-listp dups))))
   (cond
    ((symbolp pat)
     (cond
      ((or (eq pat t)
           (eq pat nil)
           (keywordp pat))
-      (mv (cons (list 'eq x pat) tests) bindings))
+      (mv (cons (list 'eq x pat) tests) bindings dups))
      ((let ((len (length (symbol-name pat))))
         (and (> len 0)
              (eql #\* (char (symbol-name pat) 0))
              (eql #\* (char (symbol-name pat) (1- len)))))
-      (mv (cons (list 'equal x pat) tests) bindings))
+      (mv (cons (list 'equal x pat) tests) bindings dups))
      ((and (> (length (symbol-name pat)) 0)
            (eql #\! (char (symbol-name pat) 0)))
       (mv (cons (list 'equal x
@@ -235,41 +238,49 @@
                                (length (symbol-name pat)))
                        pat))
                 tests)
-          bindings))
-     ((eq pat '&) (mv tests bindings))
+          bindings
+          dups))
+     ((eq pat '&) (mv tests bindings dups))
      (t (let ((binding (assoc-eq pat bindings)))
           (cond ((null binding)
-                 (mv tests (cons (list pat x) bindings)))
+                 (mv tests (cons (list pat x) bindings) dups))
                 (t (mv (cons (list 'equal x (cadr binding)) tests)
-                       bindings)))))))
+                       bindings
+                       (add-to-set-eq pat dups))))))))
    ((atom pat)
     (mv (cons (equal-x-constant x (list 'quote pat)) tests)
-        bindings))
+        bindings
+        dups))
    ((and (eq (car pat) 'quote)
          (consp (cdr pat))
          (null (cddr pat)))
     (mv (cons (equal-x-constant x pat) tests)
-        bindings))
+        bindings
+        dups))
    ((and (eq (car pat) 'quote~)
          (consp (cdr pat))
          (symbolp (cadr pat))
          (null (cddr pat)))
     (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
-        bindings))
-   (t (mv-let (tests1 bindings1)
+        bindings
+        dups))
+   (t (mv-let (tests1 bindings1 dups1)
         (match-tests-and-bindings (list 'car x) (car pat)
                                   (cons (list 'consp x) tests)
-                                  bindings)
+                                  bindings dups)
         (match-tests-and-bindings (list 'cdr x) (cdr pat)
-                                  tests1 bindings1)))))
+                                  tests1 bindings1 dups1)))))
+
 (defun match-clause (x pat forms)
   (declare (xargs :guard t))
-  (mv-let (tests bindings)
-    (match-tests-and-bindings x pat nil nil)
+  (mv-let (tests bindings dups)
+    (match-tests-and-bindings x pat nil nil nil)
     (list (if (null tests)
               t
             (cons 'and (reverse tests)))
-          (cons 'let (cons (reverse bindings) forms)))))
+          `(let ,(reverse bindings)
+             ,@(and dups `((declare (ignorable ,@dups))))
+             ,@forms))))
 
 (defun match-clause-list (x clauses)
   (declare (xargs :guard (alistp clauses)))
