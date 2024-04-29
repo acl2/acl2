@@ -1092,7 +1092,7 @@
 
 ;; For each node in REV-DAG, fix up its args (if any) according to the renaming-array, then add its simplified form to the dag-array and add its new nodenum or quotep to the renaming.
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array info tries limits state).
-;ffixme for speed, could keep track the lowest node renamed (anything lower renames to itself)?
+;; TODO: For speed, we could keep track the lowest node renamed (anything lower renames to itself).
 (defun add-simplified-dag-to-dag-array (rev-dag ;low nodes come first; can there be gaps in the numbering?
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         renaming-array ;;maps nodenums in rev-dag to the nodenums or quoteps they rewrote to in dag-array

@@ -1217,7 +1217,6 @@
 
 ;ffixme other possibilities:
 ;; leftrotate bvshl bvshr
-;fixme what about myif? i guess we no longer translate that!
 ;move this to the same file as the translation..
 ;ffixme use this more, instead of just comparing the operators to the list of operators we can translate..
 ;should this really check the types of the args?
@@ -1936,7 +1935,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: compare to gather-nodes-to-translate-up-to-depth
-;returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
+;; Returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
 ;fixme look for type mismatches..
 ;;fixme combine some recursive calls in this function?
 ;; When we decide to cut at a node (either because we can't translate it or we've hit the depth limit), we have to select a type for it.
