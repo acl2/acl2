@@ -190,56 +190,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns an axe-type, or nil (if we could not determine the type).
-;should some of the nil cases here be errors or warnings?
-;fixme handle tuples?
-;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
-;fixme make sure all callers of this handle nil okay (would it ever be better to throw an error?)?
-;what if the number of arguments is wrong?
-;; TODO: Consider adding support for constant arrays
-;; TODO: Exclude FN from being 'QUOTE?  todo: but require it to be a symbol?
-;; TODO: Are there other functions like this to deprecate?
-(defund maybe-get-type-of-function-call (fn dargs)
-  (declare (xargs :guard (darg-listp dargs)))
-  (or (maybe-get-type-of-bv-function-call fn dargs)
-      (cond
-       ;; Functions that return bv-arrays:
-       ((or (eq fn 'bv-array-write) ; (bv-array-write element-size len index val data)
-            (eq fn 'bv-array-if)) ; (bv-array-if element-size len test array1 array2)
-        (let ((element-size (unquote-if-possible (first dargs)))
-              (len (unquote-if-possible (second dargs))))
-          (if (and (natp element-size)
-                   (natp len))
-              (make-bv-array-type element-size len) ;fixme what if the width is 0?
-            nil                                     ;error?
-            )))
-       ;; Functions that return booleans:
-       ((member-eq fn *known-predicates-basic* ; TODO: Use the known-boolean stuff, in case we want to stub out a user-defined boolean function?
-                   )
-        (boolean-type)) ; TTODO: make sure these are handled right downstream
-       (t nil ; could redo things to return most-general-type here
-          ))))
-
-;; If it's non-nil, it's an Axe type.
-(defthm axe-typep-of-maybe-get-type-of-function-call
-  (implies (maybe-get-type-of-function-call fn dargs)
-           (axe-typep (maybe-get-type-of-function-call fn dargs)))
-  :hints (("Goal" :in-theory (enable maybe-get-type-of-function-call))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns an axe-type, possibly (most-general-type).
-(defund get-type-of-function-call-safe (fn dargs)
-  (declare (xargs :guard (darg-listp dargs)))
-  (or (maybe-get-type-of-function-call fn dargs)
-      (most-general-type)))
-
-(defthm axe-typep-of-get-type-of-function-call-safe
-  (axe-typep (get-type-of-function-call-safe fn dargs))
-  :hints (("Goal" :in-theory (enable get-type-of-function-call-safe))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns an axe-type, or nil if no type can be determined.
 ;; todo: ensure all callers can handle nil being returned.
 (defund maybe-get-type-of-val (val)
@@ -294,8 +244,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns an axe-type, or nil (if we could not determine the type).
+;should some of the nil cases here be errors or warnings?
+;fixme handle tuples?
+;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
+;fixme make sure all callers of this handle nil okay (would it ever be better to throw an error?)?
+;what if the number of arguments is wrong?
+;; TODO: Consider adding support for constant arrays
+;; TODO: Exclude FN from being 'QUOTE?  todo: but require it to be a symbol?
+;; TODO: Are there other functions like this to deprecate?
+(defund maybe-get-type-of-function-call (fn dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  (or (maybe-get-type-of-bv-function-call fn dargs)
+      (cond
+       ;; Functions that return bv-arrays:
+       ((or (eq fn 'bv-array-write) ; (bv-array-write element-size len index val data)
+            (eq fn 'bv-array-if)) ; (bv-array-if element-size len test array1 array2)
+        (let ((element-size (unquote-if-possible (first dargs)))
+              (len (unquote-if-possible (second dargs))))
+          (if (and (natp element-size)
+                   (natp len))
+              (make-bv-array-type element-size len) ;fixme what if the width is 0?
+            nil                                     ;error?
+            )))
+       ;; Functions that return booleans:
+       ((member-eq fn *known-predicates-basic* ; TODO: Use the known-boolean stuff, in case we want to stub out a user-defined boolean function?
+                   )
+        (boolean-type)) ; TTODO: make sure these are handled right downstream
+       (t nil ; could redo things to return most-general-type here
+          ))))
+
+;; If it's non-nil, it's an Axe type.
+(defthm axe-typep-of-maybe-get-type-of-function-call
+  (implies (maybe-get-type-of-function-call fn dargs)
+           (axe-typep (maybe-get-type-of-function-call fn dargs)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-function-call))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an axe-type, possibly (most-general-type).
+(defund get-type-of-function-call-safe (fn dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  (or (maybe-get-type-of-function-call fn dargs)
+      (most-general-type)))
+
+(defthm axe-typep-of-get-type-of-function-call-safe
+  (axe-typep (get-type-of-function-call-safe fn dargs))
+  :hints (("Goal" :in-theory (enable get-type-of-function-call-safe))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns an axe-type, or throws an error if no type can be determined.
-;; todo: ensure the error is appropdiate for all callers
+;; todo: ensure the error is appropriate for all callers
 (defund get-type-of-nodenum-checked (nodenum
                                      dag-array-name
                                      dag-array
