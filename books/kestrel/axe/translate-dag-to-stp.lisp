@@ -531,10 +531,11 @@
            val
            ")")))
 
-(defthm string-treep-of-pad-with-zeros
-  (implies (string-treep val)
-           (string-treep (pad-with-zeros numzeros val)))
-  :hints (("Goal" :in-theory (enable pad-with-zeros))))
+(local
+  (defthm string-treep-of-pad-with-zeros
+    (implies (string-treep val)
+             (string-treep (pad-with-zeros numzeros val)))
+    :hints (("Goal" :in-theory (enable pad-with-zeros)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -552,9 +553,10 @@
         (pad-with-zeros (- desired-size actual-size) varname)
       varname)))
 
-(defthm string-treep-of-translate-bv-nodenum-and-pad
-  (string-treep (translate-bv-nodenum-and-pad nodenum desired-size actual-size))
-  :hints (("Goal" :in-theory (enable translate-bv-nodenum-and-pad))))
+(local
+  (defthm string-treep-of-translate-bv-nodenum-and-pad
+    (string-treep (translate-bv-nodenum-and-pad nodenum desired-size actual-size))
+    :hints (("Goal" :in-theory (enable translate-bv-nodenum-and-pad)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -574,9 +576,10 @@
     ;;Otherwise, arg is a nodenum:
     (translate-bv-nodenum-and-pad arg desired-size actual-size)))
 
-(defthm string-treep-of-translate-bv-arg-and-pad
-  (string-treep (translate-bv-arg-and-pad arg desired-size actual-size))
-  :hints (("Goal" :in-theory (enable translate-bv-arg-and-pad))))
+(local
+  (defthm string-treep-of-translate-bv-arg-and-pad
+    (string-treep (translate-bv-arg-and-pad arg desired-size actual-size))
+    :hints (("Goal" :in-theory (enable translate-bv-arg-and-pad)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,9 +605,10 @@
           (translate-bv-nodenum-and-pad arg desired-size (bv-type-width maybe-type))
         (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression" maybe-type arg (aref1 dag-array-name dag-array arg))))))
 
-(defthm string-treep-of-translate-bv-arg
-  (string-treep (translate-bv-arg arg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist))
-  :hints (("Goal" :in-theory (enable translate-bv-arg))))
+(local
+  (defthm string-treep-of-translate-bv-arg
+    (string-treep (translate-bv-arg arg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist))
+    :hints (("Goal" :in-theory (enable translate-bv-arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -708,10 +712,11 @@
           (second entry)
         (get-array-constant-name data element-width element-count (rest constant-array-info))))))
 
-(defthm string-treep-of-get-array-constant-name
-  (implies (constant-array-infop constant-array-info)
-           (string-treep (get-array-constant-name data element-width element-count constant-array-info)))
-  :hints (("Goal" :in-theory (enable get-array-constant-name constant-array-infop))))
+(local
+  (defthm string-treep-of-get-array-constant-name
+    (implies (constant-array-infop constant-array-info)
+             (string-treep (get-array-constant-name data element-width element-count constant-array-info)))
+    :hints (("Goal" :in-theory (enable get-array-constant-name constant-array-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -736,19 +741,21 @@
             (cons (list data array-name element-width element-count)
                   constant-array-info))))))
 
-(defthm constant-array-infop-of-mv-nth-1-of-translate-constant-array-mention
-  (implies (and (constant-array-infop constant-array-info)
-                (nat-listp (unquote data))
-                (posp element-width)
-                (natp element-count)
-                (<= element-count (len (unquote data))))
-           (constant-array-infop (mv-nth 1 (translate-constant-array-mention data element-width element-count constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop))))
+(local
+  (defthm constant-array-infop-of-mv-nth-1-of-translate-constant-array-mention
+    (implies (and (constant-array-infop constant-array-info)
+                  (nat-listp (unquote data))
+                  (posp element-width)
+                  (natp element-count)
+                  (<= element-count (len (unquote data))))
+             (constant-array-infop (mv-nth 1 (translate-constant-array-mention data element-width element-count constant-array-info))))
+    :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop)))))
 
-(defthm stringp-of-mv-nth-0-of-translate-constant-array-mention
-  (implies (constant-array-infop constant-array-info)
-           (string-treep (mv-nth 0 (translate-constant-array-mention data element-width element-count constant-array-info))))
-  :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop))))
+(local
+  (defthm stringp-of-mv-nth-0-of-translate-constant-array-mention
+    (implies (constant-array-infop constant-array-info)
+             (string-treep (mv-nth 0 (translate-constant-array-mention data element-width element-count constant-array-info))))
+    :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2171,10 +2178,11 @@
              (newline-string)
              (make-type-declarations-for-array-constants (rest constant-array-info))))))
 
-(defthm string-treep-of-make-type-declarations-for-array-constants
-  (implies (constant-array-infop constant-array-info)
-           (string-treep (make-type-declarations-for-array-constants constant-array-info)))
-  :hints (("Goal" :in-theory (enable make-type-declarations-for-array-constants constant-array-infop))))
+(local
+  (defthm string-treep-of-make-type-declarations-for-array-constants
+    (implies (constant-array-infop constant-array-info)
+             (string-treep (make-type-declarations-for-array-constants constant-array-info)))
+    :hints (("Goal" :in-theory (enable make-type-declarations-for-array-constants constant-array-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2208,11 +2216,12 @@
                                                      (newline-string)
                                                      acc))))
 
-(defthm string-treep-of-make-value-assertions-for-array-constant
-  (implies (and (string-treep acc)
-                (string-treep array-name))
-           (string-treep (make-value-assertions-for-array-constant array-data array-name elemnum element-count index-size element-size acc)))
-  :hints (("Goal" :in-theory (enable make-value-assertions-for-array-constant))))
+(local
+  (defthm string-treep-of-make-value-assertions-for-array-constant
+    (implies (and (string-treep acc)
+                  (string-treep array-name))
+             (string-treep (make-value-assertions-for-array-constant array-data array-name elemnum element-count index-size element-size acc)))
+    :hints (("Goal" :in-theory (enable make-value-assertions-for-array-constant)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2780,9 +2789,10 @@
             (cons " OR "
                   (translate-disjunction-aux (rest items)))))))
 
-(defthm string-treep-of-translate-disjunction-aux
-  (string-treep (translate-disjunction-aux items))
-  :hints (("Goal" :in-theory (enable translate-disjunction-aux))))
+(local
+  (defthm string-treep-of-translate-disjunction-aux
+    (string-treep (translate-disjunction-aux items))
+    :hints (("Goal" :in-theory (enable translate-disjunction-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
