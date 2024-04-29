@@ -598,16 +598,24 @@
 ;fffixme add bvdiv and bvmod and sbvdiv and sbvrem !!
 ;; todo: add bve and sbvle?
 (defconst *bv-and-array-fns-we-can-translate*
-  '(equal getbit bvchop ;$inline
-          slice
-          bvcat
-          bvplus bvuminus bvminus bvmult
-          bitor bitand bitxor bitnot
-          bvor bvand bvxor bvnot
-          bvsx bv-array-read bv-array-write bvif
-          leftrotate32
-          boolor booland ;boolxor
-          not
-          bvlt                       ;new
-          sbvlt                      ;new
-          ))
+  '(not
+    booland boolor ;boolxor
+    ;; boolif ; todo: uncomment
+    bitnot
+    bitand bitor bitxor
+    bvchop bvnot bvuminus
+    getbit
+    slice
+    bvand bvor bvxor
+    bvplus bvminus bvmult
+    ;; bvdiv bvmod ; todo
+    ;; sbvdiv sbvrem ; todo
+    bvlt ; bvle todo
+    sbvlt ; sbvle todo
+    bvcat
+    bvsx
+    bvif
+    leftrotate32
+    bv-array-read
+    bv-array-write
+    equal))
