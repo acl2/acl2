@@ -345,7 +345,6 @@
  (must-prove-with-stp type-mismatch1 '(equal (bvif 32 x y z) (bvxor 32 x w))))
 
 ;; X is used as a boolean in the BVIF !
-;; TODO: Arrange for a nice type error, rather than an STP error
 (must-fail
   (must-prove-with-stp type-mismatch2 '(implies (unsigned-byte-p 32 x) (equal (bvif 32 x y z) (bvxor 32 x w)))))
 

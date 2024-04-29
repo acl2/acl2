@@ -455,24 +455,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a string-tree.
-;; ARG must be a nodenum or 't or 'nil.
-(defund translate-boolean-arg (arg)
-  (declare (xargs :guard (and (dargp arg)
-                              (boolean-arg-okp arg) ; todo: this excludes the ER call below -- drop one?
-                              )))
-  (if (consp arg) ;checks for quotep
-      (if (equal arg *nil*)
+;; DARG must be a nodenum or 't or 'nil.
+(defund translate-boolean-arg (darg dag-array-name dag-array cut-nodenum-type-alist)
+  (declare (xargs :guard (and (dargp darg)
+                              (boolean-arg-okp darg) ; todo: this excludes the ER call below -- drop one?
+                              (if (consp darg)       ; test for quotep
+                                  t
+                                (pseudo-dag-arrayp dag-array-name dag-array (+ 1 darg)))
+                              (nodenum-type-alistp cut-nodenum-type-alist))))
+  (if (consp darg) ;checks for quotep
+      (if (equal darg *nil*)
           "FALSE"
-        (if (equal arg *t*)
+        (if (equal darg *t*)
             "TRUE"
           ;;i suppose any constant other than nil could be translated like t (but print a warning?!):
-          (er hard? 'translate-boolean-arg "Bad constant (should be boolean): ~x0.~%" arg)))
-    ;; arg is a nodenum:
-    (make-node-var arg)))
+          (er hard? 'translate-boolean-arg "Bad constant (should be boolean): ~x0.~%" darg)))
+    ;; arg is a nodenum, so check the type:
+    (let ((maybe-type (maybe-get-type-of-nodenum darg dag-array-name dag-array cut-nodenum-type-alist)))
+      (if (boolean-typep maybe-type)
+          (make-node-var darg)
+        (er hard? 'translate-boolean-arg "bad type, ~x0, for boolean argument ~x1, with expression ~x2" maybe-type darg (aref1 dag-array-name dag-array darg))))))
 
 (local
   (defthm string-treep-of-translate-boolean-arg
-    (string-treep (translate-boolean-arg arg))
+    (string-treep (translate-boolean-arg darg dag-array-name dag-array cut-nodenum-type-alist))
     :hints (("Goal" :in-theory (enable translate-boolean-arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -603,7 +609,7 @@
     (let ((maybe-type (maybe-get-type-of-nodenum arg dag-array-name dag-array cut-nodenum-type-alist)))
       (if (bv-typep maybe-type)
           (translate-bv-nodenum-and-pad arg desired-size (bv-type-width maybe-type))
-        (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression" maybe-type arg (aref1 dag-array-name dag-array arg))))))
+        (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression ~x2" maybe-type arg (aref1 dag-array-name dag-array arg))))))
 
 (local
   (defthm string-treep-of-translate-bv-arg
@@ -904,9 +910,9 @@
                    (boolean-arg-okp rhs))
               (mv
                (list* "("
-                      (translate-boolean-arg lhs)
+                      (translate-boolean-arg lhs dag-array-name dag-array cut-nodenum-type-alist)
                       " <=> "
-                      (translate-boolean-arg rhs)
+                      (translate-boolean-arg rhs dag-array-name dag-array cut-nodenum-type-alist)
                       ")")
                constant-array-info)
             ;;todo: pass back errors?
@@ -1123,7 +1129,11 @@
                   (boolean-arg-okp (darg1 expr))
                   (boolean-arg-okp (darg2 expr)))
              (mv (erp-nil)
-                 (list* "(" (translate-boolean-arg (darg1 expr)) " OR " (translate-boolean-arg (darg2 expr)) ")")
+                 (list* "("
+                        (translate-boolean-arg (darg1 expr) dag-array-name dag-array cut-nodenum-type-alist)
+                        " OR "
+                        (translate-boolean-arg (darg2 expr) dag-array-name dag-array cut-nodenum-type-alist)
+                        ")")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
         (booland
@@ -1131,7 +1141,11 @@
                   (boolean-arg-okp (darg1 expr))
                   (boolean-arg-okp (darg2 expr)))
              (mv (erp-nil)
-                 (list* "(" (translate-boolean-arg (darg1 expr)) " AND " (translate-boolean-arg (darg2 expr)) ")")
+                 (list* "("
+                        (translate-boolean-arg (darg1 expr) dag-array-name dag-array cut-nodenum-type-alist)
+                        " AND "
+                        (translate-boolean-arg (darg2 expr) dag-array-name dag-array cut-nodenum-type-alist)
+                        ")")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
         (boolif
@@ -1141,11 +1155,11 @@
                   (boolean-arg-okp (darg3 expr)))
              (mv (erp-nil)
                  (list* "(IF "
-                        (translate-boolean-arg (darg1 expr))
+                        (translate-boolean-arg (darg1 expr) dag-array-name dag-array cut-nodenum-type-alist)
                         " THEN "
-                        (translate-boolean-arg (darg2 expr))
+                        (translate-boolean-arg (darg2 expr) dag-array-name dag-array cut-nodenum-type-alist)
                         " ELSE "
-                        (translate-boolean-arg (darg3 expr))
+                        (translate-boolean-arg (darg3 expr) dag-array-name dag-array cut-nodenum-type-alist)
                         " ENDIF)")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
@@ -1153,7 +1167,7 @@
          (if (and (= 1 (len (dargs expr)))
                   (boolean-arg-okp (darg1 expr)))
              (mv (erp-nil)
-                 (list* "(NOT(" (translate-boolean-arg (darg1 expr)) "))")
+                 (list* "(NOT(" (translate-boolean-arg (darg1 expr) dag-array-name dag-array cut-nodenum-type-alist) "))")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
         (bv-array-read ;(BV-ARRAY-READ ELEMENT-WIDTH LEN INDEX DATA)
@@ -1798,7 +1812,7 @@
                (mv
                 (erp-nil)
                 (list* "(IF "
-                       (translate-boolean-arg (darg2 expr))
+                       (translate-boolean-arg (darg2 expr) dag-array-name dag-array cut-nodenum-type-alist)
                        " THEN "
                        (translate-bv-arg (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                        "["
@@ -1830,7 +1844,7 @@
                (mv
                 (erp-nil)
                 (list* "(IF "
-                       (translate-boolean-arg test)
+                       (translate-boolean-arg test dag-array-name dag-array cut-nodenum-type-alist)
                        " THEN "
                        then-array-name
                        " ELSE "
