@@ -282,15 +282,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns an axe-type, possibly (most-general-type).
-(defund get-type-of-function-call-safe (fn dargs)
-  (declare (xargs :guard (darg-listp dargs)))
-  (or (maybe-get-type-of-function-call fn dargs)
-      (most-general-type)))
+;; Returns an axe-type, or nil if no type can be determined.
+(defund maybe-get-type-of-nodenum (nodenum
+                                   dag-array-name
+                                   dag-array
+                                   nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
+                                   )
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
+                              (nodenum-type-alistp nodenum-type-alist))))
+  ;; first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
+  (or (lookup nodenum nodenum-type-alist)
+      ;; otherwise, look up the expression at that nodenum:
+      (let ((expr (aref1 dag-array-name dag-array nodenum)))
+        (if (variablep expr)
+            nil ; it wasn't in the alist, so we can't do anything
+          (let ((fn (ffn-symb expr)))
+            (if (eq 'quote fn)
+                (maybe-get-type-of-val (unquote expr))
+              ;; it's a function call:
+              (maybe-get-type-of-function-call fn (dargs expr))))))))
 
-(defthm axe-typep-of-get-type-of-function-call-safe
-  (axe-typep (get-type-of-function-call-safe fn dargs))
-  :hints (("Goal" :in-theory (enable get-type-of-function-call-safe))))
+(local
+  (defthm axe-typep-of-maybe-get-type-of-nodenum
+    (implies (nodenum-type-alistp nodenum-type-alist)
+             (iff (axe-typep (maybe-get-type-of-nodenum nodenum dag-array-name dag-array nodenum-type-alist))
+                  (maybe-get-type-of-nodenum nodenum dag-array-name dag-array nodenum-type-alist)))
+    :hints (("Goal" :in-theory (enable maybe-get-type-of-nodenum)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,19 +322,8 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (nodenum-type-alistp nodenum-type-alist))))
-  ;;first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
-  (or (lookup nodenum nodenum-type-alist)
-      ;;otherwise, look up the expression at that nodenum:
-      (let ((expr (aref1 dag-array-name dag-array nodenum)))
-        (if (variablep expr)
-            ;;(lookup-eq expr var-type-alist) ;fix up ranges?   <- huh?
-            (er hard? 'get-type-of-nodenum-checked "can't find type of var ~x0." expr)
-          (let ((fn (ffn-symb expr)))
-            (if (eq 'quote fn)
-                (get-type-of-val-checked (unquote expr))
-              ;; it's a function call:
-              (or (maybe-get-type-of-function-call fn (dargs expr))
-                  (er hard? 'get-type-of-nodenum-checked "couldn't find type for expr ~x0 at nodenum ~x1" expr nodenum))))))))
+  (or (maybe-get-type-of-nodenum nodenum dag-array-name dag-array nodenum-type-alist)
+      (er hard? 'get-type-of-nodenum-checked "couldn't find type for nodenum ~x0, which has expr ~x1" nodenum (aref1 dag-array-name dag-array nodenum))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -331,17 +338,8 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               (nodenum-type-alistp nodenum-type-alist))))
-  ;;first check whether it is given a type in nodenum-type-alist (fffixme what if we could strengthen that type?):
-  (or (lookup nodenum nodenum-type-alist)
-      ;;otherwise, look up the expression at that nodenum:
-      (let ((expr (aref1 dag-array-name dag-array nodenum)))
-        (if (variablep expr)
-            (most-general-type)
-          (let ((fn (car expr)))
-            (if (eq 'quote fn)
-                (get-type-of-val-safe (unquote expr)) ;used to call get-type-of-val-checked, but that could crash!
-              ;;it's a regular function call:
-              (get-type-of-function-call-safe fn (dargs expr))))))))
+  (or (maybe-get-type-of-nodenum nodenum dag-array-name dag-array nodenum-type-alist)
+      (most-general-type)))
 
 (defthm axe-typep-of-get-type-of-nodenum-safe
   (implies (nodenum-type-alistp nodenum-type-alist)
