@@ -1909,8 +1909,7 @@
                                   print-max-conflicts-goalp
                                   options state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo
-                  :mode :program ;todo
+                  :verify-guards nil ;todo: first do prove-disjunction-with-axe-prover
                   :guard (and (or (and (pseudo-dagp dag)
                                        (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
