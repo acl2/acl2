@@ -1,10 +1,10 @@
 ; String Utilities -- Conversions from 8-Bit Bytes to Hex Characters
 ;
-; Copyright (C) 2018 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,7 +99,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ubyte8s=>hexchars ((bytes (unsigned-byte-listp 8 bytes)))
-  :returns (chars str::hex-digit-char-listp)
+  :returns (chars str::hex-digit-char-list*p)
   :parents (8bitbytes-hexchars-conversions)
   :short "Convert a list of unsigned 8-bit bytes
           to a sequence of hexadecimal digit characters."
@@ -120,7 +120,7 @@
 
   :prepwork
   ((define ubyte8s=>hexchars-aux ((bytes (unsigned-byte-listp 8 bytes))
-                                  (rev-chars str::hex-digit-char-listp))
+                                  (rev-chars str::hex-digit-char-list*p))
      (cond ((endp bytes) (rev rev-chars))
            (t (b* (((mv hi-char lo-char) (ubyte8=>hexchars (car bytes))))
                 (ubyte8s=>hexchars-aux (cdr bytes)
@@ -153,7 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hexchars=>ubyte8s ((chars (and (str::hex-digit-char-listp chars)
+(define hexchars=>ubyte8s ((chars (and (str::hex-digit-char-list*p chars)
                                        (true-listp chars)
                                        (evenp (len chars)))))
   :returns (bytes (unsigned-byte-listp 8 bytes))
@@ -172,7 +172,7 @@
        :exec (hexchars=>ubyte8s-aux chars nil))
 
   :prepwork
-  ((define hexchars=>ubyte8s-aux ((chars (and (str::hex-digit-char-listp chars)
+  ((define hexchars=>ubyte8s-aux ((chars (and (str::hex-digit-char-list*p chars)
                                               (true-listp chars)
                                               (evenp (len chars))))
                                   (rev-bytes (unsigned-byte-listp 8 rev-bytes)))
@@ -186,7 +186,7 @@
   ///
 
   (defrulel verify-guards-lemma
-    (implies (and (str::hex-digit-char-listp chars)
+    (implies (and (str::hex-digit-char-list*p chars)
                   (true-listp chars)
                   (evenp (len chars)))
              (equal (hexchars=>ubyte8s-aux chars rev-bytes)
@@ -216,7 +216,7 @@
              unsigned-byte-list-fix))
 
   (defrule ubyte8s=>hexchars-of-hexchars=>ubyte8s
-    (implies (and (str::hex-digit-char-listp chars)
+    (implies (and (str::hex-digit-char-list*p chars)
                   (true-listp chars)
                   (evenp (len chars)))
              (equal (ubyte8s=>hexchars (hexchars=>ubyte8s chars))
