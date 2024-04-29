@@ -34,6 +34,12 @@
        (not (eq 'quote (ffn-symb expr)))
        (darg-listp (fargs expr))))
 
+(defthm dag-function-call-exprp-forward-to-consp
+  (implies (dag-function-call-exprp expr)
+           (consp expr))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable dag-function-call-exprp))))
+
 ;;;
 ;;; dargs
 ;;;
@@ -136,6 +142,12 @@
       (myquotep expr) ; a quoted constant
       ;; a function call:
       (dag-function-call-exprp expr)))
+
+(defthm dag-function-call-exprp-forward-to-dag-exprp
+  (implies (dag-function-call-exprp expr)
+           (dag-exprp expr))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable dag-exprp))))
 
 (defthm darg-listp-of-dargs-when-dag-exprp
   (implies (and (dag-exprp expr)
