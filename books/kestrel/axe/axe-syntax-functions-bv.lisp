@@ -600,7 +600,7 @@
 (defconst *bv-and-array-fns-we-can-translate*
   '(not
     booland boolor ;boolxor
-    ;; boolif ; todo: uncomment
+    boolif
     bitnot
     bitand bitor bitxor
     bvchop bvnot bvuminus
@@ -608,10 +608,10 @@
     slice
     bvand bvor bvxor
     bvplus bvminus bvmult
-    ;; bvdiv bvmod ; todo
-    ;; sbvdiv sbvrem ; todo
-    bvlt ; bvle todo
-    sbvlt ; sbvle todo
+    bvdiv bvmod
+    sbvdiv sbvrem
+    bvlt bvle
+    sbvlt sbvle
     bvcat
     bvsx
     bvif
