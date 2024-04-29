@@ -52,6 +52,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: consisder checking the size of the elements
+(defund bv-array-arg-okp (len arg)
+  (declare (xargs :guard (and (integerp len)
+                              (<= 2 len) ; an array of length 1 would have no index bits
+                              (dargp arg))))
+  (if (consp arg) ; checks for quotep
+      (let ((data (unquote arg)))
+        (if (and (nat-listp data)
+                 (= len (len data)))
+            t
+          (prog2$ (cw "Warning: Non-bv-array constant ~x0 detected in bv-array context.~%" arg)
+                  nil)))
+    ;; it's a nodenum, so no checking is needed here (we will cut at that node if needed):
+    t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; This checks the args if they are constants but does not look up nodenums.
 ;; This no longer allows ':irrelevant values in bvifs.
 ;; Note that we no longer translate IF or MYIF
@@ -126,16 +143,14 @@
                           (darg-quoted-natp (second dargs))
                           (< 1 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
                           (bv-arg-okp (third dargs))
-                          ;; (bv-array-arg-okp (fourth dargs)) ; todo
-                          ))
+                          (bv-array-arg-okp (unquote (second dargs)) (fourth dargs))))
       (bv-array-write (and (= 5 (len dargs))
                            (darg-quoted-posp (first dargs))
                            (darg-quoted-natp (second dargs))
                            (< 1 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
                            (bv-arg-okp (third dargs))
                            (bv-arg-okp (fourth dargs))
-                           ;; (bv-array-arg-okp (fifth dargs)) ; todo
-                           ))
+                           (bv-array-arg-okp (unquote (second dargs)) (fifth dargs))))
       ;; todo: consider how to handle equal:
       ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
       ;; todo: bv-array-if?
