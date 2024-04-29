@@ -456,23 +456,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;; translating booleans
-;;;
-
-;; Check that, if ARG is a constant, it is a boolean constant.
-(defund boolean-arg-okp (arg)
-  (declare (xargs :guard (dargp arg)))
-  (if (consp arg) ;check for quotep
-      (if (booleanp (unquote arg))
-          t
-        (prog2$ (cw "Warning: Non-boolean constant ~x0 detected in a boolean context.~%" arg)
-                nil))
-    ;; it's a nodenum, so no checking is needed here (we will cut at that node if needed):
-    t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns a string-tree.
 ;; ARG must be a nodenum or 't or 'nil.
 (defund translate-boolean-arg (arg)
@@ -569,35 +552,6 @@
 (defthm string-treep-of-translate-bv-nodenum-and-pad
   (string-treep (translate-bv-nodenum-and-pad nodenum desired-size actual-size))
   :hints (("Goal" :in-theory (enable translate-bv-nodenum-and-pad))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; todo: consider adding a size param
-;; check that, if it is a constant, then it is a bv constant
-(defund bv-arg-okp (arg)
-  (declare (xargs :guard (dargp arg)))
-  (if (consp arg) ; checks for quotep
-      (if (natp (unquote arg))
-          t
-        (prog2$ (cw "Warning: Non-BV constant ~x0 detected in BV context.~%" arg)
-                nil))
-    ;; it's a nodenum, so no checking is needed here (we will cut at that node if needed):
-    t))
-
-(defthm bv-arg-okp-forward
-  (implies (and (bv-arg-okp arg)
-                (consp arg))
-           (natp (unquote arg)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bv-arg-okp))))
-
-;the nth-1 is to unquote
-(defthm bv-typep-of-maybe-get-type-of-val-of-nth-1
-  (implies (and (bv-arg-okp arg)
-                (consp arg) ;it's a quotep
-                )
-           (bv-typep (maybe-get-type-of-val (nth 1 arg))))
-  :hints (("Goal" :in-theory (enable maybe-get-type-of-val bv-arg-okp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

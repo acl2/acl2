@@ -86,6 +86,14 @@
 
 (local (in-theory (enable <-of-+-of-1-when-integers)))
 
+;the nth-1 is to unquote
+(defthm bv-typep-of-maybe-get-type-of-val-of-nth-1
+  (implies (and (bv-arg-okp arg)
+                (consp arg) ;it's a quotep
+                )
+           (bv-typep (maybe-get-type-of-val (nth 1 arg))))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-val bv-arg-okp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defthmd all-<-of-keep-atoms-when-darg-listp
@@ -2118,11 +2126,12 @@
                                                                    (cons nodenum nodenums-to-translate)
                                                                    cut-nodenum-type-alist)
                                ;;can't translate:
-                               (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                                 (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                 dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                 nodenums-to-translate
-                                                                 (acons nodenum (boolean-type) cut-nodenum-type-alist)))))
+                               (progn$ ;; (er hard? 'process-nodenums-for-translation "NOT called with non-boolean arg: ~x0." arg) ; this only fires in prove-with-stp-tests.lisp
+                                       (process-nodenums-for-translation (rest worklist) depth-limit depth-array
+                                                                         (aset1 'handled-node-array handled-node-array nodenum t)
+                                                                         dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                                         nodenums-to-translate
+                                                                         (acons nodenum (boolean-type) cut-nodenum-type-alist))))))
 
                           (t ;; the node has an obvious type, but is not something we support translating (maybe it's < or some other known boolean), so we cut:
                            ;;ffixme what if there is a better known type or induced type?
