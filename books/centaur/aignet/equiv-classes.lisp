@@ -43,11 +43,18 @@
 (local (in-theory (disable nth update-nth acl2::resize-list-when-atom)))
 (local (include-book "centaur/fty/fixequiv" :dir :system))
 (local (std::add-default-post-define-hook :fix))
-;; Each node has a next and a head.  The head is the lowest-numbered node in
-;; the equiv class.  The next is the next-higher-numbered node in the equiv
-;; class.  If next<=node, the node is the last in its class.
-;; If head >= node, the node is first in its class and head is the last.
-;; So head == node indicates a singleton class.
+
+;; The FRAIG transform expects equivalence classes in the following form:
+;; Each node has a next and a head.
+
+;;   - Generally, a node's head points to the lowest-numbered node in its equiv
+;; class. But if that node is the lowest-numbered node in its equiv class, then
+;; it instead points to the last node in its equiv class.  So head == node
+;; indicates a singleton class.
+
+;;  - Generally, a node's next points to the next-higher-numbered node in its
+;;  equiv class. If next <= node, that indicates that node is the
+;;  highest-numbered in its equiv class, and it isn't important what next is.
 (defstobj classes
   (class-nexts :type (array (unsigned-byte 32) (0)) :initially 0 :resizable t)
   (class-heads :type (array (unsigned-byte 32) (0)) :initially 0 :resizable t)
@@ -56,6 +63,9 @@
 (define classes-size (classes)
   (min (class-nexts-length classes)
        (class-heads-length classes)))
+
+
+
 
 ;; (define classes-sized ((size natp) classes)
 ;;   (and (<= (lnfix size) (class-nexts-length classes))
@@ -658,158 +668,537 @@
                                       ;; node-set-head node-head
                                       ;; node-set-next node-next
                                       ;; classes-size
-                                      )))))
+                                   )))))
 
 
-(define add-equiv-class-to-other ((head natp) (class natp) classes)
-  :guard (and (< class (classes-size classes))
-              (< head class)
+;;; NOTE on filtering equivalence classes.
+
+;;; In typical fraiging we start with every node in a single equivalence class
+;;; and rely on random simulation to break equivalences.  Equivalence classes
+;;; are only broken, never rejoined.
+
+;;; However, in some cases we want to pre-filter which nodes may be considered
+;;; equivalent to others.  In particular, centaur/sv/svex/evals-equivalent
+;;; offers a way to efficiently equivalence check an svexlist under two
+;;; different evaluations, by limiting the consideration of equivalences only
+;;; to AIG nodes that are the result of the two symbolic evaluations of the
+;;; same subexpression bit of the svexes.  To do this, we instead start with
+;;; every node in a singleton equivalence class and join classes that contain
+;;; nodes that are evaluations of the same subexpression bit.  This is a
+;;; classic union-find problem, and we have found that the next/head structure
+;;; described at the top of this file is too expensive to maintain throughout.
+;;; So we will first conduct a union/find using only class-heads as the tree
+;;; pointers for equivalence classes, then fix up the classes to the format
+;;; expected before simulation-based equivalence breaking.
+
+;;; Union-find data structure format: each node's head points to another
+;;; (lower-numbered) node in its class; if head >= node then node is the
+;;; lowest-numbered of its class.
+
+;;; To find a node's class designator, follow the chain of heads until head >=
+;;; node; then node is the designator.
+
+;;; To join the classes of two nodes, find each node's designator and if one is
+;;; greater than the other, set the head of the greater to the lesser.
+
+;;; After joining two classes, it improves overall efficiency if we
+;;; path-compress by setting the head of each node along the chain from the
+;;; original nodes to their designators to the designator for the new joined
+;;; class.
+
+(define uf-find-class-designator ((n natp)
+                                  classes)
+  :guard (and (< n (classes-size classes))
               (classes-wellformed classes))
-  ;; Class is a node which may be in an equiv class.  Set the heads of all
-  ;; nodes in its equiv class to head, and set the head of head (tail) of the
-  ;; class to the last node.  This is appropriate when class is greater than
-  ;; the greatest node currently in the equivalence class of head.  Otherwise,
-  ;; need to use join-equiv-classes-aux. Note that we don't update the nexts
-  ;; here, because class is already assumed to be fully linked. So before
-  ;; calling, the last node of head's current class should have been set to
-  ;; class.
-  :measure (nfix (- (classes-size classes) (nfix class)))
-  :returns (new-classes)
-  (b* ((ok (mbt (and (< (lnfix class) (classes-size classes))
-                     (classes-wellformed classes))))
-       (classes (node-set-head class head classes))
-       (next (node-next class classes))
-       ((when (and (mbt ok)
-                   (> next (lnfix class))))
-        (add-equiv-class-to-other head next classes)))
-    ;; class is the last node in the new class; set the head of head to it
-    (b* ((classes (node-set-head head class classes)))
-      ;; (or (class-check-consistency head classes)
-      ;;     (cw "add-equiv-class-to-other: inconsistent class: head ~x0 next ~x1 tail ~x2~%"
-      ;;         head (node-next head classes) (node-head head classes))
-      ;;     (break$))
-      classes))
+  :returns (des natp :rule-classes :type-prescription)
+  (b* ((head (node-head n classes))
+       ((when (>= head (lnfix n)))
+        (lnfix n)))
+    (uf-find-class-designator head classes))
   ///
+  (fty::deffixequiv uf-find-class-designator)
+  
+  (defret <fn>-lesser
+    (<= des (nfix n))
+    :rule-classes :linear)
+
+  (defret <fn>-of-<fn>
+    (equal (uf-find-class-designator des classes)
+           des))
+
+  (defret <fn>-of-set-greater
+    (implies (< (nfix n) (nfix m))
+             (equal (uf-find-class-designator n (node-set-head m head classes))
+                    des))
+    :hints (("goal" :induct <call>
+             :expand ((:free (classes) (uf-find-class-designator n classes))))))
+  
+  (defret <fn>-of-set-class-designator-head
+    (implies (<= (nfix des1) (nfix des))
+             (equal (uf-find-class-designator n (node-set-head des des1 classes))
+                    (uf-find-class-designator des1 classes)))
+    :hints (("goal" :induct <call>
+             :expand ((:free (classes) (uf-find-class-designator n classes))))))
+
+  (defret <fn>-of-set-to-class-designator
+    (equal (uf-find-class-designator n (node-set-head m des classes))
+           des)
+    :hints (("goal" :induct <call>
+             :expand ((:free (classes) (uf-find-class-designator n classes)))))))
+
+(define uf-join-classes ((n natp) (m natp) classes)
+  :guard (and (< n (classes-size classes))
+              (< m (classes-size classes))
+              (classes-wellformed classes))
+  :returns (mv (des natp :rule-classes :type-prescription)
+               new-classes)
+  (b* ((des1 (uf-find-class-designator n classes))
+       (des2 (uf-find-class-designator m classes))
+       ((when (eql des1 des2))
+        (mv des1 classes))
+       ((mv lesser greater)
+        (if (< des1 des2)
+            (mv des1 des2)
+          (mv des2 des1)))
+       (classes (node-set-head greater lesser classes)))
+    (mv lesser classes))
+  ///
+  (defret <fn>-bounds
+    (and (<= des (nfix n))
+         (<= des (nfix m))
+         (<= des (uf-find-class-designator n classes))
+         (<= des (uf-find-class-designator m classes)))
+    :rule-classes :linear)
+
+  (defret <fn>-wellformed
+    (implies (and (< (nfix n) (classes-size classes))
+                  (< (nfix m) (classes-size classes))
+                  (classes-wellformed classes))
+             (classes-wellformed new-classes)))
+
+  (defret uf-find-class-designator-of-<fn>
+    (and (equal (uf-find-class-designator n new-classes) des)
+         (equal (uf-find-class-designator m new-classes) des)
+         (equal (uf-find-class-designator des new-classes) des)))
+
   (defret classes-size-of-<fn>
-    (implies (and (< (nfix class) (classes-size classes))
-                  (< (nfix head) (nfix class))
+    (implies (and (< (nfix n) (classes-size classes))
+                  (< (nfix m) (classes-size classes))
                   (classes-wellformed classes))
              (equal (classes-size new-classes)
-                    (classes-size classes))))
+                    (classes-size classes)))))
 
-  (defret classes-wellformed-of-<fn>
-    (implies (and (< (nfix class) (classes-size classes))
-                  (< (nfix head) (nfix class))
-                  (classes-wellformed classes))
-             (classes-wellformed new-classes))))
-       
 
-(define join-equiv-classes-aux ((head natp)
-                                (prev natp)
-                                (class1 natp)
-                                (class2 natp)
-                                classes)
-  :guard (and (<= head prev)
-              (< prev class1)
-              (< prev class2)
-              (< class1 (classes-size classes))
-              (< class2 (classes-size classes))
+(define uf-path-member ((m natp)
+                        (n natp)
+                        classes)
+  ;; checks whether M is on N's path to its designator
+  :guard (and (< n (classes-size classes))
               (classes-wellformed classes))
-  :measure (+ (nfix (- (classes-size classes) (nfix class1)))
-              (nfix (- (classes-size classes) (nfix class2))))
-  :returns (new-classes)
-  (b* ((class1 (lnfix class1))
-       (class2 (lnfix class2))
-       (prev   (lnfix prev))
-       (ok (mbt (and (< prev (classes-size classes))
-                     (< class1 (classes-size classes))
-                     (< class2 (classes-size classes))
-                     (classes-wellformed classes))))
-       ((when (eql class1 class2))
-        ;; same class already -- shouldn't happen
-        classes)
-       ((mv class1 class2)
-        (if (< class1 class2)
-            (mv class1 class2)
-          (mv class2 class1)))
-       (classes (node-set-next prev class1 classes))
-       (classes (node-set-head class1 (lnfix head) classes))
-       (next (node-next class1 classes))
-       
-       ((when (and (mbt ok)
-                   (> next class1)))
-        (join-equiv-classes-aux head class1 next class2 classes))
-
-       ;; class1 is the last node in its class.  Set its next to class2 and use
-       ;; add-equiv-class-to-other to finish.
-       (classes (node-set-next class1 class2 classes)))
-    (add-equiv-class-to-other head class2 classes))
+  :returns member
+  (B* (((when (eql (lnfix n) (lnfix m))) t)
+       (head (node-head n classes))
+       ((when (>= head (lnfix n))) nil))
+    (uf-path-member m head classes))
   ///
-  (fty::deffixequiv join-equiv-classes-aux
-    :hints (("goal" :induct (join-equiv-classes-aux head prev class1 class2 classes)
-             :expand ((:free (head) (join-equiv-classes-aux head prev class1 class2 classes))
-                      (:free (prev) (join-equiv-classes-aux head prev class1 class2 classes))
-                      (:free (class1) (join-equiv-classes-aux head prev class1 class2 classes))
-                      (:free (class2) (join-equiv-classes-aux head prev class1 class2 classes))))))
+  (defret <fn>-when-greater
+    (implies (> (nfix m) (nfix n))
+             (not member)))
 
-  (defret classes-size-of-<fn>
-    (implies (and (<= (nfix head) (nfix prev))
-                  (< (nfix prev) (nfix class1))
-                  (< (nfix prev) (nfix class2))
-                  (< (nfix class1) (classes-size classes))
-                  (< (nfix class2) (classes-size classes))
-                  (classes-wellformed classes))
-             (equal (classes-size new-classes)
-                    (classes-size classes))))
+  (defthm <fn>-same
+    (uf-path-member n n classes))
 
-  (defret classes-wellformed-of-<fn>
-    (implies (and (<= (nfix head) (nfix prev))
-                  (< (nfix prev) (nfix class1))
-                  (< (nfix prev) (nfix class2))
-                  (< (nfix class1) (classes-size classes))
-                  (< (nfix class2) (classes-size classes))
+  (defret <fn>-of-node-set-head-greater
+    (implies (< (nfix n) (nfix k))
+             (equal (uf-path-member m n (node-set-head k head classes))
+                    member))
+    :hints (("goal" :induct <call>
+             :expand ((:free (classes) <call>))))))
+
+(define uf-path-compress-to-des ((n natp)
+                                 (des natp)
+                                 classes)
+  :guard (and (< n (classes-size classes))
+              (< des (classes-size classes))
+              (classes-wellformed classes))
+  :returns new-classes
+  (b* ((head (node-head n classes))
+       (classes (node-set-head n des classes))
+       ((when (>= head (lnfix n)))
+        classes))
+    (uf-path-compress-to-des head des classes))
+  ///
+  (defret <fn>-wellformed
+    (implies (and (< (nfix n) (classes-size classes))
+                  (< (nfix des) (classes-size classes))
                   (classes-wellformed classes))
-             (classes-wellformed new-classes))))
+             (classes-wellformed new-classes))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (uf-find-class-designator n classes)))))
 
   
-(define join-equiv-classes ((head1 natp)
-                            (head2 natp)
-                            classes)
-  :guard (and (< head1 (classes-size classes))
-              (< head2 (classes-size classes))
-              (classes-wellformed classes))
-  :returns (new-classes)
-  (b* ((head1 (lnfix head1))
-       (head2 (lnfix head2)))
-    (if (< head1 head2)
-        (b* ((next (node-next head1 classes))
-             ((when (< head1 next))
-              (join-equiv-classes-aux head1 head1 next head2 classes))
-             ;; head1 is a singleton class
-             (classes (node-set-next head1 head2 classes)))
-          (add-equiv-class-to-other head1 head2 classes))
-      (if (< head2 head1)
-          (b* ((next (node-next head2 classes))
-               ((when (< head2 next))
-                (join-equiv-classes-aux head2 head2 next head1 classes))
-               ;; head2 is a singleton class
-               (classes (node-set-next head2 head1 classes)))
-            (add-equiv-class-to-other head2 head1 classes))
-        ;; already the same class
-        classes)))
-  ///
+  ;; (local (include-book "std/lists/nth" :dir :system))
+  (local (defun n-m-ind (m n x)
+           (if (zp m)
+               (list n x)
+             (n-m-ind (1- m) (1- n) (cdr x)))))
+  (local (defthm update-nth-of-update-nth
+           (implies (< (nfix m) (nfix n))
+                    (equal (update-nth n nval (update-nth m mval x))
+                           (update-nth m mval (update-nth n nval x))))
+           :hints (("goal" :induct (n-m-ind m n x)
+                    :expand ((:free (x) (update-nth m mval x))
+                             (:free (x) (update-nth n nval x))
+                             (:free (val x) (update-nth 0 val x)))))))
+
+  (local (defthm update-nth-same
+           (equal (update-nth n nval (update-nth n mval x))
+                  (update-nth n nval x))
+           :hints (("goal" :in-theory (enable update-nth)))))
+
+  (local (defthm node-set-head-of-node-set-head
+           (implies (< (nfix m) (nfix n))
+                    (equal (node-set-head n nhead (node-set-head m mhead classes))
+                           (node-set-head m mhead (node-set-head n nhead classes))))
+           :hints(("Goal" :in-theory (enable node-set-head)))))
+  
+  (defret <fn>-of-node-set-head-greater
+    (implies (< (nfix n) (nfix m))
+             (equal (uf-path-compress-to-des n des (node-set-head m head classes))
+                    (node-set-head m head new-classes)))
+    :hints (("goal" :induct <call>
+             :expand ((:free (classes) <call>)))))
+
+  
+  (defret node-head-of-<fn>
+    (equal (node-head m new-classes)
+           (if (uf-path-member m n classes)
+               (nfix des)
+             (node-head m classes)))
+    :hints (("goal" :induct <call>
+             :expand ((uf-path-member m n classes)))))
+
+  (defret node-head-of-<fn>
+    (equal (node-head m new-classes)
+           (if (uf-path-member m n classes)
+               (nfix des)
+             (node-head m classes)))
+    :hints (("goal" :induct <call>
+             :expand ((uf-path-member m n classes)))))
+
+  (defret uf-find-class-designator-of-<fn>-less-than-class-designator
+    (implies (< (nfix m) (uf-find-class-designator n classes))
+             (equal (uf-find-class-designator m new-classes)
+                    (uf-find-class-designator m classes)))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (:free (classes) (uf-find-class-designator n classes))))))
+
+
+  (local (defthm uf-find-class-designator-of-node-set-head-class-designator
+           (implies (equal des (uf-find-class-designator n classes))
+                    (equal (uf-find-class-designator
+                            m (node-set-head n des classes))
+                           (uf-find-class-designator m classes)))
+           :hints(("Goal" :in-theory (enable uf-find-class-designator)
+                   :induct (uf-find-class-designator m classes)
+                   :expand ((:free (classes)
+                             (uf-find-class-designator m classes)))))))
+  
+
+  (defret uf-find-class-designator-des-preserved-of-<fn>
+    (implies (equal (uf-find-class-designator m classes) des)
+             (equal (uf-find-class-designator m new-classes)
+                    des))
+    :hints (("goal" :induct <call>
+             :expand (<call>))))
+
+  ;; (local
+  ;;  (defret uf-find-class-designator-n-preserved-of-<fn>
+  ;;    (implies (and ;; (not (uf-path-member m n classes))
+  ;;              (equal (uf-find-class-designator n classes) des))
+  ;;             (equal (uf-find-class-designator n new-classes)
+  ;;                    (uf-find-class-designator n classes)))))
+
+  (local (defun-nx ind (n m classes)
+           (declare (xargs :measure (nfix n)))
+           (b* ((head (node-head n classes))
+                ((when (>= head (lnfix n)))
+                 (list m classes)))
+             (list (ind head m classes)
+                   (ind head n classes)))))
+  
+  (defret uf-find-class-designator-preserved-of-<fn>
+    (implies (equal (uf-find-class-designator n classes) des)
+             (equal (uf-find-class-designator m new-classes)
+                    (uf-find-class-designator m classes)))
+    :hints (("goal" :induct (ind n m classes)
+             :expand ((:free (des)
+                       (uf-path-compress-to-des n des classes))))
+            (and stable-under-simplificationp
+                 '(:expand ((uf-find-class-designator n classes))))))
+
   (defret classes-size-of-<fn>
-    (implies (and (< (nfix head1) (classes-size classes))
-                  (< (nfix head2) (classes-size classes))
+    (implies (and (< (nfix n) (classes-size classes))
+                  (< (nfix des) (classes-size classes))
                   (classes-wellformed classes))
              (equal (classes-size new-classes)
-                    (classes-size classes))))
+                    (classes-size classes)))))
 
-  (defret classes-wellformed-of-<fn>
-    (implies (and (< (nfix head1) (classes-size classes))
-                  (< (nfix head2) (classes-size classes))
+(define uf-join-classes-compress ((n natp) (m natp) classes)
+  :guard (and (< n (classes-size classes))
+              (< m (classes-size classes))
+              (classes-wellformed classes))
+  :returns new-classes
+  (b* (((mv des classes) (uf-join-classes n m classes))
+       (classes (uf-path-compress-to-des n des classes)))
+    (uf-path-compress-to-des m des classes))
+  ///
+
+  (defret <fn>-wellformed
+    (implies (and (< (nfix n) (classes-size classes))
+                  (< (nfix m) (classes-size classes))
                   (classes-wellformed classes))
-             (classes-wellformed new-classes))))
+             (classes-wellformed new-classes)))
+
+  (defret uf-find-class-designator-of-<fn>
+    (equal (uf-find-class-designator n new-classes)
+           (uf-find-class-designator m new-classes)))
+
+  (defret classes-size-of-<fn>
+    (implies (and (< (nfix n) (classes-size classes))
+                  (< (nfix m) (classes-size classes))
+                  (classes-wellformed classes))
+             (equal (classes-size new-classes)
+                    (classes-size classes)))))
+
+
+;; Do we actually need to do this?
+(define uf-compress-all ((n natp) classes)
+  ;; When run with N=0, this path-compresses everything, i.e. sets each node's
+  ;; head to its designator so there are no more paths to traverse.  This gets
+  ;; us ready for setting up the NEXTS and getting back to the format needed
+  ;; for class breaking and fraiging.
+  :guard (and (<= n (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  :returns (new-classes)
+  (b* (((when (mbe :logic (or (zp (- (classes-size classes) (nfix n)))
+                              (not (classes-wellformed classes)))
+                               
+                   :exec (eql n (classes-size classes))))
+        classes)
+       (des (uf-find-class-designator n classes))
+       (classes (uf-path-compress-to-des n des classes)))
+    (uf-compress-all (1+ (lnfix n)) classes))
+  ///
+  
+  (defret <fn>-wellformed
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret uf-find-class-designator-of-<fn>
+    (equal (uf-find-class-designator m new-classes)
+           (uf-find-class-designator m classes)))
+
+  (defret classes-size-of-<fn>
+    (implies (classes-wellformed classes)
+             (equal (classes-size new-classes)
+                    (classes-size classes)))))
+
+
+;;; Given heads in the union/find format, sweep over the nodes fixing up the
+;;; heads/nexts to correspond to the format specified at top.
+;;; For each node, get its class designator.
+;;   - If it is its own (therefore least element of its class), then set next to itself.
+;;   - If not:
+;;       - set that node's HEAD to its class designator
+;;       - set its NEXT to itself (just to ensure it's <= itself)
+;;       - the class designator's NEXT is currently the last seen node in the class--
+;;         set that last-seen node's NEXT to this node
+;;       - set the class designator's NEXT also to this node.
+(define uf-fix-to-equiv-class-format ((n natp)
+                                      classes)
+  :guard (and (<= n (classes-size classes))
+              (classes-wellformed classes))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  :returns (new-classes)
+  (b* (((when (mbe :logic (or (zp (- (classes-size classes) (nfix n)))
+                              (not (classes-wellformed classes)))
+                   :exec (eql n (classes-size classes))))
+        classes)
+       (des (uf-find-class-designator n classes))
+       (classes (node-set-head n des classes))
+       (classes (node-set-next n n classes))
+       ((when (eql des (lnfix n)))
+        (uf-fix-to-equiv-class-format (1+ (lnfix n)) classes))
+       (prev (node-head des classes))
+       (classes (node-set-next prev n classes))
+       (classes (node-set-head des n classes)))
+    (uf-fix-to-equiv-class-format (1+ (lnfix n)) classes))
+  ///
+  (defret classes-wellformed-of-<fn>
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret classes-size-of-<fn>
+    (implies (classes-wellformed classes)
+             (equal (classes-size new-classes)
+                    (classes-size classes)))))
+  
+
+
+
+;; (define add-equiv-class-to-other ((head natp) (class natp) classes)
+;;   :guard (and (< class (classes-size classes))
+;;               (< head class)
+;;               (classes-wellformed classes))
+;;   ;; Class is a node which may be in an equiv class.  Set the heads of all
+;;   ;; nodes in its equiv class to head, and set the head of head (tail) of the
+;;   ;; class to the last node.  This is appropriate when class is greater than
+;;   ;; the greatest node currently in the equivalence class of head.  Otherwise,
+;;   ;; need to use join-equiv-classes-aux. Note that we don't update the nexts
+;;   ;; here, because class is already assumed to be fully linked. So before
+;;   ;; calling, the last node of head's current class should have been set to
+;;   ;; class.
+;;   :measure (nfix (- (classes-size classes) (nfix class)))
+;;   :returns (new-classes)
+;;   (b* ((ok (mbt (and (< (lnfix class) (classes-size classes))
+;;                      (classes-wellformed classes))))
+;;        (classes (node-set-head class head classes))
+;;        (next (node-next class classes))
+;;        ((when (and (mbt ok)
+;;                    (> next (lnfix class))))
+;;         (add-equiv-class-to-other head next classes)))
+;;     ;; class is the last node in the new class; set the head of head to it
+;;     (b* ((classes (node-set-head head class classes)))
+;;       ;; (or (class-check-consistency head classes)
+;;       ;;     (cw "add-equiv-class-to-other: inconsistent class: head ~x0 next ~x1 tail ~x2~%"
+;;       ;;         head (node-next head classes) (node-head head classes))
+;;       ;;     (break$))
+;;       classes))
+;;   ///
+;;   (defret classes-size-of-<fn>
+;;     (implies (and (< (nfix class) (classes-size classes))
+;;                   (< (nfix head) (nfix class))
+;;                   (classes-wellformed classes))
+;;              (equal (classes-size new-classes)
+;;                     (classes-size classes))))
+
+;;   (defret classes-wellformed-of-<fn>
+;;     (implies (and (< (nfix class) (classes-size classes))
+;;                   (< (nfix head) (nfix class))
+;;                   (classes-wellformed classes))
+;;              (classes-wellformed new-classes))))
+       
+
+;; (define join-equiv-classes-aux ((head natp)
+;;                                 (prev natp)
+;;                                 (class1 natp)
+;;                                 (class2 natp)
+;;                                 classes)
+;;   :guard (and (<= head prev)
+;;               (< prev class1)
+;;               (< prev class2)
+;;               (< class1 (classes-size classes))
+;;               (< class2 (classes-size classes))
+;;               (classes-wellformed classes))
+;;   :measure (+ (nfix (- (classes-size classes) (nfix class1)))
+;;               (nfix (- (classes-size classes) (nfix class2))))
+;;   :returns (new-classes)
+;;   (b* ((class1 (lnfix class1))
+;;        (class2 (lnfix class2))
+;;        (prev   (lnfix prev))
+;;        (ok (mbt (and (< prev (classes-size classes))
+;;                      (< class1 (classes-size classes))
+;;                      (< class2 (classes-size classes))
+;;                      (classes-wellformed classes))))
+;;        ((when (eql class1 class2))
+;;         ;; same class already -- shouldn't happen
+;;         classes)
+;;        ((mv class1 class2)
+;;         (if (< class1 class2)
+;;             (mv class1 class2)
+;;           (mv class2 class1)))
+;;        (classes (node-set-next prev class1 classes))
+;;        (classes (node-set-head class1 (lnfix head) classes))
+;;        (next (node-next class1 classes))
+       
+;;        ((when (and (mbt ok)
+;;                    (> next class1)))
+;;         (join-equiv-classes-aux head class1 next class2 classes))
+
+;;        ;; class1 is the last node in its class.  Set its next to class2 and use
+;;        ;; add-equiv-class-to-other to finish.
+;;        (classes (node-set-next class1 class2 classes)))
+;;     (add-equiv-class-to-other head class2 classes))
+;;   ///
+;;   (fty::deffixequiv join-equiv-classes-aux
+;;     :hints (("goal" :induct (join-equiv-classes-aux head prev class1 class2 classes)
+;;              :expand ((:free (head) (join-equiv-classes-aux head prev class1 class2 classes))
+;;                       (:free (prev) (join-equiv-classes-aux head prev class1 class2 classes))
+;;                       (:free (class1) (join-equiv-classes-aux head prev class1 class2 classes))
+;;                       (:free (class2) (join-equiv-classes-aux head prev class1 class2 classes))))))
+
+;;   (defret classes-size-of-<fn>
+;;     (implies (and (<= (nfix head) (nfix prev))
+;;                   (< (nfix prev) (nfix class1))
+;;                   (< (nfix prev) (nfix class2))
+;;                   (< (nfix class1) (classes-size classes))
+;;                   (< (nfix class2) (classes-size classes))
+;;                   (classes-wellformed classes))
+;;              (equal (classes-size new-classes)
+;;                     (classes-size classes))))
+
+;;   (defret classes-wellformed-of-<fn>
+;;     (implies (and (<= (nfix head) (nfix prev))
+;;                   (< (nfix prev) (nfix class1))
+;;                   (< (nfix prev) (nfix class2))
+;;                   (< (nfix class1) (classes-size classes))
+;;                   (< (nfix class2) (classes-size classes))
+;;                   (classes-wellformed classes))
+;;              (classes-wellformed new-classes))))
+
+  
+;; (define join-equiv-classes ((head1 natp)
+;;                             (head2 natp)
+;;                             classes)
+;;   :guard (and (< head1 (classes-size classes))
+;;               (< head2 (classes-size classes))
+;;               (classes-wellformed classes))
+;;   :returns (new-classes)
+;;   (b* ((head1 (lnfix head1))
+;;        (head2 (lnfix head2)))
+;;     (if (< head1 head2)
+;;         (b* ((next (node-next head1 classes))
+;;              ((when (< head1 next))
+;;               (join-equiv-classes-aux head1 head1 next head2 classes))
+;;              ;; head1 is a singleton class
+;;              (classes (node-set-next head1 head2 classes)))
+;;           (add-equiv-class-to-other head1 head2 classes))
+;;       (if (< head2 head1)
+;;           (b* ((next (node-next head2 classes))
+;;                ((when (< head2 next))
+;;                 (join-equiv-classes-aux head2 head2 next head1 classes))
+;;                ;; head2 is a singleton class
+;;                (classes (node-set-next head2 head1 classes)))
+;;             (add-equiv-class-to-other head2 head1 classes))
+;;         ;; already the same class
+;;         classes)))
+;;   ///
+;;   (defret classes-size-of-<fn>
+;;     (implies (and (< (nfix head1) (classes-size classes))
+;;                   (< (nfix head2) (classes-size classes))
+;;                   (classes-wellformed classes))
+;;              (equal (classes-size new-classes)
+;;                     (classes-size classes))))
+
+;;   (defret classes-wellformed-of-<fn>
+;;     (implies (and (< (nfix head1) (classes-size classes))
+;;                   (< (nfix head2) (classes-size classes))
+;;                   (classes-wellformed classes))
+;;              (classes-wellformed new-classes))))
 
 (define classes-join-miters-rec ((lit litp) mark aignet classes)
   ;; If lit is a non-negated AND gate recur into its children.
@@ -829,9 +1218,10 @@
         (mv mark classes))
        ((mv is-xor child1 child2) (id-is-xor id aignet))
        ((when is-xor)
-        (b* ((classes (join-equiv-classes (node-class-head (lit->var child1) classes)
-                                          (node-class-head (lit->var child2) classes)
-                                          classes)))
+        (b* ((classes (uf-join-classes-compress
+                       (lit->var child1) ;; (node-class-head (lit->var child1) classes)
+                       (lit->var child2) ;; (node-class-head (lit->var child2) classes)
+                       classes)))
           (mv mark classes)))
        ;; AND gate
        ((when (eql (lit->neg lit) 1))
@@ -951,7 +1341,8 @@
        (classes (classes-init-empty-aux (num-fanins aignet) classes))
        ((mv mark classes) (classes-join-po-miters (num-outs aignet) mark aignet classes))
        ((mv mark classes)
-        (classes-join-nxst-miters (num-regs aignet) mark aignet classes)))
+        (classes-join-nxst-miters (num-regs aignet) mark aignet classes))
+       (classes (uf-fix-to-equiv-class-format 0 classes)))
     (classes-report-sizes classes)
     (classes-check-consistency (num-fanins aignet) classes)
     (mv mark classes))
@@ -985,9 +1376,7 @@
         
        (classes (if (and (eql (get-bit id1 mark) 1)
                          (eql (get-bit id2 mark) 1))
-                    (join-equiv-classes (node-class-head id1 classes)
-                                        (node-class-head id2 classes)
-                                        classes)
+                    (uf-join-classes-compress id1 id2 classes)
                   classes)))
     (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes mark))
   ///
@@ -1073,7 +1462,8 @@ so in this case the aignet should have at least ~x2 outputs, but in fact it has 
        (classes (if lastp
                     (b* ((start (- (num-outs aignet) (* 2 (lnfix n)))))
                       (classes-join-po-pairs start n (+ start (lnfix n)) aignet classes mark))
-                  (classes-join-po-pairs 0 n n aignet classes mark))))
+                  (classes-join-po-pairs 0 n n aignet classes mark)))
+       (classes (uf-fix-to-equiv-class-format 0 classes)))
     (classes-report-sizes classes)
     (classes-check-consistency (num-fanins aignet) classes)
     (mv mark classes))
