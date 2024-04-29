@@ -20298,9 +20298,9 @@
 
 (defmacro fn-count-evg-max-val ()
 
-; Warning: (* 2 (fn-count-evg-max-val)) must be a (signed-byte #.*fixnum-bits*); see
-; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
-; pick a large natural number rather arbitrarily.
+; Warning: (* 2 (fn-count-evg-max-val)) must be a fixnat; see fn-count-evg-rec
+; and max-form-count-lst.  Modulo that requirement, we just pick a large
+; natural number rather arbitrarily.
 
   200000)
 
@@ -20335,15 +20335,15 @@
 ;
 ;   (verify-guards cons-count-bounded-ac)
 
-  (declare (type (signed-byte #.*fixnum-bits*) i max)
+  (declare (type #.*fixnat-type* i max)
            (xargs :guard (<= i max)
                   :measure (acl2-count x)
                   :ruler-extenders :lambdas))
-  (the (signed-byte #.*fixnum-bits*)
+  (the #.*fixnat-type*
     (cond ((or (atom x) (>= i max))
            i)
           (t (let ((i (cons-count-bounded-ac (car x) (1+f i) max)))
-               (declare (type (signed-byte #.*fixnum-bits*) i))
+               (declare (type #.*fixnat-type* i))
                (cons-count-bounded-ac (cdr x) i max))))))
 
 (defun cons-count-bounded (x)
@@ -20352,12 +20352,12 @@
 ; (fn-count-evg-max-val).  We choose (fn-count-evg-max-val) as our bound simply
 ; because that bound is used in the similar computation of fn-count-evg.
 
-  (the (signed-byte #.*fixnum-bits*)
+  (the #.*fixnat-type*
     (cons-count-bounded-ac x 0 (fn-count-evg-max-val))))
 
 (defmacro lambda-object-count-max-val ()
 
-; Warning: (* 2 (lambda-object-count-max-val)) must be a (signed-byte #.*fixnum-bits*); see
+; Warning: (* 2 (lambda-object-count-max-val)) must be a fixnat; see
 ; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
 ; pick a large natural number rather arbitrarily.
 
@@ -20387,7 +20387,7 @@
 ; the wormhole-data field of the wormhole named
 ; hons-copy-lambda-object-wormhole.  See read-hons-copy-lambda-object-culprit.
 
-  (let ((i (the (signed-byte #.*fixnum-bits*)
+  (let ((i (the #.*fixnat-type*
                 (cons-count-bounded-ac obj 0 (lambda-object-count-max-val)))))
     (cond
      ((>= i (lambda-object-count-max-val))

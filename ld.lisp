@@ -2221,7 +2221,7 @@
 
 (defun wormhole-prompt (channel state)
   (the2s
-   (signed-byte #.*fixnum-bits*)
+   #.*fixnat-type*
    (fmt1 "Wormhole ~s0~sr ~@1~*2"
          (list (cons #\0 (f-get-global 'current-package state))
                (cons #\1 (defun-mode-prompt-string state))
@@ -5278,7 +5278,7 @@
                 (keyword-value-string-listp (cddr l))))))
 
 (defun project-dir-string-p (s pos bound)
-  (declare (type (unsigned-byte #.*fixnat-bits*) bound)
+  (declare (type #.*fixnat-type* bound)
            (xargs :measure (nfix (- bound pos))
                   :guard (and (stringp s)
                               (natp pos)

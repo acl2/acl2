@@ -669,7 +669,7 @@
 
 (verify-termination-boot-strap evg-occur)
 
-(verify-termination-boot-strap min-fixnum$inline)
+(verify-termination-boot-strap min-fixnat$inline)
 
 (verify-termination-boot-strap fn-count-evg-rec ; but not guards
                                (declare (xargs :verify-guards nil)))

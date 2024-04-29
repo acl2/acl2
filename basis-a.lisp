@@ -2239,7 +2239,7 @@
 
 ; Now we lay down some macros that help with the efficiency of the FMT
 ; functions, by making it easy to declare various formals and function values
-; to be fixnums.  See the Essay on Fixnum Declarations.
+; to be nonnegative fixnums.  See the Essay on Fixnum Declarations.
 
 (defmacro mv-letc (vars form body)
   `(mv-let ,vars ,form
@@ -2274,6 +2274,17 @@
                      "The object ~x0 is not a fixnum (precisely:  not a ~
                       ~x1)."
                      n *fixnum-type*)))))
+
+(defmacro the-fixnat! (n ctx)
+  `(the-fixnum
+    (let ((n ,n))
+      (if (and (<= n ,(fixnum-bound))
+               (>= n 0))
+          n
+        (er-hard-val 0 ,ctx
+                     "The object ~x0 is not a nonnagative fixnum (precisely:  ~
+                      not a ~x1)."
+                     n *fixnat-type*)))))
 
 (defmacro the-unsigned-byte! (bits n ctx)
   `(the (unsigned-byte ,bits)
@@ -2768,7 +2779,7 @@
 ; For symbols we add together the length of the "package part" and the symbol
 ; name part.  We include the colons in the package part.
 
-          (the-fixnum
+          (the-fixnat
            (let* ((s (symbol-name x))
                   (len (min (fixnum-bound) (length s)))
                   (s-sz (cond ((needs-slashes s state)
@@ -2777,7 +2788,7 @@
                   (acc (+f! acc s-sz)))
              (declare (type string s)
                       (type #.*fixnat-type* len s-sz acc))
-             (the-fixnum
+             (the-fixnat
               (cond
                ((keywordp x) (+f! 1 acc))
                ((symbol-in-current-package-p x state)
@@ -2960,7 +2971,7 @@
            (xargs :guard ; for (print-base)
                   (fmt-state-p state)))
   (flsz1 x
-         (the-fixnum (print-base))
+         (the-fixnat (print-base))
          (print-radix)
          (round-to-small t j)
          (round-to-small t maximum)
@@ -3692,7 +3703,7 @@
            (xargs :guard (<= maximum (length s))
                   :measure (nfix (- maximum i))
                   :ruler-extenders :all))
-  (the-fixnum
+  (the-fixnat
    (cond ((not (mbt (and (integerp i) (integerp maximum))))
           maximum)
          ((< i maximum)
@@ -3777,7 +3788,7 @@
                               (<= i maximum))
                   :measure (nfix (- maximum i))
                   :ruler-extenders :lambdas))
-  (the-fixnum
+  (the-fixnat
    (cond ((= x 0) i)
          ((and (mbt (and (natp x)
                          (integerp i)
@@ -3900,7 +3911,7 @@
   (declare (type #.*fixnat-type* i maximum)
            (type string s)
            (xargs :guard (<= maximum (length s))))
-  (the-fixnum
+  (the-fixnat
    (cond
     ((not (< i (-f maximum 4)))
      (er-hard?-val?
@@ -3910,7 +3921,7 @@
        tilde-arg-points-past-string
        i 4 maximum s)))
     (t
-     (let ((x (cond ((natp x) (the-fixnum! x 'find-alternative-start))
+     (let ((x (cond ((natp x) (the-fixnat! x 'find-alternative-start))
                     ((and (consp x)
                           (atom (cdr x)))
                      0)
@@ -4526,7 +4537,7 @@
                   :verify-guards nil
                   :guard (and (<= maximum (length s)) ; typically, =
                               (character-alistp alist))))
-  (the-fixnum
+  (the-fixnat
    (cond
     ((or (not (mbt (and (natp i)
                         (natp maximum)
@@ -4648,10 +4659,10 @@
   (declare (type #.*fixnat-type* col clk)
            (type string str0 str1 str2 str3)
            (type symbol channel)
-           (xargs :guard (and (fixnum-guard (length str0))
-                              (fixnum-guard (length str1))
-                              (fixnum-guard (length str2))
-                              (fixnum-guard (length str3))
+           (xargs :guard (and (fixnat-guard (length str0))
+                              (fixnat-guard (length str1))
+                              (fixnat-guard (length str2))
+                              (fixnat-guard (length str3))
                               (true-listp lst)
                               (character-alistp alist)
                               (fmt-state-p state)
@@ -4831,7 +4842,7 @@
                           (t (list (cons #\0 n)))))
                    (t (cond ((and (<= 0 (car n)) (<= (car n) 13)) nil)
                             (t (list (cons #\0 (car n)))))))
-             0 (the-fixnum! (length str) 'spell-number)
+             0 (the-fixnat! (length str) 'spell-number)
              col nil channel state evisc-tuple (1-f clk)))))))
 
 (defun fmt-tilde-s (s col channel state clk)
@@ -4861,7 +4872,7 @@
      (pprogn (prin1$ s channel state)
              (mv (flsz-atom s (print-base) (print-radix) col state) state)))
     ((stringp s)
-     (fmt-tilde-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+     (fmt-tilde-s1 s 0 (the-fixnat! (length s) 'fmt-tilde-s) col
                    channel state))
     (t
      (let ((str (symbol-name s)))
@@ -4877,7 +4888,7 @@
           ((needs-slashes str state)
            (splat-atom s (print-base) (print-radix) 0 col channel state))
           (t (fmt-tilde-s1 str 0
-                           (the-fixnum! (length str) 'fmt-tilde-s)
+                           (the-fixnat! (length str) 'fmt-tilde-s)
                            col channel state))))
         (t
          (let ((p (symbol-package-name s)))
@@ -4914,7 +4925,7 @@
     ((acl2-numberp s)
      (splat-atom! s (print-base) (print-radix) col channel state))
     ((stringp s)
-     (fmt-tilde-cap-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+     (fmt-tilde-cap-s1 s 0 (the-fixnat! (length s) 'fmt-tilde-s) col
                        channel state))
     (t
      (let ((str (symbol-name s)))
@@ -4930,7 +4941,7 @@
           ((needs-slashes str state)
            (splat-atom! s (print-base) (print-radix) col channel state))
           (t (fmt-tilde-cap-s1 str 0
-                               (the-fixnum! (length str) 'fmt-tilde-s)
+                               (the-fixnat! (length str) 'fmt-tilde-s)
                                col channel state))))
         (t
          (let ((p (symbol-package-name s)))
@@ -5059,7 +5070,7 @@
 
                    (let* ((fmt-hard-right-margin (fmt-hard-right-margin state))
                           (sz (flsz x col fmt-hard-right-margin state eviscp))
-                          (incr (the-fixnum (if caps 4 3)))
+                          (incr (the-fixnat (if caps 4 3)))
                           (c ; either (< (+ i incr) maximum) or error
                            (fmt-char s i incr maximum nil))
                           (punctp (punctp c))
@@ -5076,18 +5087,18 @@
                             (> (+f! p+ sz) fmt-hard-right-margin)
                             (not (> (+f! p+
                                          (flsz x
-                                               (the-fixnum
+                                               (the-fixnat
                                                 *fmt-ppr-indentation*)
                                                fmt-hard-right-margin
                                                state eviscp))
                                     fmt-hard-right-margin)))
                        (pprogn
                         (newline channel state)
-                        (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
+                        (spaces1 (the-fixnat *fmt-ppr-indentation*) 0
                                  fmt-hard-right-margin
                                  channel state)
                         (fmt0 s alist i maximum
-                              (the-fixnum *fmt-ppr-indentation*)
+                              (the-fixnat *fmt-ppr-indentation*)
                               pn channel state evisc-tuple (1-f clk))))
                       ((or qy
                            (> (+f! p+ sz)
@@ -5098,9 +5109,9 @@
                               (t (newline channel state)))
                         (if qy
                             state
-                          (spaces1 (the-fixnum *fmt-ppr-indentation*)
+                          (spaces1 (the-fixnat *fmt-ppr-indentation*)
                                    0 fmt-hard-right-margin channel state))
-                        (let* ((i1 (the-fixnum
+                        (let* ((i1 (the-fixnat
                                     (if punctp
 
 ; As noted above, if we get to here then (< (+ i incr) maximum).  We are OK
@@ -5152,14 +5163,14 @@
                       (mv-letc (col state)
                                (cond ((stringp s1)
                                       (fmt0 s1 alist 0
-                                            (the-fixnum! (length s1) 'fmt0)
+                                            (the-fixnat! (length s1) 'fmt0)
                                             col pn@ channel state evisc-tuple
                                             (1-f clk)))
                                      ((msgp s1)
                                       (fmt0 (car s1)
                                             (append (cdr s1) alist)
                                             0
-                                            (the-fixnum! (length (car s1))
+                                            (the-fixnat! (length (car s1))
                                                          'fmt0)
                                             col pn@ channel state evisc-tuple
                                             (1-f clk)))
@@ -5245,7 +5256,7 @@
                                                 (char s i+3)))
                                    col channel state evisc-tuple (1-f clk))
                            (fmt0 s alist
-                                 (the-fixnum
+                                 (the-fixnat
                                   (cond
                                    ((punctp (and (< i+3 maximum)
                                                  (char s i+3)))
@@ -5306,16 +5317,16 @@
 ; So, goal-col <= fmt-hard-right-margin < (fixnum-bound).
                             (pprogn
                              (cond
-                              ((>= col (the-fixnum goal-col))
+                              ((>= col (the-fixnat goal-col))
                                (pprogn (newline channel state)
-                                       (spaces1 (the-fixnum goal-col) 0
+                                       (spaces1 (the-fixnat goal-col) 0
                                                 fmt-hard-right-margin
                                                 channel state)))
                               (t (spaces1 (-f goal-col col) col
                                           fmt-hard-right-margin
                                           channel state)))
                              (fmt0 s alist (+f! i 3) maximum
-                                   (the-fixnum goal-col)
+                                   (the-fixnat goal-col)
                                    pn channel state evisc-tuple (1-f clk))))))))
              (#\c (maybe-newline
                    (let ((pair (fmt-var s alist i maximum)))
@@ -5423,7 +5434,7 @@
                             (newline channel state))
                            (t state))
                           (fmt0 s alist (+f! i 3) maximum
-                                (the-fixnum
+                                (the-fixnat
                                  (cond
                                   ((> new-col fmt-hard-right-margin)
                                    0)
@@ -5701,7 +5712,7 @@
            (i+1 (1+f i))
            (clk-1 (1-f clk)))
        (declare (type character c0)
-                (type (unsigned-byte #.*fixnat-bits*) i+1 clk-1))
+                (type #.*fixnat-type* i+1 clk-1))
        (cond
         ((eql c0 #\~)
          (cond
@@ -5718,7 +5729,7 @@
                 nil)
                (otherwise
                 (let ((i+2 (+f i 2)))
-                  (declare (type (unsigned-byte #.*fixnat-bits*) i+2))
+                  (declare (type #.*fixnat-type* i+2))
                   (cond
                    ((not (< i+2 maximum))
                     (illegal-fmt-msg
@@ -5730,7 +5741,7 @@
                            (val2 (cdr pair2))
                            (i+3 (+f i 3)))
                       (declare (type character c2)
-                               (type (unsigned-byte #.*fixnat-bits*) i+3))
+                               (type #.*fixnat-type* i+3))
                       (cond
                        ((not pair2)
                         (illegal-fmt-msg
@@ -5796,7 +5807,7 @@
                               i 3 maximum s))
                             (t
                              (let ((i+4 (+f i 4)))
-                               (declare (type (unsigned-byte #.*fixnat-bits*) i+4))
+                               (declare (type #.*fixnat-type* i+4))
                                (cond
                                 ((not (< i+4 maximum))
                                  (illegal-fmt-msg
@@ -5806,7 +5817,7 @@
                                  (let ((n (find-alternative-start
                                            c2 s i maximum t))
                                        (max+1 (1+f maximum)))
-                                   (declare (type (signed-byte #.*fixnum-bits*) n max+1))
+                                   (declare (type #.*fixnum-type* n max+1))
                                    (cond
                                     ((= n max+1)
                                      (illegal-fmt-msg
@@ -5828,8 +5839,7 @@
                                     (t
                                      (let ((m (find-alternative-stop
                                                s n maximum t)))
-                                       (declare (type (unsigned-byte #.*fixnat-bits*)
-                                                      m))
+                                       (declare (type #.*fixnat-type* m))
                                        (cond
                                         ((eql m max+1)
                                          (illegal-fmt-msg
@@ -5839,7 +5849,7 @@
                                          (let ((o (find-alternative-skip
                                                    s m maximum t)))
                                            (declare
-                                            (type (unsigned-byte #.*fixnat-bits*) o))
+                                            (type #.*fixnat-type* o))
                                            (cond
                                             ((= o 0)
                                              (illegal-fmt-msg
@@ -5955,7 +5965,7 @@
         (t (fmx-cw-msg-1 s alist i+1 maximum clk-1)))))))
 
 (defun fmx-cw-msg-1 (s alist i maximum clk)
-  (declare (type (unsigned-byte #.*fixnat-bits*) i maximum clk)
+  (declare (type #.*fixnat-type* i maximum clk)
            (type string s)
            (xargs :guard (and (character-alistp alist)
                               (< (length s) (fixnum-bound))
@@ -7090,7 +7100,7 @@
 ; to supply a non-nil return value for other than state when io is suppressed.
 ; For example, fmt returns col and state, as suggested by the third (shape)
 ; argument below.  Without the :default-bindings, this form would evaluate to
-; (mv nil state) if event IO is inhibited.  But there are fixnum declarations
+; (mv nil state) if event IO is inhibited.  But there are fixnat declarations
 ; that require the first return value of fmt to be an integer, and we can
 ; specify the result in the inhibited case to be (mv 0 state) with the
 ; following :default-bindings:
@@ -10163,7 +10173,7 @@
 
 ; We assume that i points to the start of a line of s.
 
-  (declare (type (unsigned-byte #.*fixnat-bits*) end)
+  (declare (type #.*fixnat-type* end)
            (xargs :measure (nfix (- end i))
                   :guard (and (natp i)
                               (stringp s)
@@ -10595,12 +10605,12 @@
 
 (defun string-prefixp-1 (str1 i str2)
   (declare (type string str1 str2)
-           (type (unsigned-byte #.*fixnat-bits*) i)
+           (type #.*fixnat-type* i)
            (xargs :guard (and (<= i (length str1))
                               (<= i (length str2)))))
   (cond ((zpf i) t)
         (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte #.*fixnat-bits*) i))
+             (declare (type #.*fixnat-type* i))
              (cond ((eql (the character (char str1 i))
                          (the character (char str2 i)))
                     (string-prefixp-1 str1 i str2))

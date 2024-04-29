@@ -223,8 +223,8 @@
 ; second clause.  Then each (integerp x) in clause1 can be matched against any
 ; (integerp y) in clause2, so we have len2*len2*...*len2, len1-1 times.
 
-  (declare (type (signed-byte #.*fixnum-bits*) count))
-  (the (signed-byte #.*fixnum-bits*)
+  (declare (type #.*fixnum-type* count))
+  (the #.*fixnum-type*
        (cond ((eql count 0) 0)
              ((null cl1) count)
              ((extra-info-lit-p (car cl1))
@@ -247,7 +247,7 @@
 
 (defun subsumes1-equality-with-const (count lit x const1 tl1 tl2 cl2 alist)
   (the
-   (signed-byte #.*fixnum-bits*)
+   #.*fixnum-type*
    (cond ((eql count 0) 0)
          ((null tl2) (-f count))
          ((extra-info-lit-p (car tl2))
@@ -304,8 +304,8 @@
 ; obtained by decreasing count as above.  But, if the number of one-way-unify1
 ; calls necessary is not less than count, we return 0.
 
-  (declare (type (signed-byte #.*fixnum-bits*) count))
-  (the (signed-byte #.*fixnum-bits*)
+  (declare (type #.*fixnum-type* count))
+  (the #.*fixnum-type*
        (cond ((eql count 0) 0)
              ((null tl2) (-f count))
              ((extra-info-lit-p (car tl2))
@@ -318,7 +318,7 @@
                    (subsumes1 (1-f count) lit tl1 (cdr tl2) cl2 alist))
                   (t
                    (let ((new-count (subsumes-rec (1-f count) tl1 cl2 alist1)))
-                     (declare (type (signed-byte #.*fixnum-bits*) new-count))
+                     (declare (type #.*fixnum-type* new-count))
                      (cond ((<= 0 new-count) new-count)
                            (t (subsumes1 (-f new-count) lit tl1 (cdr tl2) cl2
                                          alist)))))))))))
@@ -405,7 +405,7 @@
 )
 
 (defconst *init-subsumes-count*
-  (the (signed-byte #.*fixnum-bits*)
+  (the #.*fixnum-type*
 
 ; The following value is rather arbitrary, determined by experimentation so
 ; that subsumes doesn't run for more than a small fraction of a second on a

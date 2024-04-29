@@ -238,10 +238,8 @@
    (value (cdr pair))))
 
 (defun large-consp (x)
-  (eql (the (signed-byte #.*fixnum-bits*)
-            (cons-count-bounded x))
-       (the (signed-byte #.*fixnum-bits*)
-            (fn-count-evg-max-val))))
+  (eql (the #.*fixnat-type* (cons-count-bounded x))
+       (the #.*fixnat-type* (fn-count-evg-max-val))))
 
 (defun defconst-fn (name form state event-form)
 
@@ -31588,7 +31586,7 @@
                        (alistp fmt-control-alist)
                        (alist-keys-subsetp fmt-control-alist
                                            *fmt-control-defaults-keys*)))
-           (type (signed-byte #.*fixnum-bits*) col))
+           (type #.*fixnat-type* col))
   (channel-to-string
    (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -31604,7 +31602,7 @@
                        (alistp fmt-control-alist)
                        (alist-keys-subsetp fmt-control-alist
                                            *fmt-control-defaults-keys*)))
-           (type (signed-byte #.*fixnum-bits*) col))
+           (type #.*fixnat-type* col))
   (channel-to-string
    (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))

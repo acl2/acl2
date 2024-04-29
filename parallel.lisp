@@ -726,7 +726,7 @@
 ; ; Unlike rewrite-args, we return (cons rewritten-args ttree) instead of
 ; ; (mv rewritten-args ttree).
 ;
-;   (declare (type (unsigned-byte #.*fixnat-bits*) rdepth))
+;   (declare (type #.*fixnat-type* rdepth))
 ;   (cond ((f-big-clock-negative-p state) ; (obsolete: no big-clock after 4/2023)
 ;          (cons (sublis-var-lst alist args)
 ;                ttree))
@@ -772,27 +772,27 @@
 ; ; Note: In this function, the extra formal geneqv is actually a list of geneqvs
 ; ; or nil denoting a list of nil geneqvs.
 ;
-;   (declare (type (unsigned-byte #.*fixnat-bits*) rdepth)
-;            (type (signed-byte #.*fixnum-bits*) step-limit))
+;   (declare (type #.*fixnat-type* rdepth)
+;            (type #.*fixnum-type* step-limit))
 ;   (the-mv
 ;    3
-;    (signed-byte #.*fixnum-bits*)
+;    #.*fixnum-type*
 ;    (cond ((null args)
 ;           (mv step-limit nil ttree))
 ;          (t (spec-mv-let
 ;              (step-limit1 rewritten-arg ttree1)
-; ;            (declare (type (signed-byte #.*fixnum-bits*) step-limit1))
+; ;            (declare (type #.*fixnum-type* step-limit1))
 ;              (rewrite-entry (rewrite (car args) alist bkptr)
 ;                             :geneqv (car geneqv))
 ;              (mv-let
 ;                (step-limit2 rewritten-args ttree2)
 ;                (rewrite-entry (rewrite-args (cdr args) alist (1+ bkptr))
 ;                               :geneqv (cdr geneqv))
-; ;              (declare (type (signed-byte #.*fixnum-bits*) step-limit2))
+; ;              (declare (type #.*fixnum-type* step-limit2))
 ;                (if t
 ;                    (mv (let* ((steps1 (- step-limit step-limit1))
 ;                               (step-limit (- step-limit2 steps1)))
-;                          (declare (type (signed-byte #.*fixnum-bits*) steps1 step-limit))
+;                          (declare (type #.*fixnum-type* steps1 step-limit))
 ;                          (cond ((>= step-limit 0)
 ;                                 step-limit)
 ;                                ((step-limit-strictp state)

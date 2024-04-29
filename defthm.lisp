@@ -10968,7 +10968,7 @@
 (defun disabledp-fn-lst (runic-mapping-pairs ens)
   (declare (xargs :guard ; see guard on enabled-runep
                   (and (enabled-structure-p ens)
-                       (nat-alistp runic-mapping-pairs))))
+                       (fixnat-alistp runic-mapping-pairs))))
   (cond ((endp runic-mapping-pairs) nil)
         ((enabled-numep (caar runic-mapping-pairs) ens)
          (disabledp-fn-lst (cdr runic-mapping-pairs) ens))
@@ -10990,7 +10990,7 @@
                                   (cond ((and (not (eq name2 :here))
                                               name2
                                               (logical-namep name2 wrld))
-                                         (nat-alistp
+                                         (fixnat-alistp
                                           (getpropc name2 'runic-mapping-pairs
                                                     nil wrld)))
                                         (t t))))
@@ -11000,7 +11000,7 @@
                                        (let ((rune (translate-abbrev-rune
                                                      name
                                                      (macro-aliases wrld))))
-                                         (nat-alistp
+                                         (fixnat-alistp
                                           (getpropc (base-symbol rune)
                                                     'runic-mapping-pairs
                                                     nil

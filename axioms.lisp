@@ -4970,7 +4970,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (<= 0 x)))
   :rule-classes :compound-recognizer)
 
-(defun nat-alistp (x) ; used in the guards of some system functions
+(defun nat-alistp (x) ; may be used in the guards of some system functions
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
         (t (and (consp (car x))
@@ -12450,9 +12450,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The remainder of this Essay gives historical perspective in ACL2's use of
 ; fixnum arithmetic.  It was written when 32-bit Lisps were still common.  The
 ; discussion carries over to 64-bit Lisps, where now we make type declarations
-; using (signed-byte #.*fixnum-bits*) rather than, as discussed below,
-; (signed-byte 30).  To get the previous behavior, use a 32-bit Lisp like CMUCL
-; or set environment variable ACL2_SMALL_FIXNUMS to a non-empty value.
+; using #.*fixnum-type* rather than, as discussed below, (signed-byte 30).  To
+; get the previous behavior, use a 32-bit Lisp like CMUCL or set environment
+; variable ACL2_SMALL_FIXNUMS to a non-empty value.
 
 ; To the best of our knowledge, the values of most-positive-fixnum in various
 ; 32-bit lisps are as follows, so we feel safe in using (signed-byte 30) and
@@ -12492,13 +12492,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #+acl2-small-fixnums 30
   #-acl2-small-fixnums 61)
 (defconst *fixnat-bits* (1- *fixnum-bits*))
+(defconst *fixnum-type* `(signed-byte ,*fixnum-bits*))
 (defmacro the-fixnum (n)
-  (list 'the
-        `(signed-byte ,*fixnum-bits*)
-        n))
+  (list 'the *fixnum-type* n))
 (defmacro fixnum-bound ()
 ; This has been the value of most-positive-fixnum in some 32-bit Lisps.
   (1- (expt 2 *fixnat-bits*)))
+
+(defun fixnat-alistp (x) ; used in the guards of some system functions
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (natp (car (car x)))
+                (<= (car (car x)) (fixnum-bound))
+                (fixnat-alistp (cdr x))))))
+
+(defthm fixnat-alistp-forward-to-nat-alistp
+  (implies (fixnat-alistp x)
+           (nat-alistp x))
+  :rule-classes :forward-chaining)
 
 ; Essay on Efficient Applicative Arrays
 
@@ -14079,10 +14091,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                            num d1 d2 maximum-length))
             (do ((i (1- d1) (1- i)))
                 ((< i 0))
-                (declare (type (integer 0 #.*array-maximum-length-bound*) i))
+                (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                 (do ((j (1- d2) (1- j)))
                     ((< j 0))
-                    (declare (type (integer 0 #.*array-maximum-length-bound*) j))
+                    (declare (type (integer -1 #.*array-maximum-length-bound*) j))
                     (let ((val
                            (aref ar
                                  (the (integer 0
@@ -16861,18 +16873,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (and (integerp x)
                 (<= 0 x)))
   :rule-classes :forward-chaining)
-
-#-acl2-loop-only
-(defun-one-output zpf (x)
-  (declare (type (unsigned-byte #.*fixnat-bits*) x))
-  (eql (the-fixnum x) 0))
-#+acl2-loop-only
-(defun zpf (x)
-; The logic-only definition of zpf needs to come after expt and integer-range-p.
-  (declare (type (unsigned-byte #.*fixnat-bits*) x))
-  (if (integerp x)
-      (<= x 0)
-    t))
 
 ; We continue by proving the guards on substitute, all-vars1 and all-vars.
 
@@ -22625,23 +22625,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; A typical use of this macro is
 
-; (the-mv 3 (signed-byte #.*fixnum-bits*) <body> 2)
+; (the-mv 3 #.*fixnum-type* <body> 2)
 
 ; which expands to
 
 ; (MV-LET (X0 X1 STATE)
 ;         <body>
-;         (MV (THE (SIGNED-BYTE #.*FIXNUM-BITS*) X0) X1 STATE))
+;         (MV (THE #.*FIXNUM-TYPE* X0) X1 STATE))
 
 ; A more flexible use is
 
-; (the-mv (v stobj1 state w) (signed-byte #.*fixnum-bits*) <body>)
+; (the-mv (v stobj1 state w) #.*fixnum-type* <body>)
 
 ; which expands to
 
 ; (MV-LET (V STOBJ1 STATE W)
 ;         <body>
-;         (MV (THE (SIGNED-BYTE #.*FIXNUM-BITS*) V) STOBJ1 STATE W))
+;         (MV (THE #.*FIXNUM-TYPE* V) STOBJ1 STATE W))
 
 ; This macro may be used when body returns n>1 things via mv, where n=args if
 ; args is an integer and otherwise args is a true list of variables and n is
@@ -29908,14 +29908,6 @@ Lisp definition."
 (defconst *fixnat-bits+1* (+ 1 *fixnat-bits*))
 (defconst *fixnat-bits+2* (+ 2 *fixnat-bits*))
 
-(defconst *fixnum-type* `(signed-byte ,(1+ *fixnat-bits*)))
-
-(defun fixnum-guard (val)
-  (declare (xargs :guard t))
-  (and (integerp val)
-       (<= (- -1 (fixnum-bound)) val)
-       (<= val (fixnum-bound))))
-
 ; Next, we introduce two flavors of ``small'' fixnum arithmetic.
 
 ; When dealing with types, ``small'' means a little fixnum.  In fact, they are
@@ -29953,7 +29945,7 @@ Lisp definition."
 ; (round-to-small t x) coerces x to be a non-negative small fixnum.  To keep it
 ; straight in your head, think of nil meaning negative and t meaning positive.
 
-  (declare (type (signed-byte #.*fixnum-bits*) x)) ; fixnum
+  (declare (type #.*fixnum-type* x)) ; fixnum
   (let ((lo (if flg 0 *small-lo*)))
     (if (integerp x)
         (if (< x lo)
@@ -29997,8 +29989,8 @@ Lisp definition."
                        (the-fixnum (- ,@(make-the-smalls (list x)))))))
 
 ; So at this point we have four types:
-; (signed-byte #.*fixnum-bits*)
-; (unsigned-byte #.fixnat-bits*)
+; (signed-byte #.*fixnum-bits*), i.e., #.*fixnum-type*
+; (unsigned-byte #.*fixnat-bits*), i.e., #.*fixnat-type*
 ; (signed-byte #.*small-bits*)
 ; (unsigned-byte #.*small-nat-bits*)
 
@@ -30064,3 +30056,16 @@ Lisp definition."
                   :mode :logic))
   (cond ((endp x) nil)
         (t (cons (cddar x) (strip-cddrs (cdr x))))))
+
+#-acl2-loop-only
+(defun-one-output zpf (x)
+  (declare (type #.*fixnat-type* x))
+  (eql (the-fixnat x) 0))
+#+acl2-loop-only
+(defun zpf (x)
+; The logic-only definition of zpf needs to come after expt and integer-range-p.
+  (declare (type #.*fixnat-type* x))
+  (if (integerp x)
+      (<= x 0)
+    t))
+

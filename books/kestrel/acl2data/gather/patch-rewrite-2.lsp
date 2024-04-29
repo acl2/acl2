@@ -24,14 +24,14 @@
 ; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
 ; output ttrees.
 
-  (declare (type (unsigned-byte #.*fixnat-bits*) rdepth)
-           (type (signed-byte #.*fixnum-bits*) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    4
-   (signed-byte #.*fixnum-bits*)
+   #.*fixnum-type*
    (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma))
          (rdepth (adjust-rdepth rdepth)))
-     (declare (type (unsigned-byte #.*fixnat-bits*) rdepth))
+     (declare (type #.*fixnat-type* rdepth))
      (cond ((zero-depthp rdepth)
 ; patch file: my-rdepth-error instead of rdepth-error
 #|
@@ -85,7 +85,7 @@
                      (rune (access rewrite-rule lemma :rune)))
                 (with-accumulated-persistence
                  rune
-                 ((the (signed-byte #.*fixnum-bits*) step-limit) flg term ttree)
+                 ((the #.*fixnum-type* step-limit) flg term ttree)
                  flg
                  (mv-let
                   (erp val latches)
@@ -451,7 +451,7 @@
                                           (rewritten-rhs ttree)
                                           (with-accumulated-persistence
                                            rune
-                                           ((the (signed-byte #.*fixnum-bits*) step-limit)
+                                           ((the #.*fixnum-type* step-limit)
                                             rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
@@ -547,7 +547,7 @@
                          (t
                           (with-accumulated-persistence
                            rune
-                           ((the (signed-byte #.*fixnum-bits*) step-limit) flg term ttree)
+                           ((the #.*fixnum-type* step-limit) flg term ttree)
                            flg
                            (sl-let
                             (relieve-hyps-ans failure-reason unify-subst ttree)
@@ -579,7 +579,7 @@
                                (rewritten-rhs ttree)
                                (with-accumulated-persistence
                                 rune
-                                ((the (signed-byte #.*fixnum-bits*) step-limit)
+                                ((the #.*fixnum-type* step-limit)
                                  rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
@@ -659,17 +659,17 @@
 ; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
 ; output ttrees.
 
-  (declare (type (unsigned-byte #.*fixnat-bits*) rdepth)
-           (type (signed-byte #.*fixnum-bits*) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    4
-   (signed-byte #.*fixnum-bits*)
+   #.*fixnum-type*
    (let* ((gstack (push-gframe 'rewrite-quoted-constant-with-lemma nil term lemma))
           (rdepth (adjust-rdepth rdepth))
           (temp (access rewrite-rule lemma :heuristic-info))
           (n (car temp))
           (loop-stopper (cdr temp)))
-     (declare (type (unsigned-byte #.*fixnat-bits*) rdepth)
+     (declare (type #.*fixnat-type* rdepth)
               (type integer n))
      (cond ((zero-depthp rdepth)
 ; patch file: my-rdepth-error instead of rdepth-error
@@ -733,7 +733,7 @@
                    (t
                     (with-accumulated-persistence
                      rune
-                     ((the (signed-byte #.*fixnum-bits*) step-limit) flg term ttree)
+                     ((the #.*fixnum-type* step-limit) flg term ttree)
                      flg
                      (sl-let
                       (relieve-hyps-ans failure-reason unify-subst ttree)
@@ -765,7 +765,7 @@
                          (rewritten-rhs ttree)
                          (with-accumulated-persistence
                           rune
-                          ((the (signed-byte #.*fixnum-bits*) step-limit)
+                          ((the #.*fixnum-type* step-limit)
                            rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
