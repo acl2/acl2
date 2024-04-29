@@ -571,49 +571,54 @@
               (t (mv known-nodenum-type-alist
                      nil)))))))
 
-(defthm alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
-  (implies (alistp known-nodenum-type-alist)
-           (alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
-                                                                         all-nodenums
-                                                                         dag-array
-                                                                         dag-len
-                                                                         known-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-node))))
+(local
+  (defthm alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
+    (implies (alistp known-nodenum-type-alist)
+             (alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
+                                                                           all-nodenums
+                                                                           dag-array
+                                                                           dag-len
+                                                                           known-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-node)))))
 
-(defthm nodenum-type-alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
-  (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                (natp nodenum)
-                (true-listp all-nodenums)
-                (all-natp all-nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (all-< all-nodenums dag-len)
-                )
-           (nodenum-type-alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
+(local
+  (defthm nodenum-type-alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (natp nodenum)
+                  (true-listp all-nodenums)
+                  (all-natp all-nodenums)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (< nodenum dag-len)
+                  (all-< all-nodenums dag-len)
+                  )
+             (nodenum-type-alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
+                                                                                        all-nodenums
+                                                                                        dag-array
+                                                                                        dag-len
+                                                                                        known-nodenum-type-alist))))
+    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp))))))
+
+; make a "bounded-nodenum-type-alistp"?
+(local
+  (defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (natp nodenum)
+                  (true-listp all-nodenums)
+                  (all-natp all-nodenums)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (< nodenum dag-len)
+                  (all-< all-nodenums dag-len)
+                  (ALL-< (STRIP-CARS KNOWN-NODENUM-TYPE-ALIST)
+                         DAG-LEN))
+             (all-< (strip-cars (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
                                                                                       all-nodenums
                                                                                       dag-array
                                                                                       dag-len
-                                                                                      known-nodenum-type-alist))))
-  :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp)))))
+                                                                                      known-nodenum-type-alist)))
+                    dag-len))
+    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp))))))
 
-; make a "bounded-nodenum-type-alistp"?
-(defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-node
-  (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                (natp nodenum)
-                (true-listp all-nodenums)
-                (all-natp all-nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (< nodenum dag-len)
-                (all-< all-nodenums dag-len)
-                (ALL-< (STRIP-CARS KNOWN-NODENUM-TYPE-ALIST)
-                       DAG-LEN))
-           (all-< (strip-cars (mv-nth 0 (improve-known-nodenum-type-alist-with-node nodenum
-                                                                                    all-nodenums
-                                                                                    dag-array
-                                                                                    dag-len
-                                                                                    known-nodenum-type-alist)))
-                  dag-len))
-  :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv known-nodenum-type-alist change-flg)
 ;makes one pass through the nodes.
@@ -641,52 +646,40 @@
                                                      known-nodenum-type-alist
                                                      (or changep change-flg))))))
 
-(defthm alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-nodes
-  (implies (alistp known-nodenum-type-alist)
-           (alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums
-                                                                          all-nodenums
-                                                                          dag-array
-                                                                          dag-len
-                                                                          known-nodenum-type-alist
-                                                                          change-flg))))
-  :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-nodes))))
+(local
+  (defthm alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-nodes
+    (implies (alistp known-nodenum-type-alist)
+             (alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums all-nodenums dag-array dag-len known-nodenum-type-alist change-flg))))
+    :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-nodes)))))
 
-(defthm nodenum-type-alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-nodes
-  (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                (true-listp nodenums)
-                (all-natp nodenums)
-                (all-natp all-nodenums)
-                (true-listp all-nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< nodenums dag-len)
-                (all-< all-nodenums dag-len))
-           (nodenum-type-alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums
-                                                                                       all-nodenums
-                                                                                       dag-array
-                                                                                       dag-len
-                                                                                       known-nodenum-type-alist
-                                                                                       change-flg))))
-  :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-nodes))))
+(local
+  (defthm nodenum-type-alistp-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-nodes
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (true-listp nodenums)
+                  (all-natp nodenums)
+                  (all-natp all-nodenums)
+                  (true-listp all-nodenums)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (all-< nodenums dag-len)
+                  (all-< all-nodenums dag-len))
+             (nodenum-type-alistp (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums all-nodenums dag-array dag-len known-nodenum-type-alist change-flg))))
+    :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-nodes)))))
 
-(defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-nodes
-  (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                (true-listp nodenums)
-                (all-natp nodenums)
-                (all-natp all-nodenums)
-                (true-listp all-nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< nodenums dag-len)
-                (all-< all-nodenums dag-len)
-                (ALL-< (STRIP-CARS KNOWN-NODENUM-TYPE-ALIST)
-                       DAG-LEN))
-           (all-< (strip-cars (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums
-                                                                                     all-nodenums
-                                                                                     dag-array
-                                                                                     dag-len
-                                                                                     known-nodenum-type-alist
-                                                                                     change-flg)))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-nodes))))
+(local
+  (defthm all-<-of-strip-cars-of-mv-nth-0-of-improve-known-nodenum-type-alist-with-nodes
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (true-listp nodenums)
+                  (all-natp nodenums)
+                  (all-natp all-nodenums)
+                  (true-listp all-nodenums)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (all-< nodenums dag-len)
+                  (all-< all-nodenums dag-len)
+                  (ALL-< (STRIP-CARS KNOWN-NODENUM-TYPE-ALIST)
+                         DAG-LEN))
+             (all-< (strip-cars (mv-nth 0 (improve-known-nodenum-type-alist-with-nodes nodenums all-nodenums dag-array dag-len known-nodenum-type-alist change-flg)))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable improve-known-nodenum-type-alist-with-nodes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -712,34 +705,37 @@
         ;;something changed, so walk the disjuncts again:
         (build-known-nodenum-type-alist-aux (+ -1 limit) nodenums dag-array dag-len known-nodenum-type-alist)))))
 
-(defthm alistp-of-build-known-nodenum-type-alist-aux
-  (implies (alistp known-nodenum-type-alist)
-           (alistp (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist)))
-  :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux))))
+(local
+  (defthm alistp-of-build-known-nodenum-type-alist-aux
+    (implies (alistp known-nodenum-type-alist)
+             (alistp (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist)))
+    :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux)))))
 
 ;;gen this and similar ones?
-(defthm nodenum-type-alistp-of-build-known-nodenum-type-alist-aux
-  (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                (natp limit)
-                (true-listp nodenums)
-                (all-natp nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< nodenums dag-len))
-           (nodenum-type-alistp (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist)))
-  :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux))))
+(local
+  (defthm nodenum-type-alistp-of-build-known-nodenum-type-alist-aux
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (natp limit)
+                  (true-listp nodenums)
+                  (all-natp nodenums)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (all-< nodenums dag-len))
+             (nodenum-type-alistp (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist)))
+    :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux)))))
 
-(defthm all-<-of-strip-cars-of-build-known-nodenum-type-alist-aux
-  (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                (natp limit)
-                (true-listp nodenums)
-                (all-natp nodenums)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (all-< nodenums dag-len)
-                (all-< (strip-cars known-nodenum-type-alist)
-                       dag-len))
-           (all-< (strip-cars (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux))))
+(local
+  (defthm all-<-of-strip-cars-of-build-known-nodenum-type-alist-aux
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (natp limit)
+                  (true-listp nodenums)
+                  (all-natp nodenums)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (all-< nodenums dag-len)
+                  (all-< (strip-cars known-nodenum-type-alist)
+                         dag-len))
+             (all-< (strip-cars (build-known-nodenum-type-alist-aux limit nodenums dag-array dag-len known-nodenum-type-alist))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -776,25 +772,27 @@
             ;; skip this disjunct:
             (get-nodenums-of-negations-of-disjuncts (rest disjuncts) dag-array dag-len)))))))
 
-(defthm all-natp-of-get-nodenums-of-negations-of-disjuncts
-  (implies (possibly-negated-nodenumsp disjuncts)
-           (all-natp (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     get-nodenums-of-negations-of-disjuncts
-                                     possibly-negated-nodenump))))
+(local
+  (defthm all-natp-of-get-nodenums-of-negations-of-disjuncts
+    (implies (possibly-negated-nodenumsp disjuncts)
+             (all-natp (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len)))
+    :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+                                       get-nodenums-of-negations-of-disjuncts
+                                       possibly-negated-nodenump)))))
 
-(defthm all-<-of-get-nodenums-of-negations-of-disjuncts
-  (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp get-nodenums-of-negations-of-disjuncts
-                                     POSSIBLY-NEGATED-NODENUMSP
-                                     STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS
-                                     STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
-                                     car-becomes-nth-of-0
-                                     possibly-negated-nodenump
-                                     bounded-possibly-negated-nodenumsp
-                                     bounded-possibly-negated-nodenump))))
+(local
+  (defthm all-<-of-get-nodenums-of-negations-of-disjuncts
+    (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
+    :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp get-nodenums-of-negations-of-disjuncts
+                                       POSSIBLY-NEGATED-NODENUMSP
+                                       STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS
+                                       STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
+                                       car-becomes-nth-of-0
+                                       possibly-negated-nodenump
+                                       bounded-possibly-negated-nodenumsp
+                                       bounded-possibly-negated-nodenump)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -821,21 +819,24 @@
                                         dag-len
                                         nil)))
 
-(defthm alistp-of-build-known-nodenum-type-alist
-  (alistp (build-known-nodenum-type-alist disjuncts dag-array dag-len))
-  :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist))))
+(local
+  (defthm alistp-of-build-known-nodenum-type-alist
+    (alistp (build-known-nodenum-type-alist disjuncts dag-array dag-len))
+    :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist)))))
 
-(defthm nodenum-type-alistp-of-build-known-nodenum-type-alist
-  (implies (and  (bounded-possibly-negated-nodenumsp disjuncts dag-len)
-                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (nodenum-type-alistp (build-known-nodenum-type-alist disjuncts dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist))))
+(local
+  (defthm nodenum-type-alistp-of-build-known-nodenum-type-alist
+    (implies (and  (bounded-possibly-negated-nodenumsp disjuncts dag-len)
+                   (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (nodenum-type-alistp (build-known-nodenum-type-alist disjuncts dag-array dag-len)))
+    :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist)))))
 
-(defthm all-<-of-strip-cars-of-build-known-nodenum-type-alist
-  (implies (and  (bounded-possibly-negated-nodenumsp disjuncts dag-len)
-                 (pseudo-dag-arrayp 'dag-array dag-array dag-len))
-           (all-< (strip-cars (build-known-nodenum-type-alist disjuncts dag-array dag-len)) dag-len))
-  :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist))))
+(local
+  (defthm all-<-of-strip-cars-of-build-known-nodenum-type-alist
+    (implies (and  (bounded-possibly-negated-nodenumsp disjuncts dag-len)
+                   (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (all-< (strip-cars (build-known-nodenum-type-alist disjuncts dag-array dag-len)) dag-len))
+    :hints (("Goal" :in-theory (enable build-known-nodenum-type-alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1121,10 +1122,11 @@
           ;; TTODO: handle leftrotate?, bvshl, bvshr, ...
           (t nil))))
 
-(defthm axe-typep-of-get-induced-type
-  (implies (get-induced-type nodenum parent-expr)
-           (axe-typep (get-induced-type nodenum parent-expr)))
-  :hints (("Goal" :in-theory (enable get-induced-type darg-quoted-posp))))
+(local
+  (defthm axe-typep-of-get-induced-type
+    (implies (get-induced-type nodenum parent-expr)
+             (axe-typep (get-induced-type nodenum parent-expr)))
+    :hints (("Goal" :in-theory (enable get-induced-type darg-quoted-posp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1159,11 +1161,12 @@
                                  type-acc))))
       (most-general-induced-type-aux (rest parent-nodenums) nodenum dag-array dag-len new-type-acc))))
 
-(defthm axe-typep-of-most-general-induced-type-aux
-  (implies (and (axe-typep type-acc)
-                (most-general-induced-type-aux parent-nodenums nodenum dag-array dag-len type-acc))
-           (axe-typep (most-general-induced-type-aux parent-nodenums nodenum dag-array dag-len type-acc)))
-  :hints (("Goal" :in-theory (enable most-general-induced-type-aux))))
+(local
+  (defthm axe-typep-of-most-general-induced-type-aux
+    (implies (and (axe-typep type-acc)
+                  (most-general-induced-type-aux parent-nodenums nodenum dag-array dag-len type-acc))
+             (axe-typep (most-general-induced-type-aux parent-nodenums nodenum dag-array dag-len type-acc)))
+    :hints (("Goal" :in-theory (enable most-general-induced-type-aux)))))
 
 ;; ;the union of all the types of choppable occurrences of x
 ;; ;the most general type for nodenum, based on which argument positions of its parents it appears in
@@ -1451,12 +1454,13 @@
 
 
 ;; should be a bv, array, or boolean type
-(defthm axe-typep-of-mv-nth-1-of-type-for-cut-nodenum
-  (implies (and (not (mv-nth 0 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))) ;drop?
-                (nodenum-type-alistp known-nodenum-type-alist)
-                (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
-           (axe-typep (mv-nth 1 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))))
-  :hints (("Goal" :in-theory (enable type-for-cut-nodenum))))
+(local
+  (defthm axe-typep-of-mv-nth-1-of-type-for-cut-nodenum
+    (implies (and (not (mv-nth 0 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))) ;drop?
+                  (nodenum-type-alistp known-nodenum-type-alist)
+                  (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
+             (axe-typep (mv-nth 1 (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))))
+    :hints (("Goal" :in-theory (enable type-for-cut-nodenum)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
