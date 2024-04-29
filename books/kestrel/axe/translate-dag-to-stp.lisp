@@ -465,9 +465,9 @@
           "FALSE"
         (if (equal arg *t*)
             "TRUE"
-          ;;i suppose any constant other than nil could be translated as t (but print a warning?!):
+          ;;i suppose any constant other than nil could be translated like t (but print a warning?!):
           (er hard? 'translate-boolean-arg "Bad constant (should be boolean): ~x0.~%" arg)))
-    ;;arg is a node number:
+    ;; arg is a nodenum:
     (make-node-var arg)))
 
 (local
@@ -597,10 +597,10 @@
   (if (consp arg) ;tests for quotep
       (translate-bv-constant (unquote arg) desired-size)
     ;;arg is a nodenum:
-    (let ((type (get-type-of-nodenum-checked arg dag-array-name dag-array cut-nodenum-type-alist)))
-      (if (bv-typep type)
-          (translate-bv-nodenum-and-pad arg desired-size (bv-type-width type))
-        (er hard? 'translate-bv-arg "bad type: ~x0 for argument ~x1" type arg)))))
+    (let ((maybe-type (maybe-get-type-of-nodenum arg dag-array-name dag-array cut-nodenum-type-alist)))
+      (if (bv-typep maybe-type)
+          (translate-bv-nodenum-and-pad arg desired-size (bv-type-width maybe-type))
+        (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression" maybe-type arg (aref1 dag-array-name dag-array arg))))))
 
 (defthm string-treep-of-translate-bv-arg
   (string-treep (translate-bv-arg arg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist))
@@ -610,6 +610,7 @@
 
 ;; Returns a string-tree.
 ;; At most one of LHS-PAD-BITS and RHS-PAD-BITS is non-zero.
+;; See also translate-equality-of-bvs-to-stp-aux.
 (defund translate-array-element-equality (lhs-string-tree rhs-string-tree lhs-pad-bits rhs-pad-bits index-width elem-num)
   (declare (xargs :guard (and (string-treep lhs-string-tree)
                               (string-treep rhs-string-tree)
@@ -669,17 +670,6 @@
    :hints (("Goal" :in-theory (enable translate-array-equality)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; ;slow?
-;; (defthm consp-of-cdr-of-aref1
-;;   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array arg)
-;;                 (natp arg)
-;; ;                (not (equal (car (aref1 dag-array-name dag-array arg)) 'quote))
-;;                 (consp (aref1 dag-array-name dag-array arg)))
-;;            (iff (consp (cdr (aref1 dag-array-name dag-array arg)))
-;;                 (cdr (aref1 dag-array-name dag-array arg))))
-;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array arg))
-;;            :in-theory (enable pseudo-dag-arrayp-aux bounded-dag-exprp))))
 
 ;recognizes a true list of items of the form (array-elems array-name element-width element-count)
 ;; todo: strengthen to require at least 2 elements?
