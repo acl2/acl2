@@ -228,14 +228,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;get rid of this?
-(defund get-type-of-function-call-checked (fn dargs)
-  (declare (xargs :guard (darg-listp dargs)))
-  (or (maybe-get-type-of-function-call fn dargs)
-      (er hard? 'get-type-of-function-call-checked "couldn't find type for call of ~x0 on args ~x1" fn dargs)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns an axe-type, possibly (most-general-type).
 (defund get-type-of-function-call-safe (fn dargs)
   (declare (xargs :guard (darg-listp dargs)))

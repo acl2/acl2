@@ -1832,13 +1832,13 @@
                   (let ((extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist
                                                              nil ;fixme print
                                                              extra-asserts)))
-                    (b* ((type (get-type-of-function-call-checked (ffn-symb expr) (dargs expr)))
+                    (b* ((type (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
                          ;; FIXME think about array nodes here
                          ;;fixme what if a hyp gives expr its width/type?
                          ;;do this in the other tagging function?
                          ;;fixme will expr always have a known type?
                          ((when (not (axe-typep type))) ; should not fail (all nodes should be pure)
-                          (cw "ERROR: Bad type, ~x0, for ~x1.~%" type expr)
+                          (er hard? 'gather-nodes-to-translate-up-to-depth "ERROR: Bad type, ~x0, for ~x1.~%" type expr)
                           (mv :type-error nil nil extra-asserts)))
                       (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist
                                                              supporters-tag-array
