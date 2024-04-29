@@ -1199,21 +1199,24 @@
 ;; nodes where we don't know the return type and can't translate (e.g., varaiables, calls to foo - but assumptions may tell us the type)
 ; If a node whose type we don't know (not obvious, not in the known-type-alist) appears sometimes as a choppable arg (e.g., to XOR) and sometimes as an arg to equal (cannot chop), we'll use the induced type (the largest type of all the choppable uses of the term) and the equal will just have to be made into a boolean variable.
 
+;; todo: since this never fires, drop this check (perhaps once the pure dag checking is strengthened)
 (defund can-translate-bvif-args (dargs)
   (declare (xargs :guard (darg-listp dargs)))
-  (and (= (len dargs) 4) ;optimize?
-       (myquotep (first dargs)) ; drop?
-       (darg-quoted-posp (first dargs)) ;used to allow 0 ;fixme print a warning in that case?
-       ;; If the arg is a constant, it must be a quoted natp (not something like ':irrelevant):
-       ;; todo: call bv-arg-okp here (but note the guard):
-       (if (consp (third dargs))         ;checks for quotep
-           (and (myquotep (third dargs)) ;for guards
-                (natp (unquote (third dargs))))
-         t)
-       (if (consp (fourth dargs))         ;checks for quotep
-           (and (myquotep (fourth dargs)) ;for guards
-                (natp (unquote (fourth dargs))))
-         t)))
+  (if (and (= (len dargs) 4)    ;optimize?
+           (myquotep (first dargs)) ; drop?
+           (darg-quoted-posp (first dargs)) ;used to allow 0 ;fixme print a warning in that case?
+           ;; If the arg is a constant, it must be a quoted natp (not something like ':irrelevant):
+           ;; todo: call bv-arg-okp here (but note the guard):
+           (if (consp (third dargs))     ;checks for quotep
+               (and (myquotep (third dargs)) ;for guards
+                    (natp (unquote (third dargs))))
+             t)
+           (if (consp (fourth dargs))     ;checks for quotep
+               (and (myquotep (fourth dargs)) ;for guards
+                    (natp (unquote (fourth dargs))))
+             t))
+      t
+    (er hard? 'can-translate-bvif-args "Bad BVIF args: ~x0." dargs)))
 
 ;ffixme other possibilities:
 ;; leftrotate bvshl bvshr
