@@ -13862,7 +13862,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun compress2 (name l)
   #+acl2-loop-only
 
-; The uses of (the (integer 0 #.*array-maximum-length-bound*) ...) below rely
+; The uses of (the (integer _ #.*array-maximum-length-bound*) ...) below rely
 ; on the array1p guard.  These declarations almost surely assist efficiency in
 ; GCL; they might or might not make a difference in other Lisps.
 
@@ -13896,9 +13896,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (let ((ar ar))
              (declare (type (array * (* *)) ar))
              (do ((i (1- dimension1) (1- i))) ((< i 0))
-                 (declare (type (integer 0 #.*array-maximum-length-bound*) i))
+                 (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                  (do ((j (1- dimension2) (1- j))) ((< j 0))
-                     (declare (type (integer 0 #.*array-maximum-length-bound*) j))
+                     (declare (type (integer -1 #.*array-maximum-length-bound*) j))
                      (setf (aref ar i j) *invisible-array-mark*)))))
           (t (setq ar
                    (make-array$ (list dimension1 dimension2)
@@ -13968,10 +13968,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (in-order
           (do ((i (1- dimension1) (1- i)))
               ((< i 0))
-              (declare (type (integer 0 #.*array-maximum-length-bound*) i))
+              (declare (type (integer -1 #.*array-maximum-length-bound*) i))
               (do ((j (1- dimension2) (1- j)))
                   ((< j 0))
-                  (declare (type (integer 0 #.*array-maximum-length-bound*) j))
+                  (declare (type (integer -1 #.*array-maximum-length-bound*) j))
                   (let ((val (aref ar i j)))
                     (cond
                      ((eq *invisible-array-mark* val)
@@ -13982,10 +13982,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (setq x l))
          (t (do ((i (1- dimension1) (1- i)))
                 ((< i 0))
-                (declare (type (integer 0 #.*array-maximum-length-bound*) i))
+                (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                 (do ((j (1- dimension2) (1- j)))
                     ((< j 0))
-                    (declare (type (integer 0 #.*array-maximum-length-bound*) j))
+                    (declare (type (integer -1 #.*array-maximum-length-bound*) j))
                     (let ((val (aref ar i j)))
                       (cond
                        ((eq *invisible-array-mark* val)
