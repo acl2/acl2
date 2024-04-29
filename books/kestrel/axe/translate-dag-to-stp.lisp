@@ -41,8 +41,6 @@
 
 ; TODO: Consider adding support for array terms that are if-then-else nests.
 
-; TODO: Consider adding support for if/myif in addition to bvif.
-
 ;The only variables appearing in the translated file should be of the forms NODE<num> or ARRAY<num>.  Even if, say, node 100 is the variable x, it is translated as the variable NODE100.  This should prevent any variable name clashes.
 ;FIXME could put in the real names of true input vars in comments?
 
@@ -502,14 +500,18 @@
 ;;; translating BVs
 ;;;
 
-;; Returns a string-tree.
+;; Returns a string-tree (actually a list of strings).
 ;make tail rec?
 ;make a table for a few common values?  process the bits in bigger chunks?
 (defund translate-bits (val topbit)
-  (declare (type integer val)
-           (xargs :measure (if (natp topbit) (+ 1 topbit) 0)))
+  (declare (xargs :guard (and (integerp val) ; require natp?
+                              (integerp topbit)
+                              (<= -1 topbit))
+                  :measure (if (natp topbit) (+ 1 topbit) 0)
+                  :split-types t)
+           (type integer val))
   (if (not (natp topbit))
-      ""
+      nil
     (cons (if (logbitp topbit val) ;(eql 1 (getbit topbit n))
               "1"
             "0")
@@ -1085,6 +1087,7 @@
 ;TODO: Need to know that the arity is correct.
 ;; dag-len is only used in guards (including the guard of translate-bv-arg).
 ;todo: see repeated calls below to translate-bv-arg on same value...
+;; We do not handle MYIF or IF, only BOOLIF, BVIF, and BV-ARRAY-IF.
 (defund translate-dag-expr (expr ;either a quotep or a function call over nodenums and quoteps (never a variable)
                             dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
