@@ -84,6 +84,8 @@
                            len-when-not-consp-cheap
                            all-natp-when-not-consp)))
 
+(local (in-theory (enable <-of-+-of-1-when-integers)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defthmd all-<-of-keep-atoms-when-darg-listp
@@ -226,43 +228,49 @@
           (mv t (first nodenums-or-quoteps) fail-or-extended-alist)
         (unify-tree-with-any-dag-node-no-wrap tree (rest nodenums-or-quoteps) dag-array dag-len alist-acc)))))
 
-(defthm alistp-of-mv-nth-2-of-unify-tree-with-any-dag-node-no-wrap
-  (implies (alistp alist-acc)
-           (alistp (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc))))
-  :hints (("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap))))
+(local
+  (defthm alistp-of-mv-nth-2-of-unify-tree-with-any-dag-node-no-wrap
+    (implies (alistp alist-acc)
+             (alistp (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc))))
+    :hints (("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap)))))
 
-(defthm darg-listp-of-strip-cdrs-of-unify-tree-with-any-dag-node-no-wrap
-  (implies (and (axe-treep tree)
-                (bounded-darg-listp nodenums-or-quoteps dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (darg-listp (strip-cdrs alist-acc))
-                (symbol-alistp alist-acc))
-           (darg-listp (strip-cdrs (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))))
-  :hints (("subgoal *1/2" :cases ((consp (CAR NODENUMS-OR-QUOTEPS))))
-          ("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap))))
+(local
+  (defthm darg-listp-of-strip-cdrs-of-unify-tree-with-any-dag-node-no-wrap
+    (implies (and (axe-treep tree)
+                  (bounded-darg-listp nodenums-or-quoteps dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (darg-listp (strip-cdrs alist-acc))
+                  (symbol-alistp alist-acc))
+             (darg-listp (strip-cdrs (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))))
+    :hints (("subgoal *1/2" :cases ((consp (CAR NODENUMS-OR-QUOTEPS))))
+            ("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap)))))
 
-(defthm unify-tree-with-any-dag-node-no-wrap-binds-all
-  (implies (and (axe-treep tree)
-                (bounded-darg-listp nodenums-or-quoteps dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (darg-listp (strip-cdrs alist-acc))
-                (symbol-alistp alist-acc)
-                (mv-nth 0 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))
-           (subsetp-equal (axe-tree-vars tree) (strip-cars (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))))
-  :hints (("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap))))
+(local
+  (defthm unify-tree-with-any-dag-node-no-wrap-binds-all
+    (implies (and (axe-treep tree)
+                  (bounded-darg-listp nodenums-or-quoteps dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (darg-listp (strip-cdrs alist-acc))
+                  (symbol-alistp alist-acc)
+                  (mv-nth 0 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))
+             (subsetp-equal (axe-tree-vars tree) (strip-cars (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))))
+    :hints (("Goal" :in-theory (enable unify-tree-with-any-dag-node-no-wrap)))))
 
-(defthm assoc-equal-of-strip-cars-of-unify-tree-with-any-dag-node-no-wrap-binds-all
-  (implies (and (member-equal var (axe-tree-vars tree))
-                (axe-treep tree)
-                (bounded-darg-listp nodenums-or-quoteps dag-len)
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                (darg-listp (strip-cdrs alist-acc))
-                (symbol-alistp alist-acc)
-                (mv-nth 0 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))
-           (assoc-equal var (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc))))
-  :hints (("Goal" :use (:instance unify-tree-with-any-dag-node-no-wrap-binds-all)
-           :in-theory (e/d (assoc-equal-iff-member-equal-of-strip-cars)
-                           (unify-tree-with-any-dag-node-no-wrap-binds-all)))))
+(local
+  (defthm assoc-equal-of-strip-cars-of-unify-tree-with-any-dag-node-no-wrap-binds-all
+    (implies (and (member-equal var (axe-tree-vars tree))
+                  (axe-treep tree)
+                  (bounded-darg-listp nodenums-or-quoteps dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                  (darg-listp (strip-cdrs alist-acc))
+                  (symbol-alistp alist-acc)
+                  (mv-nth 0 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc)))
+             (assoc-equal var (mv-nth 2 (unify-tree-with-any-dag-node-no-wrap tree nodenums-or-quoteps dag-array dag-len alist-acc))))
+    :hints (("Goal" :use (:instance unify-tree-with-any-dag-node-no-wrap-binds-all)
+             :in-theory (e/d (assoc-equal-iff-member-equal-of-strip-cars)
+                             (unify-tree-with-any-dag-node-no-wrap-binds-all))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv hyps conc).
 ;; (See also get-hyps-and-conc.)
@@ -285,11 +293,6 @@
   (implies (pseudo-termp term)
            (pseudo-termp (mv-nth 1 (term-hyps-and-conc term))))
   :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
-
-;; (defthmd plus-of-half-and-half
-;;   (implies (acl2-numberp x)
-;;            (equal (+ (* 1/2 x) (* 1/2 x))
-;;                   x)))
 
 (defconst *default-stp-max-conflicts* 60000) ; this is the number of conflicts, not seconds
 
@@ -388,6 +391,8 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable nodenum-of-an-unknown-type-thingp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;now just prints a message for incompatible types and returns (empty-type)
 ;Returns (mv nodenum-type-alist changep)
 (defund improve-type (nodenum new-type nodenum-type-alist)
@@ -439,8 +444,6 @@
 ;;           (<= 0 (cadr (aref1 'dag-array dag-array nodenum))))
 ;;  :hints (("Goal" :expand (PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY NODENUM)
 ;;           :in-theory (enable pseudo-dag-arrayp-aux BOUNDED-DAG-EXPRP))))
-
-(local (in-theory (enable <-of-+-of-1-when-integers)))
 
 ;; Returns (mv known-nodenum-type-alist changep).
 (defund improve-known-nodenum-type-alist-with-node (nodenum ;to be assumed true
@@ -1241,7 +1244,6 @@
                  (boolean-arg-okp (first args))
                  (boolean-arg-okp (second args))
                  (boolean-arg-okp (third args))))
-
     ((bv-array-read) ;new (ffixme make sure these get translated right: consider constant array issues):
      (if (and (= 4 (len args)) ;todo: speed up checks like this?
               (darg-quoted-posp (first args))
@@ -1346,7 +1348,6 @@
 ;;                                 (booleanp arg2)
 ;;                                 (and (consp arg2) (all-natp arg2))))))))
     (otherwise nil)))
-
 
 (local
   (defthmd member-equal-of-constant-when-not-equal-of-nth-0
@@ -1583,7 +1584,8 @@
                 (integerp n)
                 (<= -1 n)
                 (nat-listp nodenums-to-translate))
-           (nat-listp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
+           (nat-listp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                                                                                      nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
 (defthm no-nodes-are-variablesp-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
@@ -1593,7 +1595,8 @@
                 (nat-listp nodenums-to-translate)
                 (no-nodes-are-variablesp nodenums-to-translate
                                          dag-array-name dag-array dag-len))
-           (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))
+           (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                                                                                                    nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))
                                     dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
@@ -1627,16 +1630,8 @@
                 (all-< nodenums-to-translate bound)
                 (<= (+ 1 n) bound)
                 (all-< nodenums-to-translate dag-len))
-           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n
-                                                                                   dag-array-name
-                                                                                   dag-array
-                                                                                   dag-len
-                                                                                   needed-for-node1-tag-array
-                                                                                   needed-for-node2-tag-array
-                                                                                   nodenums-to-translate
-                                                                                   cut-nodenum-type-alist
-                                                                                   extra-asserts
-                                                                                   print var-type-alist))
+           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                                                                                  nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))
                   bound))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
@@ -1648,16 +1643,8 @@
                 (nat-listp nodenums-to-translate)
                 (all-< nodenums-to-translate (+ 1 n))
                 (all-< nodenums-to-translate dag-len))
-           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n
-                                                                                   dag-array-name
-                                                                                   dag-array
-                                                                                   dag-len
-                                                                                   needed-for-node1-tag-array
-                                                                                   needed-for-node2-tag-array
-                                                                                   nodenums-to-translate
-                                                                                   cut-nodenum-type-alist
-                                                                                   extra-asserts
-                                                                                   print var-type-alist))
+           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                                                                                   nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))
                   (+ 1 n)))
   :hints (("Goal" :use (:instance all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new (bound (+ 1 n)))
            :in-theory (disable all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new))))
@@ -1669,16 +1656,8 @@
                 (<= -1 n)
                 (nat-listp nodenums-to-translate)
                 (nodenum-type-alistp cut-nodenum-type-alist))
-           (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n
-                                                                                                dag-array-name
-                                                                                                dag-array
-                                                                                                dag-len
-                                                                                                needed-for-node1-tag-array
-                                                                                                needed-for-node2-tag-array
-                                                                                                nodenums-to-translate
-                                                                                                cut-nodenum-type-alist
-                                                                                                extra-asserts
-                                                                                                print var-type-alist))))
+           (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                                                                                                nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
 (defthm all-<-of-strip-cars-of-mv-nth-2-of-gather-nodes-to-translate-for-aggressively-cut-proof
@@ -1689,31 +1668,15 @@
                 (< n dag-len)
                 (nat-listp nodenums-to-translate)
                 (all-< nodenums-to-translate dag-len))
-           (all-< (strip-cars (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n
-                                                                                              dag-array-name
-                                                                                              dag-array
-                                                                                              dag-len
-                                                                                              needed-for-node1-tag-array
-                                                                                              needed-for-node2-tag-array
-                                                                                              nodenums-to-translate
-                                                                                              cut-nodenum-type-alist
-                                                                                              extra-asserts
-                                                                                              print var-type-alist)))
+           (all-< (strip-cars (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                                                                                              nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist)))
                   dag-len))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
 (defthm string-treep-of-mv-nth-3-of-gather-nodes-to-translate-for-aggressively-cut-proof
   (implies (string-treep extra-asserts)
-           (string-treep (mv-nth 3 (gather-nodes-to-translate-for-aggressively-cut-proof n
-                                                                                          dag-array-name
-                                                                                          dag-array
-                                                                                          dag-len
-                                                                                          needed-for-node1-tag-array
-                                                                                          needed-for-node2-tag-array
-                                                                                          nodenums-to-translate
-                                                                                          cut-nodenum-type-alist
-                                                                                          extra-asserts
-                                                                                          print var-type-alist))))
+           (string-treep (mv-nth 3 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                                                                                         nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2793,13 +2756,7 @@
                   :stobjs state))
   (b* ((negated-hyps (wrap-all 'not hyps)) ;inefficient - TODO: remove double negation?
        (clause (cons conc negated-hyps)))
-    (prove-clause-with-stp clause
-                           counterexamplep
-                           print-cex-as-signedp
-                           max-conflicts
-                           print
-                           base-filename
-                           state)))
+    (prove-clause-with-stp clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
 
 ;; Attempt to use STP to prove CONC assuming HYPS.
 ;returns (mv erp proved-or-failed state)
