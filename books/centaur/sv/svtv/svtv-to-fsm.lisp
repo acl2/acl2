@@ -4271,7 +4271,12 @@ In particular this requires
                      (t
                       (b* ((first-cycle-eqn (cdr (assoc-eq x.primary-output-var cycle-eqns-all)))
                            (rest-cycle-eqns (remove-equal first-cycle-eqn (strip-cdrs cycle-eqns-all))))
-                        (cons first-cycle-eqn rest-cycle-eqns)))))
+                        (if first-cycle-eqn
+                            (cons first-cycle-eqn rest-cycle-eqns)
+                          (cons `(natp ,x.base-cycle-var)
+                                rest-cycle-eqns))))))
+       (- (and (member-eq nil cycle-eqns)
+               (raise "Error: generated hyp of NIL")))
        ;; (run-length (len (svtv-probealist-outvars spec.probes)))
        )
     (acl2::template-subst *svtv-to-fsm-final-thm-template*
