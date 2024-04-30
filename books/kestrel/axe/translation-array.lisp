@@ -1,7 +1,7 @@
 ; Renumbering DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,11 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+
+(local (in-theory (enable true-listp-when-dargp)))
+
+;; TODO: Can we define this with def-typed-acl2-array ?
+;(def-typed-acl2-array translation-arrayp (or (null val) (dargp val)))
 
 ;; A translation-array maps each node, up to a given node, to a nodenum,
 ;; myquotep, or nil (meaning no translation applies for that node).  See also

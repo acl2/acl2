@@ -1,7 +1,7 @@
 ; dag-array-builders that involve memoization
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -408,6 +408,7 @@
                               (trees-to-memoizep trees-equal-to-tree)
                               (maybe-memoizationp memoization)
                               (print-intervalp print-interval))
+                  :guard-hints (("Goal" :in-theory (enable dargp-when-natp)))
                   :split-types t))
   (if (all-consp args) ;; "constant" case  ;;todo: we could keep these separate from the other constant alist
       (let* ((expr (cons fn args))

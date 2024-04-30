@@ -27,8 +27,9 @@
 ;; ;simpler example:
 ;; (simplify-term '(if (eqz x y) (if (eqz x y) '2 '3) w) nil :use-internal-contextsp t :print t)
 
-;; ;this one has :irrelevant in the answer:
-;; (simplify-term '(if (eqz x y) (if (eqz x y) '2 z) w) nil :use-internal-contextsp t :print t)
+;; ;this one has :irrelevant in the answer (todo: not anymore):
+;; (defstub eqz (x y) t)
+;; (simp-term '(if (eqz x y) (if (eqz x y) '2 z) w) :use-internal-contextsp t :print t :rules nil)
 
 ;; ;this one works because the context expr is negated, so it can be replaced by nil:
 ;; (simplify-term '(if (not (eqz x y)) (if (eqz x y) '2 '3) w) nil :use-internal-contextsp t :print t)

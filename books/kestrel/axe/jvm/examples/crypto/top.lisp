@@ -1,4 +1,4 @@
-; Top file for Axe JVM Formal Unit Tester examples
+; Top file for Axe JVM crypto examples
 ;
 ; Copyright (C) 2023-2024 Kestrel Institute
 ;
@@ -15,8 +15,6 @@
 ;; dependency scanner think they are actually included:
 
 #|
-(include-book "AbsLong")
-(include-book "Prefix")
-(include-book "BinarySearch")
-(include-book "BinarySearchBuggy")
+(include-book "aes-128-encrypt-light-and-spec")
+(include-book "aes-128-encrypt-regular-and-spec")
 |#

@@ -264,15 +264,15 @@
     (cons (pack$ item (car lst))
           (my-pack-list item (cdr lst)))))
 
-(defttag axe) ;due to open-output-channel!
+(defttag axe) ; for set-register-invariant-risk
 
 (set-register-invariant-risk nil) ;potentially dangerous but needed for execution speed
 
-;reconses the list, but oh well
-(defun drop-last (lst)
-  (butlast lst 1))
+;; ;reconses the list, but oh well
+;; (defun drop-last (lst)
+;;   (butlast lst 1))
 
-(defmap-simple drop-last)
+;; (defmap-simple drop-last)
 
 (local (in-theory (disable NAT-LISTP))) ;prevent inductions
 
@@ -393,23 +393,6 @@
 ;;                'boolor `(,(car disjunct-nodenums)
 ;;                         ,nodenum-of-disjunction-of-cdr)
 ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))
-
-;instead of using this, check the args, etc.?
-;fffixme add bvdiv and bvmod and sbvdiv and sbvrem !!
-(defconst *bv-and-array-fns-we-can-translate*
-  '(equal getbit bvchop ;$inline
-          slice
-          bvcat
-          bvplus bvuminus bvminus bvmult
-          bitor bitand bitxor bitnot
-          bvor bvand bvxor bvnot
-          bvsx bv-array-read bv-array-write bvif
-          leftrotate32
-          boolor booland ;boolxor
-          not
-          bvlt                       ;new
-          sbvlt                      ;new
-          ))
 
 ;fixme keep this list up to date - does it exist elsewhere?
 ;ffixme some of these (the rotates) can't be translated yet
@@ -7563,11 +7546,11 @@
 ;not currently doing any of these things because we want this to be fast
 ;returns (mv provedp state)
 ;fixme pass in assumptions (e.g., bvlt claims) - should we cut the assumptions too?
-(defun try-to-prove-pure-nodes-equivalent (smaller-nodenum
-                                           larger-nodenum ;could one of these have been replaced by a constant?
-                                           miter-array-name miter-array miter-len
-                                           var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
-                                           print max-conflicts miter-name state)
+(defun try-to-prove-pure-nodes-equal (smaller-nodenum
+                                      larger-nodenum ;could one of these have been replaced by a constant?
+                                      miter-array-name miter-array miter-len
+                                      var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
+                                      print max-conflicts miter-name state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
                               (<= smaller-nodenum larger-nodenum)
@@ -8217,13 +8200,15 @@
                    (nodes-are-purep (append-atoms (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
                                     (aset1 'done-array-temp done-array nodenum t))))))))))
 
+;; Checks whether nodenum and all of its supporters are pure.
 (defund node-is-purep (nodenum dag-array-name dag-array)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
                               )))
   (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (make-empty-array 'done-array-temp (+ 1 nodenum))))
 
-;shares the work of computing whether the individual nodes are pure
+;; Checks whether smaller-nodenum and larger-nodenum and all of their supporters are pure.
+;; May be faster than doing the 2 checks separately.
 (defund both-nodes-are-purep (smaller-nodenum larger-nodenum dag-array-name dag-array)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
@@ -10333,7 +10318,6 @@
                                              rewriter-rule-alist assumptions interpreted-function-alist monitored-symbols
                                              work-hard-when-instructedp print tag state result-array-stobj)
   (declare (xargs :mode :program :stobjs (state result-array-stobj)))
-
   (b* ( ;;Since we are not using the usual entry point to the rewriter we have to set up some stuff first:
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         ;;fixme thread these aux parts of the dag through the sweeping and mitering code?
@@ -14555,7 +14539,7 @@
  ;;            (mv-let
  ;;             (err state result-array-stobj)
  ;;             (if (endp main-theorem-concs)
- ;;                 (mv (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent
+ ;;                 (mv (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equal
  ;;                                         "No conclusions found"
  ;;                                         nil)
  ;;                             t)
@@ -14686,21 +14670,21 @@
  ;; at least one node (but not necessarily both) is supported by a recursive function - what if one has several rec fns and the other has one that needs to be split? - what if we can cut out the rec fns, leaving only bv and array fns?
  ;; the rec fns here may be things other than loop functions...
  ;;ffffixme really the "rec" fns include any built-ins other than bv/array/bool operators
- (defun try-to-prove-non-pure-nodes-equivalent (original-nodenum1 ;the smaller nodenum
-                                                original-nodenum2 ;the larger nodenum (can the nodenums be equal?) this node will be replaced
-                                                miter-array-name miter-array miter-len
-                                                miter-depth
-                                                max-conflicts
-                                                print interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                                extra-stuff ;does soundness depend on anything in this, or are these just hints?
-                                                monitored-symbols
-                                                assumptions ;terms we can assume non-nil ;fixme add these to the dag earlier (but what if some of their nodes get transformed)?
-                                                test-cases
-                                                test-case-array-alist step-num
-                                                analyzed-function-table unroll
-                                                some-goal-timed-outp nodenums-not-to-unroll
-                                                options
-                                                rand state result-array-stobj)
+ (defun try-to-prove-non-pure-nodes-equal (original-nodenum1 ;the smaller nodenum
+                                           original-nodenum2 ;the larger nodenum (can the nodenums be equal?) this node will be replaced
+                                           miter-array-name miter-array miter-len
+                                           miter-depth
+                                           max-conflicts
+                                           print interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                           extra-stuff ;does soundness depend on anything in this, or are these just hints?
+                                           monitored-symbols
+                                           assumptions ;terms we can assume non-nil ;fixme add these to the dag earlier (but what if some of their nodes get transformed)?
+                                           test-cases
+                                           test-case-array-alist step-num
+                                           analyzed-function-table unroll
+                                           some-goal-timed-outp nodenums-not-to-unroll
+                                           options
+                                           rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj) :guard (not (eq 'dag-array miter-array-name))))
    (b* ;;Start by trying to rewrite the equality of the two nodes to true:
        ((- (cw " Trying to prove non-pure nodes ~x0 and ~x1 equal.~%" original-nodenum1 original-nodenum2))
@@ -14776,7 +14760,7 @@
            (if (equal *nil* simplified-dag-lst)
                (prog2$ (cw "Equality rewrote to false!)~%") ;can this happen? would it mean the nodes are never equal?  what about the test cases?
                        (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
-             (prog2$ (er hard 'try-to-prove-non-pure-nodes-equivalent
+             (prog2$ (er hard 'try-to-prove-non-pure-nodes-equal
                          "!! ERROR The miter rewrote to a constant other than t or nil, namely ~x0.  This should never happen (unless the hypotheses contradict).)~%"
                          simplified-dag-lst)
                      (mv (erp-t) nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))
@@ -15133,11 +15117,11 @@
                                                                        nodenums-not-to-unroll rand state result-array-stobj)))
                                                              ;;both head rec?  is this stuff out of date? pull out this stuff into a subroutine..
                                                              (prog2$
-                                                              (hard-error 'try-to-prove-non-pure-nodes-equivalent "don't yet support this case." nil)
+                                                              (hard-error 'try-to-prove-non-pure-nodes-equal "don't yet support this case." nil)
                                                               (mv (erp-t) nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
 
                                                              ;;                                                                  (let*
-                                                             ;;                                                                      ((dummy0 (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent "don't yet support this case." nil)
+                                                             ;;                                                                      ((dummy0 (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equal "don't yet support this case." nil)
                                                              ;;                                                                                       (cw "Generating lemma for non-nice-tail-rec functions ~x0 and ~x1.~%" fn1 fn2)))
                                                              ;;                                                                       ;;fffixme:
                                                              ;;                                                                       ;; (dummy2a (if (eq 'REDUCE-PROCESS-BLOCK fn1) (cw "The first 3 traces for ~x0: ~x1" fn1 (firstn 3 traces1)) nil))
@@ -15335,7 +15319,7 @@
                                                              ;;                                                                           (mv-let
                                                              ;;                                                                            (err state)
                                                              ;;                                                                            (if (endp main-theorem-concs)
-                                                             ;;                                                                                (mv (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equivalent
+                                                             ;;                                                                                (mv (prog2$ (hard-error 'try-to-prove-non-pure-nodes-equal
                                                              ;;                                                                                                        "No conclusions found"
                                                              ;;                                                                                                        nil)
                                                              ;;                                                                                            t)
@@ -15498,28 +15482,28 @@
                             (prog2$ (cw "Prover failed to prove the clause.)~%")
                                     (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))))))
                 (if (eq :error result)
-                    (prog2$ (er hard 'try-to-prove-non-pure-nodes-equivalent "Unexpected error.") ; impossible?
+                    (prog2$ (er hard 'try-to-prove-non-pure-nodes-equal "Unexpected error.") ; impossible?
                             (mv (erp-t) nil analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))
                   (mv (erp-nil) result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj))))))))))
 
  ;; Tries to prove the equivalence of SMALLER-NODENUM and LARGER-NODENUM in MITER-ARRAY.
  ;; fixme could the two nodenums ever be the same? maybe not...
  ;; Returns (mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj) where, if ERP is nil, then RESULT is :proved, :timed-out, :error, :failed, or (list :new-rules new-runes new-fn-names) or (list :apply-rule ...)
- (defun try-to-prove-nodes-equivalent (smaller-nodenum
-                                       larger-nodenum
-                                       miter-array-name miter-array miter-len
-                                       miter-depth ;fixme track the actual names of the theorems we are trying to prove?
-                                       var-type-alist
-                                       print interpreted-function-alist
-                                       rewriter-rule-alist prover-rule-alist extra-stuff
-                                       monitored-symbols
-                                       assumptions ;terms to assume non-nil?
-                                       test-cases test-case-array-alist
-                                       step-num ;use this even in the pure case?
-                                       analyzed-function-table unroll miter-is-purep
-                                       some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
-                                       options
-                                       rand state result-array-stobj)
+ (defun try-to-prove-nodes-equal (smaller-nodenum
+                                  larger-nodenum
+                                  miter-array-name miter-array miter-len
+                                  miter-depth ;fixme track the actual names of the theorems we are trying to prove?
+                                  var-type-alist
+                                  print interpreted-function-alist
+                                  rewriter-rule-alist prover-rule-alist extra-stuff
+                                  monitored-symbols
+                                  assumptions ;terms to assume non-nil?
+                                  test-cases test-case-array-alist
+                                  step-num ;use this even in the pure case?
+                                  analyzed-function-table unroll miter-is-purep
+                                  some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
+                                  options
+                                  rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (let* ((expr1 (aref1 miter-array-name miter-array smaller-nodenum))
           (expr2 (aref1 miter-array-name miter-array larger-nodenum)))
@@ -15531,7 +15515,7 @@
        ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
        ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
        (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
-            (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop of cut non-pure ones.
+            (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
             (or miter-is-purep
                 (if nil ;(g :treat-as-purep options)
                     (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
@@ -15539,24 +15523,24 @@
                 (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
                 ))
            ;; The relevant part of the miter is pure:
-           ;;should we first make a miter and rewrite it?   pull that code up out of try-to-prove-non-pure-nodes-equivalent? no?  might be expensive?
+           ;;should we first make a miter and rewrite it?   pull that code up out of try-to-prove-non-pure-nodes-equal? no?  might be expensive?
            ;; or just rewrite the top node?
            (mv-let (success-flg state) ;ffixme handle errors?
              ;;fffixme pass in and translate assumptions?  they may be tighter than the sizes that are apparent from how the variables are used?
              ;; TTODO: use (pure) contexts!
-             (try-to-prove-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
+             (try-to-prove-pure-nodes-equal smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
              (if success-flg
                  (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
                ;; fixme would like to get a counterexample back and use it try to invalidate more "probable facts":
                (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)))
          ;; TODO: What if we could cut and then get a pure miter?  maybe we should always cut out the non-pure stuff and try it! but then try the non-pure approach too...
          ;; fixme should we check for and expand any remining user non-recursive functions?
-         (try-to-prove-non-pure-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
-                                                 miter-depth max-conflicts
-                                                 print interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                                 extra-stuff monitored-symbols
-                                                 assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
-                                                 some-goal-timed-outp nodenums-not-to-unroll options rand state result-array-stobj))))) ;fixme pass in miter-name?
+         (try-to-prove-non-pure-nodes-equal smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
+                                            miter-depth max-conflicts
+                                            print interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                            extra-stuff monitored-symbols
+                                            assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
+                                            some-goal-timed-outp nodenums-not-to-unroll options rand state result-array-stobj))))) ;fixme pass in miter-name?
 
  ;;       (if cut-proofs
  ;;           (mv-let (erp result miter-array state result-array-stobj)
@@ -15613,31 +15597,33 @@
  ;;remember failures and failures due to max-conflicts so we don't try them again?
 ;first generate a proof obligation that smaller-nodenum and larger-nodenum in the graph are equal.
 ;then change references to the nodes to point instead to the minimum node from the set that contains smaller-nodenum and larger-nodenum
-;BOZO i hope miter-len doesn't count the array header...
 ;BOZO now we can't drop repeats of the "same" proof...
 ;should we skip trivial equivalences?
- (defun try-to-prove-nodes-equal-and-merge (smaller-nodenum larger-nodenum miter-array-name miter-array miter-len miter-depth var-type-alist ;parent-array-name parent-array
-                                                            print interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                                            extra-stuff monitored-symbols
-                                                            assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-                                                            some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
+ (defun try-to-prove-nodes-equal-and-merge (smaller-nodenum
+                                            larger-nodenum
+                                            miter-array-name miter-array miter-len
+                                            miter-depth
+                                            var-type-alist ;parent-array-name parent-array
+                                            print interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                            extra-stuff monitored-symbols
+                                            assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
+                                            some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj)
    (declare (xargs :mode :program :stobjs (rand state result-array-stobj)))
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
-                        ;;ffixme make a 2 node version of print-dag-array-node-and-supporters - we show the simplified miter - that should contain everything interesting from the dag
-                        nil ;(print-array2 miter-array-name miter-array (+ 1 larger-nodenum))
-                        )))
+                        ;; we show the simplified miter - that should contain everything interesting from the dag
+                        (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum)))))
 ;fixme finish this.  the point was not to merge two nodes of different array types - but get-type-of-nodenum may sometimes give unfortunate errors here.
 ;could look at how the two nodes are used.  if they are not used as arrays (or equated to arrays?) then it's okay to merge them?
         ;; (let* ((smaller-node-type (get-type-of-nodenum smaller-nodenum miter-array-name miter-array
         ;;                         nodenum-type-alist ;for cut nodes (esp. those that are not bv expressions) ;now includes true input vars (or do we always cut at a var?)!
         ;;                         )
         ((mv erp result analyzed-function-table nodenums-not-to-unroll rand state result-array-stobj)
-         (try-to-prove-nodes-equivalent smaller-nodenum larger-nodenum miter-array-name miter-array miter-len miter-depth var-type-alist
-                                        print interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                        extra-stuff monitored-symbols
-                                        assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
-                                        some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
+         (try-to-prove-nodes-equal smaller-nodenum larger-nodenum miter-array-name miter-array miter-len miter-depth var-type-alist
+                                   print interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                   extra-stuff monitored-symbols
+                                   assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
+                                   some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state result-array-stobj))
         ((when erp) (mv erp nil nil nil nil rand state result-array-stobj))
         ((when (eq result :error)) (mv (erp-t) nil nil nil nil rand state result-array-stobj)) ; todo: drop once impossible
         )
@@ -15645,7 +15631,7 @@
          ;;replace larger-nodenum with smaller-nodenum in place:
          ;;fixme encapsulate this pattern into a function call?
          (let ((miter-array ;parent-array
-                (replace-node larger-nodenum smaller-nodenum miter-array-name miter-array ;parent-array-name parent-array
+                (replace-node-in-parents larger-nodenum smaller-nodenum miter-array-name miter-array ;parent-array-name parent-array
                               miter-len)))
            (prog2$ (cw "  Merging node ~x0 and node ~x1." smaller-nodenum larger-nodenum)
                    (mv (erp-nil)
@@ -15711,11 +15697,11 @@
          (b* ( ;; First simplify the equality of the node and the constant:  FFIXME first rewrite (and maybe call the prover) without using external contexts..
               (- (cw "(Making the equality and rewriting:~%"))
 ;ffixme if rewriting or proving ends in a goal that is clearly not valid then stop right there?
-              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len
-                                                )) ;fixme check if any of the context nodes are quoteps?
+              ;; This may be slow:
+              (context (get-context-for-nodenum nodenum miter-array-name miter-array miter-len))
               (- (cw " (Context for node ~x0: ~x1)~%" nodenum context))
               ((when (false-contextp context))
-               (cw "! Proof succeeded due to contradictory context !") ;fffixme close paren?
+               (cw "! Proof succeeded due to contradictory context ! )")
                (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
               (context-nodenums (get-nodenums-mentioned-in-non-false-context context))
               ;;To pass the context information into the rewriter, we extract only
@@ -15727,7 +15713,7 @@
               ;;Fix up the context to mention the right nodes in assumptions-array:
               (context (and context-nodenums (fixup-non-false-context context 'translation-array translation-array))) ; could drop the context-nodenums text
               ((when (false-contextp context)) ; todo: ensure this can't happen, given the false-contextp check above
-               (cw "! Proof succeeded due to contradictory fixed-up context !") ;fffixme close paren?
+               (cw "! Proof succeeded due to contradictory fixed-up context ! )")
                (mv (erp-nil) :proved analyzed-function-table rand state result-array-stobj))
               ;;ffixme eventually drop the conversion and pass the miter-array to the rewriter (but don't overwrite any existing nodes)??
               ;;  for now the rewriter can only work on an array named 'dag-array
@@ -15952,7 +15938,7 @@
                                      :proved
                                      ;; should we replace each mention of the node with the constant? could do it quickly using the parent-array - could propagate constants up the dag...
                                      ;; probably not needed.  hell, we could resimplify the whole dag each time...
-                                     ;;could call replace-node here but i'd rather add support for propagating the constants up...
+                                     ;;could call replace-node-in-parents here but i'd rather add support for propagating the constants up...
                                      (aset1-safe miter-array-name miter-array nodenum (enquote constant-value)) ;fixme could it be that if we don't fixup the parents here we'll do it over and over when rewriting to merge nodes?
                                      ;;the newly-constant node no longer has children:
                                      ;; (if (consp expr) ;checks that it's not a variable (we know from above that it's not a quotep)
@@ -18507,9 +18493,6 @@
                                                                   body-dag
                                                                   formal-slot-alist))))))
 
-
-
-
 ;the values of var-constant-alist are already quoted
 (defun make-var-replacement-assumptions (vars var-constant-alist)
   (if (endp vars)
@@ -19698,20 +19681,6 @@
 ;;         nil
 ;;       (append (try-to-express-target-tree-with-any-value (car target-traces-lst) value-traces-lst value-term-lst (car target-term-lst))
 ;;               (try-to-express-target-tree-with-any-value-lst (cdr target-traces-lst) value-traces-lst value-term-lst (cdr target-term-lst)))))))
-
-
-
-
-
-
-
-;; ;;returns (mv result rand state)
-;; ;where result is either :error, or a generated axe-rule-name
-;; (defun try-to-prove-non-pure-nodes-equivalent (nodenum1 nodenum2 dag-array dag-len var-type-alist print interpreted-function-alist rand state)
-;;   (declare (ignore nodenum1 nodenum2 dag-array dag-len var-type-alist print INTERPRETED-FUNCTION-ALIST)
-;;            (xargs :stobjs (state rand)))
-;;   (mv :error rand state))
-
 
 ;; ;;returns a list of equalities (fixme- are the things dealt with here and in related functions always going to be equalities?)
 ;; (defun try-to-express-target-tree-with-any-values (target-traces target-term value-traces-lst value-term-lst)

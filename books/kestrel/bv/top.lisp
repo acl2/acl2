@@ -100,6 +100,7 @@
 (include-book "bvsx")
 
 ;; Comparison operations:
+(include-book "bvequal")
 (include-book "bvlt")
 (include-book "sbvlt")
 

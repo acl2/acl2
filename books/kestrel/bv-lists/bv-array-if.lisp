@@ -1,7 +1,7 @@
 ; If-then-else on bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -168,3 +168,32 @@
            (equal (nth n (bv-array-if element-size len test array1 array2))
                   (bvif element-size test (nth n array1) (nth n array2))))
   :hints (("Goal" :in-theory (enable bv-array-if))))
+
+(defthm bv-array-if-of-bool-fix
+  (equal (bv-array-if element-size len (bool-fix test) array1 array2)
+         (bv-array-if element-size len test array1 array2))
+  :hints (("Goal" :in-theory (enable bv-array-if bool-fix))))
+
+(defthm bv-array-if-of-take-arg4
+  (implies (and (<= len n)
+                (natp n))
+           (equal (bv-array-if element-size len test (take n array1) array2)
+                  (bv-array-if element-size len test array1 array2)))
+  :hints (("Goal" :in-theory (enable bv-array-if take))))
+
+(defthm bv-array-if-of-take-arg5
+  (implies (and (<= len n)
+                (natp n))
+           (equal (bv-array-if element-size len test array1 (take n array2))
+                  (bv-array-if element-size len test array1 array2)))
+  :hints (("Goal" :in-theory (enable bv-array-if take))))
+
+(defthm bv-array-if-of-bvchop-list-arg4
+  (equal (bv-array-if element-size len test (bvchop-list element-size array1) array2)
+         (bv-array-if element-size len test array1 array2))
+  :hints (("Goal" :in-theory (enable bv-array-if bvchop-list take))))
+
+(defthm bv-array-if-of-bvchop-list-arg5
+  (equal (bv-array-if element-size len test array1 (bvchop-list element-size array2))
+         (bv-array-if element-size len test array1 array2))
+  :hints (("Goal" :in-theory (enable bv-array-if bvchop-list take))))

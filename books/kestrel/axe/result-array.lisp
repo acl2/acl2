@@ -1,7 +1,7 @@
 ; An array for tracking results of operations on nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,6 +11,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; This is only used in prover.lisp
+;; See also result-array-stobj.lisp
 
 (include-book "dargp-less-than")
 (include-book "darg-listp")
@@ -202,7 +205,8 @@
   (declare (xargs :guard (and (darg-listp args)
                               ;;(result-arrayp result-array-name result-array dag-len)
                               (array1p result-array-name result-array)
-                              (< (largest-non-quotep args) (alen1 result-array-name result-array)))))
+                              (< (largest-non-quotep args) (alen1 result-array-name result-array)))
+                  :guard-hints (("Goal" :in-theory (enable dargp-less-than-when-dargp)))))
   (if (endp args)
       nil
     ;; TODO: Consider cons-with-hint here:

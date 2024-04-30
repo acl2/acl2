@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,5 +29,5 @@
 
   (defrule hex-digit-listp-of-chars=>nats
     (equal (hex-digit-listp (chars=>nats chars))
-           (str::hex-digit-char-listp chars))
+           (str::hex-digit-char-list*p chars))
     :enable chars=>nats))

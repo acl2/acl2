@@ -83,6 +83,7 @@
                            all-natp-when-not-consp
                            all-<-when-not-consp
                            darg-listp-when-not-consp
+                           strip-cars ; avoid induction
                            )))
 
 ;(local (in-theory (enable natp-of-+-of-1-alt)))
@@ -154,7 +155,7 @@
 (mutual-recursion
 
  ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
- (defun relieve-free-var-hyp-and-all-others-for-axe-prover (nodenums-to-assume-false-to-walk-down
+ (defund relieve-free-var-hyp-and-all-others-for-axe-prover (nodenums-to-assume-false-to-walk-down
                                                             hyp ;partly instantiated
                                                             hyp-num
                                                             other-hyps
@@ -167,7 +168,7 @@
                                                             embedded-dag-depth ;used for the renaming-array-for-merge-embedded-dag
                                                             case-designator work-hard-when-instructedp prover-depth options count state)
    (declare (xargs
-             :verify-guards nil ;todo
+             :verify-guards nil ;todo (need result-arrayp in the guards?)
              :stobjs state
              :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                          (nat-listp nodenums-to-assume-false-to-walk-down)
@@ -251,7 +252,7 @@
 
  ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
  ;; alist maps vars to nodenums or quoteps (not terms?)
- (defun relieve-rule-hyps-for-axe-prover (hyps ;the hyps of the rule (not yet instantiated ; trees over vars and quoteps)
+ (defund relieve-rule-hyps-for-axe-prover (hyps ;the hyps of the rule (not yet instantiated ; trees over vars and quoteps)
                                           hyp-num
                                           alist ;binds variables to nodenums or quoteps
                                           rule-symbol
@@ -461,7 +462,7 @@
 
  ;; returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
  ;; where if new-rhs-or-nil is nil, no rule applied. otherwise, new-rhs-or-nil is a tree with nodenums and quoteps at the leaves (what about free vars?  should free vars in the RHS be an error?)
- (defun try-to-apply-rules-for-axe-prover (stored-rules
+ (defund try-to-apply-rules-for-axe-prover (stored-rules
                                            rule-alist
                                            args-to-match ;a list of nodenums and/or quoteps
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -552,7 +553,7 @@
 ;ffixme check that interpreted functions are consistent?!
 ;can this add ifns to the alist?
  ;;returns (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
- (defun merge-embedded-dag-into-dag-for-axe-prover (rev-dag
+ (defund merge-embedded-dag-into-dag-for-axe-prover (rev-dag
                                                     renaming-array-name
                                                     renaming-array2 ;associates nodenums in the embedded dag with the nodenums (or quoteps) they rewrote to in the main dag
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -650,7 +651,7 @@
  ;; TREE has nodenums and quoteps and variables (really? yes, from when we call this on a worklist of nodes) at the leaves.
  ;; returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
  ;; be sure we always handle lambdas early, in case one is hiding an if - fixme - skip this for now?
- (defun simplify-tree-and-add-to-dag-for-axe-prover (tree equiv
+ (defund simplify-tree-and-add-to-dag-for-axe-prover (tree equiv
                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                           rule-alist
                                                           nodenums-to-assume-false
@@ -1016,7 +1017,7 @@
 ;returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries changed-anything-flg state)
 ;if the items in tree-lst are already all nodenums or quoted constants this doesn't re-cons-up the list
 ;not tail-recursive, btw.
- (defun simplify-tree-lst-and-add-to-dag-for-axe-prover (tree-lst
+ (defund simplify-tree-lst-and-add-to-dag-for-axe-prover (tree-lst
                                                          equiv-lst
                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                          rule-alist nodenums-to-assume-false
@@ -1146,7 +1147,7 @@
  ;;ffixme special handling for if/myif/boolif/bvif/boolor/booland?
 ;;;fixme track the equiv used for each node? ;fixme track polarities?
  ;;this (and its callers) could take an explicit substitution for a variable, to support elim and substitute-a-var) - actually, i am changing those operations to not use rewriting..
- (defun rewrite-nodes-for-axe-prover (worklist ;could track the equivs and polarities?
+ (defund rewrite-nodes-for-axe-prover (worklist ;could track the equivs and polarities?
                                       result-array-name result-array
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                       nodenums-to-assume-false rule-alist equiv-alist interpreted-function-alist
@@ -1154,7 +1155,7 @@
                                       prover-depth options count state)
    (declare (xargs :stobjs state
                    :guard (and (nat-listp worklist)
-                               (symbolp result-array-name)
+                               ;; (symbolp result-array-name)
                                (array1p result-array-name result-array)
                                (all-< worklist (alen1 result-array-name result-array))
                                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1251,7 +1252,7 @@
 ;fixme inline this?
  ;;returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
 ;fixme can we use a better equiv?
- (defun rewrite-literal-for-axe-prover (nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false rule-alist interpreted-function-alist
+ (defund rewrite-literal-for-axe-prover (nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenums-to-assume-false rule-alist interpreted-function-alist
                                                 info tries monitored-symbols print case-designator work-hard-when-instructedp ;none of these should affect soundness
                                                 prover-depth options count state)
    (declare (xargs :stobjs state
@@ -1301,7 +1302,7 @@
  ;; and if provedp is nil, then the disjunction of literal-nodenums is equal to the disjunction of the union of work-list and done-list.
  ;; If provedp is non-nil, changep is meaningless.
  ;; may extend the dag but doesn't change any nodes (new!)
- (defun rewrite-literals-for-axe-prover (work-list ;a list of nodenums
+ (defund rewrite-literals-for-axe-prover (work-list ;a list of nodenums
                                          done-list ;a list of nodenums
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          changep rule-alist
@@ -1385,7 +1386,7 @@
  ;; otherwise, we return the simplified clause (as the list of literal nodenums and the dag-array, etc.)
  ;; perhaps this should return info, which the parent can print
  ;; old: this returns TEST-CASES because destructor elimination can change the vars and changes the test cases analogously.
- (defun rewrite-subst-and-elim-with-rule-alist-for-axe-prover (literal-nodenums
+ (defund rewrite-subst-and-elim-with-rule-alist-for-axe-prover (literal-nodenums
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                rule-alist interpreted-function-alist monitored-symbols
                                                                case-designator print work-hard-when-instructedp ;move print arg?
@@ -1512,7 +1513,7 @@
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)))))))))))
 
  ;; Returns (mv erp provedp literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state).
- (defun rewrite-subst-and-elim-with-rule-alists-for-axe-prover (literal-nodenums
+ (defund rewrite-subst-and-elim-with-rule-alists-for-axe-prover (literal-nodenums
                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                 rule-alists ;we use these one at a time
                                                                 interpreted-function-alist monitored-symbols case-designator print work-hard-when-instructedp
@@ -1641,7 +1642,7 @@
  ;; old: this returns TEST-CASES because destructor elimination can change the vars and must change the test cases analogously.
 ;old: this may do mitering (what if there are no test cases - that could mean dont miter), but does not do splitting or call stp (should we do those things before mitering?)
 ;; TODO: Move the STP call here
- (defun prove-case-with-axe-prover (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+ (defund prove-case-with-axe-prover (literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                      rule-alists
                                                      interpreted-function-alist monitored-symbols
                                                      case-designator print
@@ -1685,7 +1686,7 @@
  ;;when should we try to separate the vars?  i think destructor elimination can enable separation...
  ;;upon failure, prints the failed case (sometimes?)
  ;; Does not change any existing DAG nodes if prover-depth > 0 (TODO check that).
- (defun prove-disjunction-with-axe-prover (literal-nodenums-or-quoteps
+ (defund prove-disjunction-with-axe-prover (literal-nodenums-or-quoteps
                                           dag-array ;must be named 'dag-array
                                           dag-len
                                           dag-parent-array ;must be named 'dag-parent-array
@@ -1908,8 +1909,7 @@
                                   print-max-conflicts-goalp
                                   options state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo
-                  :mode :program ;todo
+                  :verify-guards nil ;todo: first do prove-disjunction-with-axe-prover
                   :guard (and (or (and (pseudo-dagp dag)
                                        (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))

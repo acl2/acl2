@@ -1,7 +1,7 @@
 ; Checking whether a term is equal to part of a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,8 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
+
+(local (in-theory (enable integerp-when-dargp)))
 
 (mutual-recursion
  ;; Test whether TERM is equal to ITEM wrt DAG-ARRAY.

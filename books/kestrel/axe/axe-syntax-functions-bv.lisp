@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -29,7 +29,8 @@
                           not-cddr-of-nth-when-darg-listp
                           consp-of-cdr-of-nth-when-darg-listp
                           equal-of-quote-and-nth-0-of-nth-when-darg-listp
-                          symbolp-of-nth-0-when-dag-exprp)))
+                          symbolp-of-nth-0-when-dag-exprp
+                          dargp-of-nth-when-darg-listp)))
 
 (defund unquote-if-possible (x)
   (declare (xargs :guard t))
@@ -587,3 +588,34 @@
                            (and (true-listp exclude-fns) ; for guards
                                 (not (member-eq fn exclude-fns)))
                          t))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This can be used to decide which functions to open.
+;; But to decide whether we can translate an expression, more checking is needed.
+;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
+;instead of using this, check the args, etc.?
+;fffixme add bvdiv and bvmod and sbvdiv and sbvrem !!
+;; todo: add bve and sbvle?
+(defconst *bv-and-array-fns-we-can-translate*
+  '(not
+    booland boolor ;boolxor
+    boolif
+    bitnot
+    bitand bitor bitxor
+    bvchop bvnot bvuminus
+    getbit
+    slice
+    bvand bvor bvxor
+    bvplus bvminus bvmult
+    bvdiv bvmod
+    sbvdiv sbvrem
+    bvlt bvle
+    sbvlt sbvle
+    bvcat
+    bvsx
+    bvif
+    leftrotate32
+    bv-array-read
+    bv-array-write
+    equal))

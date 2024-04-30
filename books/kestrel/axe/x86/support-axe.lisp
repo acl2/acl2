@@ -414,7 +414,7 @@
 (def-constant-opener x86isa::mxcsrbits->um$inline)
 (def-constant-opener x86isa::mxcsrbits->pm$inline)
 (def-constant-opener x86isa::mxcsrbits->rc$inline)
-(def-constant-opener x86isa::mxcsrbits->fz$inline)
+(def-constant-opener x86isa::mxcsrbits->ftz$inline)
 (def-constant-opener x86isa::mxcsrbits->reserved$inline)
 
 (def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)

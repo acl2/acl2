@@ -389,7 +389,7 @@
     x86isa::mxcsrbits->um$inline
     x86isa::mxcsrbits->pm$inline
     x86isa::mxcsrbits->rc$inline
-    x86isa::mxcsrbits->fz$inline
+    x86isa::mxcsrbits->ftz$inline
     x86isa::mxcsrbits->reserved$inline
 
     x86isa::mxcsrbits->ie
@@ -406,7 +406,7 @@
     x86isa::mxcsrbits->um
     x86isa::mxcsrbits->pm
     x86isa::mxcsrbits->rc
-    x86isa::mxcsrbits->fz
+    x86isa::mxcsrbits->ftz
     x86isa::mxcsrbits->reserved
 
     x86isa::!mxcsrbits->ie$inline
@@ -423,7 +423,7 @@
     x86isa::!mxcsrbits->um$inline
     x86isa::!mxcsrbits->pm$inline
     x86isa::!mxcsrbits->rc$inline
-    x86isa::!mxcsrbits->fz$inline
+    x86isa::!mxcsrbits->ftz$inline
     x86isa::!mxcsrbits->reserved$inline
 
     x86isa::!mxcsrbits->ie
@@ -440,7 +440,7 @@
     x86isa::!mxcsrbits->um
     x86isa::!mxcsrbits->pm
     x86isa::!mxcsrbits->rc
-    x86isa::!mxcsrbits->fz
+    x86isa::!mxcsrbits->ftz
     x86isa::!mxcsrbits->reserved
 
     x86isa::feature-flag

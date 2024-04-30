@@ -242,7 +242,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection hex-digit-list->chars ((x hex-digit-listp))
-  :returns (chars str::hex-digit-char-listp)
+  :returns (chars str::hex-digit-char-list*p)
   :short "Extract the characters from a list of hex digits."
   (hex-digit->get x)
   ///

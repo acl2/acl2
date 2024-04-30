@@ -655,10 +655,10 @@
 
 ;; A context-array maps nodenums to their contexts.
 ;todo: this failed when contextp was enabled
-(def-typed-acl2-array context-arrayp (contextp val))
+(def-typed-acl2-array context-arrayp (contextp val) :default (true-context))
 
-;; Recognizes and array whose values are bounded contexts (contexts contaning nodenums less than BOUND).
-(def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :extra-vars (bound) :extra-guards ((natp bound)))
+;; Recognizes an array whose values are bounded contexts (contexts contaning nodenums less than BOUND).
+(def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :default (true-context) :extra-vars (bound) :extra-guards ((natp bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -941,9 +941,10 @@
                               (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
                   :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp)))))
-  (let* ((context-array (make-empty-array 'context-array dag-len))
+  (let* (;; All nodes initially have a context of "true" but all contexts except that of the top node get overwritten as we go:
+         (context-array (make-empty-array-with-default 'context-array dag-len (true-context)))
          (top-nodenum (+ -1 dag-len))
-         (context-array (aset1 'context-array context-array top-nodenum (true-context))) ;top node has no context
+         ;; (context-array (aset1 'context-array context-array top-nodenum (true-context))) ;top node has no context
          (context-array (make-full-context-array-aux (+ -1 top-nodenum) ; skip the top node
                                                      dag-array-name
                                                      dag-array

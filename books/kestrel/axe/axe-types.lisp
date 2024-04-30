@@ -60,6 +60,7 @@
   (natp type))
 
 ;may change
+;could require posp?
 (defund-inline make-bv-type (width)
   (declare (xargs :guard (natp width)))
   width)
@@ -73,6 +74,10 @@
   (implies (natp width)
            (natp (make-bv-type width)))
   :rule-classes :type-prescription)
+
+(defthm make-bv-type-type-iff
+  (iff (make-bv-type width)
+       width))
 
 (defthmd <-of-0-and-make-bv-type
   (equal (< (make-bv-type width) 0)

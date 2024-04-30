@@ -72,6 +72,12 @@
                   (leftrotate size amt val)))
   :hints (("Goal" :in-theory (enable leftrotate))))
 
+(defthm leftrotate-when-not-natp-arg1
+  (implies (not (natp amt))
+           (equal (leftrotate width amt val)
+                  (leftrotate width 0 val)))
+  :hints (("Goal" :in-theory (enable leftrotate))))
+
 (defthm leftrotate-same
   (implies (natp size)
            (equal (leftrotate size size val)
@@ -116,11 +122,11 @@
                 (posp width)
                 (natp amount))
            (equal (bvchop size (leftrotate width amount val))
-                  (slice (+ -1 (- AMOUNT) SIZE WIDTH)
-                         (+ (- AMOUNT) WIDTH)
+                  (slice (+ -1 (- amount) size width)
+                         (+ (- amount) width)
                          val)))
   :hints (("Goal" :cases ((equal amount width))
-           :in-theory (enable LEFTROTATE))))
+           :in-theory (enable leftrotate))))
 
 ;combine the cases?
 (defthm bvchop-of-leftrotate-not-low
@@ -133,11 +139,11 @@
                   (bvcat (- size amount)
                          val
                          amount
-                         (SLICE (+ -1 WIDTH)
-                                (+ (- AMOUNT) WIDTH)
-                                VAL) )))
+                         (slice (+ -1 width)
+                                (+ (- amount) width)
+                                val) )))
   :hints (("Goal" ;:cases ((equal amount width))
-           :in-theory (enable LEFTROTATE))))
+           :in-theory (enable leftrotate))))
 
 ;; is there a nicer way to comvine the cases?
 (defthm bvchop-of-leftrotate-both
@@ -151,11 +157,11 @@
                       (bvcat (- size amount)
                              val
                              amount
-                             (SLICE (+ -1 WIDTH)
-                                    (+ (- AMOUNT) WIDTH)
-                                    VAL) )
-                    (slice (+ -1 (- AMOUNT) SIZE WIDTH)
-                           (+ (- AMOUNT) WIDTH)
+                             (slice (+ -1 width)
+                                    (+ (- amount) width)
+                                    val) )
+                    (slice (+ -1 (- amount) size width)
+                           (+ (- amount) width)
                            val))))
   :hints (("Goal" :cases ((< amount size)))))
 
@@ -276,17 +282,19 @@
                 (natp amt))
            (equal (leftrotate width (bvchop (lg width) amt) x)
                   (leftrotate width amt x)))
-  :hints (("Goal" :in-theory (enable leftrotate BVCHOP))))
+  :hints (("Goal" :in-theory (enable leftrotate bvchop))))
 
 (defthm leftrotate-of-bvchop-arg2
   (implies (and (syntaxp (and (quotep width)
                               (quotep size)))
                 (equal size (lg width))
                 (power-of-2p width)
-                (natp amt))
+                (natp amt) ; todo
+                )
            (equal (leftrotate width (bvchop size amt) x)
                   (leftrotate width amt x)))
-  :hints (("Goal" :in-theory (enable leftrotate BVCHOP))))
+  :hints (("Goal" :use (:instance leftrotate-of-bvchop-arg2-core (amt amt))
+           :in-theory (disable leftrotate-of-bvchop-arg2-core))))
 
 (defthm leftrotate-of-bvchop-arg3
   (implies (natp width)

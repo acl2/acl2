@@ -1,3 +1,13 @@
+; Fast alists for looking up what nodes rewrote to
+;
+; Copyright (C) 2023-2024 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "dargp-less-than")
@@ -230,7 +240,7 @@
                 (dargp darg)
                 (node-result-alistp alist))
            (lookup-darg-in-node-result-alist darg alist))
-  :hints (("Goal" :in-theory (enable lookup-darg-in-node-result-alist))))
+  :hints (("Goal" :in-theory (enable lookup-darg-in-node-result-alist dargp))))
 
 ;maybe disable?
 (defthm true-listp-of-lookup-darg-in-node-result-alist

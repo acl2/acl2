@@ -2725,7 +2725,7 @@ PP-ENTRY->ORIG-TERM)
                               ;;(:REWRITE IMPLODE-EQUIVALANCE-WITH-STRING)
                               (:META BINARY-OR**/AND**-GUARD-META-CORRECT)
                               len
-                              (:REWRITE STR::DEC-DIGIT-CHAR-LISTP-OF-CONS)
+                              (:REWRITE STR::DEC-DIGIT-CHAR-LIST*P-OF-CONS)
                               (:REWRITE
                                ACL2::DEFAULT-INTERN-IN-PACKAGE-OF-SYMBOL)
                               (:DEFINITION SUBSEQ)

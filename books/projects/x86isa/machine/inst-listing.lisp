@@ -21335,7 +21335,7 @@
 
 (defsection implemented-opcodes
   :parents (x86isa instructions x86-decoder opcode-maps)
-  :short "Intel Opcodes Supported in @('x86isa')"
+  :short "Intel opcodes supported in @('x86isa')."
   :long
   "<p>We support decoding of all the x86 instructions in the one-, two-, and
  three-byte opcode maps, including the AVX/AVX2/AVX512 extensions.  However, a

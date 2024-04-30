@@ -1,7 +1,7 @@
 ; A tool to normalize XOR nests in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -311,8 +311,6 @@
   :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;(def-typed-acl2-array translation-arrayp (natp val) :DEFAULT-SATISFIES-PREDP nil)
 
 ;; Returns (mv nodenums combined-constant).  Translates the nodenums according
 ;; to translation-array and xors all the constants.  The nodenums returned are
