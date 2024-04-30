@@ -5163,7 +5163,7 @@
                                                     (boolean-rules)
                                                     '(IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
-                                                      UBP-LONGER-BETTER
+                                                      UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1
                                                       sbvlt-of-bvminus-of-1-and-minus-1
                                                       sbvlt-of-bvplus-of-minus-1-and-1

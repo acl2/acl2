@@ -2101,7 +2101,7 @@
     unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger
 ;    sha1-loop-10-theorem-1
     equal-of-constant-and-bitxor-1
-    ubp-longer-better
+    unsigned-byte-p-when-unsigned-byte-p-smaller
     car-becomes-nth-of-0
     nth-of-cdr
     bvchop-does-nothing-rewrite))
@@ -2677,7 +2677,7 @@
      sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
      bvminus-becomes-bvplus-of-bvuminus
      sbvlt-becomes-bvlt-better
-     ubp-longer-better ;what else?  all predicates should be safe to include?
+     unsigned-byte-p-when-unsigned-byte-p-smaller ;what else?  all predicates should be safe to include?
      bvlt-tighten-free-alt
      bvlt-tighten-free
      nth-of-cons-constant-version
