@@ -1241,6 +1241,10 @@
 ;; TODO: Can we assume that the arity of the call (fn applied to args) is correct?
 ;fffixme think this through! check the types of the operands (for whether they can be translated and are compatible?)?! maybe just check constants?
 ;; Note that this does not handle EQUAL, as it is treated separately.
+;; todo: check more (arity, etc.):
+;; TODO: Consider printing a warning if a BV op with a size argument of 0 arises.
+;; TODO: Compare this to pure-fn-call-exprp (currently, this takes the dag-array for checking bv-array operations -- why?)
+;; todo: add bvequal, once we can translate it
 (defund can-always-translate-expr-to-stp (fn args dag-array-name dag-array dag-len known-nodenum-type-alist print)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
@@ -1258,6 +1262,51 @@
                  (boolean-arg-okp (first args))
                  (boolean-arg-okp (second args))
                  (boolean-arg-okp (third args))))
+    (bitnot (and (= 1 (len args))
+                 (bv-arg-okp (first args))))
+    ((bitand bitor bitxor) (and (= 2 (len args))
+                                (bv-arg-okp (first args))
+                                (bv-arg-okp (second args))))
+    ((bvchop bvnot bvuminus) ; (<fn> <size> <x>)
+     (and (= 2 (len args))
+          (darg-quoted-posp (first args))
+          (bv-arg-okp (second args))))
+    (getbit (and (= 2 (len args))
+                 (darg-quoted-natp (first args))
+                 (bv-arg-okp (second args))))
+    (slice (and (= 3 (len args))
+                (darg-quoted-natp (first args))
+                (darg-quoted-natp (second args))
+                (<= (unquote (second args))
+                    (unquote (first args)))
+                (bv-arg-okp (third args))))
+    ((bvand bvor bvxor
+            bvplus bvminus bvmult
+            bvdiv bvmod
+            sbvdiv sbvrem
+            bvlt bvle
+            sbvlt sbvle)
+     (and (= 3 (len args))
+          (darg-quoted-posp (first args))
+          (bv-arg-okp (second args))
+          (bv-arg-okp (third args))))
+    (bvcat (and (= 4 (len args))
+                (darg-quoted-posp (first args))
+                (bv-arg-okp (second args))
+                (darg-quoted-posp (third args))
+                (bv-arg-okp (fourth args))))
+    (bvsx (and (= 3 (len args))
+               (darg-quoted-posp (first args))
+               (darg-quoted-posp (second args))
+               ;; todo: disallow = ?
+               (<= (unquote (second args))
+                   (unquote (first args)))
+               (bv-arg-okp (third args))))
+
+    ;; todo: why separate?
+    ((bvif) (and (= 4 (len args)) ; (bvif <size> <test> <then> <else>)
+                 (can-translate-bvif-args args)))
+
     ((bv-array-read) ;new (ffixme make sure these get translated right: consider constant array issues):
      (if (and (= 4 (len args)) ;todo: speed up checks like this?
               (darg-quoted-posp (first args))
@@ -1303,49 +1352,22 @@
        (prog2$ (and (eq :verbose print)
                     (cw "(WARNING: Not translating array expr ~x0 since the length and width are not known.)~%" (cons fn args)))
                nil)))
-    (getbit (and (= 2 (len args))
-                 (darg-quoted-natp (first args))))
+
     ;; we can translate (leftrotate32 amt val) but only if AMT is a constant:
     (leftrotate32 (and (= 2 (len args))
                        (darg-quoted-natp (first args)) ;now allows 0 (todo: test it)
                        ;;(< (unquote (first args)) 32)
                        ))
-    (slice (and (= 3 (len args))
-                (darg-quoted-natp (first args))
-                (darg-quoted-natp (second args))
-                (<= (unquote (second args))
-                    (unquote (first args)))))
-    ((bvif) (and (= 4 (len args)) ; (bvif <size> <test> <then> <else>)
-                 (can-translate-bvif-args args)))
-    ;; todo: add bvequal, once we can translate it
-    ;; todo: check more (arity, etc.):
-    ((bvuminus bvnot bvchop) ; (<fn> <size> <x>)
-     (and (= 2 (len args))
-          (darg-quoted-posp (first args)) ;used to allow 0 ;fixme print a warning in that case?
-          ))
-    ((bvplus bvminus bvmult
-             bvand bvor bvxor
-             bvlt bvle
-             sbvlt sbvle
-             bvdiv bvmod
-             sbvdiv sbvrem)
-     (and (= 3 (len args))
-          (darg-quoted-posp (first args)) ;used to allow 0 ;fixme print a warning in that case?
-          ))
-    ;; todo: what if some args are constants?
-    ((bitor bitand bitxor)
-     (= 2 (len args)))
-    ((bitnot)
-     (= 1 (len args)))
-    (bvcat (and (= 4 (len args))
-                (darg-quoted-posp (first args))
-                (darg-quoted-posp (third args))))
-    (bvsx (and (= 3 (len args))
-               (darg-quoted-posp (first args))
-               (darg-quoted-posp (second args))
-               ;; todo: disallow = ?
-               (<= (unquote (second args))
-                   (unquote (first args)))))
+
+
+
+
+
+
+
+
+
+
 ;; (equal (let ((arg1 (first args))
 ;;                      (arg2 (second args)))
 ;;                  (and (or (not (consp arg1))
