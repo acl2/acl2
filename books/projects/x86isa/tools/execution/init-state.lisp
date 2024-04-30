@@ -47,7 +47,7 @@
 
 (defsection initialize-x86-state
   :parents (program-execution)
-  :short "Initializing the x86 state for concrete program execution"
+  :short "Initializing the x86 state for concrete program execution."
 
   :long "<p>The utilities in this section are meant to be used to
  initialize the x86 state when doing concrete execution or when
@@ -60,7 +60,7 @@
 (define n64p-byte-alistp (alst)
   :enabled t
   :parents (initialize-x86-state)
-  :short "Recognizer for a list of pairs of up to 64-bit wide linear address and byte"
+  :short "Recognizer for a list of pairs of up to 64-bit wide linear address and byte."
 
   (if (atom alst)
       (equal alst nil)
@@ -87,7 +87,7 @@
 
   :parents (initialize-x86-state)
 
-  :short "Loading a program into the model's memory"
+  :short "Loading a program into the model's memory."
 
   :long "<p>@('load-program-into-memory') expects a program
   represented in the form of a @('n64p-byte-alistp'), and loads that
@@ -140,7 +140,7 @@
 (define rgfi-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of general-purpose register indices and
-  values"
+  values."
   :long "<p>Note that the register values are required to be @('n64p'), as
   opposed to @('i64p') (which is what is required for @('!rgfi')).</p>"
 
@@ -176,7 +176,7 @@
 
 (define ctri-alistp (alst)
   :parents (initialize-x86-state)
-  :short "Recognizer for pairs of control register indices and values"
+  :short "Recognizer for pairs of control register indices and values."
   :long "<p>Note that the register values are required to be @('n64p') </p>"
 
   :enabled t
@@ -211,7 +211,7 @@
 (define msri-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of model-specific register indices and
-  values"
+  values."
   :long "<p>Note that the register values are required to be @('n64p') </p>"
   :enabled t
 
@@ -249,7 +249,7 @@
 (define seg-visiblei-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and
-          values for the visible portions of the registers"
+          values for the visible portions of the registers."
   :long "<p>Note that the register values are required to be @('n16p') </p>"
   :enabled t
 
@@ -289,7 +289,7 @@
 (define seg-hidden-basei-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and values for the
-          hidden portions containing the base addresses of the registers"
+          hidden portions containing the base addresses of the registers."
   :long "<p>Note that the register values are required to be @('n64p') </p>"
   :enabled t
 
@@ -308,7 +308,7 @@
 (define seg-hidden-limiti-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and values for the
-          hidden portions containing the limit value of the registers"
+          hidden portions containing the limit value of the registers."
   :long "<p>Note that the register values are required to be @('n32p') </p>"
   :enabled t
 
@@ -327,7 +327,7 @@
 (define seg-hidden-attri-alistp (alst)
   :parents (initialize-x86-state)
   :short "Recognizer for pairs of segment register indices and values for the
-          hidden portions containing the attr value of the registers"
+          hidden portions containing the attr value of the registers."
   :long "<p>Note that the register values are required to be @('n16p') </p>"
   :enabled t
 
@@ -424,7 +424,7 @@
 
   :parents (initialize-x86-state)
   :short "A convenient function to populate the x86 state's
-  instruction pointer, registers, and memory"
+  instruction pointer, registers, and memory."
   :guard (and (canonical-address-p start-addr)
 	      (rgfi-alistp gprs)
 	      (ctri-alistp ctrs)
@@ -474,7 +474,7 @@
   :returns (mv flg
 	       (x86 x86p :hyp :guard))
   :parents (initialize-x86-state)
-  :short "A variant of @(tsee init-x86-state) that ensures 64-bit mode"
+  :short "A variant of @(tsee init-x86-state) that ensures 64-bit mode."
   :long
   "<p>
    After calling @(tsee init-x86-state),

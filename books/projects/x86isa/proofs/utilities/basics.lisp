@@ -48,12 +48,10 @@
 
 (defsection proof-utilities
   :parents (x86isa)
-  :short "Basic utilities for x86 machine-code proofs"
-  )
+  :short "Basic utilities for x86 machine-code proofs.")
 
 (defsection debugging-code-proofs
-  :parents (proof-utilities x86isa)
-  )
+  :parents (proof-utilities x86isa))
 
 ;; ======================================================================
 ;; Some useful arithmetic theorems, currently placed here because

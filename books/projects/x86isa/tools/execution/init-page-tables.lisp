@@ -48,9 +48,9 @@
 
 ;; ======================================================================
 
-(defsection Setting-up-Page-Tables
-  :parents (Program-Execution)
-  :short "Setting up the page tables for a user-level program's run"
+(defsection setting-up-page-tables
+  :parents (program-execution)
+  :short "Setting up the page tables for a user-level program's run."
   :long "<p>Recall that when the value of the field @('app-view') is
   <tt>nil</tt>, the x86 model offers the system-level view of x86
   machines.  It's only in this view that memory read and write
@@ -66,7 +66,7 @@
 (define physical-addr-qword-alistp (alst)
   :parents (Setting-up-Page-Tables)
   :enabled t
-  :short "Recognizer for a list of pairs of up to 52-bit wide physical address and byte"
+  :short "Recognizer for a list of pairs of up to 52-bit wide physical address and byte."
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
@@ -88,7 +88,7 @@
               (physical-addr-qword-alistp addr-qword-lst))
 
   :parents (Setting-up-Page-Tables)
-  :short "Load 64-bit entries into the physical memory"
+  :short "Load 64-bit entries into the physical memory."
   :returns (x86 x86p :hyp :guard)
 
   (cond ((endp addr-qword-lst) x86)
@@ -105,7 +105,7 @@
 
 (define physical-addr-qword-alist-listp (list)
   :parents (Setting-up-Page-Tables)
-  :short "Recognizer for a list of @(see physical-addr-qword-alistp)"
+  :short "Recognizer for a list of @(see physical-addr-qword-alistp)."
   :enabled t
   (if (atom list)
       (equal list nil)
@@ -117,7 +117,7 @@
    x86)
   :parents (Setting-up-Page-Tables)
   :short "Load lists of @(see physical-addr-qword-alistp) into the
-  physical memory"
+  physical memory."
   :long "This function can be used to initialize the page tables."
   :guard (and (not (app-view x86))
               (physical-addr-qword-alist-listp addr-qword-list-list))
@@ -261,8 +261,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
   ((pdpt-base-addr :type (unsigned-byte 40)))
 
   :parents (Setting-up-Page-Tables)
-  :short "Add a PML4 entry that references a Page-Directory-Pointer
-  Table"
+  :short "Add a PML4 entry that references a Page-Directory-Pointer Table."
   (b* ((64-bit-entry
         ;; Physical address of 4K-aligned PDPT referenced by this
         ;; entry
@@ -290,7 +289,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
                          ())))
 
   (defthm-unsigned-byte-p n64p-add-pml4-entry
-    :hyp t 
+    :hyp t
     :bound 64
     :concl (add-pml4-entry pdpt-base-addr)
     :gen-linear t
@@ -309,7 +308,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
   :parents (Setting-up-Page-Tables)
 
   :short "Construct a PML4 table, one entry at a time, each of which
-  references a Page-Directory-Pointer Table"
+  references a Page-Directory-Pointer Table."
 
   :long "<p>A PML4 table comprises 512 64-bit entries.</p>"
 
@@ -375,7 +374,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
   ((page-base-addr :type (unsigned-byte 22)))
 
   :parents (Setting-up-Page-Tables)
-  :short "Add a PDP entry that maps a 1GB page"
+  :short "Add a PDP entry that maps a 1GB page."
 
   (b* ((64-bit-entry
         ;; Physical address of 4K-aligned page directory referenced by
@@ -417,7 +416,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
 
   :parents (Setting-up-Page-Tables)
   :short "Construct a PDP table, one entry at a time, each of which
-  map a 1GB page"
+  map a 1GB page."
 
   :long "<p>A PDP table comprises 512 64-bit entries.</p>"
 
@@ -484,7 +483,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
 
   :parents (Setting-up-Page-Tables)
   :short "Construct PDP tables, where each table has entries that map
-  a 1GB page"
+  a 1GB page."
 
   :long "<p>PML4 tables contain 512 64-bit entries, and in our current
   setup, each of those 512 entries point to a PDP table. Thus, we need
@@ -527,7 +526,7 @@ CR3[40:12] = 0. All these 513 tables are placed contiguously in the memory.
   :parents (Setting-up-Page-Tables)
 
   :short "Construct page tables that do linear address translation to
-  1GB page using IA32e paging"
+  1GB page using IA32e paging."
 
   (let*
       ((pml4-base-address40 (loghead 40 (logtail 12 pml4-base-address))))

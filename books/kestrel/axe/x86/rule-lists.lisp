@@ -1321,7 +1321,7 @@
     x86isa::mxcsrbits->um$inline-constant-opener
     x86isa::mxcsrbits->pm$inline-constant-opener
     x86isa::mxcsrbits->rc$inline-constant-opener
-    x86isa::mxcsrbits->fz$inline-constant-opener
+    x86isa::mxcsrbits->ftz$inline-constant-opener
 
     mxcsrbits->ie-of-bvor
     mxcsrbits->de-of-bvor
@@ -1337,7 +1337,7 @@
     mxcsrbits->um-of-bvor
     mxcsrbits->pm-of-bvor
     mxcsrbits->rc-of-bvor
-    mxcsrbits->fz-of-bvor
+    mxcsrbits->ftz-of-bvor
     mxcsrbits->reserved-of-bvor
 
     mxcsrbits->ie-of-logior
@@ -1354,7 +1354,7 @@
     mxcsrbits->um-of-logior
     mxcsrbits->pm-of-logior
     mxcsrbits->rc-of-logior
-    mxcsrbits->fz-of-logior
+    mxcsrbits->ftz-of-logior
     mxcsrbits->reserved-of-logior
 
     ;todo: more
@@ -1422,7 +1422,7 @@
     getbit-of-daz-becomes-mxcsrbits->daz
     getbit-of-omsk-becomes-mxcsrbits->-om
     getbit-of-umsk-becomes-mxcsrbits->-um
-    getbit-of-ftz-becomes-mxcsrbits->-fz
+    getbit-of-ftz-becomes-mxcsrbits->-ftz
     natp-of-omsk
     natp-of-umsk
     natp-of-ftz
