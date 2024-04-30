@@ -1030,6 +1030,8 @@
 
      bvchop-of-ifix ; more like this?
      acl2::slice-tighten-top-dag
+
+     unsigned-byte-p-when-unsigned-byte-p-smaller
      )))
 
 ;todo combine this with core-rules-bv
