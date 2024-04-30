@@ -166,7 +166,9 @@
 
 (define binary-file-load-fn ((filename stringp)
                              exld::elf
-                             exld::mach-o x86 state
+                             exld::mach-o
+                             x86
+                             state
                              &key
                              ((elf booleanp) 't)
                              ((mach-o booleanp) 'nil))
@@ -210,6 +212,12 @@
      (mv exld::elf exld::mach-o x86 state)))))
 
 (defmacro binary-file-load (filename &key (elf 't) (mach-o 'nil))
-  `(binary-file-load-fn ,filename exld::elf exld::mach-o x86 state :elf ,elf :mach-o ,mach-o))
+  `(binary-file-load-fn ,filename
+                        exld::elf
+                        exld::mach-o
+                        x86
+                        state
+                        :elf ,elf
+                        :mach-o ,mach-o))
 
 ;; ----------------------------------------------------------------------
