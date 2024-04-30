@@ -2228,7 +2228,7 @@
             x86isa::<-of-if-arg2
             acl2::<-of-if-arg1
             x86isa::if-of-if-of-nil-and-consp
-            acl2::ubp-longer-better
+            acl2::unsigned-byte-p-when-unsigned-byte-p-smaller
             x86isa::canonical-address-p-when-unsigned-byte-p
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
             acl2::collect-constants-over-<-2

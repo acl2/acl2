@@ -78,13 +78,11 @@
            (unsigned-byte-p n x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-;rename?
-(defthm ubp-longer-better
+(defthm unsigned-byte-p-when-unsigned-byte-p-smaller
   (implies (and (unsigned-byte-p free x)
-                (<= free n)
-                (integerp n))
+                (<= free n))
            (equal (unsigned-byte-p n x)
-                  (<= 0 n)))
+                  (natp n)))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p) nil))))
 
 ;should be cheap since FREE is a free var
@@ -113,7 +111,7 @@
            (unsigned-byte-p size (* x y)))
   :hints (("Goal" :use unsigned-byte-p-of-*
            :in-theory (disable unsigned-byte-p-of-*
-                               ubp-longer-better))))
+                               unsigned-byte-p-when-unsigned-byte-p-smaller))))
 
 (defthmd unsigned-byte-p-when-n-is-not-natp
   (implies (not (natp n))
