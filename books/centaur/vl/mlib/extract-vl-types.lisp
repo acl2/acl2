@@ -320,7 +320,7 @@
                      '(equal (vl-value-kind x.val) :vl-constint))
               nil))
 
-         
+
          (value (vl-constint->value x.val))
          ((vl-enumitem cur) (car items))
          ((unless (equal cur.range nil))
@@ -359,7 +359,7 @@
                 ((Unless close-bracket-i)
                  (raise "Could not find close bracket for args: ~s0~%" args))
                 (num (explode (subseq args 1 close-bracket-i)))
-                ((unless (str::dec-digit-char-listp num))
+                ((unless (str::dec-digit-char-list*p num))
                  (raise "Invalid sequence of indices are given: ~p0. There needs to be a positive integer between brackets.~%" args))
 
                 ((mv num & &) (Str::parse-nat-from-charlist num 0 0))
@@ -789,7 +789,7 @@
                             (:debug-macro-name ,debug-macro-name)
                             (:debug-fn-name ,debug-fn-name)
                             (:debug-vector-fn-name ,debug-vector-fn-name)))
-                   
+
                    ;;  )
                    ))))
            (mv events size)))
@@ -867,7 +867,7 @@
                             (:debug-fn-name ,debug-fn-name)
                             (:debug-vector-fn-name ,debug-vector-fn-name)
                             ))
-                   
+
                    ))))
            (mv (append member-events this-events) size)))
         (:vl-union
@@ -943,7 +943,7 @@
                             (:debug-fn-name ,debug-fn-name)
                             (:debug-vector-fn-name ,debug-vector-fn-name)
                             ))
-                   
+
                    ))))
            (mv (append member-events this-events) size)))
         (:vl-enum
@@ -990,7 +990,7 @@
                                          )))
                            ((sv::4vec-p value)
                             value)
-                           (t 
+                           (t
                             (case-match value
                               ,@string-to-int-cases
                               (& (progn$ (cw "Invalid enum type given: ~s0 ~%" value)
@@ -1219,7 +1219,7 @@ nil
                    (mv (change-vl-location loc :col 0) nil)))
                 (t (mv (raise "Unexpected vl-type for x: ~p0" x) nil))))
 
-         
+
          ((mv okp result & state) (vl-read-file (vl-location->filename minloc)))
          ((unless okp)
           (progn$ (cw "Couldn't read file ~p0 for ~p1 ~%"
@@ -1244,7 +1244,7 @@ nil
                                                   :col 0)))))
                    (subseq string start (min (length string) end))))))
 
-         
+
 
          ;; insert xdoc hyperlinks to quickly navigate children types.
          (string (extract-vl-types-insert-xdoc-links string all-vl-type-names))

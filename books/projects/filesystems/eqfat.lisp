@@ -36,7 +36,7 @@
                   (:rewrite fat32-masked-entry-list-p-when-not-consp)
                   (:rewrite bounded-nat-listp-correctness-1)
                   (:rewrite stringp-when-nonempty-stringp)
-                  (:rewrite str::hex-digit-char-listp-of-cons)
+                  (:rewrite str::hex-digit-char-list*p-of-cons)
                   (:definition logtail$inline)
                   (:definition loghead$inline)
                   (:rewrite nat-listp-when-unsigned-byte-listp)

@@ -1634,7 +1634,7 @@ nil)))
                                  (:type-prescription single-c-p$inline)
                                  (:type-prescription rp-termp)
                                  (:type-prescription acl2::element-list-p)
-                                 (:type-prescription str::dec-digit-char-listp)
+                                 (:type-prescription str::dec-digit-char-list*p)
                                  (:rewrite quotep-term-with-ex-from-rp)
                                  (:rewrite rp-termp-implies-subterms)
                                  (:type-prescription ex-from-synp)
@@ -4481,8 +4481,8 @@ to-be-coughed-c-lst))|#
 
 (defines has-more-than-one-var?
   (define has-more-than-one-var? (term)
-    ;; second return value should be ignored. 
-    :returns (mv result found-var) 
+    ;; second return value should be ignored.
+    :returns (mv result found-var)
     (cond ((atom term)
            (mv nil term))
           ((quotep term)
@@ -4529,8 +4529,8 @@ to-be-coughed-c-lst))|#
                      (has-more-than-one-var? term)))
                  has-more-than-one-var)
              t)))))
-        
-           
+
+
 
 (define new-sum-merge-aux ((sum-lst rp-term-listp)
                            (limit natp))
