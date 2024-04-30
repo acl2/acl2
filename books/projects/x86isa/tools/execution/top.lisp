@@ -381,9 +381,7 @@ remember to initialize the x86 state appropriately.</p>
 
 </li>
 
-</ol>"
-
-  )
+</ol>")
 
 (local (xdoc::set-default-parents program-execution))
 
@@ -397,7 +395,7 @@ remember to initialize the x86 state appropriately.</p>
 
   :parents (program-execution)
   :short "Switches the model to the system-level view and load our
-default configuration of 1G page tables"
+default configuration of 1G page tables."
 
   :guard (equal (loghead 12 paging-base-addr) 0)
   :guard-hints (("Goal" :in-theory (e/d (!cr4bits->pae
@@ -405,7 +403,9 @@ default configuration of 1G page tables"
                                          !cr0bits->pg)
                                         (unsigned-byte-p))))
 
-  :returns (x86 x86p :hyp (and (x86p x86) (unsigned-byte-p 52 paging-base-addr)))
+  :returns (x86 x86p
+                :hyp (and (x86p x86) (unsigned-byte-p 52 paging-base-addr)))
+
   :prepwork
   ((local (include-book "centaur/gl/gl" :dir :system))
 
@@ -433,30 +433,32 @@ default configuration of 1G page tables"
       :g-bindings (gl::auto-bindings (:nat x 64)))))
 
   (b* ((ctx 'init-sys-view)
-       ((when (not (equal (loghead 12 paging-base-addr) 0)))
+       ((when (not (mbt (equal (loghead 12 paging-base-addr) 0))))
         (!!ms-fresh :misaligned-paging-base-address paging-base-addr))
        (paging-base-addr40 (logtail 12 paging-base-addr))
 
-       (x86
-        ;; The default value of app-view is t; nil switches the model
-        ;; to the system-level view.
-        (!app-view nil x86))
+       ;; The default value of app-view is t; nil switches the model
+       ;; to the system-level view.
+       (x86 (!app-view nil x86))
 
+       ;; Control registers:
        (cr0 (n32 (ctri #.*cr0* x86)))
        (cr4 (n21 (ctri #.*cr4* x86)))
-       ;; Control registers:
        (x86 (!ctri #.*cr0* (!cr0Bits->pg 1 cr0) x86))
        (x86 (!ctri #.*cr4* (!cr4Bits->pae 1 cr4) x86))
-       (x86 (!ctri #.*cr3* (!cr3Bits->pdb paging-base-addr40 (ctri #.*cr3* x86)) x86))
+       (x86 (!ctri #.*cr3*
+                   (!cr3Bits->pdb paging-base-addr40 (ctri #.*cr3* x86))
+                   x86))
 
        ;; Model-specific registers:
        (efer (n12 (msri #.*ia32_efer-idx* x86)))
        (x86 (!msri #.*ia32_efer-idx* (!ia32_eferBits->lme 1 efer) x86))
 
-       ;; Initializing the page tables.
+       ;; Initialize the page tables.
        (x86
         (load-qwords-into-physical-memory-list
          (construct-page-tables paging-base-addr) x86)))
+
       x86))
 
 ;; ======================================================================
