@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (uses-stp)
+
 (include-book "defthm-axe")
 
 ;;(defthm-axe test1 (equal x x)  :rule-classes nil)
