@@ -1249,8 +1249,9 @@
                   :guard-hints (("Goal" :in-theory (enable darg-quoted-posp))))
            (ignore dag-len))
   (case fn
-    ;; We could handle boolxor here as well
-    ((boolor booland) (and (= 2 (len args))
+    (not (and (= 1 (len args))
+              (boolean-arg-okp (first args))))
+    ((booland boolor) (and (= 2 (len args))
                            (boolean-arg-okp (first args))
                            (boolean-arg-okp (second args))))
     (boolif (and (= 3 (len args))
@@ -1336,7 +1337,6 @@
      (= 2 (len args)))
     ((bitnot)
      (= 1 (len args)))
-    ;; (not t) ;fixme what if it's a not of a variable?
     (bvcat (and (= 4 (len args))
                 (darg-quoted-posp (first args))
                 (darg-quoted-posp (third args))))
@@ -2114,29 +2114,6 @@
                                                                    dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                    nodenums-to-translate
                                                                    (acons nodenum (boolean-type) cut-nodenum-type-alist))))))
-                          ;;fixme could just say that not induces a boolean type for its arg?
-                          ((and (eq 'not fn)
-                                (= 1 (len args)))
-                           (let* ((arg (first args)) ;could this be a quotep?
-                                  (arg-type (maybe-get-type-of-arg arg dag-array known-nodenum-type-alist)))
-                             (if (and arg-type
-                                      (boolean-typep arg-type) ;error if not?
-                                      )
-                                 ;;can translate:
-                                 (process-nodenums-for-translation (append-atoms args (rest worklist)) ;(append (keep-atoms args) (rest worklist))
-                                                                   depth-limit depth-array
-                                                                   (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                   dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                   (cons nodenum nodenums-to-translate)
-                                                                   cut-nodenum-type-alist)
-                               ;;can't translate:
-                               (progn$ ;; (er hard? 'process-nodenums-for-translation "NOT called with non-boolean arg: ~x0." arg) ; this only fires in prove-with-stp-tests.lisp
-                                       (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                                         (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                         dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                         nodenums-to-translate
-                                                                         (acons nodenum (boolean-type) cut-nodenum-type-alist))))))
-
                           (t ;; the node has an obvious type, but is not something we support translating (maybe it's < or some other known boolean), so we cut:
                            ;;ffixme what if there is a better known type or induced type?
                            (process-nodenums-for-translation (rest worklist) depth-limit depth-array
