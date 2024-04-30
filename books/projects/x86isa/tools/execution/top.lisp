@@ -284,7 +284,7 @@ routine, where we might see an instruction moving the value in
 ...
 </code>
 
-<p>It should be emphasized is that it is the user's responsibility to
+<p>It should be emphasized that it is the user's responsibility to
 ensure that the state is initialized \"correctly\", i.e., the program
 does not overlap with the page tables, the stack pointer is
 initialized so that the stack does not run out of memory nor does it
