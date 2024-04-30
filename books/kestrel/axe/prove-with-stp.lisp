@@ -1302,11 +1302,18 @@
                (<= (unquote (second args))
                    (unquote (first args)))
                (bv-arg-okp (third args))))
-
-    ;; todo: why separate?
     ((bvif) (and (= 4 (len args)) ; (bvif <size> <test> <then> <else>)
-                 (can-translate-bvif-args args)))
-
+                 (darg-quoted-posp (first args))
+                 (boolean-arg-okp (second args))
+                 (bv-arg-okp (third args))
+                 (bv-arg-okp (fourth args))))
+    ;; we can translate (leftrotate32 amt val) but only if AMT is a constant:
+    (leftrotate32 (and (= 2 (len args))
+                       (darg-quoted-natp (first args)) ;now allows 0 (todo: test it)
+                       ;;(< (unquote (first args)) 32)
+                       (bv-arg-okp (second args))
+                       ))
+    ;; todo: clean these up:
     ((bv-array-read) ;new (ffixme make sure these get translated right: consider constant array issues):
      (if (and (= 4 (len args)) ;todo: speed up checks like this?
               (darg-quoted-posp (first args))
@@ -1352,36 +1359,20 @@
        (prog2$ (and (eq :verbose print)
                     (cw "(WARNING: Not translating array expr ~x0 since the length and width are not known.)~%" (cons fn args)))
                nil)))
-
-    ;; we can translate (leftrotate32 amt val) but only if AMT is a constant:
-    (leftrotate32 (and (= 2 (len args))
-                       (darg-quoted-natp (first args)) ;now allows 0 (todo: test it)
-                       ;;(< (unquote (first args)) 32)
-                       ))
-
-
-
-
-
-
-
-
-
-
-;; (equal (let ((arg1 (first args))
-;;                      (arg2 (second args)))
-;;                  (and (or (not (consp arg1))
-;;                           (let ((farg1 (unquote arg1)))
-;;                             ;;if it's a constant, it must be a natural, a boolean, or an array
-;;                             (or (natp arg1)
-;;                                 (booleanp arg1)
-;;                                 (and (consp arg1) (all-natp arg1)))))
-;;                       (or (not (consp arg2))
-;;                           (let ((farg2 (unquote arg2)))
-;;                             ;;if it's a constant, it must be a natural, a boolean, or an array
-;;                             (or (natp arg2)
-;;                                 (booleanp arg2)
-;;                                 (and (consp arg2) (all-natp arg2))))))))
+    ;; (equal (let ((arg1 (first args))
+    ;;                      (arg2 (second args)))
+    ;;                  (and (or (not (consp arg1))
+    ;;                           (let ((farg1 (unquote arg1)))
+    ;;                             ;;if it's a constant, it must be a natural, a boolean, or an array
+    ;;                             (or (natp arg1)
+    ;;                                 (booleanp arg1)
+    ;;                                 (and (consp arg1) (all-natp arg1)))))
+    ;;                       (or (not (consp arg2))
+    ;;                           (let ((farg2 (unquote arg2)))
+    ;;                             ;;if it's a constant, it must be a natural, a boolean, or an array
+    ;;                             (or (natp arg2)
+    ;;                                 (booleanp arg2)
+    ;;                                 (and (consp arg2) (all-natp arg2))))))))
     (otherwise nil)))
 
 (local
