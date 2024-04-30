@@ -64,14 +64,14 @@
 (defxdoc X86ISA
   :parents (acl2::software-verification acl2::hardware-verification acl2::projects)
   :short "x86 ISA model and machine-code analysis framework developed
-  at UT Austin"
+  at UT Austin."
   :long "<p><img src='res/x86isa/x86isa.png' /></p>")
 
-(defsection Introduction
+(defsection introduction
   :parents (x86isa)
 
-  :short "A Formal and Executable Model of the x86 Instruction Set
-  Architecture"
+  :short "A formal and executable model of the x86 Instruction Set
+  Architecture."
 
   :long "<p>These books contain the specification of x86 instruction
  set architecture \(ISA\); we characterize x86 machine instructions and
@@ -215,7 +215,7 @@
 (defxdoc x86isa-build-instructions
   :parents (x86isa)
   :short "Building books related to the x86 ISA and the machine-code
-  analysis framework"
+  analysis framework."
 
   :long "<p>Some ways of building the @('x86isa') books are:</p>
 
@@ -298,9 +298,9 @@
 
  <p><img src='res/x86isa/cosim.png' /></p>")
 
-(defxdoc Publications
+(defxdoc publications
   :parents (x86isa)
-  :short "Technical publications related to these @('x86isa') books"
+  :short "Technical publications related to these @('x86isa') books."
   :long "<p>From the oldest to the newest:</p>
  <ol>
 
@@ -356,9 +356,9 @@
 
  </ol>")
 
-(defxdoc Contributors
+(defxdoc contributors
   :parents (x86isa)
-  :short "Authorship Details and Acknowledgments"
+  :short "Authorship details and acknowledgments."
   :long "<h5>Original Authors</h5>
  <p>Shilpi Goel, Warren A. Hunt, Jr., and Matt Kaufmann</p>
 
@@ -418,7 +418,7 @@
  <p>Thanks to Arjen van Lith for designing the @('x86isa') logo.</p>"
  )
 
-(defxdoc TO-DO
+(defxdoc to-do
   :parents (x86isa)
   :short "Known issues, planned activities, wishlists, etc."
 
@@ -460,7 +460,7 @@ and the step function does nothing when that information is present.</li>
 
 (xdoc::order-subtopics
  X86ISA
- (Introduction
+ (introduction
   implemented-opcodes
   x86isa-build-instructions
   utils
@@ -469,9 +469,9 @@ and the step function does nothing when that information is present.</li>
   model-validation
   proof-utilities
   debugging-code-proofs
-  Contributors
-  Publications
-  TO-DO))
+  contributors
+  publications
+  to-do))
 
 (xdoc::order-subtopics
  implemented-opcodes

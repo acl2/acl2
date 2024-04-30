@@ -48,7 +48,7 @@
 (defxdoc program-execution
   :parents (X86ISA)
 
-  :short "Setting up the x86 ISA model for a program run"
+  :short "Setting up the x86 ISA model for a program run."
 
   :long "<p>IMPORTANT: Note that if these books were built using any
   other value of @('X86ISA_EXEC') except @('t'), then instructions

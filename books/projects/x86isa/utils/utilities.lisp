@@ -59,12 +59,10 @@
 
 (defsection utils
   :parents (x86isa)
-  :short "Utilities for rest of the @('X86ISA') books"
-  )
+  :short "Utilities for rest of the @('X86ISA') books.")
 
 (defsection utilities
-  :parents (utils)
-  )
+  :parents (utils))
 
 ;; ----------------------------------------------------------------------
 
