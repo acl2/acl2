@@ -64,7 +64,7 @@
 
    ;; Assume that we are are not flushing to 0 (this is 0 upon power up or reset and
    ;; is incompatible with IEEE 754):
-   (equal (mxcsrbits->fz (mxcsr x86)) 0)))
+   (equal (mxcsrbits->ftz (mxcsr x86)) 0)))
 
 ;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
 (defun lifter-targetp (target)
