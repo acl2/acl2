@@ -174,7 +174,7 @@
                              ((mach-o booleanp) 'nil))
   :parents (program-execution)
   :short "Function to read in an ELF or Mach-O binary and load text
-  and data sections into the x86 ISA model's memory"
+  and data sections into the x86 ISA model's memory."
   :long "<p>The following macro makes it convenient to call this
   function to load a program:</p>
 <code> (binary-file-load \"fib.o\" :elf t) ;; or :mach-o t</code>"
