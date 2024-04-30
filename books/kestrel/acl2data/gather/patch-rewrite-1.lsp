@@ -56,14 +56,14 @@
 ; The first value is the rewritten term.  The second is the final
 ; value of ttree.
 
-  (declare (type (unsigned-byte #.*fixnat-bits*) rdepth)
-           (type (signed-byte #.*fixnum-bits*) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    3
-   (signed-byte #.*fixnum-bits*)
+   #.*fixnum-type*
    (let ((gstack (push-gframe 'rewrite bkptr term alist obj))
          (rdepth (adjust-rdepth rdepth)))
-     (declare (type (unsigned-byte #.*fixnat-bits*) rdepth))
+     (declare (type #.*fixnat-type* rdepth))
      (cond
       ((zero-depthp rdepth)
 ; patch file: my-rdepth-error instead of rdepth-error
@@ -459,7 +459,7 @@
                              (fn-rune-nume 'mv-nth nil nil wrld)
                              ttree))
                      (step-limit (1+f step-limit)))
-                 (declare (type (signed-byte #.*fixnum-bits*) step-limit))
+                 (declare (type #.*fixnum-type* step-limit))
                  (if mv-nth-rewritep
                      (rewrite-entry
                       (rewrite mv-nth-result alist 2))

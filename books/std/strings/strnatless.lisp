@@ -168,7 +168,7 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                                       char<-trichotomy-strong
                                       char<-transitive)
                                      (expt charlistnat<-antisymmetric
-                                           take-leading-dec-digit-chars-when-dec-digit-char-listp
+                                           take-leading-dec-digit-chars-when-dec-digit-char-list*p
                                            default-+-2 default-+-1
                                            BOUND-OF-LEN-OF-TAKE-LEADING-DEC-DIGIT-CHARS
                                            LEN-OF-PARSE-NAT-FROM-CHARLIST))
@@ -272,14 +272,14 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
              (implies (and (equal (len x) (len y))
                            (character-listp x)
                            (character-listp y)
-                           (dec-digit-char-listp x)
-                           (dec-digit-char-listp y))
+                           (dec-digit-char-list*p x)
+                           (dec-digit-char-list*p y))
                       (equal (equal (dec-digit-chars-value x)
                                     (dec-digit-chars-value y))
                              (equal x y)))
              :hints(("Goal"
                      :induct (my-induction x y)
-                     :in-theory (enable dec-digit-char-listp
+                     :in-theory (enable dec-digit-char-list*p
                                         dec-digit-chars-value
                                         commutativity-of-+))
                     (and stable-under-simplificationp
@@ -325,7 +325,7 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                       t))
       :hints(("Goal" :in-theory (e/d (char<-trichotomy-strong)
                                      (BOUND-OF-LEN-OF-TAKE-LEADING-DEC-DIGIT-CHARS
-                                      TAKE-LEADING-DEC-DIGIT-CHARS-WHEN-DEC-DIGIT-CHAR-LISTP
+                                      TAKE-LEADING-DEC-DIGIT-CHARS-WHEN-DEC-DIGIT-CHAR-LIST*P
                                       ACL2::RIGHT-CANCELLATION-FOR-+
                                       CHARLISTNAT<-ANTISYMMETRIC
                                       CHARLISTNAT<-IRREFLEXIVE
@@ -504,8 +504,8 @@ one index.</p>"
   (encapsulate
     nil
     (local (in-theory (disable acl2::nth-when-bigger
-                               take-leading-dec-digit-chars-when-dec-digit-char-listp
-                               dec-digit-char-listp-when-not-consp
+                               take-leading-dec-digit-chars-when-dec-digit-char-list*p
+                               dec-digit-char-list*p-when-not-consp
                                (:type-prescription character-listp)
                                (:type-prescription eqlable-listp)
                                (:type-prescription atom-listp)
@@ -564,8 +564,8 @@ one index.</p>"
                              )
                             (charlistnat<-antisymmetric
                              charlistnat<-trichotomy-strong
-                             take-leading-dec-digit-chars-when-dec-digit-char-listp
-                             dec-digit-char-listp-when-not-consp
+                             take-leading-dec-digit-chars-when-dec-digit-char-list*p
+                             dec-digit-char-list*p-when-not-consp
                              charlistnat<
                              (:definition strnat<-aux)
                              default-+-1 default-+-2

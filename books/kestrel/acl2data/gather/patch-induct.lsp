@@ -260,7 +260,7 @@
 
               (with-accumulated-persistence
                (fn-rune-nume fn nil nil wrld)
-               ((the (signed-byte #.*fixnum-bits*) step-limit) term ttree)
+               ((the #.*fixnum-type* step-limit) term ttree)
                t
                (expand-abbreviations (bbody fn)
                                      (pairlis$ (formals fn wrld) expanded-args)

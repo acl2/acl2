@@ -61,8 +61,8 @@
 (defmacro dec-digit-char-value (x) `(STR::dec-digit-char-value ,x))
 (add-macro-alias dec-digit-char-value STR::dec-digit-char-value)
 
-(defmacro dec-digit-char-listp (x) `(STR::dec-digit-char-listp ,x))
-(add-macro-alias dec-digit-char-listp STR::dec-digit-char-listp)
+(defmacro dec-digit-char-list*p (x) `(STR::dec-digit-char-list*p ,x))
+(add-macro-alias dec-digit-char-list*p STR::dec-digit-char-list*p)
 
 (defmacro dec-digit-char-list-value (x) `(STR::dec-digit-char-list-value ,x))
 (add-macro-alias dec-digit-char-list-value STR::dec-digit-char-list-value)

@@ -94,27 +94,27 @@
 (local
  (defthm alistp-of-mv-nth-1-of-match-tests-and-bindings
    (implies (alistp bindings)
-            (alistp (mv-nth 1 (match-tests-and-bindings x pat tests bindings))))))
+            (alistp (mv-nth 1 (match-tests-and-bindings x pat tests bindings dups))))))
 
 (local
  (defthm symbol-alistp-of-mv-nth-1-of-match-tests-and-bindings
    (implies (symbol-alistp bindings)
-            (symbol-alistp (mv-nth 1 (match-tests-and-bindings x pat tests bindings))))))
+            (symbol-alistp (mv-nth 1 (match-tests-and-bindings x pat tests bindings dups))))))
 
 ;; todo: nested induction.  use an alists book?
 (local
  (defthm no-duplicatesp-equal-of-strip-cars-of-mv-nth-1-of-match-tests-and-bindings
    (implies (no-duplicatesp-equal (strip-cars bindings))
-            (no-duplicatesp-equal (strip-cars (mv-nth 1 (match-tests-and-bindings x pat tests bindings)))))
+            (no-duplicatesp-equal (strip-cars (mv-nth 1 (match-tests-and-bindings x pat tests bindings dups)))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)))))
 
 ;; Returns a list of all the vars bound by case-match when something
 ;; successfully matches PAT.
 (defund vars-bound-in-case-match-pattern (pat)
   (declare (xargs :guard t))
-  (mv-let (tests bindings)
-      (match-tests-and-bindings :ignore pat nil nil)
-    (declare (ignore tests))
+  (mv-let (tests bindings dups)
+      (match-tests-and-bindings :ignore pat nil nil nil)
+    (declare (ignore tests dups))
     (strip-cars bindings)))
 
 (defthm symbol-listp-of-vars-bound-in-case-match-pattern

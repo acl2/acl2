@@ -699,6 +699,7 @@
     symbol-alistp-forward-to-eqlable-alistp
     character-alistp-forward-to-eqlable-alistp
     nat-alistp-forward-to-eqlable-alistp
+    fixnat-alistp-forward-to-nat-alistp
     standard-string-alistp-forward-to-alistp
     consp-assoc-equal
     known-package-alistp-forward-to-true-list-listp-and-alistp

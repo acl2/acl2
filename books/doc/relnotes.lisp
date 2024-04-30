@@ -123,6 +123,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Gaussian Elimination Library")
+
+   (xdoc::p
+    "This is a work in progress for solving Ax = b, for sparse matrices A.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Group Theory Library")
 
    (xdoc::p

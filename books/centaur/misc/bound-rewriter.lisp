@@ -965,6 +965,8 @@
         nil)
        ((linear-lemma lemma))
        ((unless (and (natp lemma.nume)
+; Matt K. addition 4/2024 to accommodate stronger guard on enabled-numep.
+                     (<= lemma.nume (fixnum-bound))
                      (enabled-numep lemma.nume ens)))
         nil)
        ((unless (and (pseudo-termp lemma.concl)
@@ -4032,6 +4034,8 @@
        ((unless (and (pseudo-termp x.concl)
                      (not x.hyps)
                      (natp x.nume)
+; Matt K. addition 4/2024 to accommodate stronger guard on enabled-numep.
+                     (<= x.nume (fixnum-bound))
                      (enabled-numep x.nume ens)))
         (mv upper-bound-acc lower-bound-acc))
        ((mv shape-ok negatedp lhs rhs) ;; (< lhs rhs) or (not (< lhs rs))

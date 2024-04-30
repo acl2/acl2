@@ -280,7 +280,7 @@ mutually recursive definitions.
        (enum/acc-formals (or (and enum/acc (acl2::formals enum/acc wrld))
                              '(M SEED)))
        (enum/acc-guard (or (and enum/acc (acl2::guard enum/acc nil wrld))
-                           '(AND (NATP M) (UNSIGNED-BYTE-P 31 SEED))))
+                           '(AND (NATP M) (UNSIGNED-BYTE-P 63 SEED))))
 
        ;; these two names are constant, but attachable names. TODO: Revisit this decision!
        (enum-name (make-enumerator-symbol name pkg))

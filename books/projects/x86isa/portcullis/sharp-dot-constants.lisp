@@ -40,10 +40,12 @@
 ; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
+
 (include-book "std/util/defconsts" :dir :system)
+
 (local (include-book "sharp-dot-defuns"))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Some expt constants:
 
@@ -114,7 +116,8 @@
 (defconst *2^32-15*   (- *2^32* 15))
 (defconst *2^32-16*   (- *2^32* 16))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
+
 ;; Prefixes (Intel manual, Dec'23, Vol. 2A, Section 2):
 
 (defconst *prefixes-width*
@@ -176,7 +179,7 @@
 (defconst *v0F38*                 #b00010)
 (defconst *v0F3A*                 #b00011)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Identifiers of some arithmetic and logical instructions:
 ;; (note: different from the opcode; specific to the formal model)
@@ -241,7 +244,8 @@
 (defconst *OP-COMI*       8)
 (defconst *OP-UCOMI*      9)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
+
 ;; REX bits (Intel manual, Dec'23, Vol. 2A, Section 2.2.1.2):
 
 (defconst *b* 0)
@@ -380,7 +384,7 @@
 (defconst *ia32_efer-names*
   (list *ia32_efer-sce* *ia32_efer-lme* *ia32_efer-lma* *ia32_efer-nxe*))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ; Constants related to the memory model in the x86 state:
 
@@ -483,14 +487,14 @@
 (defconst *mem-size-in-bytes-14*  (+ -14 *mem-size-in-bytes*))
 (defconst *mem-size-in-bytes-15*  (+ -15 *mem-size-in-bytes*))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Constants related to Flags (specific to the formal model):
 
 (defconst *unchanged* 2)
 (defconst *undefined* 3)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Instruction Sets:
 
@@ -504,7 +508,7 @@
 (defconst *avx2*   6)
 (defconst *avx512* 7)
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Constants related to modes of operation of an x86 processor
 ;; (specific to the formal model):
@@ -523,7 +527,7 @@
 (defconst *num-proc-modes*     5)
 (defconst *num-proc-modes-1*   (1- *num-proc-modes*))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Exceptions and Interrupts
 ;; Reference: Intel Manual Dec'23 Volume 1 Table 6-1
@@ -617,7 +621,7 @@
 ;; 32-255  Maskable Interrupts
 ;;         External interrupt from INTR pin or INT n instruction.
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Indices and length of fields in the x86 state (see
 ;; machine/concrete-state.lisp):
@@ -650,4 +654,4 @@
 
 (make-event (define-model-specific-registers))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------

@@ -4124,10 +4124,10 @@
 ; functions.
 
   (let ((next-nume (get-next-nume wrld)))
-    (prog2$ (or (<= (the-fixnum next-nume)
-                    (- (the-fixnum (fixnum-bound))
-                       (the-fixnum (* (the-fixnum 4)
-                                      (the-fixnum (length names))))))
+    (prog2$ (or (<= (the-fixnat next-nume)
+                    (- (the-fixnat (fixnum-bound))
+                       (the-fixnat (* (the-fixnat 4)
+                                      (the-fixnat (length names))))))
                 (max-nume-exceeded-error 'putprop-defun-runic-mapping-pairs))
             (putprop-defun-runic-mapping-pairs1
              names

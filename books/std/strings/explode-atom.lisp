@@ -60,9 +60,9 @@
                 (force (print-base-p base)))
            (not (equal (explode-atom n base) '(#\0)))))
 
-(defthm dec-digit-char-listp-of-explode-atom
+(defthm dec-digit-char-list*p-of-explode-atom
   (implies (natp n)
-           (str::dec-digit-char-listp (explode-atom n 10))))
+           (str::dec-digit-char-list*p (explode-atom n 10))))
 
 (defthm character-listp-of-explode-atom
   (character-listp (explode-atom x base))

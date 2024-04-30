@@ -139,11 +139,11 @@
              (characterp char))
     :rule-classes :compound-recognizer))
 
-(std::deflist bin-digit-char-listp (x)
+(std::deflist bin-digit-char-list*p (x)
   :short "Recognizes lists of @(see bin-digit-char-p) characters."
   (bin-digit-char-p x)
   ///
-  (defcong icharlisteqv equal (bin-digit-char-listp x) 1
+  (defcong icharlisteqv equal (bin-digit-char-list*p x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv)))))
 
 (define bin-digit-char-value
@@ -188,7 +188,7 @@
 
 (define bin-digit-chars-value1
   :parents (bin-digit-chars-value)
-  ((x bin-digit-char-listp)
+  ((x bin-digit-char-list*p)
    (val :type unsigned-byte))
   (mbe :logic (if (consp x)
                   (bin-digit-chars-value1 (cdr x)
@@ -206,7 +206,7 @@
 
 (define bin-digit-chars-value
   :short "Coerces a list of bit digits into a natural number."
-  ((x bin-digit-char-listp))
+  ((x bin-digit-char-list*p))
   :returns (value natp :rule-classes :type-prescription)
   :long "<p>For instance, @('(bin-digit-chars-value '(#\1 #\0 #\0 #\0))') is 8.
 See also @(see parse-bits-from-charlist) for a more flexible function that can
@@ -286,16 +286,16 @@ tolerate non-bit digits after the number.</p>"
                                              char-fix)))))
   (defcong icharlisteqv equal (take-leading-bin-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm bin-digit-char-listp-of-take-leading-bin-digit-chars
-    (bin-digit-char-listp (take-leading-bin-digit-chars x)))
+  (defthm bin-digit-char-list*p-of-take-leading-bin-digit-chars
+    (bin-digit-char-list*p (take-leading-bin-digit-chars x)))
   (defthm bound-of-len-of-take-leading-bin-digit-chars
     (<= (len (take-leading-bin-digit-chars x)) (len x))
     :rule-classes :linear)
   (defthm equal-of-take-leading-bin-digit-chars-and-length
     (equal (equal (len (take-leading-bin-digit-chars x)) (len x))
-           (bin-digit-char-listp x)))
-  (defthm take-leading-bin-digit-chars-when-bin-digit-char-listp
-    (implies (bin-digit-char-listp x)
+           (bin-digit-char-list*p x)))
+  (defthm take-leading-bin-digit-chars-when-bin-digit-char-list*p
+    (implies (bin-digit-char-list*p x)
              (equal (take-leading-bin-digit-chars x)
                     (list-fix x))))
   (defthm consp-of-take-leading-bin-digit-chars
@@ -315,7 +315,7 @@ tolerate non-bit digits after the number.</p>"
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (bin-digit-char-listp (nthcdr n (explode x)))
+       (bin-digit-char-list*p (nthcdr n (explode x)))
        :exec
        (if (eql n xl)
            t
@@ -325,7 +325,7 @@ tolerate non-bit digits after the number.</p>"
                                       xl))))
   ///
   (verify-guards bin-digit-string-p-aux
-    :hints(("Goal" :in-theory (enable bin-digit-char-listp)))))
+    :hints(("Goal" :in-theory (enable bin-digit-char-list*p)))))
 
 (define bin-digit-string-p
   :short "Recognizer for strings whose characters are all 0 or 1."
@@ -334,7 +334,7 @@ tolerate non-bit digits after the number.</p>"
   :long "<p>Corner case: this accepts the empty string since all of its
 characters are bit digits.</p>
 
-<p>Logically this is defined in terms of @(see bin-digit-char-listp).  But in the
+<p>Logically this is defined in terms of @(see bin-digit-char-list*p).  But in the
 execution, we use a @(see char)-based function that avoids exploding the
 string.  This provides much better performance, e.g., on an AMD FX-8350 with
 CCL:</p>
@@ -348,11 +348,11 @@ CCL:</p>
     ;; 0.99 seconds, 800 MB allocated
     (let ((x \"01001\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::bin-digit-char-listp (explode x)))))
+                   (str::bin-digit-char-list*p (explode x)))))
 })"
   :inline t
   :enabled t
-  (mbe :logic (bin-digit-char-listp (explode x))
+  (mbe :logic (bin-digit-char-list*p (explode x))
        :exec (bin-digit-string-p-aux x 0 (length x)))
   ///
   (defcong istreqv equal (bin-digit-string-p x) 1))
@@ -362,7 +362,7 @@ CCL:</p>
   :parents (nat-to-bin-chars)
   :short "Logically simple definition that is similar to @(see nat-to-bin-chars)."
   ((n natp))
-  :returns (chars bin-digit-char-listp)
+  :returns (chars bin-digit-char-list*p)
   :long "<p>This <i>almost</i> computes @('(nat-to-bin-chars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
@@ -420,7 +420,7 @@ nat-to-bin-chars).</p>"
 (define nat-to-bin-chars
   :short "Convert a natural number into a list of bits."
   ((n natp))
-  :returns (chars bin-digit-char-listp)
+  :returns (chars bin-digit-char-list*p)
   :long "<p>For instance, @('(nat-to-dec-chars 8)') is @('(#\\1 #\\0 #\\0 #\\0)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
@@ -521,8 +521,8 @@ consing together characters in reverse order.</p>"
   :inline t
   (implode (nat-to-bin-chars n))
   ///
-  (defthm bin-digit-char-listp-of-nat-to-dec-string
-    (bin-digit-char-listp (explode (nat-to-bin-string n))))
+  (defthm bin-digit-char-list*p-of-nat-to-dec-string
+    (bin-digit-char-list*p (explode (nat-to-bin-string n))))
   (defthm nat-to-bin-string-one-to-one
     (equal (equal (nat-to-bin-string n) (nat-to-bin-string m))
            (equal (nfix n) (nfix m))))
@@ -697,7 +697,7 @@ of our logical definition.</p>"
   ;; Minor speed hint
   (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-BIN-DIGIT-CHARS
                              ACL2::RIGHT-SHIFT-TO-LOGTAIL
-                             BIN-DIGIT-CHAR-LISTP-OF-CDR-WHEN-BIN-DIGIT-CHAR-LISTP)))
+                             BIN-DIGIT-CHAR-LIST*P-OF-CDR-WHEN-BIN-DIGIT-CHAR-LIST*P)))
 
   (verify-guards parse-bits-from-string
     :hints(("Goal" :in-theory (enable bin-digit-char-p
@@ -719,7 +719,7 @@ characters other than 0 or 1, or is empty, we return @('nil').</p>"
   (mbe :logic
        (let ((chars (explode x)))
          (and (consp chars)
-              (bin-digit-char-listp chars)
+              (bin-digit-char-list*p chars)
               (bin-digit-chars-value chars)))
        :exec
        (b* (((the unsigned-byte xl) (length x))

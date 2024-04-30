@@ -50,11 +50,12 @@
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/gl/defthm-using-gl" :dir :system)
+
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
 (local (include-book "std/alists/alistp" :dir :system))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 (defsection utils
   :parents (x86isa)
@@ -65,7 +66,7 @@
   :parents (utils)
   )
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 (defsection mk-name
 
@@ -78,7 +79,7 @@
     ;; Note that the package is X86ISA here.
     `(acl2::packn-pos (list ,@x) 'x86isa::mk-name)))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Convenient forcing idiom:
 
@@ -91,7 +92,7 @@
 (defmacro forced-and (&rest x)
   `(and ,@(formal-force-list x)))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (defsection constants-conversions-and-bounds
   :parents (utilities)
@@ -325,7 +326,7 @@ constants and functions; it also proves some associated lemmas.</p>")
     (16 (n128 x))
     (t (part-select x :low 0 :width n))))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 ;; Handy utility for turning a positional list into an array
 
@@ -378,7 +379,7 @@ constants and functions; it also proves some associated lemmas.</p>")
                           :name ,name)
                  ,@alist))))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 ;; Maps a list of integers to a corresponding list of Booleans,
 ;; treating 0 as false.  Example: (ints-to-booleans '(0 1 0 0 1)) ==>
@@ -396,7 +397,7 @@ constants and functions; it also proves some associated lemmas.</p>")
   (declare (xargs :guard (integer-listp x)))
   (ints-to-booleans-acc x nil))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 (defsection globally-disabled-events
   :parents (utilities)
@@ -440,7 +441,8 @@ disabledp) recursively on the events in
   (def-ruleset globally-disabled-events nil)
 
   (define globally-disable-fn
-    ((events "Can be a symbol (another ruleset) or a @('true-listp') (set of events)"))
+    ((events "Can be a symbol (another ruleset)
+              or a @('true-listp') (set of events)"))
     (b* ((events (if (true-listp events)
                      `(quote ,events)
                    events)))
@@ -466,7 +468,8 @@ disabledp) recursively on the events in
     (declare (xargs :stobjs (state)
                     :mode :program))
     (if (endp lst)
-        (mv (cw "~%~%Number of events in GLOBALLY-DISABLED-EVENTS: ~x0~%~%" count)
+        (mv (cw "~%~%Number of events in GLOBALLY-DISABLED-EVENTS: ~x0~%~%"
+                count)
             :invisible
             state)
 
@@ -482,7 +485,7 @@ disabledp) recursively on the events in
 
   (globally-disable '(logior logand logxor floor mod ash)))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; [Shilpi] slicing-operations are not needed anymore --- the :exec parts of
 ;; the accessor and updater macros have been incorporated in the
@@ -626,3 +629,5 @@ disabledp) recursively on the events in
 ;;                                      ,pos)))))))))
 
 ;;  ) ;; End of encapsulate
+
+;; ----------------------------------------------------------------------

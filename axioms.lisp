@@ -4970,7 +4970,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (<= 0 x)))
   :rule-classes :compound-recognizer)
 
-(defun nat-alistp (x) ; used in the guards of some system functions
+(defun nat-alistp (x) ; may be used in the guards of some system functions
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
         (t (and (consp (car x))
@@ -12450,9 +12450,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; The remainder of this Essay gives historical perspective in ACL2's use of
 ; fixnum arithmetic.  It was written when 32-bit Lisps were still common.  The
 ; discussion carries over to 64-bit Lisps, where now we make type declarations
-; using (signed-byte #.*fixnum-bits*) rather than, as discussed below,
-; (signed-byte 30).  To get the previous behavior, use a 32-bit Lisp like CMUCL
-; or set environment variable ACL2_SMALL_FIXNUMS to a non-empty value.
+; using #.*fixnum-type* rather than, as discussed below, (signed-byte 30).  To
+; get the previous behavior, use a 32-bit Lisp like CMUCL or set environment
+; variable ACL2_SMALL_FIXNUMS to a non-empty value.
 
 ; To the best of our knowledge, the values of most-positive-fixnum in various
 ; 32-bit lisps are as follows, so we feel safe in using (signed-byte 30) and
@@ -12492,88 +12492,112 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #+acl2-small-fixnums 30
   #-acl2-small-fixnums 61)
 (defconst *fixnat-bits* (1- *fixnum-bits*))
+(defconst *fixnum-type* `(signed-byte ,*fixnum-bits*))
 (defmacro the-fixnum (n)
-  (list 'the
-        `(signed-byte ,*fixnum-bits*)
-        n))
+  (list 'the *fixnum-type* n))
 (defmacro fixnum-bound ()
 ; This has been the value of most-positive-fixnum in some 32-bit Lisps.
   (1- (expt 2 *fixnat-bits*)))
 
-; ARRAYS - efficient applicative arrays.
+(defun fixnat-alistp (x) ; used in the guards of some system functions
+  (declare (xargs :guard t))
+  (cond ((atom x) (eq x nil))
+        (t (and (consp (car x))
+                (natp (car (car x)))
+                (<= (car (car x)) (fixnum-bound))
+                (fixnat-alistp (cdr x))))))
 
-; We provide functions for accessing and updating both one and two
-; dimensional arrays, with applicative semantics, but good access time
-; to the most recently updated copy and usually constant update time.
+(defthm fixnat-alistp-forward-to-nat-alistp
+  (implies (fixnat-alistp x)
+           (nat-alistp x))
+  :rule-classes :forward-chaining)
 
-; We first describe the one dimensional array data type.  From the
-; formal point of view, an array is simply an alist, i.e. a list of
-; pairs.  With one exception, the key (i.e., the car) of each pair is
-; a nonnegative integer.  However each array must have (at least) one
-; pair whose car is :header and whose cdr is a keyword list, whose
-; keys include :dimensions, :maximum-length, and :default.  Thus, for
-; example, the list '((1 . 2) (:header :dimensions (3) :maximum-length
-; 7 :default a) (0 . 6)) represents the sequence #s(6 2 7).  In the
-; case of a one dimensional array, the dimension is a list of length
-; one which is a nonnegative integer one greater than the maximum
-; permitted index.  (Other keywords, e.g. :purpose, for
-; identification, are permitted and ignored.)  Formally speaking, to
-; find the value of a non-negative integer key in such an alist, we
-; search the alist (with the function aref1) for the first pair whose
-; car matches the key.  If such a pair is found, then aref1 returns
-; the cdr of the pair; otherwise aref1 returns the value associated
-; with the :default key.  It is illegal to give aref1 an index
-; equal to or greater than the car of the value associated with the
-; :dimensions key.  In the normal case, updating happens by simply
-; consing a new pair on to the alist with the function aset1.
-; However, when the list resulting from such a cons has length greater
-; than the value associated with the :maximum-length key, the alist is
-; ``compressed'' back to an alist of minimal length, but with the same
-; aref1 search semantics.
+; Essay on Efficient Applicative Arrays
 
-; For efficiency, the user is asked to call the array functions with
-; an additional argument, a symbol, called the ``name'' of the given
-; array.  From the point of view of the formal semantics, the name
-; argument is simply and completely ignored.  However, as with the
-; implementation of property lists described above, the name provides
-; a hint about where to find a ``real'' Common Lisp array that may
-; currently represent the given alist, in which case an array access
-; can go quite quickly because the real array may be accessed
+; We provide functions for accessing and updating both one and two dimensional
+; arrays, with applicative semantics, but good access time to the most recently
+; updated copy and usually constant update time.
+
+; We first describe the one dimensional array data type.  From the formal point
+; of view, an array is simply an alist, i.e. a list of pairs.  With one
+; exception, the key (i.e., the car) of each pair is a nonnegative integer.
+; However each array must have (at least) one pair whose car is :header and
+; whose cdr is a keyword list, whose keys include :dimensions, :maximum-length,
+; and :default.  Thus, for example, the list '((1 . 2) (:header :dimensions (3)
+; :maximum-length 7 :default a) (0 . 6)) represents the sequence #(6 2 a).  In
+; the case of a one dimensional array, the dimension is a list of length one
+; which is a nonnegative integer one greater than the maximum permitted index.
+; (Other keywords, e.g. :purpose, for identification, are permitted and
+; ignored.)  Formally speaking, to find the value of a non-negative integer key
+; in such an alist, we search the alist (with the function aref1) for the first
+; pair whose car matches the key.  If such a pair is found, then aref1 returns
+; the cdr of the pair; otherwise aref1 returns the value associated with the
+; :default key.  It is illegal to give aref1 an index equal to or greater than
+; the car of the value associated with the :dimensions key.  In the normal
+; case, updating happens by simply consing a new pair on to the alist with the
+; function aset1.  However, when the list resulting from such a cons has length
+; greater than the value associated with the :maximum-length key, the alist is
+; ``compressed'' back to an alist of minimal length, but with the same aref1
+; search semantics.  Note that the :maximum-length value must exceed the
+; dimension, to accommodate the header in the alist.
+
+; For efficiency, the user is asked to call the array functions with an
+; additional argument, a symbol, called the ``name'' of the given array.  From
+; the point of view of the formal semantics, the name argument is simply and
+; completely ignored.  However, as with the implementation of property lists
+; described above, the name provides a hint about where to find a ``real''
+; Common Lisp array that may currently represent the given alist, in which case
+; an array access can go quite quickly because the real array may be accessed
 ; directly.
 
-; A further requirement for fast access is that the user initially
-; alert the implementation to the desire to make fast accesses by
-; calling the function compress1 on the array (and the desired name).
-; compress1 then associates with the alist (under the name) a ``real''
-; array.  Compress1 returns a list that begins with the header and has
-; its other elements in key-ascending order unless otherwise indicated
-; by the header, with aref1-irrelevant pairs deleted.  If the alist
-; is already in this normal form, then no consing is done.  If there
-; is already an array associated with the given name, and if it
-; happens to have the desired length, then no array allocation is done
+; A further requirement for fast access is that the user initially alert the
+; implementation to the desire to make fast accesses by calling the function
+; compress1 on the array (and the desired name).  Compress1 then associates
+; with the alist (under the name) a ``real'' array.  Compress1 returns a list
+; that begins with the header and has its other elements in key-ascending order
+; unless otherwise indicated by the header, with aref1-irrelevant pairs
+; deleted.  If the alist is already in this normal form, then no consing is
+; done.  If there is already an array associated with the given name, and if it
+; happens to have at least the desired length, then no array allocation is done
 ; but instead that array is ``stolen''.
 
-; In the usual case, whenever an array is updated (with aset1), the
-; ``real'' array which acts as its shadow and supports efficient
-; access, is set to support the ``new'' array, and no longer supports
-; the ``old'' array.  Thus one must, for efficiency's sake, be
-; extremely conscious of the usual order of Common Lisp evaluation.
+; In the usual case, whenever an array is updated (with aset1), the ``real''
+; array which acts as its shadow and supports efficient access, is set to
+; support the ``new'' array, and no longer supports the ``old'' array.  Thus
+; one must, for efficiency's sake, be extremely conscious of the usual order of
+; Common Lisp evaluation.
 
-; For two dimensional arrays, the value of the key :dimensions should
-; be a list of two positive integers and the aset2 and aref2 function
-; take two indices.
-
-; The following constant was originally introduced in order to
-; "require that array indices fit into 32 bits so that some compilers
-; can lay down faster code.  In the case of two dimensional arrays, we
-; require that the product of legal indices fit into 32 bits."  In
-; fact, we now make stronger requirements based on the
-; array-total-size-limit and array-dimension-limit of the underlying
-; Common Lisp implementation, as enforced by make-array$, whose
-; definition follows shortly after this.
+; For two dimensional arrays, the value of the key :dimensions should be a list
+; of two positive integers and the aset2 and aref2 function take two indices.
 
 (defmacro array-maximum-length-bound ()
+
+; See the Essay on Efficient Applicative Arrays.
+
+; This value is the upper bound for the maximum-length of an ACL2 array.  It
+; needs to be a fixnum, not only so that array dimensions will be fixnums, but
+; also because in compress1, the variable num is declared to have type (integer
+; 0 #.*array-maximum-length-bound*) and num can be as large as the
+; maximum-length of an array.
+
+; This constant was originally introduced in order to "require that array
+; indices fit into 32 bits so that some compilers can lay down faster code.  In
+; the case of two dimensional arrays, we require that the product of legal
+; indices fit into 32 bits."  But we now make a potentially stronger
+; requirement based on the array-total-size-limit and array-dimension-limit of
+; the underlying Common Lisp implementation, as enforced by make-array$, and
+; also a potentially weaker requirement, as follows.
+
   (fixnum-bound))
+
+(defconst *array-maximum-length-bound*
+
+; This is just the value provided by array-maximum-length-bound.  The macro
+; is useful because it avoids a special variable value lookup at runtime,
+; and this constant is useful because #.array-maximum-length-bound can be used
+; in type expressions.
+
+  (array-maximum-length-bound))
 
 #-acl2-loop-only
 (defconst *our-array-total-size-limit*
@@ -13292,6 +13316,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   (deflock *acl2-par-arrays-lock*)
 
 (defun aref1 (name l n)
+
+; See the Essay on Efficient Applicative Arrays.
+
   #+acl2-loop-only
   (declare (xargs :guard (and (array1p name l)
                               (integerp n)
@@ -13306,7 +13333,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; guard.
 
   #-acl2-loop-only
-  (declare (type (unsigned-byte 31) n))
+  (declare (type (integer 0 #.*array-maximum-length-bound*) n))
   #-acl2-loop-only
 ; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
 ; (with-lock
@@ -13352,18 +13379,17 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun compress1 (name l)
 
+; See the Essay on Efficient Applicative Arrays.
+
 ; In spite of the raw Lisp code in this definition, as well as in other
 ; definitions pertaining to ACL2 arrays, we do not see a way that ill-guarded
 ; calls of the raw Lisp code for these functions (by way of top-level :program
 ; mode wrappers) could violate invariants that we need to maintain.  If that
 ; changes, see initialize-invariant-risk.
 
-; The uses of (the (unsigned-byte 31) ...) below rely on the array1p guard,
-; which for example guarantees that the dimension is bounded by
-; (array-maximum-length-bound) and that each array index (i.e., each car)
-; is less than the dimension.  These declarations probably only assist
-; efficiency in GCL, but that may be the Lisp that benefits most from such
-; fixnum declarations, anyhow.
+; The uses of (the (integer 0 #.*array-maximum-length-bound*) ...) below rely
+; on the array1p guard.  These declarations almost surely assist efficiency in
+; GCL; they might or might not make a difference in other Lisps.
 
   #+acl2-loop-only
   (declare (xargs :guard (array1p name l)))
@@ -13405,8 +13431,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          old-car
          ar
          (in-order t)
-         (num 1))
-    (declare (type (unsigned-byte 31) num))
+         (num ; to be the number of elements in the compressed alist
+          1))
+    (declare (type (integer 0 #.*array-maximum-length-bound*) num))
 
     (when (and (null order)
                (> (length l) maximum-length))
@@ -13441,10 +13468,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                           (return nil))
                          ((null (cdr tl)) (return nil))
                          ((if (eq order '>)
-                              (<= (the (unsigned-byte 31) (caar tl))
-                                  (the (unsigned-byte 31) (car (cadr tl))))
-                            (>= (the (unsigned-byte 31) (caar tl))
-                                (the (unsigned-byte 31) (car (cadr tl)))))
+                              (<= (the (integer 0
+                                                #.*array-maximum-length-bound*)
+                                       (caar tl))
+                                  (the (integer 0
+                                                #.*array-maximum-length-bound*)
+                                       (car (cadr tl))))
+                            (>= (the (integer 0 #.*array-maximum-length-bound*)
+                                     (caar tl))
+                                (the (integer 0 #.*array-maximum-length-bound*)
+                                     (car (cadr tl)))))
                           (setq in-order nil)
                           (return nil))))))
             (t (setq in-order nil))))
@@ -13473,16 +13506,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (setf (car old) *invisible-array-mark*)
              (setq ar (cadr old))
              (do ((i (1- length) (1- i))) ((< i 0))
-                 (declare (type (signed-byte 32) i))
+                 (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                  (setf (svref ar i) init)))
             (t (setq ar (make-array$ length :initial-element init)))))
 
 ; Store the value of each pair under its key.  However, if there may be
 ; duplicate keys in the cdr of the alist, then we must avoid storing the value
 ; when it is covered by an earlier pair with the same key.  We can avoid that
-; considerabion if the alist is ordered as discussed above, since in that case
+; consideration if the alist is ordered as discussed above, since in that case
 ; there are no duplicate keys (and in that case, we have populated the array
-; using default rather than *initial-known-package-alist*).
+; using default rather than *invisible-array-mark*).
 
     (cond
      ((and in-order order) ; just do the writes, as indicated above
@@ -13515,43 +13548,55 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (setq x l))
             (in-order ; hence order is nil
              (do ((i (1- length) (1- i))) ((< i 0))
-                 (declare (type (signed-byte 32) i))
+                 (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                  (let ((val (svref ar i)))
-                   (cond ((eq *invisible-array-mark* val)
-                          (setf (svref ar i) default))
-                         (t (setq num (the (unsigned-byte 31) (1+ num)))))))
+                   (cond
+                    ((eq *invisible-array-mark* val)
+                     (setf (svref ar i) default))
+                    (t (setq num
+                             (the (integer 0 #.*array-maximum-length-bound*)
+                                  (1+ num)))))))
              (setq x l))
             ((eq order '>)
              (do ((i 0 (1+ i))) ((int= i length))
-                 (declare (type (unsigned-byte 31) i))
+                 (declare (type (integer 0 #.*array-maximum-length-bound*) i))
                  (let ((val (svref ar i)))
-                   (cond ((eq *invisible-array-mark* val)
-                          (setf (svref ar i) default))
-                         ((equal val default) nil)
-                         (t (push (cons i val) x)
-                            (setq num (the (unsigned-byte 31) (1+ num)))))))
+                   (cond
+                    ((eq *invisible-array-mark* val)
+                     (setf (svref ar i) default))
+                    ((equal val default) nil)
+                    (t (push (cons i val) x)
+                       (setq num
+                             (the (integer 0 #.*array-maximum-length-bound*)
+                                  (1+ num)))))))
              (setq x (cons header x)))
             (t ; (eq order '<)
              (do ((i (1- length) (1- i))) ((< i 0))
-                 (declare (type (signed-byte 32) i))
+                 (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                  (let ((val (svref ar i)))
-                   (cond ((eq *invisible-array-mark* val)
-                          (setf (svref ar i) default))
-                         ((equal val default) nil)
-                         (t (push (cons i val) x)
-                            (setq num (the (unsigned-byte 31) (1+ num)))))))
+                   (cond
+                    ((eq *invisible-array-mark* val)
+                     (setf (svref ar i) default))
+                    ((equal val default) nil)
+                    (t (push (cons i val) x)
+                       (setq num
+                             (the (integer 0 #.*array-maximum-length-bound*)
+                                  (1+ num)))))))
                (setq x (cons header x))))
-      (cond (old (setq max-ar (caddr old))
-                 (setf (aref (the (array (unsigned-byte 31) (*)) max-ar)
-                             0)
-                       (the (unsigned-byte 31)
-                            (- maximum-length num))))
-            (t (setq max-ar
-                     (make-array$ 1
-                                  :initial-contents
-                                  (list (- maximum-length num))
-                                  :element-type
-                                  '(unsigned-byte 31)))))
+      (cond
+       (old (setq max-ar (caddr old))
+            (setf (aref (the (array (integer 0 #.*array-maximum-length-bound*)
+                                    (*))
+                             max-ar)
+                        0)
+                  (the (integer 0 #.*array-maximum-length-bound*)
+                       (- maximum-length num))))
+       (t (setq max-ar
+                (make-array$ 1
+                             :initial-contents
+                             (list (- maximum-length num))
+                             :element-type
+                             '(integer 0 #.*array-maximum-length-bound*)))))
       (cond (old
              (setf (cadr old) ar)
              (setf (cadddr old) header)
@@ -13637,6 +13682,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   :hints (("Goal" :in-theory (enable array1p))))
 
 (defun aset1 (name l n val)
+
+; See the Essay on Efficient Applicative Arrays.
+
   #+acl2-loop-only
   (declare (xargs :guard (and (array1p name l)
                               (integerp n)
@@ -13649,81 +13697,112 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (compress1 name l))
           (t l)))
   #-acl2-loop-only
-  (declare (type (unsigned-byte 31) n))
+  (declare (type (integer 0 #.*array-maximum-length-bound*) n))
   #-acl2-loop-only
 ; See comment above (for #+acl2-par) about *acl2-par-arrays-lock*:
 ; (with-lock
 ;  *acl2-par-arrays-lock*
   (let ((prop (get-acl2-array-property name)))
-    (cond ((eq l (car prop))
-           (let* ((ar (cadr prop))
-                  (to-go (aref (the (array (unsigned-byte 31) (*))
-                                    (caddr prop))
-                               0)))
-             (declare (type (unsigned-byte 31) to-go)
-                      (simple-vector ar))
-             (cond ((eql (the (unsigned-byte 31) to-go) 0)
-                    (setf (car prop) *invisible-array-mark*)
-                    (setf (aref ar n) val)
-                    (let* ((header (cadddr prop))
-                           (order (array-order header))
-                           (length (car (cadr (assoc-keyword
-                                               :dimensions
-                                               (cdr header)))))
-                           (maximum-length
-                            (cadr (assoc-keyword
-                                   :maximum-length (cdr header))))
-                           (default
-                             (cadr (assoc-keyword
-                                    :default (cdr header))))
-                           (x nil)
-                           (num 1))
-                      (declare (type (unsigned-byte 31) num length))
-                      (declare (type (unsigned-byte 31) maximum-length))
-                      (cond ((null order)
+    (cond
+     ((eq l (car prop))
+      (let* ((ar (cadr prop))
+             (to-go
+              (aref (the (array (integer 0 #.*array-maximum-length-bound*)
+                                (*))
+                         (caddr prop))
+                    0)))
+        (declare (type (integer 0 #.*array-maximum-length-bound*) to-go)
+                 (simple-vector ar))
+        (cond
+         ((eql (the (integer 0 #.*array-maximum-length-bound*) to-go) 0)
+          (setf (car prop) *invisible-array-mark*)
+          (setf (aref ar n) val)
+          (let* ((header (cadddr prop))
+                 (order (array-order header))
+                 (length (car (cadr (assoc-keyword
+                                     :dimensions
+                                     (cdr header)))))
+                 (maximum-length
+                  (cadr (assoc-keyword
+                         :maximum-length (cdr header))))
+                 (default
+                   (cadr (assoc-keyword
+                          :default (cdr header))))
+                 (x nil)
+                 (num 1))
+            (declare (type (integer 0 #.*array-maximum-length-bound*)
+                           num length))
+            (declare (type (integer 0 #.*array-maximum-length-bound*)
+                           maximum-length))
+            (cond
+             ((null order)
 ; Cause same error as in the logic.
-                             (return-from aset1
-                                          (compress1 name (cons (cons n val)
-                                                                l))))
-                            ((eq order '>)
-                             (do ((i 0 (1+ i)))
-                                 ((int= i length))
-                                 (declare (type (unsigned-byte 31) i))
-                                 (let ((val (svref ar (the (unsigned-byte 31) i))))
-                                   (cond ((equal val default) nil)
-                                         (t (push (cons i val) x)
-                                            (setq num (the (unsigned-byte 31)
-                                                           (1+ num))))))))
-                            (t
-                             (do ((i (1- length) (1- i)))
-                                 ((< i 0))
-                                 (declare (type (signed-byte 32) i))
-                                 (let ((val (svref ar (the (signed-byte 32) i))))
-                                   (cond ((equal val default) nil)
-                                         (t (push (cons i val) x)
-                                            (setq num (the (unsigned-byte 31)
-                                                           (1+ num)))))))))
-                      (setq x (cons header x))
-                      (setf (aref (the (array (unsigned-byte 31) (*))
-                                       (caddr prop)) 0)
-                            (the (unsigned-byte 31) (- maximum-length num)))
-                      (setf (car prop) x)
-                      x))
-                   (t (let ((x (cons (cons n val) l)))
-                        (setf (car prop) *invisible-array-mark*)
-                        (setf (svref (the simple-vector ar) n) val)
-                        (setf (aref (the (array (unsigned-byte 31) (*))
-                                         (caddr prop))
-                                    0)
-                              (the (unsigned-byte 31) (1- to-go)))
-                        (setf (car prop) x)
-                        x)))))
-          (t (let ((l (cons (cons n val) l)))
-               (slow-array-warning 'aset1 name)
-               (cond ((> (length l)
-                         (maximum-length name l))
-                      (compress1 name l))
-                     (t l)))))))
+              (return-from aset1
+                           (compress1 name (cons (cons n val)
+                                                 l))))
+             ((eq order '>)
+              (do ((i 0 (1+ i)))
+                  ((int= i length))
+                  (declare
+                   (type (integer 0 #.*array-maximum-length-bound*)
+                         i))
+                  (let ((val (svref ar
+                                    (the (integer
+                                          0
+                                          #.*array-maximum-length-bound*)
+                                         i))))
+                    (cond ((equal val default) nil)
+                          (t (push (cons i val) x)
+                             (setq num
+                                   (the (integer
+                                         0
+                                         #.*array-maximum-length-bound*)
+                                        (1+ num))))))))
+             (t
+              (do ((i (1- length) (1- i)))
+                  ((< i 0))
+                  (declare
+                   (type
+                    (integer -1 #.*array-maximum-length-bound*)
+                    i))
+                  (let ((val
+                         (svref ar
+                                (the (integer 0
+                                              #.*array-maximum-length-bound*)
+                                     i))))
+                    (cond ((equal val default) nil)
+                          (t (push (cons i val) x)
+                             (setq num
+                                   (the (integer
+                                         0
+                                         #.*array-maximum-length-bound*)
+                                        (1+ num)))))))))
+            (setq x (cons header x))
+            (setf (aref (the (array (integer 0 #.*array-maximum-length-bound*)
+                                    (*))
+                             (caddr prop)) 0)
+                  (the (integer 0 #.*array-maximum-length-bound*)
+                       (- maximum-length num)))
+            (setf (car prop) x)
+            x))
+         (t (let ((x (cons (cons n val) l)))
+              (setf (car prop) *invisible-array-mark*)
+              (setf (svref (the simple-vector ar) n) val)
+              (setf (aref (the (array (integer 0
+                                               #.*array-maximum-length-bound*)
+                                      (*))
+                               (caddr prop))
+                          0)
+                    (the (integer 0 #.*array-maximum-length-bound*)
+                         (1- to-go)))
+              (setf (car prop) x)
+              x)))))
+     (t (let ((l (cons (cons n val) l)))
+          (slow-array-warning 'aset1 name)
+          (cond ((> (length l)
+                    (maximum-length name l))
+                 (compress1 name l))
+                (t l)))))))
 
 (defun aset1-trusted (name l n val)
 
@@ -13752,7 +13831,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (cond ((null x) (default name l))
           (t (cdr x))))
   #-acl2-loop-only
-  (declare (type (unsigned-byte 31) i j))
+  (declare (type (integer 0 #.*array-maximum-length-bound*) i j))
   #-acl2-loop-only
   (let ((prop (get-acl2-array-property name)))
     (cond ((eq l (car prop))
@@ -13795,12 +13874,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun compress2 (name l)
   #+acl2-loop-only
 
-; The uses of (the (unsigned-byte 31) ...) below rely on the array2p
-; guard, which for example guarantees that each dimension is bounded
-; by (array-maximum-length-bound) and that array indices are
-; therefore less than (array-maximum-length-bound).  These
-; declarations probably only assist efficiency in GCL, but that may be
-; the Lisp that benefits most from such fixnum declarations, anyhow.
+; The uses of (the (integer _ #.*array-maximum-length-bound*) ...) below rely
+; on the array1p guard.  These declarations almost surely assist efficiency in
+; GCL; they might or might not make a difference in other Lisps.
 
   (declare (xargs :guard (array2p name l)))
   #+acl2-loop-only
@@ -13832,9 +13908,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (let ((ar ar))
              (declare (type (array * (* *)) ar))
              (do ((i (1- dimension1) (1- i))) ((< i 0))
-                 (declare (type fixnum i))
+                 (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                  (do ((j (1- dimension2) (1- j))) ((< j 0))
-                     (declare (type fixnum j))
+                     (declare (type (integer -1 #.*array-maximum-length-bound*) j))
                      (setf (aref ar i j) *invisible-array-mark*)))))
           (t (setq ar
                    (make-array$ (list dimension1 dimension2)
@@ -13852,11 +13928,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
             (cond ((eq index :header) nil)
                   ((eq *invisible-array-mark*
                        (aref ar
-                             (the fixnum (car index))
-                             (the fixnum (cdr index))))
+                             (the (integer 0 #.*array-maximum-length-bound*)
+                                  (car index))
+                             (the (integer 0 #.*array-maximum-length-bound*)
+                                  (cdr index))))
                    (setf (aref ar
-                               (the fixnum (car index))
-                               (the fixnum (cdr index)))
+                               (the (integer 0 #.*array-maximum-length-bound*)
+                                    (car index))
+                               (the (integer 0 #.*array-maximum-length-bound*)
+                                    (cdr index)))
                          (cdar tl))))))
 
 ; Determine whether l is already in normal form (header first,
@@ -13866,68 +13946,83 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (cond ((eq (caar l) :header)
              (do ((tl (cdr l) (cdr tl)))
                  (nil)
-                 (cond ((or (eq (caar tl) :header)
-                            (eq (car (cadr tl)) :header))
-                        (setq in-order nil)
-                        (return nil))
-                       ((equal (cdr (car tl)) default)
-                        (setq in-order nil)
-                        (return nil))
-                       ((null (cdr tl)) (return nil))
-                       ((or (> (the (unsigned-byte 31) (caaar tl))
-                               (the (unsigned-byte 31) (caaadr tl)))
-                            (and (= (the (unsigned-byte 31) (caaar tl))
-                                    (the (unsigned-byte 31) (caaadr tl)))
-                                 (> (the (unsigned-byte 31) (cdaar tl))
-                                    (the (unsigned-byte 31) (cdaadr tl)))))
-                        (setq in-order nil)
-                        (return nil)))))
+                 (cond
+                  ((or (eq (caar tl) :header)
+                       (eq (car (cadr tl)) :header))
+                   (setq in-order nil)
+                   (return nil))
+                  ((equal (cdr (car tl)) default)
+                   (setq in-order nil)
+                   (return nil))
+                  ((null (cdr tl)) (return nil))
+                  ((or (> (the (integer 0 #.*array-maximum-length-bound*)
+                               (caaar tl))
+                          (the (integer 0 #.*array-maximum-length-bound*)
+                               (caaadr tl)))
+                       (and (= (the (integer 0 #.*array-maximum-length-bound*)
+                                    (caaar tl))
+                               (the (integer 0 #.*array-maximum-length-bound*)
+                                    (caaadr tl)))
+                            (> (the (integer 0 #.*array-maximum-length-bound*)
+                                    (cdaar tl))
+                               (the (integer 0 #.*array-maximum-length-bound*)
+                                    (cdaadr tl)))))
+                   (setq in-order nil)
+                   (return nil)))))
             (t (setq in-order nil)))
       (let ((x nil) (num 1) max-ar)
-        (declare (type (unsigned-byte 31) num))
+        (declare (type (integer 0 #.*array-maximum-length-bound*) num))
 
 ;  In one pass, set x to the value to be returned, put defaults into the array
 ;  where the invisible mark still sits, and calculate the length of x.
 
-        (cond (in-order
-               (do ((i (1- dimension1) (1- i)))
-                   ((< i 0))
-                   (declare (type fixnum i))
-                   (do ((j (1- dimension2) (1- j)))
-                       ((< j 0))
-                       (declare (type fixnum j))
-                       (let ((val (aref ar i j)))
-                         (cond ((eq *invisible-array-mark* val)
-                                (setf (aref ar i j) default))
-                               (t
-                                (setq num (the (unsigned-byte 31)
-                                           (1+ num))))))))
-               (setq x l))
-              (t (do ((i (1- dimension1) (1- i)))
-                     ((< i 0))
-                     (declare (type fixnum i))
-                     (do ((j (1- dimension2) (1- j)))
-                         ((< j 0))
-                         (declare (type fixnum j))
-                         (let ((val (aref ar i j)))
-                           (cond ((eq *invisible-array-mark* val)
-                                  (setf (aref ar i j) default))
-                                 ((equal val default) nil)
-                                 (t (push (cons (cons i j) val) x)
-                                    (setq num (the (unsigned-byte 31)
-                                               (1+ num))))))))
-                 (setq x (cons header x))))
-        (cond (old (setq max-ar (caddr old))
-                   (setf (aref (the (array (unsigned-byte 31) (*)) max-ar)
-                               0)
-                         (the (unsigned-byte 31)
-                          (- maximum-length num))))
-              (t (setq max-ar
-                       (make-array$ 1
-                                    :initial-contents
-                                    (list (- maximum-length num))
-                                    :element-type
-                                    '(unsigned-byte 31)))))
+        (cond
+         (in-order
+          (do ((i (1- dimension1) (1- i)))
+              ((< i 0))
+              (declare (type (integer -1 #.*array-maximum-length-bound*) i))
+              (do ((j (1- dimension2) (1- j)))
+                  ((< j 0))
+                  (declare (type (integer -1 #.*array-maximum-length-bound*) j))
+                  (let ((val (aref ar i j)))
+                    (cond
+                     ((eq *invisible-array-mark* val)
+                      (setf (aref ar i j) default))
+                     (t
+                      (setq num (the (integer 0 #.*array-maximum-length-bound*)
+                                     (1+ num))))))))
+          (setq x l))
+         (t (do ((i (1- dimension1) (1- i)))
+                ((< i 0))
+                (declare (type (integer -1 #.*array-maximum-length-bound*) i))
+                (do ((j (1- dimension2) (1- j)))
+                    ((< j 0))
+                    (declare (type (integer -1 #.*array-maximum-length-bound*) j))
+                    (let ((val (aref ar i j)))
+                      (cond
+                       ((eq *invisible-array-mark* val)
+                        (setf (aref ar i j) default))
+                       ((equal val default) nil)
+                       (t (push (cons (cons i j) val) x)
+                          (setq num
+                                (the (integer 0 #.*array-maximum-length-bound*)
+                                     (1+ num))))))))
+            (setq x (cons header x))))
+        (cond
+         (old (setq max-ar (caddr old))
+              (setf (aref (the (array
+                                (integer 0 #.*array-maximum-length-bound*)
+                                (*))
+                               max-ar)
+                          0)
+                    (the (integer 0 #.*array-maximum-length-bound*)
+                         (- maximum-length num))))
+         (t (setq max-ar
+                  (make-array$ 1
+                               :initial-contents
+                               (list (- maximum-length num))
+                               :element-type
+                               '(integer 0 #.*array-maximum-length-bound*)))))
         (cond (old
                (setf (cadr old) ar)
                (setf (cadddr old) header)
@@ -13966,19 +14061,21 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (compress2 name l))
           (t l)))
   #-acl2-loop-only
-  (declare (type (unsigned-byte 31) i j))
+  (declare (type (integer 0 #.*array-maximum-length-bound*) i j))
   #-acl2-loop-only
   (let ((prop (get-acl2-array-property name)))
     (cond
      ((eq l (car prop))
       (let* ((ar (car (cdr prop)))
-             (to-go (aref (the (array (unsigned-byte 31) (*))
+             (to-go (aref (the (array
+                                (integer 0 #.*array-maximum-length-bound*)
+                                (*))
                            (caddr prop))
                           0)))
-        (declare (type (unsigned-byte 31) to-go))
+        (declare (type (integer 0 #.*array-maximum-length-bound*) to-go))
         (declare (type (array * (* *)) ar))
         (cond
-         ((eql (the (unsigned-byte 31) to-go) 0)
+         ((eql (the (integer 0 #.*array-maximum-length-bound*) to-go) 0)
           (setf (car prop) *invisible-array-mark*)
           (setf (aref ar i j) val)
           (let* ((header (cadddr prop))
@@ -13990,34 +14087,48 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (default (cadr (assoc-keyword :default (cdr header))))
                  (x nil)
                  (num 1))
-            (declare (type (unsigned-byte 31) num d1 d2 maximum-length))
+            (declare (type (integer 0 #.*array-maximum-length-bound*)
+                           num d1 d2 maximum-length))
             (do ((i (1- d1) (1- i)))
                 ((< i 0))
-                (declare (type fixnum i))
+                (declare (type (integer -1 #.*array-maximum-length-bound*) i))
                 (do ((j (1- d2) (1- j)))
                     ((< j 0))
-                    (declare (type fixnum j))
-                    (let ((val (aref ar
-                                     (the fixnum i)
-                                     (the fixnum j))))
-                      (cond ((equal val default) nil)
-                            (t (push (cons (cons i j) val) x)
-                               (setq num (the (unsigned-byte 31)
-                                          (1+ num))))))))
+                    (declare (type (integer -1 #.*array-maximum-length-bound*) j))
+                    (let ((val
+                           (aref ar
+                                 (the (integer 0
+                                               #.*array-maximum-length-bound*)
+                                      i)
+                                 (the (integer 0
+                                               #.*array-maximum-length-bound*)
+                                      j))))
+                      (cond
+                       ((equal val default) nil)
+                       (t
+                        (push (cons (cons i j) val) x)
+                        (setq num (the (integer 0
+                                                #.*array-maximum-length-bound*)
+                                       (1+ num))))))))
             (setq x (cons header x))
-            (setf (aref (the (array (unsigned-byte 31) (*))
-                         (caddr prop))
+            (setf (aref (the (array (integer 0 #.*array-maximum-length-bound*)
+                                    (*))
+                             (caddr prop))
                         0)
-                  (the (unsigned-byte 31) (- maximum-length num)))
+                  (the (integer 0 #.*array-maximum-length-bound*)
+                       (- maximum-length num)))
             (setf (car prop) x)
             x))
          (t (let ((x (cons (cons (cons i j) val) l)))
               (setf (car prop) *invisible-array-mark*)
               (setf (aref ar i j) val)
-              (setf (aref (the (array (unsigned-byte 31) (*))
+              (setf (aref (the (array (integer 0
+                                               #.*array-maximum-length-bound*)
+                                      (*))
                            (caddr prop))
                           0)
-                    (the (unsigned-byte 31) (1- to-go)))
+                    (the (integer 0 #.*array-maximum-length-bound*)
+                         (1- to-go)))
               (setf (car prop) x)
               x)))))
      (t (let ((l (cons (cons (cons i j) val) l)))
@@ -16762,18 +16873,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (and (integerp x)
                 (<= 0 x)))
   :rule-classes :forward-chaining)
-
-#-acl2-loop-only
-(defun-one-output zpf (x)
-  (declare (type (unsigned-byte #.*fixnat-bits*) x))
-  (eql (the-fixnum x) 0))
-#+acl2-loop-only
-(defun zpf (x)
-; The logic-only definition of zpf needs to come after expt and integer-range-p.
-  (declare (type (unsigned-byte #.*fixnat-bits*) x))
-  (if (integerp x)
-      (<= x 0)
-    t))
 
 ; We continue by proving the guards on substitute, all-vars1 and all-vars.
 
@@ -22526,23 +22625,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; A typical use of this macro is
 
-; (the-mv 3 (signed-byte #.*fixnum-bits*) <body> 2)
+; (the-mv 3 #.*fixnum-type* <body> 2)
 
 ; which expands to
 
 ; (MV-LET (X0 X1 STATE)
 ;         <body>
-;         (MV (THE (SIGNED-BYTE #.*FIXNUM-BITS*) X0) X1 STATE))
+;         (MV (THE #.*FIXNUM-TYPE* X0) X1 STATE))
 
 ; A more flexible use is
 
-; (the-mv (v stobj1 state w) (signed-byte #.*fixnum-bits*) <body>)
+; (the-mv (v stobj1 state w) #.*fixnum-type* <body>)
 
 ; which expands to
 
 ; (MV-LET (V STOBJ1 STATE W)
 ;         <body>
-;         (MV (THE (SIGNED-BYTE #.*FIXNUM-BITS*) V) STOBJ1 STATE W))
+;         (MV (THE #.*FIXNUM-TYPE* V) STOBJ1 STATE W))
 
 ; This macro may be used when body returns n>1 things via mv, where n=args if
 ; args is an integer and otherwise args is a true list of variables and n is
@@ -29809,14 +29908,6 @@ Lisp definition."
 (defconst *fixnat-bits+1* (+ 1 *fixnat-bits*))
 (defconst *fixnat-bits+2* (+ 2 *fixnat-bits*))
 
-(defconst *fixnum-type* `(signed-byte ,(1+ *fixnat-bits*)))
-
-(defun fixnum-guard (val)
-  (declare (xargs :guard t))
-  (and (integerp val)
-       (<= (- -1 (fixnum-bound)) val)
-       (<= val (fixnum-bound))))
-
 ; Next, we introduce two flavors of ``small'' fixnum arithmetic.
 
 ; When dealing with types, ``small'' means a little fixnum.  In fact, they are
@@ -29854,7 +29945,7 @@ Lisp definition."
 ; (round-to-small t x) coerces x to be a non-negative small fixnum.  To keep it
 ; straight in your head, think of nil meaning negative and t meaning positive.
 
-  (declare (type (signed-byte #.*fixnum-bits*) x)) ; fixnum
+  (declare (type #.*fixnum-type* x)) ; fixnum
   (let ((lo (if flg 0 *small-lo*)))
     (if (integerp x)
         (if (< x lo)
@@ -29898,8 +29989,8 @@ Lisp definition."
                        (the-fixnum (- ,@(make-the-smalls (list x)))))))
 
 ; So at this point we have four types:
-; (signed-byte #.*fixnum-bits*)
-; (unsigned-byte #.fixnat-bits*)
+; (signed-byte #.*fixnum-bits*), i.e., #.*fixnum-type*
+; (unsigned-byte #.*fixnat-bits*), i.e., #.*fixnat-type*
 ; (signed-byte #.*small-bits*)
 ; (unsigned-byte #.*small-nat-bits*)
 
@@ -29965,3 +30056,16 @@ Lisp definition."
                   :mode :logic))
   (cond ((endp x) nil)
         (t (cons (cddar x) (strip-cddrs (cdr x))))))
+
+#-acl2-loop-only
+(defun-one-output zpf (x)
+  (declare (type #.*fixnat-type* x))
+  (eql (the-fixnat x) 0))
+#+acl2-loop-only
+(defun zpf (x)
+; The logic-only definition of zpf needs to come after expt and integer-range-p.
+  (declare (type #.*fixnat-type* x))
+  (if (integerp x)
+      (<= x 0)
+    t))
+
