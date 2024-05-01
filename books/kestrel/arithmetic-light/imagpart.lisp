@@ -15,7 +15,7 @@
 (local (include-book "minus"))
 
 (defthm imagpart-when-rationalp
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (imagpart x)
                   0)))
 
@@ -60,7 +60,7 @@
                             (y2 (- (imagpart (- x)))))))))
 
 (defthm imagpart-of-*-of-i
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (imagpart (* #c(0 1) x))
                   x))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -69,7 +69,7 @@
                  (:instance complex-definition (y x))))))
 
 (defthm imagpart-of-*-when-rationalp-arg1
-  (implies (rationalp x)
+  (implies (real/rationalp x)
            (equal (imagpart (* x y))
                   (* x (imagpart y))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -77,7 +77,7 @@
 
 ;commuted version
 (defthm imagpart-of-*-when-rationalp-arg2
-  (implies (rationalp y)
+  (implies (real/rationalp y)
            (equal (imagpart (* x y))
                   (* y (imagpart x))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
