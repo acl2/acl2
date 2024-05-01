@@ -3983,6 +3983,9 @@
              (illegal-fmt-msg find-alternative-stop s))))))
 
 (defun punctp (c)
+
+; Warning: Keep this in sync with fmt0&v.
+
   (if (member c '(#\. #\, #\: #\; #\? #\! #\) #\]))
       c
     nil))
@@ -4730,15 +4733,22 @@
                       state evisc-tuple (1-f clk)))
           (#\; (fmt0* "" "~x*;" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
+          (#\? (fmt0* "" "~x*?" "~x* and " "~x*, " lst nil col channel
+                      state evisc-tuple (1-f clk)))
           (#\! (fmt0* "" "~x*!" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
           (#\) (fmt0* "" "~x*)" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (#\? (fmt0* "" "~x*?" "~x* and " "~x*, " lst nil col channel
+          (#\] (fmt0* "" "~x*]" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (otherwise
+          ((nil)
            (fmt0* "" "~x*" "~x* and " "~x*, " lst nil col channel
-                  state evisc-tuple (1-f clk)))))
+                  state evisc-tuple (1-f clk)))
+          (otherwise
+           (prog2$ (er hard? 'fmt0&v
+                       "Implementation error: Missing punctp case, ~x0"
+                       punct)
+                   (mv 0 state)))))
        (otherwise
         (case
           punct
@@ -4750,15 +4760,22 @@
                       state evisc-tuple (1-f clk)))
           (#\; (fmt0* "" "~x*;" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
+          (#\? (fmt0* "" "~x*?" "~x* or " "~x*, " lst nil col channel
+                      state evisc-tuple (1-f clk)))
           (#\! (fmt0* "" "~x*!" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
           (#\) (fmt0* "" "~x*)" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (#\? (fmt0* "" "~x*?" "~x* or " "~x*, " lst nil col channel
+          (#\] (fmt0* "" "~x*]" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (otherwise
+          ((nil)
            (fmt0* "" "~x*" "~x* or " "~x*, " lst nil col channel
-                  state evisc-tuple (1-f clk))))))))))
+                  state evisc-tuple (1-f clk)))
+          (otherwise
+           (prog2$ (er hard? 'fmt0&v
+                       "Implementation error: Missing punctp case, ~x0"
+                       punct)
+                   (mv 0 state))))))))))
 
 (defun spell-number (n cap col channel state evisc-tuple clk)
 
@@ -7362,6 +7379,19 @@
        (or (eq (f-get-global 'saved-output-token-lst state)
                :all)
            (true-listp (f-get-global 'saved-output-token-lst state)))))
+
+(defun state-p+ (state)
+
+; This predicate is intended to hold of every ACL2 state and to contain all the
+; properties of the ACL2 state that might be needed.  It is not in use as of
+; its introduction in April 2024, but we include it so that the name is
+; reserved.  For now, error1-state-p suffices for purposes we can think of.
+
+; Maybe some day we will convince ourselves that this predicate always holds
+; and add an #-acl2-loop-code body of t.
+
+  (declare (xargs :stobjs state))
+  (error1-state-p state))
 
 (defun error1 (ctx summary str alist state)
 
