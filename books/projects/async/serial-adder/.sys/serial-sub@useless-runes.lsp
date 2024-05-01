@@ -352,7 +352,7 @@
  (3 3 (:REWRITE |(equal (/ x) (/ y))|))
  (3 3 (:REWRITE |(equal (- x) c)|))
  (3 3 (:REWRITE |(equal (- x) (- y))|))
- (2 2 (:TYPE-PRESCRIPTION TRUE-LISTP-TAKE))
+ (2 2 (:TYPE-PRESCRIPTION TAKE))
  (2 2 (:REWRITE SIMPLIFY-TERMS-SUCH-AS-AX+BX-=-0))
  (2 2 (:REWRITE |(< y (+ (- c) x))|))
  (2 2 (:REWRITE |(< x (+ c/d y))|))
