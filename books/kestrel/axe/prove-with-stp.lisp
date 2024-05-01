@@ -1399,7 +1399,7 @@
                       (member-equal x (cdr lst)))))))
 
 ;; Safety check: If no type is induced by a parent, we must not translate that parent.
-;; todo: also need to handle EQUAL, UNSIGNED-BYTE-P and NOT.
+;; todo: also need to handle EQUAL and UNSIGNED-BYTE-P.
 (thm
   (implies (and (dag-function-call-exprp parent-expr)
                 (not (get-induced-type nodenum parent-expr))
@@ -2067,7 +2067,7 @@
                                                              dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                              (cons nodenum nodenums-to-translate)
                                                              cut-nodenum-type-alist))
-                          ;; Special case for equal (fixme: add typed versions of equal and get rid of this):
+                          ;; Special case for EQUAL (fixme: add typed versions of equal and get rid of this):
                           ((and (eq 'equal fn)
                                 (= 2 (len args)))
                            (let* ((lhs (first args))   ; a nodenum or quotep
@@ -2099,7 +2099,7 @@
                                                                  dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                                  nodenums-to-translate
                                                                  (acons nodenum (boolean-type) cut-nodenum-type-alist)))))
-                          ;; todo: can we get rid of this?
+                          ;; Special case for UNSIGNED-BYTE-P  ;; todo: can we get rid of this?
                           ((and (eq 'unsigned-byte-p fn)
                                 (= 2 (len args)))
                            (if (not (darg-quoted-posp (first args))) ;allow 0?
