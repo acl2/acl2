@@ -280,6 +280,14 @@
            (axe-typep (maybe-get-type-of-function-call fn dargs)))
   :hints (("Goal" :in-theory (enable maybe-get-type-of-function-call))))
 
+;; should this be true?
+;; (defthm not-equal-of-maybe-get-type-of-function-call-and-make-bv-type-of-0
+;;   (implies (maybe-get-type-of-function-call fn dargs)
+;;            (not (equal (make-bv-type 0) (maybe-get-type-of-function-call fn dargs))))
+;;   :hints (("Goal" :in-theory (enable maybe-get-type-of-function-call
+;;                                      maybe-get-type-of-bv-function-call
+;;                                      member-equal))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an axe-type, or nil if no type can be determined.
