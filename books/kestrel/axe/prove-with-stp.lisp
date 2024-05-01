@@ -1157,8 +1157,10 @@
          (new-type-acc (if type-from-this-parent
                            (union-types type-from-this-parent type-acc)
                          (progn$ ; (cw "WARNING: No induced type for ~x0 in ~x1.~%" nodenum parent-expr)
-                                 ;; would like to say (most-general-type) here, but that caused many failures (e.g., nodenum may have parents like jvm::update-nth-local):
-                                 type-acc))))
+                           ;; would like to say (most-general-type) here, but that caused many failures (e.g., nodenum may have parents like jvm::update-nth-local):
+                           ;; If the parent can be translated, but doesn't induce a type on the child, we must put in (most-general-type) for the child unless it has an obvious type
+                           ;; But EQUAL and UNSIGNED-BYTE-P both require obvious types for their children and everything else translatable induces types (todo: check this)
+                           type-acc))))
       (most-general-induced-type-aux (rest parent-nodenums) nodenum dag-array dag-len new-type-acc))))
 
 (local
@@ -1415,6 +1417,45 @@
                                      can-translate-bvif-args
                                      member-equal-of-cons ; applies to constant lists
                                      member-equal-when-consp-iff))))
+
+;move these:
+
+;; (defthm darg-quoted-posp-forward-to-darg-quoted-natp
+;;   (implies (darg-quoted-posp darg)
+;;            (darg-quoted-natp darg))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable darg-quoted-posp darg-quoted-natp))))
+
+;; (defthm darg-quoted-posp-forward-to-posp-of-unquote
+;;   (implies (darg-quoted-posp darg)
+;;            (posp (unquote darg)))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable darg-quoted-posp))))
+
+;; (defthm darg-quoted-natp-forward-to-natp-of-unquote
+;;   (implies (darg-quoted-natp darg)
+;;            (natp (unquote darg)))
+;;   :rule-classes :forward-chaining
+;;   :hints (("Goal" :in-theory (enable darg-quoted-natp))))
+
+(defthm equal-of-0-and-make-bv-type
+  (equal (equal 0 (make-bv-type width))
+         (equal 0 width)))
+
+;; Sanity check: Everything we can translate has an obvious type, and it is not a BV type of width 0 (todo: also handle EQUAL and UNSIGNED-BYTE-P):
+(thm
+  (implies (and (can-always-translate-expr-to-stp fn dargs dag-array-name dag-array dag-len known-nodenum-type-alist print)
+                (darg-listp dargs))
+           (and (maybe-get-type-of-function-call fn dargs)
+                (not (equal (make-bv-type 0)
+                            (maybe-get-type-of-function-call fn dargs)))))
+  :hints (("Goal" :in-theory (e/d (can-always-translate-expr-to-stp maybe-get-type-of-function-call maybe-get-type-of-bv-function-call member-equal
+                                                                    darg-quoted-posp
+                                                                    darg-quoted-natp ; todo: disable
+                                                                    unquote-if-possible
+                                                                    )
+                                  (;darg-quoted-natp
+                                   )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2032,107 +2073,67 @@
                                                     (cons nodenum nodenums-to-translate)
                                                     ;;todo: add a type here?:
                                                     cut-nodenum-type-alist)
-                ;;a function call:
-                (if (and depth-limit (< depth-limit (rfix (aref1 'depth-array depth-array nodenum)))) ;todo: drop the rfix (need to know that the depth-array contains numbers)
-                    ;;node is too deep, so cut (if node is in the worklist, we must know its type):
-                    (b* ((obvious-type (maybe-get-type-of-function-call fn (dargs expr)))
+                ;; Function Call:
+                (let* ((args (dargs expr)) ;rename to dargs
+                       (translatep
+                         (cond ((and depth-limit (< depth-limit (rfix (aref1 'depth-array depth-array nodenum)))) ;todo: drop the rfix (need to know that the depth-array contains numbers)
+                                ;;node is too deep, so cut:
+                                nil)
+                               ;; todo: always cut certain operators, like bvmult?
+                               ((can-always-translate-expr-to-stp fn args 'dag-array dag-array dag-len known-nodenum-type-alist t)
+                                t)
+                               ;; Special case for EQUAL (todo: add typed versions of equal and get rid of this?):
+                               ((eq 'equal fn)
+                                (and (= 2 (len args))
+                                     (let* ((lhs (first args)) ; a nodenum or quotep
+                                            (rhs (second args)) ; a nodenum or quotep
+                                            ;; These 2 types are either obvious or assumed (not induced):
+                                            ;;these do not include types from cut-nodenum-alist -- it wouldn't be sound to use those types (they could be induced types that assume this equality will be cut out)?
+                                            (lhs-type (maybe-get-type-of-arg lhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
+                                            (rhs-type (maybe-get-type-of-arg rhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
+                                            )
+                                       (and lhs-type
+                                            rhs-type
+                                            (or (and (bv-typep lhs-type) (bv-typep rhs-type))
+                                                (and (boolean-typep lhs-type) (boolean-typep rhs-type))
+                                                (and (bv-array-typep lhs-type)
+                                                     (bv-array-typep rhs-type)
+                                                     (< 1 (bv-array-type-len lhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
+                                                     (< 1 (bv-array-type-len rhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
+                                                     ;;TODO: check for incompatible types?
+                                                     ))))))
+                               ;; Special case for UNSIGNED-BYTE-P (todo: can we get rid of this?):
+                               ((eq 'unsigned-byte-p fn) ; (unsigned-byte-p <size> <x>)
+                                (and (= 2 (len args))
+                                     (darg-quoted-posp (first args)) ;allow 0?
+                                     (let* ((arg2 (second args)) ;could this be a quotep?
+                                            (arg2-type (maybe-get-type-of-arg arg2 dag-array known-nodenum-type-alist)))
+                                       (bv-typep arg2-type) ;error if not?
+                                       )))
+                               (t nil))))
+                  (if translatep
+                      (process-nodenums-for-translation (append-atoms args (rest worklist)) ; perhaps causes the children to be translated as well
+                                                        depth-limit depth-array
+                                                        (aset1 'handled-node-array handled-node-array nodenum t)
+                                                        dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                        (cons nodenum nodenums-to-translate)
+                                                        cut-nodenum-type-alist)
+                    ;; Cut:
+                    (b* ((obvious-type (maybe-get-type-of-function-call fn args))
+                         ((when (equal obvious-type (make-bv-type 0)))
+                          (cw "ERROR: Encountered a BV node of width 0: ~x0." expr)
+                          (mv :bv-of-width-0 nodenums-to-translate cut-nodenum-type-alist handled-node-array))
+                         ;;ffixme what if there is a better known type or induced type?
                          ((mv erp type-for-cut-nodenum)
                           (if obvious-type
                               (mv (erp-nil) obvious-type)
                             (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len)))
                          ((when erp) (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
-                      (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                        (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                        nodenums-to-translate
-                                                        (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist)))
-                  (b* ((args (dargs expr))
-                       (type (maybe-get-type-of-function-call fn args)))
-                    (cond ((not type)
-                           (b* (((mv erp type-for-cut-nodenum) (type-for-cut-nodenum nodenum known-nodenum-type-alist dag-array dag-parent-array dag-len))
-                                ((when erp) (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
-                             ;;we don't know the type, so we can't translate (fixme make everything we can translate has an obvious type).  just like a variable, we must cut:
-                             ;; or skip this, as we call can-always-translate-expr-to-stp below!
-                             (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                               (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                               nodenums-to-translate
-                                                               (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist))))
-                          ((equal type (make-bv-type 0))
-                           (progn$ (cw "ERROR: Encountered a BV node of width 0: ~x0." expr)
-                                   (mv :bv-of-width-0 nodenums-to-translate cut-nodenum-type-alist handled-node-array)))
-                          ((can-always-translate-expr-to-stp fn args 'dag-array dag-array dag-len known-nodenum-type-alist t)
-                           ;; we can always translate it:
-                           (process-nodenums-for-translation (append-atoms args (rest worklist))
-                                                             depth-limit depth-array
-                                                             (aset1 'handled-node-array handled-node-array nodenum t)
-                                                             dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                             (cons nodenum nodenums-to-translate)
-                                                             cut-nodenum-type-alist))
-                          ;; Special case for EQUAL (fixme: add typed versions of equal and get rid of this):
-                          ((and (eq 'equal fn)
-                                (= 2 (len args)))
-                           (let* ((lhs (first args))   ; a nodenum or quotep
-                                  (rhs (second args))  ; a nodenum or quotep
-;these do not include types from cut-nodenum-alist -- it wouldn't be sound to use those types?
-                                  (lhs-type (maybe-get-type-of-arg lhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
-                                  (rhs-type (maybe-get-type-of-arg rhs dag-array known-nodenum-type-alist)) ;a type or nil for unknown
-                                  )
-                             (if (and lhs-type
-                                      rhs-type
-                                      (or (and (bv-typep lhs-type) (bv-typep rhs-type))
-                                          (and (boolean-typep lhs-type) (boolean-typep rhs-type))
-                                          (and (bv-array-typep lhs-type)
-                                               (bv-array-typep rhs-type)
-                                               (< 1 (bv-array-type-len lhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
-                                               (< 1 (bv-array-type-len rhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
-                                               ;;TODO: check for incompatible types?
-                                               )))
-                                 ;;can translate:
-                                 (process-nodenums-for-translation (append-atoms args (rest worklist)) ;(append (keep-atoms args) (rest worklist))
-                                                                   depth-limit depth-array
-                                                                   (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                   dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                   (cons nodenum nodenums-to-translate)
-                                                                   cut-nodenum-type-alist)
-                               ;;cannot translate; must cut:
-                               (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                                 (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                 dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                 nodenums-to-translate
-                                                                 (acons nodenum (boolean-type) cut-nodenum-type-alist)))))
-                          ;; Special case for UNSIGNED-BYTE-P  ;; todo: can we get rid of this?
-                          ((and (eq 'unsigned-byte-p fn)
-                                (= 2 (len args)))
-                           (if (not (darg-quoted-posp (first args))) ;allow 0?
-;can't translate:
-                               (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                                 (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                 dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                 nodenums-to-translate
-                                                                 (acons nodenum (boolean-type) cut-nodenum-type-alist))
-                             (let* ((arg (second args)) ;could this be a quotep?
-                                    (arg-type (maybe-get-type-of-arg arg dag-array known-nodenum-type-alist)))
-                               (if (and arg-type
-                                        (bv-typep arg-type) ;error if not?
-                                        )
-                                   ;;can translate:
-                                   (process-nodenums-for-translation (append-atoms args (rest worklist)) ;(append (keep-atoms args) (rest worklist))
-                                                                     depth-limit depth-array
-                                                                     (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                     dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                     (cons nodenum nodenums-to-translate)
-                                                                     cut-nodenum-type-alist)
-                                 ;;can't translate:
-                                 (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                                   (aset1 'handled-node-array handled-node-array nodenum t)
-                                                                   dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                   nodenums-to-translate
-                                                                   (acons nodenum (boolean-type) cut-nodenum-type-alist))))))
-                          (t ;; the node has an obvious type, but is not something we support translating (maybe it's < or some other known boolean), so we cut:
-                           ;;ffixme what if there is a better known type or induced type?
-                           (process-nodenums-for-translation (rest worklist) depth-limit depth-array
-                                                             (aset1 'handled-node-array handled-node-array nodenum t) dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                             nodenums-to-translate
-                                                             (acons nodenum type cut-nodenum-type-alist))))))))))))))
+                      (process-nodenums-for-translation (rest worklist) ; does not add the children, since we're cutting
+                                                        depth-limit depth-array
+                                                        (aset1 'handled-node-array handled-node-array nodenum t)
+                                                        dag-array dag-len dag-parent-array known-nodenum-type-alist nodenums-to-translate
+                                                        (acons nodenum type-for-cut-nodenum cut-nodenum-type-alist)))))))))))))
 
 (local
   (defthm all-natp-of-mv-nth-1-of-process-nodenums-for-translation
