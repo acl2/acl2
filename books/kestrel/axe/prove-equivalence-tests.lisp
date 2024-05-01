@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (uses-stp)
+
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "equivalence-checker")
 ;;TODO: prove-equivalence should include these since it refers to them:
