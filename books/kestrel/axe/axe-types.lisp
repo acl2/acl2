@@ -1,7 +1,7 @@
 ; Utilities dealing with types that Axe knows about
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -217,6 +217,13 @@
                 (natp len))
            (axe-typep (make-bv-array-type element-width len)))
   :hints (("Goal" :in-theory (enable axe-typep))))
+
+(defthm bv-array-typep-of-make-bv-array-type
+  (equal (bv-array-typep (make-bv-array-type element-width len))
+         (and (natp element-width)
+              (natp len)))
+  :hints (("Goal" :in-theory (enable make-bv-array-type bv-array-typep))))
+
 
 (defund bv-array-type-element-width (type)
   (declare (xargs :guard (bv-array-typep type)))

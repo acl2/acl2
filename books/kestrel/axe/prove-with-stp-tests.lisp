@@ -84,6 +84,16 @@
 (must-prove-with-stp array-padding-test '(equal (bv-array-read 8 10 0 (bv-array-write 5 10 0 7 '(0 0 0 0 0 0 0 0 0 0))) 7))
 (must-not-prove-with-stp array-padding-test2 '(equal (bv-array-read 8 10 13 (bv-array-write 5 10 0 7 '(0 0 0 0 0 0 0 0 0 0))) 7))
 
+;; the array elements are narrower than the declared size of 8.  here the array constant probably is a darg of the bv-array-read.
+(must-prove-with-stp array-width-test1 '(equal (bvchop 3 i) (bv-array-read 8 8 (bvchop 3 i) '(0 1 2 3 4 5 6 7))) :print t)
+
+;;variant of the above.  now the constant array is a separate node  the read returns 3 bits and is padded to 8 bits.
+;; this shows why we must translate the array arg of a bv-array-read using widths-must-matchp=nil (the array is 3 bits, but the read is 8 bits).
+(must-prove-with-stp array-width-test2 '(implies (equal v '(0 1 2 3 4 5 6 7)) (equal (bvchop 3 i) (bv-array-read 8 8 (bvchop 3 i) v))) :print t)
+
+;; TODO: Can we get this to pass (array width is "wrong" since it is based on the data in the constant)?
+;; (must-prove-with-stp array-width-test3 '(implies (equal v '(0 1 2 3 4 5 6 7)) (equal v (bv-array-write 8 8 (bvchop 3 i) i v))) :print t)
+
 ;test of extensional arrays:
 (must-prove-with-stp array-test-1 '(implies (and (true-listp x)
                                                  (true-listp y)
