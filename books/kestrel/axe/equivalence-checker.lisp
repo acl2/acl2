@@ -7374,9 +7374,9 @@
        (num-nodes-to-consider (+ 1 larger-nodenum))
        ;;both of these arrays must have length (+ 1 larger-nodenum), since nodes up to larger-nodenum will be looked up?  could skip the array access for nodenums larger that smaller-nodenum (they obviously can't support it)
        (needed-for-smaller-nodenum-tag-array (make-empty-array 'needed-for-node1-tag-array num-nodes-to-consider)) ;ffixme rename these arrays (but have to do it everywhere!)
-       (needed-for-smaller-nodenum-tag-array (aset1-safe 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
+       (needed-for-smaller-nodenum-tag-array (aset1 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
        (needed-for-larger-nodenum-tag-array  (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
-       (needed-for-larger-nodenum-tag-array (aset1-safe 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
+       (needed-for-larger-nodenum-tag-array (aset1 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
        ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
        ((mv erp
             nodenums-to-translate ;in decreasing order
@@ -7536,8 +7536,8 @@
     (b* (;; todo: drop this supporters-tag-array because the depth-array already tracks supporters (but consider what happens with cutting at bvmult and bvif nodes)
          (supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
          ;;mark the two nodes as supporters:
-         (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array larger-nodenum t))
-         (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array smaller-nodenum t))
+         (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array larger-nodenum t))
+         (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array smaller-nodenum t))
          (current-depth (integer-average-round-up min-depth max-depth))
          ;; TODO: Consider a worklist algorithm:
          ((mv erp nodenums-to-translate cut-nodenum-type-alist extra-asserts)
@@ -7706,7 +7706,8 @@
                                (ARRAY1P DONE-ARRAY-NAME DONE-ARRAY)
                                (all-< nodenums (ALEN1 DONE-ARRAY-NAME DONE-ARRAY))
                                (true-listp acc))
-                   :verify-guards nil))
+                   :verify-guards nil ; done below
+                   ))
    (if (endp nodenums)
        acc
      (let* ((nodenum (first nodenums))
@@ -7729,7 +7730,7 @@
                           (rest nodenums))
                   miter-array-name miter-array tag-array-name tag-array
                   done-array-name
-                  (aset1-safe done-array-name done-array nodenum t)
+                  (aset1 done-array-name done-array nodenum t)
                   (if (is-a-rec-fn-to-handle (ffn-symb expr) state)
                       (add-to-set-eql nodenum acc)
                     acc)
@@ -8493,14 +8494,14 @@
           (rebuild-node-range (+ 1 nodenum)
                               max-nodenum
                               max-unrenamed-nodenum
-                              (aset1-safe 'renaming-array renaming-array nodenum nodenum) ; or skip this?
+                              (aset1 'renaming-array renaming-array nodenum nodenum) ; or skip this?
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                               dag-array-name dag-parent-array-name)
         (if (eq 'quote (ffn-symb expr)) ; nothing much to do for a constant
             (rebuild-node-range (+ 1 nodenum)
                                 max-nodenum
                                 max-unrenamed-nodenum
-                                (aset1-safe 'renaming-array renaming-array nodenum expr)
+                                (aset1 'renaming-array renaming-array nodenum expr)
                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                 dag-array-name dag-parent-array-name)
           ;; function call:
@@ -8514,7 +8515,7 @@
                 (rebuild-node-range (+ 1 nodenum)
                                     max-nodenum
                                     max-unrenamed-nodenum
-                                    (aset1-safe 'renaming-array renaming-array nodenum new-nodenum)
+                                    (aset1 'renaming-array renaming-array nodenum new-nodenum)
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     dag-array-name dag-parent-array-name)))))))))
 
@@ -12293,7 +12294,7 @@
                   :verify-guards nil ; todo: first prove properties of GATHER-NODES-FOR-TRANSLATION
                   :stobjs state))
   (b* ((needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
-       (needed-for-node1-tag-array (aset1-safe 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
+       (needed-for-node1-tag-array (aset1 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
        ;; Choose which nodes to translate (no cutting):
        ((mv nodenums-to-translate cut-nodenum-type-alist)
         (gather-nodes-for-translation nodenum miter-array-name miter-array miter-len var-type-alist needed-for-node1-tag-array nil nil))
