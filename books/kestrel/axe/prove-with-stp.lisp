@@ -1059,7 +1059,7 @@
           ((eq fn 'bv-array-write) ; (bv-array-write <element-size> <len> <index> <val> <data>)
            (if (and (eql 5 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs))
+                    (darg-quoted-posp (second dargs)) ; todo: what about len =1 (disallowed elsewhere)?
                     (< 1 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                ;; if nodenum appears as an array and a BV, we'll get
