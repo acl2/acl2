@@ -1316,11 +1316,11 @@
                        (bv-arg-okp (second args))
                        ))
     ;; todo: clean these up:
-    ((bv-array-read) ;new (ffixme make sure these get translated right: consider constant array issues):
-     (if (and (= 4 (len args)) ;todo: speed up checks like this?
-              (darg-quoted-posp (first args))
+    ((bv-array-read) ; (bv-array-read element-width len index data)  ;new (ffixme make sure these get translated right: consider constant array issues):
+     (if (and (= 4 (len args))                ;todo: speed up checks like this?
+              (darg-quoted-posp (first args)) ; disallows 0 width
               (darg-quoted-natp (second args))
-              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits
               )
          (let* ((data-arg (fourth args))
                 (type-of-data (get-type-of-arg-safe data-arg dag-array-name dag-array known-nodenum-type-alist)))
@@ -1328,11 +1328,11 @@
                     (eql (bv-array-type-len type-of-data) (unquote (second args))))
                t
              (prog2$ (and ;(eq :verbose print)
-                      (cw "(WARNING: Not translating array read expr ~x0 since the required length is ~x1 but the array argument, ~x2, has type ~x3.)~%"
-                          (cons fn args)
-                          (unquote (second args))
-                          (if (quotep data-arg) data-arg (aref1 dag-array-name dag-array data-arg))
-                          type-of-data))
+                       (cw "(WARNING: Not translating array read expr ~x0 since the required length is ~x1 but the array argument, ~x2, has type ~x3.)~%"
+                           (cons fn args)
+                           (unquote (second args))
+                           (if (quotep data-arg) data-arg (aref1 dag-array-name dag-array data-arg))
+                           type-of-data))
                      nil)))
        (prog2$ (and (eq :verbose print)
                     (cw "(WARNING: Not translating array expr ~x0 since the length and width are not known.)~%" (cons fn args)))

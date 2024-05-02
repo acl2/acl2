@@ -610,7 +610,8 @@
                               (nodenum-type-alistp cut-nodenum-type-alist))
                   :split-types t)
            (type (integer 1 *) desired-size)
-           (ignore dag-len))
+           (ignore dag-len) ; only needed for the guard
+           )
   (if (consp arg) ;tests for quotep
       (translate-bv-constant (unquote arg) desired-size)
     ;;arg is a nodenum:
@@ -959,29 +960,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv array-name constant-array-info actual-element-width) where ARRAY-NAME is a string-tree that can be used to refer to the array
-(defund translate-array-arg (arg
-                             desired-element-width
-                             desired-array-length
-                             dag-array-name
-                             dag-array
-                             cut-nodenum-type-alist
-                             calling-fn ;the function for which ARG is an argument
-                             widths-must-matchp
-                             constant-array-info)
-  (declare (xargs :guard (and (posp desired-element-width)
-                              (natp desired-array-length)
-                              (symbolp calling-fn)
-                              (or (myquotep arg)
-                                  (and (natp arg) ;drop?
-                                       (pseudo-dag-arrayp dag-array-name dag-array (+ 1 arg))
-                                       (< arg (alen1 dag-array-name dag-array))))
-                              (array1p dag-array-name dag-array)
+(defund translate-bv-array-arg (arg
+                                desired-element-width
+                                desired-array-length
+                                dag-array-name
+                                dag-array
+                                dag-len
+                                cut-nodenum-type-alist
+                                calling-fn ;the function for which ARG is an argument
+                                widths-must-matchp
+                                constant-array-info)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (dargp-less-than arg dag-len)
+                              (posp desired-element-width)
+                              (integerp desired-array-length)
+                              (<= 2 desired-array-length)
+                              (bv-array-arg-okp desired-array-length arg)
                               (nodenum-type-alistp cut-nodenum-type-alist)
-                              (constant-array-infop constant-array-info))))
+                              (symbolp calling-fn)
+                              (constant-array-infop constant-array-info)))
+           (ignore dag-len) ; only needed for the guard
+           )
   ;;todo: maybe split into cases here at the start based on whether it's a constant?
   (b* ((arg-type (get-type-of-arg-checked arg dag-array-name dag-array cut-nodenum-type-alist))
        ((when (not (bv-array-typep arg-type)))
-        (mv (er hard? 'translate-array-arg "Tried to translate an argument, ~x0, of ~x1 that is not known to be an array." arg calling-fn)
+        (mv (er hard? 'translate-bv-array-arg "Tried to translate an argument, ~x0, of ~x1 that is not known to be an array." arg calling-fn)
             constant-array-info
             0))
        (arg-len (bv-array-type-len arg-type))
@@ -989,12 +992,12 @@
        (constant-arrayp (consp arg)) ;checks for a quoted constant
        )
     (if (not (eql desired-array-length arg-len))
-        (prog2$ (er hard? 'translate-array-arg "Tried to translate an array argument to ~x0 with desired length ~x1 but actual length ~x2.~%" calling-fn desired-array-length arg-len)
+        (prog2$ (er hard? 'translate-bv-array-arg "Tried to translate an array argument to ~x0 with desired length ~x1 but actual length ~x2.~%" calling-fn desired-array-length arg-len)
                 (mv nil constant-array-info 0))
       (if (and (not constant-arrayp) ;; I guess we don't need to check this for constants (constant array elements that are too small are okay, elements that are too large get chopped)
                widths-must-matchp
                (not (eql desired-element-width arg-element-width))) ;could perhaps translate this to false...
-          (prog2$ (er hard? 'translate-array-arg "Tried to translate an array argument to ~x0 with desired element width ~x1 but actual element width ~x2.~%"
+          (prog2$ (er hard? 'translate-bv-array-arg "Tried to translate an array argument to ~x0 with desired element width ~x1 but actual element width ~x2.~%"
                       calling-fn desired-element-width arg-element-width)
                   (mv nil constant-array-info 0))
         ;;We handle constant arrays by putting in a fresh variable and adding asserts about the values of each element
@@ -1005,7 +1008,7 @@
                 (b* (((mv array-name constant-array-info)
                       (translate-constant-array-mention arg desired-element-width desired-array-length constant-array-info)))
                   (mv array-name constant-array-info arg-element-width))
-              (prog2$ (er hard? 'translate-array-arg "Tried to translate an array argument to ~x0 with bad data ~x1.~%"
+              (prog2$ (er hard? 'translate-bv-array-arg "Tried to translate an array argument to ~x0 with bad data ~x1.~%"
                           calling-fn (unquote arg))
                       (mv nil constant-array-info 0)))
           ;;arg is a nodenum:
@@ -1014,24 +1017,24 @@
               arg-element-width))))))
 
 (local
-  (defthm string-treep-of-mv-nth-0-of-translate-array-arg
+  (defthm string-treep-of-mv-nth-0-of-translate-bv-array-arg
     (implies (constant-array-infop constant-array-info)
-             (string-treep (mv-nth 0 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array cut-nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
-    :hints (("Goal" :in-theory (enable translate-array-arg constant-array-infop)))))
+             (string-treep (mv-nth 0 (translate-bv-array-arg arg desired-element-width desired-array-length dag-array-name dag-array dag-len cut-nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
+    :hints (("Goal" :in-theory (enable translate-bv-array-arg constant-array-infop)))))
 
 (local
-  (defthm constant-array-infop-of-mv-nth-1-of-translate-array-arg
+  (defthm constant-array-infop-of-mv-nth-1-of-translate-bv-array-arg
     (implies (and ;(nat-listp (cadr arg))
                (posp desired-element-width)
                (constant-array-infop constant-array-info)
                )
-             (constant-array-infop (mv-nth 1 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array cut-nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
-    :hints (("Goal" :in-theory (enable translate-array-arg)))))
+             (constant-array-infop (mv-nth 1 (translate-bv-array-arg arg desired-element-width desired-array-length dag-array-name dag-array dag-len cut-nodenum-type-alist calling-fn widths-must-matchp constant-array-info))))
+    :hints (("Goal" :in-theory (enable translate-bv-array-arg)))))
 
 (local
-  (defthm integerp-of-mv-nth-2-of-translate-array-arg
-    (integerp (mv-nth 2 (translate-array-arg arg desired-element-width desired-array-length dag-array-name dag-array cut-nodenum-type-alist calling-fn widths-must-matchp constant-array-info)))
-    :hints (("Goal" :in-theory (enable translate-array-arg)))))
+  (defthm integerp-of-mv-nth-2-of-translate-bv-array-arg
+    (integerp (mv-nth 2 (translate-bv-array-arg arg desired-element-width desired-array-length dag-array-name dag-array dag-len cut-nodenum-type-alist calling-fn widths-must-matchp constant-array-info)))
+    :hints (("Goal" :in-theory (enable translate-bv-array-arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1675,22 +1678,23 @@
                                (nat-to-string low-slice-size) "])")
                         constant-array-info))))
             (mv (erp-t) nil constant-array-info)))
-        (bv-array-read ;(BV-ARRAY-READ ELEMENT-WIDTH LEN INDEX DATA)
+        (bv-array-read ; (bv-array-read <element-width> <len> <index> <data>)
           ;;fixme an error occurs if we try to translate a bv-array-read of one length applied to a bv-array-write of a longer length? better to just cut there??
           ;;also an error if we translate two bv-array-reads with different len params but the same array param
           ;;fixme handle arrays with non-constant lengths? will have to think about array lengths that are not powers of 2.  may need to translate ceiling-of-lg...
           (if (and (= 4 (len (dargs expr)))
-                   (darg-quoted-posp (darg1 expr))
-                   (darg-quoted-posp (darg2 expr))
+                   (darg-quoted-posp (darg1 expr)) ; element width must not be 0
+                   (darg-quoted-integerp (darg2 expr))
                    (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
-                   (bv-arg-okp (darg3 expr)))
+                   (bv-arg-okp (darg3 expr))
+                   (bv-array-arg-okp (unquote (darg2 expr)) (darg4 expr)))
               (b* ((element-width (unquote (darg1 expr)))
-                   (len (unquote (darg2 expr))) ;ffixme can the array length ever be 1? ;maybe we should get the len from the data argument... - fixme may need a case for when the index is > the len param - return 0? well, the index gets chpped down..
+                   (len (unquote (darg2 expr))) ;ffixme can the array length ever be 1? ;maybe we should get the len from the data argument... - fixme may need a case for when the index is > the len param - return 0? well, the index gets chopped down..
                    (index (darg3 expr))
                    (array-arg (darg4 expr))
                    (num-index-bits (ceiling-of-lg len))
                    ((mv array-name constant-array-info actual-element-width)
-                    (translate-array-arg array-arg element-width len dag-array-name dag-array cut-nodenum-type-alist 'bv-array-read nil constant-array-info))
+                    (translate-bv-array-arg array-arg element-width len dag-array-name dag-array dag-len cut-nodenum-type-alist 'bv-array-read nil constant-array-info))
                    ;; given that we've checked the len, can we remove the index padding stuff below?
                    (trimmed-index (list*
                                     ;;the index gets chopped down to NUM-INDEX-BITS bits because that's what bv-array-read does (fixme should translate-bv-arg accomplish that?!):
@@ -1738,7 +1742,8 @@
                    (darg-quoted-natp (darg2 expr))
                    (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                    (bv-arg-okp (darg3 expr))
-                   (bv-arg-okp (darg4 expr)))
+                   (bv-arg-okp (darg4 expr))
+                   (bv-array-arg-okp (unquote (darg2 expr)) (darg5 expr)))
               (b* ((element-width (unquote (darg1 expr)))
                    (len (unquote (darg2 expr)))
                    (index (darg3 expr))
@@ -1746,7 +1751,7 @@
                    (array-arg (darg5 expr))
                    (num-index-bits (ceiling-of-lg len))
                    ((mv array-name constant-array-info &)
-                    (translate-array-arg array-arg element-width len dag-array-name dag-array cut-nodenum-type-alist 'bv-array-write t constant-array-info)))
+                    (translate-bv-array-arg array-arg element-width len dag-array-name dag-array dag-len cut-nodenum-type-alist 'bv-array-write t constant-array-info)))
                 (let* ((trimmed-index
                          (list* (translate-bv-arg index num-index-bits dag-array-name dag-array dag-len cut-nodenum-type-alist)
                                 "["
@@ -1784,16 +1789,18 @@
                    (darg-quoted-posp (darg1 expr))
                    (darg-quoted-natp (darg2 expr))
                    (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
-                   (boolean-arg-okp (darg3 expr)))
+                   (boolean-arg-okp (darg3 expr))
+                   (bv-array-arg-okp (unquote (darg2 expr)) (darg4 expr))
+                   (bv-array-arg-okp (unquote (darg2 expr)) (darg5 expr)))
               (b* ((element-width (unquote (darg1 expr)))
                    (length (unquote (darg2 expr)))
                    (test (darg3 expr))
                    (then-branch (darg4 expr))
                    (else-branch (darg5 expr))
                    ((mv then-array-name constant-array-info &)
-                    (translate-array-arg then-branch element-width length dag-array-name dag-array cut-nodenum-type-alist 'bv-array-if t constant-array-info))
+                    (translate-bv-array-arg then-branch element-width length dag-array-name dag-array dag-len cut-nodenum-type-alist 'bv-array-if t constant-array-info))
                    ((mv else-array-name constant-array-info &)
-                    (translate-array-arg else-branch element-width length dag-array-name dag-array cut-nodenum-type-alist 'bv-array-if t constant-array-info)))
+                    (translate-bv-array-arg else-branch element-width length dag-array-name dag-array dag-len cut-nodenum-type-alist 'bv-array-if t constant-array-info)))
                 (mv
                   (erp-nil)
                   (list* "(IF "
