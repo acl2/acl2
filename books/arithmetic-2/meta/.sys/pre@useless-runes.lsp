@@ -9,9 +9,7 @@
 (|Non-numeric x in (- x)|)
 (|Non-Numeric x in (* x y)|)
 (|Non-Numeric y in (* x y)|)
-(|Non-Numeric x in (/ x)|
- (1 1 (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))
- )
+(|Non-Numeric x in (/ x)|)
 (|Non-Numeric x in (< x y)|
  (4 3 (:REWRITE DEFAULT-<-2))
  (2 2 (:REWRITE RATIONALP-IMPLIES-ACL2-NUMBERP))

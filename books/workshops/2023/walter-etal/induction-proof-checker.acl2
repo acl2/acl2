@@ -12,4 +12,6 @@
 #+acl2-par
 (set-parallel-execution nil)
 
-; cert-flags: ? t :ttags :all
+; Matt K. addtion: Avoid useless runes failure by
+; adding to the existing cert-flags.
+; cert-flags: ? t :ttags :all :useless-runes nil
