@@ -1037,7 +1037,25 @@
            (not (< (nth n vals) k)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than nth))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; move these?
+
+;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is an integerp.
+(defund darg-quoted-integerp (darg)
+  (declare (xargs :guard (dargp darg)))
+  (and (consp darg)
+       (integerp (unquote darg))))
+
+(defthm darg-quoted-integerp-forward
+  (implies (darg-quoted-integerp darg)
+           (and (consp darg)
+                (integerp (cadr darg))
+                (integerp (nth 1 darg))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-quoted-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a natp.
 (defund darg-quoted-natp (darg)
@@ -1049,9 +1067,13 @@
   (implies (darg-quoted-natp darg)
            (and (consp darg)
                 (natp (cadr darg))
-                (natp (nth 1 darg))))
+                (natp (nth 1 darg))
+                (darg-quoted-integerp darg)))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable darg-quoted-natp))))
+  :hints (("Goal" :in-theory (enable darg-quoted-natp
+                                     darg-quoted-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a posp.
 (defund darg-quoted-posp (darg)
