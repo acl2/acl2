@@ -20145,6 +20145,7 @@
 ;;                                   state rand RESULT-ARRAY-STOBJ)))
 
 ;todo: deprecate?  unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
+;; Used in several loop examples.
 (defmacro prove-equality (term1 term2 &rest rest)
   `(make-event
     (b* (((mv erp dag) (dagify-term '(equal ,term1 ,term2)))
@@ -20204,11 +20205,14 @@
        (quoted-dag-or-term1 (farg1 whole-form))
        (quoted-dag-or-term2 (farg2 whole-form))
        (wrld (w state))
+       ;; Translate assumptions
        (assumptions (translate-terms assumptions 'prove-equivalence-fn wrld)) ;throws an error on bad input
+       ;; Create the DAGS:
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
+       ;; Check vars:
        (vars1 (and check-vars (merge-sort-symbol< (dag-vars dag1))))
        (vars2 (and check-vars (merge-sort-symbol< (dag-vars dag2))))
        ((when (and check-vars
@@ -20220,6 +20224,7 @@
         ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
         ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
         (mv (erp-t) nil state rand result-array-stobj))
+       ;; Make the equality DAG:
        ((mv erp equality-dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ;; Make the initial rule sets:
@@ -20236,7 +20241,7 @@
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand result-array-stobj))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
-       ;; Call the core function:
+       ;; Try to prove the equality:
        ((mv erp provedp state rand result-array-stobj)
         (prove-miter-core equality-dag
                           tactic
@@ -20266,13 +20271,15 @@
                           ;; nil ; treat-as-purep
                           debug
                           state rand result-array-stobj))
+       ;; Remove the tempp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
+       (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
                            (mv erp nil state rand result-array-stobj)))
        ((when (not provedp)) (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
                                      ;; Convert this to an error
                                      (mv :proof-failed nil state rand result-array-stobj)))
        (- (cw "Proof of equivalence succeeded.~%"))
-       ;; make the theorem:
+       ;; make the theorem (TODO: Make this optional):
        (term1 (dag-or-term-to-term dag-or-term1 state))
        (term2 (dag-or-term-to-term dag-or-term2 state))
        (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
@@ -20280,11 +20287,14 @@
                    (implies (and ,@assumptions)
                             (equal ,term1
                                    ,term2)))))
+       ;; The event may include a theorem:
        (event (if types ;todo: remove this restriction
                   (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
                           `(progn))
                 defthm))
+       ;; The event includes a table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
+       ;; Arrange to print the miter name when the event is submitted:
        (event (extend-progn event `(value-triple ',miter-name)))
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand result-array-stobj)))
