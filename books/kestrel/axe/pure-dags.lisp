@@ -141,13 +141,13 @@
       (bv-array-read (and (= 4 (len dargs))
                           (darg-quoted-posp (first dargs))
                           (darg-quoted-natp (second dargs))
-                          (< 1 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
+                          (<= 2 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
                           (bv-arg-okp (third dargs))
                           (bv-array-arg-okp (unquote (second dargs)) (fourth dargs))))
       (bv-array-write (and (= 5 (len dargs))
                            (darg-quoted-posp (first dargs))
                            (darg-quoted-natp (second dargs))
-                           (< 1 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
+                           (<= 2 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
                            (bv-arg-okp (third dargs))
                            (bv-arg-okp (fourth dargs))
                            (bv-array-arg-okp (unquote (second dargs)) (fifth dargs))))

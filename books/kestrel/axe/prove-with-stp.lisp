@@ -1042,7 +1042,7 @@
            (if (and (eql 4 (len dargs))
                     (darg-quoted-posp (first dargs))
                     (darg-quoted-posp (second dargs))
-                    (< 1 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
+                    (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                (union-types (if (eql nodenum (third dargs))
                                 ;; nodenum is the index:
@@ -1058,7 +1058,7 @@
            (if (and (eql 5 (len dargs))
                     (darg-quoted-posp (first dargs))
                     (darg-quoted-posp (second dargs)) ; todo: what about len =1 (disallowed elsewhere)?
-                    (< 1 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
+                    (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                ;; if nodenum appears as an array and a BV, we'll get
                ;; most-general-type here, which will cause an error later:
@@ -1078,7 +1078,9 @@
           ((eq 'bv-array-if fn) ; (bv-array-if <element-width> <len> <test> <then> <else>)
            (if (and (eql 5 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs)))
+                    (darg-quoted-posp (second dargs))
+                    (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
+                    )
                (union-types (if (eql nodenum (third dargs))
                                 ;; nodenum is the test:
                                 (boolean-type)
@@ -1318,7 +1320,7 @@
      (if (and (= 4 (len args)) ;todo: speed up checks like this?
               (darg-quoted-posp (first args))
               (darg-quoted-natp (second args))
-              (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          (let* ((data-arg (fourth args))
                 (type-of-data (get-type-of-arg-safe data-arg dag-array-name dag-array known-nodenum-type-alist)))
@@ -1340,7 +1342,7 @@
      (if (and (= 5 (len args))
               (darg-quoted-posp (first args))
               (darg-quoted-natp (second args))
-              (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          t
        (prog2$ (and (eq :verbose print)
@@ -1350,7 +1352,7 @@
      (if (and (= 5 (len args))
               (darg-quoted-posp (first args))
               (darg-quoted-natp (second args))
-              (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          (let ((type (make-bv-array-type (unquote (first args)) (unquote (second args)))))
            ;; The types of the 'then' and 'else' branches must be exactly the type of the BV-ARRAY-IF:
@@ -2071,8 +2073,8 @@
                                                 (and (boolean-typep lhs-type) (boolean-typep rhs-type))
                                                 (and (bv-array-typep lhs-type)
                                                      (bv-array-typep rhs-type)
-                                                     (< 1 (bv-array-type-len lhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
-                                                     (< 1 (bv-array-type-len rhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
+                                                     (<= 2 (bv-array-type-len lhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
+                                                     (<= 2 (bv-array-type-len rhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
                                                      ;;TODO: check for incompatible types?
                                                      ))))))
                                ;; Special case for UNSIGNED-BYTE-P (todo: can we get rid of this?):

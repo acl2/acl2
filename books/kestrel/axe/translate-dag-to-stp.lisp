@@ -60,11 +60,11 @@
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
 (include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
 ;(include-book "kestrel/bv/getbit-def" :dir :system)
-(include-book "kestrel/bv-lists/bv-array-if" :dir :system)
 ;(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-if" :dir :system)
 (include-book "kestrel/bv-lists/logext-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
@@ -948,7 +948,7 @@
   (defthm string-treep-of-mv-nth-0-of-translate-equality-to-stp
     (implies (constant-array-infop constant-array-info)
              (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
-    :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len BV-ARRAY-TYPE-ELEMENT-WIDTH))))))
+    :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len bv-array-type-element-width))))))
 
 (local
   (defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
@@ -1682,7 +1682,7 @@
           (if (and (= 4 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
                    (darg-quoted-posp (darg2 expr))
-                   (< 1 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
+                   (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                    (bv-arg-okp (darg3 expr)))
               (b* ((element-width (unquote (darg1 expr)))
                    (len (unquote (darg2 expr))) ;ffixme can the array length ever be 1? ;maybe we should get the len from the data argument... - fixme may need a case for when the index is > the len param - return 0? well, the index gets chpped down..
@@ -1736,7 +1736,7 @@
           (if (and (= 5 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
                    (darg-quoted-natp (darg2 expr))
-                   (< 1 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
+                   (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                    (bv-arg-okp (darg3 expr))
                    (bv-arg-okp (darg4 expr)))
               (b* ((element-width (unquote (darg1 expr)))
@@ -1779,10 +1779,11 @@
                                ") ENDIF)"))
                       constant-array-info)))
             (mv (erp-t) nil constant-array-info)))
-        (bv-array-if ;(bv-array-if element-width length test thenpart elsepart)
+        (bv-array-if ; (bv-array-if element-width length test thenpart elsepart)
           (if (and (= 5 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
-                   (darg-quoted-natp (darg2 expr)) ;exclude 0? exclude 1?
+                   (darg-quoted-natp (darg2 expr))
+                   (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                    (boolean-arg-okp (darg3 expr)))
               (b* ((element-width (unquote (darg1 expr)))
                    (length (unquote (darg2 expr)))
