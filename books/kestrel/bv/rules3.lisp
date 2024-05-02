@@ -1931,7 +1931,7 @@
   (implies (natp size)
            (equal (* 2 (bvplus size x y))
                   (bvmult (+ 1 size) 2 (bvplus size x y))))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm ifix-does-nothing
   (implies (integerp x)
