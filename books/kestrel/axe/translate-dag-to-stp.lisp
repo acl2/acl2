@@ -2586,21 +2586,8 @@
   :hints (("Goal" :in-theory (enable prove-query-with-stp))))
 
 (defthm w-of-mv-nth-1-of-prove-query-with-stp
-  (equal (w (mv-nth 1 (prove-query-with-stp translated-query-core
-                                                      extra-string
-                                                      dag-array-name
-                                                      dag-array
-                                                      dag-len
-                                                      nodenums-to-translate
-                                                      extra-asserts
-                                                      base-filename
-                                                      cut-nodenum-type-alist
-                                                      print
-                                                      max-conflicts
-                                                      constant-array-info
-                                                      counterexamplep
-                                                      print-cex-as-signedp
-                                                      state)))
+  (equal (w (mv-nth 1 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist
+                                            print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state)))
          (w state))
   :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (w)))))
 
