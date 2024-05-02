@@ -77,7 +77,6 @@
 
 (local (in-theory (disable state-p w
                            symbol-alistp
-                           darg-quoted-posp
                            ;; for speed:
                            nth-when-not-consp-cheap
                            default-cdr
@@ -467,8 +466,7 @@
                               (all-< all-nodenums dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist))
                   :guard-hints (("Goal" :do-not-induct t
-                                 :in-theory (e/d (darg-quoted-posp
-                                                  nth-of-cdr
+                                 :in-theory (e/d (nth-of-cdr
                                                   ;CAR-BECOMES-NTH-OF-0
                                                   ;CONSP-FROM-LEN
                                                   ;CONSP-of-CDR
@@ -596,7 +594,7 @@
                                                                                         dag-array
                                                                                         dag-len
                                                                                         known-nodenum-type-alist))))
-    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp))))))
+    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0) (natp))))))
 
 ; make a "bounded-nodenum-type-alistp"?
 (local
@@ -616,7 +614,7 @@
                                                                                       dag-len
                                                                                       known-nodenum-type-alist)))
                     dag-len))
-    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp))))))
+    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0) (natp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -958,7 +956,7 @@
 (defund get-induced-type (nodenum parent-expr)
   (declare (xargs :guard (and (natp nodenum)
                               (dag-function-call-exprp parent-expr))
-                  :guard-hints (("Goal" :in-theory (enable dargp-of-nth-when-darg-listp nth-of-cdr darg-quoted-posp)))))
+                  :guard-hints (("Goal" :in-theory (enable dargp-of-nth-when-darg-listp nth-of-cdr)))))
   (let ((fn (ffn-symb parent-expr))
         (dargs (dargs parent-expr)))
     (cond ((member-eq fn '(bvuminus bvchop bvnot)) ; (<fn> <size> <arg>)
@@ -1126,7 +1124,7 @@
   (defthm axe-typep-of-get-induced-type
     (implies (get-induced-type nodenum parent-expr)
              (axe-typep (get-induced-type nodenum parent-expr)))
-    :hints (("Goal" :in-theory (enable get-induced-type darg-quoted-posp)))))
+    :hints (("Goal" :in-theory (enable get-induced-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1252,7 +1250,7 @@
                               (symbolp fn)
                               (bounded-darg-listp args dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist))
-                  :guard-hints (("Goal" :in-theory (enable darg-quoted-posp))))
+                  :guard-hints (("Goal" :in-theory (enable))))
            (ignore dag-len))
   (case fn
     (not (and (= 1 (len args))
@@ -1411,32 +1409,12 @@
                                                   (dargs parent-expr)
                                                   'dag-array dag-array dag-len known-nodenum-type-alist print)))
   :hints (("Goal" :in-theory (enable get-induced-type can-always-translate-expr-to-stp
-                                     darg-quoted-posp
+                                     darg-quoted-posp darg-quoted-natp
                                      member-equal-of-constant-when-not-equal-of-nth-0
                                      consp-of-cdr
                                      can-translate-bvif-args
                                      member-equal-of-cons ; applies to constant lists
                                      member-equal-when-consp-iff))))
-
-;move these:
-
-;; (defthm darg-quoted-posp-forward-to-darg-quoted-natp
-;;   (implies (darg-quoted-posp darg)
-;;            (darg-quoted-natp darg))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable darg-quoted-posp darg-quoted-natp))))
-
-;; (defthm darg-quoted-posp-forward-to-posp-of-unquote
-;;   (implies (darg-quoted-posp darg)
-;;            (posp (unquote darg)))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable darg-quoted-posp))))
-
-;; (defthm darg-quoted-natp-forward-to-natp-of-unquote
-;;   (implies (darg-quoted-natp darg)
-;;            (natp (unquote darg)))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable darg-quoted-natp))))
 
 (defthm equal-of-0-and-make-bv-type
   (equal (equal 0 (make-bv-type width))
@@ -1449,13 +1427,8 @@
            (and (maybe-get-type-of-function-call fn dargs)
                 (not (equal (make-bv-type 0)
                             (maybe-get-type-of-function-call fn dargs)))))
-  :hints (("Goal" :in-theory (e/d (can-always-translate-expr-to-stp maybe-get-type-of-function-call maybe-get-type-of-bv-function-call member-equal
-                                                                    darg-quoted-posp
-                                                                    darg-quoted-natp ; todo: disable
-                                                                    unquote-if-possible
-                                                                    )
-                                  (;darg-quoted-natp
-                                   )))))
+  :hints (("Goal" :in-theory (enable can-always-translate-expr-to-stp maybe-get-type-of-function-call maybe-get-type-of-bv-function-call member-equal
+                                     unquote-if-possible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
