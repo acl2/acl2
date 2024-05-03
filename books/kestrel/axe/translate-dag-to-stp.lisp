@@ -90,6 +90,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (in-theory (disable open-output-channels open-output-channel-p1)) ; drop?
@@ -425,29 +426,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;TODO: deprecate? ;make the guard require natp?
-;make a version that returns a string-tree?
-(defund nat-to-string-debug (n)
-  (declare (xargs :guard t))
-  (if (not (natp n))
-      (progn$ (cw "error: called nat-to-string on non-natural ~x0." n)
-              (break$) ; will put us in the debugger
-              )
-    (nat-to-string n)))
+;; ;TODO: deprecate? ;make the guard require natp?
+;; ;make a version that returns a string-tree?
+;; (defund nat-to-string-debug (n)
+;;   (declare (xargs :guard t))
+;;   (if (not (natp n))
+;;       (progn$ (cw "error: called nat-to-string on non-natural ~x0." n)
+;;               (break$) ; will put us in the debugger
+;;               )
+;;     (nat-to-string n)))
 
-(in-theory (disable (:e nat-to-string-debug)))
+;; (in-theory (disable (:e nat-to-string-debug)))
 
-(local
-  (defthm stringp-of-nat-to-string-debug
-    (implies (natp n)
-             (stringp (nat-to-string-debug n)))
-    :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
+;; (local
+;;   (defthm stringp-of-nat-to-string-debug
+;;     (implies (natp n)
+;;              (stringp (nat-to-string-debug n)))
+;;     :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
 
-(local
-  (defthm string-treep-of-nat-to-string-debug
-    (implies t ;(natp n) ;todo: put back
-             (string-treep (nat-to-string-debug n)))
-    :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
+;; (local
+;;   (defthm string-treep-of-nat-to-string-debug
+;;     (implies t ;(natp n) ;todo: put back
+;;              (string-treep (nat-to-string-debug n)))
+;;     :hints (("Goal" :in-theory (enable nat-to-string-debug)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -699,10 +700,11 @@
       (eq nil x)
     (let ((entry (first x)))
       (and (eql 4 (len entry))
-           (nat-listp (first entry))
-           (string-treep (second entry))
-           (posp (third entry))
-           (natp (fourth entry))
+           (nat-listp (first entry)) ; array data
+           (string-treep (second entry)) ; array "name"
+           (posp (third entry)) ; element-width (disallows 0)
+           (integerp (fourth entry)) ; array length
+           (<= 2 (fourth entry)) ; an array of length 1 would have 0 index bits
            (<= (fourth entry) (len (first entry))) ;fixme should we disallow the constant being longer?
            (constant-array-infop (rest x))))))
 
@@ -743,6 +745,8 @@
 (defund translate-constant-array-mention (data element-width element-count constant-array-info)
   (declare (xargs :guard (and (myquotep data)
                               (posp element-width)
+                              (integerp element-count)
+                              (<= 2 element-count) ; arrays of length 1 would have 0 index bits
                               (constant-array-infop constant-array-info))))
   (let* ((data (unquote data))
          (match (get-array-constant-name data element-width element-count constant-array-info)))
@@ -766,7 +770,8 @@
     (implies (and (constant-array-infop constant-array-info)
                   (nat-listp (unquote data))
                   (posp element-width)
-                  (natp element-count)
+                  (integerp element-count)
+                  (<= 2 element-count)
                   (<= element-count (len (unquote data))))
              (constant-array-infop (mv-nth 1 (translate-constant-array-mention data element-width element-count constant-array-info))))
     :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop)))))
@@ -1016,6 +1021,8 @@
   (defthm constant-array-infop-of-mv-nth-1-of-translate-bv-array-arg
     (implies (and ;(nat-listp (cadr arg))
                (posp desired-element-width)
+               (integerp desired-array-length)
+               (<= 2 desired-array-length)
                (constant-array-infop constant-array-info)
                (bv-array-arg-okp desired-array-length arg)
                )
@@ -1863,7 +1870,7 @@
                   (constant-array-infop constant-array-info))
              (string-treep (mv-nth 0 (translate-dag-expr expr dag-array-name dag-array dag-len constant-array-info cut-nodenum-type-alist))))
     :hints (("Goal" :in-theory (e/d (translate-dag-expr bounded-dag-exprp car-becomes-nth-of-0)
-                                    ((:e nat-to-string-debug) ;problem!
+                                    (;(:e nat-to-string-debug) ;problem!
                                      ;;for speed:
                                      ;nat-to-string-debug
                                      max))))))
@@ -1995,7 +2002,7 @@
       (if (bv-typep type)
           (list* varname
                  " : BITVECTOR("
-                 (nat-to-string-debug (bv-type-width type))
+                 (nat-to-string (bv-type-width type))
                  ");" (newline-string)
                  (make-stp-type-declarations (rest nodenum-type-alist)))
         (if (bv-array-typep type) ;a certain kind of :list type
@@ -2006,9 +2013,9 @@
                   (er hard? 'make-stp-type-declarations "Found an array of length 0 or 1 (neither is supported): ~x0." entry)
                 (list* varname
                        " : ARRAY BITVECTOR("
-                       (nat-to-string-debug (integer-length (+ -1 len)))
+                       (nat-to-string (integer-length (+ -1 len)))
                        ") OF BITVECTOR("
-                       (nat-to-string-debug element-size)
+                       (nat-to-string element-size)
                        ");"
                        (newline-string)
                        (make-stp-type-declarations (rest nodenum-type-alist)))))
@@ -2170,7 +2177,8 @@
 ;make tail rec?
 (defund make-type-declarations-for-array-constants (constant-array-info)
   (declare (xargs :guard (constant-array-infop constant-array-info)
-                  :guard-hints (("Goal" :in-theory (enable constant-array-infop)))))
+                  :guard-hints (("Goal" :expand (constant-array-infop constant-array-info)
+                                 :in-theory (enable constant-array-infop)))))
   (if (endp constant-array-info)
       nil
     (let* ((entry (first constant-array-info))
@@ -2179,13 +2187,13 @@
            (element-width (third entry))
            (element-count (fourth entry))
            ;;If the array constant has a length that is not a power of 2, this rounds up the length to the next power of 2 (fffixme what if element-count is 1 or 0???)
-           (index-width (integer-length (+ -1 element-count)))
+           (index-width (the (integer 1 *) (integer-length (+ -1 element-count)))) ; will be at least 1
            )
       (list* array-name
              " : ARRAY BITVECTOR("
-             (nat-to-string-debug index-width) ;fixme throw an error if this is 0
+             (nat-to-string index-width)
              ") OF BITVECTOR("
-             (nat-to-string-debug element-width)
+             (nat-to-string element-width)
              ");"
              (newline-string)
              (make-type-declarations-for-array-constants (rest constant-array-info))))))
