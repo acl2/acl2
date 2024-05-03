@@ -1957,7 +1957,7 @@
 ;fffixme think about arrays whose lengths are not powers of 2...
 ;; Returns a string-tree.
 (defund make-stp-type-declarations (nodenum-type-alist)
-  (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
+  (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist)
                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
                                  :in-theory (enable axe-typep)))))
   (if (endp nodenum-type-alist)
@@ -1965,7 +1965,7 @@
     (let* ((entry (first nodenum-type-alist))
            (nodenum (car entry))
            (type (cdr entry))
-           (varname (make-node-var nodenum)) ;todo: store these in an array?
+           (varname (make-node-var nodenum)) ;todo: could cache and reuse these
            )
       (if (bv-typep type)
           (list* varname
@@ -1977,7 +1977,7 @@
             (let* ((element-size (bv-array-type-element-width type))
                    (len (bv-array-type-len type)))
               (if (< len 2)
-                  ;; An array in STP has to have a index with at least one bit, hence at least 2 elements:
+                  ;; An array in STP must have an index with at least one bit, hence at least 2 elements:
                   (er hard? 'make-stp-type-declarations "Found an array of length 0 or 1 (neither is supported): ~x0." entry)
                 (list* varname
                        " : ARRAY BITVECTOR("
@@ -1999,18 +1999,8 @@
                   (er hard? 'make-stp-type-declarations "List type that is not a bv-array-type detected.")
                 (if (most-general-typep type)
                     (er hard? 'make-stp-type-declarations "universal type detected.")
-                  (if (call-of :range type) ; impossible, given the guard
-                      (er hard 'make-stp-type-declarations "range type detected.")
-                    ;; (let* ( ;(low (second type))
-                    ;;        (high (third type))
-                    ;;        (width (integer-length high)))
-                    ;;   (list* varname
-                    ;;          " : BITVECTOR("
-                    ;;          (nat-to-string-debug width)
-                    ;;          ");"
-                    ;;          (newline-string)
-                    ;;          (make-stp-type-declarations (rest nodenum-type-alist))))
-                    (er hard 'make-stp-type-declarations "Unknown form for type: ~x0." type)))))))))))
+                  ;; impossible, given the guard:
+                  (er hard 'make-stp-type-declarations "Unknown form for type: ~x0." type))))))))))
 
 (local
   (defthm string-treep-of-make-stp-type-declarations
