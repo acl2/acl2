@@ -1,7 +1,7 @@
 ; Converting a nat to a string
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -54,9 +54,7 @@
   (equal (equal (nat-to-string n1)
                 (nat-to-string n2))
          (equal (nfix n1) (nfix n2)))
-  :hints (("Goal" :in-theory (enable nat-to-string
-                                     nat-to-chars ; todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable nat-to-string))))
 
 (defthm not-equal-of-nat-to-string-and-empty-string
   (not (equal (nat-to-string n) ""))
