@@ -692,20 +692,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;recognizes a true list of items of the form (array-elems array-name element-width element-count)
-;; todo: strengthen to require at least 2 elements?
+;recognizes a true list of items of the form (array-elems array-name element-width)
+; todo require that the data elements are no wider than the width?
 (defund constant-array-infop (x)
   (declare (xargs :guard t))
   (if (atom x)
-      (eq nil x)
+      (null x)
     (let ((entry (first x)))
-      (and (eql 4 (len entry))
-           (nat-listp (first entry)) ; array data
-           (string-treep (second entry)) ; array "name"
-           (posp (third entry)) ; element-width (disallows 0)
-           (integerp (fourth entry)) ; array length
-           (<= 2 (fourth entry)) ; an array of length 1 would have 0 index bits
-           (<= (fourth entry) (len (first entry))) ;fixme should we disallow the constant being longer?
+      (and (= 3 (len entry))
+           (let ((data (first entry))
+                 (name (second entry)) ; "name" which we can use to refer to the array
+                 (element-width (third entry)))
+             (and (nat-listp data)
+                  (<= 2 (len data)) ; an array of length 1 would have 0 index bits
+                  (string-treep name)
+                  (posp element-width) ; element-width (disallows 0)
+                  ))
            (constant-array-infop (rest x))))))
 
 (defthm constant-array-infop-of-cdr
@@ -716,24 +718,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns a string-tree representing the array, or nil if no match
-;constant-array-info is a list of items of the form (array-constant array-name element-width element-count)
-;fixme no need to store the data and also its length?
-(defund get-array-constant-name (data element-width element-count constant-array-info)
-  (declare (xargs :guard (constant-array-infop constant-array-info)
+(defund get-array-constant-name (data element-width constant-array-info)
+  (declare (xargs :guard (and (nat-listp data)
+                              (posp element-width)
+                              (constant-array-infop constant-array-info))
                   :guard-hints (("Goal" :in-theory (enable constant-array-infop)))))
   (if (endp constant-array-info)
       nil
     (let ((entry (first constant-array-info)))
       (if (and (equal data (first entry))
-               (eql element-width (third entry))
-               (eql element-count (fourth entry)))
-          (second entry)
-        (get-array-constant-name data element-width element-count (rest constant-array-info))))))
+               (= element-width (third entry)))
+          (second entry) ; return the name
+        ;; keep looking:
+        (get-array-constant-name data element-width (rest constant-array-info))))))
 
 (local
   (defthm string-treep-of-get-array-constant-name
     (implies (constant-array-infop constant-array-info)
-             (string-treep (get-array-constant-name data element-width element-count constant-array-info)))
+             (string-treep (get-array-constant-name data element-width constant-array-info)))
     :hints (("Goal" :in-theory (enable get-array-constant-name constant-array-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -741,38 +743,34 @@
 ;makes sure that if the same array constant (used with the same width) appears twice we only make one var for it..
 ;fixme think about two arrays with the same values but different element widths!
 ;; Returns (mv array-name constant-array-info) where array-name is a string and constant-array-info may have been extended.
-;maybe we don't need to key off the element-count any more, since we always check that constant arrays have the right length (so element-count here will always just be constant-array-info)?
-(defund translate-constant-array-mention (data element-width element-count constant-array-info)
+(defund translate-constant-array-mention (data element-width constant-array-info)
   (declare (xargs :guard (and (nat-listp data)
+                              (<= 2 (len data)) ; arrays of length 1 would have 0 index bits
                               (posp element-width)
-                              (integerp element-count)
-                              (<= 2 element-count) ; arrays of length 1 would have 0 index bits
                               (constant-array-infop constant-array-info))))
-  (let* ((match (get-array-constant-name data element-width element-count constant-array-info)))
+  (let* ((match (get-array-constant-name data element-width constant-array-info)))
     (if match
         (mv match constant-array-info)
       ;; no match:
       (let* ((array-number (len constant-array-info)) ;fixme do something better?
              (array-name (cons "ARRAY" (nat-to-string array-number))))
         (mv array-name
-            (cons (list data array-name element-width element-count)
+            (cons (list data array-name element-width)
                   constant-array-info))))))
 
 (local
   (defthm stringp-of-mv-nth-0-of-translate-constant-array-mention
     (implies (constant-array-infop constant-array-info)
-             (string-treep (mv-nth 0 (translate-constant-array-mention data element-width element-count constant-array-info))))
+             (string-treep (mv-nth 0 (translate-constant-array-mention data element-width constant-array-info))))
     :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop)))))
 
 (local
   (defthm constant-array-infop-of-mv-nth-1-of-translate-constant-array-mention
     (implies (and (constant-array-infop constant-array-info)
                   (nat-listp data)
-                  (posp element-width)
-                  (integerp element-count)
-                  (<= 2 element-count)
-                  (<= element-count (len data)))
-             (constant-array-infop (mv-nth 1 (translate-constant-array-mention data element-width element-count constant-array-info))))
+                  (<= 2 (len data))
+                  (posp element-width))
+             (constant-array-infop (mv-nth 1 (translate-constant-array-mention data element-width constant-array-info))))
     :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -880,7 +878,7 @@
                     (if (and (nat-listp (unquote lhs)) ;these checks may be implied by the type tests above
                              )
                         (mv-let (lhs-string-tree constant-array-info)
-                          (translate-constant-array-mention (unquote lhs) lhs-element-width common-len constant-array-info)
+                          (translate-constant-array-mention (unquote lhs) lhs-element-width constant-array-info)
                           (mv nil lhs-string-tree constant-array-info))
                       (prog2$ (er hard? 'translate-equality-to-stp "Bad array constant: ~x0." lhs)
                               (mv t nil constant-array-info))))
@@ -892,7 +890,7 @@
                       (if (and (nat-listp (unquote rhs)) ;these checks may be implied by the type tests above
                                )
                           (mv-let (rhs-string-tree constant-array-info)
-                            (translate-constant-array-mention (unquote rhs) rhs-element-width common-len constant-array-info)
+                            (translate-constant-array-mention (unquote rhs) rhs-element-width constant-array-info)
                             (mv nil rhs-string-tree constant-array-info))
                         (prog2$ (er hard? 'translate-equality-to-stp "Bad array constant: ~x0." rhs)
                                 (mv t nil constant-array-info))))
@@ -993,7 +991,7 @@
            ;; If possible, we reuse the name of an existing constant array with the same data, length, and width.
            ;;fixme what if the data is of the wrong form?
            ((mv array-name constant-array-info)
-            (translate-constant-array-mention (unquote arg) desired-element-width desired-array-length constant-array-info)))
+            (translate-constant-array-mention (unquote arg) desired-element-width constant-array-info)))
         (mv array-name constant-array-info desired-element-width))
     ;; arg is a nodenum:
     (b* ((arg-type (get-type-of-arg-checked arg dag-array-name dag-array cut-nodenum-type-alist))
@@ -2182,12 +2180,11 @@
   (if (endp constant-array-info)
       nil
     (let* ((entry (first constant-array-info))
-           ;; (constant-data (first entry))
+           (data (first entry))
            (array-name (second entry))
            (element-width (third entry))
-           (element-count (fourth entry))
-           ;;If the array constant has a length that is not a power of 2, this rounds up the length to the next power of 2 (fffixme what if element-count is 1 or 0???)
-           (index-width (the (integer 1 *) (integer-length (+ -1 element-count)))) ; will be at least 1
+           ;;If the array constant has a length that is not a power of 2, this rounds up the length to the next power of 2
+           (index-width (the (integer 1 *) (integer-length (+ -1 (len data))))) ; will be at least 1
            )
       (list* array-name
              " : ARRAY BITVECTOR("
@@ -2253,9 +2250,9 @@
       acc
     (let* ((entry (first constant-array-info))
            (constant-data (first entry))
+           (element-count (len constant-data))
            (array-name (second entry))
            (element-width (third entry))
-           (element-count (fourth entry))
            (index-size (ceiling-of-lg element-count)))
       (if (not (<= 2 element-count))
           (er hard? 'make-value-assertions-for-array-constants "Array is too short: ~x0." entry) ; todo: prove that this can't happen (strengthen constant-array-infop first)
