@@ -81,9 +81,25 @@
                            nth-when-not-consp-cheap
                            default-cdr
                            len-when-not-consp-cheap
-                           all-natp-when-not-consp)))
+                           all-natp-when-not-consp
+                           nth-of-cdr
+                           ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
+                           ;;consp-from-len-cheap
+                           ;;memberp-nth-when-perm
+                           ;;dargp-less-than
+                           consp-from-len-cheap
+                           default-car
+                           all-<-when-not-consp
+                           eqlable-alistp ;prevent inductions
+                           )))
 
-(local (in-theory (enable <-of-+-of-1-when-integers)))
+(local (in-theory (enable <-of-+-of-1-when-integers
+                          posp
+                          true-listp-of-cdr-when-dag-exprp-and-quotep
+                          ceiling-in-terms-of-floor
+                          true-listp-of-cdr
+                          nth-of-cdr
+                          car-when-alistp-iff)))
 
 ;the nth-1 is to unquote
 (defthm bv-typep-of-maybe-get-type-of-val-of-nth-1
@@ -109,6 +125,38 @@
   (defthm rationalp-when-natp
     (implies (natp x)
              (rationalp x))))
+
+;move
+(local
+ (defthm nat-listp-of-reverse-list
+  (equal (nat-listp (reverse-list x))
+         (all-natp x))
+  :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;move
+(defthmd myquotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (myquotep d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
+
+;move
+(defthmd quotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (quotep d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
+
+;move
+(defthmd bounded-possibly-negated-nodenumsp-when-nat-listp
+  (implies (nat-listp items)
+           (equal (bounded-possibly-negated-nodenumsp items bound)
+                  (all-< items bound)))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump
+                                     all-<))))
 
 (defthm no-nodes-are-variablesp-of-merge-<
   (implies (and (no-nodes-are-variablesp l1 dag-array-name dag-array dag-len)
@@ -150,37 +198,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;move
-(local
- (defthm nat-listp-of-reverse-list
-  (equal (nat-listp (reverse-list x))
-         (all-natp x))
-  :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
-
-;move
-(defthmd myquotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (myquotep d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
-;move
-(defthmd quotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (quotep d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
-;move
-(defthmd bounded-possibly-negated-nodenumsp-when-nat-listp
-  (implies (nat-listp items)
-           (equal (bounded-possibly-negated-nodenumsp items bound)
-                  (all-< items bound)))
-  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
-                                     bounded-possibly-negated-nodenump
-                                     all-<))))
 
 ;; ;; todo?
 ;; (local
@@ -195,25 +212,6 @@
 ;;   (implies (and (all-natp x)
 ;;                 (consp x))
 ;;            (<= 0 (maxelem x)))))
-
-(local (in-theory (disable nth-of-cdr
-                           ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
-                           ;;consp-from-len-cheap
-                           ;;memberp-nth-when-perm
-                           ;;dargp-less-than
-                           CONSP-FROM-LEN-CHEAP
-                           DEFAULT-CAR
-                           ALL-<-WHEN-NOT-CONSP
-                           eqlable-alistp ;prevent inductions
-                           )))
-
-(local (in-theory (enable posp
-                          true-listp-of-cdr-when-dag-exprp-and-quotep
-                          ceiling-in-terms-of-floor
-                          TRUE-LISTP-OF-CDR
-                          nth-of-cdr
-                          car-when-alistp-iff)))
-
 
 ;FIXME: Some functions in this file should call remove-temp-dir (think about exactly which ones)
 

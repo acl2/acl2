@@ -760,7 +760,7 @@
 ;can't call this make-defthm due to a name clash with books/tools/remove-hyps
 (defun my-make-defthm (desired-name body hints state)
   (declare (xargs :stobjs state
-                  :mode :program ; beause this calls submit-event
+                  :mode :program ; because this calls submit-event
                   ))
   (let* ((props (getprops desired-name 'current-acl2-world (w state)))
          (untranslated-theorem (lookup-eq 'untranslated-theorem props)))
