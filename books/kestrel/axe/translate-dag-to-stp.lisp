@@ -715,7 +715,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns a string, or nil if no match
+;returns a string-tree representing the array, or nil if no match
 ;constant-array-info is a list of items of the form (array-constant array-name element-width element-count)
 ;fixme no need to store the data and also its length?
 (defund get-array-constant-name (data element-width element-count constant-array-info)
@@ -743,13 +743,12 @@
 ;; Returns (mv array-name constant-array-info) where array-name is a string and constant-array-info may have been extended.
 ;maybe we don't need to key off the element-count any more, since we always check that constant arrays have the right length (so element-count here will always just be constant-array-info)?
 (defund translate-constant-array-mention (data element-width element-count constant-array-info)
-  (declare (xargs :guard (and (myquotep data)
+  (declare (xargs :guard (and (nat-listp data)
                               (posp element-width)
                               (integerp element-count)
                               (<= 2 element-count) ; arrays of length 1 would have 0 index bits
                               (constant-array-infop constant-array-info))))
-  (let* ((data (unquote data))
-         (match (get-array-constant-name data element-width element-count constant-array-info)))
+  (let* ((match (get-array-constant-name data element-width element-count constant-array-info)))
     (if match
         (mv match constant-array-info)
       ;; no match:
@@ -768,11 +767,11 @@
 (local
   (defthm constant-array-infop-of-mv-nth-1-of-translate-constant-array-mention
     (implies (and (constant-array-infop constant-array-info)
-                  (nat-listp (unquote data))
+                  (nat-listp data)
                   (posp element-width)
                   (integerp element-count)
                   (<= 2 element-count)
-                  (<= element-count (len (unquote data))))
+                  (<= element-count (len data)))
              (constant-array-infop (mv-nth 1 (translate-constant-array-mention data element-width element-count constant-array-info))))
     :hints (("Goal" :in-theory (enable translate-constant-array-mention constant-array-infop)))))
 
@@ -881,7 +880,7 @@
                     (if (and (nat-listp (unquote lhs)) ;these checks may be implied by the type tests above
                              )
                         (mv-let (lhs-string-tree constant-array-info)
-                          (translate-constant-array-mention lhs lhs-element-width common-len constant-array-info)
+                          (translate-constant-array-mention (unquote lhs) lhs-element-width common-len constant-array-info)
                           (mv nil lhs-string-tree constant-array-info))
                       (prog2$ (er hard? 'translate-equality-to-stp "Bad array constant: ~x0." lhs)
                               (mv t nil constant-array-info))))
@@ -893,7 +892,7 @@
                       (if (and (nat-listp (unquote rhs)) ;these checks may be implied by the type tests above
                                )
                           (mv-let (rhs-string-tree constant-array-info)
-                            (translate-constant-array-mention rhs rhs-element-width common-len constant-array-info)
+                            (translate-constant-array-mention (unquote rhs) rhs-element-width common-len constant-array-info)
                             (mv nil rhs-string-tree constant-array-info))
                         (prog2$ (er hard? 'translate-equality-to-stp "Bad array constant: ~x0." rhs)
                                 (mv t nil constant-array-info))))
@@ -993,7 +992,7 @@
            ;; If possible, we reuse the name of an existing constant array with the same data, length, and width.
            ;;fixme what if the data is of the wrong form?
            ((mv array-name constant-array-info)
-            (translate-constant-array-mention arg desired-element-width desired-array-length constant-array-info)))
+            (translate-constant-array-mention (unquote arg) desired-element-width desired-array-length constant-array-info)))
         (mv array-name constant-array-info desired-element-width))
     ;; arg is a nodenum:
     (b* ((arg-type (get-type-of-arg-checked arg dag-array-name dag-array cut-nodenum-type-alist))
