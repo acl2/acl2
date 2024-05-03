@@ -979,7 +979,8 @@
                               (bv-array-arg-okp desired-array-length arg)
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (symbolp calling-fn)
-                              (constant-array-infop constant-array-info)))
+                              (constant-array-infop constant-array-info))
+                  :guard-hints (("Goal" :in-theory (enable bv-array-arg-okp))))
            (ignore dag-len) ; only needed for the guard
            )
   (if (consp arg) ; check for constant (fixme: what if arg is a nodenum of a constant?)
