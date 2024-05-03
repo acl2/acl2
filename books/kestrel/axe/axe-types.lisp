@@ -16,8 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; most-general-type
-
 ;todo: use a different representation?
 (defund most-general-type ()
   (declare (xargs :guard t))
@@ -41,11 +39,12 @@
 
 ;; The boolean type
 
-;rename make-boolean-type?
+;; We could rename this make-boolean-type
 (defund-inline boolean-type () (declare (xargs :guard t)) :boolean)
 
 (defund boolean-typep (type)
   (declare (xargs :guard t))
+  ;; There is only one boolean type (unlike, e.g., bv types, which have sizes
   (eq type (boolean-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,63 +107,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The :list type:  (:list element-type len-type)
-;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
-;; TODO: Disallow the empty list, so that nil is not both a list and a boolean?
-;; TODO: Redo the bv-array type and move this elsewhere.
-(defund list-typep (type)
+;; bv-array-types
+
+;;
+;; The "BV array" type (an arrays of a given length containing BVs of a given size)
+;;
+
+(defund bv-array-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
-       (eq :list (first type))
-       (eql 3 (len type)) ;this might be overkill to check in some cases?
-       ))
+       (= 3 (len type))
+       (eq :bv-array (first type))
+       (let ((element-width (second type))
+             (len (third type)))
+         (and (posp element-width) ; disallow BVs of size 0
+              (integerp len)
+              (<= 2 len) ; arrays must have length at least 2
+              ))))
 
-(defund make-list-type (element-type len-type)
-  (declare (xargs :guard t))
-  `(:list ,element-type ,len-type))
+;fixme consider what to do for arrays of all zeros..
+;note that an array type is somewhat compatible with any wider array type (for reads but not writes) but only if they have the same length
+(defund make-bv-array-type (element-width len)
+  (declare (xargs :guard (and (posp element-width)
+                              (integerp len)
+                              (<= 2 len))))
+  (list :bv-array element-width len))
 
-(defthm list-typep-of-make-list-type
-  (list-typep (make-list-type element-type len-type))
-  :hints (("Goal" :in-theory (enable list-typep make-list-type))))
+(defthm bv-array-typep-of-make-bv-array-type
+  (equal (bv-array-typep (make-bv-array-type element-width len))
+         (and (posp element-width)
+              (integerp len)
+              (<= 2 len)))
+  :hints (("Goal" :in-theory (enable make-bv-array-type bv-array-typep))))
 
-(defund list-type-element-type (type)
-  (declare (xargs :guard (list-typep type)
-                  :guard-hints (("Goal" :in-theory (enable list-typep)))))
+(defund bv-array-type-element-width (type)
+  (declare (xargs :guard (bv-array-typep type)
+                  :guard-hints (("Goal" :in-theory (enable bv-array-typep)))))
   (second type))
 
-(defund list-type-len-type (type)
-  (declare (xargs :guard (list-typep type)
-                  :guard-hints (("Goal" :in-theory (enable list-typep)))))
+(defthm bv-array-type-element-width-of-make-bv-array-type
+  (equal (bv-array-type-element-width (make-bv-array-type element-width len))
+         element-width)
+  :hints (("Goal" :in-theory (enable make-bv-array-type bv-array-type-element-width))))
+
+(defthm posp-of-bv-type-element-width
+  (implies (bv-array-typep bv-array-type)
+           (posp (bv-array-type-element-width bv-array-type)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable bv-array-type-element-width bv-array-typep))))
+
+(defund bv-array-type-len (type)
+  (declare (xargs :guard (bv-array-typep type)
+                  :guard-hints (("Goal" :in-theory (enable bv-array-typep)))))
   (third type))
 
-(defthm list-type-len-type-of-make-list-type
-  (equal (list-type-len-type (make-list-type element-type len-type))
-         len-type)
-  :hints (("Goal" :in-theory (enable list-type-len-type make-list-type))))
+(defthm natp-of-bv-array-type-len
+  (implies (bv-array-typep type)
+           (natp (bv-array-type-len type)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :in-theory (enable bv-array-type-len bv-array-typep))))
 
-(defthm list-type-element-type-of-make-list-type
-  (equal (list-type-element-type (make-list-type element-type len-type))
-         element-type)
-  :hints (("Goal" :in-theory (enable list-type-element-type make-list-type))))
+(defthm <=-of-2-and-bv-array-type-len
+  (implies (bv-array-typep type)
+           (<= 2 (bv-array-type-len type)))
+  :hints (("Goal" :in-theory (enable bv-array-type-len bv-array-typep))))
 
-;todo, but it can also be a quoted constant
-;; (thm
-;;  (implies (list-typep type)
-;;           (axe-typep (list-type-len-type type)))
-;;  :hints (("Goal" :in-theory (enable list-type-len-type list-typep))))
+(defthm bv-array-type-len-of-make-bv-array-type
+  (equal (bv-array-type-len (make-bv-array-type element-width len))
+         len)
+  :hints (("Goal" :in-theory (enable make-bv-array-type bv-array-type-len))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; the bv types and the bv-array-types do not overlap
+;; make local?
+(defthm not-bv-array-typep-of-make-bv-type
+  (implies (natp width)
+           (not (bv-array-typep (make-bv-type width))))
+  :hints (("Goal" :in-theory (enable bv-array-typep
+                                     make-bv-type
+                                     bv-typep))))
 
-;;; axe-typep
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: what about a quoted constant? isn't that also a type?  maybe only used for array lengths?
+;todo: what about a quoted constant? isn't that also a type?
 ;; See also test-case-typep for support for :range types.
 (defund axe-typep (type)
   (declare (xargs :guard t))
-  (or (bv-typep type)
-      (list-typep type) ; todo: disallow this here (used only for test case generation?)
-      ;(bv-array-typep type) a subtype of the list-type
-      (boolean-typep type)
+  (or (boolean-typep type)
+      (bv-typep type)
+      (bv-array-typep type)
       (most-general-typep type) ;; represents no information
       (empty-typep type) ;; represents a type contradiction
       ))
@@ -174,100 +204,19 @@
   (not (axe-typep nil))
   :rule-classes nil)
 
+;; we could prove axe-typep-of-boolean-type, but it just gets evaluated
+
 (defthm axe-typep-of-make-bv-type
   (implies (natp element-width)
            (axe-typep (make-bv-type element-width)))
   :hints (("Goal" :in-theory (enable axe-typep))))
 
-;;
-;; The "BV array" type (now this is just particular kind of :list type - namely, one where the elements are BVs and the length is a constant)
-;;
-
-(defund bv-array-typep (type)
-  (declare (xargs :guard t))
-  (and (list-typep type)
-       (bv-typep (list-type-element-type type))
-       (myquotep (list-type-len-type type))
-       ;; todo: exclude 0-length arrays, so that nil is not a bv-array?:
-       (natp (unquote (list-type-len-type type)))))
-
-(defthm bv-array-typep-forward-to-list-typep
-  (implies (bv-array-typep type)
-           (list-typep type))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bv-array-typep))))
-
-;fixme consider what to do for arrays of all zeros..
-;note that an array type is compatible with any wider array type.. (but not one with a different length)
-;; TODO: Can the element-width be 0?
-;; TODO: Can the len be 0?
-(defund make-bv-array-type (element-width len) ;ffixme these args aren't really types.. should they be?
-  (declare (xargs :guard (natp element-width) ; todo: strengthn to posp
-                  ))
-  (make-list-type (make-bv-type element-width) (enquote len)))
-
-(defthm list-typep-of-make-bv-array-type
-  (implies (and (natp element-width)
-                (natp len))
-           (list-typep (make-bv-array-type element-width len)))
-  :hints (("Goal" :in-theory (enable make-bv-array-type))))
-
 (defthm axe-typep-of-make-bv-array-type
-  (implies (and (natp element-width)
-                (natp len))
+  (implies (and (posp element-width)
+                (integerp len)
+                (<= 2 len))
            (axe-typep (make-bv-array-type element-width len)))
   :hints (("Goal" :in-theory (enable axe-typep))))
-
-(defthm bv-array-typep-of-make-bv-array-type
-  (equal (bv-array-typep (make-bv-array-type element-width len))
-         (and (natp element-width)
-              (natp len)))
-  :hints (("Goal" :in-theory (enable make-bv-array-type bv-array-typep))))
-
-
-(defund bv-array-type-element-width (type)
-  (declare (xargs :guard (bv-array-typep type)))
-  (bv-type-width (list-type-element-type type)) ;(second type)
-  )
-
-(defthm bv-array-type-element-width-of-make-bv-array-type
-  (equal (bv-array-type-element-width (make-bv-array-type element-width len))
-         element-width)
-  :hints (("Goal" :in-theory (enable make-bv-array-type bv-array-type-element-width))))
-
-(defthm natp-of-bv-type-element-width
-  (implies (bv-array-typep bv-array-type)
-           (natp (bv-array-type-element-width bv-array-type)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable bv-array-type-element-width bv-array-typep))))
-
- ;the args of array types are not currently quoted...
-(defund bv-array-type-len (type)
-  (declare (xargs :guard (bv-array-typep type)
-                  :guard-hints (("Goal" :in-theory (enable BV-ARRAY-TYPEP)))))
-  (unquote (list-type-len-type type)))
-
-(defthm natp-of-bv-array-type-len
-  (implies (bv-array-typep type)
-           (natp (bv-array-type-len type)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable bv-array-type-len bv-array-typep))))
-
-(defthm bv-array-type-len-of-make-bv-array-type
-  (equal (bv-array-type-len (make-bv-array-type element-width len))
-         len)
-  :hints (("Goal" :in-theory (enable make-bv-array-type bv-array-type-len))))
-
-;drop?
-(defthm not-bv-array-typep-of-make-bv-type
-  (implies (natp width)
-           (not (bv-array-typep (make-bv-type width))))
-  :hints (("Goal" :in-theory (enable bv-array-typep
-                                     make-bv-type
-                                     bv-typep
-                                     list-type-len-type
-                                     list-type-element-type
-                                     list-typep))))
 
 ;bozo add support for everything in *operators-whose-size-we-know*
 ;bozo add and verify guard? -- the guard will need to say that the indices encountered are numbers if they are constants...
@@ -350,6 +299,7 @@
               (bv-array-typep type2))
          (if (equal (bv-array-type-len type1)
                     (bv-array-type-len type2))
+             ;; todo: think about this, given that bv-array-write requires a certain element width:
              (make-bv-array-type (max (bv-array-type-element-width type1)
                                       (bv-array-type-element-width type2))
                                  (bv-array-type-len type1))
@@ -366,34 +316,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund intersect-types (type1 type2)
-  (declare (xargs :guard (and (axe-typep type1)
-                              (axe-typep type2))))
-  (cond ((empty-typep type1) (empty-type))
-        ((empty-typep type2) (empty-type))
-        ((most-general-typep type1) type2)
-        ((most-general-typep type2) type1)
-        ((and (boolean-typep type1)
-              (boolean-typep type2))
-         (boolean-type))
-        ((and (bv-typep type1)
-              (bv-typep type2))
-         (make-bv-type (min (bv-type-width type1)
-                            (bv-type-width type2))))
-        ;;ffixme make sure this is sound:
-        ((and (bv-array-typep type1)
-              (bv-array-typep type2))
-         (let ((len1 (bv-array-type-len type1))
-               (len2 (bv-array-type-len type2)))
-           (if (equal len1 len2)
-               (make-bv-array-type (min (bv-array-type-element-width type1)
-                                        (bv-array-type-element-width type2))
-                                   len1)
-             (prog2$ (er hard? 'intersect-types "Array length mismatch: ~x0 and ~x1." len1 len2)
-                     (empty-type)))))
-        (t (prog2$ (er hard? 'intersect-types "Type mismatch: ~x0 and ~x1." type1 type2)
-                   (empty-type)))))
+;; (defund intersect-types (type1 type2)
+;;   (declare (xargs :guard (and (axe-typep type1)
+;;                               (axe-typep type2))))
+;;   (cond ((empty-typep type1) (empty-type))
+;;         ((empty-typep type2) (empty-type))
+;;         ((most-general-typep type1) type2)
+;;         ((most-general-typep type2) type1)
+;;         ((and (boolean-typep type1)
+;;               (boolean-typep type2))
+;;          (boolean-type))
+;;         ((and (bv-typep type1)
+;;               (bv-typep type2))
+;;          (make-bv-type (min (bv-type-width type1)
+;;                             (bv-type-width type2))))
+;;         ;;ffixme make sure this is sound:
+;;         ((and (bv-array-typep type1)
+;;               (bv-array-typep type2))
+;;          (let ((len1 (bv-array-type-len type1))
+;;                (len2 (bv-array-type-len type2)))
+;;            (if (equal len1 len2)
+;;                (make-bv-array-type (min (bv-array-type-element-width type1)
+;;                                         (bv-array-type-element-width type2))
+;;                                    len1)
+;;              (prog2$ (er hard? 'intersect-types "Array length mismatch: ~x0 and ~x1." len1 len2)
+;;                      (empty-type)))))
+;;         (t (prog2$ (er hard? 'intersect-types "Type mismatch: ~x0 and ~x1." type1 type2)
+;;                    (empty-type)))))
 
+;rename?
 (defund intersect-types-safe (type1 type2)
   (declare (xargs :guard t))
   (cond ((empty-typep type1) (empty-type))
@@ -433,7 +384,7 @@
   (implies (bv-typep x)
            (not (bv-array-typep x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-typep bv-array-typep LIST-TYPEP))))
+  :hints (("Goal" :in-theory (enable bv-typep bv-array-typep))))
 
 (defthm not-boolean-typep-when-bv-typep-cheap
   (implies (bv-typep x)
@@ -445,4 +396,4 @@
   (implies (bv-array-typep x)
            (not (boolean-typep x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-array-typep list-typep boolean-typep))))
+  :hints (("Goal" :in-theory (enable bv-array-typep boolean-typep))))

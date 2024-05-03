@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "axe-types") ; for stuff like list-type-len-type
+(include-book "axe-types") ; for stuff like bv-type-width
 (include-book "evaluator-basic") ; for the :eval type
 (include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
@@ -51,6 +51,55 @@
  (defthm integerp-of-mv-nth-0-of-genrandom-of-expt2
    (integerp (mv-nth 0 (genrandom (expt 2 size) rand)))
    :hints (("Goal" :in-theory (enable genrandom)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; The :list type:  (:list element-type len-type)
+;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
+;; TODO: Disallow the empty list, so that nil is not both a list and a boolean?
+;; TODO: Redo the bv-array type and move this elsewhere.
+(defund list-typep (type)
+  (declare (xargs :guard t))
+  (and (true-listp type)
+       (eq :list (first type))
+       (eql 3 (len type)) ;this might be overkill to check in some cases?
+       ))
+
+(defund make-list-type (element-type len-type)
+  (declare (xargs :guard t))
+  `(:list ,element-type ,len-type))
+
+(defthm list-typep-of-make-list-type
+  (list-typep (make-list-type element-type len-type))
+  :hints (("Goal" :in-theory (enable list-typep make-list-type))))
+
+(defund list-type-element-type (type)
+  (declare (xargs :guard (list-typep type)
+                  :guard-hints (("Goal" :in-theory (enable list-typep)))))
+  (second type))
+
+(defund list-type-len-type (type)
+  (declare (xargs :guard (list-typep type)
+                  :guard-hints (("Goal" :in-theory (enable list-typep)))))
+  (third type))
+
+(defthm list-type-len-type-of-make-list-type
+  (equal (list-type-len-type (make-list-type element-type len-type))
+         len-type)
+  :hints (("Goal" :in-theory (enable list-type-len-type make-list-type))))
+
+(defthm list-type-element-type-of-make-list-type
+  (equal (list-type-element-type (make-list-type element-type len-type))
+         element-type)
+  :hints (("Goal" :in-theory (enable list-type-element-type make-list-type))))
+
+;todo, but it can also be a quoted constant
+;; (thm
+;;  (implies (list-typep type)
+;;           (axe-typep (list-type-len-type type)))
+;;  :hints (("Goal" :in-theory (enable list-type-len-type list-typep))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,7 +174,9 @@
                                                      list-typep)))))
   (or (myquotep type)
       (symbolp type) ; look up a previous val -- todo: tag this?
+      ;; todo: (boolean-typep type)
       (bv-typep type)
+      (bv-array-typep type)
       (and (list-typep type)
            (test-case-typep (list-type-element-type type))
            ;; todo: must be a scalar type:
@@ -154,9 +205,11 @@
   :hints (("Goal" :in-theory (enable test-case-typep make-bv-type))))
 
 (defthm test-case-typep-of-make-bv-array-type
-  (implies (natp element-width)
+  (implies (and (posp element-width)
+                (integerp len)
+                (<= 2 len))
            (test-case-typep (make-bv-array-type element-width len)))
-  :hints (("Goal" :in-theory (enable test-case-typep make-bv-array-type))))
+  :hints (("Goal" :in-theory (enable test-case-typep))))
 
 ;; Recognize an alist from vars to their "test types"
 (defund test-case-type-alistp (alist)
@@ -193,10 +246,13 @@
                                              list-type-len-type
                                              bv-typep
                                              list-typep
-                                             axe-typep)
+                                             axe-typep
+                                             make-bv-type
+                                             bv-array-typep
+                                             bv-array-type-element-width)
                                             (natp))))
                    :guard-hints (("Goal"
-                                  :in-theory (e/d (list-typep BV-TYPEP test-case-typep)
+                                  :in-theory (e/d (list-typep BV-TYPEP bv-array-typep test-case-typep bv-array-type-element-width)
                                                   (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (erp-nil) (unquote type) rand))
@@ -259,8 +315,13 @@
                         (mv (erp-t) nil rand))
               (prog2$ (cw "List length: ~x0.~%" len)
                       (gen-random-values len element-type rand var-value-alist)))))
+         ((bv-array-typep type)
+          (b* ((element-width (bv-array-type-element-width type))
+               (len (bv-array-type-len type)))
+            (prog2$ (cw "Bv-array length: ~x0.~%" len)
+                    (gen-random-values len (make-bv-type element-width) rand var-value-alist))))
          (t (mv (erp-t)
-                (er hard? 'gen-random-value "Unknown type: ~x0" type)
+                (er hard 'gen-random-value "Unknown type: ~x0" type)
                 rand))))
 
  ;;returns (mv erp values rand)

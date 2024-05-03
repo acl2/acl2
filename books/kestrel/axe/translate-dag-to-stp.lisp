@@ -202,7 +202,9 @@
         (boolean-type)
       ;;new (this is the tightest possible type, but wider element widths would also work):
       (if (and (consp val) ;new! disallows arrays of length 0
-               (nat-listp val))
+               (nat-listp val)
+               (<= 2 (len val)) ; otherwise, it's not a legal array
+               )
           (make-bv-array-type (max 1 (width-of-widest-int val)) ;fixme if the values are all 0, we consider the width to be 1
                               (len val))
         ;; Could not determine the type of the constant:
@@ -264,9 +266,11 @@
             (eq fn 'bv-array-if)) ; (bv-array-if element-size len test array1 array2)
         (let ((element-size (unquote-if-possible (first dargs)))
               (len (unquote-if-possible (second dargs))))
-          (if (and (natp element-size)
-                   (natp len))
-              (make-bv-array-type element-size len) ;fixme what if the width is 0?
+          (if (and (posp element-size)  ;fixme what if the width is 0?
+                   (natp len)
+                   (<= 2 len) ;todo: what if not?
+                   )
+              (make-bv-array-type element-size len)
             nil                                     ;error?
             )))
        ;; Functions that return booleans:
@@ -1018,7 +1022,8 @@
   (defthm string-treep-of-mv-nth-0-of-translate-equality-to-stp
     (implies (constant-array-infop constant-array-info)
              (string-treep (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist constant-array-info))))
-    :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (list-typep bv-array-typep bv-array-type-len bv-array-type-element-width))))))
+    :hints (("Goal" :in-theory (e/d (translate-equality-to-stp) (;list-typep bv-array-typep bv-array-type-len bv-array-type-element-width
+                                                                 ))))))
 
 (local
   (defthm constant-array-infop-of-mv-nth-1-of-translate-equality-to-stp
@@ -1973,7 +1978,7 @@
                  (nat-to-string (bv-type-width type))
                  ");" (newline-string)
                  (make-stp-type-declarations (rest nodenum-type-alist)))
-        (if (bv-array-typep type) ;a certain kind of :list type
+        (if (bv-array-typep type)
             (let* ((element-size (bv-array-type-element-width type))
                    (len (bv-array-type-len type)))
               (if (< len 2)
@@ -1995,12 +2000,10 @@
             ;; TODO: Tighten the guard to exclude some of these cases:
             (if (empty-typep type)
                 (er hard? 'make-stp-type-declarations "empty type detected.")
-              (if (list-typep type)
-                  (er hard? 'make-stp-type-declarations "List type that is not a bv-array-type detected.")
-                (if (most-general-typep type)
-                    (er hard? 'make-stp-type-declarations "universal type detected.")
-                  ;; impossible, given the guard:
-                  (er hard 'make-stp-type-declarations "Unknown form for type: ~x0." type))))))))))
+              (if (most-general-typep type)
+                  (er hard? 'make-stp-type-declarations "universal type detected.")
+                ;; impossible, given the guard:
+                (er hard 'make-stp-type-declarations "Unknown form for type: ~x0." type)))))))))
 
 (local
   (defthm string-treep-of-make-stp-type-declarations
