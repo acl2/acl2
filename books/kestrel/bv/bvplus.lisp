@@ -468,3 +468,9 @@
   :hints (("Goal" :in-theory (enable bvplus))))
 
 (theory-invariant (incompatible (:rewrite getbit-of-+-becomes-getbit-of-bvplus) (:definition bvplus)))
+
+;mixes abstractions
+(defthm bvplus-of-expt-2
+  (equal (bvplus size x (expt 2 size))
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvplus))))
