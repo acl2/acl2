@@ -2044,47 +2044,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns a string-tree.
-(defund make-stp-range-assertions (nodenum-type-alist)
-  (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
-                  :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
-                                 :in-theory (enable axe-typep empty-typep list-typep most-general-typep)))))
-  (if (endp nodenum-type-alist)
-      nil
-    (let* ((entry (first nodenum-type-alist))
-           (nodenum (car entry))
-           (type (cdr entry)))
-      (if (consp type)
-          (if (bv-array-typep type) ;; nothing to do:
-              (make-stp-range-assertions (rest nodenum-type-alist))
-            (if (boolean-typep type) ;; nothing to do:
-                (make-stp-range-assertions (rest nodenum-type-alist))
-              (if (eq :range (car type))
-                  (prog2$ (er hard 'make-stp-range-assertions "range type detected: ~x0." type)
-                          (let* ((low (second type))
-                                 (high (third type))
-                                 (width (integer-length high))
-                                 (varname (make-node-var nodenum)))
-                            (list* "ASSERT(BVLE("
-                                   (translate-bv-constant low width)
-                                   ","
-                                   varname
-                                   "));"
-                                   (newline-string)
-                                   "ASSERT(BVLE("
-                                   varname
-                                   ","
-                                   (translate-bv-constant high width)
-                                   "));"
-                                   (newline-string)
-                                   (make-stp-range-assertions (rest nodenum-type-alist)))))
-                (er hard? 'make-stp-range-assertions "Unknown form for size: ~x0." type))))
-        (make-stp-range-assertions (rest nodenum-type-alist))))))
+;; ;; Returns a string-tree.
+;; (defund make-stp-range-assertions (nodenum-type-alist)
+;;   (declare (xargs :guard (nodenum-type-alistp nodenum-type-alist) ;;TODO: This also allows :range types but axe-typep doesn't allow range types?
+;;                   :guard-hints (("Goal" :expand (nodenum-type-alistp nodenum-type-alist)
+;;                                  :in-theory (enable axe-typep empty-typep list-typep most-general-typep)))))
+;;   (if (endp nodenum-type-alist)
+;;       nil
+;;     (let* ((entry (first nodenum-type-alist))
+;;            (nodenum (car entry))
+;;            (type (cdr entry)))
+;;       (if (consp type)
+;;           (if (bv-array-typep type) ;; nothing to do:
+;;               (make-stp-range-assertions (rest nodenum-type-alist))
+;;             (if (boolean-typep type) ;; nothing to do:
+;;                 (make-stp-range-assertions (rest nodenum-type-alist))
+;;               (if (eq :range (car type))
+;;                   (prog2$ (er hard 'make-stp-range-assertions "range type detected: ~x0." type)
+;;                           (let* ((low (second type))
+;;                                  (high (third type))
+;;                                  (width (integer-length high))
+;;                                  (varname (make-node-var nodenum)))
+;;                             (list* "ASSERT(BVLE("
+;;                                    (translate-bv-constant low width)
+;;                                    ","
+;;                                    varname
+;;                                    "));"
+;;                                    (newline-string)
+;;                                    "ASSERT(BVLE("
+;;                                    varname
+;;                                    ","
+;;                                    (translate-bv-constant high width)
+;;                                    "));"
+;;                                    (newline-string)
+;;                                    (make-stp-range-assertions (rest nodenum-type-alist)))))
+;;                 (er hard? 'make-stp-range-assertions "Unknown form for size: ~x0." type))))
+;;         (make-stp-range-assertions (rest nodenum-type-alist))))))
 
-(local
-  (defthm string-treep-of-make-stp-range-assertions
-    (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
-    :hints (("Goal" :in-theory (enable make-stp-range-assertions)))))
+;; (local
+;;   (defthm string-treep-of-make-stp-range-assertions
+;;     (string-treep (make-stp-range-assertions cut-nodenum-type-alist))
+;;     :hints (("Goal" :in-theory (enable make-stp-range-assertions)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2305,7 +2305,7 @@
                              )
      (write-string-tree!
       (list* (make-stp-type-declarations cut-nodenum-type-alist)
-             (make-stp-range-assertions cut-nodenum-type-alist)
+             ;; (make-stp-range-assertions cut-nodenum-type-alist)
              (make-type-declarations-for-array-constants constant-array-info)
              (make-value-assertions-for-array-constants constant-array-info nil)
              extra-asserts
