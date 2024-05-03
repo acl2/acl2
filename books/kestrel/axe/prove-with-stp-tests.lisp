@@ -59,7 +59,7 @@
 
 (must-prove-with-stp test19 '(equal (bvmod 32 x 0) (bvchop 32 x)))
 (must-prove-with-stp test20 '(equal (bvmod 32 x 1) 0))
-;(must-prove-with-stp test '(equal (bvmod 32 x 'x) 0)) ;;this was an error - note the quote on the x... fixme should we catch that?
+;(must-prove-with-stp test '(equal (bvmod 32 x 'x) 0)) ;;this was an error - note the quote on the x.  Now we get a warning.
 (must-prove-with-stp test21 '(equal (bvmod 32 x x) 0))
 (must-prove-with-stp test22 '(equal (bvdiv 32 x 0) 0))
 (must-not-prove-with-stp test23 '(equal (bvdiv 32 x 1) 'x))
@@ -161,12 +161,15 @@
 (must-prove-with-stp leftrotate-example3 '(equal (leftrotate32 1 x) (leftrotate32 33 x)))
 (must-prove-with-stp leftrotate-example4 '(equal (leftrotate32 0 x) (leftrotate32 32 x)))
 (must-prove-with-stp leftrotate-example5 '(implies (unsigned-byte-p 32 x) (equal x (leftrotate32 32 x))))
+(must-prove-with-stp leftrotate-example5b '(equal (leftrotate32 32 x) (bvchop 32 x)))
 
 ;; (prove-clause-with-stp '((not (not (equal (bvplus 32 x y) (bvplus 32 y x))))))
 
 
+;; todo: the evaluation may happen here in these concrete tests before STP is even called:
 
-;; (equal (bvplus 32 0 0) 0)
+(must-prove-with-stp bvplus-concrete (equal (bvplus 32 0 0) 0))
+(must-prove-with-stp bvplus-concrete (equal (bvplus 32 1 -1) 0))
 
 (must-prove-with-stp test28 '(equal (sbvdiv 32 5 3) 1))
 ;; TODO: Add a rewriting pass to get tests like this working again?
