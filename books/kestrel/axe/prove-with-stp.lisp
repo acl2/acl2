@@ -2674,9 +2674,9 @@
 
 ;; Attempt to use STP to prove the disjunction of the terms in CLAUSE.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-;fixme pass in other options?
-;fixme: this could create a theorem
-;fixme: have this print balanced parens
+;todo: pass in other options?
+;todo: this could create a theorem
+;todo: have this print balanced parens
 ;todo: exploit boolean structure in the hyps (and conc?)
 ;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
 (defun prove-clause-with-stp (clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)

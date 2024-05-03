@@ -1140,7 +1140,6 @@
 ;should this take a desired size (or type?) for the expr?
 ;should we separate out the handling of terms from formulas
 ;TODO: Pull out the constant case?
-;TODO: Need to know that the arity is correct.
 ;; dag-len is only used in guards (including the guard of translate-bv-arg).
 ;todo: see repeated calls below to translate-bv-arg on same value...
 ;; We do not handle MYIF or IF, only BOOLIF, BVIF, and BV-ARRAY-IF.
