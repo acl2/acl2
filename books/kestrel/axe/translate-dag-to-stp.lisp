@@ -1197,7 +1197,7 @@
                     (list* "("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
-                           (nat-to-string-debug (+ -1 width))
+                           (nat-to-string (+ -1 width))
                            ":0])")
                     constant-array-info))
             (mv (erp-t) nil constant-array-info)))
@@ -1210,7 +1210,7 @@
                     (list* "(~"
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
-                           (nat-to-string-debug (+ -1 width))
+                           (nat-to-string (+ -1 width))
                            ":0]) ")
                     constant-array-info))
             (mv (erp-t) nil constant-array-info)))
@@ -1223,7 +1223,7 @@
                     (list* "(BVUMINUS("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
-                           (nat-to-string-debug (+ -1 width))
+                           (nat-to-string (+ -1 width))
                            ":0]))")
                     constant-array-info))
             (mv (erp-t) nil constant-array-info)))
@@ -1233,7 +1233,7 @@
                    (bv-arg-okp (darg2 expr)))
               (mv (erp-nil)
                   (let* ((bitnum (unquote (darg1 expr)))
-                         (bitnum-string (nat-to-string-debug bitnum)))
+                         (bitnum-string (nat-to-string bitnum)))
                     (list* "("
                            (translate-bv-arg (darg2 expr) (+ 1 bitnum) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1253,9 +1253,9 @@
                     (list* "("
                            (translate-bv-arg (darg3 expr) (+ 1 high) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
-                           (nat-to-string-debug high)
+                           (nat-to-string high)
                            ":"
-                           (nat-to-string-debug (unquote (darg2 expr)))
+                           (nat-to-string (unquote (darg2 expr)))
                            "])")
                     constant-array-info))
             (mv (erp-t) nil constant-array-info)))
@@ -1266,7 +1266,7 @@
                    (bv-arg-okp (darg3 expr))
                    )
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1285,7 +1285,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1304,7 +1304,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(BVXOR("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1323,10 +1323,10 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(BVPLUS("
-                           (nat-to-string-debug width)
+                           (nat-to-string width)
                            ","
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1344,10 +1344,10 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(BVSUB("
-                           (nat-to-string-debug width)
+                           (nat-to-string width)
                            ","
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1365,10 +1365,10 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(BVMULT("
-                           (nat-to-string-debug width)
+                           (nat-to-string width)
                            ","
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1387,7 +1387,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(IF (" ;if the third arg is 0, then the bvdiv is 0
                            (translate-bv-arg (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1398,7 +1398,7 @@
                            (translate-bv-constant 0 width)
                            ") ELSE "
                            "(BVDIV("
-                           (nat-to-string-debug width)
+                           (nat-to-string width)
                            ","
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1417,7 +1417,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(IF (" ;if the third arg is 0, then the bvmod is bvchop of its second argument
                            (translate-bv-arg (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1428,7 +1428,7 @@
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "[" top-bit-string ":0]" ;this line is new, since translate-bv-arg doesn't chop?!
                            ") ELSE (BVMOD("
-                           (nat-to-string-debug width)
+                           (nat-to-string width)
                            ","
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1447,7 +1447,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(IF (" ;if the third arg is 0, then the sbvdiv is 0
                            (translate-bv-arg (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1458,7 +1458,7 @@
                            (translate-bv-constant 0 width)
                            ") ELSE "
                            "(SBVDIV("
-                           (nat-to-string-debug width)
+                           (nat-to-string width)
                            ","
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1477,7 +1477,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(IF (" ;if the third arg is 0, then the sbvrem is bvchop of its second argument
                            (translate-bv-arg (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1488,7 +1488,7 @@
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "[" top-bit-string ":0]" ;this line is new, since translate-bv-arg doesn't chop?!
                            ") ELSE (SBVMOD("
-                           (nat-to-string-debug width)
+                           (nat-to-string width)
                            ","
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "["
@@ -1506,7 +1506,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(BVLT("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1527,7 +1527,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(BVLE("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1546,7 +1546,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(SBVLT("
                            ;;fixme could add the brackets to translate-bv-arg?
@@ -1567,7 +1567,7 @@
                    (bv-arg-okp (darg2 expr))
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv (erp-nil)
                     (list* "(SBVLE("
                            (translate-bv-arg (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
@@ -1590,11 +1590,11 @@
                   (list* "("
                          (translate-bv-arg (darg2 expr) (unquote (darg1 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                          "["
-                         (nat-to-string-debug (+ -1 (unquote (darg1 expr))))
+                         (nat-to-string (+ -1 (unquote (darg1 expr))))
                          ":0]@"
                          (translate-bv-arg (darg4 expr) (unquote (darg3 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                          "["
-                         (nat-to-string-debug (+ -1 (unquote (darg3 expr))))
+                         (nat-to-string (+ -1 (unquote (darg3 expr))))
                          ":0])")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
@@ -1609,9 +1609,9 @@
                     "BVSX("
                     (translate-bv-arg (darg3 expr) (unquote (darg2 expr)) dag-array-name dag-array dag-len cut-nodenum-type-alist)
                     "["
-                    (nat-to-string-debug (+ -1 (unquote (darg2 expr))))
+                    (nat-to-string (+ -1 (unquote (darg2 expr))))
                     ":0],"
-                    (nat-to-string-debug (unquote (darg1 expr)))
+                    (nat-to-string (unquote (darg1 expr)))
                     ")")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
@@ -1623,7 +1623,7 @@
                    (bv-arg-okp (darg3 expr))
                    (bv-arg-okp (darg4 expr)))
               (let* ((width (unquote (darg1 expr)))
-                     (top-bit-string (nat-to-string-debug (+ -1 width))))
+                     (top-bit-string (nat-to-string (+ -1 width))))
                 (mv
                   (erp-nil)
                   (list* "(IF "
@@ -1681,7 +1681,7 @@
                    (bv-arg-okp (darg3 expr))
                    (bv-array-arg-okp (unquote (darg2 expr)) (darg4 expr)))
               (b* ((element-width (unquote (darg1 expr)))
-                   (len (unquote (darg2 expr))) ;ffixme can the array length ever be 1? ;maybe we should get the len from the data argument... - fixme may need a case for when the index is > the len param - return 0? well, the index gets chopped down..
+                   (len (unquote (darg2 expr)))
                    (index (darg3 expr))
                    (array-arg (darg4 expr))
                    (num-index-bits (ceiling-of-lg len))
@@ -1694,7 +1694,7 @@
                                     ;;the index gets chopped down to NUM-INDEX-BITS bits because that's what bv-array-read does (fixme should translate-bv-arg accomplish that?!):
                                     (translate-bv-arg index num-index-bits dag-array-name dag-array dag-len cut-nodenum-type-alist)
                                     "["
-                                    (nat-to-string-debug (+ -1 num-index-bits))
+                                    (nat-to-string (+ -1 num-index-bits))
                                     ":0]"))
                    (array-access (list* array-name
                                         "[" ;; open bracket of array access
@@ -1710,7 +1710,7 @@
                                                      (pad-with-zeros (- element-width actual-element-width) array-access)
                                                    (if (< element-width actual-element-width)
                                                        ;; need to chop down the value:
-                                                       (list* array-access "[" (nat-to-string-debug (+ -1 element-width)) ":0]" )
+                                                       (list* array-access "[" (nat-to-string (+ -1 element-width)) ":0]" )
                                                      ;; no padding or chopping:
                                                      array-access))
                                                  ")")))
@@ -1750,7 +1750,7 @@
                 (let* ((trimmed-index
                          (list* (translate-bv-arg index num-index-bits dag-array-name dag-array dag-len cut-nodenum-type-alist)
                                 "["
-                                (nat-to-string-debug (+ -1 num-index-bits))
+                                (nat-to-string (+ -1 num-index-bits))
                                 ":0]"))
                        (expr-when-in-bounds
                          (list* "("
@@ -1761,7 +1761,7 @@
                                 ;; value:
                                 (translate-bv-arg val element-width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                                 "["
-                                (nat-to-string-debug (+ -1 element-width))
+                                (nat-to-string (+ -1 element-width))
                                 ":0]))"
                                 )))
                   (mv (erp-nil)
@@ -1812,33 +1812,31 @@
          (if (and (= 2 (len (dargs expr)))
                   (darg-quoted-natp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
-             (b* ((width-arg (darg1 expr)) ;had better be quoted
-                  (claimed-width (unquote width-arg))
+             (b* ((claimed-width (unquote (darg1 expr)))
                   (bv-arg (darg2 expr))
                   (bv-arg-type (get-type-of-arg-checked bv-arg dag-array-name dag-array cut-nodenum-type-alist))
                   ((when (not (bv-typep bv-arg-type)))
                    (er hard? 'translate-dag-expr "unsigned-byte-p claim applied to non bv ~x0." bv-arg)
                    (mv (erp-t) nil constant-array-info)) ;todo: allow this function to return an error
                   (known-width (bv-type-width bv-arg-type))
-                  (- (if (= 0 known-width)
-                         (er hard? 'translate-dag-expr "unsigned-byte-p claim with a width of 0 applied to ~x0." bv-arg)
-                       nil)))
-               (mv
-                (erp-nil)
-                (if (<= known-width claimed-width)
-                    "(TRUE)" ;the unsigned-byte-p doesn't tell us anything new
-                  ;;the unsigned-byte-p-claim amounts to saying that the high bits are 0:
-                  (list* "(("
-                         (translate-bv-arg bv-arg known-width dag-array-name dag-array dag-len cut-nodenum-type-alist)
-                         "["
-                         (nat-to-string-debug (+ -1 known-width))
-                         ":"
-                         (nat-to-string-debug claimed-width)
-                         "]) = "
-                         (translate-bv-constant 0 (- known-width claimed-width))
-                         ")"
-                         ))
-                constant-array-info))
+                  ((when (= 0 known-width))
+                   (er hard? 'translate-dag-expr "unsigned-byte-p claim with a width of 0 applied to ~x0." bv-arg)
+                   (mv :bad-width nil constant-array-info)))
+               (mv (erp-nil)
+                   (if (<= known-width claimed-width)
+                       "(TRUE)" ;the unsigned-byte-p doesn't tell us anything new
+                     ;;the unsigned-byte-p-claim amounts to saying that the high bits are 0:
+                     (list* "(("
+                            (translate-bv-arg bv-arg known-width dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                            "["
+                            (nat-to-string (+ -1 known-width))
+                            ":"
+                            (nat-to-string claimed-width)
+                            "]) = "
+                            (translate-bv-constant 0 (- known-width claimed-width))
+                            ")"
+                            ))
+                   constant-array-info))
            (mv (erp-t) nil constant-array-info)))
         ;; todo: use the typed equality operators?
         (equal
@@ -1854,7 +1852,7 @@
            (mv (erp-t) nil constant-array-info)))
         (t (mv (erp-t) nil constant-array-info)))
       (if erp
-          (prog2$ (er hard? 'translate-dag-expr "Unrecognized expr: ~x0.~%" expr)
+          (prog2$ (er hard? 'translate-dag-expr "Error (~x0) translating expr ~x1.~%" erp expr)
                   ;;todo: pass back the error?
                   (mv nil constant-array-info))
         (mv translated-expr constant-array-info)))))
@@ -1867,7 +1865,7 @@
     :hints (("Goal" :in-theory (e/d (translate-dag-expr bounded-dag-exprp car-becomes-nth-of-0)
                                     ((:e nat-to-string-debug) ;problem!
                                      ;;for speed:
-                                     nat-to-string-debug
+                                     ;nat-to-string-debug
                                      max))))))
 
 (local
