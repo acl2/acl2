@@ -59,6 +59,8 @@
 (include-book "bvcat2")
 (include-book "putbits")
 
+(include-book "bvequal")
+
 ;; Bit-wise operations:
 (include-book "bvnot")
 (include-book "bvand")
