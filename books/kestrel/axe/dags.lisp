@@ -1037,31 +1037,59 @@
            (not (< (nth n vals) k)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp dargp-less-than nth))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; move these?
 
+;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is an integerp.
+(defund darg-quoted-integerp (darg)
+  (declare (xargs :guard (dargp darg)))
+  (and (consp darg)
+       (integerp (unquote darg))))
+
+(defthm darg-quoted-integerp-forward
+  (implies (darg-quoted-integerp darg)
+           (and (consp darg)
+                (integerp (cadr darg))
+                (integerp (nth 1 darg))))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable darg-quoted-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a natp.
-(defun darg-quoted-natp (darg)
+(defund darg-quoted-natp (darg)
   (declare (xargs :guard (dargp darg)))
   (and (consp darg)
        (natp (unquote darg))))
 
-(defthm darg-quoted-natp-forward-to-consp
+(defthm darg-quoted-natp-forward
   (implies (darg-quoted-natp darg)
-           (consp darg))
+           (and (consp darg)
+                (natp (cadr darg))
+                (natp (nth 1 darg))
+                (darg-quoted-integerp darg)))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable darg-quoted-natp))))
+  :hints (("Goal" :in-theory (enable darg-quoted-natp
+                                     darg-quoted-integerp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tests that DARG is a quoted constant, not a nodenum, and that the constant is a posp.
-(defun darg-quoted-posp (darg)
+(defund darg-quoted-posp (darg)
   (declare (xargs :guard (dargp darg)))
   (and (consp darg)
        (posp (unquote darg))))
 
-(defthm darg-quoted-posp-forward-to-consp
+(defthm darg-quoted-posp-forward
   (implies (darg-quoted-posp darg)
-           (consp darg))
+           (and (consp darg)
+                (posp (cadr darg))
+                (posp (nth 1 darg))
+                (darg-quoted-natp darg)))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable darg-quoted-posp))))
+  :hints (("Goal" :in-theory (enable darg-quoted-posp
+                                     darg-quoted-natp))))
 
 (defthm not-<-of-+-1-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items dag-len)

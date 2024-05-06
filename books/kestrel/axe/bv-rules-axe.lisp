@@ -241,6 +241,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvequal-trim-arg2-axe
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
+           (equal (bvequal size x y)
+                  (bvequal size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvequal-trim-arg3-axe
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size y 'non-arithmetic dag-array))
+           (equal (bvequal size x y)
+                  (bvequal size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvequal-trim-arg2-axe-all
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+           (equal (bvequal size x y)
+                  (bvequal size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bvequal-trim-arg3-axe-all
+  (implies (axe-syntaxp (term-should-be-trimmed-axe size y 'all dag-array))
+           (equal (bvequal size x y)
+                  (bvequal size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd bvand-trim-arg1-axe
   (implies (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
            (equal (bvand size x y)
@@ -977,6 +1003,21 @@
                   (bvxor (max xsize ysize) x y)))
   :hints (("Goal" :use (:instance BVXOR-TIGHTEN (oldsize size) (newsize (max xsize ysize)))
            :in-theory (enable unsigned-byte-p-forced))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvequal-tighten-axe-bind-and-bind
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< (max xsize ysize) size)
+                (natp size)
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (bvequal size x y)
+                  (bvequal (max xsize ysize) x y)))
+  :hints (("Goal" :in-theory (enable bvequal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;fixme make -core versions of these...
 
@@ -2145,12 +2186,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm bvequal-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvequal size x y)
+                  (bvequal size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvequal-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvequal size x y)
+                  (bvequal size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only needed for Axe.  TODO: Add such rules for all bvs?  Or do they already exist?
 (defthmd bvuminus-less-than-true
   (implies (and (syntaxp (quotep k))
                 (<= (expt 2 size) k)
                 (natp size))
            (< (bvuminus size x) k)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd equal-becomes-bvequal-axe-1
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p xsize y)
+                (unsigned-byte-p-forced xsize x))
+           (equal (equal x y)
+                  (bvequal xsize x y)))
+  :hints (("Goal" :in-theory (enable bvequal))))
+
+(defthmd equal-becomes-bvequal-axe-2
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p ysize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (equal x y)
+                  (bvequal ysize x y)))
+  :hints (("Goal" :in-theory (enable bvequal))))
+
+(defthmd equal-becomes-bvequal-axe-1-strong
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p-forced xsize x))
+           (equal (equal x y)
+                  (if (unsigned-byte-p xsize y)
+                      (bvequal xsize x y)
+                    nil)))
+  :hints (("Goal" :in-theory (enable bvequal))))
+
+(defthmd equal-becomes-bvequal-axe-2-strong
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced ysize y))
+           (equal (equal x y)
+                  (if (unsigned-byte-p ysize x)
+                      (bvequal ysize x y)
+                    nil)))
+  :hints (("Goal" :in-theory (enable bvequal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -2963,7 +2963,7 @@
                 (syntaxp (quotep k)))
            (equal (bvmult 9 8 x)
                   (bvmult 9 8 k)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm unsigned-byte-p-of-floor-25-64
   (implies (natp x)
@@ -3355,7 +3355,7 @@
                 (integerp high))
            (equal (slice high low (bvmult size (expt 2 m) x))
                   (slice (- high m) (- low m) x)))
-  :hints (("Goal" :in-theory (e/d (bvmult SLICE-WHEN-VAL-IS-NOT-AN-INTEGER) ()))))
+  :hints (("Goal" :in-theory (enable bvmult slice-when-val-is-not-an-integer))))
 
 (defthm slice-of-bvmult-of-expt-gen-alt
   (implies (and (<= m low) ;gen?
@@ -3577,7 +3577,7 @@
 ;; (defthm getbit-0-of-myif
 ;;   (equal (getbit 0 (myif test a b))
 ;;          (bvif 1 test a b))
-;;   :hints (("Goal" :in-theory (e/d (bvif myif) ()))))
+;;   :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthm getbit-of-myif
   (implies (natp n) ;drop?
@@ -5737,7 +5737,6 @@
                             bvminus-becomes-bvplus-of-bvuminus
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
-
                             bvlt-of-plus-arg1
                             bvlt-of-plus-arg2)))))
 
@@ -6424,7 +6423,6 @@
            (equal (bvlt size k x)
                   (equal 1 (getbit (+ -1 size) x))))
   :hints (("Goal" :in-theory (enable bvlt-of-one-less-of-expt-of-one-less-arg2))))
-
 
 (defthm bvchop-when-top-bit-0-linear-cheap
   (implies (and (equal 0 (getbit (+ -1 size) x))

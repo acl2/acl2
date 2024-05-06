@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags (and to convert terms into dags).
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,11 @@
 (in-package "ACL2")
 
 ;; The functions in this book use the basic evaluator to evaluate ground terms.
+;; This version does not handle embedded dags.
+;; See also merge-term-into-dag-array.
 ;; See also merge-term-into-dag-array-simple.lisp.
+
+;; TODO: Add support for BOOLIF, BVIF, and BV-ARRAY-IF.
 
 (include-book "dag-array-builders2")
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
@@ -33,34 +37,30 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
-;; this version does not handle embedded dags
-
-(local (in-theory (enable integerp-when-natp)))
-
-(local (in-theory (disable consp-from-len-cheap
-                           use-all-consp-for-car
-                           USE-ALL-CONSP
-                           USE-ALL-CONSP-2
-                           NTH-WHEN-NOT-CONSP-CHEAP
-                           NTH-WHEN-ZP-CHEAP
-                           ALL-CONSP-WHEN-NOT-CONSP
-                           NAT-LISTP
-                           BOUNDED-DARG-LISTP-WHEN-ALL-< ;limit?
-                           ALL-<-OF-ALEN1-WHEN-PSEUDO-DAG-ARRAYP-LIST
-                           NTH-WHEN-<=-LEN-CHEAP
-                           default-+-2
-                           default-car
-                           default-cdr
-                           quote-lemma-for-bounded-darg-listp-gen-alt
-                           symbol-alistp ;don't induct
-                           wf-dagp-expander
-                           wf-dagp
-                           member-equal
-                           use-all-<-for-car
-                           bounded-darg-listp-when-<-of-largest-non-quotep
-                           ;;bounded-darg-listp-when-all-consp
-                           strip-cdrs
-                           )))
+(local (in-theory (e/d (integerp-when-natp)
+                       (consp-from-len-cheap
+                        use-all-consp-for-car
+                        use-all-consp
+                        use-all-consp-2
+                        nth-when-not-consp-cheap
+                        nth-when-zp-cheap
+                        all-consp-when-not-consp
+                        nat-listp
+                        bounded-darg-listp-when-all-< ;limit?
+                        all-<-of-alen1-when-pseudo-dag-arrayp-list
+                        nth-when-<=-len-cheap
+                        default-+-2
+                        default-car
+                        default-cdr
+                        quote-lemma-for-bounded-darg-listp-gen-alt
+                        symbol-alistp ;don't induct
+                        wf-dagp-expander
+                        wf-dagp
+                        member-equal
+                        use-all-<-for-car
+                        bounded-darg-listp-when-<-of-largest-non-quotep
+                        ;;bounded-darg-listp-when-all-consp
+                        strip-cdrs))))
 
 (defthmd true-listp-of-nth-1-of-nth-0-when-pseudo-termp
   (implies (and (pseudo-termp term)
@@ -776,12 +776,5 @@
                                    merge-terms-into-dag-array-basic
                                    consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs)
                                   (natp))
-           :expand ((MERGE-TERM-INTO-DAG-ARRAY-BASIC TERM VAR-REPLACEMENT-ALIST
-                                        DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY
-                                        DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                                        DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                        INTERPRETED-FUNCTION-ALIST)
-                    (MERGE-TERM-INTO-DAG-ARRAY-BASIC TERM var-replacement-alist DAG-ARRAY 0 DAG-PARENT-ARRAY
-                                                    DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                                                    DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                                    INTERPRETED-FUNCTION-ALIST)))))
+           :expand ((merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
+                    (merge-term-into-dag-array-basic term var-replacement-alist dag-array 0 dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))))

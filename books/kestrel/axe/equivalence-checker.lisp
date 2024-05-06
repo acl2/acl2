@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -213,7 +213,7 @@
 
 ;move
 ;requires that the keys are eq-able
-(defun consistent-alists (alist1 alist2)
+(defund consistent-alists (alist1 alist2)
   (declare (xargs :guard (and (symbol-alistp alist1)
                               (symbol-alistp alist2))
                   :guard-hints (("Goal" :in-theory (enable alistp-guard-hack)))
@@ -760,7 +760,7 @@
 ;can't call this make-defthm due to a name clash with books/tools/remove-hyps
 (defun my-make-defthm (desired-name body hints state)
   (declare (xargs :stobjs state
-                  :mode :program ; beause this calls submit-event
+                  :mode :program ; because this calls submit-event
                   ))
   (let* ((props (getprops desired-name 'current-acl2-world (w state)))
          (untranslated-theorem (lookup-eq 'untranslated-theorem props)))
@@ -6492,38 +6492,79 @@
       ;it is a call to len:
       (first (fargs expr)))))
 
-;items are nodenums, quoteps, or array-names
-(defun get-fns-of-items (items fns-array)
-  (if (endp items)
-      nil
-    (let* ((item (car items)))
-      (if (or (symbolp item)
-              (quotep item))
-          (get-fns-of-items (cdr items) fns-array)
-        (union-eq (aref1 'fns-array fns-array item)
-                  (get-fns-of-items (cdr items) fns-array))))))
+;; (def-typed-acl2-array2 fns-arrayp (symbol-listp val))
 
-;pairs each nodenum with a list of the fns that support it
-(defun make-fns-array-for-nodes (n max-nodenum dag-array-name dag-array fns-array)
-  (declare (xargs :measure (+ 1 (nfix (- (+ 1 max-nodenum) n)))))
-  (if (or (not (natp n))
-          (not (natp max-nodenum))
-          (> n max-nodenum))
-      fns-array
-    (let ((expr (aref1 dag-array-name dag-array n)))
-      (if (or (symbolp expr)
-              (quotep expr))
-          ;;no funs for this node, so we leave the default value (nil) in the array:
-          (make-fns-array-for-nodes (+ 1 n) max-nodenum dag-array-name dag-array fns-array)
-        (make-fns-array-for-nodes (+ 1 n) max-nodenum dag-array-name dag-array
-                                  (aset1-safe 'fns-array fns-array n (add-to-set-eq (ffn-symb expr)
-                                                                               (get-fns-of-items (fargs expr) fns-array))))))))
+;; (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
-(defun fns-that-support-node (nodenum dag-array-name dag-array)
-  (let* ((fns-array (make-empty-array 'fns-array (+ 1 nodenum)))
-         ;;this makes the fns-array for all nodes.  could just do it for supporters, but that might be slower if most nodes are supporters
-         (fns-array (make-fns-array-for-nodes 0 nodenum dag-array-name dag-array fns-array)))
-    (aref1 'fns-array fns-array nodenum)))
+;; (local (in-theory (enable true-listp-when-symbol-listp)))
+
+;; (local
+;;   (defthm true-listp-when-symbol-listp-rewrite ; todo: add to lib
+;;     (implies (symbol-listp x)
+;;              (true-listp x))))
+
+;; ;items are nodenums, quoteps, or array-names
+;; (defun get-fns-of-items (items fns-array)
+;;   (declare (xargs :guard (and (fns-arrayp 'fns-array fns-array)
+;;                               (bounded-darg-listp items (alen1 'fns-array fns-array)))))
+;;   (if (endp items)
+;;       nil
+;;     (let* ((item (car items)))
+;;       (if (or (symbolp item)
+;;               (quotep item))
+;;           (get-fns-of-items (cdr items) fns-array)
+;;         (union-eq (aref1 'fns-array fns-array item)
+;;                   (get-fns-of-items (cdr items) fns-array))))))
+
+;; (local
+;;   (defthm symbol-listp-of-get-fns-of-items
+;;     (implies (and (fns-arrayp 'fns-array fns-array)
+;;                   (bounded-darg-listp items (alen1 'fns-array fns-array)))
+;;              (symbol-listp (get-fns-of-items items fns-array)))
+;;     :hints (("Goal" :in-theory (enable get-fns-of-items)))))
+
+;; ;pairs each nodenum with a list of the fns that support it
+;; (defund make-fns-array-for-nodes (n max-nodenum dag-array-name dag-array fns-array)
+;;   (declare (xargs :guard (and (natp n)
+;;                               (natp max-nodenum)
+;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 max-nodenum))
+;;                               (fns-arrayp 'fns-array fns-array)
+;;                               (< max-nodenum (alen1 'fns-array fns-array)))
+;;                   :guard-hints (("Goal" :in-theory (enable <-of-+-of-1-when-integerp)))
+;;                   :measure (+ 1 (nfix (- (+ 1 max-nodenum) n)))))
+;;   (if (or (not (natp n))
+;;           (not (natp max-nodenum))
+;;           (> n max-nodenum))
+;;       fns-array
+;;     (let ((expr (aref1 dag-array-name dag-array n)))
+;;       (if (or (symbolp expr)
+;;               (quotep expr))
+;;           ;;no funs for this node, so we leave the default value (nil) in the array:
+;;           (make-fns-array-for-nodes (+ 1 n) max-nodenum dag-array-name dag-array fns-array)
+;;         (make-fns-array-for-nodes (+ 1 n) max-nodenum dag-array-name dag-array
+;;                                   (aset1-safe 'fns-array fns-array n (add-to-set-eq (ffn-symb expr)
+;;                                                                                     (get-fns-of-items (dargs expr) fns-array))))))))
+
+;; (local
+;;   (defthm make-fns-array-for-nodes-return-type
+;;     (implies  (and (natp n)
+;;                    (natp max-nodenum)
+;;                    (pseudo-dag-arrayp dag-array-name dag-array (+ 1 max-nodenum))
+;;                    (fns-arrayp 'fns-array fns-array)
+;;                    (< max-nodenum (alen1 'fns-array fns-array)))
+;;               (and (array1p 'fns-array (make-fns-array-for-nodes n max-nodenum dag-array-name dag-array fns-array))
+;;                    (equal (alen1 'fns-array (make-fns-array-for-nodes n max-nodenum dag-array-name dag-array fns-array))
+;;                           (alen1 'fns-array fns-array))))
+;;     :hints (("Goal" :induct t
+;;              :in-theory (enable make-fns-array-for-nodes)))))
+
+;; (defund fns-that-support-node (nodenum dag-array-name dag-array)
+;;   (declare (xargs :guard (and (natp nodenum)
+;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
+;;   (let* ((fns-array (make-empty-array 'fns-array (+ 1 nodenum)))
+;;          ;;this makes the fns-array for all nodes.  could just do it for supporters, but that might be slower if most nodes are supporters
+;;          (fns-array (make-fns-array-for-nodes 0 nodenum dag-array-name dag-array fns-array)))
+;;     (aref1 'fns-array fns-array nodenum)))
 
 (defun assert-non-nil (tag item)
   (if (equal nil item)
@@ -7333,9 +7374,9 @@
        (num-nodes-to-consider (+ 1 larger-nodenum))
        ;;both of these arrays must have length (+ 1 larger-nodenum), since nodes up to larger-nodenum will be looked up?  could skip the array access for nodenums larger that smaller-nodenum (they obviously can't support it)
        (needed-for-smaller-nodenum-tag-array (make-empty-array 'needed-for-node1-tag-array num-nodes-to-consider)) ;ffixme rename these arrays (but have to do it everywhere!)
-       (needed-for-smaller-nodenum-tag-array (aset1-safe 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
+       (needed-for-smaller-nodenum-tag-array (aset1 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
        (needed-for-larger-nodenum-tag-array  (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
-       (needed-for-larger-nodenum-tag-array (aset1-safe 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
+       (needed-for-larger-nodenum-tag-array (aset1 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
        ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
        ((mv erp
             nodenums-to-translate ;in decreasing order
@@ -7486,7 +7527,7 @@
                               (natp max-conflicts) ; allow nil?
                               (stringp base-filename))
                   :measure (nfix (+ 1 (- max-depth min-depth)))
-             :stobjs state))
+                  :stobjs state))
   (if (or (not (and (mbt (natp min-depth))
                     (mbt (integerp max-depth))))
           (< max-depth min-depth))
@@ -7495,8 +7536,8 @@
     (b* (;; todo: drop this supporters-tag-array because the depth-array already tracks supporters (but consider what happens with cutting at bvmult and bvif nodes)
          (supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
          ;;mark the two nodes as supporters:
-         (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array larger-nodenum t))
-         (supporters-tag-array (aset1-safe 'supporters-tag-array supporters-tag-array smaller-nodenum t))
+         (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array larger-nodenum t))
+         (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array smaller-nodenum t))
          (current-depth (integer-average-round-up min-depth max-depth))
          ;; TODO: Consider a worklist algorithm:
          ((mv erp nodenums-to-translate cut-nodenum-type-alist extra-asserts)
@@ -7663,8 +7704,10 @@
                                (ARRAY1P TAG-ARRAY-NAME TAG-ARRAY)
                                (all-< nodenums (ALEN1 TAG-ARRAY-NAME TAG-ARRAY))
                                (ARRAY1P DONE-ARRAY-NAME DONE-ARRAY)
-                               (all-< nodenums (ALEN1 DONE-ARRAY-NAME DONE-ARRAY)))
-                   :verify-guards nil))
+                               (all-< nodenums (ALEN1 DONE-ARRAY-NAME DONE-ARRAY))
+                               (true-listp acc))
+                   :verify-guards nil ; done below
+                   ))
    (if (endp nodenums)
        acc
      (let* ((nodenum (first nodenums))
@@ -7687,24 +7730,32 @@
                           (rest nodenums))
                   miter-array-name miter-array tag-array-name tag-array
                   done-array-name
-                  (aset1-safe done-array-name done-array nodenum t)
+                  (aset1 done-array-name done-array nodenum t)
                   (if (is-a-rec-fn-to-handle (ffn-symb expr) state)
                       (add-to-set-eql nodenum acc)
                     acc)
                   state))))))))))
 
-(skip-proofs (verify-guards non-tagged-supporters-with-rec-fns-to-handle-aux))
+(local
+  (defthm nat-listp-of-keep-atoms
+    (implies (darg-listp dargs)
+             (nat-listp (keep-atoms dargs)))
+    :hints (("Goal" :in-theory (enable keep-atoms)))))
+
+(verify-guards non-tagged-supporters-with-rec-fns-to-handle-aux)
 
 ;find supporters of nodenum that are not tagged and have rec fns to handle
 (defun non-tagged-supporters-with-rec-fns-to-handle (nodenum miter-array-name miter-array tag-array-name tag-array state)
-   (declare (xargs :stobjs state :verify-guards nil))
-   (non-tagged-supporters-with-rec-fns-to-handle-aux (list nodenum) miter-array-name miter-array tag-array-name tag-array
-                              'done-array-name
-                              (make-empty-array 'done-array-name (+ 1 nodenum))
-                              nil
-                              state))
-
-(skip-proofs (verify-guards non-tagged-supporters-with-rec-fns-to-handle))
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp miter-array-name miter-array (+ 1 nodenum))
+                              (array1p tag-array-name tag-array)
+                              (< nodenum (alen1 tag-array-name tag-array)))
+                  :stobjs state))
+  (non-tagged-supporters-with-rec-fns-to-handle-aux (list nodenum) miter-array-name miter-array tag-array-name tag-array
+                                                    'done-array-name
+                                                    (make-empty-array 'done-array-name (+ 1 nodenum))
+                                                    nil
+                                                    state))
 
 ;; (defun filter-rec-fns-to-handle (fns state)
 ;;   (declare (xargs :stobjs state
@@ -8368,7 +8419,7 @@
             (find-rec-fn-node-to-split (rest nodenums) miter-array-name miter-array extra-stuff)))))))
 
 ;returns (mv erp alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-(defun add-alist-cdrs-to-dag (alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)
+(defund add-alist-cdrs-to-dag (alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)
   (declare (xargs :guard (and (alistp alist)
                               (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                               (bounded-axe-tree-listp (strip-cdrs alist) dag-len)
@@ -8389,71 +8440,84 @@
           (add-alist-cdrs-to-dag (rest alist) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                  (acons var nodenum-or-quotep acc)))))))
 
-(defun fixup-dargs-special (dargs max-unrenamed-nodenum renaming-array)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund fixup-dargs-special (dargs max-unrenamed-nodenum renaming-array)
   (declare (xargs :guard (and (array1p 'renaming-array renaming-array)
+                              (renaming-arrayp 'renaming-array renaming-array (alen1 'renaming-array renaming-array))
                               (bounded-darg-listp dargs (alen1 'renaming-array renaming-array))
-                              (rationalp max-unrenamed-nodenum))))
+                              (natp max-unrenamed-nodenum))
+                  :guard-hints (("Goal" :expand (bounded-darg-listp dargs (alen1 'renaming-array renaming-array))
+                                 :in-theory (enable bounded-darg-listp)))))
   (if (endp dargs)
       nil
     (let* ((darg (first dargs))
-           (fixed-up-darg (if (or (consp darg)                    ;it's a quotep
-                                 (<= darg max-unrenamed-nodenum) ;it's a nodenum that didn't get renamed
-                                 )
-                             darg
-                           (aref1 'renaming-array renaming-array darg))))
+           (fixed-up-darg (if (or (consp darg) ; tests for quotep
+                                  (<= darg max-unrenamed-nodenum) ;it's a nodenum that didn't get renamed
+                                  )
+                              darg
+                            (aref1 'renaming-array renaming-array darg))))
       (cons fixed-up-darg (fixup-dargs-special (rest dargs) max-unrenamed-nodenum renaming-array)))))
 
+(defthm bounded-darg-listp-of-fixup-dargs-special
+  (implies (and (bounded-renaming-arrayp 'renaming-array renaming-array (alen1 'renaming-array renaming-array) bound)
+                (bounded-darg-listp dargs (alen1 'renaming-array renaming-array))
+                (bounded-darg-listp dargs bound))
+           (bounded-darg-listp (fixup-dargs-special dargs max-unrenamed-nodenum renaming-array)
+                               bound))
+  :hints (("Goal" :in-theory (enable fixup-dargs-special bounded-darg-listp))))
+
 ;returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
-(defun rebuild-node-range (min-nodenum
+(defun rebuild-node-range (nodenum
                            max-nodenum
                            max-unrenamed-nodenum
                            renaming-array
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                            dag-array-name dag-parent-array-name)
-  (declare (xargs :measure (nfix (+ 1 max-nodenum (- min-nodenum)))))
-  (if (or (not (natp min-nodenum))
+  (declare (xargs :guard (and (natp nodenum)
+                              (natp max-nodenum)
+                              (natp max-unrenamed-nodenum)
+                              (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                              (array1p 'renaming-array renaming-array)
+                              (bounded-renaming-arrayp 'renaming-array renaming-array (alen1 'renaming-array renaming-array) dag-len) ; dag-len grows as we go
+                              ;(< nodenum (alen1 'renaming-array renaming-array))
+                              (< max-nodenum (alen1 'renaming-array renaming-array))
+                              ;(< nodenum dag-len)
+                              (< max-nodenum dag-len))
+                  :measure (nfix (+ 1 max-nodenum (- nodenum)))))
+  (if (or (not (natp nodenum))
           (not (natp max-nodenum))
-          (< max-nodenum min-nodenum))
+          (< max-nodenum nodenum))
       (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
-    (let* ((expr (aref1 dag-array-name dag-array min-nodenum)))
-      (if (symbolp expr)
-          (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-            (add-variable-to-dag-array-with-name expr dag-array dag-len
-                                                       dag-parent-array
-                                                       dag-constant-alist
-                                                       dag-variable-alist
-                                                       dag-array-name dag-parent-array-name)
-            (if erp
-                (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
-              (rebuild-node-range (+ 1 min-nodenum)
-                                  max-nodenum
-                                  max-unrenamed-nodenum
-                                  (aset1-safe 'renaming-array renaming-array min-nodenum new-nodenum)
-                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                  dag-array-name dag-parent-array-name)))
-        (if (quotep expr)
-            (rebuild-node-range (+ 1 min-nodenum)
+    (let* ((expr (aref1 dag-array-name dag-array nodenum)))
+      (if (symbolp expr) ; nothing to do for a variable
+          (rebuild-node-range (+ 1 nodenum)
+                              max-nodenum
+                              max-unrenamed-nodenum
+                              (aset1 'renaming-array renaming-array nodenum nodenum) ; or skip this?
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                              dag-array-name dag-parent-array-name)
+        (if (eq 'quote (ffn-symb expr)) ; nothing much to do for a constant
+            (rebuild-node-range (+ 1 nodenum)
                                 max-nodenum
                                 max-unrenamed-nodenum
-                                (aset1-safe 'renaming-array renaming-array min-nodenum expr)
+                                (aset1 'renaming-array renaming-array nodenum expr)
                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                 dag-array-name dag-parent-array-name)
-          ;;function call
+          ;; function call:
           (let* ((fn (ffn-symb expr))
-                 (args (fargs expr))
-                 (new-args (fixup-dargs-special args max-unrenamed-nodenum renaming-array)))
+                 (dargs (dargs expr))
+                 (new-dargs (fixup-dargs-special dargs max-unrenamed-nodenum renaming-array)))
             (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-              (add-function-call-expr-to-dag-array-with-name fn new-args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+              (add-function-call-expr-to-dag-array-with-name fn new-dargs dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
               (if erp
                   (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
-                (rebuild-node-range (+ 1 min-nodenum)
+                (rebuild-node-range (+ 1 nodenum)
                                     max-nodenum
                                     max-unrenamed-nodenum
-                                    (aset1-safe 'renaming-array renaming-array min-nodenum new-nodenum)
+                                    (aset1 'renaming-array renaming-array nodenum new-nodenum)
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     dag-array-name dag-parent-array-name)))))))))
-
-(skip-proofs (verify-guards rebuild-node-range))
 
 (defun bind-old-vars (old-var-to-formal-alist ;maps old vars to their formals (for a connection, will be renamed with f and g??)
                       formal-val-alist ;includes formals and values (for a connection will handle both function 1 and function 2)
@@ -12148,6 +12212,7 @@
                        analyzed-function-table))
             rand state result-array-stobj)))))
 
+
 ;;returns (mv erp miter-array miter-len) where the top node of the returned miter is equivalent to the top node of the miter passed in
 ;there should be no gaps in the miter node numbering (propagate this annotation out)
 ;fffixme: add support for rules with hyps
@@ -12157,7 +12222,13 @@
                               miter-array-name
                               miter-array
                               miter-len state)
-  (declare (xargs :stobjs state :verify-guards nil))
+  (declare (xargs :guard (and (symbolp rule-symbol)
+                              (natp nodenum)
+                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< nodenum miter-len))
+                  :stobjs state
+                  :verify-guards nil ; todo
+                  ))
   (b* (((mv lhs rhs) (lhs-and-rhs-of-simple-rule rule-symbol (w state)))
        ;; unify rule with the node
        (fail-or-alist (unify-term-and-dag-item2-with-name lhs nodenum miter-array-name miter-array miter-len)))
@@ -12223,7 +12294,7 @@
                   :verify-guards nil ; todo: first prove properties of GATHER-NODES-FOR-TRANSLATION
                   :stobjs state))
   (b* ((needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
-       (needed-for-node1-tag-array (aset1-safe 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
+       (needed-for-node1-tag-array (aset1 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
        ;; Choose which nodes to translate (no cutting):
        ((mv nodenums-to-translate cut-nodenum-type-alist)
         (gather-nodes-for-translation nodenum miter-array-name miter-array miter-len var-type-alist needed-for-node1-tag-array nil nil))
@@ -20074,6 +20145,7 @@
 ;;                                   state rand RESULT-ARRAY-STOBJ)))
 
 ;todo: deprecate?  unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
+;; Used in several loop examples.
 (defmacro prove-equality (term1 term2 &rest rest)
   `(make-event
     (b* (((mv erp dag) (dagify-term '(equal ,term1 ,term2)))
@@ -20133,11 +20205,14 @@
        (quoted-dag-or-term1 (farg1 whole-form))
        (quoted-dag-or-term2 (farg2 whole-form))
        (wrld (w state))
+       ;; Translate assumptions
        (assumptions (translate-terms assumptions 'prove-equivalence-fn wrld)) ;throws an error on bad input
+       ;; Create the DAGS:
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
+       ;; Check vars:
        (vars1 (and check-vars (merge-sort-symbol< (dag-vars dag1))))
        (vars2 (and check-vars (merge-sort-symbol< (dag-vars dag2))))
        ((when (and check-vars
@@ -20149,6 +20224,7 @@
         ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
         ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
         (mv (erp-t) nil state rand result-array-stobj))
+       ;; Make the equality DAG:
        ((mv erp equality-dag) (make-equality-dag dag1 dag2))
        ((when erp) (mv erp nil state rand result-array-stobj))
        ;; Make the initial rule sets:
@@ -20165,7 +20241,7 @@
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand result-array-stobj))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
-       ;; Call the core function:
+       ;; Try to prove the equality:
        ((mv erp provedp state rand result-array-stobj)
         (prove-miter-core equality-dag
                           tactic
@@ -20195,13 +20271,15 @@
                           ;; nil ; treat-as-purep
                           debug
                           state rand result-array-stobj))
+       ;; Remove the tempp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
+       (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
                            (mv erp nil state rand result-array-stobj)))
        ((when (not provedp)) (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
                                      ;; Convert this to an error
                                      (mv :proof-failed nil state rand result-array-stobj)))
        (- (cw "Proof of equivalence succeeded.~%"))
-       ;; make the theorem:
+       ;; make the theorem (TODO: Make this optional):
        (term1 (dag-or-term-to-term dag-or-term1 state))
        (term2 (dag-or-term-to-term dag-or-term2 state))
        (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
@@ -20209,11 +20287,14 @@
                    (implies (and ,@assumptions)
                             (equal ,term1
                                    ,term2)))))
+       ;; The event may include a theorem:
        (event (if types ;todo: remove this restriction
                   (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
                           `(progn))
                 defthm))
+       ;; The event includes a table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
+       ;; Arrange to print the miter name when the event is submitted:
        (event (extend-progn event `(value-triple ',miter-name)))
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand result-array-stobj)))

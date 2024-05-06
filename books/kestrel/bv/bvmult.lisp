@@ -231,7 +231,7 @@
   (implies (natp size)
            (equal (bvmult size (expt 2 size) x)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 ;todo: allow the sizes to differ
 (defthm bvmult-of-expt-alt

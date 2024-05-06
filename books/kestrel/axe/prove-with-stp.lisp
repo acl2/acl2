@@ -77,14 +77,29 @@
 
 (local (in-theory (disable state-p w
                            symbol-alistp
-                           darg-quoted-posp
                            ;; for speed:
                            nth-when-not-consp-cheap
                            default-cdr
                            len-when-not-consp-cheap
-                           all-natp-when-not-consp)))
+                           all-natp-when-not-consp
+                           nth-of-cdr
+                           ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
+                           ;;consp-from-len-cheap
+                           ;;memberp-nth-when-perm
+                           ;;dargp-less-than
+                           consp-from-len-cheap
+                           default-car
+                           all-<-when-not-consp
+                           eqlable-alistp ;prevent inductions
+                           )))
 
-(local (in-theory (enable <-of-+-of-1-when-integers)))
+(local (in-theory (enable <-of-+-of-1-when-integers
+                          posp
+                          true-listp-of-cdr-when-dag-exprp-and-quotep
+                          ceiling-in-terms-of-floor
+                          true-listp-of-cdr
+                          nth-of-cdr
+                          car-when-alistp-iff)))
 
 ;the nth-1 is to unquote
 (defthm bv-typep-of-maybe-get-type-of-val-of-nth-1
@@ -110,6 +125,38 @@
   (defthm rationalp-when-natp
     (implies (natp x)
              (rationalp x))))
+
+;move
+(local
+ (defthm nat-listp-of-reverse-list
+  (equal (nat-listp (reverse-list x))
+         (all-natp x))
+  :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
+;move
+(defthmd myquotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (myquotep d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
+
+;move
+(defthmd quotep-when-axe-disjunctionp
+  (implies (axe-disjunctionp d)
+           (equal (quotep d)
+                  (or (equal (true-disjunction) d)
+                      (equal (false-disjunction) d))))
+  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
+
+;move
+(defthmd bounded-possibly-negated-nodenumsp-when-nat-listp
+  (implies (nat-listp items)
+           (equal (bounded-possibly-negated-nodenumsp items bound)
+                  (all-< items bound)))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump
+                                     all-<))))
 
 (defthm no-nodes-are-variablesp-of-merge-<
   (implies (and (no-nodes-are-variablesp l1 dag-array-name dag-array dag-len)
@@ -151,37 +198,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;move
-(local
- (defthm nat-listp-of-reverse-list
-  (equal (nat-listp (reverse-list x))
-         (all-natp x))
-  :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
-
-;move
-(defthmd myquotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (myquotep d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
-;move
-(defthmd quotep-when-axe-disjunctionp
-  (implies (axe-disjunctionp d)
-           (equal (quotep d)
-                  (or (equal (true-disjunction) d)
-                      (equal (false-disjunction) d))))
-  :hints (("Goal" :in-theory (enable axe-disjunctionp))))
-
-;move
-(defthmd bounded-possibly-negated-nodenumsp-when-nat-listp
-  (implies (nat-listp items)
-           (equal (bounded-possibly-negated-nodenumsp items bound)
-                  (all-< items bound)))
-  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
-                                     bounded-possibly-negated-nodenump
-                                     all-<))))
 
 ;; ;; todo?
 ;; (local
@@ -196,25 +212,6 @@
 ;;   (implies (and (all-natp x)
 ;;                 (consp x))
 ;;            (<= 0 (maxelem x)))))
-
-(local (in-theory (disable nth-of-cdr
-                           ;; cadr-becomes-nth-of-1 ; we want to keep the cdr because it gets the fargs
-                           ;;consp-from-len-cheap
-                           ;;memberp-nth-when-perm
-                           ;;dargp-less-than
-                           CONSP-FROM-LEN-CHEAP
-                           DEFAULT-CAR
-                           ALL-<-WHEN-NOT-CONSP
-                           eqlable-alistp ;prevent inductions
-                           )))
-
-(local (in-theory (enable posp
-                          true-listp-of-cdr-when-dag-exprp-and-quotep
-                          ceiling-in-terms-of-floor
-                          TRUE-LISTP-OF-CDR
-                          nth-of-cdr
-                          car-when-alistp-iff)))
-
 
 ;FIXME: Some functions in this file should call remove-temp-dir (think about exactly which ones)
 
@@ -467,8 +464,7 @@
                               (all-< all-nodenums dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist))
                   :guard-hints (("Goal" :do-not-induct t
-                                 :in-theory (e/d (darg-quoted-posp
-                                                  nth-of-cdr
+                                 :in-theory (e/d (nth-of-cdr
                                                   ;CAR-BECOMES-NTH-OF-0
                                                   ;CONSP-FROM-LEN
                                                   ;CONSP-of-CDR
@@ -596,7 +592,7 @@
                                                                                         dag-array
                                                                                         dag-len
                                                                                         known-nodenum-type-alist))))
-    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp))))))
+    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0) (natp))))))
 
 ; make a "bounded-nodenum-type-alistp"?
 (local
@@ -616,7 +612,7 @@
                                                                                       dag-len
                                                                                       known-nodenum-type-alist)))
                     dag-len))
-    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0 darg-quoted-posp) (natp))))))
+    :hints (("Goal" :in-theory (e/d (improve-known-nodenum-type-alist-with-node car-becomes-nth-of-0) (natp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -851,6 +847,7 @@
 (thm (equal (bvnot size (bvchop size x)) (bvnot size x)))
 
 ;; First of the 2 args:
+(thm (equal (bvequal size (bvchop size x) y) (bvequal size x y)))
 (thm (equal (bvplus size (bvchop size x) y) (bvplus size x y)))
 (thm (equal (bvminus size (bvchop size x) y) (bvminus size x y)))
 (thm (equal (bvmult size (bvchop size x) y) (bvmult size x y)))
@@ -867,6 +864,7 @@
 (thm (implies (posp size) (equal (sbvle size (bvchop size x) y) (sbvle size x y))))
 
 ;; Second of the 2 args:
+(thm (equal (bvequal size x (bvchop size y)) (bvequal size x y)))
 (thm (equal (bvplus size x (bvchop size y)) (bvplus size x y)))
 (thm (equal (bvminus size x (bvchop size y)) (bvminus size x y)))
 (thm (equal (bvmult size x (bvchop size y)) (bvmult size x y)))
@@ -958,7 +956,7 @@
 (defund get-induced-type (nodenum parent-expr)
   (declare (xargs :guard (and (natp nodenum)
                               (dag-function-call-exprp parent-expr))
-                  :guard-hints (("Goal" :in-theory (enable dargp-of-nth-when-darg-listp nth-of-cdr darg-quoted-posp)))))
+                  :guard-hints (("Goal" :in-theory (enable dargp-of-nth-when-darg-listp nth-of-cdr)))))
   (let ((fn (ffn-symb parent-expr))
         (dargs (dargs parent-expr)))
     (cond ((member-eq fn '(bvuminus bvchop bvnot)) ; (<fn> <size> <arg>)
@@ -969,7 +967,7 @@
                (make-bv-type (unquote (first dargs)))
              nil))
           ;; todo: add bvequal (once we can translate it):
-          ((member-eq fn '(bvplus bvminus bvmult bvand bvor bvxor bvdiv bvmod sbvdiv sbvrem bvlt bvle sbvlt sbvle)) ; (<fn> <size> <arg1> <arg2>)
+          ((member-eq fn '(bvequal bvplus bvminus bvmult bvand bvor bvxor bvdiv bvmod sbvdiv sbvrem bvlt bvle sbvlt sbvle)) ; (<fn> <size> <arg1> <arg2>)
            (if (and (eql 3 (len dargs))
                     (darg-quoted-posp (first dargs)) ; posp may be needed for sbvlt/sbvle
                     ;; ok if NODENUM is both BV args:
@@ -1043,8 +1041,8 @@
           ((eq fn 'bv-array-read) ; (bv-array-read <element-size> <len> <index> <data>)
            (if (and (eql 4 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs))
-                    (< 1 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
+                    (darg-quoted-integerp (second dargs))
+                    (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                (union-types (if (eql nodenum (third dargs))
                                 ;; nodenum is the index:
@@ -1059,8 +1057,8 @@
           ((eq fn 'bv-array-write) ; (bv-array-write <element-size> <len> <index> <val> <data>)
            (if (and (eql 5 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs))
-                    (< 1 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
+                    (darg-quoted-integerp (second dargs)) ; todo: what about len =1 (disallowed elsewhere)?
+                    (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                ;; if nodenum appears as an array and a BV, we'll get
                ;; most-general-type here, which will cause an error later:
@@ -1080,7 +1078,9 @@
           ((eq 'bv-array-if fn) ; (bv-array-if <element-width> <len> <test> <then> <else>)
            (if (and (eql 5 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs)))
+                    (darg-quoted-integerp (second dargs))
+                    (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
+                    )
                (union-types (if (eql nodenum (third dargs))
                                 ;; nodenum is the test:
                                 (boolean-type)
@@ -1126,7 +1126,7 @@
   (defthm axe-typep-of-get-induced-type
     (implies (get-induced-type nodenum parent-expr)
              (axe-typep (get-induced-type nodenum parent-expr)))
-    :hints (("Goal" :in-theory (enable get-induced-type darg-quoted-posp)))))
+    :hints (("Goal" :in-theory (enable get-induced-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1252,7 +1252,7 @@
                               (symbolp fn)
                               (bounded-darg-listp args dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist))
-                  :guard-hints (("Goal" :in-theory (enable darg-quoted-posp))))
+                  :guard-hints (("Goal" :in-theory (enable))))
            (ignore dag-len))
   (case fn
     (not (and (= 1 (len args))
@@ -1282,12 +1282,13 @@
                 (<= (unquote (second args))
                     (unquote (first args)))
                 (bv-arg-okp (third args))))
-    ((bvand bvor bvxor
-            bvplus bvminus bvmult
-            bvdiv bvmod
-            sbvdiv sbvrem
-            bvlt bvle
-            sbvlt sbvle)
+    ((bvequal
+       bvand bvor bvxor
+       bvplus bvminus bvmult
+       bvdiv bvmod
+       sbvdiv sbvrem
+       bvlt bvle
+       sbvlt sbvle)
      (and (= 3 (len args))
           (darg-quoted-posp (first args))
           (bv-arg-okp (second args))
@@ -1316,11 +1317,11 @@
                        (bv-arg-okp (second args))
                        ))
     ;; todo: clean these up:
-    ((bv-array-read) ;new (ffixme make sure these get translated right: consider constant array issues):
-     (if (and (= 4 (len args)) ;todo: speed up checks like this?
-              (darg-quoted-posp (first args))
-              (darg-quoted-natp (second args))
-              (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+    ((bv-array-read) ; (bv-array-read element-width len index data)  ;new (ffixme make sure these get translated right: consider constant array issues):
+     (if (and (= 4 (len args))                ;todo: speed up checks like this?
+              (darg-quoted-posp (first args)) ; disallows 0 width
+              (darg-quoted-integerp (second args))
+              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits
               )
          (let* ((data-arg (fourth args))
                 (type-of-data (get-type-of-arg-safe data-arg dag-array-name dag-array known-nodenum-type-alist)))
@@ -1328,11 +1329,11 @@
                     (eql (bv-array-type-len type-of-data) (unquote (second args))))
                t
              (prog2$ (and ;(eq :verbose print)
-                      (cw "(WARNING: Not translating array read expr ~x0 since the required length is ~x1 but the array argument, ~x2, has type ~x3.)~%"
-                          (cons fn args)
-                          (unquote (second args))
-                          (if (quotep data-arg) data-arg (aref1 dag-array-name dag-array data-arg))
-                          type-of-data))
+                       (cw "(WARNING: Not translating array read expr ~x0 since the required length is ~x1 but the array argument, ~x2, has type ~x3.)~%"
+                           (cons fn args)
+                           (unquote (second args))
+                           (if (quotep data-arg) data-arg (aref1 dag-array-name dag-array data-arg))
+                           type-of-data))
                      nil)))
        (prog2$ (and (eq :verbose print)
                     (cw "(WARNING: Not translating array expr ~x0 since the length and width are not known.)~%" (cons fn args)))
@@ -1341,8 +1342,8 @@
     ((bv-array-write) ; (bv-array-write element-size len index val data) ;new (ffixme make sure these get translated right - consider constant array issues):
      (if (and (= 5 (len args))
               (darg-quoted-posp (first args))
-              (darg-quoted-natp (second args))
-              (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (darg-quoted-integerp (second args))
+              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          t
        (prog2$ (and (eq :verbose print)
@@ -1351,8 +1352,8 @@
     ((bv-array-if) ;very new (ffixme make sure these get translated right - consider constant array issues):
      (if (and (= 5 (len args))
               (darg-quoted-posp (first args))
-              (darg-quoted-natp (second args))
-              (< 1 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (darg-quoted-integerp (second args))
+              (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          (let ((type (make-bv-array-type (unquote (first args)) (unquote (second args)))))
            ;; The types of the 'then' and 'else' branches must be exactly the type of the BV-ARRAY-IF:
@@ -1411,32 +1412,12 @@
                                                   (dargs parent-expr)
                                                   'dag-array dag-array dag-len known-nodenum-type-alist print)))
   :hints (("Goal" :in-theory (enable get-induced-type can-always-translate-expr-to-stp
-                                     darg-quoted-posp
+                                     darg-quoted-posp darg-quoted-natp
                                      member-equal-of-constant-when-not-equal-of-nth-0
                                      consp-of-cdr
                                      can-translate-bvif-args
                                      member-equal-of-cons ; applies to constant lists
                                      member-equal-when-consp-iff))))
-
-;move these:
-
-;; (defthm darg-quoted-posp-forward-to-darg-quoted-natp
-;;   (implies (darg-quoted-posp darg)
-;;            (darg-quoted-natp darg))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable darg-quoted-posp darg-quoted-natp))))
-
-;; (defthm darg-quoted-posp-forward-to-posp-of-unquote
-;;   (implies (darg-quoted-posp darg)
-;;            (posp (unquote darg)))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable darg-quoted-posp))))
-
-;; (defthm darg-quoted-natp-forward-to-natp-of-unquote
-;;   (implies (darg-quoted-natp darg)
-;;            (natp (unquote darg)))
-;;   :rule-classes :forward-chaining
-;;   :hints (("Goal" :in-theory (enable darg-quoted-natp))))
 
 (defthm equal-of-0-and-make-bv-type
   (equal (equal 0 (make-bv-type width))
@@ -1449,13 +1430,8 @@
            (and (maybe-get-type-of-function-call fn dargs)
                 (not (equal (make-bv-type 0)
                             (maybe-get-type-of-function-call fn dargs)))))
-  :hints (("Goal" :in-theory (e/d (can-always-translate-expr-to-stp maybe-get-type-of-function-call maybe-get-type-of-bv-function-call member-equal
-                                                                    darg-quoted-posp
-                                                                    darg-quoted-natp ; todo: disable
-                                                                    unquote-if-possible
-                                                                    )
-                                  (;darg-quoted-natp
-                                   )))))
+  :hints (("Goal" :in-theory (enable can-always-translate-expr-to-stp maybe-get-type-of-function-call maybe-get-type-of-bv-function-call member-equal
+                                     unquote-if-possible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2098,8 +2074,8 @@
                                                 (and (boolean-typep lhs-type) (boolean-typep rhs-type))
                                                 (and (bv-array-typep lhs-type)
                                                      (bv-array-typep rhs-type)
-                                                     (< 1 (bv-array-type-len lhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
-                                                     (< 1 (bv-array-type-len rhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
+                                                     (<= 2 (bv-array-type-len lhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
+                                                     (<= 2 (bv-array-type-len rhs-type)) ;arrays of length 1 require 0 index bits and so are not supported
                                                      ;;TODO: check for incompatible types?
                                                      ))))))
                                ;; Special case for UNSIGNED-BYTE-P (todo: can we get rid of this?):
@@ -2647,6 +2623,11 @@
   (prove-node-disjunction-with-stp (cons conc (negate-possibly-negated-nodenums hyps))
                                    dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
 
+(defthm w-of-mv-nth-1-of-prove-node-implication-with-stp
+  (equal (w (mv-nth 1 (prove-node-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prove-node-implication-with-stp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown
@@ -2699,9 +2680,9 @@
 
 ;; Attempt to use STP to prove the disjunction of the terms in CLAUSE.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-;fixme pass in other options?
-;fixme: this could create a theorem
-;fixme: have this print balanced parens
+;todo: pass in other options?
+;todo: this could create a theorem
+;todo: have this print balanced parens
 ;todo: exploit boolean structure in the hyps (and conc?)
 ;todo: deprecate in favor of a version that just takes a single term (note that we may need to look into the boolean structure of the term to get assumptions that tell us the types of things?)
 (defun prove-clause-with-stp (clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)

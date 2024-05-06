@@ -112,12 +112,13 @@
              (var (lookup-eq 'var alist)))
         (if (and alist
                  (quotep size)
-                 (natp (unquote size))
+                 (posp (unquote size)) ; todo: consider a size of 0
                  (symbolp var)
                  (or (member-equal `(true-listp ,var) all-hyps)
                      (member-equal `(equal (true-listp ,var) 't) all-hyps))) ;would be better to always choose just one form?
             (let ((len (find-len-from-hyp all-hyps var)))
-              (if len
+              (if (and len
+                       (<= 2 len))
                   (acons-fast var
                          (make-bv-array-type (unquote size) len) ;fixme what if the size is 0? ffffixme make sure we handle array widths right;  we round up to 1 if all elems are 0
                          var-type-alist)

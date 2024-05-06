@@ -71,8 +71,8 @@
 
 ;; This checks the args if they are constants but does not look up nodenums.
 ;; This no longer allows ':irrelevant values in bvifs.
-;; Note that we no longer translate IF or MYIF
-;; todo: add bv-array-if, maybe unsigned-byte-p
+;; Note that we no longer translate IF or MYIF.
+;; todo: consider adding unsigned-byte-p
 ;; todo: compare to can-always-translate-expr-to-stp and get-induced-type and translate-dag-expr
 (defun pure-fn-call-exprp (expr)
   (declare (xargs :guard (dag-function-call-exprp expr)
@@ -108,12 +108,13 @@
                   (<= (unquote (second dargs))
                       (unquote (first dargs)))
                   (bv-arg-okp (third dargs))))
-      ((bvand bvor bvxor
-              bvplus bvminus bvmult
-              bvdiv bvmod
-              sbvdiv sbvrem
-              bvlt bvle
-              sbvlt sbvle)
+      ((bvequal
+         bvand bvor bvxor
+         bvplus bvminus bvmult
+         bvdiv bvmod
+         sbvdiv sbvrem
+         bvlt bvle
+         sbvlt sbvle)
        (and (= 3 (len dargs))
             (darg-quoted-posp (first dargs))
             (bv-arg-okp (second dargs))
@@ -141,19 +142,25 @@
       (bv-array-read (and (= 4 (len dargs))
                           (darg-quoted-posp (first dargs))
                           (darg-quoted-natp (second dargs))
-                          (< 1 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
+                          (<= 2 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
                           (bv-arg-okp (third dargs))
                           (bv-array-arg-okp (unquote (second dargs)) (fourth dargs))))
       (bv-array-write (and (= 5 (len dargs))
                            (darg-quoted-posp (first dargs))
                            (darg-quoted-natp (second dargs))
-                           (< 1 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
+                           (<= 2 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
                            (bv-arg-okp (third dargs))
                            (bv-arg-okp (fourth dargs))
                            (bv-array-arg-okp (unquote (second dargs)) (fifth dargs))))
+      (bv-array-if (and (= 5 (len dargs)) ; (bv-array-if element-size len test array1 array2)
+                        (darg-quoted-posp (first dargs)) ; excludes element size 0
+                        (darg-quoted-natp (second dargs)) ; could use darg-quoted-integerp, here and elsewhere, if that existed.
+                        (<= 2 (unquote (second dargs))) ;an array of length 1 would have 0 index bits..
+                        (boolean-arg-okp (third dargs))
+                        (bv-array-arg-okp (unquote (second dargs)) (fourth dargs))
+                        (bv-array-arg-okp (unquote (second dargs)) (fifth dargs))))
       ;; todo: consider how to handle equal:
       ((equal) t) ;fixme check the things being equated? or maybe they get checked elsewhere
-      ;; todo: bv-array-if?
       (otherwise nil))))
 
 (defund expr-is-purep (expr)

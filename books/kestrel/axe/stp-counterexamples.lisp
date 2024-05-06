@@ -536,7 +536,8 @@
                                    counterexamplep acons
                                    nodenum-type-alistp
                                    natp-of-lookup-equal-when-raw-counterexamplep)
-                                  (boolean-typep bv-typep bv-array-typep bv-array-type-len)))))
+                                  (boolean-typep bv-typep ;bv-array-typep bv-array-type-len
+                                                 )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
